@@ -43,13 +43,13 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
 /* 배경 — 푸른 계열 그라데이션이 흐른다.
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
-body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.82;
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.80;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(120,170,218,.86), transparent 66%),
-    radial-gradient(34% 40% at 78% 10%, rgba(206,230,248,.30), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(102,152,202,.78), transparent 68%),
-    radial-gradient(36% 40% at 26% 90%, rgba(214,234,250,.28), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(142,188,228,.62), transparent 70%);
+    radial-gradient(40% 44% at 12% 18%, rgba(150,171,192,.84), transparent 66%),
+    radial-gradient(34% 40% at 78% 10%, rgba(224,231,238,.30), transparent 70%),
+    radial-gradient(44% 48% at 88% 80%, rgba(137,158,180,.76), transparent 68%),
+    radial-gradient(36% 40% at 26% 90%, rgba(228,234,241,.28), transparent 72%),
+    radial-gradient(32% 36% at 54% 50%, rgba(168,186,204,.60), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -57,6 +57,41 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
   50% {transform:translate3d(6%,-5%,0) scale(1.16) rotate(1.4deg)}
   100%{transform:translate3d(-4%,6%,0) scale(1.07) rotate(-0.6deg)}}
 @media (prefers-reduced-motion: reduce){body::before{animation:none}}
+
+/* ===== 접속 화면 (공유 코드 게이트) ===== */
+.gate{position:fixed;inset:0;z-index:900;display:grid;place-items:center;
+  background:rgba(238,242,246,.72);backdrop-filter:blur(9px) saturate(115%)}
+.gate.hidden{display:none}
+.gatecard{width:min(430px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);
+  border-radius:20px;box-shadow:0 24px 64px rgba(31,44,61,.20),0 2px 6px rgba(31,44,61,.10);
+  padding:34px 32px 26px;text-align:center}
+.gatecard .glogo{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:22px;
+  font-size:14.5px;color:var(--ink);letter-spacing:-.2px}
+.gatecard .glogo .mark{width:44px;height:22px;border-radius:8px;object-fit:cover;flex:none;
+  box-shadow:0 1px 3px rgba(31,44,61,.14)}
+.gatecard h2{margin:0 0 7px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.4px}
+.gatecard .gsub{margin:0 0 20px;font-size:12.5px;line-height:1.65;color:var(--ink2)}
+.gatecard .gsub b{color:var(--ink);font-weight:700}
+.gaterow{display:flex;gap:8px}
+.gaterow input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:11px;
+  background:var(--plane2);padding:0 14px;font-size:17px;font-weight:700;letter-spacing:3px;
+  text-align:center;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--ink)}
+.gaterow input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.gaterow input::placeholder{color:#c2cad4;font-weight:600;letter-spacing:3px}
+.gaterow .btn{height:44px;padding:0 20px;border-radius:11px;font-size:13.5px;font-weight:700;flex:none}
+.gatemsg{min-height:19px;margin-top:9px;font-size:12px;font-weight:600;color:var(--pace)}
+.gatemsg.ok{color:#3d6b52}
+.gsep{position:relative;margin:20px 0 14px;height:1px;background:var(--line)}
+.gsep span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--surface);
+  padding:0 11px;font-size:11px;color:var(--muted);font-weight:600}
+.gatecard .btn.wide{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  height:42px;border-radius:11px;font-size:13px;font-weight:700;margin-top:8px}
+.gatecard .btn.ghost{background:var(--surface);color:var(--ink2)}
+.gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
+.gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
+/* 공유 코드 (캠페인 관리) */
+.sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
+  color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -330,15 +365,23 @@ table.tbl.nogauge .gauge .track{display:none}
 @media(max-width:1200px){.stat{aspect-ratio:auto;min-height:200px}}
 
 /* treemap */
-/* 노출 분포 · 효율 버블 — 한 행 안에 좌우로 */
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:start}
+/* 노출 분포 · 효율 버블 — 한 행 안에 좌우로, 카드 높이는 항상 같게 */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:216px}
+.duo>.duocol>.sec{margin-top:0}
 .duo>.duocol{min-width:0;display:flex;flex-direction:column}
-.duo>.duocol>.card{flex:1 1 auto}
+.duo>.duocol>.sec{align-items:flex-end}
+.duo>.duocol>.card{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+.duo>.duocol>.card>.bd{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
 .duo .sec .tools{flex-wrap:wrap;justify-content:flex-end}
-@media (max-width:1440px){.duo{grid-template-columns:1fr;gap:0}}
-/* 좌우 두 카드의 키를 비슷하게 맞춘다 */
-.duo .tmap{height:600px}
-.duo .bublgd{padding:10px 12px;margin:0 0 10px}
+@media (max-width:1440px){.duo{grid-template-columns:1fr;gap:0}
+  .duo>.duocol>.card{min-height:560px}}
+/* 흰 영역 안에서 그래프가 남은 높이를 채운다 */
+.duo #treemap{flex:1 1 auto;min-height:0;display:flex}
+.duo .tmap{flex:1 1 auto;height:auto;min-height:340px}
+.duo #bubbleWrap{flex:1 1 auto;min-height:0;display:flex}
+.duo #bubble{flex:1 1 auto;min-height:0;display:flex}
+.duo #bubble svg{width:100%;height:100%;min-height:0}
+.duo .bublgd{padding:10px 12px;margin:0 0 10px;flex:none}
 .duo .bublgd .how{gap:5px 16px;margin-top:9px;padding-top:8px;font-size:11px}
 .tmap{position:relative;width:100%;height:520px;border-radius:10px;overflow:hidden;
   background:var(--plane2);border:1px solid var(--line2)}

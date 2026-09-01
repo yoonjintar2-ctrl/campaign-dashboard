@@ -737,7 +737,8 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.d
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
   ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
-  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderTreemap();renderStrip();renderBubble();}
+  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderStrip();renderBubble();
+    equalizeDuo();renderTreemap();}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();});
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
@@ -747,7 +748,10 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
 function currentRole(){
   /* CLOUD 는 뒤쪽 파일에서 선언되므로 아직 없을 수 있다 */
   let C=null;try{C=CLOUD;}catch(e){return 'agency';}
-  if(!C||!C.on)return 'agency';
+  if(!C)return 'agency';
+  /* 공유 코드 · 샘플 둘러보기로 들어왔으면 언제나 조회 전용(광고주 모드) */
+  if(C.shareView&&!C.user)return 'client';
+  if(!C.on)return 'agency';
   if(!C.user)return 'client';
   return (C.role==='master'||C.role==='editor'||!C.campaign)?'agency':'client';
 }
@@ -842,9 +846,11 @@ function renderIssueAlert(){
 function renderAll(){
   renderCampBar();renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
-  if(!$('sub-perf').classList.contains('hidden')){renderTreemap();renderGantt();renderCreatives();renderBubble();}
+  if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderCreatives();renderBubble();
+    equalizeDuo();renderTreemap();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderTreemap();renderBubble();
+buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderBubble();
+setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리 — 지난 며칠간의 반영 시점 (시안용 시드) */
 (function seedLineHist(){
   const snap=snapLines();

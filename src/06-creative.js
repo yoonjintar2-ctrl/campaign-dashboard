@@ -754,5 +754,31 @@ function renderBubble(){
   if(!window.__huePickWired){window.__huePickWired=1;
     document.addEventListener('click',()=>document.querySelectorAll('.huepick').forEach(x=>x.remove()));}
 }
+/* 노출 분포 · 효율 버블 — 제목 줄 높이를 맞춰 두 카드의 흰 영역이 위아래로 정확히 겹치게 */
+function equalizeDuo(){
+  const cols=[...document.querySelectorAll('.duo>.duocol')];
+  if(cols.length<2)return;
+  const secs=cols.map(c=>c.querySelector(':scope>.sec')).filter(Boolean);
+  if(secs.length<2)return;
+  secs.forEach(s=>s.style.minHeight='');
+  const one=getComputedStyle(cols[0].parentElement).gridTemplateColumns.split(' ').length<2;
+  if(one)return;                                   /* 한 단으로 접혔으면 맞출 필요 없다 */
+  const mx=Math.max(...secs.map(s=>s.getBoundingClientRect().height));
+  secs.forEach(s=>s.style.minHeight=Math.ceil(mx)+'px');
+}
+/* 흰 영역 높이가 바뀌면 트리맵을 다시 그린다 (칸 크기를 픽셀로 계산하므로) */
+(function watchTreemap(){
+  const start=()=>{
+    const box=$('treemap');if(!box||!window.ResizeObserver)return;
+    let last=0;
+    new ResizeObserver(()=>{
+      const h=Math.round(box.getBoundingClientRect().height);
+      if(Math.abs(h-last)<6)return;last=h;
+      clearTimeout(window.__tmT);
+      window.__tmT=setTimeout(()=>{if(!$('sub-perf').classList.contains('hidden'))renderTreemap();},120);
+    }).observe(box);};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',start):setTimeout(start,0);
+})();
 addEventListener('resize',()=>{clearTimeout(window.__bubT);
-  window.__bubT=setTimeout(()=>{if(!$('sub-perf').classList.contains('hidden'))renderBubble();},200);});
+  window.__bubT=setTimeout(()=>{equalizeDuo();
+    if(!$('sub-perf').classList.contains('hidden')){renderBubble();renderTreemap();}},200);});

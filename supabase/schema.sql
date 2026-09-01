@@ -289,3 +289,64 @@ select campaign_id,
        sum(conv) as conv, sum(net) as net
 from public.daily_stats
 group by campaign_id, stat_date, split_part(line_key, '|', 2);
+
+-- ---------------------------------------------------------------------
+-- 6. 공유 코드 — 로그인 없이 "조회 전용"으로 캠페인을 여는 8자리 코드
+--    시행사가 광고주에게 코드(또는 ?code=XXXX-XXXX 링크)를 전달한다.
+--    코드는 캠페인마다 자동으로 붙고, 캠페인 관리에서 재발급할 수 있다.
+-- ---------------------------------------------------------------------
+
+-- 헷갈리는 글자(I O 0 1 S 5 B 8 2 Z)를 뺀 알파벳으로 8자리 코드를 만든다
+create or replace function public.gen_share_code()
+returns text language plpgsql as $$
+declare
+  alphabet text := 'ACDEFGHJKLMNPQRTUVWXY34679';
+  out text := '';
+  i int;
+begin
+  loop
+    out := '';
+    for i in 1..8 loop
+      out := out || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
+    end loop;
+    out := substr(out,1,4) || '-' || substr(out,5,4);
+    exit when not exists (select 1 from public.campaigns c where c.share_code = out);
+  end loop;
+  return out;
+end $$;
+
+alter table public.campaigns
+  add column if not exists share_code text;
+update public.campaigns set share_code = public.gen_share_code() where share_code is null;
+alter table public.campaigns
+  alter column share_code set default public.gen_share_code(),
+  alter column share_code set not null;
+create unique index if not exists campaigns_share_code_key on public.campaigns(share_code);
+
+-- 코드로 캠페인 문서를 읽는다 (SECURITY DEFINER — RLS 를 우회하지만 읽기 전용)
+create or replace function public.open_by_code(p_code text)
+returns table(id uuid, name text, advertiser text, doc jsonb)
+language sql security definer set search_path = public as $$
+  select c.id, c.name, c.advertiser, c.doc
+  from public.campaigns c
+  where upper(c.share_code) = upper(trim(p_code))
+  limit 1;
+$$;
+
+-- 코드로 일별 실적을 읽는다
+create or replace function public.stats_by_code(p_code text)
+returns table(stat_date date, line_key text, imp bigint, click bigint, view bigint,
+              eng bigint, conv bigint, lead bigint, install bigint, rev bigint,
+              net bigint, extra jsonb)
+language sql security definer set search_path = public as $$
+  select d.stat_date, d.line_key, d.imp, d.click, d.view, d.eng, d.conv,
+         d.lead, d.install, d.rev, d.net, d.extra
+  from public.daily_stats d
+  join public.campaigns c on c.id = d.campaign_id
+  where upper(c.share_code) = upper(trim(p_code));
+$$;
+
+-- 로그인하지 않은 방문자(anon)도 이 두 함수만 부를 수 있다 (표 직접 접근은 여전히 RLS 로 차단)
+grant execute on function public.open_by_code(text)  to anon, authenticated;
+grant execute on function public.stats_by_code(text) to anon, authenticated;
+revoke execute on function public.gen_share_code() from anon;
