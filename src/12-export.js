@@ -28,7 +28,7 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <font><sz val="10.5"/><color rgb="FF5A6878"/><name val="맑은 고딕"/></font>
 <font><sz val="10.5"/><color rgb="FFB8665F"/><name val="맑은 고딕"/></font>
 </fonts>
-<fills count="7">
+<fills count="9">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FF3C4957"/><bgColor indexed="64"/></patternFill></fill>
@@ -36,11 +36,13 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <fill><patternFill patternType="solid"><fgColor rgb="FF28313B"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFE7ECF2"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFFBFCFE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF2F4F7"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE2E7EE"/><bgColor indexed="64"/></patternFill></fill>
 </fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8DEE6"/></left><right style="thin"><color rgb="FFD8DEE6"/></right><top style="thin"><color rgb="FFD8DEE6"/></top><bottom style="thin"><color rgb="FFD8DEE6"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="33">
+<cellXfs count="35">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
@@ -74,6 +76,8 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="164" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="165" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="166" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="7" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 </cellXfs></styleSheet>`;
 const EMU=9525;   /* 1px = 9525 EMU */
 /* sheets: [{name, rows, widths, merges:[{r1,c1,r2,c2}], images:[{png:Uint8Array,w,h,row,col}]}] */
@@ -196,7 +200,8 @@ function svgToPng(svg,scale){
 const XS={hdr:4,ghdr:5,rowhdr:6,sub:7,total:8,num:10,won:11,pct:12,txt:13,left:14,
   pct2:15,tpct2:16,spct2:17,htxt:18,hnum:19,
   tnum:20,twon:21,tpct:22,hwon:23,hpct:24,hpct2:25,
-  label:26,val:27,valWon:28,valPct:29,snum:30,swon:31,spct:32};
+  label:26,val:27,valWon:28,valPct:29,snum:30,swon:31,spct:32,
+  blank:33,sblank:34};
 /* 휴일(주말·공휴일) 행 — 같은 서식의 붉은 글씨 짝 */
 const XL_HOL={10:XS.hnum,11:XS.hwon,12:XS.hpct,13:XS.htxt,15:XS.hpct2,14:XS.htxt,6:XS.htxt};
 /* 셀 텍스트를 숫자/통화/퍼센트로 되돌린다 */
@@ -243,6 +248,9 @@ function tableToRows(tbl,startRow){
         return (base.n&&!isHead)?base:{v:txt,s:sty};})();
       /* 주말·공휴일 셀은 붉은 글씨로 (화면과 동일) */
       if(!isHead&&cell.classList.contains('hol')&&XL_HOL[c.s])c={...c,s:XL_HOL[c.s]};
+      /* 값이 없는 칸은 화면과 같이 연한 회색으로 채운다 */
+      if(!isHead&&cell.classList.contains('blank')&&role!=='total')
+        c={v:'',s:role==='sub'?XS.sblank:XS.blank};
       grid[ri][ci]=c;
       if(rs>1||csn>1)merges.push({r1:startRow+ri,c1:ci,r2:startRow+ri+rs-1,c2:ci+csn-1});
       for(let a=0;a<rs;a++)for(let b=0;b<csn;b++){
@@ -329,7 +337,6 @@ async function exportDashboard(){
       ['집행 경과',{v:`${ps.elapsed}일차 / ${ps.days}일`,s:XS.val}],
       ['총 광고비 (Gross)',{v:budget,n:1,s:XS.valWon}],
       ['소진 광고비',{v:b.cost,n:1,s:XS.valWon}],
-      ['예산 소진율',{v:budget?b.cost/budget:0,n:1,s:XS.valPct}],
       ['종합 KPI 달성률',{v:allAch,n:1,s:XS.valPct}],
       ['목표 페이스',{v:pr,n:1,s:XS.valPct}]
     ];
@@ -341,7 +348,8 @@ async function exportDashboard(){
 
     /* ---- KPI 달성 현황 — 그래프 그림으로 ---- */
     push(R,[T('KPI 달성 현황',3)]);
-    const donutSvgs=[...document.querySelectorAll('#donuts .donut')];
+    /* 예산 소진율 카드(.spend)는 리포트에 넣지 않는다 */
+    const donutSvgs=[...document.querySelectorAll('#donuts .donut')].filter(d=>!d.classList.contains('spend'));
     const dpics=[];
     for(const d of donutSvgs){
       const svg=d.querySelector('svg');if(!svg)continue;
@@ -380,14 +388,14 @@ async function exportDashboard(){
       const card=sec.nextElementSibling&&sec.nextElementSibling.nextElementSibling;
       const tbl=card?card.querySelector('table.tbl'):null;
       if(!tbl)return;
-      push(R,[T(sec.textContent.replace(/숨기기|⚙ 구성 편집|서머리 삭제/g,'').trim(),3)]);
+      push(R,[T(sec.textContent.replace(/숨기기|⚙ 헤더 편집|서머리 삭제/g,'').trim(),3)]);
       const g=tableToRows(tbl,R.length);
       g.rows.forEach(r=>R.push(r));
       s1.merges.push(...g.merges);
       blank(R);});
 
     /* ---- 소재별 효율 (달력 대신 온에어 기간을 M/D~M/D 로) ---- */
-    const crs=filteredCreatives();
+    const crs=filteredCreatives(),mrg=s1.merges;
     if(crs.length){
       push(R,[T('소재별 효율',3)]);
       push(R,[T('온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 쉼표로 나눠 적습니다.',2)]);
@@ -396,14 +404,26 @@ async function exportDashboard(){
       push(R,dims.map(k=>T((DIMS.find(d=>d.k===k)||{l:k}).l,XS.hdr))
         .concat(mcols.map(k=>T(GANTT_DEF[k].l,XS.hdr)))
         .concat([T('온에어 기간',XS.hdr)]));
-      crs.slice().sort((a,b)=>
-        dims.map(d=>d==='creative'?a.name:a[d]).join(SEP)
-          .localeCompare(dims.map(d=>d==='creative'?b.name:b[d]).join(SEP),'ko'))
-        .forEach(c=>{
-          const days=(c.daily.imp||[]).filter(v=>v>0).length;
-          push(R,dims.map(k=>T(k==='creative'?c.name:(c[k]||''),XS.rowhdr))
-            .concat(mcols.map(k=>xlCell(k==='days'?days+'일':crVal(c,k),'')))
-            .concat([{v:onAirText(c),s:XS.left}]));});
+      /* 화면과 같은 순서 — 예산이 큰 매체·소재가 위로 */
+      const sorted=crs.slice().sort((a,b)=>{
+        for(let i=0;i<dims.length;i++){
+          const va=dims[i]==='creative'?a.name:a[dims[i]],vb=dims[i]==='creative'?b.name:b[dims[i]];
+          const ra=ganttRank(dims[i],va,a),rb=ganttRank(dims[i],vb,b);
+          if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
+          if(va!==vb)return String(va).localeCompare(String(vb),'ko');}
+        return 0;});
+      /* 매체·광고상품처럼 같은 값이 이어지는 앞쪽 열은 세로로 병합한다 */
+      const keys=sorted.map(c=>dims.map(k=>String(k==='creative'?c.name:(c[k]||''))));
+      const span=mergeSpans(keys,dims.length);
+      const at0=R.length;
+      sorted.forEach((c,ri)=>{
+        const days=(c.daily.imp||[]).filter(v=>v>0).length;
+        const lead=dims.map((k,ci)=>{
+          if(span[ri][ci]>1)mrg.push({r1:at0+ri,c1:ci,r2:at0+ri+span[ri][ci]-1,c2:ci});
+          return T(span[ri][ci]===0?'':keys[ri][ci],XS.rowhdr);});
+        push(R,lead
+          .concat(mcols.map(k=>xlCell(k==='days'?days+'일':crVal(c,k),'')))
+          .concat([{v:onAirText(c),s:XS.left}]));});
       blank(R);}
 
     /* ---- 시트 2 · 일자별 상세 효율 ---- */

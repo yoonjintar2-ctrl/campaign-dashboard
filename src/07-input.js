@@ -57,7 +57,8 @@ function renderSheet(){
   let dl='';
   SHEET.forEach((r,i)=>{['segment','media','product','target','line'].forEach(k=>{
     dl+=`<datalist id="dl-${k}-${i}">${dimOpts(k,r).map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;});});
-  let h='<thead><tr><th style="width:34px"></th>'
+  let h='<thead><tr><th style="width:34px" class="rm">'
+    +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
     +cols.map(c=>`<th style="min-width:${c.w||110}px">${c.l}${c.type==='calc'?' ƒ':''}</th>`).join('')+'</tr></thead><tbody>';
   SHEET.forEach((r,ri)=>{
     h+=`<tr class="${rowBad(r)?'bad':''}"><td class="rm"><button data-del="${ri}">✕</button></td>`;
@@ -114,6 +115,11 @@ function renderSheet(){
   t.querySelectorAll('[data-dn]').forEach(n=>n.addEventListener('change',e=>{
     if(e.target.value){pushUndo();SHEET[+e.target.dataset.dn].date=e.target.value;renderSheet();}}));
   t.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndo();SHEET.splice(+b.dataset.del,1);renderSheet();});
+  /* 헤더의 ✕ = 모두 지우기 (확인 후 실행) */
+  const ca=$('sheetClearAll');
+  if(ca)ca.onclick=()=>confirmModal('입력한 일별 실적을 모두 지울까요?',
+    `${SHEET.length}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
+    ()=>{pushUndo();SHEET.length=0;renderSheet();buildFacts();renderAll();},'모두 지우기');
 }
 function paintSel(){document.querySelectorAll('#sheet td[data-r]').forEach(td=>{
   const r=+td.dataset.r,c=+td.dataset.c;

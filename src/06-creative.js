@@ -10,8 +10,8 @@ let RAW_CFG={rows:[],groups:(function(){
   return [{id:uid(),name:'볼륨',cols:vol},{id:uid(),name:'효율',cols:eff},{id:uid(),name:'비용',cols:cost}]
     .filter(g=>g.cols.length);})()};
 let RAW_ALLDAYS=false;    /* true 면 캠페인 시작~종료 전 기간을 모두 행으로 (리포트용) */
-let RAW_SEG='none';       /* 세로 세그먼트 — 표를 위아래로 나눈다 */
-let RAW_HSEG='none';      /* 가로 세그먼트 — 한 표 안에서 좌우로 나눈다 */
+let RAW_SEG='media';      /* 세로 세그먼트 — 표를 위아래로 나눈다 (기본 매체별) */
+let RAW_HSEG='product';   /* 가로 세그먼트 — 한 표 안에서 좌우로 나눈다 (기본 상품별) */
 const SEG_OPTS=[{k:'none',l:'없음'},{k:'segment',l:'구분별'},{k:'media',l:'매체별'},
   {k:'product',l:'상품별'},{k:'target',l:'타겟팅별'},{k:'creative',l:'소재별'}];
 function renderRaw(){
@@ -29,9 +29,11 @@ function renderRaw(){
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
     if(!sub.length)return;
+    /* 화면은 최신 날짜가 위, 엑셀 리포트(RAW_ALLDAYS)는 빠른 날짜가 위 */
+    const ord=RAW_ALLDAYS?(a2,b2)=>a2-b2:(a2,b2)=>b2-a2;
     const days=RAW_ALLDAYS
-      ? [...Array(TOTAL_DAYS)].map((_,i)=>i).sort((a2,b2)=>b2-a2)
-      : [...new Set(sub.map(f=>f.d))].sort((a2,b2)=>b2-a2);
+      ? [...Array(TOTAL_DAYS)].map((_,i)=>i).sort(ord)
+      : [...new Set(sub.map(f=>f.d))].sort(ord);
     totalRows+=days.length;
     const wrapDiv=el('div','rawblock'+(vi>0?' vsep':''),host);
     if(vSegs.length){
@@ -89,6 +91,7 @@ function renderRaw(){
             +(b2?METRICS[k].f(mval(k,b2)):(RAW_ALLDAYS?'':'<span class="na">–</span>'))+'</td>').join('');}).join('')
         +'</tr>';});
     tbl.innerHTML=h+'</tbody>';
+    markBlanks(tbl);
   });
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
@@ -337,7 +340,20 @@ const GANTT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k])
 const GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 let GANTT_RANGE='all';
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
-  groups:[{id:uid(),name:'소재 효율',cols:['imp','view','ctr']}],metric:'imp'};
+  groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
+/* 정렬 기준 — 예산(Gross)이 큰 매체가 위로, 그 안에서도 예산이 큰 소재가 위로 */
+const mediaBudget=m=>sum(LINES.filter(l=>l.media===m).map(lineGross));
+const creativeBudget=c=>{const l=LINES.find(x=>x.id===c.lid);
+  if(!l)return 0;
+  const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
+  return lineGross(l)*(isFinite(c.share)&&c.share>0?c.share:1/n);};
+/* 차원별 정렬 키 (클수록 위) — 없으면 null 로 두고 이름순을 쓴다 */
+function ganttRank(dim,val,c){
+  if(dim==='media')return mediaBudget(val);
+  if(dim==='creative')return creativeBudget(c);
+  if(dim==='product'||dim==='segment'||dim==='target'||dim==='line')
+    return sum(LINES.filter(l=>l[dim]===val).map(lineGross));
+  return null;}
 /* 값 비율(0~1)을 연한 남색 → 짙은 남색으로 보간 */
 /* 단일 붉은색 톤 — 값이 낮으면 아주 연한 빨강, 높을수록 진한 빨강.
    농도 기준은 "그 행(소재)의 최댓값"이므로 행마다 독립적으로 읽는다. */
@@ -354,7 +370,13 @@ function renderGantt(){
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));
-  rowsData.sort((a,b)=>a.key.localeCompare(b.key,'ko'));
+  /* 예산이 큰 순서로 (같으면 이름순) — 차원 순서대로 비교 */
+  rowsData.sort((a,b)=>{
+    for(let i=0;i<dims.length;i++){
+      const ra=ganttRank(dims[i],a.vals[i],a.c),rb=ganttRank(dims[i],b.vals[i],b.c);
+      if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
+      if(a.vals[i]!==b.vals[i])return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');}
+    return 0;});
   if(GANTT.order){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
   const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
@@ -400,6 +422,7 @@ function renderGantt(){
         +(v>0?`<span class="b" style="background:${shade(v/maxV)}"></span>`:'')+'</td>';});
     h+='</tr>';});
   t.innerHTML=h+'</tbody>';
+  markBlanks(t);
   t.style.minWidth=(leadTotal+VD.length*13)+'px';
   enableRowDrag(t,GANTT,renderGantt);
   wireGanttHover(t,SC);
@@ -573,3 +596,163 @@ function renderTreemap(){
 }
 addEventListener('resize',()=>{clearTimeout(window.__tmapT);
   window.__tmapT=setTimeout(()=>{if(!$('sub-perf').classList.contains('hidden'))renderTreemap();},180);});
+
+/* ===== 12. 효율 버블 =====
+   x·y = 효율 지표 (단가는 낮을수록 좋으므로 축 방향을 뒤집어 "좋을수록 오른쪽·위")
+   색 = 매체 · 진하기 = 광고상품 · 크기 = 소진 광고비 · 회색 = 리포트 시점에 꺼져 있는 소재 */
+const BUB_AXES=[
+  {k:'cpm',l:'노출 효율 (CPM)',base:'imp'},
+  {k:'cpc',l:'클릭 효율 (CPC)',base:'click'},
+  {k:'cpv',l:'조회 효율 (CPV)',base:'view'},
+  {k:'cpa',l:'전환 효율 (CPA)',base:'conv'},
+  {k:'ctr',l:'클릭률 (CTR)',base:'click'},
+  {k:'vtr',l:'조회율 (VTR)',base:'view'}
+];
+let BUB={x:'cpc',y:'cpm',dim:'creative'};
+/* 매체별 색 계열 — 사용자가 바꿀 수 있고 캠페인 문서에 함께 저장된다 */
+const BUB_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
+                [64,130,138],[118,120,132],[196,120,150]];
+let BUB_COLORS={};
+const bubDef=k=>BUB_AXES.find(a=>a.k===k)||BUB_AXES[0];
+const BUB_LOWER=new Set(['cpm','cpc','cpv','cpa','cpi','cpe']);
+const OFF_HUE=[150,158,167];
+/* 조회 구간의 마지막 날에 노출이 있었는가 — 없으면 "리포트 시점에 꺼진" 것으로 본다 */
+function bubIsOn(rows,last){
+  return rows.some(f=>f.d===last&&(f.imp||0)>0);
+}
+function renderBubble(){
+  const host=$('bubble');if(!host)return;
+  const fs=factFilter();
+  const dim=BUB.dim;
+  const m=new Map();
+  fs.forEach(f=>{
+    const key=[f.media,f.product,f[dim]].join(SEP);
+    if(!m.has(key))m.set(key,{media:f.media,product:f.product,name:f[dim],rows:[]});
+    m.get(key).rows.push(f);});
+  const xd=bubDef(BUB.x),yd=bubDef(BUB.y);
+  const lastDay=fs.length?Math.max(...fs.map(f=>f.d)):0;
+  let pts=[...m.values()].map(g=>{
+    const b=aggFacts(g.rows);
+    return {...g,b,cost:b.cost,on:bubIsOn(g.rows,lastDay),
+      xv:METRICS[xd.k]?METRICS[xd.k].c(b):NaN,
+      yv:METRICS[yd.k]?METRICS[yd.k].c(b):NaN,
+      xb:b[xd.base]||0,yb:b[yd.base]||0};})
+    .filter(p=>p.cost>0&&isFinite(p.xv)&&p.xv>0&&isFinite(p.yv)&&p.yv>0&&p.xb>0&&p.yb>0);
+  host.innerHTML='';
+  const lgd=$('bubLegend');
+  if(!pts.length){
+    host.innerHTML='<div class="hint" style="padding:26px 6px">두 축을 모두 계산할 수 있는 데이터가 없습니다. 축을 바꿔 보세요.</div>';
+    if(lgd)lgd.innerHTML='';
+    return;}
+  const W=1000,H=500,P={l:74,r:40,t:34,b:70};
+  const PW=W-P.l-P.r,PH=H-P.t-P.b;
+  const xLow=BUB_LOWER.has(xd.k),yLow=BUB_LOWER.has(yd.k);
+  const bubScale=vals=>{
+    const mn=Math.min(...vals),mx=Math.max(...vals);
+    const log=mn>0&&mx/mn>8;
+    const f=v=>log?Math.log(v):v;
+    let a=f(mn),b=f(mx);
+    const d=(b-a)||Math.abs(b)||1;
+    a-=d*0.16;b+=d*0.16;
+    return {log,n:v=>(f(v)-a)/((b-a)||1)};};
+  const sx=bubScale(pts.map(p=>p.xv)),sy=bubScale(pts.map(p=>p.yv));
+  const X=v=>P.l+(xLow?1-sx.n(v):sx.n(v))*PW;
+  const Y=v=>P.t+(yLow?sy.n(v):1-sy.n(v))*PH;
+  const maxCost=Math.max(...pts.map(p=>p.cost))||1;
+  const R=c=>13+Math.sqrt(c/maxCost)*38;
+  const svg=S('svg',{viewBox:`0 0 ${W} ${H}`},host);
+  /* 옅은 격자만 (구간 숫자는 넣지 않는다) */
+  for(let i=0;i<=4;i++){
+    S('line',{x1:P.l,x2:W-P.r,y1:P.t+PH*i/4,y2:P.t+PH*i/4,stroke:'#eef1f5','stroke-width':1},svg);
+    S('line',{x1:P.l+PW*i/4,x2:P.l+PW*i/4,y1:P.t,y2:P.t+PH,stroke:'#f2f5f8','stroke-width':1},svg);}
+  S('line',{x1:P.l,x2:W-P.r,y1:P.t+PH,y2:P.t+PH,stroke:'#cdd5de','stroke-width':1.2},svg);
+  S('line',{x1:P.l,x2:P.l,y1:P.t,y2:P.t+PH,stroke:'#cdd5de','stroke-width':1.2},svg);
+  /* 축 끝 표시 — 우수 / 저조 (둘 다 옅은 푸른 계열) */
+  const mark=(x,y,t,anchor,rot,good)=>{
+    const e=S('text',{x,y,'text-anchor':anchor||'middle','font-size':12,'font-weight':800,
+      fill:good?'#5c81a5':'#a3b6c8'},svg);
+    if(rot)e.setAttribute('transform',`rotate(${rot} ${x} ${y})`);
+    e.textContent=t;};
+  mark(P.l-16,P.t+4,'우수','middle',-90,1);
+  mark(P.l-16,P.t+PH-4,'저조','middle',-90,0);
+  mark(W-P.r,P.t+PH+26,'우수','end',0,1);
+  mark(P.l,P.t+PH+26,'저조','start',0,0);
+  /* 축 제목 — 각 축 가운데 */
+  const axTitle=(x,y,t,rot)=>{
+    const e=S('text',{x,y,'text-anchor':'middle','font-size':12.5,'font-weight':700,
+      fill:'#6b7c8d','letter-spacing':'-.2'},svg);
+    if(rot)e.setAttribute('transform',`rotate(${rot} ${x} ${y})`);
+    e.textContent=t;e.setAttribute('class','axt');};
+  axTitle(P.l+PW/2,P.t+PH+52,xd.l,0);
+  axTitle(P.l-52,P.t+PH/2,yd.l,-90);
+  /* 색 — 매체는 색상(사용자 지정 가능), 광고상품은 그 색의 진하기 */
+  const medias=[...new Set(pts.map(p=>p.media))];
+  medias.forEach((md,i)=>{if(BUB_COLORS[md]===undefined)BUB_COLORS[md]=i%BUB_HUES.length;});
+  const bubHue=md=>BUB_HUES[BUB_COLORS[md]%BUB_HUES.length]||BUB_HUES[0];
+  const prodOf={};
+  medias.forEach(md=>{prodOf[md]=[...new Set(pts.filter(p=>p.media===md).map(p=>p.product))].sort();});
+  const shadeT=(md,pd)=>{const ps=prodOf[md]||[];
+    const i=Math.max(0,ps.indexOf(pd)),n=Math.max(ps.length-1,1);
+    return ps.length>1?0.02+0.46*(i/n):0.10;};
+  const colorOf=p=>p.on
+    ? `rgb(${mixWhite(bubHue(p.media),shadeT(p.media,p.product)).join(',')})`
+    : `rgb(${mixWhite(OFF_HUE,shadeT(p.media,p.product)*0.6).join(',')})`;
+  /* 큰 것부터 그려 작은 버블이 위로 오게 (레퍼런스처럼 겹쳐 보이도록 반투명) */
+  pts.slice().sort((a,b)=>b.cost-a.cost).forEach(p=>{
+    const c=S('circle',{cx:X(p.xv),cy:Y(p.yv),r:R(p.cost),fill:colorOf(p),
+      'fill-opacity':p.on?.62:.5,stroke:'none',class:'bub'},svg);
+    c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+      `<div class="t">${esc(p.name||'(미지정)')}${p.on?'':' · 현재 OFF'}</div>`
+      +`<div class="r"><span class="l">매체 · 상품</span><b>${esc(p.media)} · ${esc(p.product)}</b></div>`
+      +`<div class="r"><span class="l">${xd.l}</span><b>${METRICS[xd.k].f(p.xv)}</b></div>`
+      +`<div class="r"><span class="l">${yd.l}</span><b>${METRICS[yd.k].f(p.yv)}</b></div>`
+      +`<div class="r"><span class="l">소진 광고비</span><b>${won(p.cost)}</b></div>`
+      +`<div class="r"><span class="l">노출 · 클릭</span><b>${fmt(p.b.imp)} · ${fmt(p.b.click)}</b></div>`
+      +`<div class="r"><span class="l">조회 · 전환</span><b>${fmt(p.b.view)} · ${fmt(p.b.conv)}</b></div>`));
+    c.addEventListener('mouseleave',hideTip);});
+  /* ---- 범례 (그래프 위) ---- */
+  if(!lgd)return;
+  const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품'}[BUB.dim]||'소재';
+  const offN=pts.filter(p=>!p.on).length;
+  lgd.innerHTML=`<div class="lgtop">`
+    +medias.map(md=>{
+      const ps=prodOf[md]||[];
+      /* 매체 색이 위, 그 아래에 광고상품별 색 (모두 동그란 점) */
+      const subs=ps.map(pd=>
+        `<span class="sb"><i style="background:rgb(${mixWhite(bubHue(md),shadeT(md,pd)).join(',')})"></i>`
+        +`${esc(pd)}</span>`).join('');
+      return `<span class="mgrp">`
+        +`<span class="bl" data-hue="${esc(md)}" title="눌러서 이 매체의 색 계열 바꾸기">`
+        +`<i style="background:rgb(${bubHue(md).join(',')})"></i>${esc(md)}`
+        +`<span class="pen">색 변경</span></span>`
+        +(subs?`<span class="subs">${subs}</span>`:'')+`</span>`;}).join('')
+    +(offN?`<span class="mgrp"><span class="bl" style="cursor:default">`
+      +`<i style="background:rgb(${OFF_HUE.join(',')})"></i>`
+      +`현재 OFF <span class="pen">${offN}개</span></span></span>`:'')
+    +`</div>`
+    +`<div class="how">`
+    +`<span><b>버블 하나</b> = ${dimL} 1개 (매체 × 광고상품 × ${dimL} 기준)</span>`
+    +`<span><b>크기</b> = 소진 광고비 (클수록 많이 쓴 ${dimL})</span>`
+    +`<span><b>색</b> = 매체 · <b>진하기</b> = 그 매체 안의 광고상품</span>`
+    +`<span><b>가로</b> ${xd.l} · <b>세로</b> ${yd.l} — 오른쪽·위로 갈수록 좋습니다</span>`
+    +`<span>회색 버블은 <b>리포트 기준일에 꺼져 있던</b> ${dimL}입니다</span>`
+    +(sx.log||sy.log?`<span>값 차이가 커서 ${sx.log?'가로':''}${sx.log&&sy.log?'·':''}${sy.log?'세로':''}축은 <b>로그 눈금</b>으로 그렸습니다</span>`:'')
+    +`<span>버블에 마우스를 올리면 ${dimL} 이름과 세부 값이 나옵니다</span>`
+    +`</div>`;
+  /* 매체 색 바꾸기 */
+  lgd.querySelectorAll('[data-hue]').forEach(chip=>chip.onclick=e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.huepick').forEach(x=>x.remove());
+    const md=chip.dataset.hue;
+    const box=el('div','huepick',chip);
+    box.style.top='100%';box.style.left='0';box.style.marginTop='6px';
+    box.innerHTML=BUB_HUES.map((h,i)=>
+      `<button data-i="${i}" class="${BUB_COLORS[md]===i?'on':''}" style="background:rgb(${h.join(',')})"></button>`).join('');
+    box.onclick=ev=>{ev.stopPropagation();
+      const b2=ev.target.closest('button');if(!b2)return;
+      BUB_COLORS[md]=+b2.dataset.i;box.remove();renderBubble();};});
+  if(!window.__huePickWired){window.__huePickWired=1;
+    document.addEventListener('click',()=>document.querySelectorAll('.huepick').forEach(x=>x.remove()));}
+}
+addEventListener('resize',()=>{clearTimeout(window.__bubT);
+  window.__bubT=setTimeout(()=>{if(!$('sub-perf').classList.contains('hidden'))renderBubble();},200);});

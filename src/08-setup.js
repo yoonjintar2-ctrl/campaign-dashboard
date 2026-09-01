@@ -6,8 +6,8 @@ function renderCampForm(){
     <div class="fld" style="flex:1;min-width:140px"><label>광고주</label><input value="${esc(CAMPAIGN.advertiser)}"></div>
     <div class="fld" style="width:124px"><label>시작일 (자동)</label><div class="ro">${campStart()}</div></div>
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
-    <div class="fld" style="width:160px"><label>Gross 예산 (자동)</label><div class="ro">${won(gross)}</div></div>
-    <div class="fld" style="width:160px"><label>Net 예산 (자동)</label><div class="ro">${won(net)}</div></div>
+    <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
+    <div class="fld" style="width:160px"><label>Net 예산 (자동 역산)</label><div class="ro">${won(net)}</div></div>
     <div class="fld" style="width:210px"><label>Value (자동)</label>
       <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>
     <div class="fld" style="width:120px"><label>평균 수수료율</label><div class="ro">${((1-net/gross)*100).toFixed(2)}%</div></div>`;
@@ -29,10 +29,10 @@ const LINE_FIXED=[
   {k:'kpi',l:'KPI 지표',w:84,type:'kpi',on:true,g:'KPI'},
   {k:'sub',l:'보조 지표',w:84,type:'subm',on:false,g:'KPI'}
 ];
-const LINE_LABEL={budget:'Gross 예산',net:'Net 예산'};
+const LINE_LABEL={budget:'Gross 예산',net:'Net 예산 (자동)'};
 /* 사전에서 온 열의 입력 방식 */
 const LINE_TYPE={start:'date',end:'date',startT:'time',endT:'time',
-  feeA:'pct',feeR:'pct',net:'net',budget:'ro',value:'ro',bonus:'num',bonusRate:'ro2'};
+  feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'ro',bonus:'num',bonusRate:'ro2'};
 let LINE_COLS=(function(){
   const grp=f=>f.cat==='운영'?'집행 조건':f.cat==='비용'?'예산':'예상 수치';
   const dyn=FIELDS.filter(f=>f.mixOk&&!['cpm','cpc','cpv','cpa','cpi','cpe','ctr','vtr','cvr','etr','cost'].includes(f.k))
@@ -132,7 +132,9 @@ function renderKpiTable(){
   const head=cols.map(c=>{const sep=(c.g||'')!==prevG;prevG=c.g||'';
     const gk=GKEY[c.k];
     return `<th class="${sep?'gsep':''}" style="min-width:${c.w}px">${c.l}</th>`;}).join('');
-  let h=`<thead><tr>${head}<th style="width:74px"></th></tr></thead><tbody>`;
+  let h=`<thead><tr>${head}<th style="width:74px">`
+    +`<button class="btn sm danger" id="lineClearAll" title="예상 효율 값을 모두 지웁니다"`
+    +` style="padding:0 6px">✕</button></th></tr></thead><tbody>`;
   LINES.forEach((l,i)=>{
     prevG=null;
     h+='<tr>'+cols.map(c=>{
@@ -154,11 +156,12 @@ function renderKpiTable(){
         case 'exp':{const m=c.k.slice(2);
           return `<td class="expcell ${cls}${isG?'gt':''}"><span class="gwrap">
             ${inp('num')} data-e="${m}" value="${l.e[m]?fmt(l.e[m]):''}">
-            ${gk?`<label class="gchk" title="게런티(보장) 지표"><input type="checkbox" data-g="${i}" data-gk="${gk}" ${isG?'checked':''}></label>`:''}</span></td>`;}
+            ${gk?`<label class="gchk gwarr" title="게런티(보장) 지표 — 체크하면 보장 물량으로 봅니다"><span class="gl">보장</span><input type="checkbox" data-g="${i}" data-gk="${gk}" ${isG?'checked':''}></label>`:''}</span></td>`;}
         case 'ro2':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${pct(bonusRate([l]),1)}</b></td>`;
         case 'pct':return `<td class="${cls}">${inp('num')} value="${l[c.k]?((l[c.k]*100).toFixed(0)+'%'):''}"></td>`;
-        case 'net':return `<td class="${cls}">${inp('num')} value="${l.net?fmt(l.net):''}"></td>`;
-        case 'ro':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${fmt(c.k==='budget'?lineGross(l):lineValue(l))}</b></td>`;
+        case 'gross':return `<td class="${cls}">${inp('num')} value="${lineGross(l)?fmt(lineGross(l)):''}"></td>`;
+        case 'ro':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${
+          fmt(c.k==='net'?lineNet(l):c.k==='budget'?lineGross(l):lineValue(l))}</b></td>`;
         case 'note':return `<td class="${cls}"><textarea class="note" data-l="${i}" data-k="note">${esc(l.note||'')}</textarea></td>`;
         default:return `<td class="${cls}">${inp('num')} value="${l[c.k]?fmt(l[c.k]):''}"></td>`;}
     }).join('')+`<td style="white-space:nowrap;padding-left:3px;padding-right:3px">`
@@ -188,7 +191,7 @@ function renderKpiTable(){
     const n=()=>+String(v).replace(/[^0-9.]/g,'')||0;
     if(k==='feeA'||k==='feeR'){const f=parseFloat(v.replace(/[^0-9.]/g,''));
       if(isFinite(f))l[k]=Math.min(Math.max(f/100,0),.9);}
-    else if(k==='net')l.net=n();
+    else if(k==='gross')l.gross=n();
     else if(k==='bonus')l.bonus=n();
     else if(k==='price'||k==='sec')l[k]=n();
     else if(k==='bid'){if(v==='__add'){const nb=prompt('추가할 비드 타입 (예: 1주일, 1개월, CPP)');
@@ -208,8 +211,15 @@ function renderKpiTable(){
   t.querySelectorAll('[data-dev]').forEach(cb=>cb.onchange=e=>{
     const l=LINES[+e.target.dataset.dev],v=e.target.value;
     l.device=e.target.checked?[...new Set([...l.device,v])]:l.device.filter(x=>x!==v);});
+  /* 헤더의 ✕ = 예상 효율 모두 지우기 (확인 후 실행) */
+  const ca=$('lineClearAll');
+  if(ca)ca.onclick=()=>confirmModal('예상 효율을 모두 지울까요?',
+    `${LINES.length}개 라인이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
+    ()=>{pushLineUndo();LINES=[];CREATIVES=[];
+      rebuildPeriod();buildFacts();buildFilters();buildSelects();
+      renderKpiTable();renderCampForm();renderMix();renderAll();},'모두 지우기');
   t.querySelectorAll('[data-ldel]').forEach(b=>b.onclick=()=>{
-    if(LINES.length<=1)return;pushLineUndo();LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
+    pushLineUndo();LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
     renderKpiTable();renderCampForm();renderAll();});
   /* 행 복제 — 같은 값으로 한 줄 더 */
   t.querySelectorAll('[data-ldup]').forEach(b=>b.onclick=()=>{
@@ -297,7 +307,7 @@ function openLineHistory(){
   LINE_HIST.forEach((hs,n)=>{
     const ls=JSON.parse(hs.snap);
     const g=k=>sum(ls.map(l=>+(l.e&&l.e[k])||0));
-    const gross=sum(ls.map(l=>Math.round((+l.net||0)/(1-((+l.feeA||0)+(+l.feeR||0))))));
+    const gross=sum(ls.map(lineGross));
     h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${hs.who}</td><td>${hs.org}</td>
       <td class="mono">${ls.length}</td><td class="mono">${fmt(g('imp'))}</td><td class="mono">${fmt(g('click'))}</td>
       <td class="mono">${fmt(g('view'))}</td><td class="mono">${won(gross)}</td>
@@ -329,7 +339,7 @@ function mergeDupLines(groups){
       base.a=base.a||{};
       [...new Set(Object.keys(base.a).concat(Object.keys(l.a||{})))]
         .forEach(m=>base.a[m]=(+base.a[m]||0)+(+((l.a||{})[m])||0));
-      base.net=(+base.net||0)+(+l.net||0);
+      base.gross=(+base.gross||0)+(+l.gross||0);
       base.bonus=(+base.bonus||0)+(+l.bonus||0);
       base.note=[base.note,l.note].filter(Boolean).join(' / ');
       drop.add(i);});});
@@ -396,7 +406,7 @@ function openLineColCfg(){
       date:'YYYY-MM-DD',time:'HH:MM',
       bid:'CPM · CPC · CPV · CPA …',kpi:'노출 · 클릭 · 조회 · 전환 …',
       subm:'보조로 함께 볼 지표',dev:'PC · MO · CTV 중 선택',
-      exp:'제안 목표 수치 (숫자)',net:'Net 예산 · Gross 자동 역산',
+      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',
       pct:'수수료율 (10 또는 10%)',ro:'자동 계산 — 입력하지 않습니다',
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
@@ -404,15 +414,16 @@ function openLineColCfg(){
 const MIX_CATALOG=fieldCatalog('mix').concat([{g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
   {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
 const MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
-let MIX_CFG={rows:[{k:'media',sub:true},{k:'product',sub:false},{k:'target',sub:false}],order:null,
-  groups:(function(){
-    const d=fieldDefaults('mix');
-    const byCat=c=>d.filter(k=>FLD[k].cat===c);
-    return [
-      {id:uid(),name:'집행 조건',cols:['period','price'].concat(byCat('운영'))},
-      {id:uid(),name:'Proposal · 예상 볼륨',cols:[...byCat('노출'),...byCat('클릭'),...byCat('조회')]},
-      {id:uid(),name:'금액 (Value = Gross + 보너스 · 서비스율 포함)',cols:byCat('비용')},
-      {id:uid(),name:'비고',cols:['note'],solo:true}];})()};
+let MIX_CFG={rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false},{k:'target',sub:false}],
+  order:null,
+  groups:[
+    {id:uid(),name:'기간',cols:['period']},
+    {id:uid(),name:'예산',cols:['budget','value','bonusRate','price']},
+    {id:uid(),name:'노출 효과',cols:['e_imp','cpm']},
+    {id:uid(),name:'클릭 효과',cols:['e_click','ctr','cpc']},
+    {id:uid(),name:'조회 효과',cols:['e_view','vtr','cpv']},
+    {id:uid(),name:'기타',cols:['note']}
+  ].map(g=>({...g,cols:g.cols.filter(k=>MIX_DEF[k])}))};
 const md=s=>mdy(s);   /* M/D (앞에 0 없이) */
 function mixRows(){
   const dims=MIX_CFG.rows.map(r=>r.k);
@@ -469,7 +480,8 @@ function renderMix(){
       case 'device':return one?one.device.join('+'):'–';
       case 'sec':return one?(one.sec?one.sec+'초':'–'):'–';
       case 'share':return pct(gross/totalBudget,1);
-      case 'note':return one?`<span style="color:var(--ink2);white-space:normal;display:block;text-align:left">${esc(one.note||'')}</span>`:'';
+      case 'note':return (tot||!one)?''
+        :`<span style="color:var(--ink2);white-space:normal;display:block;text-align:left">${esc(one.note||'')}</span>`;
       /* 금액 */
       case 'budget':return fmt(gross);
       case 'net':return fmt(net);
@@ -511,7 +523,7 @@ function renderMix(){
       h+='</tr>';
     }else{
       const L=r.level,vals=r.vals;
-      h+='<tr class="sub">';
+      h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(vals[ci])}</td>`;}
       h+=`<td class="head" colspan="${dims.length-L}">${esc(vals[L])} Sub Total</td>`;
@@ -520,6 +532,7 @@ function renderMix(){
   h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
   $('tblMix').innerHTML=h;
   applyColWidths($('tblMix'),MIX_CFG,cols);
+  markBlanks($('tblMix'));
   /* 판매단가처럼 라인 단위로만 정해지는 열은 값이 같거나 빈 구간을 위 행과 합쳐서 보여준다
      (열 너비 계산이 끝난 뒤에 병합한다) */
   mergeVertical($('tblMix'),'price');
@@ -634,13 +647,12 @@ const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id=
   +opts.map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('')+'</select>';
 /* 기간 필터 — 달력에서 시작·종료일을 직접 고른다 (비우면 자동 = 선택한 항목의 집행 구간) */
 const rangeSel=p=>{const sc=viewScope();
-  const auto=!FILTER.from&&!FILTER.to;
   return `<span class="lbl">기간</span>
   <span class="daterange">
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
     <input type="date" id="${p}To" value="${FILTER.to||sc.endIso}" min="${campStart()}" max="${campEnd()}">
-    <button class="btn sm" id="${p}Reset" title="선택한 항목의 집행 구간으로 되돌리기"${auto?' disabled':''}>자동</button>
+    <button class="btn sm primary" id="${p}Apply" title="선택한 기간을 대시보드에 반영">적용</button>
   </span>`;};
 function buildFilters(){
   const dimSels=p=>selHTML(p+'Segment','구분',segments(),FILTER.segment)
@@ -652,14 +664,15 @@ function buildFilters(){
       const key=['segment','media','line'][i];
       /* 차원을 바꾸면 사용자가 잡아둔 날짜는 풀고 그 항목의 집행 구간으로 다시 맞춘다 */
       e2.onchange=ev=>{FILTER[key]=ev.target.value;FILTER.from='';FILTER.to='';buildFilters();renderAll();};});
-    const f=$(p+'From'),t=$(p+'To'),r=$(p+'Reset');
-    if(f)f.onchange=e=>{FILTER.from=e.target.value;
-      if(FILTER.to&&FILTER.to<FILTER.from)FILTER.to=FILTER.from;buildFilters();renderAll();};
-    if(t)t.onchange=e=>{FILTER.to=e.target.value;
-      if(FILTER.from&&FILTER.from>FILTER.to)FILTER.from=FILTER.to;buildFilters();renderAll();};
-    if(r)r.onclick=()=>{FILTER.from='';FILTER.to='';buildFilters();renderAll();};};
+    /* 날짜는 [적용] 을 눌러야 반영된다 (고르는 중에 화면이 바뀌지 않도록) */
+    const ap=$(p+'Apply');
+    if(ap)ap.onclick=()=>{
+      let f=($(p+'From')||{}).value||'',t=($(p+'To')||{}).value||'';
+      if(f&&t&&t<f){const x=f;f=t;t=x;}
+      FILTER.from=f;FILTER.to=t;
+      buildFilters();renderAll();};};
   $('perfFilters').innerHTML=rangeSel('p')+dimSels('p')
-    +'<div class="spacer"></div><span class="hint">최종 업데이트 2026.08.31 09:20</span><button class="btn">↻ 새로고침</button>';
+    +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';
   wire('p');
   $('rawFilters').innerHTML=rangeSel('r')+dimSels('r');
   wire('r');
@@ -678,6 +691,13 @@ function buildSelects(){
   $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();};
   $('tmapMode').value=TMAP.dims.join('|');
   $('tmapMode').onchange=e=>{TMAP.dims=e.target.value.split('|');renderTreemap();};
+  /* 효율 버블 — 축 선택 */
+  ['x','y'].forEach(ax=>{
+    const sel=$(ax==='x'?'bubX':'bubY');if(!sel)return;
+    sel.innerHTML=BUB_AXES.map(a=>`<option value="${a.k}" ${BUB[ax]===a.k?'selected':''}>${a.l}</option>`).join('');
+    sel.onchange=e=>{BUB[ax]=e.target.value;renderBubble();};});
+  const bd=$('bubDim');
+  if(bd){bd.value=BUB.dim;bd.onchange=e=>{BUB.dim=e.target.value;renderBubble();};}
   $('crTopN').value=CR_TOPN;
   $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||4;renderCreatives();};
   renderRankPick();
@@ -708,19 +728,35 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.d
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
   ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
-  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderTreemap();renderStrip();}
+  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderTreemap();renderStrip();renderBubble();}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();});
-document.body.dataset.role='agency';
-document.querySelectorAll('#roleSw button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('#roleSw button').forEach(x=>x.classList.toggle('on',x===b));
-  document.body.dataset.role=b.dataset.role;
-  const c=isClient();
-  document.querySelector('#tabs [data-tab="setup"]').classList.toggle('hidden',c);
-  document.querySelector('#tabs [data-tab="input"]').classList.toggle('hidden',c);
+/* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
+   · 클라우드가 설정되지 않은 데모(로컬 파일)  → 시행사 (시안을 그대로 둘러볼 수 있게)
+   · 클라우드가 있는데 로그인 안 함 · 조회 권한 → 광고주 (대시보드만)
+   · 로그인 + 마스터/편집 권한                  → 시행사 */
+function currentRole(){
+  /* CLOUD 는 뒤쪽 파일에서 선언되므로 아직 없을 수 있다 */
+  let C=null;try{C=CLOUD;}catch(e){return 'agency';}
+  if(!C||!C.on)return 'agency';
+  if(!C.user)return 'client';
+  return (C.role==='master'||C.role==='editor'||!C.campaign)?'agency':'client';
+}
+function applyRole(){
+  const role=currentRole(),c=role==='client';
+  document.body.dataset.role=role;
+  const chip=$('roleChip');
+  if(chip){chip.textContent=c?'광고주':'시행사';chip.classList.toggle('agency',!c);
+    chip.title=c?'로그인하면 권한에 따라 시행사 화면이 열립니다':'구글 로그인 · 운영 권한 기준';}
+  const st=document.querySelector('#tabs [data-tab="setup"]');
+  const it=document.querySelector('#tabs [data-tab="input"]');
+  if(st)st.classList.toggle('hidden',c);
+  if(it)it.classList.toggle('hidden',c);
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
+  if(c&&document.querySelector('#tabs [data-tab="dash"]')&&!$('tab-dash').classList.contains('hidden')===false)switchTab('dash');
   if(c)switchTab('dash');
-  renderAll();});
+}
+setTimeout(applyRole,0);
 $('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});
 $('rawCfgBtn').onclick=()=>openBuilder($('rawCfgBox'),RAW_CFG,{useRows:false,catalog:RAW_CATALOG,onApply:renderRaw});
 $('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,useSub:false,catalog:GANTT_CATALOG,onApply:renderGantt});
@@ -728,6 +764,26 @@ $('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,
 $('mixCfgBtn').onclick=()=>openBuilder($('mixCfgBox'),MIX_CFG,
   {rowFields:DIMS.filter(d=>d.k!=='month'),catalog:MIX_CATALOG,onApply:renderMix});
 $('sumAdd').onclick=()=>{SUMMARIES.push({id:uid(),name:'새 서머리',...SUM_PRESET()});renderSummaries();};
+/* 서머리 복제 — 어떤 서머리를 베낄지 먼저 고른다 */
+$('sumDup').onclick=()=>{
+  if(!SUMMARIES.length){confirmModal('복제할 서머리가 없습니다.','먼저 새로운 써머리를 추가해 주세요.',()=>{},'확인');return;}
+  openModal('서머리 복제',
+    `<div class="hint" style="margin-bottom:10px">복사할 서머리를 고르세요. 행 헤더 · 열 그룹 구성이 그대로 복사됩니다.</div>`
+    +`<div style="display:grid;gap:7px">`
+    +SUMMARIES.map((s2,i)=>`<label class="tagchip" style="justify-content:flex-start;cursor:pointer;padding:9px 12px">
+        <input type="radio" name="sdup" value="${i}" ${i===0?'checked':''} style="margin-right:8px">
+        <b>${esc(s2.name)}</b>
+        <span class="hint" style="margin-left:8px">헤더 ${s2.rows.map(r=>(DIMS.find(d=>d.k===r.k)||{l:r.k}).l).join(' › ')||'없음'}
+          · 열 ${cfgCols(s2).length}개</span></label>`).join('')
+    +`</div>`,
+    '<button class="btn" data-close>취소</button><button class="btn primary" id="sdupGo">복제</button>',{w:640});
+  $('sdupGo').onclick=()=>{
+    const pick=document.querySelector('#modalHost [name=sdup]:checked');
+    const src=SUMMARIES[+(pick?pick.value:0)];if(!src)return;
+    const copy=JSON.parse(JSON.stringify(src));
+    copy.id=uid();copy.name=src.name+' 사본';
+    copy.groups=copy.groups.map(g=>({...g,id:uid()}));
+    SUMMARIES.push(copy);closeModal();renderSummaries();};};
 $('addRow').onclick=()=>addRow(1);$('addRow2').onclick=()=>addRow(1);
 /* KPI 판정 기준 (%p) */
 (function(){const b=$('verdictBand');if(!b)return;b.value=VERDICT_BAND;
@@ -754,7 +810,7 @@ function blankLine(){
   n.id='L'+Math.random().toString(36).slice(2,7);
   ['segment','media','product','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
   n.targets=[];n.creatives=[];n.creativeTxt='';n.device=[];
-  n.sec=0;n.price=0;n.net=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
+  n.sec=0;n.price=0;n.gross=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
   n.e={};AMET.forEach(m=>n.e[m]=0);
   n.a={};AMET.forEach(m=>n.a[m]=0);
   n.g={};n.daily={};
@@ -777,9 +833,9 @@ function renderIssueAlert(){
 function renderAll(){
   renderCampBar();renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
-  if(!$('sub-perf').classList.contains('hidden')){renderTreemap();renderGantt();renderCreatives();}
+  if(!$('sub-perf').classList.contains('hidden')){renderTreemap();renderGantt();renderCreatives();renderBubble();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderTreemap();
+buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderTreemap();renderBubble();
 /* 예상 효율 히스토리 — 지난 며칠간의 반영 시점 (시안용 시드) */
 (function seedLineHist(){
   const snap=snapLines();

@@ -17,7 +17,7 @@ const HIDDEN=new Set();                   /* 숨긴 대시보드 항목 (p11) */
 const AXIS={fill:'#98a3b1',size:10.5,weight:400};
 
 /* ===== 1. 캠페인 · 라인 ===== */
-const CAMPAIGN={name:'BMW Innovation Brand Campaign',advertiser:'BMW Korea',today:'2026-08-31'};
+const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:'2026-09-25'};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
@@ -27,38 +27,76 @@ const BID_KPI={CPM:'imp',CPV:'view',CPC:'click',CPA:'conv',CPI:'install',CPE:'en
 const DEVICES=['PC','MO','CTV'];
 
 let LINES=[
- {id:'L1',segment:'Phase 1',media:'YouTube',product:'VRC',target:'BMW 관심 오디언스',line:'BMW iX',
+ {id:'L1',segment:'Phase 1',media:'YouTube',product:'VRC',target:'카테고리 관심 오디언스',line:'신제품 A',
   device:['PC','MO'],bid:'CPV',price:19,start:'2026-08-01',end:'2026-09-30',
-  kpi:'view',sub:'vtr',feeA:.10,feeR:.05,net:25500000,bonus:3000000,sec:6,g:{imp:false,click:false,view:true},
-  e:{imp:12295082,click:7377,view:688525,eng:0,conv:300,lead:120,rev:9000000,install:480,like:0,share:0,v25:537050,v50:378689,v75:261640,v100:199672,v3:1308198,v15:426886,v30:282295},note:'PC+MO 디바이스 최적화 운영',
-  a:{imp:6200656,click:3853,view:354287,eng:3164,conv:149,lead:63,rev:4561920,net:13056000,install:238,like:1329,share:285,v25:276344,v50:194858,v75:134629,v100:102743,v3:673145,v15:219658,v30:145258}},
- {id:'L2',segment:'Phase 1',media:'YouTube',product:'VVC',target:'프리미엄 세단 IM',line:'BMW i5',
+  kpi:'view',sub:'vtr',feeA:.10,feeR:.05,gross:30000000,bonus:3000000,sec:6,
+  g:{imp:false,click:false,view:true},note:'PC+MO 디바이스 최적화 운영'},
+ {id:'L2',segment:'Phase 1',media:'YouTube',product:'VVC',target:'구매 의향 IM',line:'신제품 B',
   device:['PC','MO','CTV'],bid:'CPV',price:20,start:'2026-08-01',end:'2026-09-30',
-  kpi:'view',sub:'cpv',feeA:.10,feeR:.05,net:51000000,bonus:6000000,sec:15,g:{imp:false,click:false,view:true},
-  e:{imp:8620690,click:2586,view:2500000,eng:0,conv:900,lead:320,rev:28000000,install:1440,like:0,share:0,v25:1950000,v50:1375000,v75:950000,v100:725000,v3:4750000,v15:1550000,v30:1025000},note:'CTV 포함 확장 운영',
-  a:{imp:4318621,click:1257,view:1233800,eng:5364,conv:433,lead:162,rev:13749120,net:25296000,install:693,like:2253,share:483,v25:962364,v50:678590,v75:468844,v100:357802,v3:2344220,v15:764956,v30:505858}},
- {id:'L3',segment:'Phase 1',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'BMW i5',
+  kpi:'view',sub:'cpv',feeA:.10,feeR:.05,gross:60000000,bonus:6000000,sec:15,
+  g:{imp:false,click:false,view:true},note:'CTV 포함 확장 운영'},
+ {id:'L3',segment:'Phase 1',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'신제품 B',
   device:['MO'],bid:'CPC',price:1000,start:'2026-08-01',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,net:29750000,bonus:0,sec:0,g:{imp:false,click:true,view:false},
-  e:{imp:10000000,click:30000,view:100000,eng:23000,conv:1500,lead:600,rev:26000000,install:2400,like:9660,share:2070,v25:78000,v50:55000,v75:38000,v100:29000,v3:190000,v15:62000,v30:41000},note:'관심사 타겟 확장',
-  a:{imp:5256900,click:16089,view:54693,eng:12579,conv:773,lead:325,rev:13667940,net:15797250,install:1237,like:5283,share:1132,v25:42661,v50:30081,v75:20783,v100:15861,v3:103917,v15:33910,v30:22424}},
- {id:'L4',segment:'Phase 2',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'BMW iX',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:35000000,bonus:0,sec:0,
+  g:{imp:false,click:true,view:false},note:'관심사 타겟 확장'},
+ {id:'L4',segment:'Phase 2',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'신제품 A',
   device:['MO'],bid:'CPC',price:1050,start:'2026-08-15',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,net:21250000,bonus:0,sec:0,g:{imp:false,click:true,view:false},
-  e:{imp:7088175,click:21265,view:70882,eng:15961,conv:1000,lead:420,rev:18000000,install:1600,like:6704,share:1436,v25:55288,v50:38985,v75:26935,v100:20556,v3:134676,v15:43947,v30:29062},note:'2차 런칭 구간',
-  a:{imp:3412531,click:9937,view:32453,eng:7760,conv:458,lead:202,rev:8411040,net:10030000,install:733,like:3259,share:698,v25:25313,v50:17849,v75:12332,v100:9411,v3:61661,v15:20121,v30:13306}},
- {id:'L5',segment:'Phase 2',media:'Meta',product:'IG (View)',target:'2049 남성 · 관심사',line:'BMW X5',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:25000000,bonus:0,sec:0,
+  g:{imp:false,click:true,view:false},note:'2차 런칭 구간'},
+ {id:'L5',segment:'Phase 2',media:'Meta',product:'IG (View)',target:'2049 남성 · 관심사',line:'신제품 C',
   device:['MO'],bid:'CPM',price:8500,start:'2026-08-01',end:'2026-09-30',
-  kpi:'imp',sub:'cpm',feeA:.13,feeR:.07,net:40000000,bonus:5000000,sec:15,g:{imp:true,click:false,view:false},
-  e:{imp:6849315,click:6849,view:684932,eng:27000,conv:1200,lead:480,rev:24000000,install:1920,like:11340,share:2430,v25:534247,v50:376713,v75:260274,v100:198630,v3:1301371,v15:424658,v30:280822},note:'페이스북+인스타 노출',
-  a:{imp:3335616,click:3469,view:320219,eng:13543,conv:567,lead:238,rev:11571120,net:19480000,install:907,like:5688,share:1219,v25:249771,v50:176120,v75:121683,v100:92864,v3:608416,v15:198536,v30:131290}}
+  kpi:'imp',sub:'cpm',feeA:.13,feeR:.07,gross:50000000,bonus:5000000,sec:15,
+  g:{imp:true,click:false,view:false},note:'페이스북+인스타 노출'},
+ {id:'L6',segment:'Phase 1',media:'네이버',product:'성과형 DA',target:'리타겟팅 · 유사',line:'신제품 A',
+  device:['PC','MO'],bid:'CPC',price:700,start:'2026-08-01',end:'2026-09-30',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:30000000,bonus:0,sec:0,
+  g:{imp:false,click:true,view:false},note:'검색 리타겟 연계'},
+ {id:'L7',segment:'Phase 2',media:'카카오',product:'비즈보드',target:'2039 여성 · 관심사',line:'신제품 C',
+  device:['MO'],bid:'CPC',price:850,start:'2026-08-08',end:'2026-09-30',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:25000000,bonus:0,sec:0,
+  g:{imp:false,click:true,view:false},note:'톡 비즈보드 상단 고정'},
+ {id:'L8',segment:'Phase 1',media:'Teads',product:'inRead 동영상',target:'프리미엄 매체 지면',line:'신제품 B',
+  device:['PC','MO'],bid:'CPM',price:6500,start:'2026-08-01',end:'2026-09-30',
+  kpi:'imp',sub:'cpm',feeA:.12,feeR:.05,gross:20000000,bonus:2000000,sec:15,
+  g:{imp:true,click:false,view:false},note:'프리미엄 지면 브랜드 세이프티'}
 ];
-const toGross=(net,fee)=>net/(1-fee);
 const feeOf=l=>(+l.feeA||0)+(+l.feeR||0);
-const lineNet=l=>l.net;
-const lineGross=l=>Math.round(l.net/(1-feeOf(l)));
-const lineValue=l=>lineGross(l)+(l.bonus||0);
-const bonusRate=ls=>{const g=sum(ls.map(lineGross));return g?sum(ls.map(l=>l.bonus||0))/g:0;};
+/* 예산은 Gross 를 직접 넣고 Net 을 수수료로 역산한다
+   (수수료가 정해지기 전에 Gross 만 아는 경우가 많아 v17 에서 방향을 뒤집었다) */
+const lineGross=l=>Math.round(+l.gross||0);
+const lineNet=l=>Math.round(lineGross(l)*(1-feeOf(l)));
+const lineValue=l=>lineGross(l)+(+l.bonus||0);
+const toGross=(net,fee)=>net/(1-fee);
+/* 예전 저장본(net 기준)을 열면 Gross 로 옮겨 담는다 */
+function migrateBudget(ls){(ls||[]).forEach(l=>{
+  if(l.gross===undefined||l.gross===null||l.gross===''){
+    const f=feeOf(l);l.gross=Math.round((+l.net||0)/(1-(f<1?f:0)))||0;}
+  delete l.net;});}
+const bonusRate=ls=>{const g=sum(ls.map(lineGross));return g?sum(ls.map(l=>+l.bonus||0))/g:0;};
+/* ---- 더미 예상 수치 · 실집행 — 판매단가와 Gross 예산으로 일관되게 만든다 ---- */
+(function seedNumbers(){
+  const rng=s0=>{let x=s0;return()=>{x=(x*1103515245+12345)&0x7fffffff;return x/0x7fffffff;};};
+  LINES.forEach((l,i)=>{
+    const r=rng(97+i*137),g=lineGross(l);
+    const ctr=[.0006,.0003,.003,.003,.001,.0035,.004,.0008][i];
+    const vtr=[.056,.29,.01,.01,.10,.004,.005,.09][i];
+    let imp,click,view;
+    if(l.bid==='CPM'){imp=g/l.price*1000;click=imp*ctr;view=imp*vtr;}
+    else if(l.bid==='CPC'){click=g/l.price;imp=click/ctr;view=imp*vtr;}
+    else {view=g/l.price;imp=view/vtr;click=imp*ctr;}
+    const R=n=>Math.round(n);
+    l.e={imp:R(imp),click:R(click),view:R(view),eng:R(imp*.0027),
+      conv:R(click*.04),lead:R(click*.016),rev:R(g*.45),install:R(click*.064),
+      like:R(imp*.0011),share:R(imp*.00024),
+      v25:R(view*.78),v50:R(view*.55),v75:R(view*.38),v100:R(view*.29),
+      v3:R(view*1.9),v15:R(view*.62),v30:R(view*.41)};
+    /* 실집행 = 예상의 88~94%(경과 일수에 맞춘 페이스) × 라인별 성과 계수.
+       광고비는 페이스대로 쓰고 물량만 계수만큼 달라지므로 매체마다 단가 효율이 갈린다. */
+    const k=.885+r()*.05;
+    const perf=[1.15,1.06,1.10,1.02,0.96,1.20,1.00,1.08][i];
+    l.a={};Object.keys(l.e).forEach(m=>l.a[m]=Math.round(l.e[m]*k*perf*(.96+r()*.08)));
+    l.a.net=Math.round(lineNet(l)*k);});
+})();
 const segments=()=>[...new Set(LINES.map(l=>l.segment))];
 
 /* 기간 = 라인 시작/종료의 최소·최대 */
@@ -108,22 +146,32 @@ const AMET=['imp','click','view','eng','conv','lead','install','like','share',
 LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 
 let CREATIVES=[
- {id:'c3',lid:'L1',name:'BMW_iX_6s_Bumper',type:'video',yt:'M7lc1UVf-VE',ratio:'16:9',
-  g:'linear-gradient(140deg,#93a9bf,#354758)',run:[[0,17]],share:1},
- {id:'c8',lid:'L1',name:'BMW_iX_15s_Story',type:'video',yt:'ScMzIvxBSi4',ratio:'9:16',
-  g:'linear-gradient(140deg,#b3c1cf,#495e72)',run:[[16,30]],share:1},
- {id:'c1',lid:'L2',name:'BMW_i5_15s_Master_A',type:'video',yt:'dQw4w9WgXcQ',ratio:'16:9',
-  g:'linear-gradient(140deg,#93a2b1,#354758)',run:[[0,30]],share:.55},
- {id:'c2',lid:'L2',name:'BMW_i5_15s_Master_B',type:'video',yt:'aqz-KE-bpKQ',ratio:'16:9',
-  g:'linear-gradient(140deg,#a5b7c8,#495e72)',run:[[6,30]],share:.45},
- {id:'c4',lid:'L3',name:'DemandGen_i5_Subscribe',type:'image',ratio:'1:1',
-  g:'linear-gradient(140deg,#aabbcb,#495e72)',run:[[0,30]],share:1},
- {id:'c7',lid:'L4',name:'DemandGen_iX_Subscribe',type:'image',ratio:'4:5',
-  g:'linear-gradient(140deg,#bfcad6,#495e72)',run:[[0,30]],share:1},
- {id:'c5',lid:'L5',name:'IG_Reels_9x16_Ver1',type:'video',yt:'aqz-KE-bpKQ',ratio:'9:16',
-  g:'linear-gradient(140deg,#93a2b1,#35536f)',run:[[3,30]],share:.6},
- {id:'c6',lid:'L5',name:'IG_Feed_1x1_Ver2',type:'image',ratio:'1:1',
-  g:'linear-gradient(140deg,#b3c1cf,#354758)',run:[[0,22]],share:.4}
+ {id:'c1',lid:'L1',name:'6초 범퍼',type:'video',yt:'M7lc1UVf-VE',ratio:'16:9',
+  g:'linear-gradient(140deg,#93a9bf,#354758)',run:[[0,32]],share:1},
+ {id:'c2',lid:'L1',name:'15초 스토리',type:'video',yt:'ScMzIvxBSi4',ratio:'9:16',
+  g:'linear-gradient(140deg,#b3c1cf,#495e72)',run:[[30,55]],share:1},
+ {id:'c3',lid:'L2',name:'마스터 A',type:'video',yt:'dQw4w9WgXcQ',ratio:'16:9',
+  g:'linear-gradient(140deg,#93a2b1,#354758)',run:[[0,55]],share:.55},
+ {id:'c4',lid:'L2',name:'마스터 B',type:'video',yt:'aqz-KE-bpKQ',ratio:'16:9',
+  g:'linear-gradient(140deg,#a5b7c8,#495e72)',run:[[6,55]],share:.45},
+ {id:'c5',lid:'L3',name:'구독 B',type:'image',ratio:'1:1',
+  g:'linear-gradient(140deg,#aabbcb,#495e72)',run:[[0,55]],share:1},
+ {id:'c6',lid:'L4',name:'구독 A',type:'image',ratio:'4:5',
+  g:'linear-gradient(140deg,#bfcad6,#495e72)',run:[[0,55]],share:1},
+ {id:'c7',lid:'L5',name:'릴스 9:16',type:'video',yt:'aqz-KE-bpKQ',ratio:'9:16',
+  g:'linear-gradient(140deg,#93a2b1,#35536f)',run:[[3,55]],share:.6},
+ {id:'c8',lid:'L5',name:'피드 1:1',type:'image',ratio:'1:1',
+  g:'linear-gradient(140deg,#b3c1cf,#354758)',run:[[0,40]],share:.4},
+ {id:'c9',lid:'L6',name:'DA 640',type:'image',ratio:'16:9',
+  g:'linear-gradient(140deg,#9fb3a8,#3d5b4c)',run:[[0,55]],share:.57},
+ {id:'c10',lid:'L6',name:'DA 1200',type:'image',ratio:'16:9',
+  g:'linear-gradient(140deg,#b7c7bd,#4c6a5b)',run:[[4,55]],share:.43},
+ {id:'c11',lid:'L7',name:'보드 A',type:'image',ratio:'16:9',
+  g:'linear-gradient(140deg,#c8bda0,#6b5c3c)',run:[[7,55]],share:.6},
+ {id:'c12',lid:'L7',name:'보드 B',type:'image',ratio:'16:9',
+  g:'linear-gradient(140deg,#d3ccb6,#7a6c4d)',run:[[12,55]],share:.4},
+ {id:'c13',lid:'L8',name:'인리드 16:9',type:'video',yt:'ScMzIvxBSi4',ratio:'16:9',
+  g:'linear-gradient(140deg,#a9a3bd,#4e4766)',run:[[0,55]],share:1}
 ];
 let FACTS=[];
 function buildFacts(){
@@ -159,7 +207,11 @@ let ISSUES=[
  {s:'2026-08-17',e:'2026-08-17',scope:'Meta',type:'매체',txt:'Meta 광고관리자 개편, 반나절 집행 중단'},
  {s:'2026-08-18',e:'2026-08-21',scope:'전체',type:'기타',txt:'트래픽 감소로 일 예산 하향 조정 후 재분배'},
  {s:'2026-08-22',e:'2026-08-25',scope:'전체',type:'단가',txt:'경쟁 브랜드 신차 런칭으로 비딩 심화 → CPM 상승, 입찰가 상향 대응'},
- {s:'2026-08-28',e:'2026-08-29',scope:'YouTube · Demand Gen (구독)',type:'소재',txt:'신규 소재 교체 (Story 버전 투입)'}
+ {s:'2026-08-28',e:'2026-08-29',scope:'YouTube · Demand Gen (구독)',type:'소재',txt:'신규 소재 교체 (Story 버전 투입)'},
+ {s:'2026-09-03',e:'2026-09-05',scope:'전체',type:'기타',txt:'추석 프로모션 메시지로 카피 일괄 교체'},
+ {s:'2026-09-10',e:'2026-09-12',scope:'네이버',type:'단가',txt:'성과형 DA 입찰가 상향으로 클릭 물량 확대'},
+ {s:'2026-09-18',e:'2026-09-19',scope:'Meta',type:'소재',txt:'릴스 소재 리프레시 — 초기 학습 구간'},
+ {s:'2026-09-24',e:'2026-09-25',scope:'전체',type:'기타',txt:'추석 연휴 트래픽 감소 대비 일 예산 조정'}
 ];
 const dIdx=s=>Math.round((new Date(s+'T00:00:00')-d0)/DAY);
 let CAMP_HIST=[
@@ -251,7 +303,7 @@ const FIELDS=[
 ].map(a=>({k:a[0],l:a[1],en:a[2],cat:a[3],kind:a[4],
   mixDef:!!a[5],mixOk:!!a[6],dashDef:!!a[7],dashOk:!!a[8]}));
 const FLD={};FIELDS.forEach(f=>FLD[f.k]=f);
-/* 사용 가능 여부에 따라 구성 편집 카탈로그를 만든다 (카테고리별 묶음) */
+/* 사용 가능 여부에 따라 헤더 편집 카탈로그를 만든다 (카테고리별 묶음) */
 function fieldCatalog(scope,extra){
   const ok=f=>scope==='mix'?f.mixOk:f.dashOk;
   const out=[];

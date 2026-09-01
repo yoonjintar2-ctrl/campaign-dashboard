@@ -111,36 +111,56 @@ function saveFile(bytes,name,mime){
 
 /* ---------- 템플릿 정의 ---------- */
 /* 일자별 실적 — 직접 입력 열만 (계산 열 제외) */
-const tplDailyCols=()=>SHEET_COLS.filter(c=>c.type!=='calc')
-  .map(c=>({k:c.k,l:c.l,w:c.k==='date'?14:Math.max(11,Math.min(22,c.l.length*2+7))}));
-/* 예상 효율 — 자동 계산 열(Gross 예산·밸류·보너스율) 제외 */
-const tplLineCols=()=>LINE_COLS.filter(c=>!['ro','ro2'].includes(c.type))
-  .map(c=>({k:c.k,l:c.l,w:c.k==='note'?40:Math.max(11,Math.min(24,c.l.length*2+7))}));
+/* 여러 개를 한 칸에 적는 열은 머리글에 안내를 붙인다 */
+const TPL_HINT={creative:'소재 (여러 개면 콤마로 구분)',target:'타겟팅 그룹 (여러 개면 콤마로 구분)'};
+/* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
+const TPL_HINT_DAILY={};
+const tplW=(k,l)=>k==='note'?40:k==='date'?14:Math.max(11,Math.min(26,l.length*1.5+7));
+const tplCol=(c,hint)=>{const l=(hint||TPL_HINT)[c.k]||c.l;return {k:c.k,l,w:tplW(c.k,l)};};
+/* 게런티(보장) 여부 — 예상 노출/클릭/조회 바로 옆에 O/X 열을 둔다 */
+const GUAR_COLS={e_imp:{k:'g_imp',l:'노출 보장(O/X)'},e_click:{k:'g_click',l:'클릭 보장(O/X)'},
+  e_view:{k:'g_view',l:'조회 보장(O/X)'}};
+const GUAR_KEY={g_imp:'imp',g_click:'click',g_view:'view'};
+/* 다운로드 = 지금 켜져 있는 열만 / 매칭 = 꺼진 열까지 전부 (열을 지워도 머리글로 찾도록) */
+const dailyColsOf=all=>SHEET_COLS.filter(c=>c.type!=='calc'&&(all||c.on!==false))
+  .map(c=>tplCol(c,TPL_HINT_DAILY));
+const lineColsOf=all=>{
+  const out=[];
+  LINE_COLS.filter(c=>!['ro','ro2'].includes(c.type)&&(all||c.on!==false)).forEach(c=>{
+    out.push(tplCol(c));
+    if(GUAR_COLS[c.k]){const g=GUAR_COLS[c.k];out.push({k:g.k,l:g.l,w:tplW(g.k,g.l)});}});
+  return out;};
+const tplDailyCols=()=>dailyColsOf(false);
+const tplLineCols=()=>lineColsOf(false);
 
 const TPL_DAILY_GUIDE=[
   '아래 [일자] 머리글 줄 다음 줄부터 데이터를 넣으세요. 이 안내 부분은 지우지 않아도 됩니다.',
   '일자는 YYYY-MM-DD 로 적습니다. 8/3, 2026.8.3, 20260803 처럼 적어도 불러올 때 자동으로 바뀝니다.',
-  '구분 · 매체명 · 광고상품명 · 타겟팅 그룹명 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.',
-  '광고비는 Net 기준으로 넣습니다. Gross 는 설정의 수수료율로 자동 역산됩니다.',
+  '구분 · 매체명 · 광고상품명 · 타겟팅 그룹 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.',
+  '타겟팅 그룹은 한 행에 하나만 적습니다. 여러 그룹이면 행을 나눠 주세요 (콤마로 묶지 않습니다).',
+  '일별 광고비는 Net 기준으로 넣습니다. Gross 소진액은 설정의 수수료율로 자동 환산됩니다.',
   '값이 없는 항목은 열을 통째로 비워 두세요. 0 을 채워 넣을 필요 없습니다.',
   'CTR · CPM · CPV 같은 계산 항목은 템플릿에 없습니다. 불러오면 사이트가 자동으로 계산합니다.',
-  '안 쓰는 열은 절대 삭제하지 마세요. 값이 없으면 열은 그대로 두고 칸만 비워 둡니다. (열 순서는 바꿔도 됩니다.)',
+  '안 쓰는 열은 되도록 지우지 마세요. 값이 없으면 열은 그대로 두고 칸만 비워 둡니다. (지우거나 순서를 바꿔도 머리글 이름으로 찾아 넣습니다.)',
   '한 줄 = 하루 × 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹 × 제품) 입니다.',
-  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.'
+  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.',
+  '비드 타입은 경매형CPC · Bid CPC 처럼 적어도 CPC 로 알아서 정리됩니다.'
 ];
 const TPL_LINE_GUIDE=[
   '아래 [구분] 머리글 줄 다음 줄부터 데이터를 넣으세요. 이 안내 부분은 지우지 않아도 됩니다.',
   '한 줄 = 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹) 입니다.',
   '소재와 타겟팅 그룹이 여러 개면 쉼표(,) 로 구분해 한 칸에 적습니다.',
   '시작일 · 종료일은 YYYY-MM-DD 로 적습니다.',
-  'Net 예산과 대행사 · 렙사 수수료율만 넣으면 Gross 예산 · 밸류 · 보너스율은 자동으로 계산됩니다.',
+  'Gross 예산을 넣고 대행사 · 렙사 수수료율을 적으면 Net 예산 · 밸류 · 보너스율은 자동으로 역산됩니다.',
   '수수료율은 10 또는 10% 어느 쪽으로 적어도 됩니다.',
   '예상 노출 · 클릭 · 조회 같은 목표 수치를 넣습니다. CPM · CPV · CTR 은 넣지 않습니다 — 자동 계산됩니다.',
-  '값이 없는 항목은 칸만 비워 두세요. 안 쓰는 열이라도 절대 삭제하지 마세요. (열 순서는 바꿔도 됩니다.)',
+  '값이 없는 항목은 칸만 비워 두세요. 열을 지우거나 순서를 바꿔도 머리글 이름을 보고 찾아 넣습니다.',
+  '노출/클릭/조회 보장(O/X) 칸에 O 를 적으면 게런티(보장) 지표로 표시됩니다.',
   '1개 행은 예산을 배분하는 기준으로 나눕니다. 타겟팅 그룹이나 소재를 매체가 자동으로 예산 최적화하는 경우에는 나누지 말고 한 개의 라인으로 적어 주세요.',
-  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.'
+  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.',
+  '비드 타입은 경매형CPC · Bid CPC 처럼 적어도 CPC 로 알아서 정리됩니다.'
 ];
-function tplRows(title,guide,cols,sample){
+function tplRows(title,guide,cols){
   const R=[];
   R.push([{v:title,s:1}]);
   R.push([{v:`캠페인  ${CAMPAIGN.name}${CAMPAIGN.advertiser?'   ·   광고주  '+CAMPAIGN.advertiser:''}   ·   집행 기간  ${campStart()} ~ ${campEnd()}`,s:2}]);
@@ -149,32 +169,20 @@ function tplRows(title,guide,cols,sample){
   guide.forEach((g,i)=>R.push([{v:`${i+1}.  ${g}`,s:2}]));
   R.push([]);
   R.push(cols.map(c=>({v:c.l,s:3})));
-  R.push(cols.map(c=>({v:sample[c.k]!==undefined?sample[c.k]:'',s:4})));
   /* 입력 영역 — 500행까지 테두리를 그려 어디에 적어야 하는지 한눈에 보이게 한다 */
   while(R.length<500)R.push(cols.map(()=>({v:'',s:6})));
   return R;
 }
 function downloadDailyTemplate(){
   const cols=tplDailyCols();
-  const l=LINES[0]||{};
-  const sample={date:YESTERDAY,segment:l.segment||'',media:l.media||'',product:l.product||'',
-    target:l.target||'',line:l.line||'',imp:'1000000',click:'1200',view:'90000',net:'1500000'};
-  const rows=tplRows('디지털 캠페인 통합 대시보드 — 일자별 실적 입력 템플릿',
-    TPL_DAILY_GUIDE,cols,sample);
+  const rows=tplRows('Digital Media Dashboard — 일자별 실적 입력 템플릿',TPL_DAILY_GUIDE,cols);
   saveFile(buildXlsx('일자별 실적',rows,cols.map(c=>c.w)),
     `일자별_실적_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 function downloadLineTemplate(){
   const cols=tplLineCols();
-  const l=LINES[0]||{};
-  const sample={segment:l.segment||'',media:l.media||'',product:l.product||'',
-    target:(lineTargets(l)||[]).join(', '),creative:(lineCreatives(l)||[]).join(', '),
-    line:l.line||'',bid:l.bid||'CPM',price:l.price||'',kpi:KPI_LABEL[l.kpi]||'노출',
-    start:l.start||campStart(),end:l.end||campEnd(),
-    net:l.net||'',feeA:'10%',feeR:'5%',e_imp:'1000000',e_click:'1200',e_view:'90000'};
-  const rows=tplRows('디지털 캠페인 통합 대시보드 — 예상 효율(미디어믹스) 입력 템플릿',
-    TPL_LINE_GUIDE,cols,sample);
+  const rows=tplRows('Digital Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE,cols);
   saveFile(buildXlsx('예상 효율',rows,cols.map(c=>c.w)),
     `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -197,17 +205,28 @@ const parseCSV=txt=>{
 };
 const cleanNum=v=>{const s=String(v==null?'':v).replace(/[^0-9.\-]/g,'');
   return s===''||s==='-'?null:+s;};
+/* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 낸다
+   ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹") */
+const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'');
 function findHeader(grid,cols){
-  const labels=new Set(cols.map(c=>c.l));
+  const labels=new Set(cols.map(c=>normHdr(c.l)));
   for(let i=0;i<Math.min(grid.length,40);i++){
-    const hit=grid[i].filter(c=>labels.has(String(c||'').trim())).length;
-    if(hit>=3)return i;}
+    const hit=(grid[i]||[]).filter(c=>labels.has(normHdr(c))).length;
+    if(hit>=2)return i;}
   return -1;
 }
 function mapHeader(headRow,cols){
-  const byLabel={};cols.forEach(c=>byLabel[c.l]=c.k);
-  return headRow.map(h=>byLabel[String(h||'').trim()]||null);
+  const byLabel={};cols.forEach(c=>byLabel[normHdr(c.l)]=c.k);
+  return (headRow||[]).map(h=>byLabel[normHdr(h)]||null);
 }
+/* 비드 타입 정규화 — "경매형CPC", "Bid CPC", "CPC(자동입찰)" 같은 표기도 CPC 로 */
+function normBid(v){
+  const t=String(v==null?'':v).toUpperCase();
+  const m=t.match(/CP[MCVAIETD]/);
+  if(m)return m[0];
+  return String(v||'').trim();
+}
+const isYes=v=>/^(o|y|yes|예|보장|true|1|✓|v)$/i.test(String(v==null?'':v).trim());
 /* 파일 → 2차원 배열. .xlsx 는 SheetJS 가 있을 때만 (배포본에서는 자동 로드) */
 function readGrid(file){
   return new Promise((res,rej)=>{
@@ -240,7 +259,7 @@ function importDaily(){
     let grid;
     try{grid=await readGrid(file);}catch(e){
       confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
-    const cols=tplDailyCols();
+    const cols=dailyColsOf(true);
     const hi=findHeader(grid,cols);
     if(hi<0){confirmModal('머리글 줄을 찾지 못했습니다.',
       '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
@@ -275,7 +294,7 @@ function importLines(){
     let grid;
     try{grid=await readGrid(file);}catch(e){
       confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
-    const cols=tplLineCols();
+    const cols=lineColsOf(true);
     const hi=findHeader(grid,cols);
     if(hi<0){confirmModal('머리글 줄을 찾지 못했습니다.',
       '템플릿의 머리글(구분 · 매체 · 광고상품 …) 줄이 그대로 있어야 합니다.',()=>{},'확인');return;}
@@ -300,7 +319,9 @@ function importLines(){
         else if(t==='date'){n[k]=normDate(raw)||raw;}
         else if(t==='pct'){const v=cleanNum(raw);if(v!==null)n[k]=v>1?v/100:v;}
         else if(t==='exp'){const v=cleanNum(raw);if(v!==null)n.e[k.slice(2)]=v;}
-        else if(t==='net'){const v=cleanNum(raw);if(v!==null)n.net=v;}
+        else if(k==='bid'){n.bid=normBid(raw);}
+        else if(GUAR_KEY[k]){n.g=n.g||{};n.g[GUAR_KEY[k]]=isYes(raw);}
+        else if(t==='gross'){const v=cleanNum(raw);if(v!==null)n.gross=v;}
         else if(t==='num'){const v=cleanNum(raw);if(v!==null)n[k]=v;}
         else if(t==='dev'){n.device=raw.split(/[+,\s]+/).filter(Boolean);}
         else n[k]=raw;});

@@ -6,6 +6,14 @@ const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',
 let SERIES_DIM='media';
 let ISSUE_OVERFLOW=0;
 let SHOW_FORECAST=true, SHOW_BENCH=true;
+const LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 단일 톤(그라데이션 기준색) */
+/* SVG 글자 폭 어림 — getComputedTextLength() 가 0 을 돌려줄 때만 쓴다 */
+function estTextW(s,size){
+  let w=0;
+  for(const ch of String(s))
+    w+=/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(ch)?1.00:(/[0-9.,%]/.test(ch)?0.53:/[A-Z]/.test(ch)?0.66:0.52);
+  return w*size;
+}
 function roundRect(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h));
   return `M${x} ${y+h} L${x} ${y+r} Q${x} ${y} ${x+r} ${y} L${x+w-r} ${y} Q${x+w} ${y} ${x+w} ${y+r} L${x+w} ${y+h} Z`;}
 function pickRamp(n){
@@ -137,20 +145,23 @@ function renderDaily(){
     lt.ticks.forEach(v=>{const y=LY(v);
       S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'#e2e7ed','stroke-width':1},svg);
       tickLabels.push({y,el:txt(W-P.r+9,y+3.5,lfmt(v),'start')});});
-    const grad=S('linearGradient',{id:'lgrad',x1:'0',y1:'0',x2:'1',y2:'0'},svg);
-    S('stop',{offset:'0%','stop-color':'#6497a6'},grad);S('stop',{offset:'55%','stop-color':ACC2},grad);
-    S('stop',{offset:'100%','stop-color':'#2c5866'},grad);
     const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v)]:null).filter(Boolean);
     if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
     else{
-    /* 꺾은선 — 굵고 반투명하게 (뒤 막대가 비쳐 보이도록) */
-    S('path',{d:smoothPath(pts),fill:'none',stroke:'url(#lgrad)','stroke-width':7,opacity:.42,
+    /* 꺾은선 — 굵게, 왼쪽에서 오른쪽으로 갈수록 진해지는 한 계열의 그라데이션 */
+    const lg2=S('linearGradient',{id:'lineGrad',x1:'0',y1:'0',x2:'1',y2:'0'},svg);
+    S('stop',{offset:'0%','stop-color':'#8fb3bd'},lg2);
+    S('stop',{offset:'45%','stop-color':'#4d7f8c'},lg2);
+    S('stop',{offset:'100%','stop-color':'#1e4653'},lg2);
+    S('path',{d:smoothPath(pts),fill:'none',stroke:'url(#lineGrad)','stroke-width':4.6,opacity:1,
       'stroke-linecap':'round','stroke-linejoin':'round'},svg);
-    S('path',{d:smoothPath(pts),fill:'none',stroke:'url(#lgrad)','stroke-width':2.4,opacity:.85,
-      'stroke-linecap':'round','stroke-linejoin':'round'},svg);
-    pts.forEach(([x,y])=>S('circle',{cx:x,cy:y,r:3.2,fill:ACC2,opacity:.75,stroke:'#fff','stroke-width':1.4},svg));
+    pts.forEach(([x,y],i)=>{
+      const t2=pts.length>1?i/(pts.length-1):1;
+      const mix=(a,b)=>Math.round(a+(b-a)*t2);
+      const col=`rgb(${mix(0x8f,0x1e)},${mix(0xb3,0x46)},${mix(0xbd,0x53)})`;
+      S('circle',{cx:x,cy:y,r:3.4,fill:col,stroke:'#fff','stroke-width':1.5},svg);});
     const li=pts.length-1;
-    const lb=S('text',{x:pts[li][0]+9,y:pts[li][1]-11,'text-anchor':'start','font-size':12,'font-weight':700,fill:ACC2},svg);
+    const lb=S('text',{x:pts[li][0]+9,y:pts[li][1]-11,'text-anchor':'start','font-size':12,'font-weight':700,fill:LINE_TONE},svg);
     lb.textContent=METRICS[lk].f(lineVals[EL-1]);
     /* 예상 효율 기준선 — 데이터 레이블은 우측 보조축 자리에 (눈금과 겹치면 그 눈금은 숨김) */
     if(useBench){
@@ -176,14 +187,20 @@ function renderDaily(){
       const label=`[${is.type}] ${is.txt}`;
       const t=S('text',{x:0,y:0,'font-size':10.5,fill:'#33495f','font-weight':700},g);
       t.textContent=label;
-      const pw=t.getComputedTextLength()+18;
+      /* 화면에 붙기 전이거나 폰트가 아직 안 잡히면 측정값이 0 으로 나와 라벨이 서로 겹친다.
+         그럴 때는 글자 종류로 폭을 어림해 쓴다. */
+      let mw=0;try{mw=t.getComputedTextLength();}catch(e){}
+      if(!(mw>4))mw=estTextW(label,10.5);
+      const pw=mw+18;
       let li=0;while(laneEnd[li]!==undefined&&laneEnd[li]>ax-8)li++;
       if(li>=MAXLANE){svg.removeChild(g);ISSUE_OVERFLOW++;return;}
-      laneEnd[li]=ax+pw;
+      /* 오른쪽으로 삐져나가지 않게 당긴다 */
+      const bx=Math.max(X0,Math.min(ax,W-P.r-pw));
+      laneEnd[li]=Math.max(ax,bx)+pw;
       const y=laneTop+li*26;
-      const rect=S('rect',{x:ax,y,width:pw,height:19,rx:6,fill:'#eef1f5',stroke:'#b9c4d0'});
+      const rect=S('rect',{x:bx,y,width:pw,height:19,rx:6,fill:'#eef1f5',stroke:'#b9c4d0'});
       g.insertBefore(rect,t);
-      t.setAttribute('x',ax+9);t.setAttribute('y',y+13.2);
+      t.setAttribute('x',bx+9);t.setAttribute('y',y+13.2);
       const line=S('line',{x1:ax,x2:ax,y1:y+19,y2:H-P.b,stroke:'#c3ccd6','stroke-dasharray':'3 3','stroke-width':1});
       g.insertBefore(line,rect);
       const bw2=Math.max((Math.min(b2,ds.length-1)-Math.max(a,0)+1)*step-3,6);
@@ -203,7 +220,7 @@ function renderDaily(){
       `<div class="t">${dFull(d)} (${WD[d.getDay()]})${holName(d)?' · '+holName(d):''}</div>`+
       series.map((s,si)=>`<div class="r"><span class="l"><span style="width:8px;height:8px;border-radius:2px;background:${pal[si]};display:inline-block"></span>${esc(s.key)}</span><b>${METRICS[bk].f(s.vals[i])}</b></div>`).join('')+
       `<div class="r" style="border-top:1px solid rgba(255,255,255,.2);margin-top:6px;padding-top:5px"><span class="l">${METRICS[bk].l} 합계</span><b>${METRICS[bk].f(totals[i])}</b></div>`+
-      (lineVals?`<div class="r"><span class="l"><span class="linekey" style="background:#8fb9c5"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')));
+      (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it',lg);
@@ -260,21 +277,19 @@ SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
   ||['budget','net','value','bonus','bonusRate','feeA','feeR','spend_r','start','end','period'].includes(f.k))
   .map(f=>f.k).concat(['period']));
 /* 기본 표시 열 — 열설정북의 "대시보드/데이터입력 탭에 디펄트 표시" 기준 */
-const SUM_PRESET=()=>{
-  const d=fieldDefaults('dash').filter(k=>k!=='date'&&SUM_CELL[k]);
-  const inCat=c=>d.filter(k=>FLD[k].cat===c);
-  const vol=[...inCat('노출'),...inCat('클릭'),...inCat('조회')].filter(k=>FLD[k].kind==='in');
-  const eff=[...inCat('노출'),...inCat('클릭'),...inCat('조회')].filter(k=>FLD[k].kind==='calc');
-  const cost=[...inCat('비용'),...inCat('전환'),...inCat('기타')];
-  return {rows:[{k:'media',sub:true},{k:'product',sub:false}],order:null,
-    groups:[{id:uid(),name:'집행 조건',cols:['period'],solo:true},
-            {id:uid(),name:'실집행 볼륨',cols:vol},
-            {id:uid(),name:'효율 · 달성률',cols:eff},
-            {id:uid(),name:'비용',cols:cost}]};
-};
+/* 기본 열 구성 — 운영사항 / 노출 효율 / 클릭 효율 / 조회 효율 */
+const SUM_PRESET=()=>({
+  rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false}],order:null,
+  groups:[
+    {id:uid(),name:'운영사항',cols:['period','budget','cost','spend_r','progress']},
+    {id:uid(),name:'노출 효율',cols:['e_imp','imp','imp_r','cpm']},
+    {id:uid(),name:'클릭 효율',cols:['e_click','click','click_r','ctr','cpc']},
+    {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','vtr','cpv']}
+  ].map(g=>({...g,cols:g.cols.filter(k=>SUM_CELL[k])}))
+});
 let SUMMARIES=[{id:'s1',name:'매체 서머리',...SUM_PRESET()},
-               {id:'s2',name:'상품 × 타겟팅 서머리',...SUM_PRESET(),
-                rows:[{k:'product',sub:true},{k:'target',sub:false}]}];
+               {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),
+                rows:[{k:'target',sub:false}]}];
 const gauge=v=>!isFinite(v)?'<span class="na">–</span>'
   :`<span class="gauge"><b class="mono">${pct(v)}</b><span class="track"><i style="width:${Math.min(v,1)*100}%"></i></span></span>`;
 function buildPivot(tbl,cfg,cdef,cellDef,rerender){
@@ -331,7 +346,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i])+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
-      h+='<tr class="sub">';
+      h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],vals[ci]))}</td>`;}
       h+=`<td class="head" colspan="${dims.length-L}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
@@ -342,6 +357,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     +cells(aggFacts(facts),aggExp(activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
   applyColWidths(tbl,cfg,cols);
+  markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
 }
@@ -353,18 +369,23 @@ function renderSummaries(){
     sec.innerHTML=`<span data-nm="${i}" style="cursor:${isClient()?'default':'pointer'}">${esc(s.name)}</span>`;
     const tools=el('div','tools',sec);
     tools.innerHTML=`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`
-      +(isClient()?'':`<button class="btn sm" data-cfg="${i}">⚙ 구성 편집</button>
+      +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
+          title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
+      <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
     const cfgBox=el('div','hidden',host);
     const card=el('div','card fit',host);
     /* 서머리는 세로 스크롤 없이 전체 높이를 그대로 노출한다 (가로 스크롤만) */
     const tbl=el('table','tbl gln fit',el('div','tbl-wrap noy',card));
-    const draw=()=>buildPivot(tbl,s,SUM_DEF,SUM_CELL,draw);
+    const draw=()=>{tbl.classList.toggle('nogauge',!!s.noGauge);
+      buildPivot(tbl,s,SUM_DEF,SUM_CELL,draw);};
     draw();
     const nm=sec.querySelector('[data-nm]');
     if(!isClient())nm.onclick=()=>{const n=prompt('서머리 이름',s.name);if(n){s.name=n;renderSummaries();}};
     const cb=tools.querySelector('[data-cfg]');
     if(cb)cb.onclick=()=>openBuilder(cfgBox,s,{rowFields:DIMS,catalog:SUM_CATALOG,onApply:draw});
+    const gb=tools.querySelector('[data-gauge]');
+    if(gb)gb.onclick=()=>{s.noGauge=!s.noGauge;renderSummaries();};
     const hb=tools.querySelector('[data-hide]');
     if(hb)hb.onclick=()=>{HIDDEN.add('sum:'+s.id);renderSummaries();renderHiddenBar();};
     const db=tools.querySelector('[data-del]');

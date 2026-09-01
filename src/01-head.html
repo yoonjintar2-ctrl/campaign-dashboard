@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>디지털 캠페인 통합 대시보드</title>
+<title>Digital Media Dashboard</title>
 <!-- 클라우드(선택) — 웹에 올렸을 때만 로드한다. 파일로 직접 열면 데모(더미) 모드로만 동작. -->
 <script>
 (function(){
@@ -41,6 +41,21 @@
 html,body{margin:0;padding:0}
 body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
+/* 배경 — 지금 밝기·색 계열은 그대로 두고 아주 옅은 파스텔 그라데이션이 천천히 흐른다 */
+body::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-events:none;opacity:.55;
+  background:
+    radial-gradient(38% 42% at 12% 18%, rgba(168,206,240,.58), transparent 68%),
+    radial-gradient(34% 40% at 78% 12%, rgba(196,224,246,.52), transparent 68%),
+    radial-gradient(40% 44% at 88% 78%, rgba(160,196,226,.48), transparent 70%),
+    radial-gradient(36% 40% at 26% 88%, rgba(186,214,236,.46), transparent 70%),
+    radial-gradient(30% 34% at 54% 52%, rgba(206,226,244,.40), transparent 72%);
+  filter:blur(22px);
+  animation:bgdrift 48s ease-in-out infinite alternate}
+@keyframes bgdrift{
+  0%  {transform:translate3d(0,0,0) scale(1)}
+  50% {transform:translate3d(2.2%,-1.8%,0) scale(1.06)}
+  100%{transform:translate3d(-2.4%,2.2%,0) scale(1.03)}}
+@media (prefers-reduced-motion: reduce){body::before{animation:none}}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -50,8 +65,8 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:14px;padding:0 44px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
-.logo .mark{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,#93a2b1,#495e72);
-  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
+.logo .mark{width:52px;height:26px;border-radius:9px;flex:none;display:block;object-fit:cover;
+  box-shadow:0 1px 3px rgba(31,44,61,.14)}
 .pill{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border:1px solid var(--line);
   border-radius:9px;background:var(--surface);cursor:pointer;color:var(--ink)}
 .pill:hover{background:var(--acc-soft2)}
@@ -82,6 +97,12 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   color:var(--ink2);font-weight:600;font-size:13px}
 .subbar button:hover{background:rgba(255,255,255,.6)}
 .subbar button.on{background:var(--surface);color:var(--acc);border-color:#d0d6de;box-shadow:var(--shadow)}
+.subbar #reportBtn{margin-left:auto;height:30px;font-weight:700}
+.subbar #reportBtn.on{background:var(--surface)}
+/* 역할 표시 — 로그인 여부로 자동 결정 */
+.rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
+  border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
+.rolechip.agency{color:#38664f;background:#e9f1ec;border-color:#cfe0d6}
 
 /* 영역 이름표 (캠페인 정보 · 필터) */
 .barlbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--muted);
@@ -99,6 +120,46 @@ table.tbl.sublv thead th{background:var(--hdr-sub)}
 table.tbl.sublv thead th.g{background:var(--hdr-sub2)}
 table.tbl thead th.subhd{background:var(--hdr-sub)}
 table.tbl thead th.g.subhd{background:var(--hdr-sub2)}
+/* 달성률 게이지 숨김 — 숫자만 남긴다 */
+table.tbl.nogauge .gauge .track{display:none}
+/* 헤더 편집 — 드래그로 그룹에 넣기 */
+.gcard.dropok{outline:2px dashed var(--acc);outline-offset:2px;background:var(--acc-soft2)}
+.cb[draggable=true]{cursor:grab}
+.cb.dragging{opacity:.45}
+.ghd .gmerge{height:22px;padding:0 7px;font-size:10.5px;border-radius:6px;flex:none}
+.bkey .bhint{display:block;font-size:10.5px;font-weight:500;color:var(--muted);margin-top:2px}
+/* 효율 버블 차트 */
+#bubbleWrap{position:relative;width:100%}
+#bubble{position:relative;width:100%}
+#bubble svg{display:block;width:100%;height:auto;border-radius:12px;background:#fff}
+#bubble circle.bub{cursor:pointer;transition:fill-opacity .12s}
+#bubble circle.bub:hover{fill-opacity:.95}
+/* 버블 범례 — 그래프 위, 조금 크고 자세하게 */
+.bublgd{border:1px solid var(--line);border-radius:12px;background:var(--acc-soft2);
+  padding:12px 14px;margin:0 0 14px;font-size:12px;color:var(--ink2)}
+.bublgd .lgtop{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-start}
+.bublgd .mgrp{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.bublgd .bl{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 8px;
+  cursor:pointer;position:relative}
+.bublgd .bl:hover{border-color:var(--acc)}
+.bublgd .bl>i{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.bublgd .bl .pen{font-size:10px;color:var(--muted);font-weight:600;margin-left:2px}
+/* 매체 아래에 붙는 광고상품 색 — 모두 동그란 점 */
+.bublgd .subs{display:flex;flex-direction:column;gap:4px;align-items:flex-start;
+  margin-left:13px;padding-left:12px;border-left:1px dashed var(--line)}
+.bublgd .sb{display:flex;align-items:center;gap:6px;white-space:nowrap;
+  font-size:11.5px;font-weight:600;color:var(--ink2)}
+.bublgd .sb>i{width:11px;height:11px;border-radius:50%;flex:none;display:block}
+.bublgd .how{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:11px;padding-top:10px;
+  border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2);line-height:1.6}
+.bublgd .how>span{flex:none;white-space:nowrap}
+.bublgd .how b{color:var(--ink)}
+/* 매체 색 고르기 */
+.huepick{position:absolute;z-index:80;background:#fff;border:1px solid var(--line);border-radius:11px;
+  box-shadow:var(--shadow2);padding:9px;display:flex;gap:6px}
+.huepick button{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;padding:0}
+.huepick button.on{border-color:var(--ink)}
 .cnt2{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--acc);
   background:var(--acc-soft);border-radius:6px;padding:1px 7px;vertical-align:1px}
 
@@ -196,8 +257,11 @@ table.tbl thead th.g.subhd{background:var(--hdr-sub2)}
 .dates{margin-top:9px;font-size:11px;color:var(--muted);font-weight:400;line-height:1.75}
 
 /* donut */
-.donuts{grid-template-columns:repeat(4,minmax(0,390px))}
-.donut{padding:14px 16px 18px;text-align:center;position:relative}
+/* KPI 카드 — 줄바꿈 없이 가로로 스크롤한다 (매체가 늘어도 한 줄) */
+.donuts{display:flex!important;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;
+  scroll-snap-type:x proximity}
+.donuts>.donut{flex:0 0 312px;scroll-snap-align:start}
+.donut{padding:12px 13px 14px;text-align:center;position:relative}
 .donut .ring{overflow:visible}
 .donut .nm{font-weight:700;font-size:14px}
 /* 제목은 좌측 상단, 부제목(KPI)은 그 오른쪽 */
@@ -206,7 +270,7 @@ table.tbl thead th.g.subhd{background:var(--hdr-sub2)}
   text-overflow:ellipsis;white-space:nowrap}
 .donut .kpitag{margin-left:auto;flex:none;display:inline-block;font-size:10.5px;
   font-weight:700;padding:2px 8px;border-radius:6px;background:var(--acc-soft);color:var(--acc)}
-.donut .ring{margin:10px auto 6px;position:relative;width:330px;height:330px}
+.donut .ring{margin:6px auto 4px;position:relative;width:264px;height:264px}
 .donut .ring svg{overflow:visible}
 .donut .ctr{pointer-events:none}
 .donut .ctr{position:absolute;inset:0;display:grid;place-content:center;gap:0}
@@ -214,9 +278,17 @@ table.tbl thead th.g.subhd{background:var(--hdr-sub2)}
 .donut .ctr .l2{font-size:17px;font-weight:700;line-height:1.15}
 .donut .ctr span{font-size:9.5px;color:var(--muted);line-height:1.2;white-space:nowrap}
 /* 가운데 — 달성률만 */
-.donut .ctr .ctrbox{max-width:118px;margin:0 auto;display:grid;gap:1px;justify-items:center}
-.donut .ctr .achk{font-size:12px;color:var(--muted);font-weight:600;line-height:1.2}
-.donut .ctr .achv{font-size:31px;font-weight:800;letter-spacing:-1.4px;line-height:1.1;color:var(--ink)}
+.donut .ctr .ctrbox{max-width:104px;margin:0 auto;display:grid;gap:1px;justify-items:center}
+.donut .ctr .achk{font-size:11px;color:var(--muted);font-weight:600;line-height:1.2}
+.donut .ctr .achv{font-size:26px;font-weight:800;letter-spacing:-1.4px;line-height:1.1;color:var(--ink)}
+/* 도넛 카드 왼쪽 아래 범례 — 목표 페이스 값까지 함께 */
+.donut .dlgd{display:flex;flex-direction:column;gap:2px;align-items:flex-start;
+  margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--pace);text-align:left}
+.donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
+.donut .dlgd .lg.spend{color:var(--acc)}
+.donut .dlgd .lg.spend .sw{background:var(--acc)}
+.donut.spend{background:linear-gradient(180deg,#f7f9fb,#fff)}
 .donut .kwrap{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:7px}
 .donut .kline{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink2)}
 .donut .kline .kn{display:flex;align-items:center;gap:6px;font-weight:700}
@@ -232,10 +304,11 @@ table.tbl thead th.g.subhd{background:var(--hdr-sub2)}
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v.lng{font-size:25px;letter-spacing:-1.2px}
 .stat .v.lng2{font-size:21px;letter-spacing:-1.2px}
-.stat .dl{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;margin-top:4px}
+.stat .dl{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;margin-top:4px;
+  padding:1px 7px;border-radius:999px;white-space:nowrap}
 .stat .dl i{font-style:normal;font-size:11px}
-.stat .dl.up{color:#38664f}
-.stat .dl.down{color:#9d5750}
+.stat .dl.up{color:#2f6b4c;background:#e8f2ec}
+.stat .dl.down{color:#a34d43;background:#f8eceb}
 .stat .dl.na{color:var(--muted)}
 .stat .e{font-size:11.5px;color:var(--ink2);margin-top:12px}
 .stat .r{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -303,7 +376,7 @@ svg.chart{display:block;width:100%;height:auto;overflow:visible}
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;align-items:center}
 .legend .it{display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:11.5px}
 .dot{width:9px;height:9px;border-radius:3px;flex:none;display:inline-block}
-.linekey{width:18px;height:3px;border-radius:3px;background:var(--acc2);display:inline-block}
+.linekey{width:18px;height:3px;border-radius:3px;background:#2f5d6b;display:inline-block}
 #tip{position:fixed;z-index:600;pointer-events:none;opacity:0;transition:opacity .08s;
   background:rgba(31,44,61,.95);color:#fff;border-radius:10px;padding:9px 11px;font-size:11.5px;
   box-shadow:0 8px 26px rgba(0,0,0,.22);min-width:160px;max-width:320px}
@@ -350,7 +423,9 @@ table.tbl.fit{width:auto}
 .cmt li::marker{color:var(--muted)}
 .cmt h4.main{color:var(--acc-d)}
 .cmt h5{font-size:13px;font-weight:800;color:var(--ink);margin:10px 0 3px}
-.cmt .sub{color:var(--acc);display:block;padding-left:14px}
+/* 보조줄 — 윗줄보다 한 글자 들여 쓰고 앞에 ㄴ 를 붙인다 */
+.cmt .sub{color:var(--acc);display:block;padding-left:2.1em;text-indent:-1.1em}
+.cmt .sub::before{content:'ㄴ ';color:var(--muted);font-weight:700}
 .cmtbar .grp{display:inline-flex;align-items:center;gap:4px}
 .cmtbar .glbl{font-size:11px;font-weight:700;color:var(--muted);margin-right:1px}
 .cmtbar button.hl{color:#2f6fb0;border-color:#c3d8ec;font-weight:800}
@@ -381,11 +456,23 @@ table.tbl thead tr:nth-child(2) th{top:33px}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
+/* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
+table.tbl td.blank{background:#f2f4f7}
+table.tbl td.blank .na{color:#b6bfca}
+table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
+table.tbl tr.total td.blank{background:#39434e}
 table.tbl tbody tr:hover td{background:var(--acc-soft2)}
 table.tbl tbody tr:hover td.head{background:var(--acc-soft)}
 /* 합계 행은 헤더 첫 행과 배경색을 구분한다 */
 table.tbl tr.total td,table.tbl tbody tr.total:hover td{background:var(--tot) !important;color:#fff;font-weight:800}
 table.tbl tr.sub td,table.tbl tbody tr.sub:hover td{background:#e9ecf0 !important;font-weight:700;color:var(--acc-d)}
+/* 소계가 여러 단계면 단계마다 배경을 조금씩 다르게 (1단계가 가장 진함) */
+table.tbl tr.sub.sub-l0 td,table.tbl tbody tr.sub.sub-l0:hover td{background:#ccd6e2 !important;color:#26313d}
+table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:#e0e7ef !important}
+table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#edf1f6 !important}
+table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
+/* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
+table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}
 table.tbl tr.ins-top td{box-shadow:inset 0 2px 0 var(--acc)}
@@ -419,6 +506,10 @@ table.tbl input,table.tbl select{height:29px;border:1px solid var(--line);border
 table.tbl input.num{text-align:right}
 table.tbl input.txt{text-align:left}
 .gchk{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--muted);font-weight:600;margin-left:0}
+/* 보장 여부 체크박스 — 체크박스 위에 작게 "보장" */
+.gchk.gwarr{flex-direction:column;gap:0;line-height:1}
+.gchk.gwarr .gl{font-size:8.5px;letter-spacing:-.4px;color:var(--muted);margin-bottom:1px}
+td.expcell.gt .gchk.gwarr .gl{color:var(--acc)}
 .gchk input{width:11px;height:11px;margin:0;accent-color:var(--acc)}
 /* 게런티 체크박스는 아주 작게 · 좌우 여백 최소 */
 td.expcell{padding-left:3px;padding-right:3px}

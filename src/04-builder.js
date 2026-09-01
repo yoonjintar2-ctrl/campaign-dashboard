@@ -81,6 +81,22 @@ function wireGroupRename(tbl,cfg,rerender){
         if(e.key==='Escape'){inp.onblur=null;th.textContent=old;}};};});
 }
 
+/* 값이 0 인 칸은 – 로, 아예 비어 있는 칸은 옅은 회색으로 표시해 "해당 없음"을 분명히 한다.
+   입력·칩·게이지가 들어 있는 칸은 건드리지 않는다. */
+const ZERO_RE=/^₩?-?0(\.0+)?%?$/;
+function markBlanks(tbl){
+  if(!tbl)return;
+  tbl.querySelectorAll('tbody td, thead tr.total td').forEach(td=>{
+    if(td.classList.contains('head'))return;
+    /* 게재 히스토리의 날짜 칸은 글자가 아니라 색 농도로 값을 보여준다 — 건드리지 않는다 */
+    if(td.classList.contains('day'))return;
+    if(td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
+    const t=(td.textContent||'').replace(/\s+/g,'').trim();
+    /* 값이 아예 없는 칸(빈칸 또는 렌더러가 넣은 –)은 회색으로 꽉 채운다 */
+    if(t===''||t==='–'||t==='-'){td.classList.add('blank');td.innerHTML='<span class="na">–</span>';return;}
+    /* 값이 0 인 칸은 – 로만 바꾸고 배경은 그대로 (데이터가 있는 칸이므로) */
+    if(ZERO_RE.test(t.replace(/,/g,'')))td.innerHTML='<span class="na">–</span>';});
+}
 let DRAG=null;
 const clearIns=()=>document.querySelectorAll('.ins-l,.ins-r').forEach(e=>e.classList.remove('ins-l','ins-r'));
 function openBuilder(host,cfg,opts){
@@ -118,13 +134,21 @@ function openBuilder(host,cfg,opts){
       z.ondrop=e=>{z.classList.remove('over');if(!DRAG||DRAG.kind!=='row')return;
         e.preventDefault();const it=draft.rows.splice(DRAG.i,1)[0];draft.rows.push(it);DRAG=null;draw();};
     }
-    const r3=el('div','brow',b);r3.innerHTML='<div class="bkey">값 열 목록</div>';
+    const r3=el('div','brow',b);
+    r3.innerHTML='<div class="bkey">값 열 목록<span class="bhint">끌어다 그룹에 놓기</span></div>';
     const pool2=el('div','pool',r3);
     (opts.catalog||[]).forEach(cat=>{
       const box=el('div','catbox',pool2);box.innerHTML=`<div class="t">${cat.g}</div>`;
       cat.cols.forEach(x=>{
-        const a=el('div','cb'+(used(x.k)?' used':''),box);a.textContent=(used(x.k)?'✓ ':'+ ')+x.l;
-        if(!used(x.k))a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};});});
+        const on=used(x.k);
+        const a=el('div','cb'+(on?' used':''),box);a.textContent=(on?'✓ ':'⠿ ')+x.l;
+        if(on)return;
+        a.title='눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기';
+        a.draggable=true;
+        a.ondragstart=e=>{DRAG={kind:'cat',k:x.k};a.classList.add('dragging');
+          e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','n');};
+        a.ondragend=()=>{a.classList.remove('dragging');DRAG=null;clearIns();};
+        a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};});});
     const r4=el('div','brow',b);r4.innerHTML='<div class="bkey">열 그룹</div>';
     const gz=el('div','groups',r4);
     draft.groups.forEach((g,gi)=>{
@@ -134,7 +158,9 @@ function openBuilder(host,cfg,opts){
       const hd=el('div','ghd',card);hd.draggable=false;
       hd.innerHTML=`<span class="ghandle" draggable="true" title="드래그해서 그룹 순서 변경">⠿</span>`
         +`<input class="gname" value="${esc(g.name)}" placeholder="그룹 이름" title="열 그룹 이름을 직접 입력하세요">`
-        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4">✕</span>':'');
+        +(g.cols.length===1
+          ? `<button class="btn sm gmerge" title="열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다">이름 합치기</button>`:'')
+        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
       const nameInp=hd.querySelector('input.gname');
       nameInp.oninput=e=>{g.name=e.target.value;};
       nameInp.onfocus=()=>{selG=g.id;
@@ -142,25 +168,39 @@ function openBuilder(host,cfg,opts){
       nameInp.onmousedown=e=>e.stopPropagation();
       nameInp.onclick=e=>e.stopPropagation();
       nameInp.onkeydown=e=>{if(e.key==='Enter')e.target.blur();};
+      const mg=hd.querySelector('.gmerge');
+      if(mg)mg.onclick=e=>{e.stopPropagation();
+        g.solo=!g.solo;
+        if(g.solo)g.name=(cdef[g.cols[0]]||{l:g.cols[0]}).l;
+        draw();};
+      if(mg&&g.solo)mg.classList.add('primary');
       const x=hd.querySelector('.x');
-      if(x)x.onclick=()=>{const rest=draft.groups.filter(z=>z.id!==g.id);
-        rest[0].cols=[...rest[0].cols,...g.cols];draft.groups=rest;selG=rest[0].id;draw();};
+      /* 그룹을 지우면 그 안의 열도 함께 사라진다 */
+      if(x)x.onclick=()=>{
+        const rest=draft.groups.filter(z=>z.id!==g.id);
+        draft.groups=rest.length?rest:[{id:uid(),name:'새 그룹',cols:[]}];
+        selG=draft.groups[0].id;draw();};
       const handle=hd.querySelector('.ghandle');
       handle.ondragstart=e=>{DRAG={kind:'group',gi};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','g');};
       handle.ondragend=()=>{DRAG=null;clearIns();};
       card.ondragover=e=>{if(!DRAG)return;e.preventDefault();
         if(DRAG.kind==='group'){clearIns();const r=card.getBoundingClientRect();
-          card.classList.add(e.clientX<r.left+r.width/2?'ins-l':'ins-r');}};
+          card.classList.add(e.clientX<r.left+r.width/2?'ins-l':'ins-r');}
+        else card.classList.add('dropok');};
+      card.ondragleave=()=>card.classList.remove('dropok');
       card.ondrop=e=>{if(!DRAG)return;e.preventDefault();e.stopPropagation();
         if(DRAG.kind==='group'){const before=card.classList.contains('ins-l');clearIns();
           const it=draft.groups.splice(DRAG.gi,1)[0];
           let to=draft.groups.findIndex(z=>z.id===g.id);if(to<0)to=draft.groups.length;
           draft.groups.splice(before?to:to+1,0,it);DRAG=null;draw();}
         else if(DRAG.kind==='col'){clearIns();
-          const it=draft.groups[DRAG.gi].cols.splice(DRAG.ci,1)[0];g.cols.push(it);DRAG=null;draw();}};
+          const it=draft.groups[DRAG.gi].cols.splice(DRAG.ci,1)[0];g.cols.push(it);DRAG=null;draw();}
+        else if(DRAG.kind==='cat'){clearIns();
+          if(!used(DRAG.k))g.cols.push(DRAG.k);
+          selG=g.id;DRAG=null;draw();}};
       card.onclick=e=>{if(e.target===card||e.target.classList.contains('gbd')){selG=g.id;draw();}};
       const bd=el('div','gbd',card);
-      if(!g.cols.length)bd.innerHTML='<span style="color:#aab6c5;font-size:11px">왼쪽 목록에서 값을 추가</span>';
+      if(!g.cols.length)bd.innerHTML='<span style="color:#aab6c5;font-size:11px">위 목록에서 항목을 끌어다 놓거나 눌러서 추가</span>';
       g.cols.forEach((k,ci)=>{
         const c=el('span','chip on',bd);c.draggable=true;c.dataset.kind='col';c.dataset.gi=gi;c.dataset.ci=ci;
         c.innerHTML=`⠿ ${cdef[k]?cdef[k].l:k} <span class="x">✕</span>`;
@@ -178,7 +218,8 @@ function openBuilder(host,cfg,opts){
       /* 행 기준(차원)이 그대로면 드래그로 정한 행 순서를 유지한다 */
       const same=cfg.rows.length===draft.rows.length&&cfg.rows.every((r,i)=>r.k===draft.rows[i].k);
       cfg.rows=draft.rows.map(r=>({...r}));
-      cfg.groups=draft.groups.filter(g=>g.cols.length).map(g=>({id:g.id,name:g.name,solo:g.solo&&g.cols.length===1,cols:[...g.cols]}));
+      cfg.groups=draft.groups.filter(g=>g.cols.length)
+        .map(g=>({id:g.id,name:g.name,solo:!!g.solo&&g.cols.length===1,cols:[...g.cols]}));
       if(!cfg.groups.length)cfg.groups=[{id:uid(),name:'예상 효율',cols:[]}];
       if(!same)cfg.order=null;
       opts.onApply&&opts.onApply();};
@@ -386,12 +427,75 @@ function renderPace(){
       </div>
     </div>`;
 }
+/* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
+function renderSpendDonut(box,pr){
+  const ls=activeLines();
+  const budget=sum(ls.map(lineGross));
+  const spent=aggFacts(paceFacts()).cost;
+  const rate=budget?spent/budget:0;
+  const c=el('div','card donut spend',box);
+  c.innerHTML=`<div class="dhd"><div class="k">예산 소진율</div>
+      <div class="kpitag">전체 매체</div></div><div class="ring"></div>`;
+  const ring=c.querySelector('.ring');
+  const CC=136,VB=272,TH=27;
+  const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:VB,height:VB});
+  const defs=S('defs',{},svg);
+  const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
+  const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
+    'stroke-linecap':'round','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+  /* 게이지 색은 다른 KPI 카드와 동일 */
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#495e72','stroke-width':TH,'stroke-linecap':'round',
+    'stroke-dasharray':`${cir*f} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+  /* 호 위에 소진 금액을 곡선으로 (다른 카드의 "집행 …" 라벨과 같은 방식) */
+  (function(){
+    const pxy=(deg,r2)=>{const a=(deg-90)*Math.PI/180;return [CC+Math.cos(a)*r2,CC+Math.sin(a)*r2];};
+    const arcPath=(r2,d1,d2)=>{const [x1,y1]=pxy(d1,r2),[x2,y2]=pxy(d2,r2);
+      const large=Math.abs(d2-d1)>180?1:0,sweep=d2>d1?1:0;
+      return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r2} ${r2} 0 ${large} ${sweep} ${x2.toFixed(2)} ${y2.toFixed(2)}`;};
+    const label=`집행 ${won(spent)}`;
+    const need=label.length*7.0+16;
+    const id=uid();
+    if(cir*f>need){
+      S('path',{id,d:arcPath(rad,0,179),fill:'none'},defs);
+      const t=S('text',{'font-size':11.5,'font-weight':800,fill:'#fff','dominant-baseline':'central'},svg);
+      const tp=document.createElementNS(NS,'textPath');
+      tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+id);
+      tp.setAttribute('href','#'+id);tp.setAttribute('startOffset','12');
+      tp.setAttribute('text-anchor','start');tp.textContent=label;t.appendChild(tp);
+    }else{
+      const [tx,ty]=pxy(360*f/2,rad+TH/2+9);
+      const t=S('text',{x:Math.max(4,Math.min(VB-4,tx)),y:ty,'dominant-baseline':'central',
+        'text-anchor':tx>=CC?'start':'end','font-size':11.5,'font-weight':800,fill:'#495e72'},svg);
+      t.textContent=label;}
+  })();
+  const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
+    style:'pointer-events:stroke'},svg);
+  hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+    `<div class="t">예산 소진율 · 전체 매체</div>`
+    +`<div class="r"><span class="l">소진 광고비</span><b>${won(spent)}</b></div>`
+    +`<div class="r"><span class="l">전체 예산 (Gross)</span><b>${won(budget)}</b></div>`
+    +`<div class="r"><span class="l">소진율</span><b>${pct(rate,1)}</b></div>`
+    +`<div class="r"><span class="l">목표 페이스</span><b>${pct(pr,1)}</b></div>`
+    +`<div class="r"><span class="l">페이스 대비</span><b>${(rate-pr>=0?'+':'−')+Math.abs((rate-pr)*100).toFixed(1)}%p</b></div>`));
+  hit.addEventListener('mouseleave',hideTip);
+  ring.appendChild(svg);
+  const ctr=el('div','ctr',ring);
+  ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
+    +`<b class="achv mono">${pct(rate,1)}</b></div>`;
+  const lg=el('div','dlgd',c);
+  lg.innerHTML=`<span class="lg"><span class="sw"></span>목표 페이스 <b class="mono">${pct(pr,1)}</b></span>`
+    +`<span class="lg spend"><span class="sw"></span>소진 <b class="mono">${pct(rate,1)}</b>`
+    +` <span style="color:var(--muted);font-weight:600">/ ${won(budget)}</span></span>`;
+}
 function renderDonuts(){
   const box=$('donuts');box.innerHTML='';
   const mode=$('kpiGroupSel').value||'media';
   const ls=activeLines(),pr=paceRatio();
   const keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
-  box.style.gridTemplateColumns=`repeat(${Math.min(Math.max(keys.length,2),4)},minmax(0,370px))`;
+  renderSpendDonut(box,pr);
+
   const COL=['#495e72','#677b8d','#8897a6'];
   keys.forEach(name=>{
     const items=ls.filter(l=>(mode==='product'?l.media+' · '+l.product:l[mode])===name);
@@ -416,10 +520,11 @@ function renderDonuts(){
       <div class="ring"></div>`;
     const ring=c.querySelector('.ring');
     /* 링 두께(TH)는 그대로 두고 전체 지름만 키워 가운데 구멍을 넓힌다 */
-    const CC=170,VB=340;
+    const CC=136,VB=272;                     /* v18 — 카드 크기 80% */
     const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:VB,height:VB});
     const defs=S('defs',{},svg);
-    const TH=34, GAPR=9;                       /* 링 두께 */
+    /* 링 두께 — 링이 여러 개면 얇게 해서 가운데 구멍을 넓힌다 (안쪽 라벨 자리 확보) */
+    const TH=rings.length>1?21:27, GAPR=rings.length>1?6:7;
     /* 중심각(도, 12시=0) 기준 좌표 */
     const pxy=(deg,rad)=>{const a=((isFinite(deg)?deg:0)-90)*Math.PI/180;
       return [CC+Math.cos(a)*rad, CC+Math.sin(a)*rad];};
@@ -442,23 +547,31 @@ function renderDonuts(){
       tp.textContent=label;t.appendChild(tp);return t;};
     /* 어느 각도에 두어도 글자가 뒤집히지 않는 아치 라벨.
        위쪽 반원은 시계 방향, 아래쪽 반원은 반시계 방향 경로에 태워 항상 글자 윗면이 바깥(위)을 향한다. */
-    const arcLabel=(rad,degCenter,label,fill,size,weight)=>{
+    /* align='end' 면 글자의 "오른쪽 끝"이 degCenter 각도에 정확히 붙는다
+       (목표 페이스 게이지가 끝나는 지점에 레이블 끝을 맞추기 위한 것) */
+    const arcLabel=(rad,degCenter,label,fill,size,weight,spanDeg,align)=>{
       const id=uid();
       const d=((degCenter%360)+360)%360;
       const bottom=d>90&&d<270;
-      const span=150;
-      S('path',{id,fill:'none',
-        d:bottom?arcPath(rad,d+span/2,d-span/2):arcPath(rad,d-span/2,d+span/2)},defs);
+      /* 경로가 글자보다 짧으면 textPath 가 잘리므로 필요한 만큼 호를 넓힌다 */
+      const need=label.length*(size*0.62)+8;
+      const span=Math.min(330,Math.max(spanDeg||150,need/Math.max(rad,1)*180/Math.PI));
+      const endAlign=align==='end';
+      /* 글자가 흐르는 방향: 위쪽 반원은 시계, 아래쪽 반원은 반시계 (뒤집히지 않도록) */
+      const path=endAlign
+        ? (bottom?arcPath(rad,d+span,d):arcPath(rad,d-span,d))
+        : (bottom?arcPath(rad,d+span/2,d-span/2):arcPath(rad,d-span/2,d+span/2));
+      S('path',{id,fill:'none',d:path},defs);
       const t=S('text',{'font-size':size,'font-weight':weight,fill,'dominant-baseline':'central'},svg);
       const tp=document.createElementNS(NS,'textPath');
       tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+id);
       tp.setAttribute('href','#'+id);
-      tp.setAttribute('startOffset','50%');
-      tp.setAttribute('text-anchor','middle');
+      tp.setAttribute('startOffset',endAlign?'100%':'50%');
+      tp.setAttribute('text-anchor',endAlign?'end':'middle');
       tp.textContent=label;t.appendChild(tp);return t;};
-    /* 목표 페이스 말풍선 — 호가 끝나는 지점에서 바깥으로 지시선을 긋고 흰 박스에 문구를 담는다 */
+    const paceLegend=[];
     rings.forEach((r,i)=>{
-      const rad=(VB/2-TH/2-30)-i*(TH+GAPR),cir=2*Math.PI*rad;
+      const rad=(VB/2-TH/2-24)-i*(TH+GAPR),cir=2*Math.PI*rad;
       const pf=Math.min(Math.max(pr,0),1), af=Math.min(Math.max(r.ach,0),1);
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
@@ -478,13 +591,12 @@ function renderDonuts(){
           'text-anchor':tx>=CC?'start':'end','font-size':12,'font-weight':800,fill:r.color},svg);
         t.textContent=label;}
       /* 목표 페이스 — 호 끝 바깥쪽에 말풍선으로 (지시선 + 흰 박스) */
-      const ptxt=(rings.length>1?KPI_LABEL[r.k]+' ':'')+`목표 페이스 ${fmt(r.goal*pr)}건`;
-      const outer=(VB/2-TH/2-30);
-      arcLabel(outer+TH/2+13+i*16,pDeg,ptxt,PACE,12,800);
+      /* 목표 페이스는 카드 왼쪽 아래 범례로 뺀다 (도넛 안이 좁아 읽기 어려웠다) */
+      paceLegend.push({k:r.k,v:r.goal*pr,color:r.color});
       });
     /* 마우스를 올리면 그 KPI의 세부 데이터를 보여준다 (하단 목록 대신) */
     rings.concat(restRows).forEach((r,i)=>{
-      const rad=(VB/2-TH/2-30)-Math.min(i,rings.length-1)*(TH+GAPR);
+      const rad=(VB/2-TH/2-24)-Math.min(i,rings.length-1)*(TH+GAPR);
       const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
         style:'pointer-events:stroke;cursor:default'},svg);
       hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
@@ -500,6 +612,11 @@ function renderDonuts(){
     const totW=sum(items.map(lineGross));
     const total=totW?sum(items.map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
     const ctr=el('div','ctr',ring);
+    const lg=el('div','dlgd',c);
+    lg.innerHTML=paceLegend.map(x=>
+      `<span class="lg"><span class="sw"></span>${rings.length>1?esc(KPI_LABEL[x.k])+' ':''}목표 페이스`
+      +` <b class="mono">${fmt(x.v)}건</b></span>`).join('');
+    const ctr2=null;
     ctr.innerHTML=`<div class="ctrbox"><span class="achk">달성률</span>`
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
   });
@@ -545,14 +662,23 @@ function renderStrip(){
     const avg=ok.length?sum(ok)/ok.length:NaN;               /* 지금까지 일평균 */
     /* 낮을수록 좋은 지표(CPM·CPC·CPV·CPA)는 부호를 뒤집어 읽는다 */
     const lower=['cpm','cpc','cpv','cpa','cpi','cpe'].includes(k);
-    const d=isFinite(last)&&isFinite(avg)&&avg?last/avg-1:NaN;
-    const good=lower?d<0:d>0;
+    /* 제안 대비 — "지금쯤 제안대로면 여기까지" 와 비교해 얼마나 앞서 있는가
+       (볼륨·금액은 예상×목표 페이스, 단가는 제안 단가와 직접 비교) */
+    const due=isAbs?ev*pr:ev;
+    const d=isAbs
+      ? (isFinite(av)&&isFinite(due)&&due?av/due-1:NaN)
+      : (lower?(isFinite(ev)&&isFinite(av)&&av?ev/av-1:NaN)
+              :(isFinite(av)&&isFinite(ev)&&ev?av/ev-1:NaN));
+    const good=d>0;
     const c=el('div','card stat',box);
     c.innerHTML=`<div class="sbody">
         <div class="k">${METRICS[k].l}</div>
         <div class="v mono${(()=>{const n=METRICS[k].f(av).length;return n>13?' lng2':n>10?' lng':'';})()}">${METRICS[k].f(av)}</div>
-        ${isFinite(d)?`<div class="dl ${good?'up':'down'}" title="어제 값이 지금까지 일평균보다 ${pct(Math.abs(d),1)} ${d>0?'높습니다':'낮습니다'}">
-            ${d>0?'+':'−'}${pct(Math.abs(d),1)} <i>${d>0?'↑':'↓'}</i></div>`:'<div class="dl na">–</div>'}
+        ${isFinite(d)?`<div class="dl ${good?'up':'down'}" title="${
+            isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${d>0?'앞서 있습니다':'뒤처져 있습니다'}`
+                 :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${d>0?'좋습니다':'나쁩니다'}`}">
+            제안 대비 ${d>0?'+':'−'}${pct(Math.abs(d),1)} <i>${d>0?'↑':'↓'}</i></div>`
+          :'<div class="dl na">제안 대비 –</div>'}
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
           <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
