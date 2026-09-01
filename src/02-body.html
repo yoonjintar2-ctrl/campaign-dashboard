@@ -1,0 +1,246 @@
+<div class="topbar">
+  <div class="logo"><span class="mark">A</span> AD Campaign Hub</div>
+  <select class="pill" id="campSel" title="캠페인 선택"></select>
+  <button class="btn sm" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>
+  <div class="spacer"></div>
+  <span class="hint" id="cloudState">데모 모드</span>
+  <button class="btn sm" id="cloudSave" title="이 캠페인을 클라우드에 저장">☁ 저장</button>
+  <div class="role" id="roleSw">
+    <button data-role="agency" class="on">시행사</button>
+    <button data-role="client">광고주</button>
+  </div>
+  <button class="pill" id="reportBtn" title="대시보드를 엑셀로 내려받기">⤓ 리포트</button>
+  <button class="pill" id="signIn"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>구글 로그인</button>
+  <div class="avatar" id="meAvatar" title="게스트">GU</div>
+  <button class="btn sm hidden" id="signOut">로그아웃</button>
+</div>
+<div class="demobar" id="demoBar">
+  <span>ⓘ</span><div><b>데모 모드</b> — 지금 보이는 값은 예시 데이터입니다.
+    <b>구글 로그인</b> 하면 내 캠페인을 불러오고, 입력한 값이 클라우드에 저장됩니다.</div>
+  <button class="btn sm" id="demoHide">닫기</button>
+</div>
+
+<div class="tabs" id="tabs">
+  <button data-tab="dash" class="on">대시보드</button>
+  <button data-tab="input">데이터 입력</button>
+  <button data-tab="setup">캠페인 설정</button>
+</div>
+<div class="subbar" id="subbar">
+  <button data-sub="perf" class="on">효율</button>
+  <button data-sub="table">일자별 상세 효율</button>
+  <button data-sub="mix">미디어믹스</button>
+</div>
+
+<!-- ================= 대시보드 ================= -->
+<div class="wrap" id="tab-dash">
+  <div class="barlbl first">캠페인 정보</div>
+  <div class="cbar" id="campBar"></div>
+
+  <div id="sub-perf">
+    <div class="barlbl">필터</div>
+    <div class="filters" id="perfFilters"></div>
+    <div id="hiddenBar" class="hiddenbar hidden"></div>
+
+    <div class="sec" data-sect="pace">캠페인 진행 현황</div>
+    <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
+
+    <div class="sec gap" data-sect="comment">운영 코멘트
+      <span class="note" id="cmtState"></span>
+      <div class="tools agency-only">
+        <button class="btn sm" id="cmtAuto">✎ 자동 작성</button>
+        <button class="btn sm" id="cmtSave">저장</button>
+      </div>
+    </div>
+    <div class="card" data-sect="comment"><div class="bd">
+      <div class="cmtbar agency-only" id="cmtBar"></div>
+      <div class="cmt" id="cmtBody" contenteditable="true" spellcheck="false"></div>
+    </div></div>
+
+    <div class="sec gap" data-sect="kpi">KPI 달성 현황
+      <select class="ctl" id="kpiGroupSel">
+        <option value="media">매체별</option><option value="product">상품별</option><option value="line">제품별</option>
+      </select>
+      <div class="tools agency-only">
+        <span class="hint">판정 기준 목표 페이스 ±</span>
+        <input class="ctl" id="verdictBand" type="number" min="1" max="30" step="1" style="width:58px;text-align:right">
+        <span class="hint">%p 이내 = 양호</span>
+      </div>
+    </div>
+    <div class="grid donuts" id="donuts" data-sect="kpi"></div>
+
+    <div class="sec gap" data-sect="stat">전체 지표
+      <div class="tools"><button class="btn sm" id="statCfgBtn">⚙ 지표 설정</button></div>
+    </div>
+    <div id="statCfgBox" class="hidden" data-sect="stat"></div>
+    <div class="grid strip" id="statStrip" data-sect="stat"></div>
+
+    <div class="sec gap" data-sect="daily">일자별 효율 비교
+      <div class="tools">
+        <span class="hint">데이터 선택</span><select class="ctl" id="dimSel"></select>
+        <span class="hint">막대그래프 값</span><select class="ctl" id="barSel"></select>
+        <span class="hint">꺾은선 그래프 값</span><select class="ctl" id="lineSel"></select>
+        <span class="switch on agency-only" id="fcToggle" style="margin-left:4px"><i></i> 예상값</span>
+        <span class="switch on agency-only" id="benchToggle"><i></i> 예상 효율선</span>
+      </div>
+    </div>
+    <div class="card" data-sect="daily"><div class="bd">
+      <div id="chartDaily"></div>
+      <div class="legend" id="dailyLegend"></div>
+    </div></div>
+
+    <div id="summaryHost"></div>
+    <div style="margin-top:14px"><button class="btn agency-only" id="sumAdd">+ 서머리 영역 추가</button></div>
+
+    <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
+      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 색 농도는 <b>행(소재)별 최댓값</b> 기준</span>
+      <div class="tools">
+        <span class="shlegend"><em>낮음</em><i class="ramp"></i><em>높음</em></span>
+        <span class="hint">기간</span><select class="ctl" id="ganttRange">
+          <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
+        <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
+        <button class="btn sm" id="ganttCfgBtn">⚙ 열 구성</button>
+      </div>
+    </div>
+    <div id="ganttCfgBox" class="hidden" data-sect="gantt"></div>
+    <div class="card" data-sect="gantt"><div class="gantt-wrap"><table class="gantt" id="ganttTbl"></table></div></div>
+
+    <div class="sec gap3" data-sect="creative">우수 소재
+      <span class="note">효율이 좋은 순서로 · 소재를 누르면 원본과 지표를 볼 수 있습니다</span>
+      <div class="tools">
+        <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>
+        <span class="hint">각</span><select class="ctl" id="crTopN">
+          <option>3</option><option>4</option><option selected>5</option><option>10</option><option>15</option>
+        </select><span class="hint">개</span>
+        <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
+      </div>
+    </div>
+    <div id="creatives" data-sect="creative"></div>
+
+    <div class="sec gap3" data-sect="treemap"><span id="tmapTitle">노출 분포</span>
+      <span class="note" id="tmapSecName">매체 › 광고상품</span>
+      <span class="note">· 면적 = 값의 크기 · <span id="tmapLegend"></span></span>
+      <div class="tools">
+        <span class="hint">기준</span><select class="ctl" id="tmapMetric"></select>
+        <span class="hint">묶음</span><select class="ctl" id="tmapMode">
+          <option value="media|product|creative" selected>매체 › 광고상품 › 소재</option>
+          <option value="media|product">매체 › 광고상품</option>
+          <option value="media|product|target">매체 › 광고상품 › 타겟팅</option>
+          <option value="media|creative">매체 › 소재</option>
+          <option value="creative|media">소재 › 매체</option>
+          <option value="segment|media|product">구분 › 매체 › 광고상품</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" data-sect="treemap"><div class="bd"><div id="treemap"></div></div></div>
+
+  </div>
+
+  <div id="sub-table" class="hidden">
+    <div class="filters" id="rawFilters"></div>
+    <div class="sec" data-sect="raw">일자별 상세 효율 <span class="note" id="rawNote"></span>
+      <div class="tools">
+        <span class="hint">세로 세그먼트</span><select class="ctl" id="rawSeg"></select>
+        <span class="hint">가로 세그먼트</span><select class="ctl" id="rawHSeg"></select>
+        <button class="btn sm" id="rawCfgBtn">⚙ 열 구성</button>
+      </div>
+    </div>
+    <div id="rawCfgBox" class="hidden" data-sect="raw"></div>
+    <div id="rawHost" data-sect="raw"></div>
+  </div>
+
+  <div id="sub-mix" class="hidden">
+    <div class="filters" id="mixFilters"></div>
+    <div class="sec" data-sect="mix">미디어믹스 <span class="note">예상 효율 기준 제안서용 한 판 표</span>
+      <div class="tools">
+        <span class="hint" style="color:var(--acc);font-weight:700">■ 굵은 파란 숫자 = 게런티(보장) 항목</span>
+        <button class="btn sm agency-only" id="mixCfgBtn">⚙ 구성 편집</button>
+      </div>
+    </div>
+    <div id="mixCfgBox" class="hidden" data-sect="mix"></div>
+    <div class="card fit" data-sect="mix"><div class="tbl-wrap" style="max-height:none"><table class="tbl gln fit" id="tblMix"></table></div></div>
+  </div>
+
+</div>
+
+<!-- ================= 데이터 입력 ================= -->
+<div class="wrap hidden" id="tab-input">
+  <div class="sec" style="margin-bottom:4px">운영 이슈 <span class="note" id="issueCount"></span></div>
+  <div class="secbar">
+    <button class="btn sm" id="issueFold">▾ 펼치기</button>
+    <button class="btn sm" id="addIssue">+ 이슈 추가</button>
+    <span class="switch on" id="issueToggle"><i></i> 대시보드 그래프에 표시</span>
+  </div>
+  <div class="notice hidden" id="issueAlert" style="background:#fdf3ec;border-color:#f2d9c4;color:#8a5320;margin-bottom:10px"></div>
+  <div id="issueBox" class="hidden"><div class="card"><div class="tbl-wrap" style="max-height:none"><table class="tbl lite" id="tblIssue" style="width:auto;min-width:100%"></table></div></div></div>
+
+  <div class="sec gap">일자별 실적 입력 <span class="note" id="sheetNote"></span>
+    <span class="note" id="saveState" style="color:var(--acc)"></span>
+    <div class="tools">
+      <button class="btn sm" id="addRow">+ 행 추가</button>
+      <button class="btn sm" id="colCfgBtn">⚙ 열 설정</button>
+      <button class="btn sm" id="histBtn">🕘 입력 히스토리</button>
+      <button class="btn sm" id="tplDaily">⤓ 엑셀 템플릿</button>
+      <button class="btn sm" id="upDaily">⤒ 엑셀 불러오기</button>
+      <button class="btn sm primary" id="saveRows">저장 후 대시보드 반영</button>
+    </div>
+  </div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet" id="sheet"></table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
+      <div class="hint" id="sheetSum"></div>
+      <button class="btn sm" id="addRow2">+ 행 추가</button>
+    </div>
+  </div></div>
+
+  <div class="notice" style="margin-top:26px">
+    <span>ⓘ</span>
+    <div>셀을 <b>드래그로 범위 선택</b>한 뒤 <b>Ctrl+C / Ctrl+V</b>로 복사·붙여넣기 할 수 있습니다.
+      한 칸을 복사해 여러 칸에 붙이면 선택 범위 전체가 같은 값으로 채워지고, 엑셀에서 여러 셀을 복사하면 표에 그대로 펼쳐집니다.
+      구분·매체·광고상품·타겟팅·제품은 <b>캠페인 설정</b>에 등록된 항목만 사용할 수 있습니다.
+      일자가 해당 라인의 집행 기간을 벗어나면 행이 붉게 표시되고 다른 탭으로 이동할 때 알려 드립니다.
+      광고비는 <b>Net으로 입력</b>하고 Gross는 설정의 수수료율로 자동 역산됩니다. <b>Ctrl+Z</b>로 되돌리고 <b>Ctrl+Y</b>로 다시 실행하며, <b>방향키</b>로 셀을 옮기고 <b>Shift+방향키</b>로 범위를 넓힐 수 있습니다.</div>
+  </div>
+</div>
+
+<!-- ================= 캠페인 설정 ================= -->
+<div class="wrap hidden" id="tab-setup">
+  <div class="sec">캠페인 기본 정보
+    <div class="tools">
+      <button class="btn sm" id="holBtn">🗓 공휴일 설정</button>
+      <button class="btn sm" id="permBtn">👥 계정 · 권한</button>
+      <button class="btn sm" id="campHistBtn">🕘 변경 히스토리</button>
+      <button class="btn sm primary" id="saveAll">캠페인 설정 저장</button>
+    </div>
+  </div>
+  <div class="card"><div class="bd"><div class="form-row" id="campForm"></div></div></div>
+
+  <div class="sec gap">예상 효율
+    <div class="tools">
+      <span class="hint" style="color:var(--acc);font-weight:700">☑ 예상 노출·클릭·조회 옆 체크 = 게런티(보장) 지표</span>
+      <span class="hint" id="lineSaveState">저장됨</span>
+      <button class="btn sm" id="lineColCfgBtn">⚙ 열 설정</button>
+      <button class="btn sm" id="lineHistBtn">🕘 입력 히스토리</button>
+      <button class="btn sm" id="tplLine">⤓ 엑셀 템플릿</button>
+      <button class="btn sm" id="upLine">⤒ 엑셀 불러오기</button>
+      <button class="btn sm" id="addLine">+ 라인 추가</button>
+      <button class="btn sm primary" id="saveLines">예상 효율 저장</button>
+    </div>
+  </div>
+  <div class="notice" style="margin:2px 0 10px"><span>ⓘ</span><div>
+    <b>작성 요령</b> — 1개 행(라인)은 <b>예산을 배분하는 기준</b>으로 나눕니다.
+    타겟팅 그룹이나 소재를 매체가 <b>자동으로 예산 최적화</b>하는 경우에는 나누지 말고 <b>한 개의 라인</b>으로 적어 주세요.
+    (여러 타겟팅·소재는 한 칸에 쉼표로 나열합니다.)</div></div>
+  <div class="hint" style="margin:-4px 0 8px">키보드 — 셀을 한 번 누르면 <b>선택</b>, <b>Enter</b>(또는 더블클릭)로 입력 시작,
+    다시 <b>Enter</b> 로 완료하면 셀 선택 상태로 돌아옵니다 · <b>방향키</b> 셀 이동 · <b>Ctrl+Z / Ctrl+Y</b> 실행 취소·다시 실행</div>
+  <div class="card"><div class="tbl-wrap" style="max-height:none"><table class="tbl lite" id="tblKpi"></table></div></div>
+  <div class="hint" style="margin-top:8px">※ Net 예산과 수수료율(대행사 + 렙사)을 넣으면 Gross가 자동 계산됩니다 (Gross = Net ÷ (1 − 합산 수수료율)).
+    Value = Gross + 보너스.</div>
+
+  <div class="hint" style="margin-top:22px">※ 미디어믹스 표는 <b>대시보드 › 미디어믹스</b> 시트에서 확인합니다.</div>
+</div>
+
+<div id="tip"></div>
+<div id="modalHost"></div>
+<input type="file" id="fileIn" accept=".xlsx,.csv,.tsv,.txt" class="hidden">
+<div class="mock">디자인 시안 v5 · 더미 데이터</div>
+<script>

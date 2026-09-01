@@ -1,0 +1,357 @@
+/* ===== 0. 유틸 ===== */
+const NS='http://www.w3.org/2000/svg';
+const S=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const el=(t,c,p)=>{const e=document.createElement(t);if(c)e.className=c;if(p)p.appendChild(e);return e;};
+const $=id=>document.getElementById(id);
+const num=n=>isFinite(n)?n:0;
+const fmt=n=>(!isFinite(n)?'–':Math.round(n).toLocaleString('ko-KR'));
+const pct=(n,d=2)=>(!isFinite(n)?'–':(n*100).toFixed(d)+'%');
+const won=n=>(!isFinite(n)?'–':'₩'+Math.round(n).toLocaleString('ko-KR'));
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>'x'+Math.random().toString(36).slice(2,8);
+const SEP='';
+const ACC='#495e72',ACC2='#486a75',GRAY='#9aa4b0';
+const PACE='#b06a63',PACE_LT='#d9aca7';   /* 목표 페이스 — 붉은 계열 */
+const HIDDEN=new Set();                   /* 숨긴 대시보드 항목 (p11) */
+const AXIS={fill:'#98a3b1',size:10.5,weight:400};
+
+/* ===== 1. 캠페인 · 라인 ===== */
+const CAMPAIGN={name:'BMW Innovation Brand Campaign',advertiser:'BMW Korea',today:'2026-08-31'};
+const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
+const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
+const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
+let BID_TYPES=['CPM','CPC','CPT','CPD','CPV','CPA','CPI','CPE'];
+/* 비드 타입에 맞는 KPI 기본값 — 자동으로 채우되 이후 직접 수정할 수 있다 */
+const BID_KPI={CPM:'imp',CPV:'view',CPC:'click',CPA:'conv',CPI:'install',CPE:'eng'};
+const DEVICES=['PC','MO','CTV'];
+
+let LINES=[
+ {id:'L1',segment:'Phase 1',media:'YouTube',product:'VRC',target:'BMW 관심 오디언스',line:'BMW iX',
+  device:['PC','MO'],bid:'CPV',price:19,start:'2026-08-01',end:'2026-09-30',
+  kpi:'view',sub:'vtr',feeA:.10,feeR:.05,net:25500000,bonus:3000000,sec:6,g:{imp:false,click:false,view:true},
+  e:{imp:12295082,click:7377,view:688525,eng:0,conv:300,lead:120,rev:9000000,install:480,like:0,share:0,v25:537050,v50:378689,v75:261640,v100:199672,v3:1308198,v15:426886,v30:282295},note:'PC+MO 디바이스 최적화 운영',
+  a:{imp:6200656,click:3853,view:354287,eng:3164,conv:149,lead:63,rev:4561920,net:13056000,install:238,like:1329,share:285,v25:276344,v50:194858,v75:134629,v100:102743,v3:673145,v15:219658,v30:145258}},
+ {id:'L2',segment:'Phase 1',media:'YouTube',product:'VVC',target:'프리미엄 세단 IM',line:'BMW i5',
+  device:['PC','MO','CTV'],bid:'CPV',price:20,start:'2026-08-01',end:'2026-09-30',
+  kpi:'view',sub:'cpv',feeA:.10,feeR:.05,net:51000000,bonus:6000000,sec:15,g:{imp:false,click:false,view:true},
+  e:{imp:8620690,click:2586,view:2500000,eng:0,conv:900,lead:320,rev:28000000,install:1440,like:0,share:0,v25:1950000,v50:1375000,v75:950000,v100:725000,v3:4750000,v15:1550000,v30:1025000},note:'CTV 포함 확장 운영',
+  a:{imp:4318621,click:1257,view:1233800,eng:5364,conv:433,lead:162,rev:13749120,net:25296000,install:693,like:2253,share:483,v25:962364,v50:678590,v75:468844,v100:357802,v3:2344220,v15:764956,v30:505858}},
+ {id:'L3',segment:'Phase 1',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'BMW i5',
+  device:['MO'],bid:'CPC',price:1000,start:'2026-08-01',end:'2026-09-30',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,net:29750000,bonus:0,sec:0,g:{imp:false,click:true,view:false},
+  e:{imp:10000000,click:30000,view:100000,eng:23000,conv:1500,lead:600,rev:26000000,install:2400,like:9660,share:2070,v25:78000,v50:55000,v75:38000,v100:29000,v3:190000,v15:62000,v30:41000},note:'관심사 타겟 확장',
+  a:{imp:5256900,click:16089,view:54693,eng:12579,conv:773,lead:325,rev:13667940,net:15797250,install:1237,like:5283,share:1132,v25:42661,v50:30081,v75:20783,v100:15861,v3:103917,v15:33910,v30:22424}},
+ {id:'L4',segment:'Phase 2',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'BMW iX',
+  device:['MO'],bid:'CPC',price:1050,start:'2026-08-15',end:'2026-09-30',
+  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,net:21250000,bonus:0,sec:0,g:{imp:false,click:true,view:false},
+  e:{imp:7088175,click:21265,view:70882,eng:15961,conv:1000,lead:420,rev:18000000,install:1600,like:6704,share:1436,v25:55288,v50:38985,v75:26935,v100:20556,v3:134676,v15:43947,v30:29062},note:'2차 런칭 구간',
+  a:{imp:3412531,click:9937,view:32453,eng:7760,conv:458,lead:202,rev:8411040,net:10030000,install:733,like:3259,share:698,v25:25313,v50:17849,v75:12332,v100:9411,v3:61661,v15:20121,v30:13306}},
+ {id:'L5',segment:'Phase 2',media:'Meta',product:'IG (View)',target:'2049 남성 · 관심사',line:'BMW X5',
+  device:['MO'],bid:'CPM',price:8500,start:'2026-08-01',end:'2026-09-30',
+  kpi:'imp',sub:'cpm',feeA:.13,feeR:.07,net:40000000,bonus:5000000,sec:15,g:{imp:true,click:false,view:false},
+  e:{imp:6849315,click:6849,view:684932,eng:27000,conv:1200,lead:480,rev:24000000,install:1920,like:11340,share:2430,v25:534247,v50:376713,v75:260274,v100:198630,v3:1301371,v15:424658,v30:280822},note:'페이스북+인스타 노출',
+  a:{imp:3335616,click:3469,view:320219,eng:13543,conv:567,lead:238,rev:11571120,net:19480000,install:907,like:5688,share:1219,v25:249771,v50:176120,v75:121683,v100:92864,v3:608416,v15:198536,v30:131290}}
+];
+const toGross=(net,fee)=>net/(1-fee);
+const feeOf=l=>(+l.feeA||0)+(+l.feeR||0);
+const lineNet=l=>l.net;
+const lineGross=l=>Math.round(l.net/(1-feeOf(l)));
+const lineValue=l=>lineGross(l)+(l.bonus||0);
+const bonusRate=ls=>{const g=sum(ls.map(lineGross));return g?sum(ls.map(l=>l.bonus||0))/g:0;};
+const segments=()=>[...new Set(LINES.map(l=>l.segment))];
+
+/* 기간 = 라인 시작/종료의 최소·최대 */
+const DAY=86400000;
+/* 새로 추가한 빈 라인(날짜 미입력)은 기간 계산에서 제외한다 */
+const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||CAMPAIGN.today;
+const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||CAMPAIGN.today;
+let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
+const dT=new Date(CAMPAIGN.today+'T00:00:00');
+let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.round((dT-d0)/DAY)+1;
+let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
+let dates=ALLDATES.slice(0,ELAPSED);
+const WD=['일','월','화','수','목','금','토'];
+const dFull=d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const YESTERDAY=iso(new Date(dT.getTime()-DAY));
+
+/* ===== 공휴일 (편집 가능) ===== */
+let HOLIDAYS=[
+ ['2026-01-01','신정'],['2026-02-16','설날 연휴'],['2026-02-17','설날'],['2026-02-18','설날 연휴'],
+ ['2026-03-02','삼일절 대체'],['2026-05-05','어린이날'],['2026-05-24','부처님오신날'],['2026-05-25','부처님오신날 대체'],
+ ['2026-06-06','현충일'],['2026-08-15','광복절'],['2026-08-17','광복절 대체'],
+ ['2026-09-24','추석 연휴'],['2026-09-25','추석'],['2026-09-26','추석 연휴'],
+ ['2026-10-03','개천절'],['2026-10-05','개천절 대체'],['2026-10-09','한글날'],['2026-12-25','성탄절'],
+ ['2027-01-01','신정'],['2027-02-06','설날 연휴'],['2027-02-07','설날'],['2027-02-08','설날 연휴'],['2027-02-09','설날 대체'],
+ ['2027-03-01','삼일절'],['2027-05-05','어린이날'],['2027-05-13','부처님오신날'],['2027-06-06','현충일'],['2027-06-07','현충일 대체'],
+ ['2027-08-15','광복절'],['2027-08-16','광복절 대체'],['2027-09-14','추석 연휴'],['2027-09-15','추석'],['2027-09-16','추석 연휴'],
+ ['2027-10-03','개천절'],['2027-10-04','개천절 대체'],['2027-10-09','한글날'],['2027-10-11','한글날 대체'],['2027-12-25','성탄절'],
+ ['2028-01-01','신정'],['2028-01-26','설날 연휴'],['2028-01-27','설날'],['2028-01-28','설날 연휴'],
+ ['2028-03-01','삼일절'],['2028-05-02','부처님오신날'],['2028-05-05','어린이날'],['2028-06-06','현충일'],
+ ['2028-08-15','광복절'],['2028-10-02','추석 연휴'],['2028-10-03','추석 · 개천절'],['2028-10-04','추석 연휴'],
+ ['2028-10-09','한글날'],['2028-12-25','성탄절']
+];
+const holName=d=>{const s=iso(d),h=HOLIDAYS.find(x=>x[0]===s);return h?h[1]:null;};
+const isRest=d=>d.getDay()===0||d.getDay()===6||!!holName(d);   // 토·일·공휴일
+
+function seeded(s){return()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};}
+function spread(total,n,rnd,ramp){
+  const w=[...Array(n)].map((_,i)=>{const d=new Date(d0.getTime()+i*DAY);
+    return (0.72+0.56*rnd())*(isRest(d)?0.76:1)*(1+ramp*(i/Math.max(n-1,1)));});
+  const t=sum(w);let acc=0,out=[];
+  for(let i=0;i<n;i++){out.push(Math.round(total*(acc+w[i])/t)-Math.round(total*acc/t));acc+=w[i];}
+  return out;
+}
+const AMET=['imp','click','view','eng','conv','lead','install','like','share',
+  'v25','v50','v75','v100','v3','v15','v30','rev','net'];
+LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+
+let CREATIVES=[
+ {id:'c3',lid:'L1',name:'BMW_iX_6s_Bumper',type:'video',yt:'M7lc1UVf-VE',ratio:'16:9',
+  g:'linear-gradient(140deg,#93a9bf,#354758)',run:[[0,17]],share:1},
+ {id:'c8',lid:'L1',name:'BMW_iX_15s_Story',type:'video',yt:'ScMzIvxBSi4',ratio:'9:16',
+  g:'linear-gradient(140deg,#b3c1cf,#495e72)',run:[[16,30]],share:1},
+ {id:'c1',lid:'L2',name:'BMW_i5_15s_Master_A',type:'video',yt:'dQw4w9WgXcQ',ratio:'16:9',
+  g:'linear-gradient(140deg,#93a2b1,#354758)',run:[[0,30]],share:.55},
+ {id:'c2',lid:'L2',name:'BMW_i5_15s_Master_B',type:'video',yt:'aqz-KE-bpKQ',ratio:'16:9',
+  g:'linear-gradient(140deg,#a5b7c8,#495e72)',run:[[6,30]],share:.45},
+ {id:'c4',lid:'L3',name:'DemandGen_i5_Subscribe',type:'image',ratio:'1:1',
+  g:'linear-gradient(140deg,#aabbcb,#495e72)',run:[[0,30]],share:1},
+ {id:'c7',lid:'L4',name:'DemandGen_iX_Subscribe',type:'image',ratio:'4:5',
+  g:'linear-gradient(140deg,#bfcad6,#495e72)',run:[[0,30]],share:1},
+ {id:'c5',lid:'L5',name:'IG_Reels_9x16_Ver1',type:'video',yt:'aqz-KE-bpKQ',ratio:'9:16',
+  g:'linear-gradient(140deg,#93a2b1,#35536f)',run:[[3,30]],share:.6},
+ {id:'c6',lid:'L5',name:'IG_Feed_1x1_Ver2',type:'image',ratio:'1:1',
+  g:'linear-gradient(140deg,#b3c1cf,#354758)',run:[[0,22]],share:.4}
+];
+let FACTS=[];
+function buildFacts(){
+  FACTS=[];
+  CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
+  LINES.forEach(l=>{
+    const cs=CREATIVES.filter(c=>c.lid===l.id);
+    for(let i=0;i<ELAPSED;i++){
+      const act=cs.filter(c=>c.run.some(([a,b])=>i>=a&&i<=b));
+      const tot=sum(act.map(c=>c.share))||1;
+      cs.forEach(c=>{
+        const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
+        const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,target:l.target,
+          line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+        AMET.forEach(m=>f[m]=Math.round(((l.daily[m]&&l.daily[m][i])||0)*k));
+        f.cost=toGross(f.net,feeOf(l));
+        AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
+        FACTS.push(f);
+      });
+    }
+  });
+  CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
+    const l=LINES.find(x=>x.id===c.lid)||{};
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.target=l.target;c.line=l.line;});
+}
+buildFacts();
+
+let SHOW_ISSUES=true;
+let ISSUES=[
+ {s:'2026-08-04',e:'2026-08-06',scope:'YouTube · VVC',type:'소재',txt:'A/B 소재 교체 및 초기 학습 구간 — 노출 단가 일시 상승'},
+ {s:'2026-08-05',e:'2026-08-09',scope:'Meta',type:'매체',txt:'Meta 계정 심사로 일부 광고그룹 승인 지연, 예산 이월 집행'},
+ {s:'2026-08-09',e:'2026-08-10',scope:'YouTube · VRC',type:'홀딩',txt:'브랜드 검수 요청으로 VRC 일시 홀딩'},
+ {s:'2026-08-17',e:'2026-08-17',scope:'Meta',type:'매체',txt:'Meta 광고관리자 개편, 반나절 집행 중단'},
+ {s:'2026-08-18',e:'2026-08-21',scope:'전체',type:'기타',txt:'트래픽 감소로 일 예산 하향 조정 후 재분배'},
+ {s:'2026-08-22',e:'2026-08-25',scope:'전체',type:'단가',txt:'경쟁 브랜드 신차 런칭으로 비딩 심화 → CPM 상승, 입찰가 상향 대응'},
+ {s:'2026-08-28',e:'2026-08-29',scope:'YouTube · Demand Gen (구독)',type:'소재',txt:'신규 소재 교체 (Story 버전 투입)'}
+];
+const dIdx=s=>Math.round((new Date(s+'T00:00:00')-d0)/DAY);
+let CAMP_HIST=[
+ {d:'2026-08-01 09:12',who:'윤석진 (미디어웍스)',f:'캠페인 생성',b:'-',a:'BMW Innovation Brand Campaign'},
+ {d:'2026-08-05 14:30',who:'김미디어 (미디어웍스)',f:'L3 예상 클릭',b:'26,000',a:'30,000'},
+ {d:'2026-08-12 10:02',who:'윤석진 (미디어웍스)',f:'L5 수수료율',b:'15%',a:'20%'},
+ {d:'2026-08-20 16:44',who:'이운영 (퍼포먼스랩)',f:'L4 KPI 지표',b:'조회',a:'클릭'},
+ {d:'2026-08-26 11:20',who:'윤석진 (미디어웍스)',f:'L2 예산',b:'55,000,000',a:'60,000,000'}
+];
+
+/* ===== 2. 지표 ===== */
+/* ===== 항목 사전 — "열설정북.xlsx" 기준 =====
+   [키, 국문명, 영문명, 카테고리, 유형(in=수동입력 / calc=계산),
+    미디어믹스·예상효율 기본표시, 미디어믹스·예상효율 사용가능,
+    대시보드·데이터입력 기본표시, 대시보드·데이터입력 사용가능]                       */
+const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타'];
+const FIELDS=[
+  ['date','일자','date','운영','in',0,0,1,1],
+  ['start','시작일','start date','운영','in',1,1,0,1],
+  ['end','종료일','end date','운영','in',1,1,0,1],
+  ['startT','시작 시간','start time','운영','in',0,1,0,0],
+  ['endT','종료 시간','end time','운영','in',0,1,0,0],
+
+  ['imp','노출','imps.','노출','in',0,0,1,1],
+  ['e_imp','목표 노출','est.imps.','노출','in',1,1,0,1],
+  ['imp_r','노출 달성률','imps. achv.','노출','calc',0,0,1,1],
+  ['cpm','CPM','CPM','노출','calc',0,1,1,1],
+
+  ['click','클릭','click','클릭','in',0,0,1,1],
+  ['e_click','목표 클릭','est.click','클릭','in',1,1,0,1],
+  ['click_r','클릭 달성률','click achv.','클릭','calc',0,0,1,1],
+  ['ctr','CTR','CTR','클릭','calc',0,1,1,1],
+  ['cpc','CPC','CPC','클릭','calc',0,1,1,1],
+
+  ['view','조회','view','조회','in',0,0,1,1],
+  ['e_view','목표 조회','est.view','조회','in',1,1,0,1],
+  ['view_r','조회 달성률','view achv.','조회','calc',0,0,1,1],
+  ['vtr','VTR','VTR','조회','calc',0,1,1,1],
+  ['cpv','CPV','CPV','조회','calc',0,1,1,1],
+  ['v25','25% 조회','25% view','조회','in',0,0,0,1],
+  ['v50','50% 조회','50% view','조회','in',0,0,0,1],
+  ['v75','75% 조회','75% view','조회','in',0,0,0,1],
+  ['v100','100% 조회','100% view','조회','in',0,0,0,1],
+  ['v3','3초 조회','3s view','조회','in',0,0,0,1],
+  ['v15','15초 조회','15s view','조회','in',0,0,0,1],
+  ['v30','30초 조회','30s view','조회','in',0,0,0,1],
+  ['e_v25','목표 25% 조회','est.25% view','조회','in',0,1,0,1],
+  ['e_v50','목표 50% 조회','est.50% view','조회','in',0,1,0,1],
+  ['e_v75','목표 75% 조회','est.75% view','조회','in',0,1,0,1],
+  ['e_v100','목표 100% 조회','est.100% view','조회','in',0,1,0,1],
+  ['e_v3','목표 3초 조회','est.3s view','조회','in',0,1,0,1],
+  ['e_v15','목표 15초 조회','est.15s view','조회','in',0,1,0,1],
+  ['e_v30','목표 30초 조회','est.30s view','조회','in',0,1,0,1],
+
+  ['conv','전환','conversion','전환','in',0,0,0,1],
+  ['e_conv','목표 전환','est.conversion','전환','in',0,1,0,1],
+  ['conv_r','전환 달성률','conv. achv.','전환','calc',0,0,0,1],
+  ['cvr','CVR','CVR','전환','calc',0,1,0,1],
+  ['cpa','CPA','CPA','전환','calc',0,1,0,1],
+  ['lead','양식제출','lead','전환','in',0,0,0,1],
+
+  ['install','설치','install','설치','in',0,0,0,1],
+  ['e_install','목표 설치','est.install','설치','in',0,1,0,1],
+  ['cpi','CPI','CPI','설치','calc',0,1,0,1],
+
+  ['eng','참여','Engagement','참여','in',0,0,0,1],
+  ['e_eng','목표 참여','est.engagement','참여','in',0,1,0,1],
+  ['etr','ETR','ETR','참여','calc',0,1,0,1],
+  ['cpe','CPE','CPE','참여','calc',0,1,0,1],
+  ['like','공감','like','참여','in',0,0,0,1],
+  ['e_like','목표 공감','est.like','참여','in',0,1,0,1],
+  ['share','공유','share','참여','in',0,0,0,1],
+  ['e_share','목표 공유','est.share','참여','in',0,1,0,1],
+
+  ['rev','매출','revenue','비용','in',0,0,1,1],
+  ['e_rev','목표 매출','est.revenue','비용','in',0,1,0,1],
+  ['budget','예산','budget','비용','calc',1,1,1,1],
+  ['feeA','대행사 수수료율','agency fee','비용','in',1,1,0,1],
+  ['feeR','렙사 수수료율','rep fee','비용','in',1,1,0,1],
+  ['net','예산(net)','budget(net)','비용','in',1,1,0,1],
+  ['cost','소진금액','spend','비용','in',0,1,1,1],
+  ['value','밸류','value','비용','in',1,1,0,1],
+  ['bonus','보너스 밸류','bonus','비용','in',0,1,0,1],
+  ['bonusRate','보너스율','bonus rate','비용','calc',1,1,0,1],
+  ['spend_r','예산 소진율','spend rate','비용','calc',0,0,1,1],
+  ['roas','ROAS','ROAS','비용','calc',0,0,0,1],
+
+  ['progress','진도율','progress','기타','calc',0,0,1,1]
+].map(a=>({k:a[0],l:a[1],en:a[2],cat:a[3],kind:a[4],
+  mixDef:!!a[5],mixOk:!!a[6],dashDef:!!a[7],dashOk:!!a[8]}));
+const FLD={};FIELDS.forEach(f=>FLD[f.k]=f);
+/* 사용 가능 여부에 따라 구성 편집 카탈로그를 만든다 (카테고리별 묶음) */
+function fieldCatalog(scope,extra){
+  const ok=f=>scope==='mix'?f.mixOk:f.dashOk;
+  const out=[];
+  CAT_ORDER.forEach(c=>{
+    const cols=FIELDS.filter(f=>f.cat===c&&ok(f)&&(!extra||extra(f))).map(f=>({k:f.k,l:f.l}));
+    if(cols.length)out.push({g:c+' 관련',cols});});
+  return out;
+}
+const fieldDefaults=scope=>FIELDS.filter(f=>scope==='mix'?f.mixDef:f.dashDef).map(f=>f.k);
+
+const METRICS={
+  imp:{l:'노출',f:fmt,kind:'abs'},click:{l:'클릭',f:fmt,kind:'abs'},view:{l:'조회',f:fmt,kind:'abs'},
+  eng:{l:'참여',f:fmt,kind:'abs'},conv:{l:'전환',f:fmt,kind:'abs'},lead:{l:'양식제출',f:fmt,kind:'abs'},
+  rev:{l:'매출',f:won,kind:'abs'},cost:{l:'광고비',f:won,kind:'abs'},
+  install:{l:'설치',f:fmt,kind:'abs'},
+  cpi:{l:'CPI',f:won,kind:'rate',c:d=>d.cost/d.install},
+  ctr:{l:'CTR',f:v=>pct(v),kind:'rate',c:d=>d.click/d.imp},
+  vtr:{l:'VTR',f:v=>pct(v),kind:'rate',c:d=>d.view/d.imp},
+  cvr:{l:'CVR',f:v=>pct(v),kind:'rate',c:d=>d.conv/d.click},
+  cpm:{l:'CPM',f:won,kind:'rate',c:d=>d.cost/d.imp*1000},
+  cpc:{l:'CPC',f:won,kind:'rate',c:d=>d.cost/d.click},
+  cpv:{l:'CPV',f:won,kind:'rate',c:d=>d.cost/d.view},
+  cpa:{l:'CPA',f:won,kind:'rate',c:d=>d.cost/d.conv},
+  cpe:{l:'CPE',f:won,kind:'rate',c:d=>d.cost/d.eng},
+  etr:{l:'ETR',f:v=>pct(v),kind:'rate',c:d=>d.eng/d.imp},
+  like:{l:'공감',f:fmt,kind:'abs'},share:{l:'공유',f:fmt,kind:'abs'},
+  v25:{l:'25% 조회',f:fmt,kind:'abs'},v50:{l:'50% 조회',f:fmt,kind:'abs'},
+  v75:{l:'75% 조회',f:fmt,kind:'abs'},v100:{l:'100% 조회',f:fmt,kind:'abs'},
+  v3:{l:'3초 조회',f:fmt,kind:'abs'},v15:{l:'15초 조회',f:fmt,kind:'abs'},v30:{l:'30초 조회',f:fmt,kind:'abs'},
+  roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost}
+};
+/* METRICS 라벨은 항목 사전을 따른다 */
+Object.keys(METRICS).forEach(k=>{if(FLD[k])METRICS[k].l=FLD[k].l;});
+const mval=(k,b)=>METRICS[k].kind==='abs'?b[k]:METRICS[k].c(b);
+const zeroB=()=>{const b={cost:0};AMET.forEach(m=>b[m]=0);return b;};
+const aggFacts=fs=>{const b=zeroB();fs.forEach(f=>{AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});return b;};
+const aggExp=ls=>{const b=zeroB();b.budget=0;b.value=0;b.netSum=0;b.bonusSum=0;
+  b.dstart=null;b.dend=null;let wa=0,wr=0;
+  ls.forEach(l=>{Object.keys(l.e).forEach(m=>b[m]=(b[m]||0)+l.e[m]);
+    const gr=lineGross(l);b.cost+=gr;b.budget+=gr;b.value+=lineValue(l);
+    b.netSum+=lineNet(l);b.bonusSum+=(l.bonus||0);
+    wa+=gr*(+l.feeA||0);wr+=gr*(+l.feeR||0);
+    if(!b.dstart||l.start<b.dstart)b.dstart=l.start;
+    if(!b.dend||l.end>b.dend)b.dend=l.end;});
+  b.feeA=b.budget?wa/b.budget:0;b.feeR=b.budget?wr/b.budget:0;
+  return b;};
+/* 날짜를 M/D 로 (앞자리 0 없이). 연도가 올해와 다르면 YY/M/D */
+const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
+  const cy=new Date(CAMPAIGN.today+'T00:00:00').getFullYear();
+  return (y!==cy?String(y).slice(2)+'/':'')+m+'/'+d;};
+
+const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'target',l:'타겟팅 그룹'},
+  {k:'line',l:'제품'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
+const NO_EXP_DIMS=['creative','month'];
+/* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
+let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
+const activeLines=()=>LINES.filter(l=>['segment','media','line'].every(k=>FILTER[k]==='all'||l[k]===FILTER[k]));
+
+/* ===== 조회 기간(스코프) =====
+   구분·매체·제품을 고르면 그 라인들이 실제로 집행되는 가장 빠른 날 ~ 가장 늦은 날로 좁힌다.
+   대시보드의 효율/표/소재 운영 탭이 모두 이 스코프를 공유한다. */
+const mkScope=(s,e)=>{
+  let i0=Math.max(dIdx(s),0),i1=Math.min(dIdx(e),TOTAL_DAYS-1);
+  if(i1<i0)i1=i0;
+  const days=i1-i0+1;
+  return {i0,i1,days,elapsed:Math.max(0,Math.min(ELAPSED-i0,days)),
+    start:ALLDATES[i0],end:ALLDATES[i1],startIso:iso(ALLDATES[i0]),endIso:iso(ALLDATES[i1])};
+};
+/* 진행 스코프 — 선택한 항목(구분·매체·제품)이 실제로 집행되는 구간.
+   달성률·목표 페이스·예산 소진처럼 "캠페인이 얼마나 진행됐나"를 말하는 값의 기준. */
+function paceScope(){
+  const ls=activeLines().filter(l=>l.start&&l.end);
+  return mkScope(ls.length?ls.map(l=>l.start).sort()[0]:campStart(),
+                 ls.length?ls.map(l=>l.end).sort().slice(-1)[0]:campEnd());
+}
+/* 조회 스코프 — 진행 스코프에 달력으로 고른 시작·종료일을 추가로 적용한 "보고 있는 구간".
+   차트·표·간트가 그리는 날짜 범위. */
+function viewScope(){
+  const p=paceScope();
+  /* 기본 종료일 = 어제 (데이터가 확정된 마지막 날). 달력으로 직접 고르면 그 값이 우선 */
+  let s=p.startIso,e=p.endIso>YESTERDAY?(YESTERDAY>=s?YESTERDAY:s):p.endIso;
+  if(FILTER.from&&FILTER.from>s)s=FILTER.from;
+  if(FILTER.to)e=FILTER.to<p.endIso?FILTER.to:p.endIso;
+  if(e<s)e=s;
+  return mkScope(s,e);
+}
+const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
+const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
+function factFilter(extra){
+  const s=viewScope();
+  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
+    &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k])&&(!extra||extra(f)));
+}
+/* 진행 스코프 안의 팩트 (달력 선택과 무관) */
+function paceFacts(){
+  const s=paceScope();
+  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
+    &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k]));
+}
+const isClient=()=>document.body.dataset.role==='client';
+/* 달성률은 진행 스코프 기준 (달력으로 좁혀도 KPI 카드 값은 흔들리지 않게) */
+const paceSum=arr=>{const s=paceScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
+const kpiAch=l=>paceSum(l.daily[l.kpi])/l.e[l.kpi];
