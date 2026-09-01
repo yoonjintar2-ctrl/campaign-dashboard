@@ -43,13 +43,13 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
 /* 배경 — 푸른 계열 그라데이션이 흐른다.
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
-body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.80;
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.70;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(150,171,192,.84), transparent 66%),
-    radial-gradient(34% 40% at 78% 10%, rgba(224,231,238,.30), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(137,158,180,.76), transparent 68%),
-    radial-gradient(36% 40% at 26% 90%, rgba(228,234,241,.28), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(168,186,204,.60), transparent 70%);
+    radial-gradient(40% 44% at 12% 18%, rgba(170,190,212,.82), transparent 66%),
+    radial-gradient(34% 40% at 78% 10%, rgba(243,248,252,.32), transparent 70%),
+    radial-gradient(44% 48% at 88% 80%, rgba(158,180,204,.76), transparent 68%),
+    radial-gradient(36% 40% at 26% 90%, rgba(245,249,253,.30), transparent 72%),
+    radial-gradient(32% 36% at 54% 50%, rgba(196,212,228,.58), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -72,26 +72,32 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .gatecard h2{margin:0 0 7px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.4px}
 .gatecard .gsub{margin:0 0 20px;font-size:12.5px;line-height:1.65;color:var(--ink2)}
 .gatecard .gsub b{color:var(--ink);font-weight:700}
-.gaterow{display:flex;gap:8px}
-.gaterow input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:11px;
+.gatecard .gaterow{display:flex;gap:8px}
+.gatecard .gaterow input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:11px;
   background:var(--plane2);padding:0 14px;font-size:17px;font-weight:700;letter-spacing:3px;
   text-align:center;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--ink)}
-.gaterow input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
-.gaterow input::placeholder{color:#c2cad4;font-weight:600;letter-spacing:3px}
-.gaterow .btn{height:44px;padding:0 20px;border-radius:11px;font-size:13.5px;font-weight:700;flex:none}
-.gatemsg{min-height:19px;margin-top:9px;font-size:12px;font-weight:600;color:var(--pace)}
-.gatemsg.ok{color:#3d6b52}
-.gsep{position:relative;margin:20px 0 14px;height:1px;background:var(--line)}
-.gsep span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--surface);
-  padding:0 11px;font-size:11px;color:var(--muted);font-weight:600}
+.gatecard .gaterow input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.gatecard .gaterow input::placeholder{color:#c2cad4;font-weight:600;letter-spacing:3px}
+.gatecard .gaterow .btn{height:44px;padding:0 20px;border-radius:11px;font-size:13.5px;font-weight:700;flex:none}
+.gatecard .gatemsg{min-height:19px;margin-top:9px;font-size:12px;font-weight:600;color:var(--pace)}
+.gatecard .gatemsg.ok{color:#3d6b52}
+/* 접속 화면 전용 구분선 — 표의 그룹 구분선(td.gsep)과 이름이 겹치지 않도록 gatesep 로 */
+.gatecard .gatesep{position:relative;margin:20px 0 14px;height:1px;background:var(--line)}
+.gatecard .gatesep>span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);
+  background:var(--surface);padding:0 11px;font-size:11px;color:var(--muted);font-weight:600}
 .gatecard .btn.wide{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
   height:42px;border-radius:11px;font-size:13px;font-weight:700;margin-top:8px}
 .gatecard .btn.ghost{background:var(--surface);color:var(--ink2)}
-.gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
-.gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
+.gatecard .gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
+.gatecard .gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
 /* 공유 코드 (캠페인 관리) */
 .sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
   color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
+.sharecode.view{color:var(--acc2);background:#eaf0f1}
+.codeline{display:flex;align-items:center;gap:7px;margin:2px 0}
+.codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
+.codeline .ck.staff{color:#2f4a63;background:#dde5ee}
+.codeline .ck.view{color:#42625f;background:#dfeae8}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -101,6 +107,8 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:14px;padding:0 44px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
+.logo{cursor:pointer}
+.logo:hover .mark{filter:brightness(1.06)}
 .logo .mark{width:52px;height:26px;border-radius:9px;flex:none;display:block;object-fit:cover;
   box-shadow:0 1px 3px rgba(31,44,61,.14)}
 .pill{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border:1px solid var(--line);
@@ -278,11 +286,7 @@ table.tbl.nogauge .gauge .track{display:none}
 .pside .ps-v span{font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
 .pside .ps-s{font-size:11px;color:var(--muted);font-weight:400;line-height:17px;height:17px;margin-top:3px;
   font-variant-numeric:tabular-nums}
-.pmarks{position:relative;height:19px;margin-bottom:3px}
-.pmarks .mk{position:absolute;bottom:0;font-size:13.5px;font-weight:800;white-space:nowrap;
   font-variant-numeric:tabular-nums;padding:0 5px}
-.pmarks .mk.real{color:var(--acc)}
-.pmarks .mk.pace{color:var(--pace)}
 .goalout{margin-top:8px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;
   gap:18px;flex-wrap:wrap}
 .goalout .lg{display:inline-flex;align-items:center;gap:6px}
@@ -366,7 +370,7 @@ table.tbl.nogauge .gauge .track{display:none}
 
 /* treemap */
 /* 노출 분포 · 효율 버블 — 한 행 안에 좌우로, 카드 높이는 항상 같게 */
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:216px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:72px}
 .duo>.duocol>.sec{margin-top:0}
 .duo>.duocol{min-width:0;display:flex;flex-direction:column}
 .duo>.duocol>.sec{align-items:flex-end}
@@ -508,9 +512,17 @@ table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
 table.tbl thead tr:nth-child(2) th{top:33px}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
+/* 예상 효율 표 — 모든 칸을 흰색으로 채워 배경이 비쳐 보이지 않게 */
+#tblKpi tbody tr:not(.total) td{background:var(--surface)}
+#tblKpi tbody tr:not(.total):hover td{background:var(--acc-soft2)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
+/* 목표(예상) 수치 열 — 실적 열과 구분되게 옅은 배경 (소계·총계 행에서도 유지) */
+table.tbl td.goal{background:#dde4ed}
+table.tbl tbody tr:hover td.goal{background:#d3dce7}
+table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#2f3946}
+table.tbl td.goal.blank{background:#e9ecf1}
 table.tbl td.blank{background:#f2f4f7}
 table.tbl td.blank .na{color:#b6bfca}
 table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
@@ -526,6 +538,13 @@ table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:#e0
 table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#edf1f6 !important}
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
+/* 소계 행의 목표 열 — 각 단계 배경보다 한 톤 진하게 */
+table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#dde3ec !important}
+table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#bfcbdb !important}
+table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#d3dce8 !important}
+table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#e0e7f0 !important}
+table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#e9eff6 !important}
+table.tbl tr.sub td.goal.blank{background:#e5e9f0 !important}
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}

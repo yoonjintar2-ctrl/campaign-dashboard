@@ -166,7 +166,7 @@ function renderCreatives(){
       d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${bg}"></div>
           <div class="media">${esc(c.media)}</div>
           <div class="rankno">${i+1}</div>
-          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'} ${c.ratio}</div>
+          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'}</div>
           ${c.type==='video'?'<div class="play">▶</div>':''}</div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div>

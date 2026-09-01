@@ -324,6 +324,8 @@ alter table public.campaigns
 create unique index if not exists campaigns_share_code_key on public.campaigns(share_code);
 
 -- 코드로 캠페인 문서를 읽는다 (SECURITY DEFINER — RLS 를 우회하지만 읽기 전용)
+-- (7장에서 돌려주는 열이 늘어나므로 먼저 지우고 다시 만든다)
+drop function if exists public.open_by_code(text);
 create or replace function public.open_by_code(p_code text)
 returns table(id uuid, name text, advertiser text, doc jsonb)
 language sql security definer set search_path = public as $$
@@ -350,3 +352,202 @@ $$;
 grant execute on function public.open_by_code(text)  to anon, authenticated;
 grant execute on function public.stats_by_code(text) to anon, authenticated;
 revoke execute on function public.gen_share_code() from anon;
+
+-- =====================================================================
+-- 7. 접속 권한 4단계 (v24)
+--    ① 슈퍼마스터 — 계정 하나. 마스터 권한 부여/박탈, 모든 캠페인 열람·삭제,
+--                   캠페인 운영진 임명/해제
+--    ② 마스터     — 슈퍼마스터가 승인한 계정. 캠페인 생성·수정·삭제.
+--                   단, 본인이 만든 캠페인만 보이고 마스터 권한은 줄 수 없다
+--    ③ 운영진     — 캠페인의 "운영진 코드"로 들어왔거나 마스터가 초대한 사람.
+--                   그 캠페인 안에서는 마스터와 동등 (모든 데이터 수정·추가)
+--    ④ 광고주     — 캠페인의 "뷰어 코드"로 들어온 사람. 대시보드 탭 열람 + 엑셀 다운로드만
+-- =====================================================================
+
+-- ---- ① 계정 등급 -----------------------------------------------------
+alter table public.profiles
+  add column if not exists app_role text not null default 'guest';
+do $$ begin
+  alter table public.profiles
+    add constraint profiles_app_role_chk check (app_role in ('super','master','guest'));
+exception when duplicate_object then null; end $$;
+
+-- 슈퍼마스터 지정: 아래 이메일을 본인 구글 계정으로 바꾼 뒤 한 번 실행하세요.
+--   update public.profiles set app_role='super' where email='yoonjintar2@gmail.com';
+
+create or replace function public.is_super()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists(select 1 from public.profiles p
+                where p.id = auth.uid() and p.app_role = 'super');
+$$;
+-- 계정 등급이 마스터 이상인가 (캠페인 단위 is_master(uuid) 와 구분해서 is_app_master)
+create or replace function public.is_app_master()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists(select 1 from public.profiles p
+                where p.id = auth.uid() and p.app_role in ('super','master'));
+$$;
+create or replace function public.my_app_role()
+returns text language sql stable security definer set search_path = public as $$
+  select coalesce((select p.app_role from public.profiles p where p.id = auth.uid()),'guest');
+$$;
+
+-- ---- ② 캠페인별 코드 2종 --------------------------------------------
+--   share_code = 뷰어(광고주) 코드   ·   staff_code = 운영진 코드
+alter table public.campaigns
+  add column if not exists staff_code text;
+update public.campaigns set staff_code = public.gen_share_code() where staff_code is null;
+alter table public.campaigns
+  alter column staff_code set default public.gen_share_code(),
+  alter column staff_code set not null;
+create unique index if not exists campaigns_staff_code_key on public.campaigns(staff_code);
+
+-- 코드로 캠페인을 연다 — 어느 코드로 들어왔는지(code_kind)도 함께 돌려준다
+drop function if exists public.open_by_code(text);
+create or replace function public.open_by_code(p_code text)
+returns table(id uuid, name text, advertiser text, doc jsonb, code_kind text)
+language sql security definer set search_path = public as $$
+  select c.id, c.name, c.advertiser, c.doc,
+         case when upper(c.staff_code) = upper(trim(p_code)) then 'staff' else 'viewer' end
+  from public.campaigns c
+  where upper(c.share_code) = upper(trim(p_code))
+     or upper(c.staff_code) = upper(trim(p_code))
+  limit 1;
+$$;
+
+-- 운영진 코드로 들어온 사람이 로그인하면 그 캠페인의 운영진으로 등록된다
+create or replace function public.join_by_staff_code(p_code text)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare cid uuid;
+begin
+  if auth.uid() is null then return null; end if;
+  select c.id into cid from public.campaigns c
+   where upper(c.staff_code) = upper(trim(p_code)) limit 1;
+  if cid is null then return null; end if;
+  insert into public.campaign_members(campaign_id, user_id, role)
+  values (cid, auth.uid(), 'editor')
+  on conflict (campaign_id, user_id) do nothing;
+  return cid;
+end $$;
+
+-- ---- ③ 마스터 권한 요청 ---------------------------------------------
+create table if not exists public.access_requests(
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  email      text,
+  name       text,
+  org        text,
+  message    text not null default '',
+  status     text not null default 'pending' check (status in ('pending','approved','rejected')),
+  decided_by uuid references auth.users(id),
+  decided_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table public.access_requests enable row level security;
+
+drop policy if exists areq_insert on public.access_requests;
+create policy areq_insert on public.access_requests for insert to authenticated
+  with check (user_id = auth.uid());
+drop policy if exists areq_select on public.access_requests;
+create policy areq_select on public.access_requests for select to authenticated
+  using (user_id = auth.uid() or public.is_super());
+drop policy if exists areq_update on public.access_requests;
+create policy areq_update on public.access_requests for update to authenticated
+  using (public.is_super()) with check (public.is_super());
+
+-- 요청 보내기 (같은 사람이 여러 번 보내면 마지막 것만 대기 상태로 남는다)
+create or replace function public.request_access(p_message text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception '로그인이 필요합니다'; end if;
+  delete from public.access_requests
+   where user_id = auth.uid() and status = 'pending';
+  insert into public.access_requests(user_id, email, name, org, message)
+  select auth.uid(), p.email, p.name, p.org, coalesce(p_message,'')
+    from public.profiles p where p.id = auth.uid();
+end $$;
+
+-- 슈퍼마스터가 승인/거절 (승인하면 그 계정이 마스터가 된다)
+create or replace function public.decide_access(p_request uuid, p_approve boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid;
+begin
+  if not public.is_super() then raise exception '권한이 없습니다'; end if;
+  select user_id into uid from public.access_requests where id = p_request;
+  if uid is null then return; end if;
+  update public.access_requests
+     set status = case when p_approve then 'approved' else 'rejected' end,
+         decided_by = auth.uid(), decided_at = now()
+   where id = p_request;
+  if p_approve then
+    update public.profiles set app_role = 'master' where id = uid and app_role <> 'super';
+  end if;
+end $$;
+
+-- 슈퍼마스터가 계정 등급을 직접 바꾼다 (마스터 부여 · 박탈)
+create or replace function public.set_app_role(p_user uuid, p_role text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_super() then raise exception '권한이 없습니다'; end if;
+  if p_role not in ('master','guest') then raise exception '허용되지 않는 등급입니다'; end if;
+  update public.profiles set app_role = p_role where id = p_user and app_role <> 'super';
+end $$;
+
+-- 슈퍼마스터 화면용 목록
+create or replace function public.list_accounts()
+returns table(id uuid, email text, name text, org text, app_role text,
+              campaigns bigint, created_at timestamptz)
+language sql security definer set search_path = public as $$
+  select p.id, p.email, p.name, p.org, p.app_role,
+         (select count(*) from public.campaigns c where c.created_by = p.id),
+         p.created_at
+  from public.profiles p
+  where public.is_super()
+  order by (p.app_role='super') desc, (p.app_role='master') desc, p.created_at desc;
+$$;
+
+grant execute on function public.is_super()               to authenticated;
+grant execute on function public.is_app_master()          to authenticated;
+grant execute on function public.my_app_role()            to authenticated;
+grant execute on function public.join_by_staff_code(text) to authenticated;
+grant execute on function public.request_access(text)     to authenticated;
+grant execute on function public.decide_access(uuid,boolean) to authenticated;
+grant execute on function public.set_app_role(uuid,text)  to authenticated;
+grant execute on function public.list_accounts()          to authenticated;
+
+-- ---- ④ 캠페인 접근 규칙 다시 세우기 ---------------------------------
+--   · 슈퍼마스터 : 전부
+--   · 마스터     : 본인이 만든 캠페인 + 본인이 멤버인 캠페인
+--   · 운영진     : 멤버인 캠페인 (수정 가능)
+--   · 광고주     : 코드로만 열람 (표에 직접 접근하지 않고 open_by_code 로)
+-- 앞 절(4장)에서 만든 규칙을 지우고 4단계 권한 기준으로 다시 만든다.
+-- (이름이 다르면 두 규칙이 OR 로 함께 걸려 제한이 풀리므로 반드시 같은 이름을 쓴다)
+drop policy if exists camp_select on public.campaigns;
+drop policy if exists camp_insert on public.campaigns;
+drop policy if exists camp_update on public.campaigns;
+drop policy if exists camp_delete on public.campaigns;
+drop policy if exists prof_select on public.profiles;
+
+drop policy if exists campaigns_select on public.campaigns;
+create policy campaigns_select on public.campaigns for select to authenticated
+  using (public.is_super() or created_by = auth.uid() or public.is_member(id));
+
+drop policy if exists campaigns_insert on public.campaigns;
+create policy campaigns_insert on public.campaigns for insert to authenticated
+  with check (public.is_app_master() and created_by = auth.uid());
+
+drop policy if exists campaigns_update on public.campaigns;
+create policy campaigns_update on public.campaigns for update to authenticated
+  using (public.is_super() or created_by = auth.uid() or public.can_edit(id))
+  with check (public.is_super() or created_by = auth.uid() or public.can_edit(id));
+
+drop policy if exists campaigns_delete on public.campaigns;
+create policy campaigns_delete on public.campaigns for delete to authenticated
+  using (public.is_super() or created_by = auth.uid());
+
+-- 프로필: 본인 것 + 슈퍼마스터는 전부 + 같은 캠페인 멤버끼리
+drop policy if exists profiles_select on public.profiles;
+create policy profiles_select on public.profiles for select to authenticated
+  using (id = auth.uid() or public.is_super()
+         or exists(select 1 from public.campaign_members m1
+                    join public.campaign_members m2 on m1.campaign_id = m2.campaign_id
+                   where m1.user_id = auth.uid() and m2.user_id = public.profiles.id));

@@ -1,7 +1,12 @@
 /* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
    config.js 와 supabase-js 가 둘 다 있을 때만 켜진다. 없으면 지금까지처럼 데모(더미) 모드. */
+/* 접속 권한 4단계 (v24)
+   appRole  = 계정 등급 : super(슈퍼마스터) / master(마스터) / guest(게스트)
+   role     = 이 캠페인 안에서의 권한 : master(마스터) / editor(운영진) / viewer(광고주)
+   shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) */
 const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:false,
-  shareView:false,sample:false};
+  shareView:false,sample:false,appRole:'guest',shareRole:null};
+const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
 /* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
 function cloudReady(cb){
@@ -103,23 +108,30 @@ function makeShareCode(){
 const normCode=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)
   .replace(/^(.{4})(.{1,4})$/,'$1-$2');
 /* 샘플(데모) 캠페인의 코드 — 클라우드가 없을 때 이 코드로도 들어올 수 있다 */
-const SAMPLE_CODE='DEMO-2026';
+const SAMPLE_CODE='DEMO-2026';        /* 샘플 둘러보기 (시행사 화면) */
+const SAMPLE_VIEW_CODE='VIEW-2026';   /* 샘플을 광고주 화면으로 보고 싶을 때 */
 const gateEl=()=>$('gate');
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
-/* 코드로 들어오면 항상 조회 전용 — 편집은 구글 로그인한 계정만 */
-function enterShareView(name){
-  CLOUD.shareView=true;
+/* 코드로 들어온 사람 —
+   뷰어 코드  → 광고주 (대시보드 열람 + 엑셀 다운로드만)
+   운영진 코드 → 운영진 (그 캠페인 안에서는 마스터와 동등, 저장은 구글 로그인 후) */
+function enterShareView(name,kind){
+  CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
   hideGate();
   if(typeof applyRole==='function')applyRole();
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
-  cloudState(`${name||CAMPAIGN.name} · 공유 코드로 열람 (조회 전용)`);
+  cloudState(kind==='staff'
+    ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
+    : `${name||CAMPAIGN.name} · 뷰어 코드로 열람 (조회 전용)`);
 }
+/* 샘플 둘러보기는 시행사 전용 — 데이터 입력 · 캠페인 설정까지 다 열어 둔다.
+   (공유 코드로 들어온 광고주와 달리 화면 전체를 둘러볼 수 있어야 하기 때문) */
 function enterSample(){
-  CLOUD.shareView=true;CLOUD.sample=true;
+  CLOUD.shareView=false;CLOUD.sample=true;
   hideGate();
   if(typeof applyRole==='function')applyRole();
-  cloudState('샘플 데이터 둘러보기 · 조회 전용');
+  cloudState('샘플 데이터 둘러보기 · 시행사 화면');
   const bar=$('demoBar');
   if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');
 }
@@ -128,14 +140,16 @@ async function tryCode(raw){
   const code=normCode(raw);
   if(code.replace('-','').length<8){gateMsg('8자리 코드를 모두 입력해 주세요.');return false;}
   if(code===SAMPLE_CODE){enterSample();return true;}
+  if(code===SAMPLE_VIEW_CODE){enterShareView('샘플 캠페인','viewer');return true;}
   if(!CLOUD.on){
     gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
   gateMsg('확인 중…',true);
   const {data,error}=await CLOUD.sb.rpc('open_by_code',{p_code:code});
   const c=Array.isArray(data)?data[0]:data;
   if(error||!c){gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
+  const kind=c.code_kind==='staff'?'staff':'viewer';
   CLOUD.campaign={id:c.id,name:c.name};
-  CLOUD.role='viewer';
+  CLOUD.role=kind==='staff'?'editor':'viewer';
   applyDoc(c.doc);
   rebuildPeriod();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
@@ -146,7 +160,9 @@ async function tryCode(raw){
   buildFacts();buildFilters();buildSelects();
   renderAll();renderIssues();renderIssueAlert();renderRaw();
   renderCreatives();renderGantt();
-  enterShareView(c.name);
+  enterShareView(c.name,kind);
+  /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
+  if(kind==='staff'){try{sessionStorage.setItem('staffCode',code);}catch(e){}}
   return true;
 }
 /* 게이트를 쓸 수 있는 상태로 (로그인 세션이 없을 때만 보인다) */
@@ -155,8 +171,10 @@ function gateReady(){
   const lg=$('gateLogo'),tb=document.querySelector('.topbar .logo .mark');
   if(lg&&tb)lg.src=tb.src;
   const hint=$('gateHint');
-  if(hint)hint.innerHTML=`코드가 없으신가요? 시행사 담당자에게 캠페인 코드를 요청해 주세요.`
-    +`<br>둘러보기용 샘플 코드는 <code>${SAMPLE_CODE}</code> 입니다.`;
+  if(hint)hint.innerHTML=`코드는 두 가지입니다 — <b>운영진 코드</b>는 데이터 수정까지, `
+    +`<b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.`
+    +`<br>둘러보기용 샘플 코드 <code>${SAMPLE_CODE}</code> (시행사 화면) · `
+    +`<code>${SAMPLE_VIEW_CODE}</code> (광고주 화면)`;
   const inp=$('gateCode');
   if(inp){
     inp.oninput=e=>{const p=e.target.selectionStart;e.target.value=normCode(e.target.value);
@@ -177,6 +195,19 @@ function gateReady(){
   const q=qs.get('code');
   if(q){if(inp)inp.value=normCode(q);tryCode(q);}
 }
+
+/* 로고를 누르면 첫 화면(접속 화면)으로 — 저장하지 않은 내용이 있으면 한 번 묻는다 */
+function goHome(){
+  const home=()=>{location.href=location.pathname;};
+  if(CLOUD.shareView&&!CLOUD.user){home();return;}     /* 조회 전용은 잃을 게 없다 */
+  confirmModal('첫 화면으로 돌아갈까요?',
+    '저장하지 않은 내용은 사라집니다. 먼저 ☁ 저장을 눌러 주세요.',home,'첫 화면으로');
+}
+(function wireLogo(){
+  const go=()=>{const l=document.querySelector('.topbar .logo');
+    if(l){l.title='첫 화면으로';l.onclick=goHome;}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();
 
 /* ---------- 세션 ---------- */
 async function cloudInit(){
@@ -205,14 +236,14 @@ async function signOutCloud(){
   if(!CLOUD.on)return;
   await CLOUD.sb.auth.signOut();
   CLOUD.user=null;CLOUD.campaign=null;CLOUD.role=null;CLOUD.list=[];
-  CLOUD.shareView=false;CLOUD.sample=false;
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='guest';
   paintAuth();paintCampSel();cloudState('로그아웃됨');
   const g=gateEl();if(g)g.classList.remove('hidden');
   gateReady();
 }
 async function afterSignIn(){
   const u=CLOUD.user;
-  CLOUD.shareView=false;CLOUD.sample=false;hideGate();
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;hideGate();
   /* 프로필 upsert — 트리거가 없어도 이름/이메일이 채워지도록 */
   await CLOUD.sb.from('profiles').upsert({
     id:u.id,email:u.email,
@@ -220,9 +251,101 @@ async function afterSignIn(){
     avatar_url:u.user_metadata?.avatar_url||null},{onConflict:'id'});
   /* 가입 후에 받은 초대도 로그인 시점에 자동으로 수락된다 */
   try{await CLOUD.sb.rpc('accept_my_invites');}catch(err){}
+  /* 운영진 코드로 들어와 있던 사람이 로그인하면 그 캠페인의 정식 운영진이 된다 */
+  try{const sc=sessionStorage.getItem('staffCode');
+    if(sc){await CLOUD.sb.rpc('join_by_staff_code',{p_code:sc});sessionStorage.removeItem('staffCode');}
+  }catch(err){}
+  /* 계정 등급 (슈퍼마스터 / 마스터 / 게스트) */
+  try{const {data}=await CLOUD.sb.from('profiles').select('app_role').eq('id',u.id).maybeSingle();
+    CLOUD.appRole=data?.app_role||'guest';}catch(err){CLOUD.appRole='guest';}
   paintAuth();
   applyRoleLock();
   await loadCampaignList();
+  /* 아직 등급이 없고 참여 중인 캠페인도 없으면 권한을 요청하도록 안내 */
+  if(CLOUD.appRole==='guest'&&!CLOUD.list.length)openAccessRequest();
+}
+/* ---------- 마스터 권한 요청 (게스트 → 슈퍼마스터에게) ---------- */
+async function openAccessRequest(){
+  if(!CLOUD.on||!CLOUD.user)return;
+  let prev=null;
+  try{const {data}=await CLOUD.sb.from('access_requests')
+    .select('status,message,created_at').eq('user_id',CLOUD.user.id)
+    .order('created_at',{ascending:false}).limit(1);
+    prev=data&&data[0];}catch(err){}
+  if(prev&&prev.status==='pending'){
+    confirmModal('권한 요청이 접수되어 있습니다.',
+      `보내신 메시지 — “${prev.message||'(내용 없음)'}”\n승인되면 캠페인을 만들 수 있습니다.`,
+      ()=>{},'확인');return;}
+  openModal('캠페인 권한 요청',
+    `<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
+       이 계정에는 아직 <b>캠페인을 만들 권한</b>이 없습니다.
+       아래에 <b>소속과 용도</b>를 적어 보내 주시면 확인 후 <b>마스터 권한</b>을 드립니다.<br>
+       특정 캠페인만 보시는 분은 요청 대신 시행사에서 <b>운영진 코드</b> 또는 <b>뷰어 코드</b>를 받으시면 됩니다.</div></div>
+     <div class="fld"><label>소속 · 이름</label>
+       <input id="arOrg" placeholder="예: 미디어웍스 / 윤석진" style="width:100%"></div>
+     <div class="fld" style="margin-top:10px"><label>요청 메시지</label>
+       <textarea id="arMsg" rows="4" placeholder="예: 하반기 브랜드 캠페인 운영을 맡고 있어 캠페인 생성 권한이 필요합니다."
+         style="width:100%;resize:vertical"></textarea></div>
+     <div class="hint" id="arMsgOut" style="margin-top:8px">보낸 요청은 슈퍼마스터 화면에 그대로 표시됩니다.</div>`,
+    '<button class="btn" data-close>나중에</button><button class="btn primary" id="arGo">요청 보내기</button>',{w:620});
+  $('arGo').onclick=async()=>{
+    const org=($('arOrg').value||'').trim(),msg=($('arMsg').value||'').trim();
+    if(!msg){$('arMsgOut').textContent='요청 메시지를 적어 주세요.';return;}
+    if(org){try{await CLOUD.sb.from('profiles').update({org}).eq('id',CLOUD.user.id);}catch(err){}}
+    const {error}=await CLOUD.sb.rpc('request_access',{p_message:(org?org+' — ':'')+msg});
+    if(error){$('arMsgOut').textContent='보내지 못했습니다: '+error.message;return;}
+    closeModal();
+    confirmModal('요청을 보냈습니다.','승인되면 캠페인을 만들 수 있습니다. 잠시만 기다려 주세요.',()=>{},'확인');};
+}
+/* ---------- 슈퍼마스터 · 계정 관리 ---------- */
+async function openAccounts(){
+  if(!CLOUD.on||!CLOUD.user||CLOUD.appRole!=='super'){
+    confirmModal('슈퍼마스터만 열 수 있습니다.','계정 등급 관리는 슈퍼마스터 계정에서만 가능합니다.',()=>{},'확인');return;}
+  const [{data:reqs},{data:accs}]=await Promise.all([
+    CLOUD.sb.from('access_requests').select('*').order('created_at',{ascending:false}),
+    CLOUD.sb.rpc('list_accounts')]);
+  const pend=(reqs||[]).filter(r=>r.status==='pending');
+  let h=`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
+      <b>슈퍼마스터</b>만 마스터 권한을 주거나 뺏을 수 있습니다.
+      마스터는 <b>본인이 만든 캠페인만</b> 보고 관리하며, 다른 사람에게 마스터 권한을 줄 수 없습니다.</div></div>`;
+  h+=`<div style="font-weight:700;margin:4px 0 8px">권한 요청 <span class="cnt2">${pend.length}건 대기</span></div>`;
+  if(!pend.length)h+='<div class="card" style="padding:16px;text-align:center;color:var(--muted)">대기 중인 요청이 없습니다.</div>';
+  else{
+    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:150px">이름</th><th style="width:200px">이메일</th><th>요청 메시지</th>
+      <th style="width:110px">보낸 날</th><th style="width:150px"></th></tr></thead><tbody>`;
+    pend.forEach(r=>{h+=`<tr><td>${esc(r.name||'–')}</td><td>${esc(r.email||'–')}</td>
+      <td style="text-align:left">${esc(r.message||'–')}</td>
+      <td class="mono">${(r.created_at||'').slice(0,10)}</td>
+      <td><button class="btn sm primary" data-ok="${r.id}">마스터 승인</button>
+        <button class="btn sm danger" data-no="${r.id}">거절</button></td></tr>`;});
+    h+='</tbody></table>';}
+  h+=`<div style="font-weight:700;margin:18px 0 8px">계정 목록</div>
+    <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:150px">이름</th><th style="width:210px">이메일</th><th style="width:150px">소속</th>
+      <th style="width:110px">등급</th><th style="width:90px">캠페인</th>
+      <th style="width:130px"></th></tr></thead><tbody>`;
+  (accs||[]).forEach(a=>{
+    const me=a.id===CLOUD.user.id;
+    h+=`<tr><td>${esc(a.name||'–')}</td><td>${esc(a.email||'–')}</td><td>${esc(a.org||'–')}</td>
+      <td><span class="tagchip ${a.app_role==='guest'?'':'on'}">${APP_ROLE_LABEL[a.app_role]||a.app_role}</span></td>
+      <td class="mono">${a.campaigns||0}</td>
+      <td>${a.app_role==='super'||me?'<span class="hint">–</span>'
+        :a.app_role==='master'
+          ?`<button class="btn sm danger" data-drop="${a.id}">마스터 해제</button>`
+          :`<button class="btn sm" data-up="${a.id}">마스터 부여</button>`}</td></tr>`;});
+  h+='</tbody></table>';
+  openModal('계정 · 등급 관리 (슈퍼마스터)',h,'<button class="btn" data-close>닫기</button>',{w:1060});
+  const host=$('modalHost'),again=()=>{closeModal();openAccounts();};
+  host.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.ok,p_approve:true});again();});
+  host.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.no,p_approve:false});again();});
+  host.querySelectorAll('[data-up]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.up,p_role:'master'});again();});
+  host.querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>
+    confirmModal('마스터 권한을 해제할까요?','이 계정은 더 이상 캠페인을 만들 수 없습니다. 이미 만든 캠페인은 남습니다.',
+      async()=>{await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.drop,p_role:'guest'});again();},'해제'));
 }
 function paintAuth(){
   const u=CLOUD.user;
@@ -243,7 +366,7 @@ function paintAuth(){
 async function loadCampaignList(listOnly){
   /* RLS 가 내가 멤버인 캠페인만 돌려준다 (할당받은 캠페인만 보이는 구조) */
   const {data,error}=await CLOUD.sb.from('campaigns')
-    .select('id,name,advertiser,start_date,end_date,updated_at,share_code')
+    .select('id,name,advertiser,start_date,end_date,updated_at,share_code,staff_code,created_by')
     .order('updated_at',{ascending:false});
   if(error){cloudState('목록을 불러오지 못했습니다: '+error.message);return;}
   CLOUD.list=data||[];
@@ -291,7 +414,7 @@ async function openCampaign(id){
   CLOUD.busy=false;
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
-const ROLE_LABEL={master:'마스터',editor:'편집',viewer:'조회'};
+const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
 /* 조회 권한이면 편집 화면을 잠근다 (광고주 모드와 동일한 처리) */
 function applyRoleLock(){
   if(typeof applyRole==='function')applyRole();
@@ -380,15 +503,16 @@ async function openCampManage(){
   const rows=CLOUD.list;
   let h=`<div class="hint" style="margin-bottom:10px">내가 <b>만들었거나 초대받은</b> 캠페인만 보입니다.
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
-      <b>공유 코드</b>는 캠페인마다 자동으로 붙습니다. 광고주에게 코드(또는 ‘코드 복사’로 얻는 링크)를 알려 주면
-      로그인 없이 <b>조회 전용</b>으로 대시보드를 볼 수 있습니다.</div>`;
+      캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
+      <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
+      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. ＋ 새 캠페인으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:220px">캠페인명</th><th style="min-width:150px">광고주</th>
       <th style="width:170px">기간</th><th style="width:120px">최근 저장</th>
-      <th style="width:170px">공유 코드</th>
-      <th style="width:290px"></th></tr></thead><tbody>`;
+      <th style="width:190px">공유 코드</th>
+      <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
       const cur=CLOUD.campaign&&CLOUD.campaign.id===c.id;
       h+=`<tr data-cid="${c.id}"${cur?' style="background:var(--acc-soft2)"':''}>
@@ -396,9 +520,14 @@ async function openCampManage(){
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
-        <td><span class="sharecode">${esc(c.share_code||'–')}</span></td>
-        <td><button class="btn sm" data-cpy="${c.id}" title="공유 링크를 복사합니다">코드 복사</button>
-          <button class="btn sm" data-new="${c.id}" title="새 코드를 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
+        <td style="text-align:left">
+          <div class="codeline"><span class="ck staff">운영진</span>
+            <span class="sharecode">${esc(c.staff_code||'–')}</span></div>
+          <div class="codeline"><span class="ck view">뷰어</span>
+            <span class="sharecode view">${esc(c.share_code||'–')}</span></div></td>
+        <td><button class="btn sm" data-cpy="${c.id}" data-kind="staff" title="운영진용 링크를 복사합니다">운영진 링크</button>
+          <button class="btn sm" data-cpy2="${c.id}" data-kind="viewer" title="광고주용 링크를 복사합니다">뷰어 링크</button>
+          <button class="btn sm" data-new="${c.id}" title="두 코드를 새로 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
           <button class="btn sm" data-open="${c.id}">열기</button>
           <button class="btn sm" data-ren="${c.id}">이름 변경</button>
           <button class="btn sm" data-dup="${c.id}">복제</button>
@@ -408,18 +537,23 @@ async function openCampManage(){
   const host=$('modalHost');
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
-  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=async()=>{
-    const c=CLOUD.list.find(x=>x.id===b.dataset.cpy);if(!c||!c.share_code)return;
-    const url=location.href.split('#')[0].split('?')[0]+'?code='+c.share_code;
+  const copyCode=async(b,id,kind)=>{
+    const c=CLOUD.list.find(x=>x.id===id);if(!c)return;
+    const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
+    const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
+    const label=b.textContent;
     try{await navigator.clipboard.writeText(url);b.textContent='복사됨';
-      setTimeout(()=>b.textContent='코드 복사',1400);}
-    catch(err){prompt('아래 주소를 복사해 광고주에게 전달하세요.',url);}});
+      setTimeout(()=>b.textContent=label,1400);}
+    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}};
+  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy,'staff'));
+  host.querySelectorAll('[data-cpy2]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy2,'viewer'));
   host.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.new);if(!c)return;
     confirmModal('공유 코드를 다시 발급할까요?',
-      '지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
+      '운영진 코드와 뷰어 코드가 모두 새로 바뀌고, 지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
       const {data,error}=await CLOUD.sb.from('campaigns')
-        .update({share_code:makeShareCode()}).eq('id',c.id).select('id,share_code');
+        .update({share_code:makeShareCode(),staff_code:makeShareCode()})
+        .eq('id',c.id).select('id,share_code,staff_code');
       if(error||!data||!data.length){cloudState('코드를 바꾸지 못했습니다 (권한 확인)');return;}
       await loadCampaignList(true);closeModal();openCampManage();},'재발급');});
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
@@ -499,6 +633,7 @@ async function removeMember(userId){
   if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
+  if(b('acctBtn'))b('acctBtn').onclick=openAccounts;
   if(b('campSel'))b('campSel').onchange=e=>{if(e.target.value)openCampaign(e.target.value);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');

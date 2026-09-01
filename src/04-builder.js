@@ -400,10 +400,6 @@ function renderPace(){
       </div>
       <div style="flex:1;min-width:440px">
         <div style="font-size:13px;margin-bottom:7px;color:var(--ink2);font-weight:700">종합 KPI 달성률</div>
-        <div class="pmarks">
-          <b class="mk real" style="left:${aP}%;transform:translateX(${aP<=gP?-100:0}%)">${pct(ach,1)}</b>
-          <b class="mk pace" style="left:${gP}%;transform:translateX(${aP<=gP?0:-100}%)">${pct(pr,1)}</b>
-        </div>
         <div class="pbar">
           <i class="goal" style="width:${gP}%"></i>
           <i class="real" style="width:${aP}%"></i>
@@ -630,8 +626,11 @@ function verdictOf(ach,pace){
   return {cls:'ok',label:'양호',gap};
 }
 const STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+/* 전체 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
+const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
-  cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in')}]};
+  cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in'&&!STAT_DEF_OUT.includes(k))
+    .concat(STAT_DEF_IN.filter(k=>METRICS[k]))}]};
 /* 지표별 일자 시계열 — 진행 스코프 안에서, 집행이 끝난 날까지만 값을 만든다.
    (남은 집행일은 값 없이 비워 둔다 = 오른쪽이 비는 이유) */
 function dailySeries(k){

@@ -43,13 +43,13 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
 /* 배경 — 푸른 계열 그라데이션이 흐른다.
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
-body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.80;
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.70;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(150,171,192,.84), transparent 66%),
-    radial-gradient(34% 40% at 78% 10%, rgba(224,231,238,.30), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(137,158,180,.76), transparent 68%),
-    radial-gradient(36% 40% at 26% 90%, rgba(228,234,241,.28), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(168,186,204,.60), transparent 70%);
+    radial-gradient(40% 44% at 12% 18%, rgba(170,190,212,.82), transparent 66%),
+    radial-gradient(34% 40% at 78% 10%, rgba(243,248,252,.32), transparent 70%),
+    radial-gradient(44% 48% at 88% 80%, rgba(158,180,204,.76), transparent 68%),
+    radial-gradient(36% 40% at 26% 90%, rgba(245,249,253,.30), transparent 72%),
+    radial-gradient(32% 36% at 54% 50%, rgba(196,212,228,.58), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -72,26 +72,32 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .gatecard h2{margin:0 0 7px;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.4px}
 .gatecard .gsub{margin:0 0 20px;font-size:12.5px;line-height:1.65;color:var(--ink2)}
 .gatecard .gsub b{color:var(--ink);font-weight:700}
-.gaterow{display:flex;gap:8px}
-.gaterow input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:11px;
+.gatecard .gaterow{display:flex;gap:8px}
+.gatecard .gaterow input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:11px;
   background:var(--plane2);padding:0 14px;font-size:17px;font-weight:700;letter-spacing:3px;
   text-align:center;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--ink)}
-.gaterow input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
-.gaterow input::placeholder{color:#c2cad4;font-weight:600;letter-spacing:3px}
-.gaterow .btn{height:44px;padding:0 20px;border-radius:11px;font-size:13.5px;font-weight:700;flex:none}
-.gatemsg{min-height:19px;margin-top:9px;font-size:12px;font-weight:600;color:var(--pace)}
-.gatemsg.ok{color:#3d6b52}
-.gsep{position:relative;margin:20px 0 14px;height:1px;background:var(--line)}
-.gsep span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--surface);
-  padding:0 11px;font-size:11px;color:var(--muted);font-weight:600}
+.gatecard .gaterow input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.gatecard .gaterow input::placeholder{color:#c2cad4;font-weight:600;letter-spacing:3px}
+.gatecard .gaterow .btn{height:44px;padding:0 20px;border-radius:11px;font-size:13.5px;font-weight:700;flex:none}
+.gatecard .gatemsg{min-height:19px;margin-top:9px;font-size:12px;font-weight:600;color:var(--pace)}
+.gatecard .gatemsg.ok{color:#3d6b52}
+/* 접속 화면 전용 구분선 — 표의 그룹 구분선(td.gsep)과 이름이 겹치지 않도록 gatesep 로 */
+.gatecard .gatesep{position:relative;margin:20px 0 14px;height:1px;background:var(--line)}
+.gatecard .gatesep>span{position:absolute;left:50%;top:-9px;transform:translateX(-50%);
+  background:var(--surface);padding:0 11px;font-size:11px;color:var(--muted);font-weight:600}
 .gatecard .btn.wide{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
   height:42px;border-radius:11px;font-size:13px;font-weight:700;margin-top:8px}
 .gatecard .btn.ghost{background:var(--surface);color:var(--ink2)}
-.gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
-.gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
+.gatecard .gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
+.gatecard .gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
 /* 공유 코드 (캠페인 관리) */
 .sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
   color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
+.sharecode.view{color:var(--acc2);background:#eaf0f1}
+.codeline{display:flex;align-items:center;gap:7px;margin:2px 0}
+.codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
+.codeline .ck.staff{color:#2f4a63;background:#dde5ee}
+.codeline .ck.view{color:#42625f;background:#dfeae8}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -101,6 +107,8 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:14px;padding:0 44px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
+.logo{cursor:pointer}
+.logo:hover .mark{filter:brightness(1.06)}
 .logo .mark{width:52px;height:26px;border-radius:9px;flex:none;display:block;object-fit:cover;
   box-shadow:0 1px 3px rgba(31,44,61,.14)}
 .pill{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border:1px solid var(--line);
@@ -278,11 +286,7 @@ table.tbl.nogauge .gauge .track{display:none}
 .pside .ps-v span{font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
 .pside .ps-s{font-size:11px;color:var(--muted);font-weight:400;line-height:17px;height:17px;margin-top:3px;
   font-variant-numeric:tabular-nums}
-.pmarks{position:relative;height:19px;margin-bottom:3px}
-.pmarks .mk{position:absolute;bottom:0;font-size:13.5px;font-weight:800;white-space:nowrap;
   font-variant-numeric:tabular-nums;padding:0 5px}
-.pmarks .mk.real{color:var(--acc)}
-.pmarks .mk.pace{color:var(--pace)}
 .goalout{margin-top:8px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;
   gap:18px;flex-wrap:wrap}
 .goalout .lg{display:inline-flex;align-items:center;gap:6px}
@@ -366,7 +370,7 @@ table.tbl.nogauge .gauge .track{display:none}
 
 /* treemap */
 /* 노출 분포 · 효율 버블 — 한 행 안에 좌우로, 카드 높이는 항상 같게 */
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:216px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:72px}
 .duo>.duocol>.sec{margin-top:0}
 .duo>.duocol{min-width:0;display:flex;flex-direction:column}
 .duo>.duocol>.sec{align-items:flex-end}
@@ -508,9 +512,17 @@ table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
 table.tbl thead tr:nth-child(2) th{top:33px}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
+/* 예상 효율 표 — 모든 칸을 흰색으로 채워 배경이 비쳐 보이지 않게 */
+#tblKpi tbody tr:not(.total) td{background:var(--surface)}
+#tblKpi tbody tr:not(.total):hover td{background:var(--acc-soft2)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
+/* 목표(예상) 수치 열 — 실적 열과 구분되게 옅은 배경 (소계·총계 행에서도 유지) */
+table.tbl td.goal{background:#dde4ed}
+table.tbl tbody tr:hover td.goal{background:#d3dce7}
+table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#2f3946}
+table.tbl td.goal.blank{background:#e9ecf1}
 table.tbl td.blank{background:#f2f4f7}
 table.tbl td.blank .na{color:#b6bfca}
 table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
@@ -526,6 +538,13 @@ table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:#e0
 table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#edf1f6 !important}
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
+/* 소계 행의 목표 열 — 각 단계 배경보다 한 톤 진하게 */
+table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#dde3ec !important}
+table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#bfcbdb !important}
+table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#d3dce8 !important}
+table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#e0e7f0 !important}
+table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#e9eff6 !important}
+table.tbl tr.sub td.goal.blank{background:#e5e9f0 !important}
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}
@@ -817,7 +836,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <button class="btn primary" id="gateGo">열기</button>
     </div>
     <div class="gatemsg" id="gateMsg"></div>
-    <div class="gsep"><span>또는</span></div>
+    <div class="gatesep"><span>또는</span></div>
     <button class="btn wide" id="gateSample">샘플 데이터 둘러보기</button>
     <button class="btn wide ghost" id="gateLogin">
       <svg width="14" height="14" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>
@@ -830,6 +849,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <select class="pill agency-only" id="campSel" title="캠페인 선택"></select>
   <button class="btn sm agency-only" id="campMng" title="캠페인 관리 (이름 변경 · 복제 · 삭제)">⚙ 캠페인 관리</button>
   <button class="btn sm agency-only" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>
+  <button class="btn sm hidden" id="acctBtn" title="계정 등급 관리 (슈퍼마스터 전용)">🛡 계정 관리</button>
   <div class="spacer"></div>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
   <span class="hint" id="cloudState">데모 모드</span>
@@ -894,7 +914,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
 
     <div class="sec gap" data-sect="stat">전체 지표
-      <div class="tools"><button class="btn sm" id="statCfgBtn">⚙ 지표 설정</button></div>
+      <div class="tools"><button class="btn sm agency-only" id="statCfgBtn">⚙ 지표 설정</button></div>
     </div>
     <div id="statCfgBox" class="hidden" data-sect="stat"></div>
     <div class="grid strip" id="statStrip" data-sect="stat"></div>
@@ -926,7 +946,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
-        <button class="btn sm" id="ganttCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm agency-only" id="ganttCfgBtn">⚙ 열 구성</button>
       </div>
     </div>
     <div id="ganttCfgBox" class="hidden" data-sect="gantt"></div>
@@ -991,7 +1011,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <div class="tools">
         <span class="hint">세로 세그먼트</span><select class="ctl" id="rawSeg"></select>
         <span class="hint">가로 세그먼트</span><select class="ctl" id="rawHSeg"></select>
-        <button class="btn sm" id="rawCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm agency-only" id="rawCfgBtn">⚙ 열 구성</button>
       </div>
     </div>
     <div id="rawCfgBox" class="hidden" data-sect="raw"></div>
@@ -1907,10 +1927,6 @@ function renderPace(){
       </div>
       <div style="flex:1;min-width:440px">
         <div style="font-size:13px;margin-bottom:7px;color:var(--ink2);font-weight:700">종합 KPI 달성률</div>
-        <div class="pmarks">
-          <b class="mk real" style="left:${aP}%;transform:translateX(${aP<=gP?-100:0}%)">${pct(ach,1)}</b>
-          <b class="mk pace" style="left:${gP}%;transform:translateX(${aP<=gP?0:-100}%)">${pct(pr,1)}</b>
-        </div>
         <div class="pbar">
           <i class="goal" style="width:${gP}%"></i>
           <i class="real" style="width:${aP}%"></i>
@@ -2137,8 +2153,11 @@ function verdictOf(ach,pace){
   return {cls:'ok',label:'양호',gap};
 }
 const STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+/* 전체 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
+const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
-  cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in')}]};
+  cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in'&&!STAT_DEF_OUT.includes(k))
+    .concat(STAT_DEF_IN.filter(k=>METRICS[k]))}]};
 /* 지표별 일자 시계열 — 진행 스코프 안에서, 집행이 끝난 날까지만 값을 만든다.
    (남은 집행일은 값 없이 비워 둔다 = 오른쪽이 비는 이유) */
 function dailySeries(k){
@@ -2575,7 +2594,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     const src=(merge&&isExp)?merge.agg:a, ex=(merge&&isExp)?merge.exp:e;
     const [txt,g]=cellDef[k](src,ex,x);
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
-    return `<td class="mono${seps.has(i)?' gsep':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
   if(finer&&expIdx.length){
@@ -2622,7 +2641,8 @@ function renderSummaries(){
     const sec=el('div','sec gap3',host);
     sec.innerHTML=`<span data-nm="${i}" style="cursor:${isClient()?'default':'pointer'}">${esc(s.name)}</span>`;
     const tools=el('div','tools',sec);
-    tools.innerHTML=`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`
+    tools.innerHTML=(isClient()?''
+      :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
@@ -2815,7 +2835,7 @@ function renderCreatives(){
       d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${bg}"></div>
           <div class="media">${esc(c.media)}</div>
           <div class="rankno">${i+1}</div>
-          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'} ${c.ratio}</div>
+          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'}</div>
           ${c.type==='video'?'<div class="play">▶</div>':''}</div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div>
@@ -4362,7 +4382,7 @@ function renderMix(){
   const row=(rs,sp,tot)=>cols.map((k,i)=>{
     const rsAttr=(k==='m_note'||!sp||sp===1)?'':` rowspan="${sp}"`;
     const v=cell(rs,k,tot);
-    return `<td class="mono${seps.has(i)?' gsep':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
   out.forEach((r,i)=>{
     if(r.kind==='data'){
       const vals=r.vals,rs=entries[r.ri][1];
@@ -4412,11 +4432,13 @@ function openPerm(){
 async function openPermCloud(){
   const d=await cloudMembers();if(!d)return;
   const master=CLOUD.role==='master';
-  const opt=(cur)=>['master','editor','viewer'].map(r=>
+  /* 캠페인 안에서 줄 수 있는 권한 — 운영진(수정 가능) · 광고주(조회 전용) */
+  const opt=(cur)=>['editor','viewer'].map(r=>
     `<option value="${r}"${r===cur?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
   let h=`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
-      <b>캠페인 단위 공유</b> — 이 캠페인에 초대된 사람만 데이터를 볼 수 있습니다.
-      <b>마스터</b>는 설정·입력·초대 전부, <b>편집</b>은 설정·입력, <b>조회</b>는 대시보드만 볼 수 있습니다.
+      <b>캠페인 단위 공유</b> — 이 캠페인에 초대되었거나 코드를 받은 사람만 볼 수 있습니다.<br>
+      <b>운영진</b>은 이 캠페인 안에서 마스터와 동등하게 모든 데이터를 수정·추가할 수 있고,
+      <b>광고주</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
       ${master?'':'<b>지금은 초대·권한 변경 권한이 없습니다.</b>'}</div></div>
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th>이름</th><th>소속</th><th>이메일</th><th style="width:120px">권한</th>
@@ -4591,22 +4613,45 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
    · 클라우드가 설정되지 않은 데모(로컬 파일)  → 시행사 (시안을 그대로 둘러볼 수 있게)
    · 클라우드가 있는데 로그인 안 함 · 조회 권한 → 광고주 (대시보드만)
    · 로그인 + 마스터/편집 권한                  → 시행사 */
+/* 화면 모드는 둘뿐 — agency(시행사: 전체 화면) / client(광고주: 대시보드 + 엑셀만).
+   4단계 권한을 이 둘에 매핑한다. */
 function currentRole(){
   /* CLOUD 는 뒤쪽 파일에서 선언되므로 아직 없을 수 있다 */
   let C=null;try{C=CLOUD;}catch(e){return 'agency';}
   if(!C)return 'agency';
-  /* 공유 코드 · 샘플 둘러보기로 들어왔으면 언제나 조회 전용(광고주 모드) */
-  if(C.shareView&&!C.user)return 'client';
+  /* 샘플 둘러보기는 시행사 전용 화면 */
+  if(C.sample&&!C.user)return 'agency';
+  /* 코드로 들어온 경우 — 운영진 코드는 시행사 화면, 뷰어 코드는 광고주 화면 */
+  if(C.shareView&&!C.user)return C.shareRole==='staff'?'agency':'client';
   if(!C.on)return 'agency';
   if(!C.user)return 'client';
   return (C.role==='master'||C.role==='editor'||!C.campaign)?'agency':'client';
 }
+/* 지금 사람의 권한 이름 — 슈퍼마스터 / 마스터 / 운영진 / 광고주 */
+function roleName(){
+  let C=null;try{C=CLOUD;}catch(e){return '시행사';}
+  if(!C)return '시행사';
+  if(C.user){
+    if(C.appRole==='super')return '슈퍼마스터';
+    if(C.campaign&&C.role==='editor')return '운영진';
+    if(C.campaign&&C.role==='viewer')return '광고주';
+    if(C.appRole==='master')return '마스터';
+    return '게스트';}
+  if(C.sample)return '샘플 (시행사 화면)';
+  if(C.shareView)return C.shareRole==='staff'?'운영진':'광고주';
+  return currentRole()==='client'?'광고주':'시행사';
+}
+let __lastRole=null;
 function applyRole(){
   const role=currentRole(),c=role==='client';
   document.body.dataset.role=role;
   const chip=$('roleChip');
-  if(chip){chip.textContent=c?'광고주':'시행사';chip.classList.toggle('agency',!c);
-    chip.title=c?'로그인하면 권한에 따라 시행사 화면이 열립니다':'구글 로그인 · 운영 권한 기준';}
+  if(chip){chip.textContent=roleName();chip.classList.toggle('agency',!c);
+    chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
+      :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
+  /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */
+  let sup=false;try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';}catch(e){}
+  const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!sup);
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
   if(st)st.classList.toggle('hidden',c);
@@ -4614,6 +4659,13 @@ function applyRole(){
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
   if(c&&document.querySelector('#tabs [data-tab="dash"]')&&!$('tab-dash').classList.contains('hidden')===false)switchTab('dash');
   if(c)switchTab('dash');
+  /* 권한이 바뀌면 화면 구성 버튼이 붙어 있는 영역을 다시 그린다
+     (서머리·소재 카드는 그릴 때 isClient() 로 버튼 유무를 정하기 때문) */
+  if(__lastRole!==null&&__lastRole!==role){
+    try{renderSummaries();}catch(e){}
+    try{renderCreatives();}catch(e){}
+    try{if(typeof applyHidden==='function')applyHidden();}catch(e){}}
+  __lastRole=role;
 }
 setTimeout(applyRole,0);
 $('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});
@@ -4708,8 +4760,13 @@ setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 })();
 /* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
    config.js 와 supabase-js 가 둘 다 있을 때만 켜진다. 없으면 지금까지처럼 데모(더미) 모드. */
+/* 접속 권한 4단계 (v24)
+   appRole  = 계정 등급 : super(슈퍼마스터) / master(마스터) / guest(게스트)
+   role     = 이 캠페인 안에서의 권한 : master(마스터) / editor(운영진) / viewer(광고주)
+   shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) */
 const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:false,
-  shareView:false,sample:false};
+  shareView:false,sample:false,appRole:'guest',shareRole:null};
+const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
 /* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
 function cloudReady(cb){
@@ -4811,23 +4868,30 @@ function makeShareCode(){
 const normCode=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)
   .replace(/^(.{4})(.{1,4})$/,'$1-$2');
 /* 샘플(데모) 캠페인의 코드 — 클라우드가 없을 때 이 코드로도 들어올 수 있다 */
-const SAMPLE_CODE='DEMO-2026';
+const SAMPLE_CODE='DEMO-2026';        /* 샘플 둘러보기 (시행사 화면) */
+const SAMPLE_VIEW_CODE='VIEW-2026';   /* 샘플을 광고주 화면으로 보고 싶을 때 */
 const gateEl=()=>$('gate');
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
-/* 코드로 들어오면 항상 조회 전용 — 편집은 구글 로그인한 계정만 */
-function enterShareView(name){
-  CLOUD.shareView=true;
+/* 코드로 들어온 사람 —
+   뷰어 코드  → 광고주 (대시보드 열람 + 엑셀 다운로드만)
+   운영진 코드 → 운영진 (그 캠페인 안에서는 마스터와 동등, 저장은 구글 로그인 후) */
+function enterShareView(name,kind){
+  CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
   hideGate();
   if(typeof applyRole==='function')applyRole();
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
-  cloudState(`${name||CAMPAIGN.name} · 공유 코드로 열람 (조회 전용)`);
+  cloudState(kind==='staff'
+    ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
+    : `${name||CAMPAIGN.name} · 뷰어 코드로 열람 (조회 전용)`);
 }
+/* 샘플 둘러보기는 시행사 전용 — 데이터 입력 · 캠페인 설정까지 다 열어 둔다.
+   (공유 코드로 들어온 광고주와 달리 화면 전체를 둘러볼 수 있어야 하기 때문) */
 function enterSample(){
-  CLOUD.shareView=true;CLOUD.sample=true;
+  CLOUD.shareView=false;CLOUD.sample=true;
   hideGate();
   if(typeof applyRole==='function')applyRole();
-  cloudState('샘플 데이터 둘러보기 · 조회 전용');
+  cloudState('샘플 데이터 둘러보기 · 시행사 화면');
   const bar=$('demoBar');
   if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');
 }
@@ -4836,14 +4900,16 @@ async function tryCode(raw){
   const code=normCode(raw);
   if(code.replace('-','').length<8){gateMsg('8자리 코드를 모두 입력해 주세요.');return false;}
   if(code===SAMPLE_CODE){enterSample();return true;}
+  if(code===SAMPLE_VIEW_CODE){enterShareView('샘플 캠페인','viewer');return true;}
   if(!CLOUD.on){
     gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
   gateMsg('확인 중…',true);
   const {data,error}=await CLOUD.sb.rpc('open_by_code',{p_code:code});
   const c=Array.isArray(data)?data[0]:data;
   if(error||!c){gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
+  const kind=c.code_kind==='staff'?'staff':'viewer';
   CLOUD.campaign={id:c.id,name:c.name};
-  CLOUD.role='viewer';
+  CLOUD.role=kind==='staff'?'editor':'viewer';
   applyDoc(c.doc);
   rebuildPeriod();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
@@ -4854,7 +4920,9 @@ async function tryCode(raw){
   buildFacts();buildFilters();buildSelects();
   renderAll();renderIssues();renderIssueAlert();renderRaw();
   renderCreatives();renderGantt();
-  enterShareView(c.name);
+  enterShareView(c.name,kind);
+  /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
+  if(kind==='staff'){try{sessionStorage.setItem('staffCode',code);}catch(e){}}
   return true;
 }
 /* 게이트를 쓸 수 있는 상태로 (로그인 세션이 없을 때만 보인다) */
@@ -4863,8 +4931,10 @@ function gateReady(){
   const lg=$('gateLogo'),tb=document.querySelector('.topbar .logo .mark');
   if(lg&&tb)lg.src=tb.src;
   const hint=$('gateHint');
-  if(hint)hint.innerHTML=`코드가 없으신가요? 시행사 담당자에게 캠페인 코드를 요청해 주세요.`
-    +`<br>둘러보기용 샘플 코드는 <code>${SAMPLE_CODE}</code> 입니다.`;
+  if(hint)hint.innerHTML=`코드는 두 가지입니다 — <b>운영진 코드</b>는 데이터 수정까지, `
+    +`<b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.`
+    +`<br>둘러보기용 샘플 코드 <code>${SAMPLE_CODE}</code> (시행사 화면) · `
+    +`<code>${SAMPLE_VIEW_CODE}</code> (광고주 화면)`;
   const inp=$('gateCode');
   if(inp){
     inp.oninput=e=>{const p=e.target.selectionStart;e.target.value=normCode(e.target.value);
@@ -4885,6 +4955,19 @@ function gateReady(){
   const q=qs.get('code');
   if(q){if(inp)inp.value=normCode(q);tryCode(q);}
 }
+
+/* 로고를 누르면 첫 화면(접속 화면)으로 — 저장하지 않은 내용이 있으면 한 번 묻는다 */
+function goHome(){
+  const home=()=>{location.href=location.pathname;};
+  if(CLOUD.shareView&&!CLOUD.user){home();return;}     /* 조회 전용은 잃을 게 없다 */
+  confirmModal('첫 화면으로 돌아갈까요?',
+    '저장하지 않은 내용은 사라집니다. 먼저 ☁ 저장을 눌러 주세요.',home,'첫 화면으로');
+}
+(function wireLogo(){
+  const go=()=>{const l=document.querySelector('.topbar .logo');
+    if(l){l.title='첫 화면으로';l.onclick=goHome;}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();
 
 /* ---------- 세션 ---------- */
 async function cloudInit(){
@@ -4913,14 +4996,14 @@ async function signOutCloud(){
   if(!CLOUD.on)return;
   await CLOUD.sb.auth.signOut();
   CLOUD.user=null;CLOUD.campaign=null;CLOUD.role=null;CLOUD.list=[];
-  CLOUD.shareView=false;CLOUD.sample=false;
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='guest';
   paintAuth();paintCampSel();cloudState('로그아웃됨');
   const g=gateEl();if(g)g.classList.remove('hidden');
   gateReady();
 }
 async function afterSignIn(){
   const u=CLOUD.user;
-  CLOUD.shareView=false;CLOUD.sample=false;hideGate();
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;hideGate();
   /* 프로필 upsert — 트리거가 없어도 이름/이메일이 채워지도록 */
   await CLOUD.sb.from('profiles').upsert({
     id:u.id,email:u.email,
@@ -4928,9 +5011,101 @@ async function afterSignIn(){
     avatar_url:u.user_metadata?.avatar_url||null},{onConflict:'id'});
   /* 가입 후에 받은 초대도 로그인 시점에 자동으로 수락된다 */
   try{await CLOUD.sb.rpc('accept_my_invites');}catch(err){}
+  /* 운영진 코드로 들어와 있던 사람이 로그인하면 그 캠페인의 정식 운영진이 된다 */
+  try{const sc=sessionStorage.getItem('staffCode');
+    if(sc){await CLOUD.sb.rpc('join_by_staff_code',{p_code:sc});sessionStorage.removeItem('staffCode');}
+  }catch(err){}
+  /* 계정 등급 (슈퍼마스터 / 마스터 / 게스트) */
+  try{const {data}=await CLOUD.sb.from('profiles').select('app_role').eq('id',u.id).maybeSingle();
+    CLOUD.appRole=data?.app_role||'guest';}catch(err){CLOUD.appRole='guest';}
   paintAuth();
   applyRoleLock();
   await loadCampaignList();
+  /* 아직 등급이 없고 참여 중인 캠페인도 없으면 권한을 요청하도록 안내 */
+  if(CLOUD.appRole==='guest'&&!CLOUD.list.length)openAccessRequest();
+}
+/* ---------- 마스터 권한 요청 (게스트 → 슈퍼마스터에게) ---------- */
+async function openAccessRequest(){
+  if(!CLOUD.on||!CLOUD.user)return;
+  let prev=null;
+  try{const {data}=await CLOUD.sb.from('access_requests')
+    .select('status,message,created_at').eq('user_id',CLOUD.user.id)
+    .order('created_at',{ascending:false}).limit(1);
+    prev=data&&data[0];}catch(err){}
+  if(prev&&prev.status==='pending'){
+    confirmModal('권한 요청이 접수되어 있습니다.',
+      `보내신 메시지 — “${prev.message||'(내용 없음)'}”\n승인되면 캠페인을 만들 수 있습니다.`,
+      ()=>{},'확인');return;}
+  openModal('캠페인 권한 요청',
+    `<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
+       이 계정에는 아직 <b>캠페인을 만들 권한</b>이 없습니다.
+       아래에 <b>소속과 용도</b>를 적어 보내 주시면 확인 후 <b>마스터 권한</b>을 드립니다.<br>
+       특정 캠페인만 보시는 분은 요청 대신 시행사에서 <b>운영진 코드</b> 또는 <b>뷰어 코드</b>를 받으시면 됩니다.</div></div>
+     <div class="fld"><label>소속 · 이름</label>
+       <input id="arOrg" placeholder="예: 미디어웍스 / 윤석진" style="width:100%"></div>
+     <div class="fld" style="margin-top:10px"><label>요청 메시지</label>
+       <textarea id="arMsg" rows="4" placeholder="예: 하반기 브랜드 캠페인 운영을 맡고 있어 캠페인 생성 권한이 필요합니다."
+         style="width:100%;resize:vertical"></textarea></div>
+     <div class="hint" id="arMsgOut" style="margin-top:8px">보낸 요청은 슈퍼마스터 화면에 그대로 표시됩니다.</div>`,
+    '<button class="btn" data-close>나중에</button><button class="btn primary" id="arGo">요청 보내기</button>',{w:620});
+  $('arGo').onclick=async()=>{
+    const org=($('arOrg').value||'').trim(),msg=($('arMsg').value||'').trim();
+    if(!msg){$('arMsgOut').textContent='요청 메시지를 적어 주세요.';return;}
+    if(org){try{await CLOUD.sb.from('profiles').update({org}).eq('id',CLOUD.user.id);}catch(err){}}
+    const {error}=await CLOUD.sb.rpc('request_access',{p_message:(org?org+' — ':'')+msg});
+    if(error){$('arMsgOut').textContent='보내지 못했습니다: '+error.message;return;}
+    closeModal();
+    confirmModal('요청을 보냈습니다.','승인되면 캠페인을 만들 수 있습니다. 잠시만 기다려 주세요.',()=>{},'확인');};
+}
+/* ---------- 슈퍼마스터 · 계정 관리 ---------- */
+async function openAccounts(){
+  if(!CLOUD.on||!CLOUD.user||CLOUD.appRole!=='super'){
+    confirmModal('슈퍼마스터만 열 수 있습니다.','계정 등급 관리는 슈퍼마스터 계정에서만 가능합니다.',()=>{},'확인');return;}
+  const [{data:reqs},{data:accs}]=await Promise.all([
+    CLOUD.sb.from('access_requests').select('*').order('created_at',{ascending:false}),
+    CLOUD.sb.rpc('list_accounts')]);
+  const pend=(reqs||[]).filter(r=>r.status==='pending');
+  let h=`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
+      <b>슈퍼마스터</b>만 마스터 권한을 주거나 뺏을 수 있습니다.
+      마스터는 <b>본인이 만든 캠페인만</b> 보고 관리하며, 다른 사람에게 마스터 권한을 줄 수 없습니다.</div></div>`;
+  h+=`<div style="font-weight:700;margin:4px 0 8px">권한 요청 <span class="cnt2">${pend.length}건 대기</span></div>`;
+  if(!pend.length)h+='<div class="card" style="padding:16px;text-align:center;color:var(--muted)">대기 중인 요청이 없습니다.</div>';
+  else{
+    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:150px">이름</th><th style="width:200px">이메일</th><th>요청 메시지</th>
+      <th style="width:110px">보낸 날</th><th style="width:150px"></th></tr></thead><tbody>`;
+    pend.forEach(r=>{h+=`<tr><td>${esc(r.name||'–')}</td><td>${esc(r.email||'–')}</td>
+      <td style="text-align:left">${esc(r.message||'–')}</td>
+      <td class="mono">${(r.created_at||'').slice(0,10)}</td>
+      <td><button class="btn sm primary" data-ok="${r.id}">마스터 승인</button>
+        <button class="btn sm danger" data-no="${r.id}">거절</button></td></tr>`;});
+    h+='</tbody></table>';}
+  h+=`<div style="font-weight:700;margin:18px 0 8px">계정 목록</div>
+    <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:150px">이름</th><th style="width:210px">이메일</th><th style="width:150px">소속</th>
+      <th style="width:110px">등급</th><th style="width:90px">캠페인</th>
+      <th style="width:130px"></th></tr></thead><tbody>`;
+  (accs||[]).forEach(a=>{
+    const me=a.id===CLOUD.user.id;
+    h+=`<tr><td>${esc(a.name||'–')}</td><td>${esc(a.email||'–')}</td><td>${esc(a.org||'–')}</td>
+      <td><span class="tagchip ${a.app_role==='guest'?'':'on'}">${APP_ROLE_LABEL[a.app_role]||a.app_role}</span></td>
+      <td class="mono">${a.campaigns||0}</td>
+      <td>${a.app_role==='super'||me?'<span class="hint">–</span>'
+        :a.app_role==='master'
+          ?`<button class="btn sm danger" data-drop="${a.id}">마스터 해제</button>`
+          :`<button class="btn sm" data-up="${a.id}">마스터 부여</button>`}</td></tr>`;});
+  h+='</tbody></table>';
+  openModal('계정 · 등급 관리 (슈퍼마스터)',h,'<button class="btn" data-close>닫기</button>',{w:1060});
+  const host=$('modalHost'),again=()=>{closeModal();openAccounts();};
+  host.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.ok,p_approve:true});again();});
+  host.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.no,p_approve:false});again();});
+  host.querySelectorAll('[data-up]').forEach(b=>b.onclick=async()=>{
+    await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.up,p_role:'master'});again();});
+  host.querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>
+    confirmModal('마스터 권한을 해제할까요?','이 계정은 더 이상 캠페인을 만들 수 없습니다. 이미 만든 캠페인은 남습니다.',
+      async()=>{await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.drop,p_role:'guest'});again();},'해제'));
 }
 function paintAuth(){
   const u=CLOUD.user;
@@ -4951,7 +5126,7 @@ function paintAuth(){
 async function loadCampaignList(listOnly){
   /* RLS 가 내가 멤버인 캠페인만 돌려준다 (할당받은 캠페인만 보이는 구조) */
   const {data,error}=await CLOUD.sb.from('campaigns')
-    .select('id,name,advertiser,start_date,end_date,updated_at,share_code')
+    .select('id,name,advertiser,start_date,end_date,updated_at,share_code,staff_code,created_by')
     .order('updated_at',{ascending:false});
   if(error){cloudState('목록을 불러오지 못했습니다: '+error.message);return;}
   CLOUD.list=data||[];
@@ -4999,7 +5174,7 @@ async function openCampaign(id){
   CLOUD.busy=false;
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
-const ROLE_LABEL={master:'마스터',editor:'편집',viewer:'조회'};
+const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
 /* 조회 권한이면 편집 화면을 잠근다 (광고주 모드와 동일한 처리) */
 function applyRoleLock(){
   if(typeof applyRole==='function')applyRole();
@@ -5088,15 +5263,16 @@ async function openCampManage(){
   const rows=CLOUD.list;
   let h=`<div class="hint" style="margin-bottom:10px">내가 <b>만들었거나 초대받은</b> 캠페인만 보입니다.
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
-      <b>공유 코드</b>는 캠페인마다 자동으로 붙습니다. 광고주에게 코드(또는 ‘코드 복사’로 얻는 링크)를 알려 주면
-      로그인 없이 <b>조회 전용</b>으로 대시보드를 볼 수 있습니다.</div>`;
+      캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
+      <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
+      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. ＋ 새 캠페인으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:220px">캠페인명</th><th style="min-width:150px">광고주</th>
       <th style="width:170px">기간</th><th style="width:120px">최근 저장</th>
-      <th style="width:170px">공유 코드</th>
-      <th style="width:290px"></th></tr></thead><tbody>`;
+      <th style="width:190px">공유 코드</th>
+      <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
       const cur=CLOUD.campaign&&CLOUD.campaign.id===c.id;
       h+=`<tr data-cid="${c.id}"${cur?' style="background:var(--acc-soft2)"':''}>
@@ -5104,9 +5280,14 @@ async function openCampManage(){
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
-        <td><span class="sharecode">${esc(c.share_code||'–')}</span></td>
-        <td><button class="btn sm" data-cpy="${c.id}" title="공유 링크를 복사합니다">코드 복사</button>
-          <button class="btn sm" data-new="${c.id}" title="새 코드를 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
+        <td style="text-align:left">
+          <div class="codeline"><span class="ck staff">운영진</span>
+            <span class="sharecode">${esc(c.staff_code||'–')}</span></div>
+          <div class="codeline"><span class="ck view">뷰어</span>
+            <span class="sharecode view">${esc(c.share_code||'–')}</span></div></td>
+        <td><button class="btn sm" data-cpy="${c.id}" data-kind="staff" title="운영진용 링크를 복사합니다">운영진 링크</button>
+          <button class="btn sm" data-cpy2="${c.id}" data-kind="viewer" title="광고주용 링크를 복사합니다">뷰어 링크</button>
+          <button class="btn sm" data-new="${c.id}" title="두 코드를 새로 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
           <button class="btn sm" data-open="${c.id}">열기</button>
           <button class="btn sm" data-ren="${c.id}">이름 변경</button>
           <button class="btn sm" data-dup="${c.id}">복제</button>
@@ -5116,18 +5297,23 @@ async function openCampManage(){
   const host=$('modalHost');
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
-  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=async()=>{
-    const c=CLOUD.list.find(x=>x.id===b.dataset.cpy);if(!c||!c.share_code)return;
-    const url=location.href.split('#')[0].split('?')[0]+'?code='+c.share_code;
+  const copyCode=async(b,id,kind)=>{
+    const c=CLOUD.list.find(x=>x.id===id);if(!c)return;
+    const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
+    const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
+    const label=b.textContent;
     try{await navigator.clipboard.writeText(url);b.textContent='복사됨';
-      setTimeout(()=>b.textContent='코드 복사',1400);}
-    catch(err){prompt('아래 주소를 복사해 광고주에게 전달하세요.',url);}});
+      setTimeout(()=>b.textContent=label,1400);}
+    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}};
+  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy,'staff'));
+  host.querySelectorAll('[data-cpy2]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy2,'viewer'));
   host.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.new);if(!c)return;
     confirmModal('공유 코드를 다시 발급할까요?',
-      '지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
+      '운영진 코드와 뷰어 코드가 모두 새로 바뀌고, 지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
       const {data,error}=await CLOUD.sb.from('campaigns')
-        .update({share_code:makeShareCode()}).eq('id',c.id).select('id,share_code');
+        .update({share_code:makeShareCode(),staff_code:makeShareCode()})
+        .eq('id',c.id).select('id,share_code,staff_code');
       if(error||!data||!data.length){cloudState('코드를 바꾸지 못했습니다 (권한 확인)');return;}
       await loadCampaignList(true);closeModal();openCampManage();},'재발급');});
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
@@ -5207,6 +5393,7 @@ async function removeMember(userId){
   if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
+  if(b('acctBtn'))b('acctBtn').onclick=openAccounts;
   if(b('campSel'))b('campSel').onchange=e=>{if(e.target.value)openCampaign(e.target.value);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');
@@ -5612,7 +5799,7 @@ function renderHiddenBar(){
     let tools=sec.querySelector('.tools');
     if(!tools)tools=el('div','tools',sec);
     const b=document.createElement('button');
-    b.className='hidebtn';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
+    b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
     b.onclick=()=>{HIDDEN.add(key);applyHidden();};
     tools.appendChild(b);});
 })();

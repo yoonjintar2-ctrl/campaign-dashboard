@@ -33,7 +33,7 @@ function renderHiddenBar(){
     let tools=sec.querySelector('.tools');
     if(!tools)tools=el('div','tools',sec);
     const b=document.createElement('button');
-    b.className='hidebtn';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
+    b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
     b.onclick=()=>{HIDDEN.add(key);applyHidden();};
     tools.appendChild(b);});
 })();

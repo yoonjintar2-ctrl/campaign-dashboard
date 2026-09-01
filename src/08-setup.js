@@ -516,7 +516,7 @@ function renderMix(){
   const row=(rs,sp,tot)=>cols.map((k,i)=>{
     const rsAttr=(k==='m_note'||!sp||sp===1)?'':` rowspan="${sp}"`;
     const v=cell(rs,k,tot);
-    return `<td class="mono${seps.has(i)?' gsep':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
   out.forEach((r,i)=>{
     if(r.kind==='data'){
       const vals=r.vals,rs=entries[r.ri][1];
@@ -566,11 +566,13 @@ function openPerm(){
 async function openPermCloud(){
   const d=await cloudMembers();if(!d)return;
   const master=CLOUD.role==='master';
-  const opt=(cur)=>['master','editor','viewer'].map(r=>
+  /* 캠페인 안에서 줄 수 있는 권한 — 운영진(수정 가능) · 광고주(조회 전용) */
+  const opt=(cur)=>['editor','viewer'].map(r=>
     `<option value="${r}"${r===cur?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
   let h=`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
-      <b>캠페인 단위 공유</b> — 이 캠페인에 초대된 사람만 데이터를 볼 수 있습니다.
-      <b>마스터</b>는 설정·입력·초대 전부, <b>편집</b>은 설정·입력, <b>조회</b>는 대시보드만 볼 수 있습니다.
+      <b>캠페인 단위 공유</b> — 이 캠페인에 초대되었거나 코드를 받은 사람만 볼 수 있습니다.<br>
+      <b>운영진</b>은 이 캠페인 안에서 마스터와 동등하게 모든 데이터를 수정·추가할 수 있고,
+      <b>광고주</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
       ${master?'':'<b>지금은 초대·권한 변경 권한이 없습니다.</b>'}</div></div>
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th>이름</th><th>소속</th><th>이메일</th><th style="width:120px">권한</th>
@@ -745,22 +747,45 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
    · 클라우드가 설정되지 않은 데모(로컬 파일)  → 시행사 (시안을 그대로 둘러볼 수 있게)
    · 클라우드가 있는데 로그인 안 함 · 조회 권한 → 광고주 (대시보드만)
    · 로그인 + 마스터/편집 권한                  → 시행사 */
+/* 화면 모드는 둘뿐 — agency(시행사: 전체 화면) / client(광고주: 대시보드 + 엑셀만).
+   4단계 권한을 이 둘에 매핑한다. */
 function currentRole(){
   /* CLOUD 는 뒤쪽 파일에서 선언되므로 아직 없을 수 있다 */
   let C=null;try{C=CLOUD;}catch(e){return 'agency';}
   if(!C)return 'agency';
-  /* 공유 코드 · 샘플 둘러보기로 들어왔으면 언제나 조회 전용(광고주 모드) */
-  if(C.shareView&&!C.user)return 'client';
+  /* 샘플 둘러보기는 시행사 전용 화면 */
+  if(C.sample&&!C.user)return 'agency';
+  /* 코드로 들어온 경우 — 운영진 코드는 시행사 화면, 뷰어 코드는 광고주 화면 */
+  if(C.shareView&&!C.user)return C.shareRole==='staff'?'agency':'client';
   if(!C.on)return 'agency';
   if(!C.user)return 'client';
   return (C.role==='master'||C.role==='editor'||!C.campaign)?'agency':'client';
 }
+/* 지금 사람의 권한 이름 — 슈퍼마스터 / 마스터 / 운영진 / 광고주 */
+function roleName(){
+  let C=null;try{C=CLOUD;}catch(e){return '시행사';}
+  if(!C)return '시행사';
+  if(C.user){
+    if(C.appRole==='super')return '슈퍼마스터';
+    if(C.campaign&&C.role==='editor')return '운영진';
+    if(C.campaign&&C.role==='viewer')return '광고주';
+    if(C.appRole==='master')return '마스터';
+    return '게스트';}
+  if(C.sample)return '샘플 (시행사 화면)';
+  if(C.shareView)return C.shareRole==='staff'?'운영진':'광고주';
+  return currentRole()==='client'?'광고주':'시행사';
+}
+let __lastRole=null;
 function applyRole(){
   const role=currentRole(),c=role==='client';
   document.body.dataset.role=role;
   const chip=$('roleChip');
-  if(chip){chip.textContent=c?'광고주':'시행사';chip.classList.toggle('agency',!c);
-    chip.title=c?'로그인하면 권한에 따라 시행사 화면이 열립니다':'구글 로그인 · 운영 권한 기준';}
+  if(chip){chip.textContent=roleName();chip.classList.toggle('agency',!c);
+    chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
+      :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
+  /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */
+  let sup=false;try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';}catch(e){}
+  const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!sup);
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
   if(st)st.classList.toggle('hidden',c);
@@ -768,6 +793,13 @@ function applyRole(){
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
   if(c&&document.querySelector('#tabs [data-tab="dash"]')&&!$('tab-dash').classList.contains('hidden')===false)switchTab('dash');
   if(c)switchTab('dash');
+  /* 권한이 바뀌면 화면 구성 버튼이 붙어 있는 영역을 다시 그린다
+     (서머리·소재 카드는 그릴 때 isClient() 로 버튼 유무를 정하기 때문) */
+  if(__lastRole!==null&&__lastRole!==role){
+    try{renderSummaries();}catch(e){}
+    try{renderCreatives();}catch(e){}
+    try{if(typeof applyHidden==='function')applyHidden();}catch(e){}}
+  __lastRole=role;
 }
 setTimeout(applyRole,0);
 $('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});

@@ -321,7 +321,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     const src=(merge&&isExp)?merge.agg:a, ex=(merge&&isExp)?merge.exp:e;
     const [txt,g]=cellDef[k](src,ex,x);
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
-    return `<td class="mono${seps.has(i)?' gsep':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
   if(finer&&expIdx.length){
@@ -368,7 +368,8 @@ function renderSummaries(){
     const sec=el('div','sec gap3',host);
     sec.innerHTML=`<span data-nm="${i}" style="cursor:${isClient()?'default':'pointer'}">${esc(s.name)}</span>`;
     const tools=el('div','tools',sec);
-    tools.innerHTML=`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`
+    tools.innerHTML=(isClient()?''
+      :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
