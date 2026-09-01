@@ -849,6 +849,21 @@ $('histBtn').onclick=openHistory;
 $('campHistBtn').onclick=openCampHist;
 /* 계정 · 권한은 상단 ⚙ 캠페인 관리 → 👥 초대 로 옮겼다 */
 if($('permBtn'))$('permBtn').onclick=openPerm;
+/* 📘 사용 가이드 — 배포 폴더의 PDF 를 내려받는다 */
+const GUIDE_PDF='guide/사용가이드.pdf';
+if($('guideBtn'))$('guideBtn').onclick=async()=>{
+  try{
+    const r=await fetch(GUIDE_PDF,{method:'HEAD'});
+    if(!r.ok)throw new Error('없음');
+    const a=document.createElement('a');
+    a.href=GUIDE_PDF;a.download='Digital Media Dashboard 사용 가이드.pdf';
+    document.body.appendChild(a);a.click();a.remove();
+  }catch(e){
+    confirmModal('가이드 파일을 찾지 못했습니다.',
+      '배포 폴더의 guide/사용가이드.pdf 를 함께 올려 주세요. '
+      +'(내려받은 zip 안에 들어 있습니다. 파일 하나만 열어 보는 중이라면 같은 폴더에 guide 폴더를 두면 됩니다.)',
+      ()=>{},'확인');}
+};
 $('holBtn').onclick=openHolidays;
 $('saveAll').onclick=()=>{rebuildPeriod();buildFacts();renderAll();renderKpiTable();renderSheet();
   confirmModal('캠페인 설정을 저장했습니다.','기본 정보와 라인별 설정이 모두 반영되었습니다.',()=>{},'확인');};
@@ -885,20 +900,42 @@ function renderIssueAlert(){
       기간이 겹치는 이슈의 내용을 짧게 줄이거나 통합해 주세요. (그래프에는 최대 5줄까지 표시됩니다)</div>`;}
   else box.classList.add('hidden');
 }
+/* 아직 아무 데이터도 없는 캠페인은 0% · 1일차 같은 숫자 대신 안내만 보여 준다 */
+function dashEmpty(){
+  const on=!LINES.length||!FACTS.length;
+  const host=$('tab-dash');if(!host)return on;
+  let box=$('dashEmpty');
+  if(!box){
+    box=el('div','emptybox');box.id='dashEmpty';
+    host.insertBefore(box,host.firstChild);}
+  const client=isClient();
+  box.innerHTML=`<div class="ttl">아직 표시할 데이터가 없습니다</div>`
+    +`<div class="txt">${client
+      ? '시행사에서 실적을 입력하면 이 화면에 대시보드가 나타납니다.'
+      : '<b>캠페인 설정</b>에서 예상 효율(라인)을 먼저 넣고, <b>데이터 입력</b>에서 일자별 실적을 채워 주세요.'}</div>`
+    +(client?'':`<div class="acts">
+        <button class="btn primary" data-go="setup">캠페인 설정으로</button>
+        <button class="btn" data-go="input">데이터 입력으로</button></div>`);
+  box.classList.toggle('hidden',!on);
+  box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchTab(b.dataset.go));
+  /* 데이터가 없으면 대시보드 본문은 감춘다 */
+  ['sub-perf','sub-table','sub-mix'].forEach(id=>{const e=$(id);if(e)e.classList.toggle('nodata',on);});
+  const sb=$('subbar');if(sb)sb.classList.toggle('nodata',on);
+  /* 캠페인 정보 · 필터 줄도 함께 감춘다 (₩0 만 남으면 오히려 헷갈린다) */
+  const bar=$('campBar');
+  if(bar){bar.classList.toggle('nodata',on);
+    const lbl=bar.previousElementSibling;if(lbl)lbl.classList.toggle('nodata',on);}
+
+  return on;
+}
 function renderAll(){
-  renderCampBar();renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
+  renderCampBar();
+  if(dashEmpty())return;
+  renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
 buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
-/* 예상 효율 히스토리 — 지난 며칠간의 반영 시점 (시안용 시드) */
-(function seedLineHist(){
-  const snap=snapLines();
-  const who=[['윤석진','미디어웍스'],['김미디어','미디어웍스'],['이운영','퍼포먼스랩']];
-  for(let n=0;n<5;n++){
-    const d=new Date(dT.getTime()-n*DAY);d.setHours(10+(n%3)*3,15+(n*11)%40,0,0);
-    LINE_HIST.push({t:d,who:who[n%3][0],org:who[n%3][1],kind:n===0?'자동 저장':'반영 완료',snap});}
-  const e=$('lineSaveState');if(e)e.textContent=`반영 완료 ${hhmm(LINE_HIST[0].t)}`;
-})();
+/* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */

@@ -43,13 +43,13 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
 /* 배경 — 푸른 계열 그라데이션이 흐른다.
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
-body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.70;
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.78;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(170,190,212,.82), transparent 66%),
+    radial-gradient(40% 44% at 12% 18%, rgba(126,155,186,.92), transparent 66%),
     radial-gradient(34% 40% at 78% 10%, rgba(243,248,252,.32), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(158,180,204,.76), transparent 68%),
+    radial-gradient(44% 48% at 88% 80%, rgba(112,143,177,.88), transparent 68%),
     radial-gradient(36% 40% at 26% 90%, rgba(245,249,253,.30), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(196,212,228,.58), transparent 70%);
+    radial-gradient(32% 36% at 54% 50%, rgba(160,184,210,.70), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -104,13 +104,45 @@ body[data-mode="sample"] #acctBtn{display:none !important}
 .codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
 .codeline .ck.staff{color:#2f4a63;background:#dde5ee}
 .codeline .ck.view{color:#42625f;background:#dfeae8}
+/* 계정 버튼 — 로그인한 구글 아이디를 보여 주고, 누르면 로그아웃 메뉴가 열린다 */
+.mewrap{position:relative}
+.me{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;padding:3px 11px 3px 4px;cursor:pointer;max-width:250px}
+.me:hover{border-color:var(--acc)}
+.me .avatar{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-size:10.5px;
+  font-weight:800;display:grid;place-items:center;flex:none}
+.me .mail{font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:172px}
+.me .cv{font-size:9px;color:var(--muted);flex:none}
+.memenu{position:absolute;right:0;top:calc(100% + 7px);min-width:238px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2);padding:6px;z-index:80}
+.memenu.hidden{display:none}
+.memenu .mi{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;
+  padding:8px 11px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.memenu .mi:hover{background:var(--acc-soft)}
+.memenu .mi.head{cursor:default;border-bottom:1px solid var(--line2);border-radius:0;margin-bottom:4px;
+  padding-bottom:9px}
+.memenu .mi.head b{display:block;font-size:13px}
+.memenu .mi.head span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis}
+/* 데이터가 없을 때 대시보드 자리에 보여 주는 안내 */
+.emptybox{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:46px 30px;text-align:center;margin:22px 0}
+.emptybox.hidden{display:none}
+.emptybox .ttl{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.emptybox .txt{margin-top:9px;font-size:13px;color:var(--ink2);line-height:1.7}
+.emptybox .acts{margin-top:18px;display:flex;gap:8px;justify-content:center}
+.nodata{display:none !important}
 .copyb{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:6px;
   width:22px;height:22px;line-height:1;font-size:12px;cursor:pointer;padding:0;flex:none}
 .copyb:hover{border-color:var(--acc);color:var(--acc)}
 .copyb.ok{border-color:#3d6b52;color:#3d6b52}
-/* 캠페인 관리 — 액션 버튼은 좁아지면 두 줄로 접힌다 */
-table.tbl td.acts{white-space:normal}
-table.tbl td.acts>*{display:inline-flex;margin:2px}
+/* 캠페인 관리 — 액션 버튼 두 줄, 글자는 세로 가운데 */
+table.tbl td.acts{white-space:normal;padding:8px 10px}
+table.tbl td.acts .ln{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+table.tbl td.acts .ln+.ln{margin-top:5px}
+table.tbl td.acts .btn{display:inline-flex;align-items:center;justify-content:center;
+  line-height:1;height:26px;padding:0 10px}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -118,7 +150,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 
 /* ---------- top ---------- */
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:14px;padding:0 44px;height:56px}
+  display:flex;align-items:center;gap:14px;padding:0 76px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
 .logo{cursor:pointer}
 .logo:hover .mark{filter:brightness(1.06)}
@@ -138,17 +170,19 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 #signIn{gap:7px;font-weight:700}
 #signIn svg{flex:none}
 .demobar{display:flex;align-items:center;gap:10px;background:#fff6e8;border-bottom:1px solid #f0dfc4;
-  color:#7a5a22;padding:8px 44px;font-size:12px}
+  color:#7a5a22;padding:8px 76px;font-size:12px}
 .demobar>span{font-size:13px}
 .demobar>div{flex:1}
 .demobar .btn{height:24px;padding:0 9px;font-size:11px;border-color:#e4d3b8;background:#fffdf8}
-.tabs{background:var(--surface);padding:0 44px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
+.tabs{background:var(--surface);padding:0 76px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
+@media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}
+  .subbar{padding:11px 40px}.demobar{padding:9px 40px}}
 .tabs button{border:0;background:transparent;padding:12px 14px 10px;cursor:pointer;color:var(--ink2);
   font-weight:600;border-bottom:2px solid transparent;font-size:13.5px}
 .tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
 /* 하위 탭 = 메인 탭 바로 아래 붙임 */
 .tabs{border-bottom:1px solid var(--line)}
-.subbar{background:#e4e7ec;border-bottom:1px solid #d7dadf;padding:11px 44px;
+.subbar{background:#e4e7ec;border-bottom:1px solid #d7dadf;padding:11px 76px;
   position:sticky;top:97px;z-index:58;display:flex;gap:6px}
 .subbar button{border:1px solid transparent;background:transparent;padding:7px 18px;border-radius:9px;cursor:pointer;
   color:var(--ink2);font-weight:600;font-size:13px}
@@ -221,7 +255,8 @@ table.tbl.nogauge .gauge .track{display:none}
   background:var(--acc-soft);border-radius:6px;padding:1px 7px;vertical-align:1px}
 
 /* ---------- layout ---------- */
-.wrap{padding:16px 44px 80px;max-width:1860px;margin:0 auto}
+.wrap{padding:16px 76px 84px;max-width:1900px;margin:0 auto}
+@media (max-width:1500px){.wrap{padding:16px 40px 84px}}
 .sec{font-size:19px;font-weight:700;color:var(--sec);margin:28px 0 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;letter-spacing:-.3px}
 .sec.gap{margin-top:40px}
 .sec.gap2{margin-top:56px}
@@ -413,14 +448,14 @@ table.tbl.nogauge .gauge .track{display:none}
   pointer-events:none;z-index:2}
 .tmap .grp>.gh{position:absolute;left:0;right:0;top:0;height:17px;line-height:17px;padding:0 6px;
   font-size:10.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  background:rgba(255,255,255,.62);color:var(--ink2)}
+  color:#fff;text-shadow:0 1px 1px rgba(20,30,42,.28)}
 .tmap .tile{position:absolute;overflow:hidden;border:1px solid rgba(255,255,255,.55);
   display:flex;flex-direction:column;justify-content:center;padding:4px 6px;cursor:default;
   transition:filter .1s}
 .tmap .tile:hover{filter:brightness(1.14)}
 .tmap .tile .tn{font-size:11px;font-weight:700;line-height:1.2;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-.tmap .tile .tv{font-size:10.5px;opacity:.86;font-variant-numeric:tabular-nums;margin-top:1px}
+  text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 1.5px rgba(20,30,42,.30)}
+.tmap .tile .tv{font-size:10.5px;opacity:.92;text-shadow:0 1px 1.5px rgba(20,30,42,.26);font-variant-numeric:tabular-nums;margin-top:1px}
 .tmap .tile.sm .tv{display:none}
 .tmap .tile.xs .tn{font-size:9.5px}
 .tmap .tile.tiny .tn,.tmap .tile.tiny .tv{display:none}
@@ -532,10 +567,10 @@ table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
 /* 목표(예상) 수치 열 — 실적 열과 구분되게 옅은 배경 (소계·총계 행에서도 유지) */
-table.tbl td.goal{background:#dde4ed}
-table.tbl tbody tr:hover td.goal{background:#d3dce7}
-table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#2f3946}
-table.tbl td.goal.blank{background:#e9ecf1}
+table.tbl td.goal{background:#c6d4e4}
+table.tbl tbody tr:hover td.goal{background:#b9cadd}
+table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#3d4c5e}
+table.tbl td.goal.blank{background:#dbe2ea}
 table.tbl td.blank{background:#f2f4f7}
 table.tbl td.blank .na{color:#b6bfca}
 table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
@@ -552,12 +587,12 @@ table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#ed
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
 /* 소계 행의 목표 열 — 각 단계 배경보다 한 톤 진하게 */
-table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#dde3ec !important}
-table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#bfcbdb !important}
-table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#d3dce8 !important}
-table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#e0e7f0 !important}
-table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#e9eff6 !important}
-table.tbl tr.sub td.goal.blank{background:#e5e9f0 !important}
+table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#c0cede !important}
+table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#aabbd0 !important}
+table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#bccbdd !important}
+table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#ccd8e6 !important}
+table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#d8e2ed !important}
+table.tbl tr.sub td.goal.blank{background:#ccd6e2 !important}
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}
@@ -748,12 +783,18 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .lblink input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(73,94,114,.15)}
 
 /* gantt */
-.gantt-wrap{overflow:auto;max-height:70vh}
+/* 게재 히스토리 — 세로 스크롤 없이 전체 높이를 그대로 보여 준다 (소재 비교가 중요).
+   overflow-y:clip 은 스크롤 컨테이너를 만들지 않으므로 헤더가 페이지 기준으로 고정된다. */
+.gantt-wrap{overflow-x:auto;overflow-y:clip;max-height:none}
 table.gantt{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;white-space:nowrap;width:100%;table-layout:auto}
 table.gantt th,table.gantt td{border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
   font-size:11.5px;text-align:center;padding:0}
-table.gantt th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:5;height:26px}
-table.gantt thead tr:nth-child(2) th{top:26px}
+table.gantt th{background:var(--hdr);color:#fff;font-weight:700;z-index:5;height:26px}
+/* 세로 스크롤이 없으므로 헤더는 아래의 떠 있는 머리글 막대(.ghfix)로 고정한다 */
+.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;box-shadow:0 4px 10px rgba(31,44,61,.13)}
+.ghfix.on{display:block}
+.ghfix .inner{overflow:hidden}
+.ghfix table.gantt{margin:0}
 table.gantt th.mo{background:var(--hdr2)}
 table.gantt th.gsep,table.gantt td.gsep{border-left:1px solid var(--gline)}
 table.gantt th.lead,table.gantt td.lead{position:sticky;z-index:6;background:var(--surface);padding:7px 9px;

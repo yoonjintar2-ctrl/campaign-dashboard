@@ -426,6 +426,60 @@ function renderGantt(){
   t.style.minWidth=(leadTotal+VD.length*13)+'px';
   enableRowDrag(t,GANTT,renderGantt);
   wireGanttHover(t,SC);
+  mountGanttHead(t);
+}
+/* ---- 떠 있는 머리글 막대 ----
+   게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서
+   position:sticky 로는 머리글을 붙일 수 없다. 대신 머리글만 복사해 화면 위쪽에 띄우고,
+   가로 스크롤은 원래 표와 서로 맞춘다. */
+function mountGanttHead(tbl){
+  const wrap=tbl.closest('.gantt-wrap');if(!wrap)return;
+  let bar=$('ganttHead');
+  if(!bar){bar=el('div','ghfix');bar.id='ganttHead';document.body.appendChild(bar);}
+  const inner=el('div','inner');
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  /* 원본 열 너비를 그대로 옮긴다 */
+  const cg=document.createElement('colgroup');
+  [...tbl.tHead.rows[1].cells].forEach(()=>{});
+  const firstRow=tbl.tBodies[0]&&tbl.tBodies[0].rows[0];
+  if(firstRow){[...firstRow.cells].forEach(td=>{
+    const c=document.createElement('col');
+    c.style.width=Math.round(td.getBoundingClientRect().width)+'px';
+    cg.appendChild(c);});
+    clone.insertBefore(cg,clone.firstChild);}
+  clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
+  inner.appendChild(clone);
+  bar.innerHTML='';bar.appendChild(inner);
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    const sec=document.querySelector('.card[data-sect="gantt"]');
+    if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+20;
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    /* 복사본 표의 폭을 원본과 똑같이 맞춰야 가로 스크롤 위치가 어긋나지 않는다 */
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.onscroll=()=>{inner.scrollLeft=wrap.scrollLeft;};
+  window.__ganttPlace=place;
+  if(!window.__ganttHeadWired){
+    window.__ganttHeadWired=1;
+    const run=()=>{if(window.__ganttPlace)window.__ganttPlace();};
+    addEventListener('scroll',run,true);
+    addEventListener('resize',run);}
+  setTimeout(place,0);setTimeout(place,300);
 }
 /* 날짜 칸·날짜 헤더에 마우스를 올리면 해당 행·열을 살짝 강조하고,
    칸 위에서는 그 날짜·그 소재의 광고 효율을 툴팁으로 보여준다 */
@@ -551,12 +605,12 @@ function renderTreemap(){
   const shadeT=(leaves)=>{
     const vals=leaves.map(l=>uk&&l.v>0?(l.c/l.v)*(mk==='imp'?1000:1):NaN)
       .filter(v=>isFinite(v)&&v>0);
-    if(!uk||vals.length<2)return ()=>.30;
+    if(!uk||vals.length<2)return ()=>.20;
     const lo=Math.min(...vals),hi=Math.max(...vals);
     return leaf=>{
       const u=leaf.v>0?(leaf.c/leaf.v)*(mk==='imp'?1000:1):NaN;
-      if(!isFinite(u)||hi===lo)return .34;
-      return .04+((u-lo)/(hi-lo))*.66;};};   /* 단가가 낮을수록 t 작음 = 진함 */
+      if(!isFinite(u)||hi===lo)return .22;
+      return .02+((u-lo)/(hi-lo))*.40;};};   /* 단가가 낮을수록 t 작음 = 진함 */
   const collect=n=>n.kids?n.kids.flatMap(collect):[n];
   const tip=(names,leaf,sect)=>e=>showTip(e.clientX,e.clientY,
     `<div class="t">${names.map(esc).join(' · ')}</div>`
@@ -574,16 +628,19 @@ function renderTreemap(){
     const inner=el('div','sin',sec);
     if(sc.h>HEAD+10){
       const hd=el('div','sh',sec);
-      hd.style.background=`rgb(${base.join(',')})`;
+      const sA=mixWhite(base,0),sB=mixWhite(base,.18);
+      hd.style.background=`linear-gradient(100deg,rgb(${sA.join(',')}),rgb(${sB.join(',')}))`;
       hd.innerHTML=`<span>${esc(sc.name)}</span><span class="sv">${pct(sc.v/grand,1)}</span>`;
       inner.style.top=HEAD+'px';}
     const iw=sec.clientWidth||sc.w-6, ih=(sc.h-(sc.h>HEAD+10?HEAD:0))-6;
     const tile=(node,x,y,w,h,names,parent)=>{
-      const t=tOf(node), rgb=mixWhite(base,t);
+      /* 글자를 모두 흰색으로 통일하기 위해 타일이 너무 밝아지지 않게 농도를 묶는다 */
+      const t=Math.min(tOf(node),.42), rgb=mixWhite(base,t);
+      const lite=mixWhite(rgb,.14);
       const d=el('div','tile',inner);
       d.className='tile'+(h<34?' sm':'')+(h<24||w<52?' xs':'')+(h<15||w<34?' tiny':'');
       d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-        +`background:rgb(${rgb.join(',')});color:${inkOn(rgb)}`;
+        +`background:linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}));color:#fff`;
       d.innerHTML=`<div class="tn">${esc(node.name)}</div>`
         +`<div class="tv">${METRICS[mk].f(node.v)}</div>`;
       d.addEventListener('mousemove',tip(names,node,sc));
@@ -594,7 +651,9 @@ function renderTreemap(){
           const g=el('div','grp',inner);
           g.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
           const gh=el('div','gh',g);
-          gh.style.color=inkOn(mixWhite(base,.62))==='#fff'?'#fff':'var(--ink2)';
+          const gA=mixWhite(base,.06),gB=mixWhite(base,.24);
+          gh.style.background=`linear-gradient(100deg,rgb(${gA.join(',')}),rgb(${gB.join(',')}))`;
+          gh.style.color='#fff';
           gh.textContent=n.name;
           layout(n.kids,n.x,n.y+SUBHEAD,n.w,n.h-SUBHEAD,names.concat([n.name]),depth+1);
         }else if(n.kids&&n.kids.length){

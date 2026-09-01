@@ -5,7 +5,7 @@
    role     = 이 캠페인 안에서의 권한 : master(마스터) / editor(운영진) / viewer(광고주)
    shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) */
 const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:false,
-  shareView:false,sample:false,appRole:'guest',shareRole:null};
+  shareView:false,sample:false,appRole:'guest',shareRole:null,savedAt:null,dirty:false};
 const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
 /* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
@@ -110,6 +110,28 @@ const normCode=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8
 /* 샘플(데모) 캠페인의 코드 — 클라우드가 없을 때 이 코드로도 들어올 수 있다 */
 const SAMPLE_CODE='DEMO-2026';        /* 샘플 둘러보기 (시행사 화면) */
 const SAMPLE_VIEW_CODE='VIEW-2026';   /* 샘플을 광고주 화면으로 보고 싶을 때 */
+/* 처음 켰을 때의 예시 데이터를 그대로 떠 놓는다 —
+   로그인·로그아웃을 거친 뒤 샘플로 돌아와도 새로고침 없이 다시 보여 주기 위해서.
+   샘플은 이 스냅샷에서만 복원되므로 로그인 후 내 캠페인에는 절대 섞이지 않는다. */
+let DEMO_SNAP=null;
+(function keepDemo(){
+  const grab=()=>{try{DEMO_SNAP=JSON.parse(JSON.stringify(serializeDoc()));
+    DEMO_SNAP.__daily=LINES.map(l=>({k:LINE_KEY(l),daily:JSON.parse(JSON.stringify(l.daily))}));
+  }catch(e){}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',grab):setTimeout(grab,0);
+})();
+function restoreDemo(){
+  if(!DEMO_SNAP)return false;
+  clearWorkState();
+  applyDoc(DEMO_SNAP);
+  rebuildPeriod();
+  const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
+  LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
+  buildFacts();buildFilters();buildSelects();
+  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
+  renderRaw();renderCreatives();renderGantt();
+  return true;
+}
 const gateEl=()=>$('gate');
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
@@ -128,7 +150,9 @@ function enterShareView(name,kind){
 /* 샘플 둘러보기는 시행사 전용 — 데이터 입력 · 캠페인 설정까지 다 열어 둔다.
    (공유 코드로 들어온 광고주와 달리 화면 전체를 둘러볼 수 있어야 하기 때문) */
 function enterSample(){
-  CLOUD.shareView=false;CLOUD.sample=true;
+  CLOUD.shareView=false;CLOUD.sample=true;CLOUD.campaign=null;CLOUD.role=null;
+  /* 로그인·로그아웃을 거쳐 화면이 비어 있을 수 있으므로 예시 데이터를 되살린다 */
+  restoreDemo();
   hideGate();
   if(typeof applyRole==='function')applyRole();
   cloudState('샘플 데이터 둘러보기 · 시행사 화면');
@@ -349,16 +373,27 @@ async function openAccounts(){
 }
 function paintAuth(){
   const u=CLOUD.user;
-  const av=$('meAvatar'),si=$('signIn'),so=$('signOut'),bar=$('demoBar');
+  const av=$('meAvatar'),si=$('signIn'),bar=$('demoBar');
+  const mail=$('meMail'),nameEl=$('meName'),sub=$('meSub'),wrap=$('meWrap'),menu=$('meMenu');
   if(u){
     const nm=u.user_metadata?.full_name||u.email||'';
-    av.textContent=nm.slice(0,2).toUpperCase();av.title=`${nm} · ${u.email}`;
-    si.classList.add('hidden');so.classList.remove('hidden');
+    av.textContent=(nm[0]||'U').toUpperCase();
+    if(mail)mail.textContent=u.email||nm;
+    if(nameEl)nameEl.textContent=nm;
+    if(sub)sub.textContent=`${u.email||''} · ${APP_ROLE_LABEL[CLOUD.appRole]||'게스트'}`;
+    si.classList.add('hidden');
+    if(wrap)wrap.classList.remove('hidden');
     if(bar)bar.classList.add('hidden');
   }else{
-    av.textContent='GU';av.title='게스트 (데모 모드)';
-    si.classList.remove('hidden');so.classList.add('hidden');
+    av.textContent='GU';
+    if(mail)mail.textContent='게스트';
+    if(nameEl)nameEl.textContent='게스트';
+    if(sub)sub.textContent='로그인하지 않음';
+    si.classList.remove('hidden');
+    /* 로그인하지 않았으면 계정 버튼(=로그아웃 메뉴)은 숨긴다 */
+    if(wrap)wrap.classList.add('hidden');
     if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');}
+  if(menu)menu.classList.add('hidden');
   if(typeof applyRoleLock==='function')applyRoleLock();
 }
 
@@ -396,6 +431,7 @@ async function openCampaign(id){
   const {data:mem}=await CLOUD.sb.from('campaign_members')
     .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
   CLOUD.role=mem?.role||'viewer';
+  clearWorkState();
   applyDoc(c.doc);
   rebuildPeriod();
   const {data:rows}=await CLOUD.sb.from('daily_stats')
@@ -450,15 +486,49 @@ async function cloudSave(silent){
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   await CLOUD.sb.from('campaign_history').insert({
     campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
-  const t=new Date();
-  cloudState(`저장됨 ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`);
+  CLOUD.savedAt=new Date();
+  paintSaved();
 }
+/* ---------- 자동 저장 · "00분 전에 저장됨" ---------- */
+const AUTO_SAVE_MS=3*60*1000;          /* 바뀐 내용이 있으면 3분마다 조용히 저장 */
+function paintSaved(){
+  if(!CLOUD.savedAt)return;
+  const m=Math.floor((Date.now()-CLOUD.savedAt.getTime())/60000);
+  const t=CLOUD.savedAt;
+  const hhmm=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  const el2=$('cloudState');
+  if(el2){
+    el2.textContent=m<1?'방금 저장됨':m<60?`${m}분 전에 저장됨`
+      :m<1440?`${Math.floor(m/60)}시간 전에 저장됨`:`${hhmm} 에 저장됨`;
+    el2.title=`마지막 저장 ${dFull(t)} ${hhmm}`;}
+}
+/* 화면에 바뀐 내용이 생기면 표시해 둔다 (자동 저장 대상) */
+function markDirty(){CLOUD.dirty=true;}
+(function autoSave(){
+  setInterval(()=>{
+    paintSaved();
+    if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign||CLOUD.role==='viewer')return;
+    if(!CLOUD.dirty||CLOUD.busy)return;
+    if(CLOUD.savedAt&&Date.now()-CLOUD.savedAt.getTime()<AUTO_SAVE_MS)return;
+    CLOUD.dirty=false;cloudSave(true);
+  },30000);
+})();
 /* 빈 캠페인으로 초기화 — 새 캠페인이 데모 데이터를 그대로 안고 저장되던 문제를 막는다 */
+/* 캠페인을 옮겨 다닐 때 앞 캠페인의 값이 남지 않도록 화면 상태를 통째로 비운다 */
+function clearWorkState(){
+  if(typeof SHEET!=='undefined')SHEET.length=0;
+  if(typeof SHEET_HIST!=='undefined')SHEET_HIST.length=0;
+  if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
+  if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
+  try{HIDDEN.clear();}catch(e){}
+  try{DIRTY_AT=null;}catch(e){}
+  try{LINE_DIRTY=null;}catch(e){}
+}
 function resetToBlank(name,advertiser){
   CAMPAIGN.name=name||'새 캠페인';
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
-  if(typeof SHEET!=='undefined')SHEET.length=0;
+  clearWorkState();
   rebuildPeriod();buildFacts();
   buildFilters();buildSelects();
   renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
@@ -530,12 +600,16 @@ async function openCampManage(){
             <span class="sharecode view">${esc(c.share_code||'–')}</span>
             <button class="copyb" data-copy="${c.id}" data-kind="viewer"
               title="광고주용 접속 링크를 복사합니다">⧉</button></div></td>
-        <td class="acts">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
+        <td class="acts">
+          <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-          <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 초대</button>
-          <button class="btn sm" data-ren="${c.id}">이름 변경</button>
-          <button class="btn sm" data-dup="${c.id}">복제</button>
-          <button class="btn sm danger" data-del="${c.id}">삭제</button></td></tr>`;});
+            <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 운영진 초대</button>
+          </div>
+          <div class="ln">
+            <button class="btn sm" data-ren="${c.id}">이름 변경</button>
+            <button class="btn sm" data-dup="${c.id}">캠페인 복제</button>
+            <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
+          </div></td></tr>`;});
     h+='</tbody></table>';}
   openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
@@ -631,6 +705,12 @@ async function removeMember(userId){
   const b=id=>$(id);
   if(b('signIn'))b('signIn').onclick=signInGoogle;
   if(b('signOut'))b('signOut').onclick=signOutCloud;
+  /* 계정 버튼 — 누르면 로그아웃 메뉴 열기/닫기 */
+  if(b('meBtn'))b('meBtn').onclick=e=>{e.stopPropagation();
+    $('meMenu').classList.toggle('hidden');};
+  document.addEventListener('click',e=>{
+    const m=$('meMenu');
+    if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
   if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
@@ -653,4 +733,7 @@ async function removeMember(userId){
   const chain=(id,fn)=>{const el2=$(id);if(!el2)return;const prev=el2.onclick;
     el2.onclick=async e=>{if(prev)await prev.call(el2,e);if(CLOUD.on&&CLOUD.user)cloudSave(true);};};
   chain('saveAll');chain('saveLines');chain('saveRows');
+  /* 화면에서 값을 바꾸면 자동 저장 대상으로 표시한다 */
+  ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{
+    if(e.target.closest('#gate,#modalHost'))return;markDirty();},true));
 })();

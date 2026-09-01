@@ -29,8 +29,17 @@
   <span class="hint" id="cloudState">데모 모드</span>
   <button class="btn sm agency-only" id="cloudSave" title="이 캠페인을 클라우드에 저장">☁ 저장</button>
   <button class="pill" id="signIn"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>구글 로그인</button>
-  <div class="avatar" id="meAvatar" title="게스트">GU</div>
-  <button class="btn sm hidden" id="signOut">로그아웃</button>
+  <div class="mewrap" id="meWrap">
+    <button class="me" id="meBtn" title="계정">
+      <span class="avatar" id="meAvatar">GU</span>
+      <span class="mail" id="meMail">게스트</span>
+      <span class="cv">▾</span>
+    </button>
+    <div class="memenu hidden" id="meMenu">
+      <div class="mi head"><b id="meName">게스트</b><span id="meSub">로그인하지 않음</span></div>
+      <button class="mi" id="signOut">로그아웃</button>
+    </div>
+  </div>
 </div>
 <div class="demobar" id="demoBar">
   <span>ⓘ</span><div><b>데모 모드</b> — 지금 보이는 값은 예시 데이터입니다.
@@ -250,6 +259,7 @@
 <div class="wrap hidden" id="tab-setup">
   <div class="sec">캠페인 기본 정보
     <div class="tools">
+      <button class="btn sm" id="guideBtn" title="사용 가이드 PDF를 내려받습니다">📘 사용 가이드</button>
       <button class="btn sm" id="holBtn">🗓 공휴일 설정</button>
       <button class="btn sm" id="campHistBtn">🕘 변경 히스토리</button>
       <button class="btn sm primary" id="saveAll">캠페인 설정 저장</button>

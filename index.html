@@ -43,13 +43,13 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
 /* 배경 — 푸른 계열 그라데이션이 흐른다.
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
-body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.70;
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.78;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(170,190,212,.82), transparent 66%),
+    radial-gradient(40% 44% at 12% 18%, rgba(126,155,186,.92), transparent 66%),
     radial-gradient(34% 40% at 78% 10%, rgba(243,248,252,.32), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(158,180,204,.76), transparent 68%),
+    radial-gradient(44% 48% at 88% 80%, rgba(112,143,177,.88), transparent 68%),
     radial-gradient(36% 40% at 26% 90%, rgba(245,249,253,.30), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(196,212,228,.58), transparent 70%);
+    radial-gradient(32% 36% at 54% 50%, rgba(160,184,210,.70), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -104,13 +104,45 @@ body[data-mode="sample"] #acctBtn{display:none !important}
 .codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
 .codeline .ck.staff{color:#2f4a63;background:#dde5ee}
 .codeline .ck.view{color:#42625f;background:#dfeae8}
+/* 계정 버튼 — 로그인한 구글 아이디를 보여 주고, 누르면 로그아웃 메뉴가 열린다 */
+.mewrap{position:relative}
+.me{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;padding:3px 11px 3px 4px;cursor:pointer;max-width:250px}
+.me:hover{border-color:var(--acc)}
+.me .avatar{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-size:10.5px;
+  font-weight:800;display:grid;place-items:center;flex:none}
+.me .mail{font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:172px}
+.me .cv{font-size:9px;color:var(--muted);flex:none}
+.memenu{position:absolute;right:0;top:calc(100% + 7px);min-width:238px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2);padding:6px;z-index:80}
+.memenu.hidden{display:none}
+.memenu .mi{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;
+  padding:8px 11px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.memenu .mi:hover{background:var(--acc-soft)}
+.memenu .mi.head{cursor:default;border-bottom:1px solid var(--line2);border-radius:0;margin-bottom:4px;
+  padding-bottom:9px}
+.memenu .mi.head b{display:block;font-size:13px}
+.memenu .mi.head span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis}
+/* 데이터가 없을 때 대시보드 자리에 보여 주는 안내 */
+.emptybox{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:46px 30px;text-align:center;margin:22px 0}
+.emptybox.hidden{display:none}
+.emptybox .ttl{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.emptybox .txt{margin-top:9px;font-size:13px;color:var(--ink2);line-height:1.7}
+.emptybox .acts{margin-top:18px;display:flex;gap:8px;justify-content:center}
+.nodata{display:none !important}
 .copyb{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:6px;
   width:22px;height:22px;line-height:1;font-size:12px;cursor:pointer;padding:0;flex:none}
 .copyb:hover{border-color:var(--acc);color:var(--acc)}
 .copyb.ok{border-color:#3d6b52;color:#3d6b52}
-/* 캠페인 관리 — 액션 버튼은 좁아지면 두 줄로 접힌다 */
-table.tbl td.acts{white-space:normal}
-table.tbl td.acts>*{display:inline-flex;margin:2px}
+/* 캠페인 관리 — 액션 버튼 두 줄, 글자는 세로 가운데 */
+table.tbl td.acts{white-space:normal;padding:8px 10px}
+table.tbl td.acts .ln{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+table.tbl td.acts .ln+.ln{margin-top:5px}
+table.tbl td.acts .btn{display:inline-flex;align-items:center;justify-content:center;
+  line-height:1;height:26px;padding:0 10px}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -118,7 +150,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 
 /* ---------- top ---------- */
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:14px;padding:0 44px;height:56px}
+  display:flex;align-items:center;gap:14px;padding:0 76px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
 .logo{cursor:pointer}
 .logo:hover .mark{filter:brightness(1.06)}
@@ -138,17 +170,19 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 #signIn{gap:7px;font-weight:700}
 #signIn svg{flex:none}
 .demobar{display:flex;align-items:center;gap:10px;background:#fff6e8;border-bottom:1px solid #f0dfc4;
-  color:#7a5a22;padding:8px 44px;font-size:12px}
+  color:#7a5a22;padding:8px 76px;font-size:12px}
 .demobar>span{font-size:13px}
 .demobar>div{flex:1}
 .demobar .btn{height:24px;padding:0 9px;font-size:11px;border-color:#e4d3b8;background:#fffdf8}
-.tabs{background:var(--surface);padding:0 44px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
+.tabs{background:var(--surface);padding:0 76px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
+@media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}
+  .subbar{padding:11px 40px}.demobar{padding:9px 40px}}
 .tabs button{border:0;background:transparent;padding:12px 14px 10px;cursor:pointer;color:var(--ink2);
   font-weight:600;border-bottom:2px solid transparent;font-size:13.5px}
 .tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
 /* 하위 탭 = 메인 탭 바로 아래 붙임 */
 .tabs{border-bottom:1px solid var(--line)}
-.subbar{background:#e4e7ec;border-bottom:1px solid #d7dadf;padding:11px 44px;
+.subbar{background:#e4e7ec;border-bottom:1px solid #d7dadf;padding:11px 76px;
   position:sticky;top:97px;z-index:58;display:flex;gap:6px}
 .subbar button{border:1px solid transparent;background:transparent;padding:7px 18px;border-radius:9px;cursor:pointer;
   color:var(--ink2);font-weight:600;font-size:13px}
@@ -221,7 +255,8 @@ table.tbl.nogauge .gauge .track{display:none}
   background:var(--acc-soft);border-radius:6px;padding:1px 7px;vertical-align:1px}
 
 /* ---------- layout ---------- */
-.wrap{padding:16px 44px 80px;max-width:1860px;margin:0 auto}
+.wrap{padding:16px 76px 84px;max-width:1900px;margin:0 auto}
+@media (max-width:1500px){.wrap{padding:16px 40px 84px}}
 .sec{font-size:19px;font-weight:700;color:var(--sec);margin:28px 0 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;letter-spacing:-.3px}
 .sec.gap{margin-top:40px}
 .sec.gap2{margin-top:56px}
@@ -413,14 +448,14 @@ table.tbl.nogauge .gauge .track{display:none}
   pointer-events:none;z-index:2}
 .tmap .grp>.gh{position:absolute;left:0;right:0;top:0;height:17px;line-height:17px;padding:0 6px;
   font-size:10.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  background:rgba(255,255,255,.62);color:var(--ink2)}
+  color:#fff;text-shadow:0 1px 1px rgba(20,30,42,.28)}
 .tmap .tile{position:absolute;overflow:hidden;border:1px solid rgba(255,255,255,.55);
   display:flex;flex-direction:column;justify-content:center;padding:4px 6px;cursor:default;
   transition:filter .1s}
 .tmap .tile:hover{filter:brightness(1.14)}
 .tmap .tile .tn{font-size:11px;font-weight:700;line-height:1.2;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-.tmap .tile .tv{font-size:10.5px;opacity:.86;font-variant-numeric:tabular-nums;margin-top:1px}
+  text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 1.5px rgba(20,30,42,.30)}
+.tmap .tile .tv{font-size:10.5px;opacity:.92;text-shadow:0 1px 1.5px rgba(20,30,42,.26);font-variant-numeric:tabular-nums;margin-top:1px}
 .tmap .tile.sm .tv{display:none}
 .tmap .tile.xs .tn{font-size:9.5px}
 .tmap .tile.tiny .tn,.tmap .tile.tiny .tv{display:none}
@@ -532,10 +567,10 @@ table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
 /* 목표(예상) 수치 열 — 실적 열과 구분되게 옅은 배경 (소계·총계 행에서도 유지) */
-table.tbl td.goal{background:#dde4ed}
-table.tbl tbody tr:hover td.goal{background:#d3dce7}
-table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#2f3946}
-table.tbl td.goal.blank{background:#e9ecf1}
+table.tbl td.goal{background:#c6d4e4}
+table.tbl tbody tr:hover td.goal{background:#b9cadd}
+table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#3d4c5e}
+table.tbl td.goal.blank{background:#dbe2ea}
 table.tbl td.blank{background:#f2f4f7}
 table.tbl td.blank .na{color:#b6bfca}
 table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
@@ -552,12 +587,12 @@ table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#ed
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
 /* 소계 행의 목표 열 — 각 단계 배경보다 한 톤 진하게 */
-table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#dde3ec !important}
-table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#bfcbdb !important}
-table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#d3dce8 !important}
-table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#e0e7f0 !important}
-table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#e9eff6 !important}
-table.tbl tr.sub td.goal.blank{background:#e5e9f0 !important}
+table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#c0cede !important}
+table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#aabbd0 !important}
+table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#bccbdd !important}
+table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#ccd8e6 !important}
+table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#d8e2ed !important}
+table.tbl tr.sub td.goal.blank{background:#ccd6e2 !important}
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}
@@ -748,12 +783,18 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .lblink input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(73,94,114,.15)}
 
 /* gantt */
-.gantt-wrap{overflow:auto;max-height:70vh}
+/* 게재 히스토리 — 세로 스크롤 없이 전체 높이를 그대로 보여 준다 (소재 비교가 중요).
+   overflow-y:clip 은 스크롤 컨테이너를 만들지 않으므로 헤더가 페이지 기준으로 고정된다. */
+.gantt-wrap{overflow-x:auto;overflow-y:clip;max-height:none}
 table.gantt{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;white-space:nowrap;width:100%;table-layout:auto}
 table.gantt th,table.gantt td{border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
   font-size:11.5px;text-align:center;padding:0}
-table.gantt th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:5;height:26px}
-table.gantt thead tr:nth-child(2) th{top:26px}
+table.gantt th{background:var(--hdr);color:#fff;font-weight:700;z-index:5;height:26px}
+/* 세로 스크롤이 없으므로 헤더는 아래의 떠 있는 머리글 막대(.ghfix)로 고정한다 */
+.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;box-shadow:0 4px 10px rgba(31,44,61,.13)}
+.ghfix.on{display:block}
+.ghfix .inner{overflow:hidden}
+.ghfix table.gantt{margin:0}
 table.gantt th.mo{background:var(--hdr2)}
 table.gantt th.gsep,table.gantt td.gsep{border-left:1px solid var(--gline)}
 table.gantt th.lead,table.gantt td.lead{position:sticky;z-index:6;background:var(--surface);padding:7px 9px;
@@ -878,8 +919,17 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <span class="hint" id="cloudState">데모 모드</span>
   <button class="btn sm agency-only" id="cloudSave" title="이 캠페인을 클라우드에 저장">☁ 저장</button>
   <button class="pill" id="signIn"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>구글 로그인</button>
-  <div class="avatar" id="meAvatar" title="게스트">GU</div>
-  <button class="btn sm hidden" id="signOut">로그아웃</button>
+  <div class="mewrap" id="meWrap">
+    <button class="me" id="meBtn" title="계정">
+      <span class="avatar" id="meAvatar">GU</span>
+      <span class="mail" id="meMail">게스트</span>
+      <span class="cv">▾</span>
+    </button>
+    <div class="memenu hidden" id="meMenu">
+      <div class="mi head"><b id="meName">게스트</b><span id="meSub">로그인하지 않음</span></div>
+      <button class="mi" id="signOut">로그아웃</button>
+    </div>
+  </div>
 </div>
 <div class="demobar" id="demoBar">
   <span>ⓘ</span><div><b>데모 모드</b> — 지금 보이는 값은 예시 데이터입니다.
@@ -1099,6 +1149,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 <div class="wrap hidden" id="tab-setup">
   <div class="sec">캠페인 기본 정보
     <div class="tools">
+      <button class="btn sm" id="guideBtn" title="사용 가이드 PDF를 내려받습니다">📘 사용 가이드</button>
       <button class="btn sm" id="holBtn">🗓 공휴일 설정</button>
       <button class="btn sm" id="campHistBtn">🕘 변경 히스토리</button>
       <button class="btn sm primary" id="saveAll">캠페인 설정 저장</button>
@@ -3134,6 +3185,60 @@ function renderGantt(){
   t.style.minWidth=(leadTotal+VD.length*13)+'px';
   enableRowDrag(t,GANTT,renderGantt);
   wireGanttHover(t,SC);
+  mountGanttHead(t);
+}
+/* ---- 떠 있는 머리글 막대 ----
+   게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서
+   position:sticky 로는 머리글을 붙일 수 없다. 대신 머리글만 복사해 화면 위쪽에 띄우고,
+   가로 스크롤은 원래 표와 서로 맞춘다. */
+function mountGanttHead(tbl){
+  const wrap=tbl.closest('.gantt-wrap');if(!wrap)return;
+  let bar=$('ganttHead');
+  if(!bar){bar=el('div','ghfix');bar.id='ganttHead';document.body.appendChild(bar);}
+  const inner=el('div','inner');
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  /* 원본 열 너비를 그대로 옮긴다 */
+  const cg=document.createElement('colgroup');
+  [...tbl.tHead.rows[1].cells].forEach(()=>{});
+  const firstRow=tbl.tBodies[0]&&tbl.tBodies[0].rows[0];
+  if(firstRow){[...firstRow.cells].forEach(td=>{
+    const c=document.createElement('col');
+    c.style.width=Math.round(td.getBoundingClientRect().width)+'px';
+    cg.appendChild(c);});
+    clone.insertBefore(cg,clone.firstChild);}
+  clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
+  inner.appendChild(clone);
+  bar.innerHTML='';bar.appendChild(inner);
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    const sec=document.querySelector('.card[data-sect="gantt"]');
+    if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+20;
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    /* 복사본 표의 폭을 원본과 똑같이 맞춰야 가로 스크롤 위치가 어긋나지 않는다 */
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.onscroll=()=>{inner.scrollLeft=wrap.scrollLeft;};
+  window.__ganttPlace=place;
+  if(!window.__ganttHeadWired){
+    window.__ganttHeadWired=1;
+    const run=()=>{if(window.__ganttPlace)window.__ganttPlace();};
+    addEventListener('scroll',run,true);
+    addEventListener('resize',run);}
+  setTimeout(place,0);setTimeout(place,300);
 }
 /* 날짜 칸·날짜 헤더에 마우스를 올리면 해당 행·열을 살짝 강조하고,
    칸 위에서는 그 날짜·그 소재의 광고 효율을 툴팁으로 보여준다 */
@@ -3259,12 +3364,12 @@ function renderTreemap(){
   const shadeT=(leaves)=>{
     const vals=leaves.map(l=>uk&&l.v>0?(l.c/l.v)*(mk==='imp'?1000:1):NaN)
       .filter(v=>isFinite(v)&&v>0);
-    if(!uk||vals.length<2)return ()=>.30;
+    if(!uk||vals.length<2)return ()=>.20;
     const lo=Math.min(...vals),hi=Math.max(...vals);
     return leaf=>{
       const u=leaf.v>0?(leaf.c/leaf.v)*(mk==='imp'?1000:1):NaN;
-      if(!isFinite(u)||hi===lo)return .34;
-      return .04+((u-lo)/(hi-lo))*.66;};};   /* 단가가 낮을수록 t 작음 = 진함 */
+      if(!isFinite(u)||hi===lo)return .22;
+      return .02+((u-lo)/(hi-lo))*.40;};};   /* 단가가 낮을수록 t 작음 = 진함 */
   const collect=n=>n.kids?n.kids.flatMap(collect):[n];
   const tip=(names,leaf,sect)=>e=>showTip(e.clientX,e.clientY,
     `<div class="t">${names.map(esc).join(' · ')}</div>`
@@ -3282,16 +3387,19 @@ function renderTreemap(){
     const inner=el('div','sin',sec);
     if(sc.h>HEAD+10){
       const hd=el('div','sh',sec);
-      hd.style.background=`rgb(${base.join(',')})`;
+      const sA=mixWhite(base,0),sB=mixWhite(base,.18);
+      hd.style.background=`linear-gradient(100deg,rgb(${sA.join(',')}),rgb(${sB.join(',')}))`;
       hd.innerHTML=`<span>${esc(sc.name)}</span><span class="sv">${pct(sc.v/grand,1)}</span>`;
       inner.style.top=HEAD+'px';}
     const iw=sec.clientWidth||sc.w-6, ih=(sc.h-(sc.h>HEAD+10?HEAD:0))-6;
     const tile=(node,x,y,w,h,names,parent)=>{
-      const t=tOf(node), rgb=mixWhite(base,t);
+      /* 글자를 모두 흰색으로 통일하기 위해 타일이 너무 밝아지지 않게 농도를 묶는다 */
+      const t=Math.min(tOf(node),.42), rgb=mixWhite(base,t);
+      const lite=mixWhite(rgb,.14);
       const d=el('div','tile',inner);
       d.className='tile'+(h<34?' sm':'')+(h<24||w<52?' xs':'')+(h<15||w<34?' tiny':'');
       d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-        +`background:rgb(${rgb.join(',')});color:${inkOn(rgb)}`;
+        +`background:linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}));color:#fff`;
       d.innerHTML=`<div class="tn">${esc(node.name)}</div>`
         +`<div class="tv">${METRICS[mk].f(node.v)}</div>`;
       d.addEventListener('mousemove',tip(names,node,sc));
@@ -3302,7 +3410,9 @@ function renderTreemap(){
           const g=el('div','grp',inner);
           g.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
           const gh=el('div','gh',g);
-          gh.style.color=inkOn(mixWhite(base,.62))==='#fff'?'#fff':'var(--ink2)';
+          const gA=mixWhite(base,.06),gB=mixWhite(base,.24);
+          gh.style.background=`linear-gradient(100deg,rgb(${gA.join(',')}),rgb(${gB.join(',')}))`;
+          gh.style.color='#fff';
           gh.textContent=n.name;
           layout(n.kids,n.x,n.y+SUBHEAD,n.w,n.h-SUBHEAD,names.concat([n.name]),depth+1);
         }else if(n.kids&&n.kids.length){
@@ -4762,6 +4872,21 @@ $('histBtn').onclick=openHistory;
 $('campHistBtn').onclick=openCampHist;
 /* 계정 · 권한은 상단 ⚙ 캠페인 관리 → 👥 초대 로 옮겼다 */
 if($('permBtn'))$('permBtn').onclick=openPerm;
+/* 📘 사용 가이드 — 배포 폴더의 PDF 를 내려받는다 */
+const GUIDE_PDF='guide/사용가이드.pdf';
+if($('guideBtn'))$('guideBtn').onclick=async()=>{
+  try{
+    const r=await fetch(GUIDE_PDF,{method:'HEAD'});
+    if(!r.ok)throw new Error('없음');
+    const a=document.createElement('a');
+    a.href=GUIDE_PDF;a.download='Digital Media Dashboard 사용 가이드.pdf';
+    document.body.appendChild(a);a.click();a.remove();
+  }catch(e){
+    confirmModal('가이드 파일을 찾지 못했습니다.',
+      '배포 폴더의 guide/사용가이드.pdf 를 함께 올려 주세요. '
+      +'(내려받은 zip 안에 들어 있습니다. 파일 하나만 열어 보는 중이라면 같은 폴더에 guide 폴더를 두면 됩니다.)',
+      ()=>{},'확인');}
+};
 $('holBtn').onclick=openHolidays;
 $('saveAll').onclick=()=>{rebuildPeriod();buildFacts();renderAll();renderKpiTable();renderSheet();
   confirmModal('캠페인 설정을 저장했습니다.','기본 정보와 라인별 설정이 모두 반영되었습니다.',()=>{},'확인');};
@@ -4798,23 +4923,45 @@ function renderIssueAlert(){
       기간이 겹치는 이슈의 내용을 짧게 줄이거나 통합해 주세요. (그래프에는 최대 5줄까지 표시됩니다)</div>`;}
   else box.classList.add('hidden');
 }
+/* 아직 아무 데이터도 없는 캠페인은 0% · 1일차 같은 숫자 대신 안내만 보여 준다 */
+function dashEmpty(){
+  const on=!LINES.length||!FACTS.length;
+  const host=$('tab-dash');if(!host)return on;
+  let box=$('dashEmpty');
+  if(!box){
+    box=el('div','emptybox');box.id='dashEmpty';
+    host.insertBefore(box,host.firstChild);}
+  const client=isClient();
+  box.innerHTML=`<div class="ttl">아직 표시할 데이터가 없습니다</div>`
+    +`<div class="txt">${client
+      ? '시행사에서 실적을 입력하면 이 화면에 대시보드가 나타납니다.'
+      : '<b>캠페인 설정</b>에서 예상 효율(라인)을 먼저 넣고, <b>데이터 입력</b>에서 일자별 실적을 채워 주세요.'}</div>`
+    +(client?'':`<div class="acts">
+        <button class="btn primary" data-go="setup">캠페인 설정으로</button>
+        <button class="btn" data-go="input">데이터 입력으로</button></div>`);
+  box.classList.toggle('hidden',!on);
+  box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchTab(b.dataset.go));
+  /* 데이터가 없으면 대시보드 본문은 감춘다 */
+  ['sub-perf','sub-table','sub-mix'].forEach(id=>{const e=$(id);if(e)e.classList.toggle('nodata',on);});
+  const sb=$('subbar');if(sb)sb.classList.toggle('nodata',on);
+  /* 캠페인 정보 · 필터 줄도 함께 감춘다 (₩0 만 남으면 오히려 헷갈린다) */
+  const bar=$('campBar');
+  if(bar){bar.classList.toggle('nodata',on);
+    const lbl=bar.previousElementSibling;if(lbl)lbl.classList.toggle('nodata',on);}
+
+  return on;
+}
 function renderAll(){
-  renderCampBar();renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
+  renderCampBar();
+  if(dashEmpty())return;
+  renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
 buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
-/* 예상 효율 히스토리 — 지난 며칠간의 반영 시점 (시안용 시드) */
-(function seedLineHist(){
-  const snap=snapLines();
-  const who=[['윤석진','미디어웍스'],['김미디어','미디어웍스'],['이운영','퍼포먼스랩']];
-  for(let n=0;n<5;n++){
-    const d=new Date(dT.getTime()-n*DAY);d.setHours(10+(n%3)*3,15+(n*11)%40,0,0);
-    LINE_HIST.push({t:d,who:who[n%3][0],org:who[n%3][1],kind:n===0?'자동 저장':'반영 완료',snap});}
-  const e=$('lineSaveState');if(e)e.textContent=`반영 완료 ${hhmm(LINE_HIST[0].t)}`;
-})();
+/* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */
 /* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
    config.js 와 supabase-js 가 둘 다 있을 때만 켜진다. 없으면 지금까지처럼 데모(더미) 모드. */
 /* 접속 권한 4단계 (v24)
@@ -4822,7 +4969,7 @@ setTimeout(()=>{equalizeDuo();renderTreemap();},0);
    role     = 이 캠페인 안에서의 권한 : master(마스터) / editor(운영진) / viewer(광고주)
    shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) */
 const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:false,
-  shareView:false,sample:false,appRole:'guest',shareRole:null};
+  shareView:false,sample:false,appRole:'guest',shareRole:null,savedAt:null,dirty:false};
 const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
 /* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
@@ -4927,6 +5074,28 @@ const normCode=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8
 /* 샘플(데모) 캠페인의 코드 — 클라우드가 없을 때 이 코드로도 들어올 수 있다 */
 const SAMPLE_CODE='DEMO-2026';        /* 샘플 둘러보기 (시행사 화면) */
 const SAMPLE_VIEW_CODE='VIEW-2026';   /* 샘플을 광고주 화면으로 보고 싶을 때 */
+/* 처음 켰을 때의 예시 데이터를 그대로 떠 놓는다 —
+   로그인·로그아웃을 거친 뒤 샘플로 돌아와도 새로고침 없이 다시 보여 주기 위해서.
+   샘플은 이 스냅샷에서만 복원되므로 로그인 후 내 캠페인에는 절대 섞이지 않는다. */
+let DEMO_SNAP=null;
+(function keepDemo(){
+  const grab=()=>{try{DEMO_SNAP=JSON.parse(JSON.stringify(serializeDoc()));
+    DEMO_SNAP.__daily=LINES.map(l=>({k:LINE_KEY(l),daily:JSON.parse(JSON.stringify(l.daily))}));
+  }catch(e){}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',grab):setTimeout(grab,0);
+})();
+function restoreDemo(){
+  if(!DEMO_SNAP)return false;
+  clearWorkState();
+  applyDoc(DEMO_SNAP);
+  rebuildPeriod();
+  const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
+  LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
+  buildFacts();buildFilters();buildSelects();
+  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
+  renderRaw();renderCreatives();renderGantt();
+  return true;
+}
 const gateEl=()=>$('gate');
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
@@ -4945,7 +5114,9 @@ function enterShareView(name,kind){
 /* 샘플 둘러보기는 시행사 전용 — 데이터 입력 · 캠페인 설정까지 다 열어 둔다.
    (공유 코드로 들어온 광고주와 달리 화면 전체를 둘러볼 수 있어야 하기 때문) */
 function enterSample(){
-  CLOUD.shareView=false;CLOUD.sample=true;
+  CLOUD.shareView=false;CLOUD.sample=true;CLOUD.campaign=null;CLOUD.role=null;
+  /* 로그인·로그아웃을 거쳐 화면이 비어 있을 수 있으므로 예시 데이터를 되살린다 */
+  restoreDemo();
   hideGate();
   if(typeof applyRole==='function')applyRole();
   cloudState('샘플 데이터 둘러보기 · 시행사 화면');
@@ -5166,16 +5337,27 @@ async function openAccounts(){
 }
 function paintAuth(){
   const u=CLOUD.user;
-  const av=$('meAvatar'),si=$('signIn'),so=$('signOut'),bar=$('demoBar');
+  const av=$('meAvatar'),si=$('signIn'),bar=$('demoBar');
+  const mail=$('meMail'),nameEl=$('meName'),sub=$('meSub'),wrap=$('meWrap'),menu=$('meMenu');
   if(u){
     const nm=u.user_metadata?.full_name||u.email||'';
-    av.textContent=nm.slice(0,2).toUpperCase();av.title=`${nm} · ${u.email}`;
-    si.classList.add('hidden');so.classList.remove('hidden');
+    av.textContent=(nm[0]||'U').toUpperCase();
+    if(mail)mail.textContent=u.email||nm;
+    if(nameEl)nameEl.textContent=nm;
+    if(sub)sub.textContent=`${u.email||''} · ${APP_ROLE_LABEL[CLOUD.appRole]||'게스트'}`;
+    si.classList.add('hidden');
+    if(wrap)wrap.classList.remove('hidden');
     if(bar)bar.classList.add('hidden');
   }else{
-    av.textContent='GU';av.title='게스트 (데모 모드)';
-    si.classList.remove('hidden');so.classList.add('hidden');
+    av.textContent='GU';
+    if(mail)mail.textContent='게스트';
+    if(nameEl)nameEl.textContent='게스트';
+    if(sub)sub.textContent='로그인하지 않음';
+    si.classList.remove('hidden');
+    /* 로그인하지 않았으면 계정 버튼(=로그아웃 메뉴)은 숨긴다 */
+    if(wrap)wrap.classList.add('hidden');
     if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');}
+  if(menu)menu.classList.add('hidden');
   if(typeof applyRoleLock==='function')applyRoleLock();
 }
 
@@ -5213,6 +5395,7 @@ async function openCampaign(id){
   const {data:mem}=await CLOUD.sb.from('campaign_members')
     .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
   CLOUD.role=mem?.role||'viewer';
+  clearWorkState();
   applyDoc(c.doc);
   rebuildPeriod();
   const {data:rows}=await CLOUD.sb.from('daily_stats')
@@ -5267,15 +5450,49 @@ async function cloudSave(silent){
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   await CLOUD.sb.from('campaign_history').insert({
     campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
-  const t=new Date();
-  cloudState(`저장됨 ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`);
+  CLOUD.savedAt=new Date();
+  paintSaved();
 }
+/* ---------- 자동 저장 · "00분 전에 저장됨" ---------- */
+const AUTO_SAVE_MS=3*60*1000;          /* 바뀐 내용이 있으면 3분마다 조용히 저장 */
+function paintSaved(){
+  if(!CLOUD.savedAt)return;
+  const m=Math.floor((Date.now()-CLOUD.savedAt.getTime())/60000);
+  const t=CLOUD.savedAt;
+  const hhmm=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  const el2=$('cloudState');
+  if(el2){
+    el2.textContent=m<1?'방금 저장됨':m<60?`${m}분 전에 저장됨`
+      :m<1440?`${Math.floor(m/60)}시간 전에 저장됨`:`${hhmm} 에 저장됨`;
+    el2.title=`마지막 저장 ${dFull(t)} ${hhmm}`;}
+}
+/* 화면에 바뀐 내용이 생기면 표시해 둔다 (자동 저장 대상) */
+function markDirty(){CLOUD.dirty=true;}
+(function autoSave(){
+  setInterval(()=>{
+    paintSaved();
+    if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign||CLOUD.role==='viewer')return;
+    if(!CLOUD.dirty||CLOUD.busy)return;
+    if(CLOUD.savedAt&&Date.now()-CLOUD.savedAt.getTime()<AUTO_SAVE_MS)return;
+    CLOUD.dirty=false;cloudSave(true);
+  },30000);
+})();
 /* 빈 캠페인으로 초기화 — 새 캠페인이 데모 데이터를 그대로 안고 저장되던 문제를 막는다 */
+/* 캠페인을 옮겨 다닐 때 앞 캠페인의 값이 남지 않도록 화면 상태를 통째로 비운다 */
+function clearWorkState(){
+  if(typeof SHEET!=='undefined')SHEET.length=0;
+  if(typeof SHEET_HIST!=='undefined')SHEET_HIST.length=0;
+  if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
+  if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
+  try{HIDDEN.clear();}catch(e){}
+  try{DIRTY_AT=null;}catch(e){}
+  try{LINE_DIRTY=null;}catch(e){}
+}
 function resetToBlank(name,advertiser){
   CAMPAIGN.name=name||'새 캠페인';
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
-  if(typeof SHEET!=='undefined')SHEET.length=0;
+  clearWorkState();
   rebuildPeriod();buildFacts();
   buildFilters();buildSelects();
   renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
@@ -5347,12 +5564,16 @@ async function openCampManage(){
             <span class="sharecode view">${esc(c.share_code||'–')}</span>
             <button class="copyb" data-copy="${c.id}" data-kind="viewer"
               title="광고주용 접속 링크를 복사합니다">⧉</button></div></td>
-        <td class="acts">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
+        <td class="acts">
+          <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-          <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 초대</button>
-          <button class="btn sm" data-ren="${c.id}">이름 변경</button>
-          <button class="btn sm" data-dup="${c.id}">복제</button>
-          <button class="btn sm danger" data-del="${c.id}">삭제</button></td></tr>`;});
+            <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 운영진 초대</button>
+          </div>
+          <div class="ln">
+            <button class="btn sm" data-ren="${c.id}">이름 변경</button>
+            <button class="btn sm" data-dup="${c.id}">캠페인 복제</button>
+            <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
+          </div></td></tr>`;});
     h+='</tbody></table>';}
   openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
@@ -5448,6 +5669,12 @@ async function removeMember(userId){
   const b=id=>$(id);
   if(b('signIn'))b('signIn').onclick=signInGoogle;
   if(b('signOut'))b('signOut').onclick=signOutCloud;
+  /* 계정 버튼 — 누르면 로그아웃 메뉴 열기/닫기 */
+  if(b('meBtn'))b('meBtn').onclick=e=>{e.stopPropagation();
+    $('meMenu').classList.toggle('hidden');};
+  document.addEventListener('click',e=>{
+    const m=$('meMenu');
+    if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
   if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
@@ -5470,6 +5697,9 @@ async function removeMember(userId){
   const chain=(id,fn)=>{const el2=$(id);if(!el2)return;const prev=el2.onclick;
     el2.onclick=async e=>{if(prev)await prev.call(el2,e);if(CLOUD.on&&CLOUD.user)cloudSave(true);};};
   chain('saveAll');chain('saveLines');chain('saveRows');
+  /* 화면에서 값을 바꾸면 자동 저장 대상으로 표시한다 */
+  ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{
+    if(e.target.closest('#gate,#modalHost'))return;markDirty();},true));
 })();
 /* ===== 12. 엑셀 템플릿 — 내려받기 · 불러오기 =====
    템플릿에는 "직접 입력하는 항목"만 넣는다. CTR·CPM 같은 계산 항목은
@@ -5858,6 +6088,23 @@ function renderHiddenBar(){
     HIDDEN.delete(b.dataset.show);applyHidden();renderSummaries();});
   bar.querySelector('[data-showall]').onclick=()=>{HIDDEN.clear();applyHidden();renderSummaries();};
 }
+/* 표 헤더 고정 위치 — 상단바 + 탭 + 서브바가 차지하는 높이를 CSS 변수로 알려 준다
+   (세로 스크롤 없는 표들이 이 값을 기준으로 헤더를 붙인다) */
+function syncStick(){
+  const sb=document.querySelector('#subbar'),tb=document.querySelector('.tabs');
+  const base=sb&&sb.offsetParent?sb:tb;
+  if(!base)return;
+  const r=base.getBoundingClientRect();
+  const top=Math.max(0,Math.round(r.bottom-(base.style.position==='fixed'?0:0)));
+  /* 화면 맨 위에 붙어 있을 때의 높이를 쓴다 (스크롤 위치와 무관하게) */
+  const h=(document.querySelector('.topbar')?.offsetHeight||0)
+    +(tb?.offsetHeight||0)+(sb&&sb.offsetParent?sb.offsetHeight:0);
+  document.documentElement.style.setProperty('--stick',h+'px');
+}
+addEventListener('resize',syncStick);
+addEventListener('load',syncStick);
+setTimeout(syncStick,0);setTimeout(syncStick,600);
+
 /* 각 섹션 제목 우측에 숨기기 버튼을 붙인다 */
 (function wireHide(){
   document.querySelectorAll('.sec[data-sect]').forEach(sec=>{

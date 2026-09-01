@@ -26,6 +26,23 @@ function renderHiddenBar(){
     HIDDEN.delete(b.dataset.show);applyHidden();renderSummaries();});
   bar.querySelector('[data-showall]').onclick=()=>{HIDDEN.clear();applyHidden();renderSummaries();};
 }
+/* 표 헤더 고정 위치 — 상단바 + 탭 + 서브바가 차지하는 높이를 CSS 변수로 알려 준다
+   (세로 스크롤 없는 표들이 이 값을 기준으로 헤더를 붙인다) */
+function syncStick(){
+  const sb=document.querySelector('#subbar'),tb=document.querySelector('.tabs');
+  const base=sb&&sb.offsetParent?sb:tb;
+  if(!base)return;
+  const r=base.getBoundingClientRect();
+  const top=Math.max(0,Math.round(r.bottom-(base.style.position==='fixed'?0:0)));
+  /* 화면 맨 위에 붙어 있을 때의 높이를 쓴다 (스크롤 위치와 무관하게) */
+  const h=(document.querySelector('.topbar')?.offsetHeight||0)
+    +(tb?.offsetHeight||0)+(sb&&sb.offsetParent?sb.offsetHeight:0);
+  document.documentElement.style.setProperty('--stick',h+'px');
+}
+addEventListener('resize',syncStick);
+addEventListener('load',syncStick);
+setTimeout(syncStick,0);setTimeout(syncStick,600);
+
 /* 각 섹션 제목 우측에 숨기기 버튼을 붙인다 */
 (function wireHide(){
   document.querySelectorAll('.sec[data-sect]').forEach(sec=>{
