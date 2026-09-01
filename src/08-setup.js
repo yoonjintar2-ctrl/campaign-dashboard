@@ -8,18 +8,20 @@ function renderCampForm(){
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
     <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
     <div class="fld" style="width:160px"><label>Net 예산 (자동 역산)</label><div class="ro">${won(net)}</div></div>
-    <div class="fld" style="width:210px"><label>Value (자동)</label>
+    <div class="fld" style="width:210px"><label>Value (합계)</label>
       <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>
     <div class="fld" style="width:120px"><label>평균 수수료율</label><div class="ro">${((1-net/gross)*100).toFixed(2)}%</div></div>`;
 }
 /* 라인 표 — 열 정의 기반 (열 설정에서 on/off) */
 /* 라인 표 열 — 고정 열(차원·KPI) + 항목 사전의 "예상효율&미디어믹스 사용 가능" 항목 */
 /* 열 너비는 화면에 최대한 많은 열이 들어오도록 좁게 잡는다 */
+/* 필수 표시는 매체 · 광고상품 둘뿐 — 나머지는 열 설정에서 자유롭게 켜고 끈다 */
+const LINE_REQ=['media','product'];
 const LINE_FIXED=[
-  {k:'segment',l:'구분',w:88,type:'auto',on:true,lock:1},
+  {k:'segment',l:'구분',w:88,type:'auto',on:false},
   {k:'media',l:'매체',w:92,type:'auto',on:true,lock:1},
   {k:'product',l:'광고상품',w:142,type:'auto',on:true,lock:1},
-  {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true,lock:1},
+  {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
@@ -32,18 +34,22 @@ const LINE_FIXED=[
 const LINE_LABEL={budget:'Gross 예산',net:'Net 예산 (자동)'};
 /* 사전에서 온 열의 입력 방식 */
 const LINE_TYPE={start:'date',end:'date',startT:'time',endT:'time',
-  feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'ro',bonus:'num',bonusRate:'ro2'};
-let LINE_COLS=(function(){
+  feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'val',bonus:'num',bonusRate:'ro2'};
+/* 예상 효율 표의 기본 표시 열 */
+const LINE_DEF_ON=['media','product','target','creative','bid','price','start','end','kpi',
+  'e_imp','e_click','e_view','budget'];
+const lineColsDefault=(function(){
   const grp=f=>f.cat==='운영'?'집행 조건':f.cat==='비용'?'예산':'예상 수치';
   const dyn=FIELDS.filter(f=>f.mixOk&&!['cpm','cpc','cpv','cpa','cpi','cpe','ctr','vtr','cvr','etr','cost'].includes(f.k))
     .map(f=>({k:f.k,l:f.k.startsWith('e_')?f.l.replace('목표','예상'):f.l,
-      w:f.k.startsWith('e_')?120:106,type:LINE_TYPE[f.k]||'exp',on:f.mixDef,g:grp(f)}))
+      w:f.k.startsWith('e_')?120:106,type:LINE_TYPE[f.k]||'exp',on:LINE_DEF_ON.includes(f.k),g:grp(f)}))
     .map(c=>LINE_LABEL[c.k]?{...c,l:LINE_LABEL[c.k]}:c);
   const order=['집행 조건','KPI','예상 수치','예산'];
   const out=LINE_FIXED.filter(c=>!c.g).concat(
     order.flatMap(g=>LINE_FIXED.filter(c=>c.g===g).concat(dyn.filter(c=>c.g===g))));
-  out.push({k:'note',l:'비고',w:280,type:'note',on:true});
-  return out;})();
+  out.push({k:'note',l:'비고',w:280,type:'note',on:LINE_DEF_ON.includes('note')});
+  return out;});
+let LINE_COLS=lineColsDefault();
 const GKEY={e_imp:'imp',e_click:'click',e_view:'view'};
 const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
 
@@ -160,6 +166,7 @@ function renderKpiTable(){
         case 'ro2':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${pct(bonusRate([l]),1)}</b></td>`;
         case 'pct':return `<td class="${cls}">${inp('num')} value="${l[c.k]?((l[c.k]*100).toFixed(0)+'%'):''}"></td>`;
         case 'gross':return `<td class="${cls}">${inp('num')} value="${lineGross(l)?fmt(lineGross(l)):''}"></td>`;
+        case 'val':return `<td class="${cls}">${inp('num')} value="${lineValue(l)?fmt(lineValue(l)):''}"></td>`;
         case 'ro':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${
           fmt(c.k==='net'?lineNet(l):c.k==='budget'?lineGross(l):lineValue(l))}</b></td>`;
         case 'note':return `<td class="${cls}"><textarea class="note" data-l="${i}" data-k="note">${esc(l.note||'')}</textarea></td>`;
@@ -192,7 +199,9 @@ function renderKpiTable(){
     if(k==='feeA'||k==='feeR'){const f=parseFloat(v.replace(/[^0-9.]/g,''));
       if(isFinite(f))l[k]=Math.min(Math.max(f/100,0),.9);}
     else if(k==='gross')l.gross=n();
-    else if(k==='bonus')l.bonus=n();
+    /* 밸류는 직접 입력 — 보너스는 Gross 와의 차액으로 맞춘다 (거꾸로도 성립) */
+    else if(k==='value'){l.value=n();l.bonus=Math.max(0,l.value-lineGross(l));}
+    else if(k==='bonus'){l.bonus=n();l.value=lineGross(l)+l.bonus;}
     else if(k==='price'||k==='sec')l[k]=n();
     else if(k==='bid'){if(v==='__add'){const nb=prompt('추가할 비드 타입 (예: 1주일, 1개월, CPP)');
         if(nb&&!BID_TYPES.includes(nb))BID_TYPES.push(nb);l.bid=nb||l.bid;}else l.bid=v;
@@ -397,16 +406,16 @@ function rebuildPeriod(){
 function openLineColCfg(){
   openColCfgUI({
     title:'예상 효율 · 열 설정',
-    hint:'체크한 열만 예상 효율 표에 나타납니다. 기본 열(구분·매체·광고상품·타겟팅 그룹)은 해제할 수 없습니다.',
+    hint:'체크한 열만 예상 효율 표에 나타납니다. 필수 열은 매체 · 광고상품 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.',
     cols:LINE_COLS,
-    fixedKeys:LINE_COLS.filter(c=>c.lock).map(c=>c.k),
+    fixedKeys:LINE_REQ,
     allowFormula:false,
     ruleOf:c=>({auto:'캠페인에 등록된 값 중 선택 · 직접 입력 가능',
       chips:'등록된 항목에서 선택 · ＋로 신규 추가',
       date:'YYYY-MM-DD',time:'HH:MM',
       bid:'CPM · CPC · CPV · CPA …',kpi:'노출 · 클릭 · 조회 · 전환 …',
       subm:'보조로 함께 볼 지표',dev:'PC · MO · CTV 중 선택',
-      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',
+      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',val:'밸류 (직접 입력)',
       pct:'수수료율 (10 또는 10%)',ro:'자동 계산 — 입력하지 않습니다',
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});

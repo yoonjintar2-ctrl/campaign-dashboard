@@ -43,8 +43,8 @@ function applyDoc(d){
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
   if(isFinite(d.verdictBand))VERDICT_BAND=d.verdictBand;
-  if(d.cols?.line)LINE_COLS=d.cols.line;
-  if(d.cols?.sheet)SHEET_COLS=d.cols.sheet;
+  if(d.cols?.line)LINE_COLS=mergeCols(d.cols.line,lineColsDefault());
+  if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -77,9 +77,12 @@ function sheetToRows(){
   const out=[];
   SHEET.forEach(r=>{
     const l=rowLine(r);if(!l||!r.date)return;
-    const row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),creative:''};
+    const row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),
+      creative:r.creative||''};
     const extra={};
     DAILY_COLS.forEach(k=>row[k]=+r[k]||0);
+    /* 시트는 Gross 소진비용을 받고, 저장은 Net 기준(DB 열이 net)이다 */
+    row.net=Math.round((+r.cost||0)*(1-feeOf(l)));
     AMET.forEach(m=>{if(!DAILY_COLS.includes(m))extra[m]=+r[m]||0;});
     /* 사용자가 열 설정에서 새로 만든 열도 함께 보관 */
     SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))extra[c.k]=+r[c.k]||0;});

@@ -41,20 +41,21 @@
 html,body{margin:0;padding:0}
 body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
   font-family:'Pretendard','Apple SD Gothic Neo',system-ui,-apple-system,"Segoe UI",sans-serif}
-/* 배경 — 지금 밝기·색 계열은 그대로 두고 아주 옅은 파스텔 그라데이션이 천천히 흐른다 */
-body::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-events:none;opacity:.55;
+/* 배경 — 푸른 계열 그라데이션이 흐른다.
+   진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
+body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.82;
   background:
-    radial-gradient(38% 42% at 12% 18%, rgba(168,206,240,.58), transparent 68%),
-    radial-gradient(34% 40% at 78% 12%, rgba(196,224,246,.52), transparent 68%),
-    radial-gradient(40% 44% at 88% 78%, rgba(160,196,226,.48), transparent 70%),
-    radial-gradient(36% 40% at 26% 88%, rgba(186,214,236,.46), transparent 70%),
-    radial-gradient(30% 34% at 54% 52%, rgba(206,226,244,.40), transparent 72%);
-  filter:blur(22px);
-  animation:bgdrift 48s ease-in-out infinite alternate}
+    radial-gradient(40% 44% at 12% 18%, rgba(120,170,218,.86), transparent 66%),
+    radial-gradient(34% 40% at 78% 10%, rgba(206,230,248,.30), transparent 70%),
+    radial-gradient(44% 48% at 88% 80%, rgba(102,152,202,.78), transparent 68%),
+    radial-gradient(36% 40% at 26% 90%, rgba(214,234,250,.28), transparent 72%),
+    radial-gradient(32% 36% at 54% 50%, rgba(142,188,228,.62), transparent 70%);
+  filter:blur(30px);
+  animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
-  0%  {transform:translate3d(0,0,0) scale(1)}
-  50% {transform:translate3d(2.2%,-1.8%,0) scale(1.06)}
-  100%{transform:translate3d(-2.4%,2.2%,0) scale(1.03)}}
+  0%  {transform:translate3d(-5%,3.5%,0) scale(1.02) rotate(-1.2deg)}
+  50% {transform:translate3d(6%,-5%,0) scale(1.16) rotate(1.4deg)}
+  100%{transform:translate3d(-4%,6%,0) scale(1.07) rotate(-0.6deg)}}
 @media (prefers-reduced-motion: reduce){body::before{animation:none}}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
@@ -329,6 +330,16 @@ table.tbl.nogauge .gauge .track{display:none}
 @media(max-width:1200px){.stat{aspect-ratio:auto;min-height:200px}}
 
 /* treemap */
+/* 노출 분포 · 효율 버블 — 한 행 안에 좌우로 */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:start}
+.duo>.duocol{min-width:0;display:flex;flex-direction:column}
+.duo>.duocol>.card{flex:1 1 auto}
+.duo .sec .tools{flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:1440px){.duo{grid-template-columns:1fr;gap:0}}
+/* 좌우 두 카드의 키를 비슷하게 맞춘다 */
+.duo .tmap{height:600px}
+.duo .bublgd{padding:10px 12px;margin:0 0 10px}
+.duo .bublgd .how{gap:5px 16px;margin-top:9px;padding-top:8px;font-size:11px}
 .tmap{position:relative;width:100%;height:520px;border-radius:10px;overflow:hidden;
   background:var(--plane2);border:1px solid var(--line2)}
 /* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
@@ -871,39 +882,44 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     </div>
     <div id="creatives" data-sect="creative"></div>
 
-    <div class="sec gap3" data-sect="treemap"><span id="tmapTitle">노출 분포</span>
-      <span class="note" id="tmapSecName">매체 › 광고상품</span>
-      <span class="note">· 면적 = 값의 크기 · <span id="tmapLegend"></span></span>
-      <div class="tools">
-        <span class="hint">기준</span><select class="ctl" id="tmapMetric"></select>
-        <span class="hint">묶음</span><select class="ctl" id="tmapMode">
-          <option value="media|product|creative" selected>매체 › 광고상품 › 소재</option>
-          <option value="media|product">매체 › 광고상품</option>
-          <option value="media|product|target">매체 › 광고상품 › 타겟팅</option>
-          <option value="media|creative">매체 › 소재</option>
-          <option value="creative|media">소재 › 매체</option>
-          <option value="segment|media|product">구분 › 매체 › 광고상품</option>
-        </select>
+    <div class="duo">
+      <div class="duocol">
+      <div class="sec gap3" data-sect="treemap"><span id="tmapTitle">노출 분포</span>
+        <span class="note" id="tmapSecName">매체 › 광고상품</span>
+        <span class="note">· 면적 = 값의 크기 · <span id="tmapLegend"></span></span>
+        <div class="tools">
+          <span class="hint">기준</span><select class="ctl" id="tmapMetric"></select>
+          <span class="hint">묶음</span><select class="ctl" id="tmapMode">
+            <option value="media|product|creative" selected>매체 › 광고상품 › 소재</option>
+            <option value="media|product">매체 › 광고상품</option>
+            <option value="media|product|target">매체 › 광고상품 › 타겟팅</option>
+            <option value="media|creative">매체 › 소재</option>
+            <option value="creative|media">소재 › 매체</option>
+            <option value="segment|media|product">구분 › 매체 › 광고상품</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" data-sect="treemap"><div class="bd"><div id="treemap"></div></div></div>
+      </div>
+      <div class="duocol">
+      <div class="sec gap3" data-sect="bubble"><span>효율 버블</span>
+        <span class="note">효율이 좋을수록 오른쪽 · 위</span>
+        <div class="tools">
+          <span class="hint">X축</span><select class="ctl" id="bubX"></select>
+          <span class="hint">Y축</span><select class="ctl" id="bubY"></select>
+          <span class="hint">묶음</span><select class="ctl" id="bubDim">
+            <option value="creative" selected>소재별</option>
+            <option value="target">타겟팅 그룹별</option>
+            <option value="product">광고상품별</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" data-sect="bubble"><div class="bd">
+        <div id="bubLegend" class="bublgd"></div>
+        <div id="bubbleWrap"><div id="bubble"></div></div>
+      </div></div>
       </div>
     </div>
-    <div class="card" data-sect="treemap"><div class="bd"><div id="treemap"></div></div></div>
-
-    <div class="sec gap3" data-sect="bubble"><span>효율 버블</span>
-      <span class="note">효율이 좋을수록 오른쪽 · 위</span>
-      <div class="tools">
-        <span class="hint">X축</span><select class="ctl" id="bubX"></select>
-        <span class="hint">Y축</span><select class="ctl" id="bubY"></select>
-        <span class="hint">묶음</span><select class="ctl" id="bubDim">
-          <option value="creative" selected>소재별</option>
-          <option value="target">타겟팅 그룹별</option>
-          <option value="product">광고상품별</option>
-        </select>
-      </div>
-    </div>
-    <div class="card" data-sect="bubble"><div class="bd">
-      <div id="bubLegend" class="bublgd"></div>
-      <div id="bubbleWrap"><div id="bubble"></div></div>
-    </div></div>
 
   </div>
 
@@ -970,7 +986,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       한 칸을 복사해 여러 칸에 붙이면 선택 범위 전체가 같은 값으로 채워지고, 엑셀에서 여러 셀을 복사하면 표에 그대로 펼쳐집니다.
       구분·매체·광고상품·타겟팅·제품은 <b>캠페인 설정</b>에 등록된 항목만 사용할 수 있습니다.
       일자가 해당 라인의 집행 기간을 벗어나면 행이 붉게 표시되고 다른 탭으로 이동할 때 알려 드립니다.
-      광고비는 <b>Net으로 입력</b>하고 Gross는 설정의 수수료율로 자동 역산됩니다. <b>Ctrl+Z</b>로 되돌리고 <b>Ctrl+Y</b>로 다시 실행하며, <b>방향키</b>로 셀을 옮기고 <b>Shift+방향키</b>로 범위를 넓힐 수 있습니다.</div>
+      소진비용은 <b>Gross로 입력</b>하고 Net은 설정의 수수료율로 자동 역산됩니다. <b>Ctrl+Z</b>로 되돌리고 <b>Ctrl+Y</b>로 다시 실행하며, <b>방향키</b>로 셀을 옮기고 <b>Shift+방향키</b>로 범위를 넓힐 수 있습니다.</div>
   </div>
 </div>
 
@@ -1005,8 +1021,8 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <div class="hint" style="margin:-4px 0 8px">키보드 — 셀을 한 번 누르면 <b>선택</b>, <b>Enter</b>(또는 더블클릭)로 입력 시작,
     다시 <b>Enter</b> 로 완료하면 셀 선택 상태로 돌아옵니다 · <b>방향키</b> 셀 이동 · <b>Ctrl+Z / Ctrl+Y</b> 실행 취소·다시 실행</div>
   <div class="card"><div class="tbl-wrap" style="max-height:none"><table class="tbl lite" id="tblKpi"></table></div></div>
-  <div class="hint" style="margin-top:8px">※ Net 예산과 수수료율(대행사 + 렙사)을 넣으면 Gross가 자동 계산됩니다 (Gross = Net ÷ (1 − 합산 수수료율)).
-    Value = Gross + 보너스.</div>
+  <div class="hint" style="margin-top:8px">※ Gross 예산과 수수료율(대행사 + 렙사)을 넣으면 Net이 자동 역산됩니다 (Net = Gross × (1 − 합산 수수료율)).
+    Value(밸류)는 직접 입력하며, 보너스는 Gross와의 차액으로 맞춰집니다.</div>
 
   <div class="hint" style="margin-top:22px">※ 미디어믹스 표는 <b>대시보드 › 미디어믹스</b> 시트에서 확인합니다.</div>
 </div>
@@ -1083,7 +1099,9 @@ const feeOf=l=>(+l.feeA||0)+(+l.feeR||0);
    (수수료가 정해지기 전에 Gross 만 아는 경우가 많아 v17 에서 방향을 뒤집었다) */
 const lineGross=l=>Math.round(+l.gross||0);
 const lineNet=l=>Math.round(lineGross(l)*(1-feeOf(l)));
-const lineValue=l=>lineGross(l)+(+l.bonus||0);
+/* 밸류는 직접 입력(v21) — 값이 없으면 Gross + 보너스로 본다 */
+const lineValue=l=>(l.value===undefined||l.value===null||l.value==='')
+  ? lineGross(l)+(+l.bonus||0) : Math.round(+l.value||0);
 const toGross=(net,fee)=>net/(1-fee);
 /* 예전 저장본(net 기준)을 열면 Gross 로 옮겨 담는다 */
 function migrateBudget(ls){(ls||[]).forEach(l=>{
@@ -3213,7 +3231,7 @@ function renderBubble(){
     host.innerHTML='<div class="hint" style="padding:26px 6px">두 축을 모두 계산할 수 있는 데이터가 없습니다. 축을 바꿔 보세요.</div>';
     if(lgd)lgd.innerHTML='';
     return;}
-  const W=1000,H=500,P={l:74,r:40,t:34,b:70};
+  const W=780,H=450,P={l:66,r:30,t:26,b:62};
   const PW=W-P.l-P.r,PH=H-P.t-P.b;
   const xLow=BUB_LOWER.has(xd.k),yLow=BUB_LOWER.has(yd.k);
   const bubScale=vals=>{
@@ -3328,35 +3346,62 @@ addEventListener('resize',()=>{clearTimeout(window.__bubT);
 /* ===== 9. 데이터 입력 ===== */
 /* 데이터 입력 열 — 항목 사전의 "대시보드/데이터입력 사용 가능 + 수동 입력" 항목.
    기본 표시는 사전의 디펄트 열, 그 외는 열 설정에서 켤 수 있다. */
+/* 필수 표시는 일자·매체명 둘뿐 — 나머지는 열 설정에서 자유롭게 켜고 끈다 */
+const SHEET_REQ=['date','media'];
 const SHEET_DIMS=[
-  {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:true},
+  {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:false},
   {k:'media',l:'매체명',w:104,type:'dim',rule:'설정 › 라인 목록',lock:1,on:true},
   {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
-  {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true}
+  {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
+  {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
-const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:112};
-let SHEET_COLS=[{k:'date',l:'일자',w:112,type:'text',rule:'YYYY-MM-DD · 라인 집행 기간 내',lock:1,on:true}]
-  .concat(SHEET_DIMS)
+const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
+/* 기본 표시 열 — 일자 · 매체명 · 광고상품명 · 타겟팅 그룹명 · 소재 · 노출 · 클릭 · 조회 · 소진비용 */
+const SHEET_DEF_ON=['date','media','product','target','creative','imp','click','view','cost'];
+const SHEET_LABEL={cost:'소진비용 (Gross)',net:'Net 광고비'};
+const SHEET_RULE={cost:'숫자 입력 · Gross 기준',net:'Gross 소진비용에서 자동 역산'};
+const sheetColsDefault=()=>
+  [{k:'date',l:'일자',w:112,type:'text',rule:'YYYY-MM-DD · 라인 집행 기간 내',lock:1,on:true}]
+  .concat(SHEET_DIMS.map(c=>({...c,on:SHEET_DEF_ON.includes(c.k)})))
   .concat(FIELDS.filter(f=>f.dashOk&&f.kind==='in'&&!/^e_/.test(f.k)
-      &&!['date','start','end','startT','endT','budget','value','feeA','feeR','cost'].includes(f.k))
-    .map(f=>({k:f.k==='net'?'net':f.k,l:f.k==='net'?'Net 광고비':f.l,
-      w:SHEET_W[f.k]||92,type:'num',rule:f.k==='net'?'숫자 입력 · Gross 자동 역산':'숫자 입력',
-      lock:1,on:f.dashDef||f.k==='net'})));
+      &&!['date','start','end','startT','endT','budget','value','feeA','feeR','net'].includes(f.k))
+    .map(f=>({k:f.k,l:SHEET_LABEL[f.k]||f.l,
+      w:SHEET_W[f.k]||92,type:'num',rule:SHEET_RULE[f.k]||'숫자 입력',
+      lock:1,on:SHEET_DEF_ON.includes(f.k)})));
+let SHEET_COLS=sheetColsDefault();
+/* 예전 저장본(net 기준·소재 열 없음)을 지금 열 구성에 맞춰 얹는다 */
+function mergeCols(saved,def){
+  if(!Array.isArray(saved)||!saved.length)return def;
+  const by={};saved.forEach(c=>by[c.k]=c);
+  const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
+    .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:c.l,w:c.w,on:c.on}:c;});
+  def.forEach(d=>{if(!by[d.k])kept.push(d);});
+  return kept;
+}
 const numKeys=()=>SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k);
 const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
 let SHEET=LINES.map(l=>{
   const idx=ELAPSED-1,v=l.daily.view[idx];
+  const cs=CREATIVES.filter(c=>c.lid===l.id);
   return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,target:l.target,line:l.line,
+    creative:cs.length?cs[0].name:'',cost:Math.round(toGross(l.daily.net[idx],feeOf(l))),
     imp:l.daily.imp[idx],click:l.daily.click[idx],view:v,eng:l.daily.eng[idx],conv:l.daily.conv[idx],
-    lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],net:l.daily.net[idx],
+    lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],
     like:l.daily.like[idx],share:l.daily.share[idx],
     v3:l.daily.v3[idx],v15:l.daily.v15[idx],v30:l.daily.v30[idx],
     v25:l.daily.v25[idx],v50:l.daily.v50[idx],v75:l.daily.v75[idx],v100:l.daily.v100[idx]};});
-const dimOpts=(k,row)=>{const order=['segment','media','product','target','line'],i=order.indexOf(k);
-  return [...new Set(LINES.filter(l=>order.slice(0,i).every(p=>!row[p]||l[p]===row[p])).map(l=>l[k]))];};
-function rowLine(r){return LINES.find(l=>l.segment===r.segment&&l.media===r.media&&l.product===r.product
-  &&l.target===r.target&&l.line===r.line);}
+const DIM_CHAIN=['segment','media','product','target','line','creative'];
+const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
+  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>p==='creative'||!row[p]||l[p]===row[p]));
+  if(k==='creative')
+    return [...new Set(ls.flatMap(l=>CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name)))].filter(Boolean);
+  return [...new Set(ls.map(l=>l[k]))];};
+/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다 */
+function rowLine(r){
+  const keys=['segment','media','product','target','line'].filter(k=>r[k]);
+  if(!keys.length)return null;
+  return LINES.find(l=>keys.every(k=>l[k]===r[k]))||null;}
 function rowBad(r){
   const l=rowLine(r);if(!l)return !!(r.media||r.product);
   return !(r.date>=l.start&&r.date<=l.end);}
@@ -3421,7 +3466,7 @@ function renderSheet(){
   const bad=SHEET.filter(rowBad).length;
   $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
     +(bad?` · <b style="color:var(--neg)">기간을 벗어난 행 ${bad}개</b>`:'');
-  const gross=sum(SHEET.map(r=>{const l=rowLine(r);return toGross(+r.net||0,l?feeOf(l):.15);}));
+  const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
     조회 <b class="mono">${fmt(sum(SHEET.map(r=>+r.view||0)))}</b> ·
@@ -3475,10 +3520,10 @@ function setCell(i,k,raw){
     r[k]=dimOpts(k,r).includes(v)?v:'';}
   else if(k==='date')r[k]=normDate(raw,r.date);
   else r[k]=String(raw).trim();
-  const chain=['segment','media','product','target','line'],ix=chain.indexOf(k);
-  if(ix>=0)chain.slice(ix+1).forEach(p=>{if(!dimOpts(p,r).includes(r[p]))r[p]='';});}
+  const ix=DIM_CHAIN.indexOf(k);
+  if(ix>=0)DIM_CHAIN.slice(ix+1).forEach(p=>{if(r[p]&&!dimOpts(p,r).includes(r[p]))r[p]='';});}
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
-const blankRow=()=>{const o={date:YESTERDAY,segment:'',media:'',product:'',target:'',line:''};
+const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
 const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());renderSheet();};
 const sheetActive=()=>!$('tab-input').classList.contains('hidden')&&document.querySelector('#sheet td.sel');
@@ -3617,7 +3662,7 @@ function openHistory(){
   SHEET_HIST.forEach((hs,n)=>{
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));
-    const cost=sum(rs.map(r=>{const l=rowLine(r);return toGross(+r.net||0,l?feeOf(l):.15);}));
+    const cost=sum(rs.map(r=>+r.cost||0));
     h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${hs.who}</td><td>${hs.org}</td>
       <td class="mono">${rs.length}</td><td class="mono">${fmt(g('imp'))}</td><td class="mono">${fmt(g('click'))}</td>
       <td class="mono">${fmt(g('view'))}</td><td class="mono">${fmt(g('conv'))}</td><td class="mono">${won(cost)}</td>
@@ -3705,9 +3750,9 @@ function openColCfgUI(opt){
 function openColCfg(){
   openColCfgUI({
     title:'데이터 입력 · 열 설정',
-    hint:'체크한 열만 표에 나타납니다. 기본 표시 열은 열설정북(항목 사전)을 따릅니다.',
+    hint:'체크한 열만 표에 나타납니다. 필수 열은 일자 · 매체명 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.',
     cols:SHEET_COLS,
-    fixedKeys:['date','segment','media','product','target','line'],
+    fixedKeys:SHEET_REQ,
     allowFormula:true,
     onSave:d=>{SHEET_COLS=d;renderSheet();}});
 }
@@ -3721,18 +3766,20 @@ function renderCampForm(){
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
     <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
     <div class="fld" style="width:160px"><label>Net 예산 (자동 역산)</label><div class="ro">${won(net)}</div></div>
-    <div class="fld" style="width:210px"><label>Value (자동)</label>
+    <div class="fld" style="width:210px"><label>Value (합계)</label>
       <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>
     <div class="fld" style="width:120px"><label>평균 수수료율</label><div class="ro">${((1-net/gross)*100).toFixed(2)}%</div></div>`;
 }
 /* 라인 표 — 열 정의 기반 (열 설정에서 on/off) */
 /* 라인 표 열 — 고정 열(차원·KPI) + 항목 사전의 "예상효율&미디어믹스 사용 가능" 항목 */
 /* 열 너비는 화면에 최대한 많은 열이 들어오도록 좁게 잡는다 */
+/* 필수 표시는 매체 · 광고상품 둘뿐 — 나머지는 열 설정에서 자유롭게 켜고 끈다 */
+const LINE_REQ=['media','product'];
 const LINE_FIXED=[
-  {k:'segment',l:'구분',w:88,type:'auto',on:true,lock:1},
+  {k:'segment',l:'구분',w:88,type:'auto',on:false},
   {k:'media',l:'매체',w:92,type:'auto',on:true,lock:1},
   {k:'product',l:'광고상품',w:142,type:'auto',on:true,lock:1},
-  {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true,lock:1},
+  {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
@@ -3745,18 +3792,22 @@ const LINE_FIXED=[
 const LINE_LABEL={budget:'Gross 예산',net:'Net 예산 (자동)'};
 /* 사전에서 온 열의 입력 방식 */
 const LINE_TYPE={start:'date',end:'date',startT:'time',endT:'time',
-  feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'ro',bonus:'num',bonusRate:'ro2'};
-let LINE_COLS=(function(){
+  feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'val',bonus:'num',bonusRate:'ro2'};
+/* 예상 효율 표의 기본 표시 열 */
+const LINE_DEF_ON=['media','product','target','creative','bid','price','start','end','kpi',
+  'e_imp','e_click','e_view','budget'];
+const lineColsDefault=(function(){
   const grp=f=>f.cat==='운영'?'집행 조건':f.cat==='비용'?'예산':'예상 수치';
   const dyn=FIELDS.filter(f=>f.mixOk&&!['cpm','cpc','cpv','cpa','cpi','cpe','ctr','vtr','cvr','etr','cost'].includes(f.k))
     .map(f=>({k:f.k,l:f.k.startsWith('e_')?f.l.replace('목표','예상'):f.l,
-      w:f.k.startsWith('e_')?120:106,type:LINE_TYPE[f.k]||'exp',on:f.mixDef,g:grp(f)}))
+      w:f.k.startsWith('e_')?120:106,type:LINE_TYPE[f.k]||'exp',on:LINE_DEF_ON.includes(f.k),g:grp(f)}))
     .map(c=>LINE_LABEL[c.k]?{...c,l:LINE_LABEL[c.k]}:c);
   const order=['집행 조건','KPI','예상 수치','예산'];
   const out=LINE_FIXED.filter(c=>!c.g).concat(
     order.flatMap(g=>LINE_FIXED.filter(c=>c.g===g).concat(dyn.filter(c=>c.g===g))));
-  out.push({k:'note',l:'비고',w:280,type:'note',on:true});
-  return out;})();
+  out.push({k:'note',l:'비고',w:280,type:'note',on:LINE_DEF_ON.includes('note')});
+  return out;});
+let LINE_COLS=lineColsDefault();
 const GKEY={e_imp:'imp',e_click:'click',e_view:'view'};
 const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
 
@@ -3873,6 +3924,7 @@ function renderKpiTable(){
         case 'ro2':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${pct(bonusRate([l]),1)}</b></td>`;
         case 'pct':return `<td class="${cls}">${inp('num')} value="${l[c.k]?((l[c.k]*100).toFixed(0)+'%'):''}"></td>`;
         case 'gross':return `<td class="${cls}">${inp('num')} value="${lineGross(l)?fmt(lineGross(l)):''}"></td>`;
+        case 'val':return `<td class="${cls}">${inp('num')} value="${lineValue(l)?fmt(lineValue(l)):''}"></td>`;
         case 'ro':return `<td class="${cls} mono" style="background:var(--acc-soft2)"><b>${
           fmt(c.k==='net'?lineNet(l):c.k==='budget'?lineGross(l):lineValue(l))}</b></td>`;
         case 'note':return `<td class="${cls}"><textarea class="note" data-l="${i}" data-k="note">${esc(l.note||'')}</textarea></td>`;
@@ -3905,7 +3957,9 @@ function renderKpiTable(){
     if(k==='feeA'||k==='feeR'){const f=parseFloat(v.replace(/[^0-9.]/g,''));
       if(isFinite(f))l[k]=Math.min(Math.max(f/100,0),.9);}
     else if(k==='gross')l.gross=n();
-    else if(k==='bonus')l.bonus=n();
+    /* 밸류는 직접 입력 — 보너스는 Gross 와의 차액으로 맞춘다 (거꾸로도 성립) */
+    else if(k==='value'){l.value=n();l.bonus=Math.max(0,l.value-lineGross(l));}
+    else if(k==='bonus'){l.bonus=n();l.value=lineGross(l)+l.bonus;}
     else if(k==='price'||k==='sec')l[k]=n();
     else if(k==='bid'){if(v==='__add'){const nb=prompt('추가할 비드 타입 (예: 1주일, 1개월, CPP)');
         if(nb&&!BID_TYPES.includes(nb))BID_TYPES.push(nb);l.bid=nb||l.bid;}else l.bid=v;
@@ -4110,16 +4164,16 @@ function rebuildPeriod(){
 function openLineColCfg(){
   openColCfgUI({
     title:'예상 효율 · 열 설정',
-    hint:'체크한 열만 예상 효율 표에 나타납니다. 기본 열(구분·매체·광고상품·타겟팅 그룹)은 해제할 수 없습니다.',
+    hint:'체크한 열만 예상 효율 표에 나타납니다. 필수 열은 매체 · 광고상품 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.',
     cols:LINE_COLS,
-    fixedKeys:LINE_COLS.filter(c=>c.lock).map(c=>c.k),
+    fixedKeys:LINE_REQ,
     allowFormula:false,
     ruleOf:c=>({auto:'캠페인에 등록된 값 중 선택 · 직접 입력 가능',
       chips:'등록된 항목에서 선택 · ＋로 신규 추가',
       date:'YYYY-MM-DD',time:'HH:MM',
       bid:'CPM · CPC · CPV · CPA …',kpi:'노출 · 클릭 · 조회 · 전환 …',
       subm:'보조로 함께 볼 지표',dev:'PC · MO · CTV 중 선택',
-      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',
+      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',val:'밸류 (직접 입력)',
       pct:'수수료율 (10 또는 10%)',ro:'자동 계산 — 입력하지 않습니다',
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
@@ -4603,8 +4657,8 @@ function applyDoc(d){
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
   if(isFinite(d.verdictBand))VERDICT_BAND=d.verdictBand;
-  if(d.cols?.line)LINE_COLS=d.cols.line;
-  if(d.cols?.sheet)SHEET_COLS=d.cols.sheet;
+  if(d.cols?.line)LINE_COLS=mergeCols(d.cols.line,lineColsDefault());
+  if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -4637,9 +4691,12 @@ function sheetToRows(){
   const out=[];
   SHEET.forEach(r=>{
     const l=rowLine(r);if(!l||!r.date)return;
-    const row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),creative:''};
+    const row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),
+      creative:r.creative||''};
     const extra={};
     DAILY_COLS.forEach(k=>row[k]=+r[k]||0);
+    /* 시트는 Gross 소진비용을 받고, 저장은 Net 기준(DB 열이 net)이다 */
+    row.net=Math.round((+r.cost||0)*(1-feeOf(l)));
     AMET.forEach(m=>{if(!DAILY_COLS.includes(m))extra[m]=+r[m]||0;});
     /* 사용자가 열 설정에서 새로 만든 열도 함께 보관 */
     SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))extra[c.k]=+r[c.k]||0;});

@@ -65,7 +65,9 @@ const feeOf=l=>(+l.feeA||0)+(+l.feeR||0);
    (수수료가 정해지기 전에 Gross 만 아는 경우가 많아 v17 에서 방향을 뒤집었다) */
 const lineGross=l=>Math.round(+l.gross||0);
 const lineNet=l=>Math.round(lineGross(l)*(1-feeOf(l)));
-const lineValue=l=>lineGross(l)+(+l.bonus||0);
+/* 밸류는 직접 입력(v21) — 값이 없으면 Gross + 보너스로 본다 */
+const lineValue=l=>(l.value===undefined||l.value===null||l.value==='')
+  ? lineGross(l)+(+l.bonus||0) : Math.round(+l.value||0);
 const toGross=(net,fee)=>net/(1-fee);
 /* 예전 저장본(net 기준)을 열면 Gross 로 옮겨 담는다 */
 function migrateBudget(ls){(ls||[]).forEach(l=>{

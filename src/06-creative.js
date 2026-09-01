@@ -644,7 +644,7 @@ function renderBubble(){
     host.innerHTML='<div class="hint" style="padding:26px 6px">두 축을 모두 계산할 수 있는 데이터가 없습니다. 축을 바꿔 보세요.</div>';
     if(lgd)lgd.innerHTML='';
     return;}
-  const W=1000,H=500,P={l:74,r:40,t:34,b:70};
+  const W=780,H=450,P={l:66,r:30,t:26,b:62};
   const PW=W-P.l-P.r,PH=H-P.t-P.b;
   const xLow=BUB_LOWER.has(xd.k),yLow=BUB_LOWER.has(yd.k);
   const bubScale=vals=>{

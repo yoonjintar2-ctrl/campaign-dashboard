@@ -1,35 +1,62 @@
 /* ===== 9. 데이터 입력 ===== */
 /* 데이터 입력 열 — 항목 사전의 "대시보드/데이터입력 사용 가능 + 수동 입력" 항목.
    기본 표시는 사전의 디펄트 열, 그 외는 열 설정에서 켤 수 있다. */
+/* 필수 표시는 일자·매체명 둘뿐 — 나머지는 열 설정에서 자유롭게 켜고 끈다 */
+const SHEET_REQ=['date','media'];
 const SHEET_DIMS=[
-  {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:true},
+  {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:false},
   {k:'media',l:'매체명',w:104,type:'dim',rule:'설정 › 라인 목록',lock:1,on:true},
   {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
-  {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true}
+  {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
+  {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
-const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:112};
-let SHEET_COLS=[{k:'date',l:'일자',w:112,type:'text',rule:'YYYY-MM-DD · 라인 집행 기간 내',lock:1,on:true}]
-  .concat(SHEET_DIMS)
+const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
+/* 기본 표시 열 — 일자 · 매체명 · 광고상품명 · 타겟팅 그룹명 · 소재 · 노출 · 클릭 · 조회 · 소진비용 */
+const SHEET_DEF_ON=['date','media','product','target','creative','imp','click','view','cost'];
+const SHEET_LABEL={cost:'소진비용 (Gross)',net:'Net 광고비'};
+const SHEET_RULE={cost:'숫자 입력 · Gross 기준',net:'Gross 소진비용에서 자동 역산'};
+const sheetColsDefault=()=>
+  [{k:'date',l:'일자',w:112,type:'text',rule:'YYYY-MM-DD · 라인 집행 기간 내',lock:1,on:true}]
+  .concat(SHEET_DIMS.map(c=>({...c,on:SHEET_DEF_ON.includes(c.k)})))
   .concat(FIELDS.filter(f=>f.dashOk&&f.kind==='in'&&!/^e_/.test(f.k)
-      &&!['date','start','end','startT','endT','budget','value','feeA','feeR','cost'].includes(f.k))
-    .map(f=>({k:f.k==='net'?'net':f.k,l:f.k==='net'?'Net 광고비':f.l,
-      w:SHEET_W[f.k]||92,type:'num',rule:f.k==='net'?'숫자 입력 · Gross 자동 역산':'숫자 입력',
-      lock:1,on:f.dashDef||f.k==='net'})));
+      &&!['date','start','end','startT','endT','budget','value','feeA','feeR','net'].includes(f.k))
+    .map(f=>({k:f.k,l:SHEET_LABEL[f.k]||f.l,
+      w:SHEET_W[f.k]||92,type:'num',rule:SHEET_RULE[f.k]||'숫자 입력',
+      lock:1,on:SHEET_DEF_ON.includes(f.k)})));
+let SHEET_COLS=sheetColsDefault();
+/* 예전 저장본(net 기준·소재 열 없음)을 지금 열 구성에 맞춰 얹는다 */
+function mergeCols(saved,def){
+  if(!Array.isArray(saved)||!saved.length)return def;
+  const by={};saved.forEach(c=>by[c.k]=c);
+  const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
+    .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:c.l,w:c.w,on:c.on}:c;});
+  def.forEach(d=>{if(!by[d.k])kept.push(d);});
+  return kept;
+}
 const numKeys=()=>SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k);
 const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
 let SHEET=LINES.map(l=>{
   const idx=ELAPSED-1,v=l.daily.view[idx];
+  const cs=CREATIVES.filter(c=>c.lid===l.id);
   return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,target:l.target,line:l.line,
+    creative:cs.length?cs[0].name:'',cost:Math.round(toGross(l.daily.net[idx],feeOf(l))),
     imp:l.daily.imp[idx],click:l.daily.click[idx],view:v,eng:l.daily.eng[idx],conv:l.daily.conv[idx],
-    lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],net:l.daily.net[idx],
+    lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],
     like:l.daily.like[idx],share:l.daily.share[idx],
     v3:l.daily.v3[idx],v15:l.daily.v15[idx],v30:l.daily.v30[idx],
     v25:l.daily.v25[idx],v50:l.daily.v50[idx],v75:l.daily.v75[idx],v100:l.daily.v100[idx]};});
-const dimOpts=(k,row)=>{const order=['segment','media','product','target','line'],i=order.indexOf(k);
-  return [...new Set(LINES.filter(l=>order.slice(0,i).every(p=>!row[p]||l[p]===row[p])).map(l=>l[k]))];};
-function rowLine(r){return LINES.find(l=>l.segment===r.segment&&l.media===r.media&&l.product===r.product
-  &&l.target===r.target&&l.line===r.line);}
+const DIM_CHAIN=['segment','media','product','target','line','creative'];
+const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
+  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>p==='creative'||!row[p]||l[p]===row[p]));
+  if(k==='creative')
+    return [...new Set(ls.flatMap(l=>CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name)))].filter(Boolean);
+  return [...new Set(ls.map(l=>l[k]))];};
+/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다 */
+function rowLine(r){
+  const keys=['segment','media','product','target','line'].filter(k=>r[k]);
+  if(!keys.length)return null;
+  return LINES.find(l=>keys.every(k=>l[k]===r[k]))||null;}
 function rowBad(r){
   const l=rowLine(r);if(!l)return !!(r.media||r.product);
   return !(r.date>=l.start&&r.date<=l.end);}
@@ -94,7 +121,7 @@ function renderSheet(){
   const bad=SHEET.filter(rowBad).length;
   $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
     +(bad?` · <b style="color:var(--neg)">기간을 벗어난 행 ${bad}개</b>`:'');
-  const gross=sum(SHEET.map(r=>{const l=rowLine(r);return toGross(+r.net||0,l?feeOf(l):.15);}));
+  const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
     조회 <b class="mono">${fmt(sum(SHEET.map(r=>+r.view||0)))}</b> ·
@@ -148,10 +175,10 @@ function setCell(i,k,raw){
     r[k]=dimOpts(k,r).includes(v)?v:'';}
   else if(k==='date')r[k]=normDate(raw,r.date);
   else r[k]=String(raw).trim();
-  const chain=['segment','media','product','target','line'],ix=chain.indexOf(k);
-  if(ix>=0)chain.slice(ix+1).forEach(p=>{if(!dimOpts(p,r).includes(r[p]))r[p]='';});}
+  const ix=DIM_CHAIN.indexOf(k);
+  if(ix>=0)DIM_CHAIN.slice(ix+1).forEach(p=>{if(r[p]&&!dimOpts(p,r).includes(r[p]))r[p]='';});}
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
-const blankRow=()=>{const o={date:YESTERDAY,segment:'',media:'',product:'',target:'',line:''};
+const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
 const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());renderSheet();};
 const sheetActive=()=>!$('tab-input').classList.contains('hidden')&&document.querySelector('#sheet td.sel');
@@ -290,7 +317,7 @@ function openHistory(){
   SHEET_HIST.forEach((hs,n)=>{
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));
-    const cost=sum(rs.map(r=>{const l=rowLine(r);return toGross(+r.net||0,l?feeOf(l):.15);}));
+    const cost=sum(rs.map(r=>+r.cost||0));
     h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${hs.who}</td><td>${hs.org}</td>
       <td class="mono">${rs.length}</td><td class="mono">${fmt(g('imp'))}</td><td class="mono">${fmt(g('click'))}</td>
       <td class="mono">${fmt(g('view'))}</td><td class="mono">${fmt(g('conv'))}</td><td class="mono">${won(cost)}</td>
@@ -378,9 +405,9 @@ function openColCfgUI(opt){
 function openColCfg(){
   openColCfgUI({
     title:'데이터 입력 · 열 설정',
-    hint:'체크한 열만 표에 나타납니다. 기본 표시 열은 열설정북(항목 사전)을 따릅니다.',
+    hint:'체크한 열만 표에 나타납니다. 필수 열은 일자 · 매체명 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.',
     cols:SHEET_COLS,
-    fixedKeys:['date','segment','media','product','target','line'],
+    fixedKeys:SHEET_REQ,
     allowFormula:true,
     onSave:d=>{SHEET_COLS=d;renderSheet();}});
 }
