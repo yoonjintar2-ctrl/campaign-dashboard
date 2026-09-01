@@ -1,0 +1,73 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build site
+        run: |
+          mkdir -p dist
+          python tools/build.py dist/index.html
+
+      - name: Create Supabase config
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          from pathlib import Path
+
+          config = {
+              "url": os.environ.get("SUPABASE_URL", ""),
+              "anonKey": os.environ.get("SUPABASE_ANON_KEY", "")
+          }
+
+          Path("dist/config.js").write_text(
+              "window.CLOUD_CONFIG = " + json.dumps(config) + ";\n",
+              encoding="utf-8"
+          )
+          PY
+
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
