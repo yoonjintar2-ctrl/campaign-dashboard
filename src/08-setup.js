@@ -615,6 +615,9 @@ async function openPermCloud(){
 function openCampHist(){
   let h='<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>'
     +'<th>변경 시각</th><th>변경자</th><th>항목</th><th>변경 전</th><th>변경 후</th></tr></thead><tbody>';
+  if(!CAMP_HIST.length)
+    h+='<tr><td colspan="5" class="hint" style="padding:20px">아직 기록된 변경이 없습니다. '
+      +'캠페인 정보를 바꾸면 여기에 쌓입니다.</td></tr>';
   CAMP_HIST.slice().reverse().forEach(r=>{h+=`<tr><td class="mono">${r.d}</td><td>${r.who}</td>
     <td>${r.f}</td><td class="mono" style="color:var(--muted)">${r.b}</td><td class="mono"><b>${r.a}</b></td></tr>`;});
   openModal('캠페인 정보 변경 히스토리',h+'</tbody></table>','<button class="btn" data-close>닫기</button>',{w:820});}
@@ -784,8 +787,14 @@ function applyRole(){
     chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
       :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
   /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */
-  let sup=false;try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';}catch(e){}
+  let sup=false,sample=false,needReq=false;
+  try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';
+      sample=!!(CLOUD&&CLOUD.sample&&!CLOUD.user);
+      needReq=sample||!!(CLOUD&&CLOUD.user&&CLOUD.appRole==='guest');}catch(e){}
   const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!sup);
+  /* 샘플 둘러보기 중이거나 아직 등급이 없으면 권한 요청 버튼을 보여 준다 */
+  document.body.dataset.mode=sample?'sample':'';
+  const rb=$('reqBtn');if(rb)rb.classList.toggle('hidden',!needReq);
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
   if(st)st.classList.toggle('hidden',c);
@@ -838,7 +847,8 @@ $('saveRows').onclick=saveRows;
 $('colCfgBtn').onclick=openColCfg;
 $('histBtn').onclick=openHistory;
 $('campHistBtn').onclick=openCampHist;
-$('permBtn').onclick=openPerm;
+/* 계정 · 권한은 상단 ⚙ 캠페인 관리 → 👥 초대 로 옮겼다 */
+if($('permBtn'))$('permBtn').onclick=openPerm;
 $('holBtn').onclick=openHolidays;
 $('saveAll').onclick=()=>{rebuildPeriod();buildFacts();renderAll();renderKpiTable();renderSheet();
   confirmModal('캠페인 설정을 저장했습니다.','기본 정보와 라인별 설정이 모두 반영되었습니다.',()=>{},'확인');};

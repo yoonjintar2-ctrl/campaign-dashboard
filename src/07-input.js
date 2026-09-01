@@ -210,14 +210,8 @@ function commitSnapshot(kind){
   const el2=$('saveState');if(el2)el2.textContent=`${kind} ${hhmm(now)}`;
 }
 const hhmm=d=>`${dFull(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-/* 초기 히스토리 — 지난 며칠간 반영 완료된 시점들 */
+/* 입력 히스토리 — 실제로 저장·반영할 때만 쌓인다 (예시 값 없음) */
 let SHEET_HIST=[];
-(function seedHist(){
-  const who=[['윤석진','미디어웍스'],['김미디어','미디어웍스'],['이운영','퍼포먼스랩']];
-  for(let n=0;n<8;n++){
-    const d=new Date(dT.getTime()-n*DAY);d.setHours(9+(n%3)*4,10+(n*7)%50,0,0);
-    SHEET_HIST.push({t:d,who:who[n%3][0],org:who[n%3][1],kind:n===0?'자동 저장':'반영 완료',rows:null,seed:true});}
-})();
 document.addEventListener('paste',e=>{
   if(!sheetActive())return;
   const txt=(e.clipboardData||window.clipboardData).getData('text');if(!txt)return;
@@ -314,6 +308,9 @@ function openHistory(){
       <th style="width:160px">반영 완료 시각</th><th style="width:96px">입력자</th><th style="width:104px">소속</th>
       <th style="width:70px">행 수</th><th>노출</th><th>클릭</th><th>조회</th><th>전환</th><th>Gross 광고비</th>
       <th style="width:104px">상태</th><th style="width:118px"></th></tr></thead><tbody>`;
+  if(!SHEET_HIST.length)
+    h+='<tr><td colspan="11" class="hint" style="padding:20px">아직 저장된 시점이 없습니다. '
+      +'표를 입력하고 저장하면 여기에 쌓입니다.</td></tr>';
   SHEET_HIST.forEach((hs,n)=>{
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));

@@ -99,6 +99,7 @@ function markBlanks(tbl){
 }
 let DRAG=null;
 const clearIns=()=>document.querySelectorAll('.ins-l,.ins-r').forEach(e=>e.classList.remove('ins-l','ins-r'));
+let CAT_SEL='*';                       /* 값 열 목록에서 고른 분류 (열 설정 팝업 공통) */
 function openBuilder(host,cfg,opts){
   const draft={rows:(cfg.rows||[]).map(r=>({...r})),
     groups:(cfg.groups||[]).map(g=>({id:g.id,name:g.name,solo:g.solo,cols:[...g.cols]}))};
@@ -134,21 +135,42 @@ function openBuilder(host,cfg,opts){
       z.ondrop=e=>{z.classList.remove('over');if(!DRAG||DRAG.kind!=='row')return;
         e.preventDefault();const it=draft.rows.splice(DRAG.i,1)[0];draft.rows.push(it);DRAG=null;draw();};
     }
+    /* 값 열 목록 — 카테고리 탭 한 줄 + 항목 칩 한 덩어리.
+       예전처럼 카테고리마다 상자를 세로로 세우면 작은 화면에서 두 줄로 늘어져
+       그룹 카드까지 화면 밖으로 밀려 드래그가 어려웠다. */
+    const cats=(opts.catalog||[]).filter(c=>c.cols.length);
     const r3=el('div','brow',b);
     r3.innerHTML='<div class="bkey">값 열 목록<span class="bhint">끌어다 그룹에 놓기</span></div>';
-    const pool2=el('div','pool',r3);
-    (opts.catalog||[]).forEach(cat=>{
-      const box=el('div','catbox',pool2);box.innerHTML=`<div class="t">${cat.g}</div>`;
-      cat.cols.forEach(x=>{
+    const pool2=el('div','pool col',r3);
+    const tabs=el('div','cattabs',pool2);
+    const items=el('div','catitems',pool2);
+    const drawItems=()=>{
+      items.innerHTML='';
+      const list=CAT_SEL==='*'?cats:cats.filter(c=>c.g===CAT_SEL);
+      let n=0;
+      list.forEach(cat=>cat.cols.forEach(x=>{
         const on=used(x.k);
-        const a=el('div','cb'+(on?' used':''),box);a.textContent=(on?'✓ ':'⠿ ')+x.l;
+        const a=el('span','cb'+(on?' used':''),items);
+        a.textContent=(on?'✓ ':'⠿ ')+x.l;
+        if(CAT_SEL==='*')a.title=cat.g;
         if(on)return;
-        a.title='눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기';
+        n++;
+        a.title=(CAT_SEL==='*'?cat.g+' · ':'')+'눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기';
         a.draggable=true;
         a.ondragstart=e=>{DRAG={kind:'cat',k:x.k};a.classList.add('dragging');
           e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','n');};
         a.ondragend=()=>{a.classList.remove('dragging');DRAG=null;clearIns();};
-        a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};});});
+        a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};}));
+      if(!n)items.innerHTML='<span class="ph">이 분류의 항목은 모두 쓰고 있습니다.</span>';};
+    const drawTabs=()=>{
+      tabs.innerHTML='';
+      [{g:'*',l:'전체'}].concat(cats.map(c=>({g:c.g,l:c.g.replace(/\s*관련$/,'')})))
+        .forEach(t=>{
+          const btn=el('button','ctab'+(CAT_SEL===t.g?' on':''),tabs);
+          btn.type='button';btn.textContent=t.l;
+          btn.onclick=()=>{CAT_SEL=t.g;drawTabs();drawItems();};});};
+    if(CAT_SEL!=='*'&&!cats.some(c=>c.g===CAT_SEL))CAT_SEL='*';
+    drawTabs();drawItems();
     const r4=el('div','brow',b);r4.innerHTML='<div class="bkey">열 그룹</div>';
     const gz=el('div','groups',r4);
     draft.groups.forEach((g,gi)=>{

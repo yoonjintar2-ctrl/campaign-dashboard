@@ -505,12 +505,13 @@ async function openCampManage(){
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
       캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
       <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
-      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.</div>`;
+      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
+      코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사되고, <b>👥 초대</b>로 구글 계정을 직접 초대할 수 있습니다.</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. ＋ 새 캠페인으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th style="min-width:220px">캠페인명</th><th style="min-width:150px">광고주</th>
-      <th style="width:170px">기간</th><th style="width:120px">최근 저장</th>
+      <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
+      <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
       <th style="width:190px">공유 코드</th>
       <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
@@ -522,40 +523,40 @@ async function openCampManage(){
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
         <td style="text-align:left">
           <div class="codeline"><span class="ck staff">운영진</span>
-            <span class="sharecode">${esc(c.staff_code||'–')}</span></div>
+            <span class="sharecode">${esc(c.staff_code||'–')}</span>
+            <button class="copyb" data-copy="${c.id}" data-kind="staff"
+              title="운영진용 접속 링크를 복사합니다">⧉</button></div>
           <div class="codeline"><span class="ck view">뷰어</span>
-            <span class="sharecode view">${esc(c.share_code||'–')}</span></div></td>
-        <td><button class="btn sm" data-cpy="${c.id}" data-kind="staff" title="운영진용 링크를 복사합니다">운영진 링크</button>
-          <button class="btn sm" data-cpy2="${c.id}" data-kind="viewer" title="광고주용 링크를 복사합니다">뷰어 링크</button>
-          <button class="btn sm" data-new="${c.id}" title="두 코드를 새로 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
-          <button class="btn sm" data-open="${c.id}">열기</button>
+            <span class="sharecode view">${esc(c.share_code||'–')}</span>
+            <button class="copyb" data-copy="${c.id}" data-kind="viewer"
+              title="광고주용 접속 링크를 복사합니다">⧉</button></div></td>
+        <td class="acts">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
+              :`<button class="btn sm" data-open="${c.id}">열기</button>`}
+          <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 초대</button>
           <button class="btn sm" data-ren="${c.id}">이름 변경</button>
           <button class="btn sm" data-dup="${c.id}">복제</button>
           <button class="btn sm danger" data-del="${c.id}">삭제</button></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1020});
+  openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
-  const copyCode=async(b,id,kind)=>{
-    const c=CLOUD.list.find(x=>x.id===id);if(!c)return;
+  /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
+  host.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    const c=CLOUD.list.find(x=>x.id===b.dataset.copy);if(!c)return;
+    const kind=b.dataset.kind;
     const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
     const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
-    const label=b.textContent;
-    try{await navigator.clipboard.writeText(url);b.textContent='복사됨';
-      setTimeout(()=>b.textContent=label,1400);}
-    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}};
-  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy,'staff'));
-  host.querySelectorAll('[data-cpy2]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy2,'viewer'));
-  host.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
-    const c=CLOUD.list.find(x=>x.id===b.dataset.new);if(!c)return;
-    confirmModal('공유 코드를 다시 발급할까요?',
-      '운영진 코드와 뷰어 코드가 모두 새로 바뀌고, 지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
-      const {data,error}=await CLOUD.sb.from('campaigns')
-        .update({share_code:makeShareCode(),staff_code:makeShareCode()})
-        .eq('id',c.id).select('id,share_code,staff_code');
-      if(error||!data||!data.length){cloudState('코드를 바꾸지 못했습니다 (권한 확인)');return;}
-      await loadCampaignList(true);closeModal();openCampManage();},'재발급');});
+    try{await navigator.clipboard.writeText(url);
+      b.textContent='✓';b.classList.add('ok');
+      setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
+    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}});
+  /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
+  host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
+    const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
+    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeModal();await openCampaign(c.id);}
+    else closeModal();
+    if(typeof openPermCloud==='function')openPermCloud();});
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
     const nm=prompt('캠페인 이름',c.name||'');if(nm===null)return;
@@ -634,6 +635,14 @@ async function removeMember(userId){
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
   if(b('acctBtn'))b('acctBtn').onclick=openAccounts;
+  if(b('reqBtn'))b('reqBtn').onclick=()=>{
+    if(CLOUD.user){openAccessRequest();return;}
+    confirmModal('먼저 구글 로그인이 필요합니다.',
+      '어떤 계정에 권한을 드릴지 확인해야 하기 때문입니다. 로그인한 뒤 소속과 용도를 적어 보내 주세요.',
+      ()=>{if(CLOUD.on)signInGoogle();
+        else confirmModal('지금은 샘플 화면입니다.',
+          '실제 사이트에 올린 뒤에는 이 버튼으로 바로 권한을 요청할 수 있습니다.',()=>{},'확인');},
+      '구글 로그인');};
   if(b('campSel'))b('campSel').onchange=e=>{if(e.target.value)openCampaign(e.target.value);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');

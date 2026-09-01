@@ -91,6 +91,12 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .gatecard .gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
 .gatecard .gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
 /* 공유 코드 (캠페인 관리) */
+/* 샘플 둘러보기 중에는 캠페인 조작 버튼을 감추고 권한 요청 버튼만 남긴다 */
+body[data-mode="sample"] #campSel,
+body[data-mode="sample"] #campMng,
+body[data-mode="sample"] #campNew,
+body[data-mode="sample"] #cloudSave,
+body[data-mode="sample"] #acctBtn{display:none !important}
 .sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
   color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
 .sharecode.view{color:var(--acc2);background:#eaf0f1}
@@ -98,6 +104,13 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
 .codeline .ck.staff{color:#2f4a63;background:#dde5ee}
 .codeline .ck.view{color:#42625f;background:#dfeae8}
+.copyb{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:6px;
+  width:22px;height:22px;line-height:1;font-size:12px;cursor:pointer;padding:0;flex:none}
+.copyb:hover{border-color:var(--acc);color:var(--acc)}
+.copyb.ok{border-color:#3d6b52;color:#3d6b52}
+/* 캠페인 관리 — 액션 버튼은 좁아지면 두 줄로 접힌다 */
+table.tbl td.acts{white-space:normal}
+table.tbl td.acts>*{display:inline-flex;margin:2px}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -507,14 +520,14 @@ table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--cell);t
 /* 모든 세로 구분선은 같은 색 · 같은 굵기 */
 table.tbl th,table.tbl td{border-right:1px solid var(--cell)}
 table.tbl th:last-child,table.tbl td:last-child{border-right:0}
+/* 모든 표의 본문 칸은 흰색으로 채운다 — 뒤 배경이 비쳐 칸마다 색이 달라 보이지 않도록.
+   아래의 행 헤더 · 목표 열 · 빈 칸 · 소계 · 합계 규칙이 이 값을 덮어쓴다 */
+table.tbl tbody td{background:var(--surface)}
 table.tbl th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:2}
 table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
 table.tbl thead tr:nth-child(2) th{top:33px}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
-/* 예상 효율 표 — 모든 칸을 흰색으로 채워 배경이 비쳐 보이지 않게 */
-#tblKpi tbody tr:not(.total) td{background:var(--surface)}
-#tblKpi tbody tr:not(.total):hover td{background:var(--acc-soft2)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
@@ -651,11 +664,20 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
   background:var(--acc);border-radius:2px}
 .chip.ins-l::before{left:-5px}.chip.ins-r::after{right:-5px}
 .pool{display:flex;flex-wrap:wrap;gap:6px;flex:1}
-.catbox{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px 10px;min-width:140px}
-.catbox .t{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:6px}
-.catbox .cb{display:block;font-size:11.5px;color:var(--ink2);padding:3px 0;cursor:pointer}
-.catbox .cb:hover{color:var(--acc)}
-.catbox .cb.used{color:#b8c4d3;cursor:default}
+.pool.col{flex-direction:column;gap:8px;min-width:0}
+/* 값 열 목록 — 분류 탭 한 줄 + 항목 칩 (작은 화면에서도 두세 줄로 끝나도록) */
+.cattabs{display:flex;flex-wrap:wrap;gap:4px}
+.cattabs .ctab{border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  border-radius:999px;padding:3px 11px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.5}
+.cattabs .ctab:hover{border-color:var(--acc);color:var(--acc)}
+.cattabs .ctab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.catitems{display:flex;flex-wrap:wrap;gap:5px;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;padding:8px;max-height:132px;overflow-y:auto}
+.catitems .cb{font-size:11.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:7px;
+  background:var(--plane2);padding:3px 9px;cursor:grab;white-space:nowrap;line-height:1.6}
+.catitems .cb:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
+.catitems .cb.used{color:#b8c4d3;background:transparent;border-style:dashed;cursor:default}
+.catitems .ph{color:var(--muted);font-size:11.5px;padding:3px}
 .groups{display:flex;gap:10px;flex-wrap:wrap;flex:1}
 .gcard{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:190px;box-shadow:var(--shadow)}
 .gcard.sel{border-color:var(--acc);box-shadow:0 0 0 2px rgba(73,94,114,.20)}
@@ -850,6 +872,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <button class="btn sm agency-only" id="campMng" title="캠페인 관리 (이름 변경 · 복제 · 삭제)">⚙ 캠페인 관리</button>
   <button class="btn sm agency-only" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>
   <button class="btn sm hidden" id="acctBtn" title="계정 등급 관리 (슈퍼마스터 전용)">🛡 계정 관리</button>
+  <button class="btn sm primary hidden" id="reqBtn" title="캠페인을 만들 수 있는 마스터 권한을 요청합니다">🔑 권한 요청하기</button>
   <div class="spacer"></div>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
   <span class="hint" id="cloudState">데모 모드</span>
@@ -1077,7 +1100,6 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <div class="sec">캠페인 기본 정보
     <div class="tools">
       <button class="btn sm" id="holBtn">🗓 공휴일 설정</button>
-      <button class="btn sm" id="permBtn">👥 계정 · 권한</button>
       <button class="btn sm" id="campHistBtn">🕘 변경 히스토리</button>
       <button class="btn sm primary" id="saveAll">캠페인 설정 저장</button>
     </div>
@@ -1332,13 +1354,8 @@ let ISSUES=[
  {s:'2026-09-24',e:'2026-09-25',scope:'전체',type:'기타',txt:'추석 연휴 트래픽 감소 대비 일 예산 조정'}
 ];
 const dIdx=s=>Math.round((new Date(s+'T00:00:00')-d0)/DAY);
-let CAMP_HIST=[
- {d:'2026-08-01 09:12',who:'윤석진 (미디어웍스)',f:'캠페인 생성',b:'-',a:'BMW Innovation Brand Campaign'},
- {d:'2026-08-05 14:30',who:'김미디어 (미디어웍스)',f:'L3 예상 클릭',b:'26,000',a:'30,000'},
- {d:'2026-08-12 10:02',who:'윤석진 (미디어웍스)',f:'L5 수수료율',b:'15%',a:'20%'},
- {d:'2026-08-20 16:44',who:'이운영 (퍼포먼스랩)',f:'L4 KPI 지표',b:'조회',a:'클릭'},
- {d:'2026-08-26 11:20',who:'윤석진 (미디어웍스)',f:'L2 예산',b:'55,000,000',a:'60,000,000'}
-];
+/* 캠페인 정보 변경 히스토리 — 실제로 값을 바꿀 때만 쌓인다 (예시 값 없음) */
+let CAMP_HIST=[];
 
 /* ===== 2. 지표 ===== */
 /* ===== 항목 사전 — "열설정북.xlsx" 기준 =====
@@ -1626,6 +1643,7 @@ function markBlanks(tbl){
 }
 let DRAG=null;
 const clearIns=()=>document.querySelectorAll('.ins-l,.ins-r').forEach(e=>e.classList.remove('ins-l','ins-r'));
+let CAT_SEL='*';                       /* 값 열 목록에서 고른 분류 (열 설정 팝업 공통) */
 function openBuilder(host,cfg,opts){
   const draft={rows:(cfg.rows||[]).map(r=>({...r})),
     groups:(cfg.groups||[]).map(g=>({id:g.id,name:g.name,solo:g.solo,cols:[...g.cols]}))};
@@ -1661,21 +1679,42 @@ function openBuilder(host,cfg,opts){
       z.ondrop=e=>{z.classList.remove('over');if(!DRAG||DRAG.kind!=='row')return;
         e.preventDefault();const it=draft.rows.splice(DRAG.i,1)[0];draft.rows.push(it);DRAG=null;draw();};
     }
+    /* 값 열 목록 — 카테고리 탭 한 줄 + 항목 칩 한 덩어리.
+       예전처럼 카테고리마다 상자를 세로로 세우면 작은 화면에서 두 줄로 늘어져
+       그룹 카드까지 화면 밖으로 밀려 드래그가 어려웠다. */
+    const cats=(opts.catalog||[]).filter(c=>c.cols.length);
     const r3=el('div','brow',b);
     r3.innerHTML='<div class="bkey">값 열 목록<span class="bhint">끌어다 그룹에 놓기</span></div>';
-    const pool2=el('div','pool',r3);
-    (opts.catalog||[]).forEach(cat=>{
-      const box=el('div','catbox',pool2);box.innerHTML=`<div class="t">${cat.g}</div>`;
-      cat.cols.forEach(x=>{
+    const pool2=el('div','pool col',r3);
+    const tabs=el('div','cattabs',pool2);
+    const items=el('div','catitems',pool2);
+    const drawItems=()=>{
+      items.innerHTML='';
+      const list=CAT_SEL==='*'?cats:cats.filter(c=>c.g===CAT_SEL);
+      let n=0;
+      list.forEach(cat=>cat.cols.forEach(x=>{
         const on=used(x.k);
-        const a=el('div','cb'+(on?' used':''),box);a.textContent=(on?'✓ ':'⠿ ')+x.l;
+        const a=el('span','cb'+(on?' used':''),items);
+        a.textContent=(on?'✓ ':'⠿ ')+x.l;
+        if(CAT_SEL==='*')a.title=cat.g;
         if(on)return;
-        a.title='눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기';
+        n++;
+        a.title=(CAT_SEL==='*'?cat.g+' · ':'')+'눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기';
         a.draggable=true;
         a.ondragstart=e=>{DRAG={kind:'cat',k:x.k};a.classList.add('dragging');
           e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','n');};
         a.ondragend=()=>{a.classList.remove('dragging');DRAG=null;clearIns();};
-        a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};});});
+        a.onclick=()=>{(draft.groups.find(g=>g.id===selG)||draft.groups[0]).cols.push(x.k);draw();};}));
+      if(!n)items.innerHTML='<span class="ph">이 분류의 항목은 모두 쓰고 있습니다.</span>';};
+    const drawTabs=()=>{
+      tabs.innerHTML='';
+      [{g:'*',l:'전체'}].concat(cats.map(c=>({g:c.g,l:c.g.replace(/\s*관련$/,'')})))
+        .forEach(t=>{
+          const btn=el('button','ctab'+(CAT_SEL===t.g?' on':''),tabs);
+          btn.type='button';btn.textContent=t.l;
+          btn.onclick=()=>{CAT_SEL=t.g;drawTabs();drawItems();};});};
+    if(CAT_SEL!=='*'&&!cats.some(c=>c.g===CAT_SEL))CAT_SEL='*';
+    drawTabs();drawItems();
     const r4=el('div','brow',b);r4.innerHTML='<div class="bkey">열 그룹</div>';
     const gz=el('div','groups',r4);
     draft.groups.forEach((g,gi)=>{
@@ -3137,10 +3176,21 @@ const TMAP_METRICS=['imp','click','view','conv','cost'];
 const TMAP_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa'};
 let TMAP={metric:'imp',dims:['media','product','creative']};
 /* 매체별 색 — 전체 톤과 어울리는 저채도 계열 */
-const MEDIA_HUES=[[73,94,114],[72,106,117],[79,105,95],[95,88,114],[107,91,80],[90,100,112],[68,88,100]];
+/* 색이 서로 확실히 구분되도록 색상환에서 골고루 뽑은 값 (효율 버블과 같은 팔레트) */
+const MEDIA_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
+                  [64,130,138],[118,120,132],[196,120,150],[96,116,72],[150,96,84]];
 const mixWhite=(rgb,t)=>rgb.map(v=>Math.round(v+(255-v)*t));
 const inkOn=rgb=>(rgb[0]*.299+rgb[1]*.587+rgb[2]*.114)>168?'#26313c':'#fff';
-const hueOf=name=>{let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;
+/* 매체는 목록 순서대로 색을 배정한다 — 해시로 뽑으면 서로 겹치거나 비슷해진다.
+   효율 버블에서 고른 매체 색(BUB_COLORS)을 그대로 따라가므로 두 그래프의 색이 항상 같다. */
+const hueOf=name=>{
+  const ms=[...new Set(LINES.map(l=>l.media))];
+  const i=ms.indexOf(name);
+  if(i>=0){
+    let idx=i;
+    try{if(BUB_COLORS[name]===undefined)BUB_COLORS[name]=i%BUB_HUES.length;idx=BUB_COLORS[name];}catch(e){}
+    return (typeof BUB_HUES!=='undefined'?BUB_HUES:MEDIA_HUES)[idx%MEDIA_HUES.length]||MEDIA_HUES[0];}
+  let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;
   return MEDIA_HUES[h%MEDIA_HUES.length];};
 /* squarified treemap — 타일이 최대한 정사각형에 가깝게 */
 function squarify(items,x,y,w,h){
@@ -3214,7 +3264,7 @@ function renderTreemap(){
     return leaf=>{
       const u=leaf.v>0?(leaf.c/leaf.v)*(mk==='imp'?1000:1):NaN;
       if(!isFinite(u)||hi===lo)return .34;
-      return .06+((u-lo)/(hi-lo))*.62;};};   /* 단가가 낮을수록 t 작음 = 진함 */
+      return .04+((u-lo)/(hi-lo))*.66;};};   /* 단가가 낮을수록 t 작음 = 진함 */
   const collect=n=>n.kids?n.kids.flatMap(collect):[n];
   const tip=(names,leaf,sect)=>e=>showTip(e.clientX,e.clientY,
     `<div class="t">${names.map(esc).join(' · ')}</div>`
@@ -3663,14 +3713,8 @@ function commitSnapshot(kind){
   const el2=$('saveState');if(el2)el2.textContent=`${kind} ${hhmm(now)}`;
 }
 const hhmm=d=>`${dFull(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-/* 초기 히스토리 — 지난 며칠간 반영 완료된 시점들 */
+/* 입력 히스토리 — 실제로 저장·반영할 때만 쌓인다 (예시 값 없음) */
 let SHEET_HIST=[];
-(function seedHist(){
-  const who=[['윤석진','미디어웍스'],['김미디어','미디어웍스'],['이운영','퍼포먼스랩']];
-  for(let n=0;n<8;n++){
-    const d=new Date(dT.getTime()-n*DAY);d.setHours(9+(n%3)*4,10+(n*7)%50,0,0);
-    SHEET_HIST.push({t:d,who:who[n%3][0],org:who[n%3][1],kind:n===0?'자동 저장':'반영 완료',rows:null,seed:true});}
-})();
 document.addEventListener('paste',e=>{
   if(!sheetActive())return;
   const txt=(e.clipboardData||window.clipboardData).getData('text');if(!txt)return;
@@ -3767,6 +3811,9 @@ function openHistory(){
       <th style="width:160px">반영 완료 시각</th><th style="width:96px">입력자</th><th style="width:104px">소속</th>
       <th style="width:70px">행 수</th><th>노출</th><th>클릭</th><th>조회</th><th>전환</th><th>Gross 광고비</th>
       <th style="width:104px">상태</th><th style="width:118px"></th></tr></thead><tbody>`;
+  if(!SHEET_HIST.length)
+    h+='<tr><td colspan="11" class="hint" style="padding:20px">아직 저장된 시점이 없습니다. '
+      +'표를 입력하고 저장하면 여기에 쌓입니다.</td></tr>';
   SHEET_HIST.forEach((hs,n)=>{
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));
@@ -4481,6 +4528,9 @@ async function openPermCloud(){
 function openCampHist(){
   let h='<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>'
     +'<th>변경 시각</th><th>변경자</th><th>항목</th><th>변경 전</th><th>변경 후</th></tr></thead><tbody>';
+  if(!CAMP_HIST.length)
+    h+='<tr><td colspan="5" class="hint" style="padding:20px">아직 기록된 변경이 없습니다. '
+      +'캠페인 정보를 바꾸면 여기에 쌓입니다.</td></tr>';
   CAMP_HIST.slice().reverse().forEach(r=>{h+=`<tr><td class="mono">${r.d}</td><td>${r.who}</td>
     <td>${r.f}</td><td class="mono" style="color:var(--muted)">${r.b}</td><td class="mono"><b>${r.a}</b></td></tr>`;});
   openModal('캠페인 정보 변경 히스토리',h+'</tbody></table>','<button class="btn" data-close>닫기</button>',{w:820});}
@@ -4650,8 +4700,14 @@ function applyRole(){
     chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
       :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
   /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */
-  let sup=false;try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';}catch(e){}
+  let sup=false,sample=false,needReq=false;
+  try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';
+      sample=!!(CLOUD&&CLOUD.sample&&!CLOUD.user);
+      needReq=sample||!!(CLOUD&&CLOUD.user&&CLOUD.appRole==='guest');}catch(e){}
   const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!sup);
+  /* 샘플 둘러보기 중이거나 아직 등급이 없으면 권한 요청 버튼을 보여 준다 */
+  document.body.dataset.mode=sample?'sample':'';
+  const rb=$('reqBtn');if(rb)rb.classList.toggle('hidden',!needReq);
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
   if(st)st.classList.toggle('hidden',c);
@@ -4704,7 +4760,8 @@ $('saveRows').onclick=saveRows;
 $('colCfgBtn').onclick=openColCfg;
 $('histBtn').onclick=openHistory;
 $('campHistBtn').onclick=openCampHist;
-$('permBtn').onclick=openPerm;
+/* 계정 · 권한은 상단 ⚙ 캠페인 관리 → 👥 초대 로 옮겼다 */
+if($('permBtn'))$('permBtn').onclick=openPerm;
 $('holBtn').onclick=openHolidays;
 $('saveAll').onclick=()=>{rebuildPeriod();buildFacts();renderAll();renderKpiTable();renderSheet();
   confirmModal('캠페인 설정을 저장했습니다.','기본 정보와 라인별 설정이 모두 반영되었습니다.',()=>{},'확인');};
@@ -5265,12 +5322,13 @@ async function openCampManage(){
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
       캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
       <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
-      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.</div>`;
+      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
+      코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사되고, <b>👥 초대</b>로 구글 계정을 직접 초대할 수 있습니다.</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. ＋ 새 캠페인으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th style="min-width:220px">캠페인명</th><th style="min-width:150px">광고주</th>
-      <th style="width:170px">기간</th><th style="width:120px">최근 저장</th>
+      <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
+      <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
       <th style="width:190px">공유 코드</th>
       <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
@@ -5282,40 +5340,40 @@ async function openCampManage(){
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
         <td style="text-align:left">
           <div class="codeline"><span class="ck staff">운영진</span>
-            <span class="sharecode">${esc(c.staff_code||'–')}</span></div>
+            <span class="sharecode">${esc(c.staff_code||'–')}</span>
+            <button class="copyb" data-copy="${c.id}" data-kind="staff"
+              title="운영진용 접속 링크를 복사합니다">⧉</button></div>
           <div class="codeline"><span class="ck view">뷰어</span>
-            <span class="sharecode view">${esc(c.share_code||'–')}</span></div></td>
-        <td><button class="btn sm" data-cpy="${c.id}" data-kind="staff" title="운영진용 링크를 복사합니다">운영진 링크</button>
-          <button class="btn sm" data-cpy2="${c.id}" data-kind="viewer" title="광고주용 링크를 복사합니다">뷰어 링크</button>
-          <button class="btn sm" data-new="${c.id}" title="두 코드를 새로 발급하고 기존 코드는 못 쓰게 합니다">재발급</button>
-          <button class="btn sm" data-open="${c.id}">열기</button>
+            <span class="sharecode view">${esc(c.share_code||'–')}</span>
+            <button class="copyb" data-copy="${c.id}" data-kind="viewer"
+              title="광고주용 접속 링크를 복사합니다">⧉</button></div></td>
+        <td class="acts">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
+              :`<button class="btn sm" data-open="${c.id}">열기</button>`}
+          <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 초대</button>
           <button class="btn sm" data-ren="${c.id}">이름 변경</button>
           <button class="btn sm" data-dup="${c.id}">복제</button>
           <button class="btn sm danger" data-del="${c.id}">삭제</button></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1020});
+  openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
-  const copyCode=async(b,id,kind)=>{
-    const c=CLOUD.list.find(x=>x.id===id);if(!c)return;
+  /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
+  host.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    const c=CLOUD.list.find(x=>x.id===b.dataset.copy);if(!c)return;
+    const kind=b.dataset.kind;
     const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
     const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
-    const label=b.textContent;
-    try{await navigator.clipboard.writeText(url);b.textContent='복사됨';
-      setTimeout(()=>b.textContent=label,1400);}
-    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}};
-  host.querySelectorAll('[data-cpy]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy,'staff'));
-  host.querySelectorAll('[data-cpy2]').forEach(b=>b.onclick=()=>copyCode(b,b.dataset.cpy2,'viewer'));
-  host.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
-    const c=CLOUD.list.find(x=>x.id===b.dataset.new);if(!c)return;
-    confirmModal('공유 코드를 다시 발급할까요?',
-      '운영진 코드와 뷰어 코드가 모두 새로 바뀌고, 지금 코드로 보고 있던 사람은 더 이상 열 수 없습니다.',async()=>{
-      const {data,error}=await CLOUD.sb.from('campaigns')
-        .update({share_code:makeShareCode(),staff_code:makeShareCode()})
-        .eq('id',c.id).select('id,share_code,staff_code');
-      if(error||!data||!data.length){cloudState('코드를 바꾸지 못했습니다 (권한 확인)');return;}
-      await loadCampaignList(true);closeModal();openCampManage();},'재발급');});
+    try{await navigator.clipboard.writeText(url);
+      b.textContent='✓';b.classList.add('ok');
+      setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
+    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}});
+  /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
+  host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
+    const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
+    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeModal();await openCampaign(c.id);}
+    else closeModal();
+    if(typeof openPermCloud==='function')openPermCloud();});
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
     const nm=prompt('캠페인 이름',c.name||'');if(nm===null)return;
@@ -5394,6 +5452,14 @@ async function removeMember(userId){
   if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
   if(b('acctBtn'))b('acctBtn').onclick=openAccounts;
+  if(b('reqBtn'))b('reqBtn').onclick=()=>{
+    if(CLOUD.user){openAccessRequest();return;}
+    confirmModal('먼저 구글 로그인이 필요합니다.',
+      '어떤 계정에 권한을 드릴지 확인해야 하기 때문입니다. 로그인한 뒤 소속과 용도를 적어 보내 주세요.',
+      ()=>{if(CLOUD.on)signInGoogle();
+        else confirmModal('지금은 샘플 화면입니다.',
+          '실제 사이트에 올린 뒤에는 이 버튼으로 바로 권한을 요청할 수 있습니다.',()=>{},'확인');},
+      '구글 로그인');};
   if(b('campSel'))b('campSel').onchange=e=>{if(e.target.value)openCampaign(e.target.value);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');

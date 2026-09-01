@@ -468,10 +468,21 @@ const TMAP_METRICS=['imp','click','view','conv','cost'];
 const TMAP_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa'};
 let TMAP={metric:'imp',dims:['media','product','creative']};
 /* 매체별 색 — 전체 톤과 어울리는 저채도 계열 */
-const MEDIA_HUES=[[73,94,114],[72,106,117],[79,105,95],[95,88,114],[107,91,80],[90,100,112],[68,88,100]];
+/* 색이 서로 확실히 구분되도록 색상환에서 골고루 뽑은 값 (효율 버블과 같은 팔레트) */
+const MEDIA_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
+                  [64,130,138],[118,120,132],[196,120,150],[96,116,72],[150,96,84]];
 const mixWhite=(rgb,t)=>rgb.map(v=>Math.round(v+(255-v)*t));
 const inkOn=rgb=>(rgb[0]*.299+rgb[1]*.587+rgb[2]*.114)>168?'#26313c':'#fff';
-const hueOf=name=>{let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;
+/* 매체는 목록 순서대로 색을 배정한다 — 해시로 뽑으면 서로 겹치거나 비슷해진다.
+   효율 버블에서 고른 매체 색(BUB_COLORS)을 그대로 따라가므로 두 그래프의 색이 항상 같다. */
+const hueOf=name=>{
+  const ms=[...new Set(LINES.map(l=>l.media))];
+  const i=ms.indexOf(name);
+  if(i>=0){
+    let idx=i;
+    try{if(BUB_COLORS[name]===undefined)BUB_COLORS[name]=i%BUB_HUES.length;idx=BUB_COLORS[name];}catch(e){}
+    return (typeof BUB_HUES!=='undefined'?BUB_HUES:MEDIA_HUES)[idx%MEDIA_HUES.length]||MEDIA_HUES[0];}
+  let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;
   return MEDIA_HUES[h%MEDIA_HUES.length];};
 /* squarified treemap — 타일이 최대한 정사각형에 가깝게 */
 function squarify(items,x,y,w,h){
@@ -545,7 +556,7 @@ function renderTreemap(){
     return leaf=>{
       const u=leaf.v>0?(leaf.c/leaf.v)*(mk==='imp'?1000:1):NaN;
       if(!isFinite(u)||hi===lo)return .34;
-      return .06+((u-lo)/(hi-lo))*.62;};};   /* 단가가 낮을수록 t 작음 = 진함 */
+      return .04+((u-lo)/(hi-lo))*.66;};};   /* 단가가 낮을수록 t 작음 = 진함 */
   const collect=n=>n.kids?n.kids.flatMap(collect):[n];
   const tip=(names,leaf,sect)=>e=>showTip(e.clientX,e.clientY,
     `<div class="t">${names.map(esc).join(' · ')}</div>`

@@ -91,6 +91,12 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .gatecard .gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
 .gatecard .gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
 /* 공유 코드 (캠페인 관리) */
+/* 샘플 둘러보기 중에는 캠페인 조작 버튼을 감추고 권한 요청 버튼만 남긴다 */
+body[data-mode="sample"] #campSel,
+body[data-mode="sample"] #campMng,
+body[data-mode="sample"] #campNew,
+body[data-mode="sample"] #cloudSave,
+body[data-mode="sample"] #acctBtn{display:none !important}
 .sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
   color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
 .sharecode.view{color:var(--acc2);background:#eaf0f1}
@@ -98,6 +104,13 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .codeline .ck{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;min-width:42px;text-align:center}
 .codeline .ck.staff{color:#2f4a63;background:#dde5ee}
 .codeline .ck.view{color:#42625f;background:#dfeae8}
+.copyb{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:6px;
+  width:22px;height:22px;line-height:1;font-size:12px;cursor:pointer;padding:0;flex:none}
+.copyb:hover{border-color:var(--acc);color:var(--acc)}
+.copyb.ok{border-color:#3d6b52;color:#3d6b52}
+/* 캠페인 관리 — 액션 버튼은 좁아지면 두 줄로 접힌다 */
+table.tbl td.acts{white-space:normal}
+table.tbl td.acts>*{display:inline-flex;margin:2px}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -507,14 +520,14 @@ table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--cell);t
 /* 모든 세로 구분선은 같은 색 · 같은 굵기 */
 table.tbl th,table.tbl td{border-right:1px solid var(--cell)}
 table.tbl th:last-child,table.tbl td:last-child{border-right:0}
+/* 모든 표의 본문 칸은 흰색으로 채운다 — 뒤 배경이 비쳐 칸마다 색이 달라 보이지 않도록.
+   아래의 행 헤더 · 목표 열 · 빈 칸 · 소계 · 합계 규칙이 이 값을 덮어쓴다 */
+table.tbl tbody td{background:var(--surface)}
 table.tbl th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:2}
 table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
 table.tbl thead tr:nth-child(2) th{top:33px}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
-/* 예상 효율 표 — 모든 칸을 흰색으로 채워 배경이 비쳐 보이지 않게 */
-#tblKpi tbody tr:not(.total) td{background:var(--surface)}
-#tblKpi tbody tr:not(.total):hover td{background:var(--acc-soft2)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
@@ -651,11 +664,20 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
   background:var(--acc);border-radius:2px}
 .chip.ins-l::before{left:-5px}.chip.ins-r::after{right:-5px}
 .pool{display:flex;flex-wrap:wrap;gap:6px;flex:1}
-.catbox{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px 10px;min-width:140px}
-.catbox .t{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:6px}
-.catbox .cb{display:block;font-size:11.5px;color:var(--ink2);padding:3px 0;cursor:pointer}
-.catbox .cb:hover{color:var(--acc)}
-.catbox .cb.used{color:#b8c4d3;cursor:default}
+.pool.col{flex-direction:column;gap:8px;min-width:0}
+/* 값 열 목록 — 분류 탭 한 줄 + 항목 칩 (작은 화면에서도 두세 줄로 끝나도록) */
+.cattabs{display:flex;flex-wrap:wrap;gap:4px}
+.cattabs .ctab{border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  border-radius:999px;padding:3px 11px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.5}
+.cattabs .ctab:hover{border-color:var(--acc);color:var(--acc)}
+.cattabs .ctab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.catitems{display:flex;flex-wrap:wrap;gap:5px;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;padding:8px;max-height:132px;overflow-y:auto}
+.catitems .cb{font-size:11.5px;color:var(--ink2);border:1px solid var(--line2);border-radius:7px;
+  background:var(--plane2);padding:3px 9px;cursor:grab;white-space:nowrap;line-height:1.6}
+.catitems .cb:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
+.catitems .cb.used{color:#b8c4d3;background:transparent;border-style:dashed;cursor:default}
+.catitems .ph{color:var(--muted);font-size:11.5px;padding:3px}
 .groups{display:flex;gap:10px;flex-wrap:wrap;flex:1}
 .gcard{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:190px;box-shadow:var(--shadow)}
 .gcard.sel{border-color:var(--acc);box-shadow:0 0 0 2px rgba(73,94,114,.20)}
