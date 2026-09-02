@@ -2,8 +2,10 @@
 /* 표 탭 열 — 항목 사전 중 팩트에서 바로 계산 가능한 항목만 */
 const RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
 const RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));
+/* 기본 열에서 빼는 항목 — 매출은 켜고 싶을 때 열 구성에서 켠다 */
+const RAW_DEF_OUT=['rev'];
 let RAW_CFG={rows:[],groups:(function(){
-  const d=fieldDefaults('dash').filter(k=>METRICS[k]);
+  const d=fieldDefaults('dash').filter(k=>METRICS[k]&&RAW_DEF_OUT.indexOf(k)<0);
   const vol=d.filter(k=>FLD[k].kind==='in'&&FLD[k].cat!=='비용');
   const eff=d.filter(k=>FLD[k].kind==='calc'&&FLD[k].cat!=='비용');
   const cost=d.filter(k=>FLD[k].cat==='비용');
@@ -92,11 +94,65 @@ function renderRaw(){
         +'</tr>';});
     tbl.innerHTML=h+'</tbody>';
     markBlanks(tbl);
+    /* 가로 세그먼트가 많으면 좌우 스크롤이 길어진다 — 블록 단위로 건너뛰는 미니맵을 붙인다 */
+    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks);
   });
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
   if(hSegs.length)note.push(`가로 ${SEG_OPTS.find(s=>s.k===RAW_HSEG).l} ${hSegs.length}개`);
   $('rawNote').textContent=note.join(' · ');
+}
+
+/* 일자별 상세 효율 — 가로 세그먼트 미니맵 · 좌우 이동 버튼
+   블록(가로 세그먼트) 하나씩 건너뛰고, 지금 보고 있는 블록을 칩으로 표시한다. */
+function mountHNav(wrapDiv,card,wrap,tbl,blocks){
+  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 */
+  wrap.classList.add('hfrozen');
+  const setFz=()=>{const r=tbl.querySelector('tbody tr');
+    if(r&&r.children[0])wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');};
+  setFz();setTimeout(setFz,0);addEventListener('resize',setFz);
+  const nav=document.createElement('div');
+  nav.className='hnav';
+  nav.innerHTML='<button class="nvb" data-step="-1" title="이전 세그먼트로">◀</button>'
+    +'<div class="nvmap"><div class="nvchips">'
+    +blocks.map((b,i)=>`<button class="nvc" data-go="${i}">${esc(b.name)}</button>`).join('')
+    +'</div><div class="nvbar"><i></i></div></div>'
+    +'<button class="nvb" data-step="1" title="다음 세그먼트로">▶</button>';
+  card.parentNode.insertBefore(nav,card);
+  /* 각 블록의 왼쪽 좌표 — 스크롤 영역 안에서의 위치 */
+  const lefts=()=>{const wr=wrap.getBoundingClientRect();
+    return [...tbl.querySelectorAll('thead tr:first-child th.g')]
+      .map(th=>Math.round(th.getBoundingClientRect().left-wr.left+wrap.scrollLeft));};
+  /* 왼쪽에 붙어 있는 일자 · 요일 두 열의 폭만큼 빼 줘야 블록 첫 열이 바로 보인다 */
+  const frozen=()=>{const r=tbl.querySelector('tbody tr');
+    if(!r)return 0;
+    return Math.round([...r.children].slice(0,2).reduce((a,c)=>a+c.getBoundingClientRect().width,0));};
+  const chips=[...nav.querySelectorAll('.nvc')];
+  const fill=nav.querySelector('.nvbar>i');
+  const goTo=i=>{const L=lefts();if(!L.length)return;
+    const k=Math.max(0,Math.min(L.length-1,i));
+    wrap.scrollTo({left:Math.max(0,L[k]-frozen()),behavior:'smooth'});};
+  /* 지금 보고 있는 블록 — 스크롤 위치와 가장 가까운 블록 */
+  const cur=()=>{const L=lefts();if(!L.length)return 0;
+    const fz=frozen(),x=wrap.scrollLeft;let k=0,best=Infinity;
+    L.forEach((v,i)=>{const d=Math.abs(Math.max(0,v-fz)-x);if(d<best){best=d;k=i;}});
+    return k;};
+  const paint=()=>{
+    const k=cur();
+    chips.forEach((c,i)=>c.classList.toggle('on',i===k));
+    const max=Math.max(1,wrap.scrollWidth-wrap.clientWidth);
+    const vis=wrap.clientWidth/Math.max(1,wrap.scrollWidth);
+    fill.style.width=Math.max(8,vis*100)+'%';
+    fill.style.left=(wrap.scrollLeft/max)*(100-Math.max(8,vis*100))+'%';
+    nav.querySelector('[data-step="-1"]').disabled=wrap.scrollLeft<=1;
+    nav.querySelector('[data-step="1"]').disabled=wrap.scrollLeft>=max-1;
+    const on=wrap.scrollWidth-wrap.clientWidth>4;
+    nav.classList.toggle('idle',!on);};
+  chips.forEach((c,i)=>c.onclick=()=>goTo(i));
+  nav.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>goTo(cur()+ +b.dataset.step));
+  wrap.addEventListener('scroll',paint,{passive:true});
+  addEventListener('resize',paint);
+  paint();setTimeout(paint,0);
 }
 /* ===== 8. 소재 운영 ===== */
 let CR_FILTER={media:'all',type:'all',sort:'imp'};
@@ -118,7 +174,7 @@ function filteredCreatives(){
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
 
-/* ===== 우수 소재 — 효율 기준별 TOP N =====
+/* ===== 효율 우수 소재 — 효율 기준별 TOP N =====
    단가(CPV·CPM·CPC·CPA)는 낮을수록 우수하므로 오름차순.
    분모(조회·노출·클릭·전환)가 0인 소재는 순위에서 제외한다. */
 const CR_RANKS=[
@@ -127,7 +183,9 @@ const CR_RANKS=[
   {k:'cpc',l:'클릭 효율',sub:'CPC 낮은 순',base:'click'},
   {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'}
 ];
-let CR_RANK_ON=['cpv','cpm','cpc'];
+/* 기본은 조회 · 클릭 두 가지 — 좌우 두 칸으로 나란히 놓는다.
+   다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
+let CR_RANK_ON=['cpv','cpc'];
 let CR_TOPN=5;
 function renderRankPick(){
   const host=$('crRankPick');if(!host)return;
@@ -145,23 +203,25 @@ function renderCreatives(){
   const pool=filteredCreatives();
   if(!pool.length){
     host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
+  /* 기준마다 한 칸씩 — 두 칸이 좌우로 나란히 간다 */
+  const cols=el('div','crcols',host);
   CR_RANKS.filter(r=>CR_RANK_ON.includes(r.k)).forEach(r=>{
     const rows=pool.map(c=>{const b=crAgg(c);
         return {c,b,base:b[r.base]||0,eff:METRICS[r.k].c(b)};})
       .filter(x=>x.base>0&&isFinite(x.eff)&&x.eff>0)
       .sort((a,b)=>a.eff-b.eff)
       .slice(0,CR_TOPN);
-    const g=el('div','',host);g.style.marginBottom='22px';
+    const g=el('div','crcol',cols);
     const hd=el('div','crband',g);
     hd.innerHTML=`<span class="t">${r.l}이 우수한 소재</span>`
       +`<span class="n">${r.sub} · 상위 ${rows.length}개</span>`;
     if(!rows.length){el('div','hint',g).textContent=`${METRICS[r.k].l}를 계산할 수 있는 소재가 없습니다.`;return;}
+    /* 1위는 지금 크기 그대로, 2위부터는 가로 절반씩 두 개가 한 줄에 */
     const grid=el('div','crgrid',g);
-    grid.style.gridTemplateColumns=`repeat(${Math.min(Math.max(rows.length,1),5)},minmax(0,1fr))`;
     rows.forEach((x,i)=>{
       /* 순위 기준으로 쓴 지표는 위에 이미 크게 나오므로 아래 목록에서는 뺀다 */
-      const c=x.c,cols=cfgCols(CR_CFG[c.type]).filter(k=>k!==r.k);
-      const d=el('div','cr',grid);
+      const c=x.c,mcols=cfgCols(CR_CFG[c.type]).filter(k=>k!==r.k);
+      const d=el('div','cr'+(i===0?' lead':''),grid);
       const bg=c.img?`url("${encodeURI(c.img)}")`:c.g;
       d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${bg}"></div>
           <div class="media">${esc(c.media)}</div>
@@ -170,7 +230,7 @@ function renderCreatives(){
           ${c.type==='video'?'<div class="play">▶</div>':''}</div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div>
-          ${cols.map(k=>`<div class="mt"><span>${CR_DEF[k].l}</span><b>${crVal(c,k)}</b></div>`).join('')}</div>`;
+          ${mcols.map(k=>`<div class="mt"><span>${CR_DEF[k].l}</span><b>${crVal(c,k)}</b></div>`).join('')}</div>`;
       d.onclick=()=>openLightbox(c);});});
 }
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.

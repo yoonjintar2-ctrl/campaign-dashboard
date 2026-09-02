@@ -94,9 +94,7 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 /* 샘플 둘러보기 중에는 캠페인 조작 버튼을 감추고 권한 요청 버튼만 남긴다 */
 body[data-mode="sample"] #campSel,
 body[data-mode="sample"] #campMng,
-body[data-mode="sample"] #campNew,
-body[data-mode="sample"] #cloudSave,
-body[data-mode="sample"] #acctBtn{display:none !important}
+body[data-mode="sample"] #cloudSave{display:none !important}
 .sharecode{display:inline-flex;align-items:center;gap:6px;font-weight:800;letter-spacing:1.6px;
   color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:2px 9px;font-size:12px}
 .sharecode.view{color:var(--acc2);background:#eaf0f1}
@@ -114,7 +112,7 @@ body[data-mode="sample"] #acctBtn{display:none !important}
 .me .mail{font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;max-width:172px}
 .me .cv{font-size:9px;color:var(--muted);flex:none}
-.memenu{position:absolute;right:0;top:calc(100% + 7px);min-width:238px;background:var(--surface);
+.memenu{position:absolute;right:0;top:calc(100% + 7px);min-width:278px;background:var(--surface);
   border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2);padding:6px;z-index:80}
 .memenu.hidden{display:none}
 .memenu .mi{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;
@@ -199,6 +197,9 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .barlbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--muted);
   margin:18px 0 6px;text-transform:none}
 .barlbl.first{margin-top:2px}
+.barlbl.row{display:flex;align-items:center;gap:10px}
+.barlbl.row .tools{margin-left:auto;display:flex;gap:6px;align-items:center}
+.barlbl.row .tools .ctl{font-size:12px}
 
 /* 일자별 상세 효율 — 가로/세로 세그먼트 구분선 */
 table.tbl th.hsep,table.tbl td.hsep{border-left:3px solid var(--gline)}
@@ -305,7 +306,12 @@ table.tbl.nogauge .gauge .track{display:none}
 .pbar{position:relative;height:46px;border-radius:12px;background:#e9edf2;overflow:hidden}
 .pbar>i{position:absolute;left:0;top:0;bottom:0;border-radius:12px;display:block}
 .pbar>.goal{background:var(--pace)}
-.pbar>.real{background:var(--acc)}
+/* 달성률 막대 — 지금의 짙은 톤은 그대로 두고 안쪽 그라데이션만 은은하게 흐르게 */
+.pbar>.real{background:linear-gradient(104deg,
+    #3f5265 0%, #56708a 18%, #405568 36%, #5c7794 54%, #3b4e60 72%, #526b83 88%, #3f5265 100%);
+  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate}
+@keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){.pbar>.real{animation:none}}
 .pbar .lab{position:absolute;top:50%;transform:translate(-100%,-50%);font-size:14px;font-weight:800;color:#fff;
   font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.2)}
 .pbar .lab.goal{font-weight:700;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
@@ -334,7 +340,6 @@ table.tbl.nogauge .gauge .track{display:none}
 .pside .ps-v span{font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
 .pside .ps-s{font-size:11px;color:var(--muted);font-weight:400;line-height:17px;height:17px;margin-top:3px;
   font-variant-numeric:tabular-nums}
-  font-variant-numeric:tabular-nums;padding:0 5px}
 .goalout{margin-top:8px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;
   gap:18px;flex-wrap:wrap}
 .goalout .lg{display:inline-flex;align-items:center;gap:6px}
@@ -374,6 +379,7 @@ table.tbl.nogauge .gauge .track{display:none}
   margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--pace);text-align:left}
 .donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
+.donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
 .donut .dlgd .lg.spend{color:var(--acc)}
 .donut .dlgd .lg.spend .sw{background:var(--acc)}
 .donut.spend{background:linear-gradient(180deg,#f7f9fb,#fff)}
@@ -461,7 +467,37 @@ table.tbl.nogauge .gauge .track{display:none}
 .tmap .tile.tiny .tn,.tmap .tile.tiny .tv{display:none}
 .tmap-empty{display:grid;place-items:center;height:100%;color:var(--muted);font-size:12.5px}
 
-/* 우수 소재 — 기준 선택 칩 */
+
+/* 일자별 상세 효율 — 가로 세그먼트가 많으면 일자 · 요일 두 열을 왼쪽에 고정 */
+.tbl-wrap.hfrozen table.tbl thead tr:first-child th:first-child,
+.tbl-wrap.hfrozen table.tbl thead tr.total td.head{position:sticky;left:0;z-index:6}
+.tbl-wrap.hfrozen table.tbl tbody td.head:nth-child(1){position:sticky;left:0;z-index:3}
+.tbl-wrap.hfrozen table.tbl tbody td.head:nth-child(2){position:sticky;z-index:3}
+.tbl-wrap.hfrozen table.tbl tbody tr td.head:nth-child(2){left:var(--fz1,72px)}
+/* 고정된 두 열의 오른쪽에 경계선 하나 */
+.tbl-wrap.hfrozen table.tbl tbody td.head:nth-child(2),
+.tbl-wrap.hfrozen table.tbl thead tr:first-child th:first-child,
+.tbl-wrap.hfrozen table.tbl thead tr.total td.head{border-right:2px solid var(--gline)}
+
+/* 일자별 상세 효율 — 가로 세그먼트 미니맵 */
+.hnav{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.hnav.idle{display:none}
+.hnav .nvb{width:26px;height:26px;flex:none;border:1px solid var(--line);background:#fff;border-radius:7px;
+  color:var(--ink2);font-size:11px;font-weight:800;cursor:pointer;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center}
+.hnav .nvb:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.hnav .nvb:disabled{opacity:.32;cursor:default}
+.hnav .nvmap{flex:1;min-width:0}
+.hnav .nvchips{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.hnav .nvchips::-webkit-scrollbar{display:none}
+.hnav .nvc{border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px;
+  font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;flex:none}
+.hnav .nvc:hover{border-color:var(--acc);color:var(--acc)}
+.hnav .nvc.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.hnav .nvbar{position:relative;height:4px;border-radius:3px;background:#e4e9ef;margin-top:5px}
+.hnav .nvbar>i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--acc-lt);display:block}
+
+/* 효율 우수 소재 — 기준 선택 칩 */
 .rankpick{display:inline-flex;gap:4px;flex-wrap:wrap}
 .rankpick button{border:1px solid var(--line);background:var(--surface);color:var(--ink2);
   border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:700;cursor:pointer}
@@ -556,7 +592,8 @@ table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--cell);t
 table.tbl th,table.tbl td{border-right:1px solid var(--cell)}
 table.tbl th:last-child,table.tbl td:last-child{border-right:0}
 /* 모든 표의 본문 칸은 흰색으로 채운다 — 뒤 배경이 비쳐 칸마다 색이 달라 보이지 않도록.
-   아래의 행 헤더 · 목표 열 · 빈 칸 · 소계 · 합계 규칙이 이 값을 덮어쓴다 */
+   아래의 행 헤더 · 빈 칸 · 소계 · 합계 규칙이 이 값을 덮어쓴다.
+   목표(예상) 열도 일반 값과 똑같이: 데이터 행은 흰색, 소계 행은 그 소계 단계 색 */
 table.tbl tbody td{background:var(--surface)}
 table.tbl th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:2}
 table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
@@ -566,11 +603,6 @@ table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:#fbfcfe;font-weight:600;color:var(--ink)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
-/* 목표(예상) 수치 열 — 실적 열과 구분되게 옅은 배경 (소계·총계 행에서도 유지) */
-table.tbl td.goal{background:#c6d4e4}
-table.tbl tbody tr:hover td.goal{background:#b9cadd}
-table.tbl tr.total td.goal,table.tbl thead tr.total td.goal{background:#3d4c5e}
-table.tbl td.goal.blank{background:#dbe2ea}
 table.tbl td.blank{background:#f2f4f7}
 table.tbl td.blank .na{color:#b6bfca}
 table.tbl tr.sub td.blank,table.tbl tbody tr.sub:hover td.blank{background:#e2e7ee !important}
@@ -586,13 +618,6 @@ table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:#e0
 table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#edf1f6 !important}
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
-/* 소계 행의 목표 열 — 각 단계 배경보다 한 톤 진하게 */
-table.tbl tr.sub td.goal,table.tbl tbody tr.sub:hover td.goal{background:#c0cede !important}
-table.tbl tr.sub.sub-l0 td.goal,table.tbl tbody tr.sub.sub-l0:hover td.goal{background:#aabbd0 !important}
-table.tbl tr.sub.sub-l1 td.goal,table.tbl tbody tr.sub.sub-l1:hover td.goal{background:#bccbdd !important}
-table.tbl tr.sub.sub-l2 td.goal,table.tbl tbody tr.sub.sub-l2:hover td.goal{background:#ccd8e6 !important}
-table.tbl tr.sub.sub-l3 td.goal,table.tbl tbody tr.sub.sub-l3:hover td.goal{background:#d8e2ed !important}
-table.tbl tr.sub td.goal.blank{background:#ccd6e2 !important}
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
 table.tbl tr.dragging td{opacity:.4}
@@ -603,6 +628,11 @@ table.tbl td.bdrag{cursor:grab}
 table.tbl td.bdragging{opacity:.45}
 table.tbl td.ins-top{box-shadow:inset 0 3px 0 var(--acc)}
 table.tbl td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
+/* 게런티(보장) 값 — 소계 · 합계 행에서는 그 행 글자색을 따라간다 (배경과 겹쳐 안 보이지 않도록) */
+table.tbl td .gt{color:var(--acc);font-weight:800}
+table.tbl tr.sub td .gt{color:var(--acc-d)}
+table.tbl tr.sub.sub-l0 td .gt{color:#1d2733}
+table.tbl tr.total td .gt,table.tbl thead tr.total td .gt{color:#fff}
 table.tbl td.hol,table.tbl td.hol *{color:var(--hol) !important}
 table.tbl th.g input.ghdr{width:100%;min-width:60px;height:22px;border:1px solid rgba(255,255,255,.55);
   background:rgba(255,255,255,.16);color:#fff;font-weight:700;font-size:12.5px;text-align:center;
@@ -728,9 +758,21 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .gcard.ins-l::before{left:-6px}.gcard.ins-r::after{right:-6px}
 .bfoot{display:flex;justify-content:flex-end;gap:8px;padding-top:11px;border-top:1px dashed var(--line);margin-top:4px}
 
-/* creatives */
-.crgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}
-@media(max-width:1400px){.crgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* creatives — 기준(조회 · 클릭)마다 한 칸, 두 칸이 좌우로 나란히 */
+.crcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 30px;align-items:start}
+@media(max-width:1180px){.crcols{grid-template-columns:1fr}}
+/* 한 칸 안에서 1위는 전체 폭, 2위부터는 가로 절반씩 */
+.crgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.crgrid>.cr.lead{grid-column:1/-1}
+/* 1위는 크게 보여 주되 한 화면을 다 잡아먹지 않도록 높이를 잡아 둔다 */
+.crgrid>.cr.lead .thumb{aspect-ratio:auto;height:236px}
+.crgrid>.cr:not(.lead) .thumb{aspect-ratio:16/9}
+.crgrid>.cr:not(.lead) .meta{padding:8px 9px 9px}
+.crgrid>.cr:not(.lead) .meta .nm{font-size:11.5px}
+.crgrid>.cr:not(.lead) .meta .mt{font-size:10px;margin-top:3px}
+.crgrid>.cr.lead .rankno{width:24px;height:24px;font-size:12px}
+.crgrid>.cr:not(.lead) .rankno{width:18px;height:18px;font-size:9.5px;top:7px;right:7px}
+.crgrid>.cr:not(.lead) .media,.crgrid>.cr:not(.lead) .rt{font-size:9.5px;padding:2px 6px}
 .cr{overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .cr:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
@@ -871,6 +913,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .fld input,.fld select{width:100%;height:35px;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 11px}
 .fld .ro{background:var(--acc-soft2);border:1px solid #dbe1e9;font-weight:700;display:flex;align-items:center;
   height:35px;border-radius:9px;padding:0 11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fld .ro.ell{display:block;line-height:33px;overflow:hidden;text-overflow:ellipsis}
 .locked{background:#f1f3f6 !important;color:#93a0b0 !important}
 .notice{display:flex;gap:9px;align-items:flex-start;background:var(--acc-soft);border:1px solid #d9e7fa;
   color:#1c5386;border-radius:11px;padding:11px 13px;font-size:12px}

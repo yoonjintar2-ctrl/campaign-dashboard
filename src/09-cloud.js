@@ -34,7 +34,8 @@ function serializeDoc(){
     issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
-           gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS}
+           gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
+           perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
   };
 }
 function applyDoc(d){
@@ -57,6 +58,8 @@ function applyDoc(d){
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
+  if(v.perfOrder&&typeof PERF_ORDER!=='undefined'){PERF_ORDER=v.perfOrder;
+    if(typeof applyPerfOrder==='function')applyPerfOrder();}
   if(v.gantt)GANTT=v.gantt;
   if(v.creative)CR_CFG=v.creative;
   if(v.stat)STAT_CFG=v.stat;
@@ -577,7 +580,7 @@ async function openCampManage(){
       <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
       <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
       코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사되고, <b>👥 초대</b>로 구글 계정을 직접 초대할 수 있습니다.</div>`;
-  if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. ＋ 새 캠페인으로 시작하세요.</div>';
+  if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. 아래 <b>＋ 새 캠페인</b>으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
@@ -611,8 +614,11 @@ async function openCampManage(){
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 관리',h,'<button class="btn" data-close>닫기</button>',{w:1140});
+  openModal('캠페인 관리',h,
+    '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
+    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
+  if($('campNew'))$('campNew').onclick=()=>{closeModal();createCampaign();};
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
@@ -712,9 +718,10 @@ async function removeMember(userId){
     const m=$('meMenu');
     if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
   if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
-  if(b('campNew'))b('campNew').onclick=createCampaign;
   if(b('campMng'))b('campMng').onclick=openCampManage;
-  if(b('acctBtn'))b('acctBtn').onclick=openAccounts;
+  /* 계정 관리 — 구글 계정 메뉴 안에서 연다 */
+  if(b('acctBtn'))b('acctBtn').onclick=e=>{e.stopPropagation();
+    $('meMenu').classList.add('hidden');openAccounts();};
   if(b('reqBtn'))b('reqBtn').onclick=()=>{
     if(CLOUD.user){openAccessRequest();return;}
     confirmModal('먼저 구글 로그인이 필요합니다.',

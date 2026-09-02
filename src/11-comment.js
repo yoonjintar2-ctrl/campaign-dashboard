@@ -3,8 +3,8 @@
 /* ---------- 대시보드 항목 숨기기 ----------
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
 const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
-  stat:'전체 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
-  gantt:'소재 × 일자 게재 히스토리',creative:'우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
+  stat:'주요 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
+  gantt:'소재 × 일자 게재 히스토리',creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
   bubble:'효율 버블'};
 function applyHidden(){
   document.querySelectorAll('[data-sect]').forEach(elm=>{
@@ -53,6 +53,25 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
     b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
     b.onclick=()=>{HIDDEN.add(key);applyHidden();};
     tools.appendChild(b);});
+})();
+
+/* ---------- 운영 코멘트 · 서머리 표시 순서 ----------
+   중간 자리(#slotMid)와 페이지 맨 아래(#slotEnd) 두 자리를 두고
+   운영 코멘트와 서머리 묶음이 어느 자리에 들어갈지 정한다. */
+let PERF_ORDER='sum';   /* 'sum' = 서머리 먼저 · 코멘트 맨 아래 */
+function applyPerfOrder(){
+  const mid=$('slotMid'),end=$('slotEnd'),cb=$('cmtBlock'),sb=$('sumBlock');
+  if(!mid||!end||!cb||!sb)return;
+  const first=PERF_ORDER==='cmt'?cb:sb, last=PERF_ORDER==='cmt'?sb:cb;
+  mid.after(first);end.before(last);
+  const sel=$('perfOrder');if(sel&&sel.value!==PERF_ORDER)sel.value=PERF_ORDER;
+}
+(function wirePerfOrder(){
+  const sel=$('perfOrder');if(!sel)return;
+  sel.onchange=()=>{PERF_ORDER=sel.value;applyPerfOrder();
+    if(typeof markDirty==='function')markDirty();
+    if(typeof syncStick==='function')syncStick();};
+  applyPerfOrder();
 })();
 
 /* ---------- 운영 코멘트 ---------- */

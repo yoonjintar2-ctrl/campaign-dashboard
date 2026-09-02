@@ -2,8 +2,10 @@
 function renderCampForm(){
   const gross=sum(LINES.map(lineGross)),net=sum(LINES.map(lineNet)),val=sum(LINES.map(lineValue));
   $('campForm').innerHTML=`
-    <div class="fld" style="flex:2;min-width:240px"><label>캠페인명</label><input value="${esc(CAMPAIGN.name)}"></div>
-    <div class="fld" style="flex:1;min-width:140px"><label>광고주</label><input value="${esc(CAMPAIGN.advertiser)}"></div>
+    <div class="fld" style="flex:2;min-width:250px"><label>캠페인명</label>
+      <div class="ro ell" title="${esc(CAMPAIGN.name||'')}">${esc(CAMPAIGN.name||'–')}</div></div>
+    <div class="fld" style="flex:1.4;min-width:190px"><label>광고주</label>
+      <div class="ro ell" title="${esc(CAMPAIGN.advertiser||'')}">${esc(CAMPAIGN.advertiser||'–')}</div></div>
     <div class="fld" style="width:124px"><label>시작일 (자동)</label><div class="ro">${campStart()}</div></div>
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
     <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
@@ -420,13 +422,16 @@ function openLineColCfg(){
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
 }
-const MIX_CATALOG=fieldCatalog('mix').concat([{g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
+const MIX_CATALOG=fieldCatalog('mix').concat([
+  {g:'KPI',cols:[{k:'kpi',l:'KPI 지표'},{k:'kpiGoal',l:'KPI 목표 수'}]},
+  {g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
   {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
 const MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
 let MIX_CFG={rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false},{k:'target',sub:false}],
   order:null,
   groups:[
     {id:uid(),name:'기간',cols:['period']},
+    {id:uid(),name:'KPI',cols:['kpi','kpiGoal']},
     {id:uid(),name:'예산',cols:['budget','value','bonusRate','price']},
     {id:uid(),name:'노출 효과',cols:['e_imp','cpm']},
     {id:uid(),name:'클릭 효과',cols:['e_click','ctr','cpc']},
@@ -460,7 +465,7 @@ function renderMix(){
     const b=aggExp(ls),gross=sum(ls.map(lineGross)),net=sum(ls.map(lineNet)),val=sum(ls.map(lineValue));
     const one=ls.length===1?ls[0]:null;
     const g=key=>ls.length>0&&ls.every(l=>l.g&&l.g[key]);
-    const wrap=(v,key)=>g(key)?`<b style="color:var(--acc)">${v}</b>`:v;
+    const wrap=(v,key)=>g(key)?`<b class="gt">${v}</b>`:v;
     /* 집행 조건 · 기타 */
     switch(k){
       case 'period':return one?`${md(one.start)}~${md(one.end)}`
@@ -486,6 +491,16 @@ function renderMix(){
         if(!vol)return '';
         const avg=gross/vol*(bd==='CPM'?1000:1);
         return `${bd} ${fmt(avg)}`;}
+      /* KPI 지표 — 묶인 라인의 KPI 가 하나면 그 이름, 여럿이면 모두 나열 */
+      case 'kpi':{const ks=[...new Set(ls.map(l=>l.kpi).filter(Boolean))];
+        if(!ks.length)return '–';
+        return ks.map(x=>KPI_LABEL[x]||x).join(' · ');}
+      /* KPI 목표 수 — 각 라인이 자기 KPI 로 잡은 목표 물량의 합 (게런티면 굵은 파랑) */
+      case 'kpiGoal':{
+        const v=sum(ls.map(l=>(l.e&&+l.e[l.kpi])||0));
+        if(!v)return '–';
+        const gt=ls.length>0&&ls.every(l=>l.g&&l.kpi&&l.g[l.kpi]);
+        return gt?`<b class="gt">${fmt(v)}</b>`:fmt(v);}
       case 'device':return one?one.device.join('+'):'–';
       case 'sec':return one?(one.sec?one.sec+'초':'–'):'–';
       case 'share':return pct(gross/totalBudget,1);
@@ -516,7 +531,7 @@ function renderMix(){
   const row=(rs,sp,tot)=>cols.map((k,i)=>{
     const rsAttr=(k==='m_note'||!sp||sp===1)?'':` rowspan="${sp}"`;
     const v=cell(rs,k,tot);
-    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}" data-mk="${k}" data-mv="${esc(String(v))}"${rsAttr}>${v}</td>`;}).join('');
   out.forEach((r,i)=>{
     if(r.kind==='data'){
       const vals=r.vals,rs=entries[r.ri][1];

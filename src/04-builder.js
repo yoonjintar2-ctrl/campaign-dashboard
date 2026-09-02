@@ -427,7 +427,7 @@ function renderPace(){
           <i class="real" style="width:${aP}%"></i>
         </div>
         <div class="goalout">
-          <span class="lg"><span class="sw" style="background:var(--acc)"></span>종합 KPI 달성률</span>
+          <span class="lg"><span class="sw" style="background:var(--acc)"></span>달성률</span>
           <span class="lg pace"><span class="sw"></span>목표 페이스</span>
         </div>
         <div class="daygauge">
@@ -503,9 +503,8 @@ function renderSpendDonut(box,pr){
   ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
     +`<b class="achv mono">${pct(rate,1)}</b></div>`;
   const lg=el('div','dlgd',c);
-  lg.innerHTML=`<span class="lg"><span class="sw"></span>목표 페이스 <b class="mono">${pct(pr,1)}</b></span>`
-    +`<span class="lg spend"><span class="sw"></span>소진 <b class="mono">${pct(rate,1)}</b>`
-    +` <span style="color:var(--muted);font-weight:600">/ ${won(budget)}</span></span>`;
+  lg.innerHTML=`<span class="lg"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
+    +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
 }
 function renderDonuts(){
   const box=$('donuts');box.innerHTML='';
@@ -532,7 +531,7 @@ function renderDonuts(){
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
     const restRows=restKpis.map(k=>({...mk(k),color:'var(--gray)'}));
     const c=el('div','card donut',box);
-    /* 제목은 좌측 상단에 (전체 지표 타일과 같은 스타일) */
+    /* 제목은 좌측 상단에 (주요 지표 타일과 같은 스타일) */
     c.innerHTML=`<div class="dhd"><div class="k">${esc(name)}</div>
         <div class="kpitag">KPI · ${allKpis.map(x=>KPI_LABEL[x.k]).join(' · ')}${restKpis.length?` <span style="opacity:.7">(상위 ${MAXRING})</span>`:''}</div></div>
       <div class="ring"></div>`;
@@ -633,7 +632,7 @@ function renderDonuts(){
     const lg=el('div','dlgd',c);
     lg.innerHTML=paceLegend.map(x=>
       `<span class="lg"><span class="sw"></span>${rings.length>1?esc(KPI_LABEL[x.k])+' ':''}목표 페이스`
-      +` <b class="mono">${fmt(x.v)}건</b></span>`).join('');
+      +` <b class="mono">${fmt(x.v)}건</b><span class="pcpar">(${pct(pr,1)})</span></span>`).join('');
     const ctr2=null;
     ctr.innerHTML=`<div class="ctrbox"><span class="achk">달성률</span>`
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
@@ -648,7 +647,7 @@ function verdictOf(ach,pace){
   return {cls:'ok',label:'양호',gap};
 }
 const STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
-/* 전체 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
+/* 주요 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
 const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
   cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in'&&!STAT_DEF_OUT.includes(k))

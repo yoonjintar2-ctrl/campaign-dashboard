@@ -287,7 +287,7 @@ const SUM_PRESET=()=>({
     {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','vtr','cpv']}
   ].map(g=>({...g,cols:g.cols.filter(k=>SUM_CELL[k])}))
 });
-let SUMMARIES=[{id:'s1',name:'매체 서머리',...SUM_PRESET()},
+let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET()},
                {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),
                 rows:[{k:'target',sub:false}]}];
 const gauge=v=>!isFinite(v)?'<span class="na">–</span>'
@@ -321,7 +321,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     const src=(merge&&isExp)?merge.agg:a, ex=(merge&&isExp)?merge.exp:e;
     const [txt,g]=cellDef[k](src,ex,x);
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
-    return `<td class="mono${seps.has(i)?' gsep':''}${/^e_/.test(k)?' goal':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
+    return `<td class="mono${seps.has(i)?' gsep':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
   if(finer&&expIdx.length){
