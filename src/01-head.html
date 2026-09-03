@@ -327,13 +327,18 @@ table.tbl.nogauge .gauge .track{display:none}
 .pside{flex:0 0 132px;white-space:nowrap;text-align:right}
 .pside.r{flex-basis:114px;text-align:left}
 /* 지표 이름을 먼저 읽히게 — 이름은 크게 위, 수치는 작게 아래 */
+/* 지표 줄은 막대 가운데에 글자를 맞춘다 — 위의 페이스 점 줄(13px)만큼 내려 준다.
+   그러지 않으면 글자가 막대보다 위로 떠 보인다 */
+.pline:not(.days) .pside{padding-top:13px}
 .pside .nm1{font-size:17px;font-weight:900;color:var(--ink);letter-spacing:-.4px;line-height:22px}
 .pside .sub1{font-size:12px;font-weight:600;color:var(--muted);line-height:17px;
   font-variant-numeric:tabular-nums}
 /* 오른쪽은 달성률이 주인공 — 크게, 그 아래 목표 */
+/* 달성률 숫자는 무채색으로 통일 — 색은 막대에서만 말한다 */
 .pside.r .nm1{font-size:24px;font-weight:900;letter-spacing:-.9px;line-height:26px;
-  color:var(--tone,var(--ink));font-variant-numeric:tabular-nums}
+  color:var(--ink);font-variant-numeric:tabular-nums}
 .pside.r .sub1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:17px}
+.pline.days .pside{padding-top:0}
 .pline.days .pside .nm1,.pline.days .pside.r .nm1{font-size:11.5px;font-weight:600;
   color:var(--muted);line-height:16px;letter-spacing:0}
 .pline.days .pside .sub1,.pline.days .pside.r .sub1{font-size:13.5px;font-weight:800;
@@ -347,6 +352,9 @@ table.tbl.nogauge .gauge .track{display:none}
 .pdotrow>i{position:absolute;bottom:2px;width:9px;height:9px;border-radius:50%;
   transform:translateX(-50%);background:var(--dotc,#4c729a);display:block}
 .pbar{position:relative;height:44px;border-radius:9px;background:#e9edf2;overflow:hidden}
+/* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
+.pbar .mstack>i{transition:background-color .18s}
+.pbar.hot .mstack>i{background-image:none !important;background-color:var(--hotc,#4c729a)}
 .pbar .mstack{position:absolute;left:0;top:0;bottom:0;display:flex;gap:3px}
 /* 구간 채움 = 색 물결(위) + 남색 바탕(아래) 두 겹.
    물결을 배경으로 넣었기 때문에 매체 이름 글자보다 뒤에 있고, 구간 사이 간격(구분선)도 침범하지 않는다.
@@ -440,6 +448,7 @@ th.cresz{position:relative}
 body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:none !important}
 
 /* ===== 영역 설명 (ⓘ) ===== */
+.cmt h4 .mper{font-size:11.5px;font-weight:600;color:var(--muted);margin-left:7px;letter-spacing:0}
 .infowrap{position:relative;display:inline-flex}
 .infoi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#fff;
   color:var(--muted);font-size:11.5px;font-weight:800;cursor:help;display:inline-flex;
@@ -565,8 +574,10 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   background:var(--plane2);border:1px solid var(--line2)}
 /* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
 .tmap .sect{position:absolute;overflow:hidden;border:4px solid var(--surface);border-radius:3px}
-/* 매체 머리글은 섹터 안쪽 상자에 꽉 채운다 — 아래 그룹 상자도 같은 폭이라 좌우가 정확히 맞는다 */
-.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;display:flex;align-items:center;
+/* 매체 머리글 — 아래 그룹 상자(.grp)가 2px 흰 테두리를 갖고 있어서
+   같은 두께의 투명 테두리를 줘야 색이 칠해지는 영역의 좌우가 정확히 맞는다 */
+.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;
+  border:2px solid transparent;background-clip:padding-box;display:flex;align-items:center;
   gap:6px;padding:0 8px;font-size:11.5px;font-weight:800;color:#fff;
   white-space:nowrap;overflow:hidden;z-index:3}
 .tmap .sect>.sh .sv{margin-left:auto;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums}
@@ -806,6 +817,8 @@ td.gt input.num{color:var(--acc);font-weight:800}
   border:1px solid #cfd8e2;border-radius:6px;padding:2px 5px 2px 7px;font-size:11px;font-weight:700;white-space:nowrap}
 .chipfield .cfchip b{cursor:pointer;color:#94a2b1;font-weight:700;font-size:10px}
 .chipfield .cfchip b:hover{color:var(--neg)}
+.chipfield .cfchip b.ed{font-size:10.5px}
+.chipfield .cfchip b.ed:hover{color:var(--acc)}
 .chipfield .cfpick{border:1px dashed var(--gline);background:var(--surface);color:var(--muted);
   border-radius:6px;padding:2px 7px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .chipfield .cfpick:hover{border-color:var(--acc);color:var(--acc);border-style:solid;background:var(--acc-soft2)}

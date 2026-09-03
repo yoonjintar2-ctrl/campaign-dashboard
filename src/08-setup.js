@@ -126,7 +126,9 @@ const CHIP_KIND={
 /* 기본은 "이미 등록된 항목 중에서 고르기". 새 이름이 필요할 때만 ＋ 버튼으로 직접 추가한다. */
 function chipFieldHTML(kind,li,items){
   return `<div class="chipfield" data-cf="${kind}" data-l="${li}">`
-    +items.map(v=>`<span class="cfchip">${esc(v)}<b data-rm="${esc(v)}" title="삭제">✕</b></span>`).join('')
+    +items.map(v=>`<span class="cfchip">${esc(v)}`
+      +`<b class="ed" data-ed="${esc(v)}" title="이름 수정">✎</b>`
+      +`<b data-rm="${esc(v)}" title="삭제">✕</b></span>`).join('')
     +`<button type="button" class="cfpick" title="등록된 항목에서 선택">선택 ▾</button>`
     +`<button type="button" class="cfadd" title="새 항목 직접 추가">＋</button></div>`;
 }
@@ -139,6 +141,8 @@ function wireChipFields(root,onChange){
     const set=v=>{K.set(l,v);onChange();};
     fd.querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{
       e.stopPropagation();set(cur().filter(x=>x!==b.dataset.rm));});
+    fd.querySelectorAll('[data-ed]').forEach(b=>b.onclick=e=>{
+      e.stopPropagation();openChipRename(kind,b.dataset.ed,l,onChange);});
     /* 선택 ▾ — 등록된 목록에서 고르기 (기본 동작)
        표 안에 그리면 스크롤 영역에 잘리므로 body에 fixed로 띄우고, 아래가 좁으면 위로 연다 */
     const pickBtn=fd.querySelector('.cfpick');
@@ -169,6 +173,36 @@ function wireChipFields(root,onChange){
       if(parts.length)set(cur().concat(parts));};
   });
 }
+/* 이미 등록된 광고상품 · 광고 지면 · 타겟팅 그룹 · 소재의 이름을 고친다.
+   같은 이름을 여러 라인에서 쓰고 있으면 "이 라인만" 바꿀지 "전부 함께" 바꿀지 물어본다. */
+function openChipRename(kind,old,line,onChange){
+  const K=CHIP_KIND[kind];if(!K)return;
+  const used=LINES.filter(x=>K.get(x).includes(old));
+  const many=used.length>1;
+  openModal(`${K.label} 이름 수정`,
+    `<div class="fld"><label>새 이름</label>
+       <input class="txt" id="chipNew" value="${esc(old)}" style="width:100%"></div>
+     <div class="hint" style="margin-top:9px">
+       "${esc(old)}" 은(는) 지금 <b>${used.length}개 라인</b>에서 쓰고 있습니다.
+       ${many?'다른 라인도 함께 바꿀지 골라 주세요.':''}</div>`,
+    `<button class="btn" data-close>취소</button>`
+    +(many?`<button class="btn" id="chipOne">이 라인만 바꾸기</button>`:'')
+    +`<button class="btn primary" id="chipAll">${many?`전체 ${used.length}개 함께 바꾸기`:'저장'}</button>`,
+    {w:460});
+  const apply=lines=>{
+    const nv=($('chipNew').value||'').trim();
+    if(!nv||nv===old){closeModal();return;}
+    /* 소재는 이미지·미리보기가 달린 실제 레코드라 이름만 갈아 끼운다 */
+    if(kind==='creative')
+      CREATIVES.forEach(c=>{if(c.name===old&&lines.some(x=>x.id===c.lid))c.name=nv;});
+    lines.forEach(x=>K.set(x,K.get(x).map(n=>n===old?nv:n)));
+    closeModal();
+    buildFacts();
+    if(onChange)onChange(); else {renderKpiTable();renderAll();}};
+  const one=$('chipOne');if(one)one.onclick=()=>apply([line]);
+  $('chipAll').onclick=()=>apply(many?used:[line]);
+  setTimeout(()=>{const i=$('chipNew');if(i){i.focus();i.select();}},30);
+}
 function renderKpiTable(){
   const t=$('tblKpi'),cols=LINE_COLS.filter(c=>c.on);
   let dl='';['segment','media','product','target','line'].forEach(k=>{
@@ -177,12 +211,16 @@ function renderKpiTable(){
   const head=cols.map(c=>{const sep=(c.g||'')!==prevG;prevG=c.g||'';
     const gk=GKEY[c.k];
     return `<th class="${sep?'gsep':''}" style="min-width:${c.w}px">${c.l}</th>`;}).join('');
-  let h=`<thead><tr>${head}<th style="width:74px">`
+  /* 행 조작(복제 · 삭제)은 맨 앞 열로 — 표가 가로로 길어 오른쪽 끝까지 가기 번거로웠다 */
+  let h=`<thead><tr><th class="rm" rowspan="1" style="width:74px">`
     +`<button class="btn sm danger" id="lineClearAll" title="예상 효율 값을 모두 지웁니다"`
-    +` style="padding:0 6px">✕</button></th></tr></thead><tbody>`;
+    +` style="padding:0 6px">✕</button></th>${head}</tr></thead><tbody>`;
   LINES.forEach((l,i)=>{
     prevG=null;
-    h+='<tr>'+cols.map(c=>{
+    h+=`<tr><td class="rm" style="white-space:nowrap;padding-left:3px;padding-right:3px">`
+      +`<button class="btn sm" data-ldup="${i}" title="이 행을 같은 값으로 복제" style="padding:0 6px">⧉</button>`
+      +`<button class="btn sm danger" data-ldel="${i}" title="행 삭제" style="padding:0 6px;margin-left:3px">✕</button></td>`
+      +cols.map(c=>{
       const sep=(c.g||'')!==prevG;prevG=c.g||'';
       const cls=`${sep?'gsep ':''}`;
       const gk=GKEY[c.k],isG=gk&&l.g&&l.g[gk];
@@ -194,7 +232,7 @@ function renderKpiTable(){
         case 'date':return `<td class="${cls}">${inp('')} type="date" value="${l[c.k]||''}"></td>`;
         case 'time':return `<td class="${cls}">${inp('')} type="time" value="${l[c.k]||''}"></td>`;
         case 'bid':return `<td class="${cls}"><select data-l="${i}" data-k="bid"><option value=""${l.bid?'':' selected'}>선택</option>${BID_TYPES.map(b=>`<option ${l.bid===b?'selected':''}>${b}</option>`).join('')}<option value="__add">+ 항목 추가…</option></select></td>`;
-        case 'kpi':return `<td class="${cls}"><select data-l="${i}" data-k="kpi">${KPI_KEYS.map(k=>`<option value="${k}" ${l.kpi===k?'selected':''}>${KPI_LABEL[k]}</option>`).join('')}</select></td>`;
+        case 'kpi':return `<td class="${cls}"><select data-l="${i}" data-k="kpi" title="비워 두면 비드 타입으로 판단합니다"><option value=""${l.kpi?'':' selected'}>자동 (${KPI_LABEL[kpiOf(l)]})</option>${KPI_KEYS.map(k=>`<option value="${k}" ${l.kpi===k?'selected':''}>${KPI_LABEL[k]}</option>`).join('')}</select></td>`;
         case 'subm':return `<td class="${cls}"><select data-l="${i}" data-k="sub"><option value="">–</option>${Object.entries(RATE_LABEL).map(([k,v])=>`<option value="${k}" ${l.sub===k?'selected':''}>${v}</option>`).join('')}</select></td>`;
         case 'dev':return `<td class="${cls}"><span style="display:flex;gap:5px;justify-content:center">${DEVICES.map(d=>
           `<label class="gchk"><input type="checkbox" data-dev="${i}" value="${d}" ${l.device.includes(d)?'checked':''}>${d}</label>`).join('')}</span></td>`;
@@ -210,13 +248,11 @@ function renderKpiTable(){
           fmt(c.k==='net'?lineNet(l):c.k==='budget'?lineGross(l):lineValue(l))}</b></td>`;
         case 'note':return `<td class="${cls}"><textarea class="note" data-l="${i}" data-k="note">${esc(l.note||'')}</textarea></td>`;
         default:return `<td class="${cls}">${inp('num')} value="${l[c.k]?fmt(l[c.k]):''}"></td>`;}
-    }).join('')+`<td style="white-space:nowrap;padding-left:3px;padding-right:3px">`
-      +`<button class="btn sm" data-ldup="${i}" title="이 행을 같은 값으로 복제" style="padding:0 6px">⧉</button>`
-      +`<button class="btn sm danger" data-ldel="${i}" title="행 삭제" style="padding:0 6px;margin-left:3px">✕</button></td></tr>`;});
+    }).join('')+'</tr>';});
   /* TOTAL */
   const gross=sum(LINES.map(lineGross)),net=sum(LINES.map(lineNet));
   prevG=null;
-  h+='<tr class="total">'+cols.map((c,ci)=>{
+  h+='<tr class="total"><td class="rm"></td>'+cols.map((c,ci)=>{
     const sep=(c.g||'')!==prevG;prevG=c.g||'';
     const cls=`${sep?'gsep ':''}mono`;
     let v='';
@@ -228,10 +264,10 @@ function renderKpiTable(){
     else if(c.k==='value')v=fmt(sum(LINES.map(lineValue)));
     else if(c.k==='feeA')v=((sum(LINES.map(l=>lineGross(l)*l.feeA))/gross)*100).toFixed(1)+'%';
     else if(c.k==='feeR')v=((sum(LINES.map(l=>lineGross(l)*l.feeR))/gross)*100).toFixed(1)+'%';
-    return `<td class="${cls}">${v}</td>`;}).join('')+'<td></td></tr></tbody>'+dl;
+    return `<td class="${cls}">${v}</td>`;}).join('')+'</tr></tbody>'+dl;
   t.innerHTML=h;
   /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
-  enableColResize(t,cols,()=>markDirty(),0);
+  enableColResize(t,cols,()=>markDirty(),1);
   wireChipFields(t,()=>{rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderAll();});
   t.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=e=>{
     pushLineUndo();
@@ -247,7 +283,7 @@ function renderKpiTable(){
     else if(k==='bid'){if(v==='__add'){const nb=prompt('추가할 비드 타입 (예: 1주일, 1개월, CPP)');
         if(nb&&!BID_TYPES.includes(nb))BID_TYPES.push(nb);l.bid=nb||l.bid;}else l.bid=v;
       /* 비드 타입이 바뀌면 KPI 기본값을 자동으로 맞춘다 (이후 KPI 열에서 직접 변경 가능) */
-      if(BID_KPI[l.bid]&&KPI_KEYS.includes(BID_KPI[l.bid]))l.kpi=BID_KPI[l.bid];}
+      /* KPI 를 따로 고르지 않았으면 kpiOf() 가 비드 타입으로 알아서 판단한다 */}
     else l[k]=v;
     if(k==='start'||k==='end')rebuildPeriod();
     buildFacts();renderKpiTable();renderCampForm();renderAll();});
@@ -285,8 +321,9 @@ function renderKpiTable(){
   /* 셀 선택 — 클릭한 칸이 선택 상태가 된다 */
   [...(t.tBodies[0]?t.tBodies[0].rows:[])].forEach((tr,ri)=>{
     if(tr.classList.contains('total'))return;
-    [...tr.cells].forEach((td,ci)=>{
-      if(ci>=cols.length)return;
+    [...tr.cells].forEach((td,cx)=>{
+      const ci=cx-1;                       /* 맨 앞은 행 조작(복제·삭제) 열 */
+      if(ci<0||ci>=cols.length)return;
       td.dataset.r=ri;td.dataset.c=ci;
       /* 엑셀처럼 — 한 번 누르면 "셀 선택", Enter 또는 더블클릭이면 "입력 시작".
          드롭다운·날짜·체크박스·칩은 기존처럼 바로 눌러서 쓴다. */
@@ -395,7 +432,9 @@ function mergeDupLines(groups){
       base.note=[base.note,l.note].filter(Boolean).join(' / ');
       drop.add(i);});});
   LINES=LINES.filter((_,i)=>!drop.has(i));}
-function saveLines(){
+/* 예상 효율 저장 직전 점검 — 중복 라인이 있으면 합산할지 물어본다.
+   저장 버튼이 없어진 뒤로는 상단바 ☁ 저장에서 부른다. after 를 주면 정리 후 이어서 실행한다. */
+function saveLines(after){
   const gs=dupGroups();
   if(gs.length){
     const names=gs.map(a=>{const l=LINES[a[0]];
@@ -405,11 +444,11 @@ function saveLines(){
       +'확인을 누르면 해당 라인의 예상 효율 데이터를 하나로 합산해 저장합니다.',
       ()=>{pushLineUndo();mergeDupLines(gs);
         rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
-        commitLineSnap('반영 완료');},'합산 후 저장');
+        commitLineSnap('반영 완료');if(after)after();},'합산 후 저장');
     return;}
   rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
   commitLineSnap('반영 완료');
-  confirmModal('예상 효율을 저장했습니다.','미디어믹스와 대시보드에 반영되었습니다.',()=>{},'확인');}
+  if(after)after();}
 /* --- 키보드 — Enter 입력/완료 · 방향키 이동 · Ctrl+Z / Ctrl+Y --- */
 document.addEventListener('keydown',e=>{
   const tab=$('tab-setup');if(!tab||tab.classList.contains('hidden'))return;
@@ -532,14 +571,14 @@ function renderMix(){
         const avg=gross/vol*(bd==='CPM'?1000:1);
         return `${bd} ${fmt(avg)}`;}
       /* KPI 지표 — 묶인 라인의 KPI 가 하나면 그 이름, 여럿이면 모두 나열 */
-      case 'kpi':{const ks=[...new Set(ls.map(l=>l.kpi).filter(Boolean))];
+      case 'kpi':{const ks=[...new Set(ls.map(kpiOf).filter(Boolean))];
         if(!ks.length)return '–';
         return ks.map(x=>KPI_LABEL[x]||x).join(' · ');}
       /* KPI 목표 수 — 각 라인이 자기 KPI 로 잡은 목표 물량의 합 (게런티면 굵은 파랑) */
       case 'kpiGoal':{
-        const v=sum(ls.map(l=>(l.e&&+l.e[l.kpi])||0));
+        const v=sum(ls.map(l=>(l.e&&+l.e[kpiOf(l)])||0));
         if(!v)return '–';
-        const gt=ls.length>0&&ls.every(l=>l.g&&l.kpi&&l.g[l.kpi]);
+        const gt=ls.length>0&&ls.every(l=>l.g&&l.g[kpiOf(l)]);
         return gt?`<b class="gt">${fmt(v)}</b>`:fmt(v);}
       case 'device':return one?one.device.join('+'):'–';
       case 'sec':return one?(one.sec?one.sec+'초':'–'):'–';
@@ -898,7 +937,8 @@ $('addRow').onclick=()=>addRow(1);$('addRow2').onclick=()=>addRow(1);
 (function(){const b=$('verdictBand');if(!b)return;b.value=VERDICT_BAND;
   b.onchange=e=>{const v=parseFloat(e.target.value);
     if(isFinite(v)&&v>0){VERDICT_BAND=v;renderDonuts();}else e.target.value=VERDICT_BAND;};})();
-$('saveRows').onclick=saveRows;
+/* 저장 버튼은 없앴다 — 시트를 고치면 syncSheet() 가 바로 반영한다.
+   전체 저장은 상단바 오른쪽 ☁ 저장 하나로 통일 */
 $('colCfgBtn').onclick=openColCfg;
 $('histBtn').onclick=openHistory;
 $('campHistBtn').onclick=openCampHist;
@@ -920,8 +960,7 @@ if($('guideBtn'))$('guideBtn').onclick=async()=>{
       ()=>{},'확인');}
 };
 $('holBtn').onclick=openHolidays;
-$('saveAll').onclick=()=>{rebuildPeriod();buildFacts();renderAll();renderKpiTable();renderSheet();
-  confirmModal('캠페인 설정을 저장했습니다.','기본 정보와 라인별 설정이 모두 반영되었습니다.',()=>{},'확인');};
+
 $('issueFold').onclick=()=>{const b=$('issueBox'),open=b.classList.toggle('hidden');
   $('issueFold').textContent=open?'▾ 펼치기':'▴ 접기';};
 $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);renderDaily();};
@@ -944,7 +983,7 @@ $('addLine').onclick=()=>{
   pushLineUndo();LINES.push(blankLine());
   rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
   LSEL={r:LINES.length-1,c:0};paintLSel();};
-$('saveLines').onclick=saveLines;
+
 $('lineHistBtn').onclick=openLineHistory;
 $('lineColCfgBtn').onclick=openLineColCfg;
 addEventListener('resize',()=>renderDaily());

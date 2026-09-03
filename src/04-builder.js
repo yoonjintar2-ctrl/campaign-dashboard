@@ -119,7 +119,7 @@ function markBlanks(tbl){
   tbl.querySelectorAll('tbody td, thead tr.total td').forEach(td=>{
     if(td.classList.contains('head'))return;
     /* 게재 히스토리의 날짜 칸은 글자가 아니라 색 농도로 값을 보여준다 — 건드리지 않는다 */
-    if(td.classList.contains('day'))return;
+    if(td.classList.contains('day')||td.classList.contains('rm'))return;
     if(td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
     const t=(td.textContent||'').replace(/\s+/g,'').trim();
     /* 값이 아예 없는 칸(빈칸 또는 렌더러가 넣은 –)은 회색으로 꽉 채운다 */
@@ -474,7 +474,7 @@ const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
-const AMB_OK=[126,196,152], AMB_NG=[236,158,146];
+const AMB_OK=[126,196,152], AMB_NG=[227,109,92];
 /* 페이스 대비 ±6%p 를 만점으로 본다. 1%p 만 벌어져도 색이 보이도록 바닥값(.32)을 준다 —
    ±10%p 기준일 때는 1%p 차이가 세기 .1 이라 붉은 기가 전혀 안 보였다. */
 function ambLevel(pr){
@@ -517,7 +517,7 @@ function paceKpiRows(){
   const idxOf=s2=>{const t=ALLDATES.findIndex(d=>iso(d)===s2);return t<0?sc.i0:t;};
   const per=new Map();
   activeLines().forEach(l=>{
-    const k=l.kpi;if(!k)return;
+    const k=kpiOf(l);if(!k)return;
     const goal=goalIn(l,k);if(!goal)return;
     if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
     const o=per.get(k);
@@ -559,7 +559,7 @@ function renderPace(){
       `<i style="flex:${Math.max(y.v,1)} 1 0" data-m="${esc(y.m)}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
-    return `<div class="pline" style="--tone:${tone}">
+    return `<div class="pline">
       <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
       <div class="pmid">
         <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
@@ -629,8 +629,15 @@ function wirePaceTip(){
       +`<div class="r"><span class="l">집행 / 목표</span><b>${fmt(Math.round(d.act))} / ${fmt(Math.round(d.goal))}</b></div>`
       +`<div class="r"><span class="l">오늘까지 채웠어야 할 양</span><b>${fmt(Math.round(d.due))}</b></div>`
       +`<div class="r"><span class="l">차이</span><b>${(d.act>=d.due?'+':'−')+fmt(Math.round(Math.abs(d.act-d.due)))}</b></div>`;
+    /* 마우스를 올린 동안에는 막대를 페이스 색(초록·붉은색)으로 통째로 바꿔 보여 준다 */
+    const hot=d.pr>=1?AMB_OK:AMB_NG;
+    const lv=Math.max(.45,Math.min(Math.abs(d.pr-1)/.06,1));
+    const base=hex2rgb(PACE_TONE);
+    const mixc=base.map((v,i)=>Math.round(v+(hot[i]-v)*lv));
+    bar.style.setProperty('--hotc',`rgb(${mixc.join(',')})`);
+    bar.addEventListener('mouseenter',()=>bar.classList.add('hot'));
     bar.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,html));
-    bar.addEventListener('mouseleave',hideTip);});
+    bar.addEventListener('mouseleave',()=>{bar.classList.remove('hot');hideTip();});});
 }
 /* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
@@ -689,10 +696,14 @@ function renderSpendDonut(box,pr){
       tp.setAttribute('href','#'+id);tp.setAttribute('startOffset','12');
       tp.setAttribute('text-anchor','start');tp.textContent=label;t.appendChild(tp);
     }else{
-      const [tx,ty]=pxy(360*f/2,rad+TH/2+9);
-      const t=S('text',{x:Math.max(4,Math.min(VB-4,tx)),y:ty,'dominant-baseline':'central',
-        'text-anchor':tx>=CC?'start':'end','font-size':11.5,'font-weight':800,fill:KPI_RING[0]},svg);
-      t.textContent=label;}
+      /* 호가 짧으면 호가 끝난 지점부터 트랙 위에 곡선으로 — 링 밖으로 튀어나가지 않게 */
+      const id2=uid();
+      S('path',{id:id2,d:arcPath(rad,360*f,360*f+179),fill:'none'},defs);
+      const t=S('text',{'font-size':11.5,'font-weight':800,fill:KPI_RING[0],'dominant-baseline':'central'},svg);
+      const tp=document.createElementNS(NS,'textPath');
+      tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+id2);
+      tp.setAttribute('href','#'+id2);tp.setAttribute('startOffset','10');
+      tp.setAttribute('text-anchor','start');tp.textContent=label;t.appendChild(tp);}
   })();
   const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
     style:'pointer-events:stroke'},svg);
@@ -725,14 +736,14 @@ function renderDonuts(){
     const items=ls.filter(l=>(mode==='product'?l.media+' · '+l.product:l[mode])===name);
     /* KPI가 섞여 있으면 예산이 큰 순으로 최대 2개까지만 겹쳐 그린다 (3개 이상은 판독이 어려움) */
     const MAXRING=2;
-    const allKpis=[...new Set(items.map(l=>l.kpi))]
-      .map(k=>({k,w:sum(items.filter(l=>l.kpi===k).map(lineGross))}))
+    const allKpis=[...new Set(items.map(kpiOf))]
+      .map(k=>({k,w:sum(items.filter(l=>kpiOf(l)===k).map(lineGross))}))
       .sort((a,b)=>b.w-a.w);
     const kpis=allKpis.slice(0,MAXRING).map(x=>x.k);
     const restKpis=allKpis.slice(MAXRING).map(x=>x.k);
     const safe=v=>isFinite(v)?v:0;
     const mk=k=>{
-      const it=items.filter(l=>l.kpi===k),w=sum(it.map(lineGross));
+      const it=items.filter(l=>kpiOf(l)===k),w=sum(it.map(lineGross));
       return {k,ach:safe(sum(it.map(l=>safe(kpiAch(l))*lineGross(l)))/w),
         act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>goalIn(l,k))))};};
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
@@ -809,13 +820,14 @@ function renderDonuts(){
       /* 호 안쪽 — 집행 실적 */
       const label=`집행 ${KPI_LABEL[r.k]} ${fmt(r.act)}건`;
       const need=label.length*7.4+18;
+      /* 라벨은 항상 링의 곡률을 따라 흐른다.
+         · 달성 호가 충분히 길면 그 안쪽에 흰 글씨로
+         · 짧으면 호가 끝난 지점부터 회색 트랙 위에 링 색 글씨로
+         (예전에는 짧을 때 링 밖에 직선으로 그려져 그래프에서 튀어나와 보였다) */
       if(cir*af>need){
         curvedFrom(rad,0,label,'#fff',12,800,1,12);
       }else{
-        const rr=rad+TH/2+9,[tx,ty]=pxy(aDeg/2,rr);
-        const t=S('text',{x:Math.max(4,Math.min(VB-4,tx)),y:ty,'dominant-baseline':'central',
-          'text-anchor':tx>=CC?'start':'end','font-size':12,'font-weight':800,fill:r.color},svg);
-        t.textContent=label;}
+        curvedFrom(rad,aDeg,label,r.color,11.5,800,1,10);}
       /* 목표 페이스 — 호 끝 바깥쪽에 말풍선으로 (지시선 + 흰 박스) */
       /* 목표 페이스는 카드 왼쪽 아래 범례로 뺀다 (도넛 안이 좁아 읽기 어려웠다) */
       paceLegend.push({k:r.k,v:r.goal*pr,color:r.color});

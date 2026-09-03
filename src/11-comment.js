@@ -279,7 +279,7 @@ function autoComment(){
     return {m,ach:achOf(ls),gross:sum(ls.map(lineGross))};})
     .sort((x,y)=>(y.ach||0)-(x.ach||0));
   const days=Math.max(1,sc.i1-sc.i0+1);
-  const bestAll=CREATIVES.map(c=>{const bb=crAgg(c);const uk=unitOf((LINES.find(l=>l.id===c.lid)||{}).kpi||'imp');
+  const bestAll=CREATIVES.map(c=>{const bb=crAgg(c);const uk=unitOf(kpiOf(LINES.find(l=>l.id===c.lid)));
       return {c,uk,v:METRICS[uk].c(bb),base:bb.imp||0};})
     .filter(x=>x.base>0&&isFinite(x.v)&&x.v>0).sort((x,y)=>x.v-y.v)[0];
   /* 한 줄씩 끊어서 — 길게 이어 쓰면 읽기 어렵다 */
@@ -299,15 +299,29 @@ function autoComment(){
   const sm=`<div class="cmtsum"><span class="t">서머리</span>`
     +lines.map(x=>`<span class="ln">${x}</span>`).join('')+`</div>`;
   let h=sm;
+  /* 두 날짜 중 늦은/이른 쪽 (ISO 문자열이라 그대로 비교하면 된다) */
+  const later=(a,b)=>(a&&b)?(a>b?a:b):(a||b);
+  const earlier=(a,b)=>(a&&b)?(a<b?a:b):(a||b);
   medias.forEach(m=>{
     const ls=ls0.filter(l=>l.media===m);
-    h+=`<h4>[${esc(m)}]</h4>`;
+    /* 매체의 실제 집행 기간 — 캠페인 설정에 적힌 라인별 시작·종료일에서 뽑는다
+       (예전에는 조회 기간을 그대로 써서 9/16 시작 매체도 9/1 로 나왔다) */
+    const ms=ls.map(l=>l.start).filter(Boolean).sort()[0]||campStart();
+    const me=ls.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||campEnd();
+    h+=`<h4>[${esc(m)}] <span class="mper">${mdy(ms)}~${mdy(me)}</span></h4>`;
+    /* 아직 시작하지 않은 매체는 한 줄만 */
+    if(ms>YESTERDAY){h+=`<ul><li><b>${mdy(ms)}</b> 온에어 예정</li></ul>`;return;}
     const prods=[...new Set(ls.map(l=>l.product))];
     prods.forEach((pd,pi)=>{
       const pls=ls.filter(l=>l.product===pd);
+      /* 이 상품의 기간 ∩ 조회 기간 */
+      const ps=pls.map(l=>l.start).filter(Boolean).sort()[0]||ms;
+      const pe=pls.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||me;
+      const period=`${mdy(later(ps,sc.startIso))}~${mdy(earlier(pe,sc.endIso))}`;
+      if(ps>YESTERDAY){h+=`<h5>${pi+1}) ${esc(pd)}</h5><ul><li><b>${mdy(ps)}</b> 온에어 예정</li></ul>`;return;}
       const pf=fs.filter(f=>f.media===m&&f.product===pd);
       const a=aggFacts(pf),e=aggExp(pls);
-      const kpi=pls[0]?pls[0].kpi:'imp';
+      const kpi=pls[0]?kpiOf(pls[0]):'imp';
       const kpiL=KPI_LABEL[kpi]||'노출';
       const unitK=unitOf(kpi);
       const unit=METRICS[unitK]?METRICS[unitK].c(a):NaN;

@@ -23,7 +23,15 @@ const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'�
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
 let BID_TYPES=['CPM','CPC','CPT','CPD','CPV','CPA','CPI','CPE'];
 /* 비드 타입에 맞는 KPI 기본값 — 자동으로 채우되 이후 직접 수정할 수 있다 */
-const BID_KPI={CPM:'imp',CPV:'view',CPC:'click',CPA:'conv',CPI:'install',CPE:'eng'};
+/* 비드 타입 → KPI 지표. KPI 를 따로 고르지 않았을 때 이걸로 판단한다.
+   CPM·CPT·CPD = 노출 / CPC = 클릭 / CPV = 조회 / CPE = 참여 / CPI·CPA = 전환 / 그 외 = 노출 */
+const BID_KPI={CPM:'imp',CPT:'imp',CPD:'imp',CPC:'click',CPV:'view',CPE:'eng',CPI:'conv',CPA:'conv'};
+/* 라인의 실제 KPI — 비워 두면 비드 타입으로 정하고, 그것도 없으면 노출 */
+const kpiOf=l=>{
+  if(!l)return 'imp';
+  if(l.kpi&&KPI_KEYS.includes(l.kpi))return l.kpi;
+  const b=String(l.bid||'').toUpperCase().match(/CP[MCVAIETD]/);
+  return (b&&BID_KPI[b[0]])||'imp';};
 const DEVICES=['PC','MO','CTV'];
 
 let LINES=[
@@ -358,6 +366,12 @@ const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광�
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
+/* 기간 기본값 — 시작일은 캠페인 첫날, 종료일은 어제(데이터가 확정된 마지막 날) */
+function resetDateFilter(){
+  const p=campScope();
+  FILTER.from=p.startIso;
+  FILTER.to=p.endIso>YESTERDAY?(YESTERDAY>=p.startIso?YESTERDAY:p.startIso):p.endIso;
+}
 const activeLines=()=>LINES.filter(l=>['segment','media','line'].every(k=>FILTER[k]==='all'||l[k]===FILTER[k]));
 
 /* ===== 조회 기간(스코프) =====
@@ -387,25 +401,12 @@ function viewScope(){
   if(e<s)e=s;
   return mkScope(s,e);
 }
-/* 달력으로 기간을 직접 고른 상태인가 */
-const datePicked=()=>!!(FILTER.from||FILTER.to);
-/* 진행 스코프 —
-   · 기본(달력을 건드리지 않음) = 캠페인 전체 구간. 달성률 90.6% / 페이스 91.8% 처럼
-     "캠페인이 지금 어디까지 왔나"를 말한다.
-   · 달력으로 구간을 고르면 = 그 구간. 게이지 · 시작/종료일 · 실적 · 목표가 모두 그 구간 기준이 된다.
-     ([적용] 을 눌러도 날짜 게이지가 그대로이던 문제를 이렇게 고쳤다) */
-function paceScope(){return datePicked()?viewScope():campScope();}
-/* 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다.
-   달력을 건드리지 않았으면 원래 목표 그대로. */
-function goalIn(l,k){
-  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
-  if(!datePicked())return g;
-  const sc=viewScope();
-  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
-  const n=Math.max(1,z-a+1);
-  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
-  return ov<=0?0:g*Math.min(1,ov/n);
-}
+/* 진행 스코프 = 캠페인 설정에 적힌 집행 구간.
+   기간·날짜 게이지·시작/종료일·목표 페이스는 달력 선택과 무관하게 늘 여기를 기준으로 말한다.
+   (실적 수치는 아래 paceSum · paceFacts 처럼 달력으로 고른 구간만 더한다) */
+function paceScope(){return campScope();}
+/* 목표는 캠페인 전체 목표 그대로 — 기간을 좁혀도 목표가 줄지 않는다 */
+function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
 function factFilter(extra){
@@ -413,13 +414,13 @@ function factFilter(extra){
   return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
     &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k])&&(!extra||extra(f)));
 }
-/* 진행 스코프 안의 팩트 (달력 선택과 무관) */
+/* 실적 팩트 — 달력으로 고른 구간만. 대시보드의 집행 수치·금액은 모두 이걸 쓴다 */
 function paceFacts(){
-  const s=paceScope();
+  const s=viewScope();
   return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
     &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k]));
 }
 const isClient=()=>document.body.dataset.role==='client';
-/* 달성률은 진행 스코프 기준 (달력으로 좁혀도 KPI 카드 값은 흔들리지 않게) */
-const paceSum=arr=>{const s=paceScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
-const kpiAch=l=>paceSum(l.daily[l.kpi])/goalIn(l,l.kpi);
+/* 집행 실적 합계 — 달력으로 고른 구간만 더한다 */
+const paceSum=arr=>{const s=viewScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
+const kpiAch=l=>{const k=kpiOf(l);return paceSum(l.daily[k])/goalIn(l,k);};

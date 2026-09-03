@@ -739,7 +739,7 @@ async function removeMember(userId){
   /* 저장 버튼들과 함께 클라우드에도 반영 */
   const chain=(id,fn)=>{const el2=$(id);if(!el2)return;const prev=el2.onclick;
     el2.onclick=async e=>{if(prev)await prev.call(el2,e);if(CLOUD.on&&CLOUD.user)cloudSave(true);};};
-  chain('saveAll');chain('saveLines');chain('saveRows');
+  /* 저장 버튼은 ☁ 저장 하나로 통일했다 */
   /* 화면에서 값을 바꾸면 자동 저장 대상으로 표시한다 */
   ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{
     if(e.target.closest('#gate,#modalHost'))return;markDirty();},true));

@@ -336,7 +336,7 @@ function importDaily(){
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
       +(dup?` 완전히 똑같은 중복 행 ${dup}개는 제외했습니다.`:'')
       +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
-      ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();
+      ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();applySheet();renderAll();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
   });
 }

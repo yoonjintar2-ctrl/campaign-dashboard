@@ -151,15 +151,15 @@ function renderSheet(){
     td.addEventListener('mouseenter',()=>{if(selecting){SEL.r2=+td.dataset.r;SEL.c2=+td.dataset.c;paintSel();}});});
   t.querySelectorAll('input[data-c],select[data-c]').forEach(inp=>inp.addEventListener('change',e=>{
     pushUndo();
-    setCell(+e.target.dataset.r,cols[+e.target.dataset.c].k,e.target.value);renderSheet();}));
+    setCell(+e.target.dataset.r,cols[+e.target.dataset.c].k,e.target.value);renderSheet();syncSheet();}));
   /* 달력 아이콘 → 네이티브 데이트피커 */
   t.querySelectorAll('[data-dp]').forEach(b=>b.onclick=e=>{
     e.preventDefault();e.stopPropagation();
     const n=t.querySelector(`[data-dn="${b.dataset.dp}"]`);if(!n)return;
     if(n.showPicker)try{n.showPicker();}catch(err){n.click();}else n.click();});
   t.querySelectorAll('[data-dn]').forEach(n=>n.addEventListener('change',e=>{
-    if(e.target.value){pushUndo();SHEET[+e.target.dataset.dn].date=e.target.value;renderSheet();}}));
-  t.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndo();SHEET.splice(+b.dataset.del,1);renderSheet();});
+    if(e.target.value){pushUndo();SHEET[+e.target.dataset.dn].date=e.target.value;renderSheet();syncSheet();}}));
+  t.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndo();SHEET.splice(+b.dataset.del,1);renderSheet();syncSheet();});
   /* 헤더의 ✕ = 모두 지우기 (확인 후 실행) */
   const ca=$('sheetClearAll');
   if(ca)ca.onclick=()=>confirmModal('입력한 일별 실적을 모두 지울까요?',
@@ -198,14 +198,14 @@ function setCell(i,k,raw){
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
 const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
-const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());renderSheet();};
+const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());renderSheet();syncSheet();};
 const sheetActive=()=>!$('tab-input').classList.contains('hidden')&&document.querySelector('#sheet td.sel');
 
 /* ===== 실행 취소 / 다시 실행 (Ctrl+Z · Ctrl+Y) ===== */
 const UNDO=[],REDO=[],UNDO_MAX=60;
 const snapSheet=()=>JSON.parse(JSON.stringify({rows:SHEET,sel:SEL}));
 function pushUndo(){UNDO.push(snapSheet());if(UNDO.length>UNDO_MAX)UNDO.shift();REDO.length=0;markDirty();}
-function applySnap(s){SHEET=s.rows.map(r=>({...r}));SEL={...s.sel};renderSheet();}
+function applySnap(s){SHEET=s.rows.map(r=>({...r}));SEL={...s.sel};renderSheet();syncSheet();}
 function undoSheet(){if(!UNDO.length)return false;REDO.push(snapSheet());applySnap(UNDO.pop());return true;}
 function redoSheet(){if(!REDO.length)return false;UNDO.push(snapSheet());applySnap(REDO.pop());return true;}
 
@@ -248,7 +248,7 @@ document.addEventListener('paste',e=>{
       while(SHEET.length<=ri)SHEET.push(blankRow());
       setCell(ri,cols[ci].k,cell);}));
     SEL={r1:r0,c1:c0,r2:r0+grid.length-1,c2:c0+grid[0].length-1};}
-  renderSheet();});
+  renderSheet();syncSheet();});
 document.addEventListener('copy',e=>{
   if(!sheetActive())return;
   const cols=sheetCols();
@@ -301,18 +301,40 @@ document.addEventListener('keydown',e=>{
   if(cell){cell.scrollIntoView({block:'nearest',inline:'nearest'});
     if(!e.shiftKey){const f=cell.querySelector('input,select');if(f)f.focus();}}
 });
-function saveRows(){
-  LINES.forEach(l=>{
+/* 시트에 적힌 값을 라인별 · 날짜별 실적으로 옮긴다.
+   · 예전에는 행의 일자를 무시하고 전부 "마지막 경과일" 한 칸에만 넣어서
+     여러 날을 입력해도 하루치만 잡히고 나머지가 사라졌다 → 이제 행의 일자대로 넣는다
+   · 소진비용은 Gross 로 적으므로 그 라인의 수수료로 Net 을 역산해 담는다
+     (이걸 안 해서 금액이 대시보드 어디에도 안 잡혔다)
+   · 시트에 나오는 (라인 × 날짜) 칸만 덮어쓴다 — 적지 않은 날의 값은 건드리지 않는다 */
+function applySheet(){
+  const bucket=new Map();
+  SHEET.forEach(r=>{
+    const l=rowLine(r);if(!l)return;
+    const i=dIdx(r.date);if(!(i>=0&&i<TOTAL_DAYS))return;
+    const k=l.id+'\u0001'+i;
+    let b=bucket.get(k);
+    if(!b){b={l,i,v:{}};AMET.forEach(m=>b.v[m]=0);bucket.set(k,b);}
+    const fee=feeOf(l);
+    AMET.forEach(m=>{
+      let x=+r[m]||0;
+      /* Gross 소진비용 → Net */
+      if(m==='net'&&!x&&r.cost)x=(+r.cost||0)*(1-fee);
+      if(x)b.v[m]+=x;});});
+  const touched=new Set();
+  bucket.forEach(b=>{
+    touched.add(b.l);
+    AMET.forEach(m=>{
+      if(!Array.isArray(b.l.daily[m]))b.l.daily[m]=[];
+      while(b.l.daily[m].length<TOTAL_DAYS)b.l.daily[m].push(0);
+      b.l.daily[m][b.i]=b.v[m];});});
+  touched.forEach(l=>AMET.forEach(m=>{l.a[m]=sum(l.daily[m]||[]);}));
+  /* 한 라인을 소재별로 나눠 적었으면 그 비중을 소재 배분에 반영한다 */
+  touched.forEach(l=>{
     const rows=SHEET.filter(r=>rowLine(r)===l);
-    if(!rows.length)return;
-    const i=ELAPSED-1;
-    AMET.forEach(m=>{const before=l.daily[m][i];
-      l.daily[m][i]=sum(rows.map(r=>+r[m]||0));l.a[m]+=l.daily[m][i]-before;});
-    /* 한 라인을 소재별로 나눠 적었으면 그 비중을 소재 배분에 반영한다 —
-       예상 효율에서는 소재 2개를 한 줄로 등록했어도 실적은 소재마다 따로 넣을 수 있다 */
     const byCr=new Map();
     rows.forEach(r=>{const n2=String(r.creative||'').trim();if(!n2)return;
-      byCr.set(n2,(byCr.get(n2)||0)+(+r[l.kpi]||+r.imp||0));});
+      byCr.set(n2,(byCr.get(n2)||0)+(+r[kpiOf(l)]||+r.imp||0));});
     if(byCr.size>1){
       const cs=CREATIVES.filter(c=>c.lid===l.id);
       const tot=sum([...byCr.values()]);
@@ -320,7 +342,16 @@ function saveRows(){
         cs.forEach(c=>{const v=byCr.get(c.name);if(v!=null)c.share=v/tot;});
         const s2=sum(cs.map(c=>+c.share||0));
         if(s2>0)cs.forEach(c=>c.share=(+c.share||0)/s2);}}});
-  buildFacts();renderAll();switchTab('dash');}
+  buildFacts();
+  return touched.size;
+}
+/* 시트를 고치면 따로 저장하지 않아도 대시보드에 바로 반영된다 (짧게 모아서 한 번에) */
+let SHEET_APPLY_T=null;
+function syncSheet(){
+  clearTimeout(SHEET_APPLY_T);
+  SHEET_APPLY_T=setTimeout(()=>{applySheet();renderAll();},220);
+}
+function saveRows(){applySheet();renderAll();switchTab('dash');}
 function renderIssues(){
   let h=`<thead><tr><th style="width:124px">시작일</th><th style="width:124px">종료일</th>
     <th style="width:190px">대상</th><th style="width:92px">유형</th><th>이슈 내용</th><th style="width:44px"></th></tr></thead><tbody>`;

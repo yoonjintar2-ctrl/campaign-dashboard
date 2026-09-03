@@ -186,10 +186,11 @@ const median=a=>{if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),h=b.
 function heatCols(){
   const seen=new Map();
   activeLines().forEach(l=>{
-    if(!l.media||!l.product||!l.kpi)return;
-    const k=[l.media,l.product,l.kpi].join(SEP);
-    if(!seen.has(k))seen.set(k,{media:l.media,product:l.product,kpi:l.kpi,
-      unit:KPI_UNIT[l.kpi]||'cpm',lids:new Set()});
+    const lk=kpiOf(l);
+    if(!l.media||!l.product||!lk)return;
+    const k=[l.media,l.product,lk].join(SEP);
+    if(!seen.has(k))seen.set(k,{media:l.media,product:l.product,kpi:lk,
+      unit:KPI_UNIT[lk]||'cpm',lids:new Set()});
     seen.get(k).lids.add(l.id);});
   return [...seen.values()];
 }
@@ -478,8 +479,19 @@ function crNameGroups(){
   const m=new Map();
   CREATIVES.forEach(c=>{const k=c.name;
     if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
-  return [...m.entries()].map(([name,list])=>({name,list}))
-    .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  /* 순서는 CREATIVES 에 담긴 순서 그대로 — 소재 관리에서 ▲▼ 로 바꾼 순서가 유지된다 */
+  return [...m.entries()].map(([name,list])=>({name,list}));
+}
+/* 소재 관리 목록에서 한 칸 위/아래로 옮긴다.
+   실제 순서는 CREATIVES 배열 자체를 재정렬해서 캠페인과 함께 저장된다. */
+function moveCrGroup(name,dir){
+  const order=crNameGroups().map(g=>g.name);
+  const i=order.indexOf(name), j=i+dir;
+  if(i<0||j<0||j>=order.length)return false;
+  order.splice(j,0,order.splice(i,1)[0]);
+  const rank={};order.forEach((n,k)=>rank[n]=k);
+  CREATIVES.sort((a,b)=>(rank[a.name]??999)-(rank[b.name]??999));
+  return true;
 }
 /* ---------- 소재 파일 인코딩 ----------
    원본 영상은 보통 수백 MB~GB 라 그대로 담을 수 없다.
@@ -576,6 +588,7 @@ function openCrManage(){
         <div class="hint">먼저 <b>캠페인 설정</b> 탭에서 라인을 추가하고 그 라인의 <b>소재</b> 항목에 소재명을 입력하세요.</div></div>`;
   }else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:56px">순서</th>
       <th style="width:52px">미리보기</th><th style="min-width:220px">소재명</th>
       <th style="min-width:240px">사용 중인 매체 · 상품</th>
       <th style="width:96px">유형</th><th style="min-width:280px">소재 파일 · 링크</th>
@@ -585,6 +598,9 @@ function openCrManage(){
       const used=[...new Set(g.list.map(c=>c.media+' · '+c.product))];
       const bg=c0.img?`url(&quot;${c0.img.slice(0,4)==='data'?c0.img:encodeURI(c0.img)}&quot;)`:c0.g;
       h+=`<tr data-cn="${esc(g.name)}">
+        <td style="white-space:nowrap;padding-left:4px;padding-right:4px">
+          <button class="btn sm" data-cup2="${esc(g.name)}" title="위로" style="padding:0 5px">▲</button>
+          <button class="btn sm" data-cdn="${esc(g.name)}" title="아래로" style="padding:0 5px;margin-left:2px">▼</button></td>
         <td><span class="crthumb-sm" style="background-image:${bg}"></span></td>
         <td><input class="txt" data-cf="name" value="${esc(g.name)}"></td>
         <td class="hint" style="line-height:1.5">${used.map(esc).join('<br>')}
@@ -645,6 +661,10 @@ function openCrManage(){
         reopen();});};
     const clr=tr.querySelector('[data-cclr]');
     if(clr)clr.onclick=()=>{list.forEach(c=>{c.img='';c.clip='';});reopen();};});
+  host.querySelectorAll('[data-cup2]').forEach(b=>b.onclick=()=>{
+    if(moveCrGroup(b.dataset.cup2,-1))reopen();});
+  host.querySelectorAll('[data-cdn]').forEach(b=>b.onclick=()=>{
+    if(moveCrGroup(b.dataset.cdn,1))reopen();});
   host.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{
     const nm=b.dataset.cdel;
     confirmModal(`"${nm}" 소재를 삭제할까요?`,
@@ -765,6 +785,23 @@ function shade(t){
   /* 한 행 안의 값 차이가 크지 않아도 강약이 보이도록 대비를 세운다 */
   return `rgb(${mixRGB(SHADE_LOW,SHADE_HIGH,Math.pow(k,1.7)).join(',')})`;
 }
+/* 한 소재의 날짜별 효율(단가) → 히트맵과 같은 초록↔회색↔빨강 색.
+   단가는 그 소재가 속한 라인의 KPI 기준(CPV·CPC·CPM)이고, 낮을수록 좋다.
+   비교는 그 행 안에서만 한다 — 소재마다 단가 수준이 달라도 강약이 보이도록. */
+function rowEff(c,SC){
+  const l=LINES.find(x=>x.id===c.lid);
+  const unit=KPI_UNIT[kpiOf(l)]||'cpm';
+  const baseK={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[unit]||'imp';
+  const vals=[],by={};
+  for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+    const cost=(c.daily.cost&&c.daily.cost[i])||0;
+    const base=(c.daily[baseK]&&c.daily[baseK][i])||0;
+    if(cost>0&&base>0){const u=unit==='cpm'?cost/base*1000:cost/base;
+      by[i]=u;vals.push(u);}}
+  if(vals.length<2)return {ok:false};
+  const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
+  return {ok:true,color:i=>by[i]===undefined?'#e9edf2':(hmFill(by[i],mn,md,mx)||'#e9edf2')};
+}
 function renderGantt(){
   const t=$('ganttTbl'),list=filteredCreatives();
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
@@ -813,13 +850,16 @@ function renderGantt(){
       const v=k==='days'?days+'일':crVal(c,k);
       h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
     const maxV=rowMax(c);                                /* 이 행(소재)의 최댓값 */
+    const eff=rowEff(c,SC);                              /* 이 행의 날짜별 효율(단가) 색 기준 */
     VD.forEach((d,i)=>{
       const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
       const arr=c.daily[mk]||[],v=gi<ELAPSED?(arr[gi]||0):0;
       const hol=!!holName(d),we=d.getDay()%6===0;
-      /* 값이 클수록 진해지는 색 농도 (막대 높이 대신) */
+      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준).
+         금액이 없어 효율을 못 구하면 값 크기로 농도만 표시한다 */
+      const bg=eff.ok?eff.color(gi):shade(v/maxV);
       h+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
-        +(v>0?`<span class="b" style="background:${shade(v/maxV)}"></span>`:'')+'</td>';});
+        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')+'</td>';});
     h+='</tr>';});
   t.innerHTML=h+'</tbody>';
   markBlanks(t);
@@ -841,16 +881,20 @@ function mountGanttHead(tbl){
   clone.className=tbl.className;
   clone.style.tableLayout='fixed';
   clone.appendChild(tbl.tHead.cloneNode(true));
-  /* 원본 열 너비를 그대로 옮긴다 */
+  /* 원본 열 너비를 그대로 옮긴다.
+     본문 첫 행은 rowspan 때문에 칸 수가 모자랄 수 있어(머리글보다 적다) 폭이 어긋났다 —
+     머리글 자체에서 잰다: 1행의 lead 칸들 + 2행의 나머지 칸들이 정확히 전체 열이다 */
   const cg=document.createElement('colgroup');
-  [...tbl.tHead.rows[1].cells].forEach(()=>{});
-  const firstRow=tbl.tBodies[0]&&tbl.tBodies[0].rows[0];
-  if(firstRow){[...firstRow.cells].forEach(td=>{
+  const leadTh=[...tbl.tHead.rows[0].cells].filter(th=>th.classList.contains('lead'));
+  const restTh=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+  leadTh.concat(restTh).forEach(th=>{
     const c=document.createElement('col');
-    c.style.width=Math.round(td.getBoundingClientRect().width)+'px';
+    c.style.width=Math.round(th.getBoundingClientRect().width)+'px';
     cg.appendChild(c);});
-    clone.insertBefore(cg,clone.firstChild);}
-  clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
+  clone.insertBefore(cg,clone.firstChild);
+  /* 복사본에서는 고정(sticky)과 좌표를 모두 푼다 — 안 그러면 앞쪽 칸이 서로 겹친다 */
+  clone.querySelectorAll('th').forEach(th=>{
+    th.style.position='static';th.style.left='auto';th.style.zIndex='auto';});
   inner.appendChild(clone);
   bar.innerHTML='';bar.appendChild(inner);
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
@@ -925,6 +969,8 @@ let TMAP={metric:'imp',dims:['media','product','creative']};
 /* 색이 서로 확실히 구분되도록 색상환에서 골고루 뽑은 값 (효율 버블과 같은 팔레트) */
 const MEDIA_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
                   [64,130,138],[118,120,132],[196,120,150],[96,116,72],[150,96,84]];
+/* "기타"로 묶인 작은 매체들 — 무채색으로 뒤로 물린다 */
+const TM_ETC=[150,157,166];
 const mixWhite=(rgb,t)=>rgb.map(v=>Math.round(v+(255-v)*t));
 const inkOn=rgb=>(rgb[0]*.299+rgb[1]*.587+rgb[2]*.114)>168?'#26313c':'#fff';
 /* 매체는 목록 순서대로 색을 배정한다 — 해시로 뽑으면 서로 겹치거나 비슷해진다.
@@ -996,8 +1042,18 @@ function renderTreemap(){
     if(val instanceof Map){const kids=walk(val);
       return {name,kids,v:sum(kids.map(k=>k.v)),c:sum(kids.map(k=>k.c))};}
     return {name,v:val.v,c:val.c};}).filter(n=>n.v>0).sort((a,b)=>b.v-a.v);
-  const sects=walk(root);
+  let sects=walk(root);
   const grand=sum(sects.map(s=>s.v));
+  /* 너무 작아 이름조차 줄어 버리는 매체는 "기타" 하나로 묶어 회색으로 보여 준다 —
+     칸이 많아질수록 큰 매체를 읽기 어려워지기 때문 */
+  const TM_MIN=.03;
+  if(grand>0){
+    const small=sects.filter(s=>s.v/grand<TM_MIN);
+    if(small.length>1){
+      sects=sects.filter(s=>s.v/grand>=TM_MIN);
+      sects.push({name:'기타',etc:1,kids:small,
+        v:sum(small.map(s=>s.v)),c:sum(small.map(s=>s.c))});
+      sects.sort((a,b)=>b.v-a.v);}}
   if(!grand){box.innerHTML='<div class="tmap-empty">표시할 값이 없습니다.</div>';return;}
   const W=box.clientWidth||box.offsetWidth||1000, H=box.clientHeight||460;
   const HEAD=21, SUBHEAD=17;
@@ -1020,7 +1076,7 @@ function renderTreemap(){
     +`<div class="r"><span class="l">${esc(names[0])} 안에서</span><b>${pct(leaf.v/sect.v,1)}</b></div>`
     +`<div class="r"><span class="l">전체 대비</span><b>${pct(leaf.v/grand,1)}</b></div>`);
   squarify(sects,0,0,W,H).forEach(sc=>{
-    const base=hueOf(sc.name);
+    const base=sc.etc?TM_ETC:hueOf(sc.name);
     const tOf=shadeT(collect(sc));
     /* 섹터 — 굵은 테두리를 border-box 로 그려 폭이 균일하게 */
     const sec=el('div','sect',box);
