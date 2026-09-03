@@ -193,6 +193,8 @@ function renderKpiTable(){
     else if(c.k==='feeR')v=((sum(LINES.map(l=>lineGross(l)*l.feeR))/gross)*100).toFixed(1)+'%';
     return `<td class="${cls}">${v}</td>`;}).join('')+'<td></td></tr></tbody>'+dl;
   t.innerHTML=h;
+  /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
+  enableColResize(t,cols,()=>markDirty(),0);
   wireChipFields(t,()=>{rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderAll();});
   t.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=e=>{
     pushLineUndo();

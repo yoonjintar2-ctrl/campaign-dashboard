@@ -166,12 +166,18 @@ const HM_COLW=132;        /* 값 열 최대 폭 — 매체가 적어도 너무 �
 const HM_LEADW=190;       /* 구분 열 폭 */
 let HEAT_DAILY=false;     /* 일자별은 기본으로 접어 둔다 */
 let HEAT_TIP=[];
+/* 나쁜 쪽은 세게 누른다 — 저조한 칸이 화면을 잡아먹지 않고 잘 되는 칸이 먼저 보이게.
+   HM_BAD_GAMMA 가 클수록 붉은 기가 늦게 붙고, HM_BAD_CAP 이 낮을수록 가장 나쁜 칸도 옅다. */
+const HM_GOOD_GAMMA=1.35, HM_BAD_GAMMA=1.9, HM_BAD_CAP=.62;
+const cl01=t=>Math.min(1,Math.max(0,isFinite(t)?t:0));
 function hmFill(v,mn,md,mx){
   if(!isFinite(v))return null;
   let a,b,t;
-  if(v<=md){a=HM_GOOD;b=HM_MID;t=md>mn?(v-mn)/(md-mn):0;}
-  else{a=HM_MID;b=HM_BAD;t=mx>md?(v-md)/(mx-md):0;}
-  const rgb=a.map((x,i)=>Math.round(x+(b[i]-x)*Math.min(1,Math.max(0,t))));
+  if(v<=md){a=HM_GOOD;b=HM_MID;
+    t=Math.pow(cl01(md>mn?(v-mn)/(md-mn):0),HM_GOOD_GAMMA);}
+  else{a=HM_MID;b=HM_BAD;
+    t=Math.pow(cl01(mx>md?(v-md)/(mx-md):0),HM_BAD_GAMMA)*HM_BAD_CAP;}
+  const rgb=a.map((x,i)=>Math.round(x+(b[i]-x)*cl01(t)));
   return 'rgb('+mixWhite(rgb,.46).join(',')+')';
 }
 const median=a=>{if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),h=b.length>>1;
@@ -377,8 +383,9 @@ const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 /* 썸네일 뒤에는 항상 그라데이션을 깔아 둔다 —
    네트워크가 막힌 환경(사내망 · 오프라인)에서 이미지가 안 떠도 빈 칸이 되지 않는다 */
 function crBg(c){
+  /* 직접 올린 파일(이미지 · 영상 대표 컷)이 먼저 — 인터넷이 막혀도 보인다 */
+  if(c.img)return `url("${c.img.slice(0,5)==='data:'?c.img:encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
   if(c.yt)return `url("${ytThumb(ytId(c.yt))}"), ${c.g||'#dfe4ea'}`;
-  if(c.img)return `url("${encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
   return c.g;
 }
 /* 유튜브 플레이어는 file:// 로 열면 출처가 없어 "구성 오류 153" 을 낸다.
@@ -386,6 +393,19 @@ function crBg(c){
 const CAN_YT=/^https?:$/.test(location.protocol);
 /* 영상 소재는 마우스를 올리면 썸네일 자리에서 소리 없이 잠깐 재생된다 */
 function wireCrPlay(thumb,c){
+  /* 올려 둔 저용량 클립이 있으면 그걸 튼다 — 인터넷도, https 도 필요 없다 */
+  if(c.clip){
+    thumb.classList.add('playable');
+    let v=null,t=null;
+    thumb.addEventListener('mouseenter',()=>{clearTimeout(t);
+      t=setTimeout(()=>{if(v)return;
+        v=document.createElement('video');
+        v.className='ytprev clip';v.src=c.clip;v.muted=true;v.loop=true;
+        v.playsInline=true;v.autoplay=true;
+        thumb.appendChild(v);v.play().catch(()=>{});},200);});
+    thumb.addEventListener('mouseleave',()=>{clearTimeout(t);
+      if(v){v.pause();v.remove();v=null;}});
+    return;}
   if(!c.yt)return;
   const id=ytId(c.yt);if(!id)return;
   thumb.classList.add('playable');
@@ -430,8 +450,8 @@ function renderCreatives(){
     const x0=rows[0],c0=x0.c;
     const lead=el('div','cr lead',duo);
     lead.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c0)}"></div>
+        <div class="ribbon"><i>1위</i></div>
         <div class="media">${esc(c0.media)}</div>
-        <div class="rankno">1</div>
         <div class="rt">${c0.type==='video'?'▶ 영상':'🖼 이미지'}</div></div>
       <div class="meta"><div class="nm" title="${esc(c0.name)}">${esc(c0.name)}</div>
         <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x0.eff)}</b></div></div>`;
@@ -460,6 +480,76 @@ function crNameGroups(){
     if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
   return [...m.entries()].map(([name,list])=>({name,list}))
     .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+}
+/* ---------- 소재 파일 인코딩 ----------
+   원본 영상은 보통 수백 MB~GB 라 그대로 담을 수 없다.
+   대시보드에서는 "이렇게 생긴 소재"만 확인하면 되므로 브라우저 안에서
+   ① 대표 컷(썸네일 JPEG)과 ② 아주 짧은 무음 미리보기(webm)로 줄여서 담는다.
+   서버도, 인터넷도 필요 없고 원본은 올라가지 않는다. */
+const CLIP_W=360;        /* 미리보기 가로 (세로는 비율대로) */
+const CLIP_SEC=4;        /* 미리보기 길이 */
+const CLIP_FPS=15;
+const CLIP_KBPS=420;     /* 4초 × 420kbps ≈ 210KB */
+const CLIP_MAXCHARS=1100000;  /* data URL 이 이보다 크면 클립은 버리고 대표 컷만 남긴다 */
+const clipMime=()=>['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+  .find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';
+/* 영상 → {poster, clip, w, h, dur}. onProgress(문구) 로 진행 상황을 알린다. */
+function encodeVideo(file,onProgress,cb){
+  const url=URL.createObjectURL(file);
+  const v=document.createElement('video');
+  v.preload='auto';v.muted=true;v.playsInline=true;v.src=url;
+  const fail=msg=>{URL.revokeObjectURL(url);cb(null,msg);};
+  v.onerror=()=>fail('이 브라우저가 읽을 수 없는 영상 형식입니다 (mp4 · mov · webm 을 권장합니다)');
+  v.onloadedmetadata=()=>{
+    const sc=Math.min(1,CLIP_W/Math.max(v.videoWidth||CLIP_W,1));
+    const cw=Math.max(2,Math.round((v.videoWidth||CLIP_W)*sc)&~1);
+    const ch=Math.max(2,Math.round((v.videoHeight||CLIP_W)*sc)&~1);
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+    const cx=cv.getContext('2d');
+    const dur=isFinite(v.duration)?v.duration:0;
+    const start=dur>CLIP_SEC+1?Math.min(dur*0.1,dur-CLIP_SEC-.2):0;
+    /* 1) 대표 컷 — 시작 지점의 한 프레임 */
+    onProgress&&onProgress('대표 컷을 뽑는 중…');
+    v.currentTime=start+.05;
+    v.onseeked=()=>{
+      v.onseeked=null;
+      cx.drawImage(v,0,0,cw,ch);
+      let poster='';try{poster=cv.toDataURL('image/jpeg',.8);}catch(e){}
+      const mime=clipMime();
+      if(!mime||!cv.captureStream){URL.revokeObjectURL(url);
+        return cb({poster,clip:'',w:cw,h:ch,dur},'미리보기 영상은 이 브라우저에서 만들 수 없어 대표 컷만 담았습니다');}
+      /* 2) 짧은 무음 미리보기 — 캔버스에 그린 화면만 녹화한다 (소리는 담지 않는다) */
+      onProgress&&onProgress('미리보기를 만드는 중… 0%');
+      const stream=cv.captureStream(CLIP_FPS);
+      let rec;
+      try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:CLIP_KBPS*1000});}
+      catch(e){URL.revokeObjectURL(url);
+        return cb({poster,clip:'',w:cw,h:ch,dur},'미리보기 영상은 이 브라우저에서 만들 수 없어 대표 컷만 담았습니다');}
+      const parts=[];
+      rec.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data);};
+      rec.onstop=()=>{
+        try{v.pause();}catch(e){}
+        URL.revokeObjectURL(url);
+        const blob=new Blob(parts,{type:mime});
+        const fr=new FileReader();
+        fr.onload=()=>{const s2=String(fr.result||'');
+          if(s2.length>CLIP_MAXCHARS)cb({poster,clip:'',w:cw,h:ch,dur},
+            '미리보기가 너무 커서 대표 컷만 담았습니다');
+          else cb({poster,clip:s2,w:cw,h:ch,dur},'');};
+        fr.onerror=()=>cb({poster,clip:'',w:cw,h:ch,dur},'미리보기 저장에 실패해 대표 컷만 담았습니다');
+        fr.readAsDataURL(blob);};
+      const t0=performance.now();
+      const draw=()=>{
+        if(rec.state!=='recording')return;
+        cx.drawImage(v,0,0,cw,ch);
+        const el2=(performance.now()-t0)/1000;
+        onProgress&&onProgress(`미리보기를 만드는 중… ${Math.min(99,Math.round(el2/CLIP_SEC*100))}%`);
+        if(el2>=CLIP_SEC||(dur&&v.currentTime>=dur-.05)){try{rec.stop();}catch(e){}return;}
+        requestAnimationFrame(draw);};
+      v.play().then(()=>{rec.start();requestAnimationFrame(draw);})
+        .catch(()=>{URL.revokeObjectURL(url);
+          cb({poster,clip:'',w:cw,h:ch,dur},'영상을 재생할 수 없어 대표 컷만 담았습니다');});};
+  };
 }
 /* 업로드한 이미지는 긴 변 720px 로 줄여 data URL 로 담는다 (문서가 과도하게 커지지 않도록) */
 function shrinkImage(file,cb){
@@ -502,17 +592,26 @@ function openCrManage(){
         <td><select data-cf="type"><option value="video"${c0.type==='video'?' selected':''}>영상</option>
           <option value="image"${c0.type==='image'?' selected':''}>이미지</option></select></td>
         <td>${c0.type==='video'
-          ? `<input class="txt" data-cf="yt" value="${esc(c0.yt||'')}" placeholder="YouTube 링크 또는 영상 ID">`
+          ? `<input class="txt" data-cf="yt" value="${esc(c0.yt||'')}" placeholder="YouTube 링크 또는 영상 ID">
+             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+               <label class="btn sm" style="cursor:pointer;margin:0">영상 파일 올리기
+                 <input type="file" accept="video/*" data-cvid hidden></label>
+               <span class="hint" data-cst>${c0.clip?'미리보기 있음':(c0.img?'대표 컷만 있음':'없음')}</span>
+               ${(c0.clip||c0.img)?'<button class="btn sm" data-cclr>지우기</button>':''}</div>`
           : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                <label class="btn sm" style="cursor:pointer;margin:0">이미지 업로드
                  <input type="file" accept="image/*" data-cup hidden></label>
-               <span class="hint" data-cim>${c0.img?'업로드됨':'없음'}</span>
+               <span class="hint" data-cst>${c0.img?'업로드됨':'없음'}</span>
                ${c0.img?'<button class="btn sm" data-cclr>지우기</button>':''}</div>`}</td>
         <td><button class="btn sm danger" data-cdel="${esc(g.name)}">삭제</button></td></tr>`;});
     h+=`</tbody></table>`;
   }
   h+=`<div class="hint" style="margin-top:12px">소재를 새로 추가하려면 <b>캠페인 설정</b> 탭에서
-      해당 라인을 먼저 추가한 뒤 <b>소재</b> 칸에 이름을 적어 주세요.</div>`;
+      해당 라인을 먼저 추가한 뒤 <b>소재</b> 칸에 이름을 적어 주세요.</div>
+    <div class="hint" style="margin-top:6px">영상은 <b>원본이 올라가지 않습니다.</b>
+      브라우저 안에서 대표 컷 한 장과 ${CLIP_SEC}초짜리 무음 미리보기(가로 ${CLIP_W}px)로 줄여서 담기 때문에
+      2GB 짜리 원본을 골라도 저장되는 용량은 보통 <b>0.3MB 안팎</b>입니다.
+      유튜브 링크를 넣어 두면 파일을 올리지 않아도 됩니다.</div>`;
   openModal('소재 관리',h,'<button class="btn" data-close>닫기</button>',{w:1080});
   const host=$('modalHost');
   const redraw=()=>{buildFacts();renderCreatives();renderGantt();renderTreemap();renderAll();};
@@ -529,11 +628,23 @@ function openCrManage(){
       else if(f==='yt'){const id=ytId(v);list.forEach(c=>c.yt=id);}
       else list.forEach(c=>c[f]=v);
       reopen();});
+    const st=tr.querySelector('[data-cst]');
+    const say=t=>{if(st)st.textContent=t;};
     const up=tr.querySelector('[data-cup]');
     if(up)up.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+      say('줄이는 중…');
       shrinkImage(f,url=>{list.forEach(c=>{c.img=url;c.type='image';});reopen();});};
+    /* 영상은 원본을 담지 않는다 — 대표 컷 + 4초 무음 미리보기로 줄여서 담는다 */
+    const vup=tr.querySelector('[data-cvid]');
+    if(vup)vup.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+      say('영상을 읽는 중…');
+      encodeVideo(f,say,(r,msg)=>{
+        if(!r){say(msg||'변환에 실패했습니다');return;}
+        list.forEach(c=>{c.img=r.poster||'';c.clip=r.clip||'';c.type='video';});
+        if(msg)say(msg);
+        reopen();});};
     const clr=tr.querySelector('[data-cclr]');
-    if(clr)clr.onclick=()=>{list.forEach(c=>c.img='');reopen();};});
+    if(clr)clr.onclick=()=>{list.forEach(c=>{c.img='';c.clip='';});reopen();};});
   host.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{
     const nm=b.dataset.cdel;
     confirmModal(`"${nm}" 소재를 삭제할까요?`,
@@ -552,7 +663,11 @@ function ytId(s){
 }
 function openLightbox(c){
   const mediaHTML=()=>c.type==='video'
-    ? (c.yt
+    ? (c.clip
+        ? `<video src="${c.clip}" controls loop muted autoplay playsinline
+             style="max-width:100%;max-height:52vh;border-radius:10px;box-shadow:var(--shadow2)"></video>
+           <div class="hint" style="margin-top:8px">화면만 담은 ${CLIP_SEC}초 미리보기입니다 (소리 없음)</div>`
+        : c.yt
         ? (CAN_YT
             ?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(c.yt))}?rel=0" allowfullscreen></iframe>`
             :`<div class="lbph">파일을 직접 열면 유튜브가 재생을 막습니다(구성 오류 153).<br>
@@ -917,7 +1032,9 @@ function renderTreemap(){
       hd.style.background=`linear-gradient(100deg,rgb(${sA.join(',')}),rgb(${sB.join(',')}))`;
       hd.innerHTML=`<span>${esc(sc.name)}</span><span class="sv">${pct(sc.v/grand,1)}</span>`;
       inner.style.top=HEAD+'px';}
-    const iw=sec.clientWidth||sc.w-6, ih=(sc.h-(sc.h>HEAD+10?HEAD:0))-6;
+    /* 타일 배치는 섹터의 실제 안쪽 크기(테두리 제외)를 그대로 쓴다 —
+       예전처럼 sc.w-6 을 쓰면 오른쪽이 2px 잘려 매체명 띠와 어긋난다 */
+    const iw=sec.clientWidth||Math.max(sc.w-8,0), ih=sec.clientHeight||Math.max(sc.h-8,0);
     const tile=(node,x,y,w,h,names,parent)=>{
       /* 글자를 모두 흰색으로 통일하기 위해 타일이 너무 밝아지지 않게 농도를 묶는다 */
       const t=Math.min(tOf(node),.42), rgb=mixWhite(base,t);
@@ -946,7 +1063,7 @@ function renderTreemap(){
         }else{
           tile(n,n.x,n.y,n.w,n.h,names.concat([n.name]));}});};
     const y0=sc.h>HEAD+10?HEAD:0;
-    layout(sc.kids||[sc],0,0,Math.max(sc.w-6,0),Math.max(sc.h-y0-6,0),[sc.name],1);
+    layout(sc.kids||[sc],0,0,Math.max(iw,0),Math.max(ih-y0,0),[sc.name],1);
   });
 }
 addEventListener('resize',()=>{clearTimeout(window.__tmapT);

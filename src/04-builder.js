@@ -16,6 +16,36 @@ function groupHeaderHTML(cfg,cdef,leadCols){
 const gsepSet=cfg=>{const s=new Set();let i=0;
   cfg.groups.filter(g=>g.cols.length).forEach((g,gi)=>{if(gi>0)s.add(i);i+=g.cols.length;});return s;};
 
+/* 표 머리글의 오른쪽 끝을 잡아 끌면 열 너비가 바뀐다.
+   바뀐 값은 열 정의(c.w)에 그대로 들어가고, 열 정의는 캠페인 문서와 함께 저장되므로
+   다음에 열어도 그대로다. 더블클릭하면 자동 너비로 되돌린다.
+   off = 값 열이 시작하는 위치 (앞에 삭제 버튼 열 같은 게 있으면 1). */
+function enableColResize(tbl,cols,onDone,off){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[0])return;
+  const ths=[...tbl.tHead.rows[0].cells];
+  off=off||0;
+  cols.forEach((c,i)=>{
+    const th=ths[off+i];if(!th||th.querySelector('.colgrip'))return;
+    th.classList.add('cresz');
+    const g=document.createElement('span');
+    g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
+    th.appendChild(g);
+    g.addEventListener('mousedown',e=>{
+      e.preventDefault();e.stopPropagation();
+      const x0=e.clientX, w0=th.getBoundingClientRect().width;
+      document.body.classList.add('colresizing');
+      const mv=ev=>{const w=Math.max(52,Math.round(w0+ev.clientX-x0));
+        c.w=w;th.style.minWidth=w+'px';th.style.width=w+'px';};
+      const up=()=>{document.removeEventListener('mousemove',mv);
+        document.removeEventListener('mouseup',up);
+        document.body.classList.remove('colresizing');
+        if(onDone)onDone();};
+      document.addEventListener('mousemove',mv);
+      document.addEventListener('mouseup',up);});
+    g.addEventListener('dblclick',e=>{e.stopPropagation();
+      delete c.w;th.style.minWidth='';th.style.width='';if(onDone)onDone();});});
+}
+
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
@@ -428,11 +458,37 @@ function ringGrad(defs,color){
 }
 /* 달성률 호는 살짝 비쳐서, 페이스보다 앞서 있어도 뒤의 목표 페이스 호가 보인다 */
 const ACH_OPACITY=.8;
+/* 끝이 둥근 호(round cap)를 정확한 길이로 그린다.
+   round cap 은 양 끝에서 선 두께의 절반만큼 더 튀어나가므로,
+   대시 길이를 두께만큼 줄이고 시작점을 절반 앞으로 밀어 실제로 보이는 구간을 맞춘다.
+   (이 보정을 빼면 회색 트랙을 덮거나 100% 초과에서 시작점 위에 투톤이 생긴다 — 함정 9)
+   호가 캡 지름보다 짧으면 캡을 접어(butt) 값이 과장되지 않게 한다. */
+function capDash(cir,f,TH){
+  const len=cir*Math.min(Math.max(f,0),1);
+  if(len>=cir-.5)  return {'stroke-dasharray':`${cir} ${cir}`,'stroke-linecap':'butt'};
+  if(len<=TH*1.05) return {'stroke-dasharray':`${len} ${cir}`,'stroke-linecap':'butt'};
+  return {'stroke-dasharray':`${len-TH} ${cir}`,'stroke-dashoffset':-TH/2,'stroke-linecap':'round'};
+}
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
 const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
-const PACE_OK='#8fb8a1', PACE_NG='#d3a49e';
+/* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
+const AMB_OK=[126,196,152], AMB_NG=[214,131,120];
+/* 페이스 대비 ±6%p 를 만점으로 본다. 1%p 만 벌어져도 색이 보이도록 바닥값(.32)을 준다 —
+   ±10%p 기준일 때는 1%p 차이가 세기 .1 이라 붉은 기가 전혀 안 보였다. */
+function ambLevel(pr){
+  const t=Math.min(Math.abs((isFinite(pr)?pr:1)-1)/.06,1);
+  return t<.03?0:.32+t*.5;
+}
+/* 달성률 숫자 색 — 남색에서 초록/붉은색으로 물든다 */
+const PACE_TONE='#3f5d80', TONE_OK='#4f8666', TONE_NG='#a85f57';
+/* 두 hex 색을 t(0~1) 만큼 섞는다 */
+function mixHex(a,b,t){
+  const h=s=>[1,3,5].map(i=>parseInt(s.substr(i,2),16));
+  const A=h(a),B=h(b);
+  return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');
+}
 
 const PATTERN="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Crect x='4' y='7' width='38' height='30' rx='5' fill='%23ffffff' fill-opacity='0.11'/%3E%3Ccircle cx='15' cy='17' r='3.6' fill='%23ffffff' fill-opacity='0.17'/%3E%3Cpath d='M8 33 L19 20 L27 28 L32 23 L38 33 Z' fill='%23ffffff' fill-opacity='0.17'/%3E%3C/svg%3E\")";
 
@@ -489,7 +545,13 @@ function renderPace(){
     const l=KPI_LABEL[x.k]||x.k, c=PACE_SEG[i%PACE_SEG.length];
     const r=x.goal?x.act/x.goal:0, f=Math.min(Math.max(r,0),1)*100;
     const pace=Math.min(Math.max(x.goal?x.due/x.goal:0,0),1)*100;
-    const ahead=r>=(x.goal?x.due/x.goal:0);
+    /* 페이스 대비 성과 — 막대를 지나가는 색 물결의 색과 세기를 정한다.
+       정확히 페이스면 세기 0 이라 순수 남색으로 보인다. */
+    const pr=x.due?x.act/x.due:1, ahead=pr>=1;
+    const amb=ambLevel(pr), C=ahead?AMB_OK:AMB_NG;
+    const ambc=`rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)})`;
+    /* 오른쪽 달성률 숫자 색 — 물결과 같은 방향으로 남색에서 물든다 */
+    const tone=mixHex(PACE_TONE, ahead?TONE_OK:TONE_NG, Math.min(Math.abs(pr-1)/.06,1));
     /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
        각 구간의 %는 "그 매체가 전체 목표의 몇 %를 채웠나" 라서 다 더하면 달성률이 된다. */
     const bg=`linear-gradient(150deg,${adjust(c,.08,.05)},${c})`;
@@ -497,17 +559,17 @@ function renderPace(){
       `<i style="flex:${Math.max(y.v,1)} 1 0" data-m="${esc(y.m)}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
-    return `<div class="pline">
+    return `<div class="pline" style="--tone:${tone}">
       <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
       <div class="pmid">
+        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"
+          title="목표 페이스 ${manUnit(x.due)} (${pct(pace/100,1)})"></i></div>
         <div class="pbar">
-          <div class="mstack" style="width:${f}%;--segbg:${bg}">${segs}</div>
+          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
-          <b class="pv${f>26?' in':''}" style="${f>26?`right:calc(100% - ${f}% + 12px)`:`left:calc(${f}% + 12px)`}">${pct(r,1)}</b>
         </div>
-        <div class="prow"><i style="width:${pace}%;background:${ahead?PACE_OK:PACE_NG}"></i></div>
       </div>
-      <div class="pside r"><div class="nm1">목표</div><div class="sub1">${manUnit(x.goal)}</div></div>
+      <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
@@ -519,13 +581,24 @@ function renderPace(){
         <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(sc.end)}(${WD[sc.end.getDay()]})</div></div>
       </div>
       ${rows.map(line).join('')}
-      <div class="pfoot"><i></i>얇은 막대 = <b>목표 페이스</b>
-        <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다</span></div>
+      <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
+        <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다</span></div>
     </div></div>`;
   fitPaceLabels();
 }
-/* 구간이 좁으면 % → 매체명 순서로 글자를 지운다 */
+/* 구간이 좁으면 % → 매체명 순서로 글자를 지운다.
+   같은 자리에서 물결의 좌표계(막대 폭 · 물결 폭 · 구간의 시작 위치)도 잡아 둔다 —
+   구간마다 배경을 따로 그리지만 시작 위치를 빼 주기 때문에 물결은 막대 전체를 하나로 지나간다. */
 function fitPaceLabels(){
+  document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
+    const W=bar.getBoundingClientRect().width;
+    const st=bar.querySelector('.mstack');if(!st)return;
+    const x0=st.getBoundingClientRect().left;
+    bar.style.setProperty('--barw',W.toFixed(1)+'px');
+    bar.style.setProperty('--wavew',(W*1.5).toFixed(1)+'px');
+    st.querySelectorAll(':scope>i').forEach(seg=>{
+      seg.style.setProperty('--segoff',
+        (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
   document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
@@ -533,6 +606,22 @@ function fitPaceLabels(){
     const need=nm.textContent.length*7.4+20;
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
+  startAmb();
+}
+/* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
+   0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
+let AMB_RAF=null;
+function startAmb(){
+  if(AMB_RAF!==null)return;
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){
+    const b=$('paceBox');if(b)b.style.setProperty('--ambt','.5');AMB_RAF=-1;return;}
+  const P=13000;
+  const step=ts=>{
+    const b=$('paceBox');
+    if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
+    b.style.setProperty('--ambt',((1-Math.cos((ts%P)/P*2*Math.PI))/2).toFixed(4));
+    AMB_RAF=requestAnimationFrame(step);};
+  AMB_RAF=requestAnimationFrame(step);
 }
 addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
@@ -551,15 +640,14 @@ function renderSpendDonut(box,pr){
   const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
-  /* 둥근 끝(round cap)은 호 끝이 TH/2 만큼 더 튀어나가 회색 트랙을 덮어 버린다 —
-     남아 있어야 할 회색 구간이 남색으로 보이던 원인이라 butt 로 자른다 */
+  /* 끝은 둥글게 — capDash 가 길이를 보정해서 회색 트랙을 침범하지 않는다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-    'stroke-linecap':'butt','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+    ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 게이지 색은 다른 KPI 카드와 동일 — 그라데이션 + 반투명(뒤의 목표 페이스가 비친다).
      100% 를 넘기면 뒤에 비칠 것이 없으므로 불투명하게 그려 톤이 갈리지 않게 한다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,
-    'stroke-linecap':'butt','stroke-opacity':f>=1?1:ACH_OPACITY,
-    'stroke-dasharray':`${cir*f} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+    'stroke-opacity':f>=1?1:ACH_OPACITY,...capDash(cir,f,TH),
+    transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 호 위에 소진 금액을 곡선으로 (다른 카드의 "집행 …" 라벨과 같은 방식) */
   (function(){
     const pxy=(deg,r2)=>{const a=(deg-90)*Math.PI/180;return [CC+Math.cos(a)*r2,CC+Math.sin(a)*r2];};
@@ -688,11 +776,11 @@ function renderDonuts(){
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-        'stroke-linecap':'butt','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+        ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
       /* 100% 를 넘기면 불투명하게 — 뒤의 페이스가 비쳐 톤이 갈리는 것을 막는다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,r.color),'stroke-width':TH,
-        'stroke-linecap':'butt','stroke-opacity':af>=1?1:ACH_OPACITY,
-        'stroke-dasharray':`${cir*af} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+        'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),
+        transform:`rotate(-90 ${CC} ${CC})`},svg);
       const pDeg=360*pf, aDeg=360*af;
       /* 호 안쪽 — 집행 실적 */
       const label=`집행 ${KPI_LABEL[r.k]} ${fmt(r.act)}건`;

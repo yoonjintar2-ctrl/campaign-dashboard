@@ -43,24 +43,31 @@ const xe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]))
   .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
 const colName=n=>{let s='';n++;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=(n-m-1)/26;}return s;};
-/* rows: [[{v,s?,n?}, …], …]  s = 스타일 번호, n = true 면 숫자 */
+/* rows: [[{v,s?,n?}, …], …]  s = 스타일 번호, n = true 면 숫자
+   시트가 여러 장이면 buildXlsx([{name,rows,widths}, …]) 로 부른다 */
 function buildXlsx(sheetName,rows,widths){
-  const sheetRows=rows.map((r,ri)=>{
-    const cells=r.map((c,ci)=>{
-      if(c==null)return '';
-      const ref=colName(ci)+(ri+1);
-      const st=c.s?` s="${c.s}"`:'';
-      /* 값이 없어도 스타일(테두리)이 있으면 빈 셀을 그려 둔다 */
-      if(c.v===''||c.v==null)return c.s?`<c r="${ref}"${st}/>`:'';
-      return c.n
-        ? `<c r="${ref}"${st}><v>${Number(c.v)}</v></c>`
-        : `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`;}).join('');
-    return `<row r="${ri+1}">${cells}</row>`;}).join('');
-  const cols=widths&&widths.length
-    ? `<cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>`
-    : '';
-  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;
+  const shs=Array.isArray(sheetName)?sheetName:[{name:sheetName,rows,widths}];
+  const sheetXml=shs.map(sh=>{
+    const sheetRows=(sh.rows||[]).map((r,ri)=>{
+      const cells=(r||[]).map((c,ci)=>{
+        if(c==null)return '';
+        const ref=colName(ci)+(ri+1);
+        const st=c.s?` s="${c.s}"`:'';
+        /* 값이 없어도 스타일(테두리)이 있으면 빈 셀을 그려 둔다 */
+        if(c.v===''||c.v==null)return c.s?`<c r="${ref}"${st}/>`:'';
+        return c.n
+          ? `<c r="${ref}"${st}><v>${Number(c.v)}</v></c>`
+          : `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`;}).join('');
+      return `<row r="${ri+1}">${cells}</row>`;}).join('');
+    const cols=(sh.widths&&sh.widths.length)
+      ? `<cols>${sh.widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>`
+      : '';
+    /* 입력 시트는 머리글 줄(1행)을 얼려 둬서 아래로 내려도 항목 이름이 보인다 */
+    const freeze=sh.freeze
+      ? `<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>`
+      +`<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>`:'';
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="0">${freeze}</sheetView></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;});
   /* 0 기본 · 1 제목 · 2 안내 · 3 머리글 · 4 예시 · 5 소제목 · 6 입력칸(테두리만) */
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -89,15 +96,15 @@ function buildXlsx(sheetName,rows,widths){
 </cellXfs></styleSheet>`;
   const files=[
     {name:'[Content_Types].xml',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`)},
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${shs.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`)},
     {name:'_rels/.rels',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`)},
     {name:'xl/workbook.xml',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xe(sheetName).slice(0,31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`)},
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${shs.map((sh,i)=>`<sheet name="${xe(sh.name).slice(0,31)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`)},
     {name:'xl/_rels/workbook.xml.rels',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`)},
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${shs.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${shs.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`)},
     {name:'xl/styles.xml',data:enc(styles)},
-    {name:'xl/worksheets/sheet1.xml',data:enc(sheet)}
+    ...sheetXml.map((x,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:enc(x)}))
   ];
   return zipStore(files);
 }
@@ -112,7 +119,9 @@ function saveFile(bytes,name,mime){
 /* ---------- 템플릿 정의 ---------- */
 /* 일자별 실적 — 직접 입력 열만 (계산 열 제외) */
 /* 여러 개를 한 칸에 적는 열은 머리글에 안내를 붙인다 */
-const TPL_HINT={creative:'소재 (여러 개면 콤마로 구분)',target:'타겟팅 그룹 (여러 개면 콤마로 구분)'};
+const TPL_HINT={
+  creative:'소재  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)',
+  target:'타겟팅 그룹  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)'};
 /* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
 const TPL_HINT_DAILY={};
 const tplW=(k,l)=>k==='note'?40:k==='date'?14:Math.max(11,Math.min(26,l.length*1.5+7));
@@ -134,7 +143,7 @@ const tplDailyCols=()=>dailyColsOf(false);
 const tplLineCols=()=>lineColsOf(false);
 
 const TPL_DAILY_GUIDE=[
-  '아래 [일자] 머리글 줄 다음 줄부터 데이터를 넣으세요. 이 안내 부분은 지우지 않아도 됩니다.',
+  '"일자별 실적" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '일자는 YYYY-MM-DD 로 적습니다. 8/3, 2026.8.3, 20260803 처럼 적어도 불러올 때 자동으로 바뀝니다.',
   '구분 · 매체명 · 광고상품명 · 타겟팅 그룹 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.',
   '타겟팅 그룹은 한 행에 하나만 적습니다. 여러 그룹이면 행을 나눠 주세요 (콤마로 묶지 않습니다).',
@@ -143,13 +152,15 @@ const TPL_DAILY_GUIDE=[
   'CTR · CPM · CPV 같은 계산 항목은 템플릿에 없습니다. 불러오면 사이트가 자동으로 계산합니다.',
   '안 쓰는 열은 되도록 지우지 마세요. 값이 없으면 열은 그대로 두고 칸만 비워 둡니다. (지우거나 순서를 바꿔도 머리글 이름으로 찾아 넣습니다.)',
   '한 줄 = 하루 × 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹 × 제품) 입니다.',
-  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.',
+  '테두리가 그려진 칸(2행 ~ 501행)이 입력 영역입니다. 그 안에 값을 채워 주세요. 행이 모자라면 더 붙여도 됩니다.',
   '비드 타입은 경매형CPC · Bid CPC 처럼 적어도 CPC 로 알아서 정리됩니다.'
 ];
 const TPL_LINE_GUIDE=[
-  '아래 [구분] 머리글 줄 다음 줄부터 데이터를 넣으세요. 이 안내 부분은 지우지 않아도 됩니다.',
+  '"예상 효율" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '한 줄 = 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹) 입니다.',
-  '소재와 타겟팅 그룹이 여러 개면 쉼표(,) 로 구분해 한 칸에 적습니다.',
+  '타겟팅 그룹 · 소재를 한 칸에 여러 개 적을 때 — 타겟팅별로 예산을 나누어 세팅하는 경우에만 콤마(,) 로 구분합니다.',
+  '같은 예산 그룹으로 함께 운영하는(매체가 알아서 배분하는) 타겟팅 · 소재는 앰퍼샌드(&) 로 묶어 적습니다. 예) 20대남성&30대남성',
+  '예산을 나누어 세팅한 타겟팅은 콤마로 묶기보다 행을 나누어 각각의 예산을 적는 편이 정확합니다.',
   '시작일 · 종료일은 YYYY-MM-DD 로 적습니다.',
   'Gross 예산을 넣고 대행사 · 렙사 수수료율을 적으면 Net 예산 · 밸류 · 보너스율은 자동으로 역산됩니다.',
   '수수료율은 10 또는 10% 어느 쪽으로 적어도 됩니다.',
@@ -157,35 +168,41 @@ const TPL_LINE_GUIDE=[
   '값이 없는 항목은 칸만 비워 두세요. 열을 지우거나 순서를 바꿔도 머리글 이름을 보고 찾아 넣습니다.',
   '노출/클릭/조회 보장(O/X) 칸에 O 를 적으면 게런티(보장) 지표로 표시됩니다.',
   '1개 행은 예산을 배분하는 기준으로 나눕니다. 타겟팅 그룹이나 소재를 매체가 자동으로 예산 최적화하는 경우에는 나누지 말고 한 개의 라인으로 적어 주세요.',
-  '테두리가 그려진 칸(머리글 아래 ~ 500행)이 입력 영역입니다. 그 안에 값을 채워 주세요.',
+  '테두리가 그려진 칸(2행 ~ 501행)이 입력 영역입니다. 그 안에 값을 채워 주세요. 행이 모자라면 더 붙여도 됩니다.',
   '비드 타입은 경매형CPC · Bid CPC 처럼 적어도 CPC 로 알아서 정리됩니다.'
 ];
-function tplRows(title,guide,cols){
+/* 입력 시트 — 1행이 머리글, 2행부터 바로 데이터.
+   안내 문구는 옆의 "작성 요령" 시트로 뺐다. */
+function tplRows(cols){
+  const R=[cols.map(c=>({v:c.l,s:3}))];
+  /* 입력 영역 — 500행까지 테두리를 그려 어디에 적어야 하는지 한눈에 보이게 한다 */
+  while(R.length<501)R.push(cols.map(()=>({v:'',s:6})));
+  return R;
+}
+/* 작성 요령 시트 */
+function tplGuideRows(title,guide){
   const R=[];
   R.push([{v:title,s:1}]);
   R.push([{v:`캠페인  ${CAMPAIGN.name}${CAMPAIGN.advertiser?'   ·   광고주  '+CAMPAIGN.advertiser:''}   ·   집행 기간  ${campStart()} ~ ${campEnd()}`,s:2}]);
   R.push([]);
   R.push([{v:'■ 작성 요령',s:5}]);
   guide.forEach((g,i)=>R.push([{v:`${i+1}.  ${g}`,s:2}]));
-  R.push([]);
-  R.push(cols.map(c=>({v:c.l,s:3})));
-  /* 입력 영역 — 500행까지 테두리를 그려 어디에 적어야 하는지 한눈에 보이게 한다 */
-  while(R.length<500)R.push(cols.map(()=>({v:'',s:6})));
   return R;
 }
+const TPL_MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 function downloadDailyTemplate(){
   const cols=tplDailyCols();
-  const rows=tplRows('Digital Media Dashboard — 일자별 실적 입력 템플릿',TPL_DAILY_GUIDE,cols);
-  saveFile(buildXlsx('일자별 실적',rows,cols.map(c=>c.w)),
-    `일자별_실적_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  saveFile(buildXlsx([
+      {name:'일자별 실적',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
+      {name:'작성 요령',rows:tplGuideRows('Digital Media Dashboard — 일자별 실적 입력 템플릿',TPL_DAILY_GUIDE),widths:[120]}]),
+    `일자별_실적_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
 }
 function downloadLineTemplate(){
   const cols=tplLineCols();
-  const rows=tplRows('Digital Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE,cols);
-  saveFile(buildXlsx('예상 효율',rows,cols.map(c=>c.w)),
-    `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  saveFile(buildXlsx([
+      {name:'예상 효율',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
+      {name:'작성 요령',rows:tplGuideRows('Digital Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE),widths:[120]}]),
+    `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
 }
 
 /* ---------- 불러오기 ---------- */
@@ -313,8 +330,9 @@ function importLines(){
         if(raw==='')return;
         filled=true;
         const t=typeOf[k];
-        if(k==='creative'){creatives=raw.split(',').map(s=>s.trim()).filter(Boolean);}
-        else if(k==='target'){targets=raw.split(',').map(s=>s.trim()).filter(Boolean);}
+        /* 콤마(예산을 나눈 경우) 와 & (같은 예산 그룹) 둘 다 구분 기호로 받는다 */
+        if(k==='creative'){creatives=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
+        else if(k==='target'){targets=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
         else if(t==='pct'){const v=cleanNum(raw);if(v!==null)n[k]=v>1?v/100:v;}

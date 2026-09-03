@@ -309,8 +309,10 @@ const onAirText=c=>{
 };
 async function exportDashboard(){
   const btn=$('reportBtn');
-  const label=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='만드는 중…';}
+  /* 아이콘이 들어 있으므로 글자만 바꾼다 */
+  const lb=btn?btn.querySelector('span'):null;
+  const label=lb?lb.textContent:'';
+  if(btn){btn.disabled=true;if(lb)lb.textContent='만드는 중…';}
   try{
     const sc=viewScope(),pr=paceRatio(),ps=paceScope();
     const T=(v,s)=>({v,s:s||0});
@@ -443,6 +445,61 @@ async function exportDashboard(){
   }catch(err){
     confirmModal('엑셀을 만들지 못했습니다.',String(err&&err.message||err),()=>{},'확인');
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=label||'⤓ 리포트';}}
+    if(btn){btn.disabled=false;if(lb)lb.textContent=label||'엑셀';}}
 }
-(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;})();
+/* A4 가로 한 장에 들어가는 실제 폭(96dpi 기준, 여백 제외) */
+const PRINT_W=1040;
+/* 종이보다 넓은 표·그래프는 그만큼 줄여서 잘리지 않게 한다.
+   화면에는 영향이 없도록 --pz 만 심어 두고 @media print 에서만 zoom 을 건다. */
+function fitForPrint(){
+  document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');x.style.removeProperty('--pz');});
+  const wide=document.querySelectorAll(
+    '#sub-perf .tbl-wrap, #sub-mix .tbl-wrap, .gantt-wrap, .heatwrap, .pacescroll, .stripscroll');
+  wide.forEach(w=>{
+    const inner=w.firstElementChild;
+    const cw=Math.max(w.scrollWidth,inner?inner.scrollWidth:0);
+    if(cw>PRINT_W+4){
+      w.classList.add('pz');
+      w.style.setProperty('--pz',(PRINT_W/cw).toFixed(3));}});
+}
+/* ---------- PDF 리포트 ----------
+   브라우저의 인쇄 기능을 그대로 쓴다(별도 라이브러리 없이 어디서나 동작).
+   인쇄용 스타일이 광고주 화면 기준으로 정리하고 일자별 상세 효율만 뺀다.
+   미디어믹스는 아직 안 그려져 있을 수 있으므로 미리 그려 둔 뒤 인쇄한다. */
+function exportPdfReport(){
+  const b=$('pdfBtn');
+  if(b){b.disabled=true;}
+  /* 지금 보고 있던 자리를 기억해 두었다가 인쇄가 끝나면 그대로 되돌린다 */
+  const subOn=document.querySelector('#subbar button[data-sub].on');
+  const tabOn=document.querySelector('#tabs button.on');
+  const prev={sub:subOn?subOn.dataset.sub:'perf',tab:tabOn?tabOn.dataset.tab:'dash',
+    y:scrollY};
+  document.body.classList.add('pdfmode');
+  try{switchTab('dash');}catch(e){}
+  const goPerf=document.querySelector('#subbar button[data-sub="perf"]');
+  if(goPerf)goPerf.click();
+  /* 미디어믹스 · 효율 화면을 모두 그려 둔다 */
+  setTimeout(()=>{
+    try{renderMix();}catch(e){}
+    try{renderCreatives();renderGantt();renderStrip();renderBubble();renderTreemap();renderHeat();}catch(e){}
+    setTimeout(()=>{
+      fitForPrint();
+      document.body.classList.remove('pdfmode');
+      const back=()=>{
+        const bs=document.querySelector(`#subbar button[data-sub="${prev.sub}"]`);
+        if(bs)bs.click();
+        if(prev.tab!=='dash'){try{switchTab(prev.tab);}catch(e){}}
+        scrollTo({top:prev.y});
+        document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');
+          x.style.removeProperty('--pz');});
+        if(b)b.disabled=false;};
+      const once=()=>{removeEventListener('afterprint',once);setTimeout(back,120);};
+      addEventListener('afterprint',once);
+      try{print();}catch(e){back();}
+      /* afterprint 를 안 주는 브라우저 대비 */
+      setTimeout(()=>{if(b&&b.disabled){removeEventListener('afterprint',once);back();}},4000);
+    },420);
+  },60);
+}
+(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
+  const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();

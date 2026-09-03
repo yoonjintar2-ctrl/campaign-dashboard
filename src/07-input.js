@@ -127,6 +127,8 @@ function renderSheet(){
     조회 <b class="mono">${fmt(sum(SHEET.map(r=>+r.view||0)))}</b> ·
     전환 <b class="mono">${fmt(sum(SHEET.map(r=>+r.conv||0)))}</b> ·
     Gross 광고비 <b class="mono">${won(gross)}</b>`;
+  /* 머리글 끝을 끌어 열 너비 조정 — 맨 앞 삭제 열 다음부터가 값 열이라 off=1 */
+  enableColResize(t,cols,()=>markDirty(),1);
   t.querySelectorAll('td[data-r]').forEach(td=>{
     td.addEventListener('mousedown',e=>{const r=+td.dataset.r,c=+td.dataset.c;
       if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};selecting=true;paintSel();});
@@ -243,8 +245,25 @@ document.addEventListener('copy',e=>{
   e.clipboardData.setData('text/plain',out.join('\n'));e.preventDefault();});
 document.addEventListener('mouseup',()=>selecting=false);
 /* ===== 키보드 — 실행 취소/다시 실행 · 방향키 이동 · Shift+방향키 범위 확장 ===== */
+/* 편집 중인 칸의 원래 값을 기억해 둔다 (ESC 로 되돌리기 위해) */
+document.addEventListener('focusin',e=>{
+  const t=e.target;
+  if(t&&t.closest&&t.closest('#sheet td')&&(t.tagName==='INPUT'||t.tagName==='SELECT'))
+    t.dataset.orig=t.value;});
 document.addEventListener('keydown',e=>{
   if($('tab-input').classList.contains('hidden'))return;
+  /* Enter · ESC — 커서를 없애고 그 칸을 "선택된 상태"로만 남긴다.
+     Enter 는 입력한 값을 반영하고, ESC 는 편집을 시작하기 전 값으로 되돌린다. */
+  if(e.key==='Enter'||e.key==='Escape'){
+    const ae=document.activeElement;
+    const cell=ae&&ae.closest?ae.closest('#sheet td'):null;
+    if(cell){
+      e.preventDefault();e.stopPropagation();
+      if(e.key==='Escape'&&ae.dataset.orig!==undefined)ae.value=ae.dataset.orig;
+      const r=+cell.dataset.r,c=+cell.dataset.c;
+      ae.blur();
+      if(isFinite(r)&&isFinite(c)){SEL={r1:r,c1:c,r2:r,c2:c};paintSel();}
+      return;}}
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undoSheet();return;}
   if(mod&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redoSheet();return;}

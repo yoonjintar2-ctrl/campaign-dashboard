@@ -49,9 +49,11 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
 const SECT_INFO={
   pace:`<p>지표마다 <b>그 지표를 KPI로 잡은 라인들만</b> 모아 실적과 목표를 비교합니다.
      캠페인 전체 노출·클릭·조회가 아니라, 그 지표를 <b>보장한 라인</b>의 합입니다.</p>
-   <p><b>얇은 막대 = 목표 페이스.</b> 각 라인의 목표를 그 라인의 <b>집행 일수로 나눠 하루치</b>를 구하고
+   <p><b>막대 위의 점 = 목표 페이스.</b> 각 라인의 목표를 그 라인의 <b>집행 일수로 나눠 하루치</b>를 구하고
      오늘까지 지난 날만큼 더한 값입니다. 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않습니다.
-     달성이 이 선보다 앞서면 초록, 뒤처지면 붉은색입니다.</p>
+     막대 끝이 이 점보다 오른쪽이면 페이스보다 앞선 것입니다.</p>
+   <p>막대 색은 <b>페이스 대비 성과</b>를 나타냅니다. 기본은 남색이고, 앞설수록 초록 · 뒤처질수록
+     붉은색 물결이 은은하게 흐릅니다. 페이스와 같으면 물결 없이 남색만 보입니다.</p>
    <p>막대 안 구간은 <b>매체별 기여</b>입니다. 각 %는 “그 매체가 전체 목표의 몇 %를 채웠나”라서
      모두 더하면 달성률이 됩니다.</p>
    <p>맨 위 <b>N일차 · NN% 경과</b>는 달력상 경과일이라 목표 페이스와 값이 다를 수 있습니다.</p>`,
@@ -106,10 +108,31 @@ function attachInfo(tools,html,title){
   const w=el('span','infowrap',tools);
   w.innerHTML=`<button class="infoi" title="${esc(title||'설명')}" aria-label="설명">i</button>`
     +`<div class="infopop">${title?`<div class="h">${esc(title)}</div>`:''}${html}</div>`;
-  const open=v=>w.classList.toggle('open',v);
+  const pop=w.querySelector('.infopop');
+  /* 설명 상자를 화면 안쪽에 앉힌다 — 아래가 좁으면 위로 뒤집고, 좌우도 화면 안으로 붙인다.
+     position:fixed 라서 카드의 overflow 에 잘리지 않는다. */
+  const place=()=>{
+    pop.style.visibility='hidden';pop.style.left='0px';pop.style.top='0px';
+    w.classList.remove('up');
+    const r=w.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
+    const vw=innerWidth, vh=innerHeight, M=12;
+    let top=r.bottom+8, up=false;
+    if(top+ph>vh-M){
+      if(r.top-8-ph>M){top=r.top-8-ph;up=true;}
+      else top=Math.max(M,vh-M-ph);}
+    let left=Math.max(M,Math.min(r.right-pw,vw-M-pw));
+    pop.style.left=left+'px';pop.style.top=top+'px';
+    /* 화살표는 늘 아이콘 가운데를 가리킨다 */
+    const ax=left+pw-(r.left+r.width/2)-5.5;
+    pop.style.setProperty('--arrx',Math.max(6,Math.min(pw-17,ax)).toFixed(1)+'px');
+    w.classList.toggle('up',up);
+    pop.style.visibility='';};
+  const open=v=>{w.classList.toggle('open',v);if(v)place();};
   w.addEventListener('mouseenter',()=>open(true));
   w.addEventListener('mouseleave',()=>open(false));
   w.querySelector('.infoi').onclick=e=>{e.stopPropagation();open(!w.classList.contains('open'));};
+  addEventListener('scroll',()=>{if(w.classList.contains('open'))place();},true);
+  addEventListener('resize',()=>{if(w.classList.contains('open'))place();});
 }
 document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open')
   .forEach(w=>w.classList.remove('open')));
