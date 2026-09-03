@@ -17,7 +17,11 @@ const HIDDEN=new Set();                   /* 숨긴 대시보드 항목 (p11) */
 const AXIS={fill:'#98a3b1',size:10.5,weight:400};
 
 /* ===== 1. 캠페인 · 라인 ===== */
-const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:'2026-09-25'};
+/* 기준일은 언제나 "실제 오늘"이다. 예전에는 시연용 날짜(2026-09-25)가 박혀 있어서
+   캐시를 지우고 새 브라우저로 열어도 기간 필터 종료일이 늘 9/24 로 잡히는 문제가 있었다. */
+const TODAY_ISO=(()=>{const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:TODAY_ISO};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
@@ -407,15 +411,9 @@ function viewScope(){
 /* 진행 스코프 = 조회 스코프.
    기간 필터에서 9/1~9/2 를 고르면 "집행 2일차 / 2일", 목표 페이스도 그 2일 기준으로 잡힌다. */
 function paceScope(){return viewScope();}
-/* 고른 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다 */
-function goalIn(l,k){
-  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
-  const sc=viewScope();
-  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
-  const n=Math.max(1,z-a+1);
-  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
-  return ov<=0?0:g*Math.min(1,ov/n);
-}
+/* 목표는 **캠페인 전체 기준** — 기간 필터는 집행(실적) 수치에만 적용한다.
+   (기간을 좁혔다고 목표까지 줄면 달성률이 실제와 달라진다) */
+function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
 function factFilter(extra){

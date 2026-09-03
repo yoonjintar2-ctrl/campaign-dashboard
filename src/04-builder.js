@@ -522,7 +522,8 @@ const manUnit=n=>{
    각 라인의 목표를 그 라인의 집행 일수로 나눠 하루치를 구하고 오늘까지 지난 날만큼 더한다.
    그래서 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않는다. */
 function paceKpiRows(){
-  const sc=paceScope();
+  /* 목표·목표 페이스는 캠페인 전체 기준, 실적(paceSum)만 기간 필터를 따른다 */
+  const sc=campScope();
   const idxOf=s2=>{const t=ALLDATES.findIndex(d=>iso(d)===s2);return t<0?sc.i0:t;};
   const per=new Map();
   activeLines().forEach(l=>{
@@ -543,11 +544,16 @@ function paceKpiRows(){
     .sort((a,b)=>b.goal-a.goal);
 }
 function renderPace(){
-  const sc=paceScope();
+  const sc=paceScope();          /* 기간 필터 구간 — 집행 수치와 머리글 */
+  const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
   const rows=paceKpiRows();
-  const cells=[...Array(sc.days)].map((_,i)=>{
-    const d=ALLDATES[sc.i0+i],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
-    return `<i class="${i<sc.elapsed?'on':''}${rest?' rest':''}"`
+  /* 날짜 칸은 늘 캠페인 전체 일수만큼 그리고, 기간 필터로 고른 날만 색을 채운다.
+     (9/1~9/2 를 고르면 30칸 중 2칸만 칠해진다) */
+  const cells=[...Array(cs.days)].map((_,i)=>{
+    const gi=cs.i0+i;
+    const d=ALLDATES[gi],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
+    const on=gi>=sc.i0&&gi<=sc.i1&&gi<ELAPSED;
+    return `<i class="${on?'on':''}${rest?' rest':''}"`
       +` title="${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}"></i>`;}).join('');
   /* 지표마다 한 줄 — 합산 수치는 쓰지 않는다 */
   const line=(x,i)=>{
@@ -582,19 +588,22 @@ function renderPace(){
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
-  /* 머리글 · 게이지 · 목표 페이스 모두 기간 필터에서 고른 구간 기준.
-     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다. */
-  const cs=campScope();
-  const narrow=sc.startIso!==cs.startIso||sc.endIso!==cs.endIso;
+  /* 머리글 · 목표 페이스는 기간 필터에서 고른 구간 기준 —
+     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다.
+     기간을 따로 잡지 않았으면 분모는 캠페인 전체 일수를 쓴다(33일차 / 61일). */
+  /* 기본 구간(캠페인 시작 ~ 어제)과 다를 때만 "좁혀 본" 것으로 친다 */
+  const dflt=mkScope(cs.startIso,cs.endIso>YESTERDAY?(YESTERDAY>=cs.startIso?YESTERDAY:cs.startIso):cs.endIso);
+  const narrow=sc.startIso!==dflt.startIso||sc.endIso!==dflt.endIso;
+  const den=narrow?sc.days:cs.days;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
-        <span class="el">${Math.round(sc.elapsed/Math.max(sc.days,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)}</span>`:''}</div>
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${den}일
+        <span class="el">${Math.round(sc.elapsed/Math.max(den,1)*100)}% 경과</span>
+        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)} · ${cs.days}일</span>`:''}</div>
       <div class="pline days">
-        <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
+        <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
-        <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(sc.end)}(${WD[sc.end.getDay()]})</div></div>
+        <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(cs.end)}(${WD[cs.end.getDay()]})</div></div>
       </div>
       ${rows.map(line).join('')}
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
@@ -732,7 +741,7 @@ function renderSpendDonut(box,pr){
   ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
     +`<b class="achv mono">${pct(rate,1)}</b></div>`;
   const lg=el('div','dlgd',c);
-  lg.innerHTML=`<span class="lg"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
+  lg.innerHTML=`<span class="lg mute"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
     +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
 }
 function renderDonuts(){
@@ -914,7 +923,7 @@ function renderStrip(){
     const rate=isAbs?av/ev:(['cpm','cpc','cpv','cpa'].includes(k)?ev/av:av/ev);
     const S=dailySeries(k);
     const ok=S.vals.filter(isFinite);
-    const last=ok.length?ok[ok.length-1]:NaN;                /* 어제 획득분 */
+    const last=ok.length?ok[ok.length-1]:NaN;                /* 조회 구간의 마지막 날 획득분 (D-1) */
     const avg=ok.length?sum(ok)/ok.length:NaN;               /* 지금까지 일평균 */
     /* 낮을수록 좋은 지표(CPM·CPC·CPV·CPA)는 부호를 뒤집어 읽는다 */
     const lower=['cpm','cpc','cpv','cpa','cpi','cpe'].includes(k);
@@ -938,7 +947,7 @@ function renderStrip(){
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
           <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
-        <div class="r2">어제 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
+        <div class="r2" title="조회 기간의 마지막 날(${mdy(viewScope().endIso)}) 실적입니다">D-1 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
           <span class="sub">(일평균 ${isFinite(avg)?METRICS[k].f(avg):'–'})</span></div>
       </div>
       <div class="spark"></div><div class="sppill" hidden></div>`;

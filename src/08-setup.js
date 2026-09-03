@@ -826,8 +826,9 @@ function buildSelects(){
   $('crTopN').value=CR_TOPN;
   $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||5;renderCreatives();};
   const am=$('crAllMedia');
-  if(am){am.checked=CR_ALL_MEDIA;
-    am.onchange=e=>{CR_ALL_MEDIA=e.target.checked;renderCreatives();};}
+  if(am){am.classList.toggle('on',!!CR_ALL_MEDIA);
+    am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
+      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');

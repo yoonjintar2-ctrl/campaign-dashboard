@@ -501,8 +501,10 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donut .ctr .achk{font-size:11px;color:var(--muted);font-weight:600;line-height:1.2}
 .donut .ctr .achv{font-size:26px;font-weight:800;letter-spacing:-1.4px;line-height:1.1;color:var(--ink)}
 /* 도넛 카드 왼쪽 아래 범례 — 목표 페이스 값까지 함께 */
+/* 글자는 회색, 색은 앞의 점에만 — 붉은 글씨가 너무 튀었다 */
 .donut .dlgd{display:flex;flex-direction:column;gap:2px;align-items:flex-start;
-  margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--pace);text-align:left}
+  margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
+.donut .dlgd b{color:var(--ink2)}
 .donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
@@ -1020,10 +1022,10 @@ table.gantt td.bdrag{cursor:grab}
 table.gantt td.bdragging{opacity:.45}
 table.gantt td.ins-top{box-shadow:inset 0 3px 0 var(--acc)}
 table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
-/* 간트 색 범례 — 투 톤 */
+/* 간트 색 범례 — 히트맵과 같은 초록(우수) → 회색 → 붉은색(저조) */
 .shlegend{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600}
 .shlegend i.ramp{width:76px;height:9px;display:inline-block;border-radius:2px;
-  background:linear-gradient(90deg,#faeeec,#d9a49e,#993f37)}
+  background:linear-gradient(90deg,rgb(177,201,188),rgb(206,210,215),rgb(210,188,188))}
 .shlegend em{font-style:normal}
 .shlegend .ar{opacity:.55}
 /* 요일별 · 일자별 효율 히트맵 */
@@ -1271,9 +1273,9 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     </div>
 
     <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
-      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 색 농도는 <b>행(소재)별 최댓값</b> 기준</span>
+      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준</span>
       <div class="tools">
-        <span class="shlegend"><em>낮음</em><i class="ramp"></i><em>높음</em></span>
+        <span class="shlegend"><em>효율 우수</em><i class="ramp"></i><em>저조</em></span>
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
@@ -1290,8 +1292,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="hint">각</span><select class="ctl" id="crTopN">
           <option>3</option><option>4</option><option selected>5</option><option>6</option>
         </select><span class="hint">개</span>
-        <label class="gchk" title="켜면 매체 필터와 상관없이 모든 매체의 소재를 한 줄에서 비교합니다">
-          <input type="checkbox" id="crAllMedia"><span>매체 구분 없이 비교</span></label>
+        <span class="switch" id="crAllMedia" title="켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐 비교합니다"><i></i> 매체 구분 없이 비교</span>
         <button class="btn sm" id="crAllBtn">📁 전체 소재 보기</button>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>
@@ -1478,7 +1479,11 @@ const HIDDEN=new Set();                   /* 숨긴 대시보드 항목 (p11) */
 const AXIS={fill:'#98a3b1',size:10.5,weight:400};
 
 /* ===== 1. 캠페인 · 라인 ===== */
-const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:'2026-09-25'};
+/* 기준일은 언제나 "실제 오늘"이다. 예전에는 시연용 날짜(2026-09-25)가 박혀 있어서
+   캐시를 지우고 새 브라우저로 열어도 기간 필터 종료일이 늘 9/24 로 잡히는 문제가 있었다. */
+const TODAY_ISO=(()=>{const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:TODAY_ISO};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
@@ -1868,15 +1873,9 @@ function viewScope(){
 /* 진행 스코프 = 조회 스코프.
    기간 필터에서 9/1~9/2 를 고르면 "집행 2일차 / 2일", 목표 페이스도 그 2일 기준으로 잡힌다. */
 function paceScope(){return viewScope();}
-/* 고른 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다 */
-function goalIn(l,k){
-  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
-  const sc=viewScope();
-  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
-  const n=Math.max(1,z-a+1);
-  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
-  return ov<=0?0:g*Math.min(1,ov/n);
-}
+/* 목표는 **캠페인 전체 기준** — 기간 필터는 집행(실적) 수치에만 적용한다.
+   (기간을 좁혔다고 목표까지 줄면 달성률이 실제와 달라진다) */
+function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
 function factFilter(extra){
@@ -2418,7 +2417,8 @@ const manUnit=n=>{
    각 라인의 목표를 그 라인의 집행 일수로 나눠 하루치를 구하고 오늘까지 지난 날만큼 더한다.
    그래서 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않는다. */
 function paceKpiRows(){
-  const sc=paceScope();
+  /* 목표·목표 페이스는 캠페인 전체 기준, 실적(paceSum)만 기간 필터를 따른다 */
+  const sc=campScope();
   const idxOf=s2=>{const t=ALLDATES.findIndex(d=>iso(d)===s2);return t<0?sc.i0:t;};
   const per=new Map();
   activeLines().forEach(l=>{
@@ -2439,11 +2439,16 @@ function paceKpiRows(){
     .sort((a,b)=>b.goal-a.goal);
 }
 function renderPace(){
-  const sc=paceScope();
+  const sc=paceScope();          /* 기간 필터 구간 — 집행 수치와 머리글 */
+  const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
   const rows=paceKpiRows();
-  const cells=[...Array(sc.days)].map((_,i)=>{
-    const d=ALLDATES[sc.i0+i],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
-    return `<i class="${i<sc.elapsed?'on':''}${rest?' rest':''}"`
+  /* 날짜 칸은 늘 캠페인 전체 일수만큼 그리고, 기간 필터로 고른 날만 색을 채운다.
+     (9/1~9/2 를 고르면 30칸 중 2칸만 칠해진다) */
+  const cells=[...Array(cs.days)].map((_,i)=>{
+    const gi=cs.i0+i;
+    const d=ALLDATES[gi],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
+    const on=gi>=sc.i0&&gi<=sc.i1&&gi<ELAPSED;
+    return `<i class="${on?'on':''}${rest?' rest':''}"`
       +` title="${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}"></i>`;}).join('');
   /* 지표마다 한 줄 — 합산 수치는 쓰지 않는다 */
   const line=(x,i)=>{
@@ -2478,19 +2483,22 @@ function renderPace(){
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
-  /* 머리글 · 게이지 · 목표 페이스 모두 기간 필터에서 고른 구간 기준.
-     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다. */
-  const cs=campScope();
-  const narrow=sc.startIso!==cs.startIso||sc.endIso!==cs.endIso;
+  /* 머리글 · 목표 페이스는 기간 필터에서 고른 구간 기준 —
+     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다.
+     기간을 따로 잡지 않았으면 분모는 캠페인 전체 일수를 쓴다(33일차 / 61일). */
+  /* 기본 구간(캠페인 시작 ~ 어제)과 다를 때만 "좁혀 본" 것으로 친다 */
+  const dflt=mkScope(cs.startIso,cs.endIso>YESTERDAY?(YESTERDAY>=cs.startIso?YESTERDAY:cs.startIso):cs.endIso);
+  const narrow=sc.startIso!==dflt.startIso||sc.endIso!==dflt.endIso;
+  const den=narrow?sc.days:cs.days;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
-        <span class="el">${Math.round(sc.elapsed/Math.max(sc.days,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)}</span>`:''}</div>
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${den}일
+        <span class="el">${Math.round(sc.elapsed/Math.max(den,1)*100)}% 경과</span>
+        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)} · ${cs.days}일</span>`:''}</div>
       <div class="pline days">
-        <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
+        <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
-        <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(sc.end)}(${WD[sc.end.getDay()]})</div></div>
+        <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(cs.end)}(${WD[cs.end.getDay()]})</div></div>
       </div>
       ${rows.map(line).join('')}
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
@@ -2628,7 +2636,7 @@ function renderSpendDonut(box,pr){
   ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
     +`<b class="achv mono">${pct(rate,1)}</b></div>`;
   const lg=el('div','dlgd',c);
-  lg.innerHTML=`<span class="lg"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
+  lg.innerHTML=`<span class="lg mute"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
     +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
 }
 function renderDonuts(){
@@ -2810,7 +2818,7 @@ function renderStrip(){
     const rate=isAbs?av/ev:(['cpm','cpc','cpv','cpa'].includes(k)?ev/av:av/ev);
     const S=dailySeries(k);
     const ok=S.vals.filter(isFinite);
-    const last=ok.length?ok[ok.length-1]:NaN;                /* 어제 획득분 */
+    const last=ok.length?ok[ok.length-1]:NaN;                /* 조회 구간의 마지막 날 획득분 (D-1) */
     const avg=ok.length?sum(ok)/ok.length:NaN;               /* 지금까지 일평균 */
     /* 낮을수록 좋은 지표(CPM·CPC·CPV·CPA)는 부호를 뒤집어 읽는다 */
     const lower=['cpm','cpc','cpv','cpa','cpi','cpe'].includes(k);
@@ -2834,7 +2842,7 @@ function renderStrip(){
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
           <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
-        <div class="r2">어제 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
+        <div class="r2" title="조회 기간의 마지막 날(${mdy(viewScope().endIso)}) 실적입니다">D-1 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
           <span class="sub">(일평균 ${isFinite(avg)?METRICS[k].f(avg):'–'})</span></div>
       </div>
       <div class="spark"></div><div class="sppill" hidden></div>`;
@@ -3651,13 +3659,40 @@ const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
   return b;};
 const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
-/* 켜면 매체 필터를 무시하고 모든 매체의 소재를 한 줄에서 견준다 */
+/* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
+/* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
+   집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
+   byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
+function mergeCreatives(list,byName){
+  const KEYS=AMET.concat(['cost']);
+  const m=new Map();
+  list.forEach(c=>{
+    const k=byName?c.name:[c.segment,c.media,c.line,c.name].join(SEP);
+    let o=m.get(k);
+    if(!o){
+      o={...c,id:'mg'+m.size,lids:[c.lid],medias:[c.media],daily:{}};
+      KEYS.forEach(x=>o.daily[x]=[]);
+      m.set(k,o);
+    }else{
+      o.lids.push(c.lid);
+      if(o.medias.indexOf(c.media)<0)o.medias.push(c.media);
+      if(!o.img&&c.img)o.img=c.img;
+      if(!o.clip&&c.clip)o.clip=c.clip;
+      if(!o.yt&&c.yt)o.yt=c.yt;
+      if(!o.g&&c.g)o.g=c.g;
+    }
+    KEYS.forEach(x=>{const a=c.daily[x]||[];
+      for(let i=0;i<a.length;i++)o.daily[x][i]=(o.daily[x][i]||0)+(+a[i]||0);});});
+  const out=[...m.values()];
+  out.forEach(o=>{if(o.medias.length>1)o.media=o.medias.join(' · ');});
+  return out;
+}
 function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
-  let a=CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
+  let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA);
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -4109,10 +4144,12 @@ let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
 /* 정렬 기준 — 예산(Gross)이 큰 매체가 위로, 그 안에서도 예산이 큰 소재가 위로 */
 const mediaBudget=m=>sum(LINES.filter(l=>l.media===m).map(lineGross));
-const creativeBudget=c=>{const l=LINES.find(x=>x.id===c.lid);
-  if(!l)return 0;
-  const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
-  return lineGross(l)*(isFinite(c.share)&&c.share>0?c.share:1/n);};
+const creativeBudget=c=>{
+  const ids=Array.isArray(c.lids)?c.lids:[c.lid];
+  return sum(ids.map(id=>{const l=LINES.find(x=>x.id===id);
+    if(!l)return 0;
+    const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
+    return lineGross(l)/n;}));};
 /* 차원별 정렬 키 (클수록 위) — 없으면 null 로 두고 이름순을 쓴다 */
 function ganttRank(dim,val,c){
   if(dim==='media')return mediaBudget(val);
@@ -4132,34 +4169,38 @@ function shade(t){
   /* 한 행 안의 값 차이가 크지 않아도 강약이 보이도록 대비를 세운다 */
   return `rgb(${mixRGB(SHADE_LOW,SHADE_HIGH,Math.pow(k,1.7)).join(',')})`;
 }
-/* 한 소재의 날짜별 효율(단가) → 히트맵과 같은 초록↔회색↔빨강 색.
-   단가는 그 소재가 속한 라인의 KPI 기준(CPV·CPC·CPM)이고, 낮을수록 좋다.
-   비교는 그 행 안에서만 한다 — 소재마다 단가 수준이 달라도 강약이 보이도록. */
-function rowEff(c,SC){
-  const l=LINES.find(x=>x.id===c.lid);
-  const unit=KPI_UNIT[kpiOf(l)]||'cpm';
-  const baseK={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[unit]||'imp';
-  /* 금액이 없으면 KPI 지표 자체를 효율 대용으로 쓴다 —
-     이 경우엔 값이 클수록 좋은 것이라 부호를 뒤집어 hmFill 에 넘긴다 */
-  const vals=[],by={};
-  let mode='cost';
-  for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+/* 게재 히스토리 칸 색 — 표에 나온 모든 소재·모든 날을 통틀어 한 스케일로 본다.
+   (행마다 따로 재면 하루치만 있는 소재는 비교 대상이 없어 색이 안 나왔다)
+   기준은 그 소재의 KPI 단가(낮을수록 좋음)이고, 금액이 없으면 반응률(높을수록 좋음)을 쓴다. */
+function ganttEff(list,SC){
+  const val={};let mode='cost';
+  const unitOf=c=>{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));
+    return KPI_UNIT[kpiOf(l)]||'cpm';};
+  const baseOf=u=>({cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[u]||'imp');
+  const collect=how=>{const v=[];
+    list.forEach(c=>{
+      const u=unitOf(c),bk=baseOf(u);
+      for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+        const x=how(c,i,u,bk);
+        if(x!==null&&isFinite(x)){val[c.id+'|'+i]=x;v.push(x);}}});
+    return v;};
+  let vals=collect((c,i,u,bk)=>{
     const cost=(c.daily.cost&&c.daily.cost[i])||0;
-    const base=(c.daily[baseK]&&c.daily[baseK][i])||0;
-    if(cost>0&&base>0){const u=unit==='cpm'?cost/base*1000:cost/base;
-      by[i]=u;vals.push(u);}}
+    const base=(c.daily[bk]&&c.daily[bk][i])||0;
+    if(!(cost>0&&base>0))return null;
+    return u==='cpm'?cost/base*1000:cost/base;});
   if(vals.length<2){
-    /* 금액이 없을 때 — 그 소재의 반응률(CTR·VTR)로 좋고 나쁨을 본다 */
-    mode='rate';
-    const rateBase={click:'imp',view:'imp',conv:'click',eng:'imp'}[baseK==='imp'?'click':baseK]||'imp';
-    vals.length=0;for(const k in by)delete by[k];
-    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
-      const num=(c.daily[baseK]&&c.daily[baseK][i])||0;
-      const den=(c.daily[rateBase]&&c.daily[rateBase][i])||0;
-      if(num>0&&den>0){const u=-(num/den);by[i]=u;vals.push(u);}}}
-  if(vals.length<2)return {ok:false};
+    mode='rate';for(const k in val)delete val[k];
+    vals=collect((c,i,u,bk)=>{
+      const num=(c.daily[bk==='imp'?'click':bk]&&c.daily[bk==='imp'?'click':bk][i])||0;
+      const den=(c.daily.imp&&c.daily.imp[i])||0;
+      if(!(num>0&&den>0))return null;
+      return -(num/den);});}          /* 반응률은 높을수록 좋으므로 부호를 뒤집는다 */
+  if(!vals.length)return {ok:false};
   const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
-  return {ok:true,mode,color:i=>by[i]===undefined?'#eef1f5':(hmFill(by[i],mn,md,mx)||'#eef1f5')};
+  return {ok:true,mode,
+    color:(c,i)=>{const v=val[c.id+'|'+i];
+      return v===undefined?'#dfe4ea':(hmFill(v,mn,md,mx)||'#dfe4ea');}};
 }
 function renderGantt(){
   const t=$('ganttTbl'),list=filteredCreatives();
@@ -4185,7 +4226,9 @@ function renderGantt(){
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
-  /* 색 농도는 행(소재)마다 그 행의 최댓값을 기준으로 한다 — 행 안에서의 강약을 보기 위함 */
+  /* 색 기준은 표 전체를 한 번에 잡는다 */
+  const EFF=ganttEff(rowsData.map(r=>r.c),SC);
+  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 그 행의 최댓값 기준 */
   const rowMax=c=>{const a=c.daily[mk]||[];
     let m=0;for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++)if((a[i]||0)>m)m=a[i];return m||1;};
   let h='<thead><tr>';
@@ -4209,14 +4252,12 @@ function renderGantt(){
       const v=k==='days'?days+'일':crVal(c,k);
       h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
     const maxV=rowMax(c);                                /* 이 행(소재)의 최댓값 */
-    const eff=rowEff(c,SC);                              /* 이 행의 날짜별 효율(단가) 색 기준 */
     VD.forEach((d,i)=>{
       const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
       const arr=c.daily[mk]||[],v=gi<ELAPSED?(arr[gi]||0):0;
       const hol=!!holName(d),we=d.getDay()%6===0;
-      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준).
-         금액이 없어 효율을 못 구하면 값 크기로 농도만 표시한다 */
-      const bg=eff.ok?eff.color(gi):shade(v/maxV);
+      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
+      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
       h+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
         +(v>0?`<span class="b" style="background:${bg}"></span>`:'')+'</td>';});
     h+='</tr>';});
@@ -5987,8 +6028,9 @@ function buildSelects(){
   $('crTopN').value=CR_TOPN;
   $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||5;renderCreatives();};
   const am=$('crAllMedia');
-  if(am){am.checked=CR_ALL_MEDIA;
-    am.onchange=e=>{CR_ALL_MEDIA=e.target.checked;renderCreatives();};}
+  if(am){am.classList.toggle('on',!!CR_ALL_MEDIA);
+    am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
+      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
@@ -6257,11 +6299,32 @@ function serializeDoc(){
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
   };
 }
-function applyDoc(d){
+/* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
+   실제 캠페인은 저장된 날짜를 절대 쓰지 않는다. 저장본에 박힌 옛 날짜(예: 2026-09-25)를 되살리면
+   "오늘"이 그 날로 굳어져 기간 필터 종료일이 계속 그 전날(9/24)로 잡혔다. */
+/* 클립보드 복사 — navigator.clipboard 는 https(또는 localhost)가 아니면 막힌다.
+   그럴 때를 대비해 숨긴 textarea + execCommand 로 한 번 더 시도한다. */
+async function copyText(t){
+  try{
+    if(navigator.clipboard&&window.isSecureContext){
+      await navigator.clipboard.writeText(t);return true;}
+  }catch(e){}
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=t;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }catch(e){return false;}
+}
+function applyDoc(d,keepToday){
   if(!d||!d.lines)return;
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
-  if(d.campaign?.today)CAMPAIGN.today=d.campaign.today;
+  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   LINES=d.lines.map(l=>({...l,daily:{}}));
   migrateBudget(LINES);            /* 예전 net 기준 저장본을 Gross 기준으로 */
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
@@ -6349,19 +6412,44 @@ let DEMO_SNAP=null;
    이 브라우저에 마지막 상태를 적어 둔다. 캠페인마다 따로 저장한다. */
 const LS_KEY=()=>'dmd:doc:'+((CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'local');
 let LS_T=null;
+/* 일별 실적은 doc(설정 문서)에 넣지 않는다 — 클라우드에서는 daily_stats 테이블이 원본이기 때문.
+   대신 브라우저 저장본에만 따로 담는다. 이게 없으면 새로고침할 때 라인의 daily 가 비고
+   입력 시트에 적힌 줄만 살아남아 화면이 텅 비어 보였다. */
+function packDaily(){
+  return LINES.map(l=>{
+    const d={};
+    AMET.forEach(m=>{const a=l.daily&&l.daily[m];
+      if(Array.isArray(a)&&a.some(v=>+v))d[m]=a.map(v=>Math.round((+v||0)*1000)/1000);});
+    return {k:LINE_KEY(l),d};});
+}
+function unpackDaily(list){
+  if(!Array.isArray(list)||!list.length)return false;
+  const by={};list.forEach(x=>{if(x&&x.k)by[x.k]=x.d||{};});
+  let hit=0;
+  LINES.forEach(l=>{
+    const d=by[LINE_KEY(l)];if(!d)return;hit++;
+    l.daily=l.daily||{};l.a=l.a||{};
+    AMET.forEach(m=>{
+      if(!Array.isArray(l.daily[m]))l.daily[m]=[];
+      const src=d[m];
+      for(let i=0;i<TOTAL_DAYS;i++)l.daily[m][i]=src?(+src[i]||0):(+l.daily[m][i]||0);
+      l.daily[m].length=TOTAL_DAYS;
+      l.a[m]=sum(l.daily[m]);});});
+  return hit>0;
+}
+const lsPack=()=>JSON.stringify({t:Date.now(),doc:serializeDoc(),daily:packDaily()});
 function saveLocal(){
   clearTimeout(LS_T);
-  LS_T=setTimeout(()=>{
-    try{localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}
-  },500);
+  LS_T=setTimeout(()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}},500);
 }
 function loadLocal(){
   try{
     const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
     const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
     applyDoc(o.doc);
-    rebuildPeriod();
-    if(typeof applySheet==='function')applySheet();
+    rebuildPeriod();resetDateFilter();
+    unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
+    if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
     buildFacts();buildFilters();buildSelects();
     renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
     renderCreatives();renderGantt();
@@ -6370,13 +6458,12 @@ function loadLocal(){
 }
 function clearLocal(){try{localStorage.removeItem(LS_KEY());}catch(e){}}
 /* 값이 바뀔 때마다 조용히 적어 둔다 */
-addEventListener('beforeunload',()=>{try{
-  localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}});
+addEventListener('beforeunload',()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}});
 function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
-  applyDoc(DEMO_SNAP);
-  rebuildPeriod();
+  applyDoc(DEMO_SNAP,true);
+  rebuildPeriod();resetDateFilter();
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
   buildFacts();buildFilters();buildSelects();
@@ -6428,7 +6515,7 @@ async function tryCode(raw){
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
   applyDoc(c.doc);
-  rebuildPeriod();
+  rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
@@ -6690,7 +6777,7 @@ async function openCampaign(id){
   CLOUD.role=mem?.role||'viewer';
   clearWorkState();
   applyDoc(c.doc);
-  rebuildPeriod();
+  rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.from('daily_stats')
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
@@ -6884,10 +6971,10 @@ async function openCampManage(){
     const kind=b.dataset.kind;
     const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
     const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
-    try{await navigator.clipboard.writeText(url);
+    if(await copyText(url)){
       b.textContent='✓';b.classList.add('ok');
       setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
-    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}});
+    else prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);});
   /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;

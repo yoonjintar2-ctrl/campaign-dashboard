@@ -142,9 +142,9 @@
     </div>
 
     <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
-      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 색 농도는 <b>행(소재)별 최댓값</b> 기준</span>
+      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준</span>
       <div class="tools">
-        <span class="shlegend"><em>낮음</em><i class="ramp"></i><em>높음</em></span>
+        <span class="shlegend"><em>효율 우수</em><i class="ramp"></i><em>저조</em></span>
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
@@ -161,8 +161,7 @@
         <span class="hint">각</span><select class="ctl" id="crTopN">
           <option>3</option><option>4</option><option selected>5</option><option>6</option>
         </select><span class="hint">개</span>
-        <label class="gchk" title="켜면 매체 필터와 상관없이 모든 매체의 소재를 한 줄에서 비교합니다">
-          <input type="checkbox" id="crAllMedia"><span>매체 구분 없이 비교</span></label>
+        <span class="switch" id="crAllMedia" title="켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐 비교합니다"><i></i> 매체 구분 없이 비교</span>
         <button class="btn sm" id="crAllBtn">📁 전체 소재 보기</button>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>

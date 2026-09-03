@@ -348,13 +348,40 @@ const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
   return b;};
 const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
-/* 켜면 매체 필터를 무시하고 모든 매체의 소재를 한 줄에서 견준다 */
+/* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
+/* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
+   집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
+   byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
+function mergeCreatives(list,byName){
+  const KEYS=AMET.concat(['cost']);
+  const m=new Map();
+  list.forEach(c=>{
+    const k=byName?c.name:[c.segment,c.media,c.line,c.name].join(SEP);
+    let o=m.get(k);
+    if(!o){
+      o={...c,id:'mg'+m.size,lids:[c.lid],medias:[c.media],daily:{}};
+      KEYS.forEach(x=>o.daily[x]=[]);
+      m.set(k,o);
+    }else{
+      o.lids.push(c.lid);
+      if(o.medias.indexOf(c.media)<0)o.medias.push(c.media);
+      if(!o.img&&c.img)o.img=c.img;
+      if(!o.clip&&c.clip)o.clip=c.clip;
+      if(!o.yt&&c.yt)o.yt=c.yt;
+      if(!o.g&&c.g)o.g=c.g;
+    }
+    KEYS.forEach(x=>{const a=c.daily[x]||[];
+      for(let i=0;i<a.length;i++)o.daily[x][i]=(o.daily[x][i]||0)+(+a[i]||0);});});
+  const out=[...m.values()];
+  out.forEach(o=>{if(o.medias.length>1)o.media=o.medias.join(' · ');});
+  return out;
+}
 function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
-  let a=CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
+  let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA);
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -806,10 +833,12 @@ let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
 /* 정렬 기준 — 예산(Gross)이 큰 매체가 위로, 그 안에서도 예산이 큰 소재가 위로 */
 const mediaBudget=m=>sum(LINES.filter(l=>l.media===m).map(lineGross));
-const creativeBudget=c=>{const l=LINES.find(x=>x.id===c.lid);
-  if(!l)return 0;
-  const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
-  return lineGross(l)*(isFinite(c.share)&&c.share>0?c.share:1/n);};
+const creativeBudget=c=>{
+  const ids=Array.isArray(c.lids)?c.lids:[c.lid];
+  return sum(ids.map(id=>{const l=LINES.find(x=>x.id===id);
+    if(!l)return 0;
+    const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
+    return lineGross(l)/n;}));};
 /* 차원별 정렬 키 (클수록 위) — 없으면 null 로 두고 이름순을 쓴다 */
 function ganttRank(dim,val,c){
   if(dim==='media')return mediaBudget(val);
@@ -829,34 +858,38 @@ function shade(t){
   /* 한 행 안의 값 차이가 크지 않아도 강약이 보이도록 대비를 세운다 */
   return `rgb(${mixRGB(SHADE_LOW,SHADE_HIGH,Math.pow(k,1.7)).join(',')})`;
 }
-/* 한 소재의 날짜별 효율(단가) → 히트맵과 같은 초록↔회색↔빨강 색.
-   단가는 그 소재가 속한 라인의 KPI 기준(CPV·CPC·CPM)이고, 낮을수록 좋다.
-   비교는 그 행 안에서만 한다 — 소재마다 단가 수준이 달라도 강약이 보이도록. */
-function rowEff(c,SC){
-  const l=LINES.find(x=>x.id===c.lid);
-  const unit=KPI_UNIT[kpiOf(l)]||'cpm';
-  const baseK={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[unit]||'imp';
-  /* 금액이 없으면 KPI 지표 자체를 효율 대용으로 쓴다 —
-     이 경우엔 값이 클수록 좋은 것이라 부호를 뒤집어 hmFill 에 넘긴다 */
-  const vals=[],by={};
-  let mode='cost';
-  for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+/* 게재 히스토리 칸 색 — 표에 나온 모든 소재·모든 날을 통틀어 한 스케일로 본다.
+   (행마다 따로 재면 하루치만 있는 소재는 비교 대상이 없어 색이 안 나왔다)
+   기준은 그 소재의 KPI 단가(낮을수록 좋음)이고, 금액이 없으면 반응률(높을수록 좋음)을 쓴다. */
+function ganttEff(list,SC){
+  const val={};let mode='cost';
+  const unitOf=c=>{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));
+    return KPI_UNIT[kpiOf(l)]||'cpm';};
+  const baseOf=u=>({cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[u]||'imp');
+  const collect=how=>{const v=[];
+    list.forEach(c=>{
+      const u=unitOf(c),bk=baseOf(u);
+      for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+        const x=how(c,i,u,bk);
+        if(x!==null&&isFinite(x)){val[c.id+'|'+i]=x;v.push(x);}}});
+    return v;};
+  let vals=collect((c,i,u,bk)=>{
     const cost=(c.daily.cost&&c.daily.cost[i])||0;
-    const base=(c.daily[baseK]&&c.daily[baseK][i])||0;
-    if(cost>0&&base>0){const u=unit==='cpm'?cost/base*1000:cost/base;
-      by[i]=u;vals.push(u);}}
+    const base=(c.daily[bk]&&c.daily[bk][i])||0;
+    if(!(cost>0&&base>0))return null;
+    return u==='cpm'?cost/base*1000:cost/base;});
   if(vals.length<2){
-    /* 금액이 없을 때 — 그 소재의 반응률(CTR·VTR)로 좋고 나쁨을 본다 */
-    mode='rate';
-    const rateBase={click:'imp',view:'imp',conv:'click',eng:'imp'}[baseK==='imp'?'click':baseK]||'imp';
-    vals.length=0;for(const k in by)delete by[k];
-    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
-      const num=(c.daily[baseK]&&c.daily[baseK][i])||0;
-      const den=(c.daily[rateBase]&&c.daily[rateBase][i])||0;
-      if(num>0&&den>0){const u=-(num/den);by[i]=u;vals.push(u);}}}
-  if(vals.length<2)return {ok:false};
+    mode='rate';for(const k in val)delete val[k];
+    vals=collect((c,i,u,bk)=>{
+      const num=(c.daily[bk==='imp'?'click':bk]&&c.daily[bk==='imp'?'click':bk][i])||0;
+      const den=(c.daily.imp&&c.daily.imp[i])||0;
+      if(!(num>0&&den>0))return null;
+      return -(num/den);});}          /* 반응률은 높을수록 좋으므로 부호를 뒤집는다 */
+  if(!vals.length)return {ok:false};
   const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
-  return {ok:true,mode,color:i=>by[i]===undefined?'#eef1f5':(hmFill(by[i],mn,md,mx)||'#eef1f5')};
+  return {ok:true,mode,
+    color:(c,i)=>{const v=val[c.id+'|'+i];
+      return v===undefined?'#dfe4ea':(hmFill(v,mn,md,mx)||'#dfe4ea');}};
 }
 function renderGantt(){
   const t=$('ganttTbl'),list=filteredCreatives();
@@ -882,7 +915,9 @@ function renderGantt(){
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
-  /* 색 농도는 행(소재)마다 그 행의 최댓값을 기준으로 한다 — 행 안에서의 강약을 보기 위함 */
+  /* 색 기준은 표 전체를 한 번에 잡는다 */
+  const EFF=ganttEff(rowsData.map(r=>r.c),SC);
+  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 그 행의 최댓값 기준 */
   const rowMax=c=>{const a=c.daily[mk]||[];
     let m=0;for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++)if((a[i]||0)>m)m=a[i];return m||1;};
   let h='<thead><tr>';
@@ -906,14 +941,12 @@ function renderGantt(){
       const v=k==='days'?days+'일':crVal(c,k);
       h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
     const maxV=rowMax(c);                                /* 이 행(소재)의 최댓값 */
-    const eff=rowEff(c,SC);                              /* 이 행의 날짜별 효율(단가) 색 기준 */
     VD.forEach((d,i)=>{
       const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
       const arr=c.daily[mk]||[],v=gi<ELAPSED?(arr[gi]||0):0;
       const hol=!!holName(d),we=d.getDay()%6===0;
-      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준).
-         금액이 없어 효율을 못 구하면 값 크기로 농도만 표시한다 */
-      const bg=eff.ok?eff.color(gi):shade(v/maxV);
+      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
+      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
       h+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
         +(v>0?`<span class="b" style="background:${bg}"></span>`:'')+'</td>';});
     h+='</tr>';});

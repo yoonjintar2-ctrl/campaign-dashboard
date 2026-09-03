@@ -501,8 +501,10 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donut .ctr .achk{font-size:11px;color:var(--muted);font-weight:600;line-height:1.2}
 .donut .ctr .achv{font-size:26px;font-weight:800;letter-spacing:-1.4px;line-height:1.1;color:var(--ink)}
 /* 도넛 카드 왼쪽 아래 범례 — 목표 페이스 값까지 함께 */
+/* 글자는 회색, 색은 앞의 점에만 — 붉은 글씨가 너무 튀었다 */
 .donut .dlgd{display:flex;flex-direction:column;gap:2px;align-items:flex-start;
-  margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--pace);text-align:left}
+  margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
+.donut .dlgd b{color:var(--ink2)}
 .donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
@@ -1020,10 +1022,10 @@ table.gantt td.bdrag{cursor:grab}
 table.gantt td.bdragging{opacity:.45}
 table.gantt td.ins-top{box-shadow:inset 0 3px 0 var(--acc)}
 table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
-/* 간트 색 범례 — 투 톤 */
+/* 간트 색 범례 — 히트맵과 같은 초록(우수) → 회색 → 붉은색(저조) */
 .shlegend{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600}
 .shlegend i.ramp{width:76px;height:9px;display:inline-block;border-radius:2px;
-  background:linear-gradient(90deg,#faeeec,#d9a49e,#993f37)}
+  background:linear-gradient(90deg,rgb(177,201,188),rgb(206,210,215),rgb(210,188,188))}
 .shlegend em{font-style:normal}
 .shlegend .ar{opacity:.55}
 /* 요일별 · 일자별 효율 히트맵 */

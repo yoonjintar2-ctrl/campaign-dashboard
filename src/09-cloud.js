@@ -40,11 +40,32 @@ function serializeDoc(){
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
   };
 }
-function applyDoc(d){
+/* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
+   실제 캠페인은 저장된 날짜를 절대 쓰지 않는다. 저장본에 박힌 옛 날짜(예: 2026-09-25)를 되살리면
+   "오늘"이 그 날로 굳어져 기간 필터 종료일이 계속 그 전날(9/24)로 잡혔다. */
+/* 클립보드 복사 — navigator.clipboard 는 https(또는 localhost)가 아니면 막힌다.
+   그럴 때를 대비해 숨긴 textarea + execCommand 로 한 번 더 시도한다. */
+async function copyText(t){
+  try{
+    if(navigator.clipboard&&window.isSecureContext){
+      await navigator.clipboard.writeText(t);return true;}
+  }catch(e){}
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=t;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }catch(e){return false;}
+}
+function applyDoc(d,keepToday){
   if(!d||!d.lines)return;
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
-  if(d.campaign?.today)CAMPAIGN.today=d.campaign.today;
+  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   LINES=d.lines.map(l=>({...l,daily:{}}));
   migrateBudget(LINES);            /* 예전 net 기준 저장본을 Gross 기준으로 */
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
@@ -132,19 +153,44 @@ let DEMO_SNAP=null;
    이 브라우저에 마지막 상태를 적어 둔다. 캠페인마다 따로 저장한다. */
 const LS_KEY=()=>'dmd:doc:'+((CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'local');
 let LS_T=null;
+/* 일별 실적은 doc(설정 문서)에 넣지 않는다 — 클라우드에서는 daily_stats 테이블이 원본이기 때문.
+   대신 브라우저 저장본에만 따로 담는다. 이게 없으면 새로고침할 때 라인의 daily 가 비고
+   입력 시트에 적힌 줄만 살아남아 화면이 텅 비어 보였다. */
+function packDaily(){
+  return LINES.map(l=>{
+    const d={};
+    AMET.forEach(m=>{const a=l.daily&&l.daily[m];
+      if(Array.isArray(a)&&a.some(v=>+v))d[m]=a.map(v=>Math.round((+v||0)*1000)/1000);});
+    return {k:LINE_KEY(l),d};});
+}
+function unpackDaily(list){
+  if(!Array.isArray(list)||!list.length)return false;
+  const by={};list.forEach(x=>{if(x&&x.k)by[x.k]=x.d||{};});
+  let hit=0;
+  LINES.forEach(l=>{
+    const d=by[LINE_KEY(l)];if(!d)return;hit++;
+    l.daily=l.daily||{};l.a=l.a||{};
+    AMET.forEach(m=>{
+      if(!Array.isArray(l.daily[m]))l.daily[m]=[];
+      const src=d[m];
+      for(let i=0;i<TOTAL_DAYS;i++)l.daily[m][i]=src?(+src[i]||0):(+l.daily[m][i]||0);
+      l.daily[m].length=TOTAL_DAYS;
+      l.a[m]=sum(l.daily[m]);});});
+  return hit>0;
+}
+const lsPack=()=>JSON.stringify({t:Date.now(),doc:serializeDoc(),daily:packDaily()});
 function saveLocal(){
   clearTimeout(LS_T);
-  LS_T=setTimeout(()=>{
-    try{localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}
-  },500);
+  LS_T=setTimeout(()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}},500);
 }
 function loadLocal(){
   try{
     const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
     const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
     applyDoc(o.doc);
-    rebuildPeriod();
-    if(typeof applySheet==='function')applySheet();
+    rebuildPeriod();resetDateFilter();
+    unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
+    if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
     buildFacts();buildFilters();buildSelects();
     renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
     renderCreatives();renderGantt();
@@ -153,13 +199,12 @@ function loadLocal(){
 }
 function clearLocal(){try{localStorage.removeItem(LS_KEY());}catch(e){}}
 /* 값이 바뀔 때마다 조용히 적어 둔다 */
-addEventListener('beforeunload',()=>{try{
-  localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}});
+addEventListener('beforeunload',()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}});
 function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
-  applyDoc(DEMO_SNAP);
-  rebuildPeriod();
+  applyDoc(DEMO_SNAP,true);
+  rebuildPeriod();resetDateFilter();
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
   buildFacts();buildFilters();buildSelects();
@@ -211,7 +256,7 @@ async function tryCode(raw){
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
   applyDoc(c.doc);
-  rebuildPeriod();
+  rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
@@ -473,7 +518,7 @@ async function openCampaign(id){
   CLOUD.role=mem?.role||'viewer';
   clearWorkState();
   applyDoc(c.doc);
-  rebuildPeriod();
+  rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.from('daily_stats')
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
@@ -667,10 +712,10 @@ async function openCampManage(){
     const kind=b.dataset.kind;
     const code=kind==='staff'?c.staff_code:c.share_code;if(!code)return;
     const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
-    try{await navigator.clipboard.writeText(url);
+    if(await copyText(url)){
       b.textContent='✓';b.classList.add('ok');
       setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
-    catch(err){prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);}});
+    else prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);});
   /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
