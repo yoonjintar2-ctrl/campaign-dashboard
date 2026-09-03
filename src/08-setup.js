@@ -948,9 +948,9 @@ function renderAll(){
   if(dashEmpty())return;
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
-  if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderCreatives();renderBubble();
+  if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderBubble();
+buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */

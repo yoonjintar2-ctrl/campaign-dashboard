@@ -154,6 +154,181 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks){
   addEventListener('resize',paint);
   paint();setTimeout(paint,0);
 }
+/* ===== 요일별 · 일자별 효율 히트맵 =====
+   열 = 매체 × 광고상품 × KPI 지표, 값 = 그 KPI 의 단가.
+   색은 스케일 그룹(요일 · 휴일평일 = 한 묶음 / 일자별 = 따로) 안에서만 비교한다 —
+   초록(싸다=좋다) → 회색(중간) → 빨강(비싸다=나쁘다). */
+const KPI_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa',eng:'cpe',install:'cpi',
+  lead:'cpa',like:'cpe',share:'cpe'};
+/* 중앙값은 회색 — 좋고 나쁨이 뚜렷한 양 끝만 색으로 */
+const HM_GOOD=[111,155,131],HM_MID=[164,172,180],HM_BAD=[176,106,99];
+const HM_COLW=132;        /* 값 열 최대 폭 — 매체가 적어도 너무 벌어지지 않게 */
+const HM_LEADW=190;       /* 구분 열 폭 */
+let HEAT_DAILY=false;     /* 일자별은 기본으로 접어 둔다 */
+let HEAT_TIP=[];
+function hmFill(v,mn,md,mx){
+  if(!isFinite(v))return null;
+  let a,b,t;
+  if(v<=md){a=HM_GOOD;b=HM_MID;t=md>mn?(v-mn)/(md-mn):0;}
+  else{a=HM_MID;b=HM_BAD;t=mx>md?(v-md)/(mx-md):0;}
+  const rgb=a.map((x,i)=>Math.round(x+(b[i]-x)*Math.min(1,Math.max(0,t))));
+  return 'rgb('+mixWhite(rgb,.46).join(',')+')';
+}
+const median=a=>{if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),h=b.length>>1;
+  return b.length%2?b[h]:(b[h-1]+b[h])/2;};
+/* 열 정의 — 지금 필터에 걸린 라인에서 매체 × 광고상품 × KPI 조합을 뽑는다 */
+function heatCols(){
+  const seen=new Map();
+  activeLines().forEach(l=>{
+    if(!l.media||!l.product||!l.kpi)return;
+    const k=[l.media,l.product,l.kpi].join(SEP);
+    if(!seen.has(k))seen.set(k,{media:l.media,product:l.product,kpi:l.kpi,
+      unit:KPI_UNIT[l.kpi]||'cpm',lids:new Set()});
+    seen.get(k).lids.add(l.id);});
+  return [...seen.values()];
+}
+function renderHeat(){
+  const tbl=$('heatTbl');if(!tbl)return;
+  const cols=heatCols();
+  const fs=factFilter();
+  HEAT_TIP=[];
+  if(!cols.length||!fs.length){
+    tbl.style.maxWidth='';
+    tbl.innerHTML='<tbody><tr><td class="head" style="text-align:center;padding:26px">'
+      +'표시할 데이터가 없습니다.</td></tr></tbody>';return;}
+  const bucket=cols.map(c=>fs.filter(f=>f.media===c.media&&f.product===c.product&&c.lids.has(f.lid)));
+  const aggOf=(list)=>(list&&list.length)?aggFacts(list):null;
+  const valOf=(ci,b)=>{
+    if(!b)return NaN;
+    const m=METRICS[cols[ci].unit];
+    if(!m||!m.c)return NaN;
+    const v=m.c(b);
+    return isFinite(v)&&v>0?v:NaN;};
+  /* ---- 카테고리 (scale = 색 비교 묶음) ---- */
+  const cats=[];
+  cats.push({name:'요일별',scale:'wd',rows:WD.map((w,i)=>({label:w+'요일',rest:i===0||i===6,
+    pick:list=>list.filter(f=>ALLDATES[f.d].getDay()===i)}))});
+  cats.push({name:'휴일 · 평일',scale:'wd',rows:[
+    {label:'휴일 (주말 · 공휴일)',rest:true,pick:list=>list.filter(f=>isRest(ALLDATES[f.d]))},
+    {label:'평일',pick:list=>list.filter(f=>!isRest(ALLDATES[f.d]))}]});
+  if(HEAT_DAILY){
+    const days=[...new Set(fs.map(f=>f.d))].sort((a,b)=>a-b);
+    cats.push({name:'일자별',scale:'day',rows:days.map(di=>{const d=ALLDATES[di],h=holName(d);
+      return {label:`${d.getMonth()+1}/${d.getDate()} (${WD[d.getDay()]})${h?' · '+h:''}`,
+        rest:isRest(d),pick:list=>list.filter(f=>f.d===di)};})});}
+  /* 값·집계를 미리 계산 (툴팁에서 다시 쓴다) */
+  cats.forEach(cat=>{
+    cat.agg=cat.rows.map(r=>cols.map((c,ci)=>aggOf(r.pick(bucket[ci]))));
+    cat.grid=cat.agg.map(row=>row.map((b,ci)=>valOf(ci,b)));});
+  /* 스케일 묶음별 최소 · 중앙 · 최대 */
+  const scales={};
+  cats.forEach(cat=>{
+    if(!scales[cat.scale])scales[cat.scale]=cols.map(()=>[]);
+    cat.grid.forEach(row=>row.forEach((v,ci)=>{if(isFinite(v))scales[cat.scale][ci].push(v);}));});
+  const stat={};
+  Object.keys(scales).forEach(k=>stat[k]=scales[k].map(vs=>
+    ({mn:Math.min(...vs),md:median(vs),mx:Math.max(...vs),n:vs.length})));
+  /* ---- 헤더 3줄 ---- */
+  const mSpan=[];let last=null;
+  cols.forEach(c=>{if(last&&last.media===c.media)mSpan[mSpan.length-1].n++;
+    else mSpan.push({media:c.media,n:1});last=c;});
+  let h='<colgroup>'+`<col style="width:${HM_LEADW}px">`
+    +cols.map(()=>`<col style="width:${Math.floor(100/cols.length)}%">`).join('')+'</colgroup>'
+    +'<thead>'
+    +`<tr><th class="lead" rowspan="3">구분</th>`
+    +mSpan.map(m=>`<th class="h1" colspan="${m.n}">${esc(m.media)}</th>`).join('')+'</tr>'
+    +'<tr>'+cols.map(c=>`<th class="h2" title="${esc(c.product)}">${esc(c.product)}</th>`).join('')+'</tr>'
+    +'<tr>'+cols.map(c=>`<th class="h3" title="KPI ${esc(KPI_LABEL[c.kpi]||c.kpi)}">`
+        +`KPI : ${METRICS[c.unit].l}</th>`).join('')+'</tr></thead><tbody>';
+  /* ---- 본문 ---- */
+  cats.forEach(cat=>{
+    const st=stat[cat.scale];
+    h+=`<tr class="hcat"><td class="head" colspan="${cols.length+1}">${esc(cat.name)}</td></tr>`;
+    cat.rows.forEach((r,ri)=>{
+      h+=`<tr><td class="head${r.rest?' hol':''}" title="${esc(r.label)}">${esc(r.label)}</td>`
+        +cols.map((c,ci)=>{
+          const v=cat.grid[ri][ci],b=cat.agg[ri][ci],s=st[ci];
+          if(!isFinite(v))return '<td class="hm"><span class="c na">–</span></td>';
+          const bg=s.n>1?hmFill(v,s.mn,s.md,s.mx):null;
+          const ti=HEAT_TIP.length;
+          HEAT_TIP.push({label:r.label,cat:cat.name,c,b,v});
+          return `<td class="hm" data-ti="${ti}">`
+            +`<span class="c"${bg?` style="background:${bg}"`:''}>${METRICS[c.unit].f(v)}</span></td>`;}).join('')
+        +'</tr>';});});
+  tbl.innerHTML=h+'</tbody>';
+  /* 매체가 적어도 열이 과하게 벌어지지 않도록 표 전체 폭에 상한을 둔다 */
+  tbl.style.maxWidth=(HM_LEADW+cols.length*HM_COLW)+'px';
+  wireHeatTip(tbl);
+  mountHeatHead(tbl);
+}
+/* 칸에 마우스를 올리면 그 구간의 세부 실적을 보여준다 */
+function wireHeatTip(tbl){
+  const MET=['imp','click','view','conv','cost'];
+  tbl.querySelectorAll('td.hm[data-ti]').forEach(td=>{
+    td.addEventListener('mousemove',e=>{
+      const t=HEAT_TIP[+td.dataset.ti];if(!t)return;
+      const rows=MET.filter(k=>t.b&&isFinite(t.b[k])&&t.b[k]>0)
+        .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(t.b[k])}</b></div>`);
+      const eff=['ctr','vtr','cvr'].filter(k=>{const v=METRICS[k].c(t.b);return isFinite(v)&&v>0;})
+        .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(METRICS[k].c(t.b))}</b></div>`);
+      showTip(e.clientX,e.clientY,
+        `<div class="t">${esc(t.c.media)} · ${esc(t.c.product)}</div>`
+        +`<div class="r"><span class="l">${esc(t.cat)}</span><b>${esc(t.label)}</b></div>`
+        +`<div class="r"><span class="l">${METRICS[t.c.unit].l} (KPI ${esc(KPI_LABEL[t.c.kpi]||t.c.kpi)})</span>`
+        +`<b>${METRICS[t.c.unit].f(t.v)}</b></div>`
+        +rows.join('')+eff.join(''));});
+    td.addEventListener('mouseleave',hideTip);});
+}
+/* 세로 스크롤 없이 전부 보여주므로, 머리글은 화면에 떠 있는 복사본으로 고정한다
+   (게재 히스토리와 같은 방식 — overflow-x:auto 안에서는 sticky 가 페이지에 붙지 않는다) */
+function mountHeatHead(tbl){
+  const wrap=tbl.closest('.heatwrap');if(!wrap||!tbl.tHead)return;
+  let bar=$('heatHead');
+  if(!bar){bar=el('div','ghfix');bar.id='heatHead';document.body.appendChild(bar);}
+  const inner=el('div','inner');
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  const cg=tbl.querySelector('colgroup');
+  if(cg)clone.appendChild(cg.cloneNode(true));
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
+  inner.appendChild(clone);
+  bar.innerHTML='';bar.appendChild(inner);
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    const sec=document.querySelector('.card[data-sect="heat"]');
+    if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+20;
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    clone.style.maxWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.onscroll=()=>{inner.scrollLeft=wrap.scrollLeft;};
+  window.__heatPlace=place;
+  if(!window.__heatHeadWired){
+    window.__heatHeadWired=1;
+    const run=()=>{if(window.__heatPlace)window.__heatPlace();};
+    addEventListener('scroll',run,true);
+    addEventListener('resize',run);}
+  setTimeout(place,0);setTimeout(place,300);
+}
+(function wireHeat(){
+  const b=$('heatDay');if(!b)return;
+  b.classList.toggle('on',HEAT_DAILY);
+  b.onclick=()=>{HEAT_DAILY=!HEAT_DAILY;b.classList.toggle('on',HEAT_DAILY);renderHeat();};
+})();
+
 /* ===== 8. 소재 운영 ===== */
 let CR_FILTER={media:'all',type:'all',sort:'imp'};
 const CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
@@ -183,10 +358,10 @@ const CR_RANKS=[
   {k:'cpc',l:'클릭 효율',sub:'CPC 낮은 순',base:'click'},
   {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'}
 ];
-/* 기본은 조회 · 클릭 두 가지 — 좌우 두 칸으로 나란히 놓는다.
-   다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
-let CR_RANK_ON=['cpv','cpc'];
-let CR_TOPN=5;
+/* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
+   순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
+let CR_RANK_ON=['cpv','cpc','cpm'];
+let CR_TOPN=4;
 function renderRankPick(){
   const host=$('crRankPick');if(!host)return;
   host.innerHTML=CR_RANKS.map(r=>
@@ -197,15 +372,49 @@ function renderRankPick(){
     if(!CR_RANK_ON.length)CR_RANK_ON=[k];
     renderRankPick();renderCreatives();});
 }
+/* 유튜브 썸네일 · 미리보기 */
+const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+/* 썸네일 뒤에는 항상 그라데이션을 깔아 둔다 —
+   네트워크가 막힌 환경(사내망 · 오프라인)에서 이미지가 안 떠도 빈 칸이 되지 않는다 */
+function crBg(c){
+  if(c.yt)return `url("${ytThumb(ytId(c.yt))}"), ${c.g||'#dfe4ea'}`;
+  if(c.img)return `url("${encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
+  return c.g;
+}
+/* 유튜브 플레이어는 file:// 로 열면 출처가 없어 "구성 오류 153" 을 낸다.
+   그래서 http(s) 로 열렸을 때만 미리보기를 붙이고, 로컬 파일에서는 썸네일만 보여준다. */
+const CAN_YT=/^https?:$/.test(location.protocol);
+/* 영상 소재는 마우스를 올리면 썸네일 자리에서 소리 없이 잠깐 재생된다 */
+function wireCrPlay(thumb,c){
+  if(!c.yt)return;
+  const id=ytId(c.yt);if(!id)return;
+  thumb.classList.add('playable');
+  if(!CAN_YT)return;
+  let fr=null,t=null;
+  thumb.addEventListener('mouseenter',()=>{
+    clearTimeout(t);
+    t=setTimeout(()=>{
+      if(fr)return;
+      fr=document.createElement('iframe');
+      fr.className='ytprev';
+      fr.setAttribute('allow','autoplay; encrypted-media');
+      fr.setAttribute('frameborder','0');
+      fr.src=`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0`
+        +`&loop=1&playlist=${id}&modestbranding=1&rel=0&playsinline=1`;
+      thumb.appendChild(fr);},260);});
+  thumb.addEventListener('mouseleave',()=>{
+    clearTimeout(t);
+    if(fr){fr.remove();fr=null;}});
+}
 function renderCreatives(){
   const host=$('creatives');if(!host)return;
   host.innerHTML='';
   const pool=filteredCreatives();
   if(!pool.length){
     host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
-  /* 기준마다 한 칸씩 — 두 칸이 좌우로 나란히 간다 */
+  /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
-  CR_RANKS.filter(r=>CR_RANK_ON.includes(r.k)).forEach(r=>{
+  CR_RANK_ON.map(k=>CR_RANKS.find(r=>r.k===k)).filter(Boolean).forEach(r=>{
     const rows=pool.map(c=>{const b=crAgg(c);
         return {c,b,base:b[r.base]||0,eff:METRICS[r.k].c(b)};})
       .filter(x=>x.base>0&&isFinite(x.eff)&&x.eff>0)
@@ -213,25 +422,35 @@ function renderCreatives(){
       .slice(0,CR_TOPN);
     const g=el('div','crcol',cols);
     const hd=el('div','crband',g);
-    hd.innerHTML=`<span class="t">${r.l}이 우수한 소재</span>`
+    hd.innerHTML=`<span class="t">${r.l}</span>`
       +`<span class="n">${r.sub} · 상위 ${rows.length}개</span>`;
     if(!rows.length){el('div','hint',g).textContent=`${METRICS[r.k].l}를 계산할 수 있는 소재가 없습니다.`;return;}
-    /* 1위는 지금 크기 그대로, 2위부터는 가로 절반씩 두 개가 한 줄에 */
-    const grid=el('div','crgrid',g);
-    rows.forEach((x,i)=>{
-      /* 순위 기준으로 쓴 지표는 위에 이미 크게 나오므로 아래 목록에서는 뺀다 */
-      const c=x.c,mcols=cfgCols(CR_CFG[c.type]).filter(k=>k!==r.k);
-      const d=el('div','cr'+(i===0?' lead':''),grid);
-      const bg=c.img?`url("${encodeURI(c.img)}")`:c.g;
-      d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${bg}"></div>
-          <div class="media">${esc(c.media)}</div>
-          <div class="rankno">${i+1}</div>
-          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'}</div>
-          ${c.type==='video'?'<div class="play">▶</div>':''}</div>
+    const duo=el('div','crduo',g);
+    /* --- 1위 --- */
+    const x0=rows[0],c0=x0.c;
+    const lead=el('div','cr lead',duo);
+    lead.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c0)}"></div>
+        <div class="media">${esc(c0.media)}</div>
+        <div class="rankno">1</div>
+        <div class="rt">${c0.type==='video'?'▶ 영상':'🖼 이미지'}</div></div>
+      <div class="meta"><div class="nm" title="${esc(c0.name)}">${esc(c0.name)}</div>
+        <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x0.eff)}</b></div></div>`;
+    wireCrPlay(lead.querySelector('.thumb'),c0);
+    lead.onclick=()=>openLightbox(c0);
+    /* --- 2위 이하 --- */
+    const rest=el('div','crrest',duo);
+    rest.style.gridTemplateRows=`repeat(${Math.max(rows.length-1,1)},1fr)`;
+    rows.slice(1).forEach((x,i)=>{
+      const c=x.c;
+      const d=el('div','cr mini',rest);
+      d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c)}"></div>
+          <div class="rankno">${i+2}</div></div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
-          <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div>
-          ${mcols.map(k=>`<div class="mt"><span>${CR_DEF[k].l}</span><b>${crVal(c,k)}</b></div>`).join('')}</div>`;
-      d.onclick=()=>openLightbox(c);});});
+          <div class="mm">${esc(c.media)}</div>
+          <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
+      wireCrPlay(d.querySelector('.thumb'),c);
+      d.onclick=()=>openLightbox(c);});
+  });
 }
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.
    같은 이름은 여러 매체·상품·타겟팅에 함께 쓰인 하나의 소재로 본다. */
@@ -333,8 +552,14 @@ function ytId(s){
 }
 function openLightbox(c){
   const mediaHTML=()=>c.type==='video'
-    ? (c.yt?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(c.yt))}?rel=0" allowfullscreen></iframe>`
-           :`<div class="lbph">영상 링크를 입력하면 여기에서 재생됩니다</div>`)
+    ? (c.yt
+        ? (CAN_YT
+            ?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(c.yt))}?rel=0" allowfullscreen></iframe>`
+            :`<div class="lbph">파일을 직접 열면 유튜브가 재생을 막습니다(구성 오류 153).<br>
+               웹 주소(https)로 올린 뒤 열면 정상 재생됩니다.
+               <a href="https://youtu.be/${esc(ytId(c.yt))}" target="_blank" rel="noopener"
+                  style="display:inline-block;margin-top:9px;color:var(--acc);font-weight:800">유튜브에서 열기 ↗</a></div>`)
+        :`<div class="lbph">영상 링크를 입력하면 여기에서 재생됩니다</div>`)
     : (c.img?`<img src="${esc(c.img)}" alt="${esc(c.name)}" style="max-width:100%;max-height:52vh;border-radius:10px;box-shadow:var(--shadow2)">`
            :`<div style="background:${c.g};border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;
               width:${c.ratio==='9:16'?'270px':c.ratio==='4:5'?'350px':'440px'};aspect-ratio:${c.ratio.replace(':','/')};

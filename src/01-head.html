@@ -264,6 +264,8 @@ table.tbl.nogauge .gauge .track{display:none}
 .sec.gap3{margin-top:72px}
 #summaryHost .sec:first-child{margin-top:72px}
 .sec:first-child{margin-top:0}
+/* 운영 코멘트 · 서머리 묶음은 페이지 중간에 오므로 첫 자식이라도 위 여백을 준다 */
+#cmtBlock>.sec:first-child,#sumBlock>.sec:first-child{margin-top:72px}
 .sec .note{font-size:12.5px;font-weight:500;color:var(--muted)}
 .sec .tools{margin-left:auto;display:flex;gap:6px;align-items:center}
 .subsec{font-size:15.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;margin:6px 0 9px}
@@ -302,52 +304,96 @@ table.tbl.nogauge .gauge .track{display:none}
 .cbar .k{font-size:11px;color:var(--muted);font-weight:600}
 .cbar .v{font-size:13px;font-weight:700;color:var(--ink2)}
 
-/* progress */
-.pbar{position:relative;height:46px;border-radius:12px;background:#e9edf2;overflow:hidden}
-.pbar>i{position:absolute;left:0;top:0;bottom:0;border-radius:12px;display:block}
-.pbar>.goal{background:var(--pace)}
-/* 달성률 막대 — 지금의 짙은 톤은 그대로 두고 안쪽 그라데이션만 은은하게 흐르게 */
-.pbar>.real{background:linear-gradient(104deg,
-    #3f5265 0%, #56708a 18%, #405568 36%, #5c7794 54%, #3b4e60 72%, #526b83 88%, #3f5265 100%);
-  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate}
-@keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
-@media (prefers-reduced-motion:reduce){.pbar>.real{animation:none}}
-.pbar .lab{position:absolute;top:50%;transform:translate(-100%,-50%);font-size:14px;font-weight:800;color:#fff;
-  font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-.pbar .lab.goal{font-weight:700;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
-/* ▼ 표식의 삼각형 꼭짓점이 목표 페이스 막대의 오른쪽 끝에 정확히 오도록 */
-.pmark{position:relative;height:17px}
-.pmark .m{position:absolute;bottom:0;transform:translateX(-100%);padding-right:9px;font-size:10.5px;
-  color:var(--pace);white-space:nowrap;font-weight:700;line-height:1}
-.pmark .m::after{content:'';position:absolute;right:0;bottom:-1px;transform:translateX(50%);
-  width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
-  border-top:6px solid var(--pace)}
+/* ===== 캠페인 진행 현황 =====
+   지표(노출 · 클릭 · 조회)마다 한 줄씩. 합산 수치는 쓰지 않는다.
+   좌(지표명 · 집행) · 막대 · 우(목표)는 절대 줄바꿈하지 않고, 좁아지면 가로 스크롤. */
+.pacescroll{overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
+.pacebody{min-width:560px}
+/* 맨 위 — 집행 경과 (가운데) */
+.phead{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;
+  font-variant-numeric:tabular-nums;margin-bottom:16px;display:flex;align-items:baseline;
+  gap:9px;justify-content:center;white-space:nowrap}
+.phead .sep{color:#cdd5de;font-weight:400}
+.phead .el{font-size:13px;font-weight:700;color:var(--acc)}
 
-/* 집행 일자 게이지 — 막대와 좌우 끝을 정확히 맞추고, 경과분은 단색으로 채운다 */
-.daygauge{margin-top:10px}
-.daygauge .dg-cells{display:flex;gap:2px;width:100%}
-.daygauge .dg-cells i{flex:1 1 0;min-width:0;height:9px;border-radius:2px;background:#dde3ea;display:block}
-.daygauge .dg-cells i.on{background:var(--acc)}
-.daygauge .dg-ends{display:flex;justify-content:space-between;margin-top:5px}
-.daygauge .dg-ends span{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap}
-.daygauge .dg-ends span:first-child{text-align:left}
-.daygauge .dg-ends span:last-child{text-align:right}
-/* 진행 현황 좌·우 블록 — 그래프 양옆 여백 중앙, 좌우 세 줄의 높이·서체를 동일하게 */
-.pside{min-width:210px;flex:0 0 210px;text-align:center}
-.pside .ps-k{font-size:11.5px;font-weight:600;color:var(--muted);line-height:17px;height:17px}
-.pside .ps-v{display:flex;align-items:baseline;justify-content:center;gap:7px;height:38px;margin-top:3px}
-.pside .ps-v b{font-size:30px;font-weight:700;letter-spacing:-.8px;line-height:38px}
-.pside .ps-v span{font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
-.pside .ps-s{font-size:11px;color:var(--muted);font-weight:400;line-height:17px;height:17px;margin-top:3px;
+.pline{display:flex;flex-wrap:nowrap;align-items:center;gap:16px}
+.pline+.pline{margin-top:24px}
+.pline.days{margin-bottom:24px;padding-bottom:18px;border-bottom:1px dashed var(--line)}
+.pside{flex:0 0 130px;white-space:nowrap;text-align:right}
+.pside.r{text-align:left}
+/* 지표 이름을 먼저 읽히게 — 이름은 크게 위, 수치는 작게 아래 */
+.pside .nm1{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:20px}
+.pside .sub1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px;
   font-variant-numeric:tabular-nums}
-.goalout{margin-top:8px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;
-  gap:18px;flex-wrap:wrap}
-.goalout .lg{display:inline-flex;align-items:center;gap:6px}
-.goalout .lg b{font-variant-numeric:tabular-nums}
-.goalout .lg.pace{color:var(--pace)}
-.goalout .sw{width:10px;height:10px;border-radius:3px;background:var(--pace);display:inline-block}
+.pside.r .nm1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px}
+.pside.r .sub1{font-size:15px;font-weight:800;color:var(--ink2);line-height:20px}
+.pline.days .pside .nm1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px}
+.pline.days .pside .sub1{font-size:13.5px;font-weight:800;color:var(--ink2);line-height:19px}
+.pmid{flex:1 1 auto;min-width:250px}
+
+/* 지표별 달성 막대 — 매체는 색이 아니라 간격으로만 나눈다 */
+.pbar{position:relative;height:34px;border-radius:9px;background:#e9edf2;overflow:hidden}
+.pbar .mstack{position:absolute;left:0;top:0;bottom:0;display:flex;gap:3px}
+.pbar .mstack>i{min-width:0;overflow:hidden;background:var(--segbg);
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px}
+.pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
+.pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
+.pbar .mstack>i:only-child{border-radius:9px}
+/* 매체 글자 — 있는 줄만 알 정도로 옅게 */
+.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;line-height:1.2}
+.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);
+  white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+.pbar .mstack i.nolb .nm,.pbar .mstack i.nolb .pc{display:none}
+.pbar .mstack i.nopc .pc{display:none}
+.pbar .pv{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:800;
+  font-variant-numeric:tabular-nums;color:var(--acc-d);z-index:4;white-space:nowrap}
+.pbar .pv.in{color:#fff;text-shadow:0 1px 3px rgba(20,30,44,.3)}
+/* 채워진 구간 위를 은은하게 흐르는 광택 */
+.pbar .sheen{position:absolute;left:0;top:0;bottom:0;pointer-events:none;border-radius:9px;
+  background:linear-gradient(104deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.13) 26%,
+    rgba(255,255,255,0) 50%,rgba(255,255,255,.11) 76%,rgba(255,255,255,0) 100%);
+  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate;z-index:3}
+@keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){.pbar .sheen{animation:none}}
+/* 얇은 목표 페이스 막대 */
+.prow{position:relative;height:5px;border-radius:3px;background:#eceff3;margin-top:5px}
+.prow>i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;display:block}
+
+/* 집행 일자 게이지 — 다른 막대와 같은 남색 계열 */
+.dgauge{display:flex;gap:2px;width:100%}
+.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:#e3e8ee;display:block}
+.dgauge i.on{background:linear-gradient(160deg,#5f83a9,#4c729a)}
+.dgauge i.on.rest{background:linear-gradient(160deg,#87a2be,#7391b2)}
+.dgauge i.rest{background:#e9edf2}
+
+.pfoot{display:flex;align-items:center;gap:9px;margin-top:18px;padding-top:12px;
+  border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2);font-weight:600;
+  flex-wrap:wrap}
+.pfoot>i{width:22px;height:5px;border-radius:3px;display:inline-block;flex:none;
+  background:linear-gradient(90deg,#8fb8a1,#d3a49e)}
+.pfoot span{color:var(--muted);font-weight:500}
 .delta{font-weight:700}.delta.up{color:var(--acc)}.delta.down{color:var(--neg)}
-.dates{margin-top:9px;font-size:11px;color:var(--muted);font-weight:400;line-height:1.75}
+
+/* ===== 영역 설명 (ⓘ) ===== */
+.infowrap{position:relative;display:inline-flex}
+.infoi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#fff;
+  color:var(--muted);font-size:11.5px;font-weight:800;cursor:help;display:inline-flex;
+  align-items:center;justify-content:center;line-height:1;padding:0;transition:.12s;
+  font-family:inherit}
+.infoi:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft2)}
+.infopop{position:absolute;right:0;top:calc(100% + 8px);width:340px;max-width:78vw;
+  background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow2);
+  padding:13px 15px;z-index:70;font-size:12px;font-weight:400;color:var(--ink2);
+  line-height:1.6;letter-spacing:0;text-align:left;white-space:normal}
+.infopop::before{content:'';position:absolute;right:5px;top:-6px;width:11px;height:11px;
+  background:#fff;border-left:1px solid var(--line);border-top:1px solid var(--line);
+  transform:rotate(45deg)}
+.infopop b{color:var(--ink);font-weight:700}
+.infopop .h{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.infopop p{margin:0 0 7px}
+.infopop p:last-child{margin-bottom:0}
+.infowrap:not(.open) .infopop{display:none}
 
 /* donut */
 /* KPI 카드 — 줄바꿈 없이 가로로 스크롤한다 (매체가 늘어도 한 줄) */
@@ -390,7 +436,10 @@ table.tbl.nogauge .gauge .track{display:none}
 .donut .kline .kv span{color:var(--muted)}
 
 /* stat tiles — 정사각형에 가까운 카드 + 배경 일별 추이 */
-.strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
+.strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
+  padding:5px 4px 10px;scroll-snap-type:x proximity}
+.strip>.stat{flex:1 0 244px;min-width:244px;scroll-snap-align:start}
 .stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/.94;min-height:250px}
 .stat .sbody{position:relative;z-index:2;padding:18px 20px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
@@ -432,7 +481,9 @@ table.tbl.nogauge .gauge .track{display:none}
 .duo>.duocol>.card>.bd{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
 .duo .sec .tools{flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:1440px){.duo{grid-template-columns:1fr;gap:0}
-  .duo>.duocol>.card{min-height:560px}}
+  .duo>.duocol>.card{min-height:560px}
+  /* 두 칸이 위아래로 놓이면 아래 칸 제목 위에 다른 섹션과 같은 여백을 준다 */
+  .duo>.duocol+.duocol>.sec{margin-top:72px}}
 /* 흰 영역 안에서 그래프가 남은 높이를 채운다 */
 .duo #treemap{flex:1 1 auto;min-height:0;display:flex}
 .duo .tmap{flex:1 1 auto;height:auto;min-height:340px}
@@ -445,7 +496,9 @@ table.tbl.nogauge .gauge .track{display:none}
   background:var(--plane2);border:1px solid var(--line2)}
 /* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
 .tmap .sect{position:absolute;overflow:hidden;border:4px solid var(--surface);border-radius:3px}
-.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;display:flex;align-items:center;
+/* 하위 그룹(.grp)이 2px 테두리만큼 안쪽에서 시작하므로 매체 머리글도 같이 2px 들여
+   왼쪽 선이 어긋나 보이지 않게 한다 */
+.tmap .sect>.sh{position:absolute;left:2px;right:2px;top:2px;height:21px;display:flex;align-items:center;
   gap:6px;padding:0 8px;font-size:11.5px;font-weight:800;color:#fff;
   white-space:nowrap;overflow:hidden;z-index:3}
 .tmap .sect>.sh .sv{margin-left:auto;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums}
@@ -506,12 +559,6 @@ table.tbl.nogauge .gauge .track{display:none}
 .crband{margin:0 0 8px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 .crband .t{font-size:14px;font-weight:700;color:var(--ink)}
 .crband .n{font-size:11.5px;color:var(--muted)}
-.cr .media{position:absolute;top:9px;left:9px;background:rgba(31,44,61,.62);border-radius:7px;
-  padding:2px 8px;font-size:10.5px;font-weight:700;color:#fff;z-index:3}
-.cr .rankno{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:50%;
-  background:var(--acc);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;z-index:3}
-.cr .meta .eff{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:var(--muted)}
-.cr .meta .eff b{color:var(--acc);font-variant-numeric:tabular-nums}
 
 /* charts */
 svg.chart{display:block;width:100%;height:auto;overflow:visible}
@@ -758,36 +805,46 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .gcard.ins-l::before{left:-6px}.gcard.ins-r::after{right:-6px}
 .bfoot{display:flex;justify-content:flex-end;gap:8px;padding-top:11px;border-top:1px dashed var(--line);margin-top:4px}
 
-/* creatives — 기준(조회 · 클릭)마다 한 칸, 두 칸이 좌우로 나란히 */
-.crcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 30px;align-items:start}
-@media(max-width:1180px){.crcols{grid-template-columns:1fr}}
-/* 한 칸 안에서 1위는 전체 폭, 2위부터는 가로 절반씩 */
-.crgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.crgrid>.cr.lead{grid-column:1/-1}
-/* 1위는 크게 보여 주되 한 화면을 다 잡아먹지 않도록 높이를 잡아 둔다 */
-.crgrid>.cr.lead .thumb{aspect-ratio:auto;height:236px}
-.crgrid>.cr:not(.lead) .thumb{aspect-ratio:16/9}
-.crgrid>.cr:not(.lead) .meta{padding:8px 9px 9px}
-.crgrid>.cr:not(.lead) .meta .nm{font-size:11.5px}
-.crgrid>.cr:not(.lead) .meta .mt{font-size:10px;margin-top:3px}
-.crgrid>.cr.lead .rankno{width:24px;height:24px;font-size:12px}
-.crgrid>.cr:not(.lead) .rankno{width:18px;height:18px;font-size:9.5px;top:7px;right:7px}
-.crgrid>.cr:not(.lead) .media,.crgrid>.cr:not(.lead) .rt{font-size:9.5px;padding:2px 6px}
+/* creatives — 기준(조회 · 클릭 · 노출)마다 한 칸, 세 칸이 좌우로 나란히.
+   칸 안에서는 1위를 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 (영역 높이를 낮춘다) */
+.crcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 30px;align-items:start}
+@media(max-width:1400px){.crcols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.crcols{grid-template-columns:1fr}}
+.crduo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.78fr);gap:12px;align-items:stretch}
+.crrest{display:grid;gap:9px;min-width:0}
 .cr{overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s;background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
 .cr:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
-.cr .thumb{position:relative;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center}
+.cr .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;display:grid;place-items:center;background:#e9edf2}
 .cr .thumb .fill{position:absolute;inset:0;background-size:cover;background-position:center}
-.cr .badge{position:absolute;top:9px;left:9px;background:rgba(31,44,61,.6);border-radius:7px;padding:2px 8px;
-  font-size:10.5px;font-weight:700;color:#fff;z-index:2}
-.cr .rt{position:absolute;bottom:9px;right:9px;background:rgba(255,255,255,.9);border-radius:7px;padding:2px 7px;
-  font-size:10px;font-weight:700;color:var(--ink2);z-index:2}
-.cr .play{width:32px;height:32px;border-radius:50%;background:rgba(31,44,61,.45);display:grid;place-items:center;
-  color:#fff;font-size:13px;z-index:2}
-.cr .meta{padding:9px 11px 11px;border-top:1px solid var(--line2)}
-.cr .meta .nm{font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cr .meta .mt{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;margin-top:4px}
-.cr .meta .mt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cr .thumb .ytprev{position:absolute;left:50%;top:50%;width:178%;height:178%;
+  transform:translate(-50%,-50%);border:0;pointer-events:none;z-index:1}
+.cr .thumb.playable::after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:34px;height:34px;border-radius:50%;background:rgba(31,44,61,.42);color:#fff;font-size:12px;
+  display:grid;place-items:center;z-index:2;transition:opacity .15s}
+.cr .thumb.playable:hover::after{opacity:0}
+.cr .media{position:absolute;top:8px;left:8px;background:rgba(31,44,61,.62);border-radius:7px;
+  padding:2px 8px;font-size:10.5px;font-weight:700;color:#fff;z-index:3}
+.cr .rankno{position:absolute;top:8px;right:8px;width:21px;height:21px;border-radius:50%;
+  background:var(--acc);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;z-index:3}
+.cr .rt{position:absolute;bottom:8px;right:8px;background:rgba(255,255,255,.9);border-radius:7px;
+  padding:2px 7px;font-size:10px;font-weight:700;color:var(--ink2);z-index:3}
+.cr .meta{padding:9px 11px 11px;border-top:1px solid var(--line2);min-width:0}
+.cr .meta .nm{font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .meta .eff{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px;
+  font-size:11.5px;color:var(--muted)}
+.cr .meta .eff b{color:var(--acc);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+/* 2위 이하 — 가로형 미니 카드 */
+.cr.mini{display:flex;align-items:stretch;min-height:0}
+.cr.mini .thumb{flex:none;height:100%;aspect-ratio:1/1;border-radius:0}
+.cr.mini .thumb .rankno{width:17px;height:17px;font-size:9.5px;top:5px;right:5px}
+.cr.mini .thumb.playable::after{width:22px;height:22px;font-size:9px}
+.cr.mini .meta{flex:1;min-width:0;border-top:0;border-left:1px solid var(--line2);
+  padding:7px 10px;display:flex;flex-direction:column;justify-content:center}
+.cr.mini .meta .nm{font-size:11.5px}
+.cr.mini .meta .mm{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px}
+.cr.mini .meta .eff{margin-top:3px;font-size:10.5px}
+.cr.mini .meta .eff b{font-size:12.5px}
 
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(23,33,46,.62);backdrop-filter:blur(3px);z-index:500;
@@ -871,6 +928,47 @@ table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
   background:linear-gradient(90deg,#faeeec,#d9a49e,#993f37)}
 .shlegend em{font-style:normal}
 .shlegend .ar{opacity:.55}
+/* 요일별 · 일자별 효율 히트맵 */
+.hmramp{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600}
+.hmramp i{width:84px;height:9px;display:inline-block;border-radius:2px;
+  background:linear-gradient(90deg,#b6cec1,#dbdfe4,#dcc0bc)}
+.hmramp em{font-style:normal}
+/* 세로 스크롤 없이 전부 보여 준다 — 머리글은 떠 있는 복사본(#heatHead)으로 고정 */
+.heatwrap{max-height:none;overflow-y:visible}
+table.tbl.heat{border-spacing:0;table-layout:fixed;width:100%}
+table.tbl.heat th,table.tbl.heat td{border-right:0;border-bottom:0}
+/* 머리글 3단 — 구분·매체는 진한 남색, 광고상품은 한 톤 연하게, KPI 는 가장 약하게 */
+table.tbl.heat th{padding:7px 9px;line-height:1.3;border-bottom:2px solid #fff;
+  border-right:2px solid #fff;position:static;white-space:normal;word-break:keep-all}
+table.tbl.heat thead th:last-child{border-right:0}
+table.tbl.heat th.lead{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700;
+  border-bottom:0;vertical-align:middle}
+table.tbl.heat th.h1{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700}
+table.tbl.heat th.h2{background:#6d7b8a;color:#fff;font-size:11.5px;font-weight:600}
+table.tbl.heat th.h3{background:#eef1f5;color:var(--sec);font-size:10.5px;font-weight:700;
+  letter-spacing:.01em;white-space:nowrap}
+table.tbl.heat td{padding:0;background:transparent !important}
+/* 구분 열 — 가운데 정렬 · 남색 글씨 */
+table.tbl.heat td.head{padding:0 10px;background:#fbfcfe !important;font-weight:700;
+  color:var(--acc-d);text-align:center;font-size:11.5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+table.tbl.heat tbody tr:hover td.head{background:var(--acc-soft) !important}
+table.tbl.heat td.head.hol{color:var(--hol)}
+/* 값 칸 — 선 대신 여백으로 나눈 칩 */
+table.tbl.heat td.hm{cursor:default}
+table.tbl.heat td.hm .c{display:block;margin:2px;border-radius:6px;padding:6px 8px;
+  font-size:12px;font-weight:600;color:#243040;background:#f2f4f7;
+  font-variant-numeric:tabular-nums;text-align:center;transition:filter .12s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.tbl.heat td.hm .c.na{color:#c2c9d2;background:#f6f7f9;font-weight:500}
+table.tbl.heat td.hm:hover .c{filter:brightness(.94)}
+/* 카테고리 구분 줄 */
+table.tbl.heat tr.hcat td{background:#e6ebf1 !important;color:#26313d;font-weight:800;
+  text-align:left;letter-spacing:.02em;padding:7px 12px;font-size:12px}
+table.tbl.heat tr.hcat+tr td{padding-top:1px}
+/* 왼쪽 구분 열은 가로 스크롤에서도 붙어 있게 */
+table.tbl.heat td.head,table.tbl.heat tr.hcat td{position:sticky;left:0;z-index:3}
+table.tbl.heat th.lead{position:sticky;left:0;z-index:6}
 .crthumb-sm{width:34px;height:26px;border-radius:5px;display:inline-block;vertical-align:middle;
   background-size:cover;background-position:center;box-shadow:0 0 0 1px var(--line)}
 

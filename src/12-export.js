@@ -326,8 +326,10 @@ async function exportDashboard(){
 
     /* ---- 캠페인 집행 현황 (라벨 · 값 카드형) ---- */
     const b=aggFacts(paceFacts()),budget=sum(activeLines().map(lineGross));
-    const totW=sum(activeLines().map(lineGross));
-    const allAch=totW?sum(activeLines().map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
+    /* 화면의 캠페인 진행 현황과 같은 기준 — 각 라인이 자기 KPI 로 쌓은 실적 합 ÷ 목표 합 */
+    const kr=paceKpiRows();
+    const kAct=sum(kr.map(x=>x.act)),kGoal=sum(kr.map(x=>x.goal));
+    const allAch=kGoal?kAct/kGoal:0;
     push(R,[T('캠페인 집행 현황',3)]);
     const info=[
       ['캠페인명',{v:CAMPAIGN.name,s:XS.val}],
@@ -337,6 +339,8 @@ async function exportDashboard(){
       ['집행 경과',{v:`${ps.elapsed}일차 / ${ps.days}일`,s:XS.val}],
       ['총 광고비 (Gross)',{v:budget,n:1,s:XS.valWon}],
       ['소진 광고비',{v:b.cost,n:1,s:XS.valWon}],
+      ['목표 달성 수치',{v:kAct,n:1,s:XS.val}],
+      ['종합 목표',{v:kGoal,n:1,s:XS.val}],
       ['종합 KPI 달성률',{v:allAch,n:1,s:XS.valPct}],
       ['목표 페이스',{v:pr,n:1,s:XS.valPct}]
     ];
@@ -346,31 +350,7 @@ async function exportDashboard(){
       s1.merges.push({r1:r0,c1:1,r2:r0,c2:3});});
     blank(R);
 
-    /* ---- KPI 달성 현황 — 그래프 그림으로 ---- */
-    push(R,[T('KPI 달성 현황',3)]);
-    /* 예산 소진율 카드(.spend)는 리포트에 넣지 않는다 */
-    const donutSvgs=[...document.querySelectorAll('#donuts .donut')].filter(d=>!d.classList.contains('spend'));
-    const dpics=[];
-    for(const d of donutSvgs){
-      const svg=d.querySelector('svg');if(!svg)continue;
-      const pic=await svgToPng(svg,2);
-      if(pic)dpics.push({pic,name:(d.querySelector('.dhd .k')||{textContent:''}).textContent.trim()});}
-    if(dpics.length){
-      const SCALE=.62;
-      /* 그림이 놓일 열을 먼저 잡고, 그 위에 매체 이름을 적는다 */
-      const cols=[];let colAt=0;
-      dpics.forEach(x=>{cols.push(colAt);colAt+=Math.ceil(x.pic.w*SCALE/70)+1;});
-      const lbl=[];
-      dpics.forEach((x,i)=>{lbl[cols[i]]=T(x.name,XS.rowhdr);});
-      push(R,lbl);
-      blank(R);blank(R);blank(R);
-      const at=R.length;
-      const hpx=Math.max(...dpics.map(x=>x.pic.h))*SCALE;
-      for(let i=0;i<Math.ceil(hpx/18)+1;i++){const rr=[];rr.__h=13.5;push(R,rr);}
-      dpics.forEach((x,i)=>
-        s1.images.push({png:x.pic.png,w:x.pic.w*SCALE,h:x.pic.h*SCALE,row:at,col:cols[i]}));
-      blank(R);
-    }else{push(R,[T('그래프를 만들 수 없어 표로 대신합니다.',2)]);}
+    /* KPI 달성 현황은 리포트에 넣지 않는다 (화면에서만 본다) */
 
     /* ---- 일자별 효율 비교 — 차트 그림 ---- */
     const chartSvg=document.querySelector('#chartDaily svg');

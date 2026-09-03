@@ -4,7 +4,8 @@
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
 const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
   stat:'주요 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
-  gantt:'소재 × 일자 게재 히스토리',creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
+  gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
+  creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
   bubble:'효율 버블'};
 function applyHidden(){
   document.querySelectorAll('[data-sect]').forEach(elm=>{
@@ -43,7 +44,77 @@ addEventListener('resize',syncStick);
 addEventListener('load',syncStick);
 setTimeout(syncStick,0);setTimeout(syncStick,600);
 
-/* 각 섹션 제목 우측에 숨기기 버튼을 붙인다 */
+/* ---------- 영역 설명 (ⓘ) ----------
+   광고주 · 시행사가 공통으로 궁금해할 만한 내용을 영역마다 한 덩어리로 적어 둔다. */
+const SECT_INFO={
+  pace:`<p>지표마다 <b>그 지표를 KPI로 잡은 라인들만</b> 모아 실적과 목표를 비교합니다.
+     캠페인 전체 노출·클릭·조회가 아니라, 그 지표를 <b>보장한 라인</b>의 합입니다.</p>
+   <p><b>얇은 막대 = 목표 페이스.</b> 각 라인의 목표를 그 라인의 <b>집행 일수로 나눠 하루치</b>를 구하고
+     오늘까지 지난 날만큼 더한 값입니다. 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않습니다.
+     달성이 이 선보다 앞서면 초록, 뒤처지면 붉은색입니다.</p>
+   <p>막대 안 구간은 <b>매체별 기여</b>입니다. 각 %는 “그 매체가 전체 목표의 몇 %를 채웠나”라서
+     모두 더하면 달성률이 됩니다.</p>
+   <p>맨 위 <b>N일차 · NN% 경과</b>는 달력상 경과일이라 목표 페이스와 값이 다를 수 있습니다.</p>`,
+  stat:`<p>조회 기간 동안의 <b>전체 합계</b>입니다. 필터를 걸면 그 범위만 집계됩니다.</p>
+   <p><b>제안 대비</b>는 “제안대로면 오늘쯤 여기까지” 와 비교한 값입니다.
+     볼륨·금액은 제안값 × 목표 페이스, 단가(CPM·CPC·CPV 등)는 제안 단가와 직접 견줍니다.
+     단가는 낮을수록 좋으므로 부호를 뒤집어 읽습니다.</p>
+   <p>카드 뒤 회색 선은 <b>일별 추이</b>입니다. 지표는 ⚙ 지표 설정에서 바꿉니다.</p>`,
+  kpi:`<p><b>캠페인 전체 노출·클릭·조회가 아닙니다.</b> 매체(또는 상품)마다
+     <b>그 매체가 KPI로 잡은 지표만</b> 골라 달성률을 그립니다.
+     예를 들어 CPV로 산 상품은 조회만, CPM으로 산 상품은 노출만 봅니다.</p>
+   <p>도넛의 <b>붉은 호가 목표 페이스</b>입니다. 달성 호는 살짝 비쳐 있어 페이스보다 앞서 있어도
+     목표 지점이 어디인지 보입니다.</p>
+   <p>맨 앞 카드는 전체 매체 기준 <b>예산 소진율</b>입니다.</p>`,
+  daily:`<p>막대는 물량, 꺾은선은 단가입니다. 위쪽 말풍선은 그 기간에 있었던 <b>운영 이슈</b>입니다.</p>
+   <p><b>예상 효율선</b>은 캠페인 설정에 넣은 제안값을 일평균으로 편 선입니다.
+     실제 선이 그 아래(단가) 또는 위(물량)에 있으면 제안보다 잘 나오고 있다는 뜻입니다.</p>`,
+  gantt:`<p>노출이 <b>1회 이상 발생한 날</b>을 게재한 날로 봅니다. 칸 색이 진할수록 그날 값이 큽니다.</p>
+   <p>농도 기준은 <b>행(소재)별 최댓값</b>입니다. 소재끼리의 절대 비교가 아니라
+     그 소재 안에서 어느 날이 셌는지를 봅니다.</p>`,
+  creative:`<p>기준별로 <b>단가가 낮은 순</b> 상위 소재입니다. 조회 효율은 CPV, 클릭 효율은 CPC,
+     노출 효율은 CPM 기준입니다.</p>
+   <p>분모가 0인 소재(조회가 없는데 CPV를 보는 등)는 순위에서 빠집니다.
+     소재를 누르면 원본과 지표를 볼 수 있습니다.</p>`,
+  heat:`<p>열마다 <b>그 라인이 KPI로 잡은 지표의 단가</b>를 봅니다. 열이 다르면 단위도 다릅니다.</p>
+   <p>색은 <b>같은 카테고리 · 같은 열 안에서만</b> 비교합니다.
+     요일별과 휴일·평일은 한 묶음으로 보고, 일자별은 따로 봅니다.
+     초록이 쌀수록(좋음), 빨강이 비쌀수록(나쁨)이고 가운데값은 회색입니다.</p>
+   <p>칸에 마우스를 올리면 그 구간의 노출·클릭·조회·소진금액을 볼 수 있습니다.</p>`,
+  treemap:`<p>면적은 값의 크기, 색은 매체입니다. 매체 → 광고상품 → 소재 순으로 물량이
+     어디에 몰려 있는지 봅니다.</p>
+   <p>색의 <b>농도는 단가 효율</b>입니다. 같은 매체 안에서 진할수록 단가가 낮습니다(= 효율이 좋습니다).</p>`,
+  bubble:`<p>가로·세로 두 축 모두 <b>단가</b>라서 <b>오른쪽 · 위로 갈수록 좋습니다.</b>
+     원의 크기는 노출량, 색은 매체입니다.</p>
+   <p>노출 분포와 <b>매체 색이 항상 같습니다.</b> 종료된 소재는 테두리만 그립니다.</p>`,
+  comment:`<p>이 캠페인에 대해 <b>시행사가 직접 적는</b> 운영 코멘트입니다.
+     ✎ 자동 작성을 누르면 지금 수치를 바탕으로 초안을 만들어 줍니다.</p>
+   <p>저장하면 광고주 화면에도 같이 보입니다.</p>`,
+  raw:`<p>날짜별 숫자를 그대로 봅니다. 주말·공휴일은 붉은 글씨, 값이 없는 칸은 회색입니다.</p>
+   <p>세로 · 가로 세그먼트로 매체별 · 상품별로 나눠 볼 수 있고,
+     가로로 길어지면 표 위 <b>세그먼트 미니맵</b>으로 건너뜁니다. 일자 · 요일 열은 왼쪽에 고정됩니다.</p>`,
+  mix:`<p><b>제안서용 표</b>입니다. 집행 실적이 아니라 캠페인 설정에 넣은 <b>예상 효율</b> 기준입니다.</p>
+   <p><b>굵은 파란 숫자는 게런티(보장) 항목</b>입니다. 묶인 라인이 모두 그 지표를 보장할 때만 표시됩니다.</p>
+   <p>KPI 목표 수는 각 라인이 자기 KPI로 잡은 목표의 합입니다.</p>`
+};
+function SUM_INFO(){return `<p>선택한 차원(매체 · 광고상품 · 타겟팅 등)으로 묶어 본 <b>집행 실적 요약</b>입니다.</p>
+  <p>목표 열은 캠페인 설정의 <b>예상 효율</b>, 나머지는 조회 기간의 실제 집행값입니다.
+    달성률 막대는 목표 대비 실적입니다.</p>
+  <p>⚙ 헤더 편집에서 열 구성과 묶음을 바꿀 수 있습니다.</p>`;}
+function attachInfo(tools,html,title){
+  if(!tools||tools.querySelector('.infowrap'))return;
+  const w=el('span','infowrap',tools);
+  w.innerHTML=`<button class="infoi" title="${esc(title||'설명')}" aria-label="설명">i</button>`
+    +`<div class="infopop">${title?`<div class="h">${esc(title)}</div>`:''}${html}</div>`;
+  const open=v=>w.classList.toggle('open',v);
+  w.addEventListener('mouseenter',()=>open(true));
+  w.addEventListener('mouseleave',()=>open(false));
+  w.querySelector('.infoi').onclick=e=>{e.stopPropagation();open(!w.classList.contains('open'));};
+}
+document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open')
+  .forEach(w=>w.classList.remove('open')));
+
+/* 각 섹션 제목 우측에 숨기기 버튼과 설명 아이콘을 붙인다 */
 (function wireHide(){
   document.querySelectorAll('.sec[data-sect]').forEach(sec=>{
     const key=sec.dataset.sect;
@@ -52,7 +123,8 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
     const b=document.createElement('button');
     b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
     b.onclick=()=>{HIDDEN.add(key);applyHidden();};
-    tools.appendChild(b);});
+    tools.appendChild(b);
+    if(SECT_INFO[key])attachInfo(tools,SECT_INFO[key],SECT_LABEL[key]||key);});
 })();
 
 /* ---------- 운영 코멘트 · 서머리 표시 순서 ----------

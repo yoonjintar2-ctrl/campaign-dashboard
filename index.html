@@ -264,6 +264,8 @@ table.tbl.nogauge .gauge .track{display:none}
 .sec.gap3{margin-top:72px}
 #summaryHost .sec:first-child{margin-top:72px}
 .sec:first-child{margin-top:0}
+/* 운영 코멘트 · 서머리 묶음은 페이지 중간에 오므로 첫 자식이라도 위 여백을 준다 */
+#cmtBlock>.sec:first-child,#sumBlock>.sec:first-child{margin-top:72px}
 .sec .note{font-size:12.5px;font-weight:500;color:var(--muted)}
 .sec .tools{margin-left:auto;display:flex;gap:6px;align-items:center}
 .subsec{font-size:15.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;margin:6px 0 9px}
@@ -302,52 +304,96 @@ table.tbl.nogauge .gauge .track{display:none}
 .cbar .k{font-size:11px;color:var(--muted);font-weight:600}
 .cbar .v{font-size:13px;font-weight:700;color:var(--ink2)}
 
-/* progress */
-.pbar{position:relative;height:46px;border-radius:12px;background:#e9edf2;overflow:hidden}
-.pbar>i{position:absolute;left:0;top:0;bottom:0;border-radius:12px;display:block}
-.pbar>.goal{background:var(--pace)}
-/* 달성률 막대 — 지금의 짙은 톤은 그대로 두고 안쪽 그라데이션만 은은하게 흐르게 */
-.pbar>.real{background:linear-gradient(104deg,
-    #3f5265 0%, #56708a 18%, #405568 36%, #5c7794 54%, #3b4e60 72%, #526b83 88%, #3f5265 100%);
-  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate}
-@keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
-@media (prefers-reduced-motion:reduce){.pbar>.real{animation:none}}
-.pbar .lab{position:absolute;top:50%;transform:translate(-100%,-50%);font-size:14px;font-weight:800;color:#fff;
-  font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-.pbar .lab.goal{font-weight:700;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
-/* ▼ 표식의 삼각형 꼭짓점이 목표 페이스 막대의 오른쪽 끝에 정확히 오도록 */
-.pmark{position:relative;height:17px}
-.pmark .m{position:absolute;bottom:0;transform:translateX(-100%);padding-right:9px;font-size:10.5px;
-  color:var(--pace);white-space:nowrap;font-weight:700;line-height:1}
-.pmark .m::after{content:'';position:absolute;right:0;bottom:-1px;transform:translateX(50%);
-  width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
-  border-top:6px solid var(--pace)}
+/* ===== 캠페인 진행 현황 =====
+   지표(노출 · 클릭 · 조회)마다 한 줄씩. 합산 수치는 쓰지 않는다.
+   좌(지표명 · 집행) · 막대 · 우(목표)는 절대 줄바꿈하지 않고, 좁아지면 가로 스크롤. */
+.pacescroll{overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
+.pacebody{min-width:560px}
+/* 맨 위 — 집행 경과 (가운데) */
+.phead{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;
+  font-variant-numeric:tabular-nums;margin-bottom:16px;display:flex;align-items:baseline;
+  gap:9px;justify-content:center;white-space:nowrap}
+.phead .sep{color:#cdd5de;font-weight:400}
+.phead .el{font-size:13px;font-weight:700;color:var(--acc)}
 
-/* 집행 일자 게이지 — 막대와 좌우 끝을 정확히 맞추고, 경과분은 단색으로 채운다 */
-.daygauge{margin-top:10px}
-.daygauge .dg-cells{display:flex;gap:2px;width:100%}
-.daygauge .dg-cells i{flex:1 1 0;min-width:0;height:9px;border-radius:2px;background:#dde3ea;display:block}
-.daygauge .dg-cells i.on{background:var(--acc)}
-.daygauge .dg-ends{display:flex;justify-content:space-between;margin-top:5px}
-.daygauge .dg-ends span{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap}
-.daygauge .dg-ends span:first-child{text-align:left}
-.daygauge .dg-ends span:last-child{text-align:right}
-/* 진행 현황 좌·우 블록 — 그래프 양옆 여백 중앙, 좌우 세 줄의 높이·서체를 동일하게 */
-.pside{min-width:210px;flex:0 0 210px;text-align:center}
-.pside .ps-k{font-size:11.5px;font-weight:600;color:var(--muted);line-height:17px;height:17px}
-.pside .ps-v{display:flex;align-items:baseline;justify-content:center;gap:7px;height:38px;margin-top:3px}
-.pside .ps-v b{font-size:30px;font-weight:700;letter-spacing:-.8px;line-height:38px}
-.pside .ps-v span{font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
-.pside .ps-s{font-size:11px;color:var(--muted);font-weight:400;line-height:17px;height:17px;margin-top:3px;
+.pline{display:flex;flex-wrap:nowrap;align-items:center;gap:16px}
+.pline+.pline{margin-top:24px}
+.pline.days{margin-bottom:24px;padding-bottom:18px;border-bottom:1px dashed var(--line)}
+.pside{flex:0 0 130px;white-space:nowrap;text-align:right}
+.pside.r{text-align:left}
+/* 지표 이름을 먼저 읽히게 — 이름은 크게 위, 수치는 작게 아래 */
+.pside .nm1{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:20px}
+.pside .sub1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px;
   font-variant-numeric:tabular-nums}
-.goalout{margin-top:8px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;
-  gap:18px;flex-wrap:wrap}
-.goalout .lg{display:inline-flex;align-items:center;gap:6px}
-.goalout .lg b{font-variant-numeric:tabular-nums}
-.goalout .lg.pace{color:var(--pace)}
-.goalout .sw{width:10px;height:10px;border-radius:3px;background:var(--pace);display:inline-block}
+.pside.r .nm1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px}
+.pside.r .sub1{font-size:15px;font-weight:800;color:var(--ink2);line-height:20px}
+.pline.days .pside .nm1{font-size:11.5px;font-weight:600;color:var(--muted);line-height:16px}
+.pline.days .pside .sub1{font-size:13.5px;font-weight:800;color:var(--ink2);line-height:19px}
+.pmid{flex:1 1 auto;min-width:250px}
+
+/* 지표별 달성 막대 — 매체는 색이 아니라 간격으로만 나눈다 */
+.pbar{position:relative;height:34px;border-radius:9px;background:#e9edf2;overflow:hidden}
+.pbar .mstack{position:absolute;left:0;top:0;bottom:0;display:flex;gap:3px}
+.pbar .mstack>i{min-width:0;overflow:hidden;background:var(--segbg);
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px}
+.pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
+.pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
+.pbar .mstack>i:only-child{border-radius:9px}
+/* 매체 글자 — 있는 줄만 알 정도로 옅게 */
+.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;line-height:1.2}
+.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);
+  white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+.pbar .mstack i.nolb .nm,.pbar .mstack i.nolb .pc{display:none}
+.pbar .mstack i.nopc .pc{display:none}
+.pbar .pv{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:800;
+  font-variant-numeric:tabular-nums;color:var(--acc-d);z-index:4;white-space:nowrap}
+.pbar .pv.in{color:#fff;text-shadow:0 1px 3px rgba(20,30,44,.3)}
+/* 채워진 구간 위를 은은하게 흐르는 광택 */
+.pbar .sheen{position:absolute;left:0;top:0;bottom:0;pointer-events:none;border-radius:9px;
+  background:linear-gradient(104deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.13) 26%,
+    rgba(255,255,255,0) 50%,rgba(255,255,255,.11) 76%,rgba(255,255,255,0) 100%);
+  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate;z-index:3}
+@keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){.pbar .sheen{animation:none}}
+/* 얇은 목표 페이스 막대 */
+.prow{position:relative;height:5px;border-radius:3px;background:#eceff3;margin-top:5px}
+.prow>i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;display:block}
+
+/* 집행 일자 게이지 — 다른 막대와 같은 남색 계열 */
+.dgauge{display:flex;gap:2px;width:100%}
+.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:#e3e8ee;display:block}
+.dgauge i.on{background:linear-gradient(160deg,#5f83a9,#4c729a)}
+.dgauge i.on.rest{background:linear-gradient(160deg,#87a2be,#7391b2)}
+.dgauge i.rest{background:#e9edf2}
+
+.pfoot{display:flex;align-items:center;gap:9px;margin-top:18px;padding-top:12px;
+  border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2);font-weight:600;
+  flex-wrap:wrap}
+.pfoot>i{width:22px;height:5px;border-radius:3px;display:inline-block;flex:none;
+  background:linear-gradient(90deg,#8fb8a1,#d3a49e)}
+.pfoot span{color:var(--muted);font-weight:500}
 .delta{font-weight:700}.delta.up{color:var(--acc)}.delta.down{color:var(--neg)}
-.dates{margin-top:9px;font-size:11px;color:var(--muted);font-weight:400;line-height:1.75}
+
+/* ===== 영역 설명 (ⓘ) ===== */
+.infowrap{position:relative;display:inline-flex}
+.infoi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#fff;
+  color:var(--muted);font-size:11.5px;font-weight:800;cursor:help;display:inline-flex;
+  align-items:center;justify-content:center;line-height:1;padding:0;transition:.12s;
+  font-family:inherit}
+.infoi:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft2)}
+.infopop{position:absolute;right:0;top:calc(100% + 8px);width:340px;max-width:78vw;
+  background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow2);
+  padding:13px 15px;z-index:70;font-size:12px;font-weight:400;color:var(--ink2);
+  line-height:1.6;letter-spacing:0;text-align:left;white-space:normal}
+.infopop::before{content:'';position:absolute;right:5px;top:-6px;width:11px;height:11px;
+  background:#fff;border-left:1px solid var(--line);border-top:1px solid var(--line);
+  transform:rotate(45deg)}
+.infopop b{color:var(--ink);font-weight:700}
+.infopop .h{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.infopop p{margin:0 0 7px}
+.infopop p:last-child{margin-bottom:0}
+.infowrap:not(.open) .infopop{display:none}
 
 /* donut */
 /* KPI 카드 — 줄바꿈 없이 가로로 스크롤한다 (매체가 늘어도 한 줄) */
@@ -390,7 +436,10 @@ table.tbl.nogauge .gauge .track{display:none}
 .donut .kline .kv span{color:var(--muted)}
 
 /* stat tiles — 정사각형에 가까운 카드 + 배경 일별 추이 */
-.strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
+.strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
+  padding:5px 4px 10px;scroll-snap-type:x proximity}
+.strip>.stat{flex:1 0 244px;min-width:244px;scroll-snap-align:start}
 .stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/.94;min-height:250px}
 .stat .sbody{position:relative;z-index:2;padding:18px 20px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
@@ -432,7 +481,9 @@ table.tbl.nogauge .gauge .track{display:none}
 .duo>.duocol>.card>.bd{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
 .duo .sec .tools{flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:1440px){.duo{grid-template-columns:1fr;gap:0}
-  .duo>.duocol>.card{min-height:560px}}
+  .duo>.duocol>.card{min-height:560px}
+  /* 두 칸이 위아래로 놓이면 아래 칸 제목 위에 다른 섹션과 같은 여백을 준다 */
+  .duo>.duocol+.duocol>.sec{margin-top:72px}}
 /* 흰 영역 안에서 그래프가 남은 높이를 채운다 */
 .duo #treemap{flex:1 1 auto;min-height:0;display:flex}
 .duo .tmap{flex:1 1 auto;height:auto;min-height:340px}
@@ -445,7 +496,9 @@ table.tbl.nogauge .gauge .track{display:none}
   background:var(--plane2);border:1px solid var(--line2)}
 /* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
 .tmap .sect{position:absolute;overflow:hidden;border:4px solid var(--surface);border-radius:3px}
-.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;display:flex;align-items:center;
+/* 하위 그룹(.grp)이 2px 테두리만큼 안쪽에서 시작하므로 매체 머리글도 같이 2px 들여
+   왼쪽 선이 어긋나 보이지 않게 한다 */
+.tmap .sect>.sh{position:absolute;left:2px;right:2px;top:2px;height:21px;display:flex;align-items:center;
   gap:6px;padding:0 8px;font-size:11.5px;font-weight:800;color:#fff;
   white-space:nowrap;overflow:hidden;z-index:3}
 .tmap .sect>.sh .sv{margin-left:auto;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums}
@@ -506,12 +559,6 @@ table.tbl.nogauge .gauge .track{display:none}
 .crband{margin:0 0 8px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 .crband .t{font-size:14px;font-weight:700;color:var(--ink)}
 .crband .n{font-size:11.5px;color:var(--muted)}
-.cr .media{position:absolute;top:9px;left:9px;background:rgba(31,44,61,.62);border-radius:7px;
-  padding:2px 8px;font-size:10.5px;font-weight:700;color:#fff;z-index:3}
-.cr .rankno{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:50%;
-  background:var(--acc);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;z-index:3}
-.cr .meta .eff{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:var(--muted)}
-.cr .meta .eff b{color:var(--acc);font-variant-numeric:tabular-nums}
 
 /* charts */
 svg.chart{display:block;width:100%;height:auto;overflow:visible}
@@ -758,36 +805,46 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .gcard.ins-l::before{left:-6px}.gcard.ins-r::after{right:-6px}
 .bfoot{display:flex;justify-content:flex-end;gap:8px;padding-top:11px;border-top:1px dashed var(--line);margin-top:4px}
 
-/* creatives — 기준(조회 · 클릭)마다 한 칸, 두 칸이 좌우로 나란히 */
-.crcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 30px;align-items:start}
-@media(max-width:1180px){.crcols{grid-template-columns:1fr}}
-/* 한 칸 안에서 1위는 전체 폭, 2위부터는 가로 절반씩 */
-.crgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.crgrid>.cr.lead{grid-column:1/-1}
-/* 1위는 크게 보여 주되 한 화면을 다 잡아먹지 않도록 높이를 잡아 둔다 */
-.crgrid>.cr.lead .thumb{aspect-ratio:auto;height:236px}
-.crgrid>.cr:not(.lead) .thumb{aspect-ratio:16/9}
-.crgrid>.cr:not(.lead) .meta{padding:8px 9px 9px}
-.crgrid>.cr:not(.lead) .meta .nm{font-size:11.5px}
-.crgrid>.cr:not(.lead) .meta .mt{font-size:10px;margin-top:3px}
-.crgrid>.cr.lead .rankno{width:24px;height:24px;font-size:12px}
-.crgrid>.cr:not(.lead) .rankno{width:18px;height:18px;font-size:9.5px;top:7px;right:7px}
-.crgrid>.cr:not(.lead) .media,.crgrid>.cr:not(.lead) .rt{font-size:9.5px;padding:2px 6px}
+/* creatives — 기준(조회 · 클릭 · 노출)마다 한 칸, 세 칸이 좌우로 나란히.
+   칸 안에서는 1위를 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 (영역 높이를 낮춘다) */
+.crcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 30px;align-items:start}
+@media(max-width:1400px){.crcols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.crcols{grid-template-columns:1fr}}
+.crduo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.78fr);gap:12px;align-items:stretch}
+.crrest{display:grid;gap:9px;min-width:0}
 .cr{overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s;background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
 .cr:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
-.cr .thumb{position:relative;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center}
+.cr .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;display:grid;place-items:center;background:#e9edf2}
 .cr .thumb .fill{position:absolute;inset:0;background-size:cover;background-position:center}
-.cr .badge{position:absolute;top:9px;left:9px;background:rgba(31,44,61,.6);border-radius:7px;padding:2px 8px;
-  font-size:10.5px;font-weight:700;color:#fff;z-index:2}
-.cr .rt{position:absolute;bottom:9px;right:9px;background:rgba(255,255,255,.9);border-radius:7px;padding:2px 7px;
-  font-size:10px;font-weight:700;color:var(--ink2);z-index:2}
-.cr .play{width:32px;height:32px;border-radius:50%;background:rgba(31,44,61,.45);display:grid;place-items:center;
-  color:#fff;font-size:13px;z-index:2}
-.cr .meta{padding:9px 11px 11px;border-top:1px solid var(--line2)}
-.cr .meta .nm{font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cr .meta .mt{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;margin-top:4px}
-.cr .meta .mt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cr .thumb .ytprev{position:absolute;left:50%;top:50%;width:178%;height:178%;
+  transform:translate(-50%,-50%);border:0;pointer-events:none;z-index:1}
+.cr .thumb.playable::after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:34px;height:34px;border-radius:50%;background:rgba(31,44,61,.42);color:#fff;font-size:12px;
+  display:grid;place-items:center;z-index:2;transition:opacity .15s}
+.cr .thumb.playable:hover::after{opacity:0}
+.cr .media{position:absolute;top:8px;left:8px;background:rgba(31,44,61,.62);border-radius:7px;
+  padding:2px 8px;font-size:10.5px;font-weight:700;color:#fff;z-index:3}
+.cr .rankno{position:absolute;top:8px;right:8px;width:21px;height:21px;border-radius:50%;
+  background:var(--acc);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;z-index:3}
+.cr .rt{position:absolute;bottom:8px;right:8px;background:rgba(255,255,255,.9);border-radius:7px;
+  padding:2px 7px;font-size:10px;font-weight:700;color:var(--ink2);z-index:3}
+.cr .meta{padding:9px 11px 11px;border-top:1px solid var(--line2);min-width:0}
+.cr .meta .nm{font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .meta .eff{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px;
+  font-size:11.5px;color:var(--muted)}
+.cr .meta .eff b{color:var(--acc);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+/* 2위 이하 — 가로형 미니 카드 */
+.cr.mini{display:flex;align-items:stretch;min-height:0}
+.cr.mini .thumb{flex:none;height:100%;aspect-ratio:1/1;border-radius:0}
+.cr.mini .thumb .rankno{width:17px;height:17px;font-size:9.5px;top:5px;right:5px}
+.cr.mini .thumb.playable::after{width:22px;height:22px;font-size:9px}
+.cr.mini .meta{flex:1;min-width:0;border-top:0;border-left:1px solid var(--line2);
+  padding:7px 10px;display:flex;flex-direction:column;justify-content:center}
+.cr.mini .meta .nm{font-size:11.5px}
+.cr.mini .meta .mm{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px}
+.cr.mini .meta .eff{margin-top:3px;font-size:10.5px}
+.cr.mini .meta .eff b{font-size:12.5px}
 
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(23,33,46,.62);backdrop-filter:blur(3px);z-index:500;
@@ -871,6 +928,47 @@ table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
   background:linear-gradient(90deg,#faeeec,#d9a49e,#993f37)}
 .shlegend em{font-style:normal}
 .shlegend .ar{opacity:.55}
+/* 요일별 · 일자별 효율 히트맵 */
+.hmramp{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600}
+.hmramp i{width:84px;height:9px;display:inline-block;border-radius:2px;
+  background:linear-gradient(90deg,#b6cec1,#dbdfe4,#dcc0bc)}
+.hmramp em{font-style:normal}
+/* 세로 스크롤 없이 전부 보여 준다 — 머리글은 떠 있는 복사본(#heatHead)으로 고정 */
+.heatwrap{max-height:none;overflow-y:visible}
+table.tbl.heat{border-spacing:0;table-layout:fixed;width:100%}
+table.tbl.heat th,table.tbl.heat td{border-right:0;border-bottom:0}
+/* 머리글 3단 — 구분·매체는 진한 남색, 광고상품은 한 톤 연하게, KPI 는 가장 약하게 */
+table.tbl.heat th{padding:7px 9px;line-height:1.3;border-bottom:2px solid #fff;
+  border-right:2px solid #fff;position:static;white-space:normal;word-break:keep-all}
+table.tbl.heat thead th:last-child{border-right:0}
+table.tbl.heat th.lead{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700;
+  border-bottom:0;vertical-align:middle}
+table.tbl.heat th.h1{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700}
+table.tbl.heat th.h2{background:#6d7b8a;color:#fff;font-size:11.5px;font-weight:600}
+table.tbl.heat th.h3{background:#eef1f5;color:var(--sec);font-size:10.5px;font-weight:700;
+  letter-spacing:.01em;white-space:nowrap}
+table.tbl.heat td{padding:0;background:transparent !important}
+/* 구분 열 — 가운데 정렬 · 남색 글씨 */
+table.tbl.heat td.head{padding:0 10px;background:#fbfcfe !important;font-weight:700;
+  color:var(--acc-d);text-align:center;font-size:11.5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+table.tbl.heat tbody tr:hover td.head{background:var(--acc-soft) !important}
+table.tbl.heat td.head.hol{color:var(--hol)}
+/* 값 칸 — 선 대신 여백으로 나눈 칩 */
+table.tbl.heat td.hm{cursor:default}
+table.tbl.heat td.hm .c{display:block;margin:2px;border-radius:6px;padding:6px 8px;
+  font-size:12px;font-weight:600;color:#243040;background:#f2f4f7;
+  font-variant-numeric:tabular-nums;text-align:center;transition:filter .12s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.tbl.heat td.hm .c.na{color:#c2c9d2;background:#f6f7f9;font-weight:500}
+table.tbl.heat td.hm:hover .c{filter:brightness(.94)}
+/* 카테고리 구분 줄 */
+table.tbl.heat tr.hcat td{background:#e6ebf1 !important;color:#26313d;font-weight:800;
+  text-align:left;letter-spacing:.02em;padding:7px 12px;font-size:12px}
+table.tbl.heat tr.hcat+tr td{padding-top:1px}
+/* 왼쪽 구분 열은 가로 스크롤에서도 붙어 있게 */
+table.tbl.heat td.head,table.tbl.heat tr.hcat td{position:sticky;left:0;z-index:3}
+table.tbl.heat th.lead{position:sticky;left:0;z-index:6}
 .crthumb-sm{width:34px;height:26px;border-radius:5px;display:inline-block;vertical-align:middle;
   background-size:cover;background-position:center;box-shadow:0 0 0 1px var(--line)}
 
@@ -1012,6 +1110,12 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <div class="sec" data-sect="pace">캠페인 진행 현황</div>
     <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
 
+    <div class="sec gap" data-sect="stat">주요 지표
+      <div class="tools"><button class="btn sm agency-only" id="statCfgBtn">⚙ 지표 설정</button></div>
+    </div>
+    <div id="statCfgBox" class="hidden" data-sect="stat"></div>
+    <div class="strip" id="statStrip" data-sect="stat"></div>
+
     <div class="sec gap" data-sect="kpi">KPI 달성 현황
       <select class="ctl" id="kpiGroupSel">
         <option value="media">매체별</option><option value="product">상품별</option><option value="line">제품별</option>
@@ -1023,12 +1127,6 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       </div>
     </div>
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
-
-    <div class="sec gap" data-sect="stat">주요 지표
-      <div class="tools"><button class="btn sm agency-only" id="statCfgBtn">⚙ 지표 설정</button></div>
-    </div>
-    <div id="statCfgBox" class="hidden" data-sect="stat"></div>
-    <div class="grid strip" id="statStrip" data-sect="stat"></div>
 
     <div class="sec gap" data-sect="daily">일자별 효율 비교
       <div class="tools">
@@ -1053,7 +1151,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       </div>
     </div>
     <div id="cmtBlock">
-      <div class="sec gap" data-sect="comment">운영 코멘트
+      <div class="sec gap3" data-sect="comment">운영 코멘트
         <span class="note" id="cmtState"></span>
         <div class="tools agency-only">
           <button class="btn sm" id="cmtAuto">✎ 자동 작성</button>
@@ -1084,12 +1182,21 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <div class="tools">
         <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>
         <span class="hint">각</span><select class="ctl" id="crTopN">
-          <option>3</option><option>4</option><option selected>5</option><option>10</option><option>15</option>
+          <option>3</option><option selected>4</option><option>5</option><option>6</option>
         </select><span class="hint">개</span>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>
     </div>
     <div id="creatives" data-sect="creative"></div>
+
+    <div class="sec gap3" data-sect="heat">요일별 · 일자별 효율 히트맵
+      <span class="note">각 열의 <b>KPI 지표 단가</b> · 색은 카테고리 안에서 비교 — 초록 = 좋음 · 회색 = 중간 · 빨강 = 나쁨</span>
+      <div class="tools">
+        <span class="hmramp"><em>좋음</em><i></i><em>나쁨</em></span>
+        <span class="switch on" id="heatDay"><i></i> 일자별</span>
+      </div>
+    </div>
+    <div class="card fit" data-sect="heat"><div class="tbl-wrap heatwrap"><table class="tbl heat" id="heatTbl"></table></div></div>
 
     <div class="duo">
       <div class="duocol">
@@ -2043,6 +2150,48 @@ function showTip(x,y,html){tip.innerHTML=html;tip.style.opacity=1;
   tip.style.left=Math.min(x+14,innerWidth-w-10)+'px';tip.style.top=Math.max(10,y-h-14)+'px';}
 const hideTip=()=>tip.style.opacity=0;
 
+/* 색 보정 — 밝기만 바꾸면 채도가 죽으므로 HSL 로 바꿔 명도·채도를 같이 조절한다 */
+const hex2rgb=h=>{h=h.replace('#','');
+  if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+function rgb2hsl([r,g,b]){r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
+  let h=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
+    h=mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4);h/=6;}
+  return [h,s,l];}
+function hsl2rgb([h,s,l]){
+  if(!s)return [l,l,l].map(v=>Math.round(v*255));
+  const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const f=t=>{t=(t+1)%1;
+    if(t<1/6)return p+(q-p)*6*t;
+    if(t<1/2)return q;
+    if(t<2/3)return p+(q-p)*(2/3-t)*6;
+    return p;};
+  return [f(h+1/3),f(h),f(h-1/3)].map(v=>Math.round(v*255));}
+const clamp01=v=>Math.min(1,Math.max(0,v));
+/* dl = 명도 증감, ds = 채도 증감 (밝게 할수록 채도를 조금 올려 색이 바래지 않게) */
+const adjust=(color,dl,ds)=>{const [h,s,l]=rgb2hsl(hex2rgb(color));
+  return 'rgb('+hsl2rgb([h,clamp01(s+(ds||0)),clamp01(l+dl)]).join(',')+')';};
+
+/* 도넛 링용 그라데이션 — 시작(위)은 밝게, 끝(아래)은 진하게.
+   호를 따라가는 그라데이션은 SVG 에 없으므로 대각선 linearGradient 로 농담 차이를 준다. */
+function ringGrad(defs,color){
+  const id=uid();
+  const g=S('linearGradient',{id,x1:'0',y1:'0',x2:'1',y2:'1'},defs);
+  S('stop',{offset:'0%','stop-color':adjust(color,.12,.06)},g);
+  S('stop',{offset:'50%','stop-color':color},g);
+  S('stop',{offset:'100%','stop-color':adjust(color,-.09,.04)},g);
+  return `url(#${id})`;
+}
+/* 달성률 호는 살짝 비쳐서, 페이스보다 앞서 있어도 뒤의 목표 페이스 호가 보인다 */
+const ACH_OPACITY=.8;
+/* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
+const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
+const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
+/* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
+const PACE_OK='#8fb8a1', PACE_NG='#d3a49e';
+
 const PATTERN="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Crect x='4' y='7' width='38' height='30' rx='5' fill='%23ffffff' fill-opacity='0.11'/%3E%3Ccircle cx='15' cy='17' r='3.6' fill='%23ffffff' fill-opacity='0.17'/%3E%3Cpath d='M8 33 L19 20 L27 28 L32 23 L38 33 Z' fill='%23ffffff' fill-opacity='0.17'/%3E%3C/svg%3E\")";
 
 function renderCampBar(){
@@ -2053,49 +2202,97 @@ function renderCampBar(){
     +it('총 예산',won(gross))
     +it('총 Value',`${won(sum(LINES.map(lineValue)))} <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(bonusRate(LINES),1)}</span>`);
 }
-function renderPace(){
-  const ls=activeLines(),w=sum(ls.map(lineGross));
-  const ach=sum(ls.map(l=>kpiAch(l)*lineGross(l)))/w;
-  const b=aggFacts(paceFacts());
-  const budget=sum(ls.map(lineGross)),pr=paceRatio(),gap=ach-pr;
+/* 만 · 억 단위 축약 (막대 안 · 종합 목표 내역에서 쓴다) */
+const manUnit=n=>{
+  if(!isFinite(n))return '–';
+  n=Math.round(n);
+  if(n>=100000000)return (n/100000000).toFixed(1).replace(/\.0$/,'')+'억';
+  if(n>=10000)return Math.round(n/10000).toLocaleString('ko-KR')+'만';
+  return n.toLocaleString('ko-KR');};
+/* 각 라인이 자기 KPI 로 쌓은 실적 · 목표를 지표별로 모은다 */
+/* 각 라인이 자기 KPI 로 쌓은 실적 · 목표를 지표별로 모은다.
+   목표 페이스(due)는 단순 경과일 비율이 아니라 라인별 집행 기간을 반영한다 —
+   각 라인의 목표를 그 라인의 집행 일수로 나눠 하루치를 구하고 오늘까지 지난 날만큼 더한다.
+   그래서 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않는다. */
+function paceKpiRows(){
   const sc=paceScope();
-  const aP=Math.min(ach,1)*100,gP=Math.min(pr,1)*100,overlap=Math.abs(aP-gP)<12;
-  /* 집행 일자 게이지 — 총 집행일수만큼 작은 칸, 경과분은 진하게 */
-  const cells=[...Array(sc.days)].map((_,i)=>{
-    const d=ALLDATES[sc.i0+i],done=i<sc.elapsed;
-    return `<i class="${done?'on':''}" title="${dFull(d)} (${WD[d.getDay()]})"></i>`;}).join('');
-  $('paceBox').innerHTML=`
-    <div style="display:flex;align-items:center;gap:30px;flex-wrap:wrap">
-      <div class="pside">
-        <div class="ps-k">집행 경과</div>
-        <div class="ps-v"><b>${sc.elapsed}일차</b><span>/ ${sc.days}일 · ${pct(pr,1)}</span></div>
-        <div class="ps-s">데이터 기준일자 ${dFull(dT)}까지</div>
-      </div>
-      <div style="flex:1;min-width:440px">
-        <div style="font-size:13px;margin-bottom:7px;color:var(--ink2);font-weight:700">종합 KPI 달성률</div>
-        <div class="pbar">
-          <i class="goal" style="width:${gP}%"></i>
-          <i class="real" style="width:${aP}%"></i>
-        </div>
-        <div class="goalout">
-          <span class="lg"><span class="sw" style="background:var(--acc)"></span>달성률</span>
-          <span class="lg pace"><span class="sw"></span>목표 페이스</span>
-        </div>
-        <div class="daygauge">
-          <span class="dg-cells">${cells}</span>
-          <div class="dg-ends">
-            <span>${dFull(sc.start)} (${WD[sc.start.getDay()]})</span>
-            <span>${dFull(sc.end)} (${WD[sc.end.getDay()]})</span>
-          </div>
-        </div>
-      </div>
-      <div class="pside">
-        <div class="ps-k">예산 소진</div>
-        <div class="ps-v"><b>${pct(b.cost/budget,1)}</b><span>/ ${won(budget)}</span></div>
-        <div class="ps-s">소진 광고비 ${won(b.cost)}</div>
-      </div>
-    </div>`;
+  const idxOf=s2=>{const t=ALLDATES.findIndex(d=>iso(d)===s2);return t<0?sc.i0:t;};
+  const per=new Map();
+  activeLines().forEach(l=>{
+    const k=l.kpi;if(!k)return;
+    const goal=(+(l.e&&l.e[k]))||0;if(!goal)return;
+    if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
+    const o=per.get(k);
+    const a=Math.max(l.start?idxOf(l.start):sc.i0,sc.i0);
+    const z=Math.min(l.end?idxOf(l.end):sc.i1,sc.i1);
+    const n=Math.max(1,z-a+1);
+    const done=Math.max(0,Math.min(n,sc.i0+sc.elapsed-a));
+    const got=paceSum(l.daily[k])||0;
+    o.act+=got;o.goal+=goal;o.due+=goal*done/n;
+    o.media.set(l.media,(o.media.get(l.media)||0)+got);});
+  return [...per.values()].filter(x=>x.goal>0)
+    .map(x=>({...x,media:[...x.media.entries()].map(([m,v])=>({m,v}))
+      .filter(y=>y.v>0).sort((a,b)=>b.v-a.v)}))
+    .sort((a,b)=>b.goal-a.goal);
 }
+function renderPace(){
+  const sc=paceScope();
+  const rows=paceKpiRows();
+  const cells=[...Array(sc.days)].map((_,i)=>{
+    const d=ALLDATES[sc.i0+i],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
+    return `<i class="${i<sc.elapsed?'on':''}${rest?' rest':''}"`
+      +` title="${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}"></i>`;}).join('');
+  /* 지표마다 한 줄 — 합산 수치는 쓰지 않는다 */
+  const line=(x,i)=>{
+    const l=KPI_LABEL[x.k]||x.k, c=PACE_SEG[i%PACE_SEG.length];
+    const r=x.goal?x.act/x.goal:0, f=Math.min(Math.max(r,0),1)*100;
+    const pace=Math.min(Math.max(x.goal?x.due/x.goal:0,0),1)*100;
+    const ahead=r>=(x.goal?x.due/x.goal:0);
+    /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
+       각 구간의 %는 "그 매체가 전체 목표의 몇 %를 채웠나" 라서 다 더하면 달성률이 된다. */
+    const bg=`linear-gradient(150deg,${adjust(c,.08,.05)},${c})`;
+    const segs=(x.media.length?x.media:[{m:'–',v:x.act}]).map(y=>
+      `<i style="flex:${Math.max(y.v,1)} 1 0" data-m="${esc(y.m)}">`
+      +`<span class="nm">${esc(y.m)}</span>`
+      +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
+    return `<div class="pline">
+      <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
+      <div class="pmid">
+        <div class="pbar">
+          <div class="mstack" style="width:${f}%;--segbg:${bg}">${segs}</div>
+          <div class="sheen" style="width:${f}%"></div>
+          <b class="pv${f>26?' in':''}" style="${f>26?`right:calc(100% - ${f}% + 12px)`:`left:calc(${f}% + 12px)`}">${pct(r,1)}</b>
+        </div>
+        <div class="prow"><i style="width:${pace}%;background:${ahead?PACE_OK:PACE_NG}"></i></div>
+      </div>
+      <div class="pside r"><div class="nm1">목표</div><div class="sub1">${manUnit(x.goal)}</div></div>
+    </div>`;};
+  $('paceBox').innerHTML=`
+    <div class="pacescroll"><div class="pacebody">
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
+        <span class="el">${Math.round(sc.elapsed/sc.days*100)}% 경과</span></div>
+      <div class="pline days">
+        <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
+        <div class="pmid"><div class="dgauge">${cells}</div></div>
+        <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(sc.end)}(${WD[sc.end.getDay()]})</div></div>
+      </div>
+      ${rows.map(line).join('')}
+      <div class="pfoot"><i></i>얇은 막대 = <b>목표 페이스</b>
+        <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다</span></div>
+    </div></div>`;
+  fitPaceLabels();
+}
+/* 구간이 좁으면 % → 매체명 순서로 글자를 지운다 */
+function fitPaceLabels(){
+  document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
+    const w=seg.getBoundingClientRect().width;
+    const nm=seg.querySelector('.nm');if(!nm)return;
+    seg.classList.remove('nolb','nopc');
+    const need=nm.textContent.length*7.4+20;
+    if(w<need)seg.classList.add('nolb');
+    else if(w<need+14)seg.classList.add('nopc');});
+}
+addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
 function renderSpendDonut(box,pr){
   const ls=activeLines();
@@ -2112,10 +2309,14 @@ function renderSpendDonut(box,pr){
   const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+  /* 둥근 끝(round cap)은 호 끝이 TH/2 만큼 더 튀어나가 회색 트랙을 덮어 버린다 —
+     남아 있어야 할 회색 구간이 남색으로 보이던 원인이라 butt 로 자른다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-    'stroke-linecap':'round','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
-  /* 게이지 색은 다른 KPI 카드와 동일 */
-  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#495e72','stroke-width':TH,'stroke-linecap':'round',
+    'stroke-linecap':'butt','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+  /* 게이지 색은 다른 KPI 카드와 동일 — 그라데이션 + 반투명(뒤의 목표 페이스가 비친다).
+     100% 를 넘기면 뒤에 비칠 것이 없으므로 불투명하게 그려 톤이 갈리지 않게 한다 */
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,
+    'stroke-linecap':'butt','stroke-opacity':f>=1?1:ACH_OPACITY,
     'stroke-dasharray':`${cir*f} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 호 위에 소진 금액을 곡선으로 (다른 카드의 "집행 …" 라벨과 같은 방식) */
   (function(){
@@ -2136,7 +2337,7 @@ function renderSpendDonut(box,pr){
     }else{
       const [tx,ty]=pxy(360*f/2,rad+TH/2+9);
       const t=S('text',{x:Math.max(4,Math.min(VB-4,tx)),y:ty,'dominant-baseline':'central',
-        'text-anchor':tx>=CC?'start':'end','font-size':11.5,'font-weight':800,fill:'#495e72'},svg);
+        'text-anchor':tx>=CC?'start':'end','font-size':11.5,'font-weight':800,fill:KPI_RING[0]},svg);
       t.textContent=label;}
   })();
   const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
@@ -2164,7 +2365,8 @@ function renderDonuts(){
   const keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
   renderSpendDonut(box,pr);
 
-  const COL=['#495e72','#677b8d','#8897a6'];
+  /* 배경 그라데이션(청록빛 남색)과 같은 계열로 채도를 올린 링 색 */
+  const COL=KPI_RING;
   keys.forEach(name=>{
     const items=ls.filter(l=>(mode==='product'?l.media+' · '+l.product:l[mode])===name);
     /* KPI가 섞여 있으면 예산이 큰 순으로 최대 2개까지만 겹쳐 그린다 (3개 이상은 판독이 어려움) */
@@ -2244,8 +2446,10 @@ function renderDonuts(){
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-        'stroke-linecap':'round','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
-      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:r.color,'stroke-width':TH,'stroke-linecap':'round',
+        'stroke-linecap':'butt','stroke-dasharray':`${cir*pf} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+      /* 100% 를 넘기면 불투명하게 — 뒤의 페이스가 비쳐 톤이 갈리는 것을 막는다 */
+      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,r.color),'stroke-width':TH,
+        'stroke-linecap':'butt','stroke-opacity':af>=1?1:ACH_OPACITY,
         'stroke-dasharray':`${cir*af} ${cir}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
       const pDeg=360*pf, aDeg=360*af;
       /* 호 안쪽 — 집행 실적 */
@@ -2323,7 +2527,6 @@ function renderStrip(){
   const a=aggFacts(paceFacts()),e=aggExp(activeLines()),pr=paceRatio();
   const box=$('statStrip');box.innerHTML='';
   const cols=cfgCols(STAT_CFG);
-  box.style.gridTemplateColumns=`repeat(${Math.min(Math.max(cols.length,2),5)},minmax(0,1fr))`;
   cols.forEach(k=>{
     const av=mval(k,a),ev=mval(k,e),isAbs=METRICS[k].kind==='abs';
     const rate=isAbs?av/ev:(['cpm','cpc','cpv','cpa'].includes(k)?ev/av:av/ev);
@@ -2530,9 +2733,14 @@ function renderDaily(){
   if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'#f7f9fb'},svg);
   ds.forEach((d,i)=>{
     let base=Y(0);const future=i>=EL;
-    series.forEach((s,si)=>{const v=future?(SHOW_FORECAST?s.fvals[i]:0):s.vals[i];if(v<=0)return;
+    /* 값이 0인 계열은 건너뛰므로, 맨 위에 실제로 그려지는 칸을 먼저 찾아 거기에만 둥근 모서리를 준다
+       (그렇지 않으면 날짜마다 맨 윗칸이 둥글기도, 각지기도 한다) */
+    const vOf=si=>future?(SHOW_FORECAST?series[si].fvals[i]:0):series[si].vals[i];
+    let topIdx=-1;
+    for(let si=series.length-1;si>=0;si--){if(vOf(si)>0){topIdx=si;break;}}
+    series.forEach((s,si)=>{const v=vOf(si);if(v<=0)return;
       const h=PH*(v/yMax),y=base-h;
-      S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===series.length-1?4:0),
+      S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===topIdx?4:0),
         fill:pal[si],opacity:future?.34:1},svg);
       base=y;});
     const rest=isRest(d);
@@ -2647,8 +2855,7 @@ function renderDaily(){
     x.innerHTML=`<span class="linekey"></span><span style="color:var(--acc2);font-weight:700">${METRICS[lk].l}</span> <span style="color:var(--muted)">(우측 축)</span>`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.34"></span>미집행 구간 예상값 (일할)`;}
-  if(SHOW_ISSUES){const x=el('span','it',lg);
-    x.innerHTML=`<span style="width:14px;height:9px;border-radius:3px;background:#eef1f5;border:1px solid #b9c4d0;display:inline-block"></span>운영 이슈`;}
+
 }
 
 /* ===== 6. 서머리 ===== */
@@ -2792,6 +2999,7 @@ function renderSummaries(){
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
+    if(typeof attachInfo==='function')attachInfo(tools,SUM_INFO(),s.name);
     const cfgBox=el('div','hidden',host);
     const card=el('div','card fit',host);
     /* 서머리는 세로 스크롤 없이 전체 높이를 그대로 노출한다 (가로 스크롤만) */
@@ -2968,6 +3176,181 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks){
   addEventListener('resize',paint);
   paint();setTimeout(paint,0);
 }
+/* ===== 요일별 · 일자별 효율 히트맵 =====
+   열 = 매체 × 광고상품 × KPI 지표, 값 = 그 KPI 의 단가.
+   색은 스케일 그룹(요일 · 휴일평일 = 한 묶음 / 일자별 = 따로) 안에서만 비교한다 —
+   초록(싸다=좋다) → 회색(중간) → 빨강(비싸다=나쁘다). */
+const KPI_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa',eng:'cpe',install:'cpi',
+  lead:'cpa',like:'cpe',share:'cpe'};
+/* 중앙값은 회색 — 좋고 나쁨이 뚜렷한 양 끝만 색으로 */
+const HM_GOOD=[111,155,131],HM_MID=[164,172,180],HM_BAD=[176,106,99];
+const HM_COLW=132;        /* 값 열 최대 폭 — 매체가 적어도 너무 벌어지지 않게 */
+const HM_LEADW=190;       /* 구분 열 폭 */
+let HEAT_DAILY=false;     /* 일자별은 기본으로 접어 둔다 */
+let HEAT_TIP=[];
+function hmFill(v,mn,md,mx){
+  if(!isFinite(v))return null;
+  let a,b,t;
+  if(v<=md){a=HM_GOOD;b=HM_MID;t=md>mn?(v-mn)/(md-mn):0;}
+  else{a=HM_MID;b=HM_BAD;t=mx>md?(v-md)/(mx-md):0;}
+  const rgb=a.map((x,i)=>Math.round(x+(b[i]-x)*Math.min(1,Math.max(0,t))));
+  return 'rgb('+mixWhite(rgb,.46).join(',')+')';
+}
+const median=a=>{if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),h=b.length>>1;
+  return b.length%2?b[h]:(b[h-1]+b[h])/2;};
+/* 열 정의 — 지금 필터에 걸린 라인에서 매체 × 광고상품 × KPI 조합을 뽑는다 */
+function heatCols(){
+  const seen=new Map();
+  activeLines().forEach(l=>{
+    if(!l.media||!l.product||!l.kpi)return;
+    const k=[l.media,l.product,l.kpi].join(SEP);
+    if(!seen.has(k))seen.set(k,{media:l.media,product:l.product,kpi:l.kpi,
+      unit:KPI_UNIT[l.kpi]||'cpm',lids:new Set()});
+    seen.get(k).lids.add(l.id);});
+  return [...seen.values()];
+}
+function renderHeat(){
+  const tbl=$('heatTbl');if(!tbl)return;
+  const cols=heatCols();
+  const fs=factFilter();
+  HEAT_TIP=[];
+  if(!cols.length||!fs.length){
+    tbl.style.maxWidth='';
+    tbl.innerHTML='<tbody><tr><td class="head" style="text-align:center;padding:26px">'
+      +'표시할 데이터가 없습니다.</td></tr></tbody>';return;}
+  const bucket=cols.map(c=>fs.filter(f=>f.media===c.media&&f.product===c.product&&c.lids.has(f.lid)));
+  const aggOf=(list)=>(list&&list.length)?aggFacts(list):null;
+  const valOf=(ci,b)=>{
+    if(!b)return NaN;
+    const m=METRICS[cols[ci].unit];
+    if(!m||!m.c)return NaN;
+    const v=m.c(b);
+    return isFinite(v)&&v>0?v:NaN;};
+  /* ---- 카테고리 (scale = 색 비교 묶음) ---- */
+  const cats=[];
+  cats.push({name:'요일별',scale:'wd',rows:WD.map((w,i)=>({label:w+'요일',rest:i===0||i===6,
+    pick:list=>list.filter(f=>ALLDATES[f.d].getDay()===i)}))});
+  cats.push({name:'휴일 · 평일',scale:'wd',rows:[
+    {label:'휴일 (주말 · 공휴일)',rest:true,pick:list=>list.filter(f=>isRest(ALLDATES[f.d]))},
+    {label:'평일',pick:list=>list.filter(f=>!isRest(ALLDATES[f.d]))}]});
+  if(HEAT_DAILY){
+    const days=[...new Set(fs.map(f=>f.d))].sort((a,b)=>a-b);
+    cats.push({name:'일자별',scale:'day',rows:days.map(di=>{const d=ALLDATES[di],h=holName(d);
+      return {label:`${d.getMonth()+1}/${d.getDate()} (${WD[d.getDay()]})${h?' · '+h:''}`,
+        rest:isRest(d),pick:list=>list.filter(f=>f.d===di)};})});}
+  /* 값·집계를 미리 계산 (툴팁에서 다시 쓴다) */
+  cats.forEach(cat=>{
+    cat.agg=cat.rows.map(r=>cols.map((c,ci)=>aggOf(r.pick(bucket[ci]))));
+    cat.grid=cat.agg.map(row=>row.map((b,ci)=>valOf(ci,b)));});
+  /* 스케일 묶음별 최소 · 중앙 · 최대 */
+  const scales={};
+  cats.forEach(cat=>{
+    if(!scales[cat.scale])scales[cat.scale]=cols.map(()=>[]);
+    cat.grid.forEach(row=>row.forEach((v,ci)=>{if(isFinite(v))scales[cat.scale][ci].push(v);}));});
+  const stat={};
+  Object.keys(scales).forEach(k=>stat[k]=scales[k].map(vs=>
+    ({mn:Math.min(...vs),md:median(vs),mx:Math.max(...vs),n:vs.length})));
+  /* ---- 헤더 3줄 ---- */
+  const mSpan=[];let last=null;
+  cols.forEach(c=>{if(last&&last.media===c.media)mSpan[mSpan.length-1].n++;
+    else mSpan.push({media:c.media,n:1});last=c;});
+  let h='<colgroup>'+`<col style="width:${HM_LEADW}px">`
+    +cols.map(()=>`<col style="width:${Math.floor(100/cols.length)}%">`).join('')+'</colgroup>'
+    +'<thead>'
+    +`<tr><th class="lead" rowspan="3">구분</th>`
+    +mSpan.map(m=>`<th class="h1" colspan="${m.n}">${esc(m.media)}</th>`).join('')+'</tr>'
+    +'<tr>'+cols.map(c=>`<th class="h2" title="${esc(c.product)}">${esc(c.product)}</th>`).join('')+'</tr>'
+    +'<tr>'+cols.map(c=>`<th class="h3" title="KPI ${esc(KPI_LABEL[c.kpi]||c.kpi)}">`
+        +`KPI : ${METRICS[c.unit].l}</th>`).join('')+'</tr></thead><tbody>';
+  /* ---- 본문 ---- */
+  cats.forEach(cat=>{
+    const st=stat[cat.scale];
+    h+=`<tr class="hcat"><td class="head" colspan="${cols.length+1}">${esc(cat.name)}</td></tr>`;
+    cat.rows.forEach((r,ri)=>{
+      h+=`<tr><td class="head${r.rest?' hol':''}" title="${esc(r.label)}">${esc(r.label)}</td>`
+        +cols.map((c,ci)=>{
+          const v=cat.grid[ri][ci],b=cat.agg[ri][ci],s=st[ci];
+          if(!isFinite(v))return '<td class="hm"><span class="c na">–</span></td>';
+          const bg=s.n>1?hmFill(v,s.mn,s.md,s.mx):null;
+          const ti=HEAT_TIP.length;
+          HEAT_TIP.push({label:r.label,cat:cat.name,c,b,v});
+          return `<td class="hm" data-ti="${ti}">`
+            +`<span class="c"${bg?` style="background:${bg}"`:''}>${METRICS[c.unit].f(v)}</span></td>`;}).join('')
+        +'</tr>';});});
+  tbl.innerHTML=h+'</tbody>';
+  /* 매체가 적어도 열이 과하게 벌어지지 않도록 표 전체 폭에 상한을 둔다 */
+  tbl.style.maxWidth=(HM_LEADW+cols.length*HM_COLW)+'px';
+  wireHeatTip(tbl);
+  mountHeatHead(tbl);
+}
+/* 칸에 마우스를 올리면 그 구간의 세부 실적을 보여준다 */
+function wireHeatTip(tbl){
+  const MET=['imp','click','view','conv','cost'];
+  tbl.querySelectorAll('td.hm[data-ti]').forEach(td=>{
+    td.addEventListener('mousemove',e=>{
+      const t=HEAT_TIP[+td.dataset.ti];if(!t)return;
+      const rows=MET.filter(k=>t.b&&isFinite(t.b[k])&&t.b[k]>0)
+        .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(t.b[k])}</b></div>`);
+      const eff=['ctr','vtr','cvr'].filter(k=>{const v=METRICS[k].c(t.b);return isFinite(v)&&v>0;})
+        .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(METRICS[k].c(t.b))}</b></div>`);
+      showTip(e.clientX,e.clientY,
+        `<div class="t">${esc(t.c.media)} · ${esc(t.c.product)}</div>`
+        +`<div class="r"><span class="l">${esc(t.cat)}</span><b>${esc(t.label)}</b></div>`
+        +`<div class="r"><span class="l">${METRICS[t.c.unit].l} (KPI ${esc(KPI_LABEL[t.c.kpi]||t.c.kpi)})</span>`
+        +`<b>${METRICS[t.c.unit].f(t.v)}</b></div>`
+        +rows.join('')+eff.join(''));});
+    td.addEventListener('mouseleave',hideTip);});
+}
+/* 세로 스크롤 없이 전부 보여주므로, 머리글은 화면에 떠 있는 복사본으로 고정한다
+   (게재 히스토리와 같은 방식 — overflow-x:auto 안에서는 sticky 가 페이지에 붙지 않는다) */
+function mountHeatHead(tbl){
+  const wrap=tbl.closest('.heatwrap');if(!wrap||!tbl.tHead)return;
+  let bar=$('heatHead');
+  if(!bar){bar=el('div','ghfix');bar.id='heatHead';document.body.appendChild(bar);}
+  const inner=el('div','inner');
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  const cg=tbl.querySelector('colgroup');
+  if(cg)clone.appendChild(cg.cloneNode(true));
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
+  inner.appendChild(clone);
+  bar.innerHTML='';bar.appendChild(inner);
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    const sec=document.querySelector('.card[data-sect="heat"]');
+    if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+20;
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    clone.style.maxWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.onscroll=()=>{inner.scrollLeft=wrap.scrollLeft;};
+  window.__heatPlace=place;
+  if(!window.__heatHeadWired){
+    window.__heatHeadWired=1;
+    const run=()=>{if(window.__heatPlace)window.__heatPlace();};
+    addEventListener('scroll',run,true);
+    addEventListener('resize',run);}
+  setTimeout(place,0);setTimeout(place,300);
+}
+(function wireHeat(){
+  const b=$('heatDay');if(!b)return;
+  b.classList.toggle('on',HEAT_DAILY);
+  b.onclick=()=>{HEAT_DAILY=!HEAT_DAILY;b.classList.toggle('on',HEAT_DAILY);renderHeat();};
+})();
+
 /* ===== 8. 소재 운영 ===== */
 let CR_FILTER={media:'all',type:'all',sort:'imp'};
 const CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
@@ -2997,10 +3380,10 @@ const CR_RANKS=[
   {k:'cpc',l:'클릭 효율',sub:'CPC 낮은 순',base:'click'},
   {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'}
 ];
-/* 기본은 조회 · 클릭 두 가지 — 좌우 두 칸으로 나란히 놓는다.
-   다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
-let CR_RANK_ON=['cpv','cpc'];
-let CR_TOPN=5;
+/* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
+   순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
+let CR_RANK_ON=['cpv','cpc','cpm'];
+let CR_TOPN=4;
 function renderRankPick(){
   const host=$('crRankPick');if(!host)return;
   host.innerHTML=CR_RANKS.map(r=>
@@ -3011,15 +3394,49 @@ function renderRankPick(){
     if(!CR_RANK_ON.length)CR_RANK_ON=[k];
     renderRankPick();renderCreatives();});
 }
+/* 유튜브 썸네일 · 미리보기 */
+const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+/* 썸네일 뒤에는 항상 그라데이션을 깔아 둔다 —
+   네트워크가 막힌 환경(사내망 · 오프라인)에서 이미지가 안 떠도 빈 칸이 되지 않는다 */
+function crBg(c){
+  if(c.yt)return `url("${ytThumb(ytId(c.yt))}"), ${c.g||'#dfe4ea'}`;
+  if(c.img)return `url("${encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
+  return c.g;
+}
+/* 유튜브 플레이어는 file:// 로 열면 출처가 없어 "구성 오류 153" 을 낸다.
+   그래서 http(s) 로 열렸을 때만 미리보기를 붙이고, 로컬 파일에서는 썸네일만 보여준다. */
+const CAN_YT=/^https?:$/.test(location.protocol);
+/* 영상 소재는 마우스를 올리면 썸네일 자리에서 소리 없이 잠깐 재생된다 */
+function wireCrPlay(thumb,c){
+  if(!c.yt)return;
+  const id=ytId(c.yt);if(!id)return;
+  thumb.classList.add('playable');
+  if(!CAN_YT)return;
+  let fr=null,t=null;
+  thumb.addEventListener('mouseenter',()=>{
+    clearTimeout(t);
+    t=setTimeout(()=>{
+      if(fr)return;
+      fr=document.createElement('iframe');
+      fr.className='ytprev';
+      fr.setAttribute('allow','autoplay; encrypted-media');
+      fr.setAttribute('frameborder','0');
+      fr.src=`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0`
+        +`&loop=1&playlist=${id}&modestbranding=1&rel=0&playsinline=1`;
+      thumb.appendChild(fr);},260);});
+  thumb.addEventListener('mouseleave',()=>{
+    clearTimeout(t);
+    if(fr){fr.remove();fr=null;}});
+}
 function renderCreatives(){
   const host=$('creatives');if(!host)return;
   host.innerHTML='';
   const pool=filteredCreatives();
   if(!pool.length){
     host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
-  /* 기준마다 한 칸씩 — 두 칸이 좌우로 나란히 간다 */
+  /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
-  CR_RANKS.filter(r=>CR_RANK_ON.includes(r.k)).forEach(r=>{
+  CR_RANK_ON.map(k=>CR_RANKS.find(r=>r.k===k)).filter(Boolean).forEach(r=>{
     const rows=pool.map(c=>{const b=crAgg(c);
         return {c,b,base:b[r.base]||0,eff:METRICS[r.k].c(b)};})
       .filter(x=>x.base>0&&isFinite(x.eff)&&x.eff>0)
@@ -3027,25 +3444,35 @@ function renderCreatives(){
       .slice(0,CR_TOPN);
     const g=el('div','crcol',cols);
     const hd=el('div','crband',g);
-    hd.innerHTML=`<span class="t">${r.l}이 우수한 소재</span>`
+    hd.innerHTML=`<span class="t">${r.l}</span>`
       +`<span class="n">${r.sub} · 상위 ${rows.length}개</span>`;
     if(!rows.length){el('div','hint',g).textContent=`${METRICS[r.k].l}를 계산할 수 있는 소재가 없습니다.`;return;}
-    /* 1위는 지금 크기 그대로, 2위부터는 가로 절반씩 두 개가 한 줄에 */
-    const grid=el('div','crgrid',g);
-    rows.forEach((x,i)=>{
-      /* 순위 기준으로 쓴 지표는 위에 이미 크게 나오므로 아래 목록에서는 뺀다 */
-      const c=x.c,mcols=cfgCols(CR_CFG[c.type]).filter(k=>k!==r.k);
-      const d=el('div','cr'+(i===0?' lead':''),grid);
-      const bg=c.img?`url("${encodeURI(c.img)}")`:c.g;
-      d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${bg}"></div>
-          <div class="media">${esc(c.media)}</div>
-          <div class="rankno">${i+1}</div>
-          <div class="rt">${c.type==='video'?'▶ 영상':'🖼 이미지'}</div>
-          ${c.type==='video'?'<div class="play">▶</div>':''}</div>
+    const duo=el('div','crduo',g);
+    /* --- 1위 --- */
+    const x0=rows[0],c0=x0.c;
+    const lead=el('div','cr lead',duo);
+    lead.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c0)}"></div>
+        <div class="media">${esc(c0.media)}</div>
+        <div class="rankno">1</div>
+        <div class="rt">${c0.type==='video'?'▶ 영상':'🖼 이미지'}</div></div>
+      <div class="meta"><div class="nm" title="${esc(c0.name)}">${esc(c0.name)}</div>
+        <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x0.eff)}</b></div></div>`;
+    wireCrPlay(lead.querySelector('.thumb'),c0);
+    lead.onclick=()=>openLightbox(c0);
+    /* --- 2위 이하 --- */
+    const rest=el('div','crrest',duo);
+    rest.style.gridTemplateRows=`repeat(${Math.max(rows.length-1,1)},1fr)`;
+    rows.slice(1).forEach((x,i)=>{
+      const c=x.c;
+      const d=el('div','cr mini',rest);
+      d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c)}"></div>
+          <div class="rankno">${i+2}</div></div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
-          <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div>
-          ${mcols.map(k=>`<div class="mt"><span>${CR_DEF[k].l}</span><b>${crVal(c,k)}</b></div>`).join('')}</div>`;
-      d.onclick=()=>openLightbox(c);});});
+          <div class="mm">${esc(c.media)}</div>
+          <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
+      wireCrPlay(d.querySelector('.thumb'),c);
+      d.onclick=()=>openLightbox(c);});
+  });
 }
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.
    같은 이름은 여러 매체·상품·타겟팅에 함께 쓰인 하나의 소재로 본다. */
@@ -3147,8 +3574,14 @@ function ytId(s){
 }
 function openLightbox(c){
   const mediaHTML=()=>c.type==='video'
-    ? (c.yt?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(c.yt))}?rel=0" allowfullscreen></iframe>`
-           :`<div class="lbph">영상 링크를 입력하면 여기에서 재생됩니다</div>`)
+    ? (c.yt
+        ? (CAN_YT
+            ?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId(c.yt))}?rel=0" allowfullscreen></iframe>`
+            :`<div class="lbph">파일을 직접 열면 유튜브가 재생을 막습니다(구성 오류 153).<br>
+               웹 주소(https)로 올린 뒤 열면 정상 재생됩니다.
+               <a href="https://youtu.be/${esc(ytId(c.yt))}" target="_blank" rel="noopener"
+                  style="display:inline-block;margin-top:9px;color:var(--acc);font-weight:800">유튜브에서 열기 ↗</a></div>`)
+        :`<div class="lbph">영상 링크를 입력하면 여기에서 재생됩니다</div>`)
     : (c.img?`<img src="${esc(c.img)}" alt="${esc(c.name)}" style="max-width:100%;max-height:52vh;border-radius:10px;box-shadow:var(--shadow2)">`
            :`<div style="background:${c.g};border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;
               width:${c.ratio==='9:16'?'270px':c.ratio==='4:5'?'350px':'440px'};aspect-ratio:${c.ratio.replace(':','/')};
@@ -5086,10 +5519,10 @@ function renderAll(){
   if(dashEmpty())return;
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
-  if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderCreatives();renderBubble();
+  if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderBubble();
+buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */
 /* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
@@ -6203,7 +6636,8 @@ function importLines(){
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
 const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
   stat:'주요 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
-  gantt:'소재 × 일자 게재 히스토리',creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
+  gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
+  creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
   bubble:'효율 버블'};
 function applyHidden(){
   document.querySelectorAll('[data-sect]').forEach(elm=>{
@@ -6242,7 +6676,77 @@ addEventListener('resize',syncStick);
 addEventListener('load',syncStick);
 setTimeout(syncStick,0);setTimeout(syncStick,600);
 
-/* 각 섹션 제목 우측에 숨기기 버튼을 붙인다 */
+/* ---------- 영역 설명 (ⓘ) ----------
+   광고주 · 시행사가 공통으로 궁금해할 만한 내용을 영역마다 한 덩어리로 적어 둔다. */
+const SECT_INFO={
+  pace:`<p>지표마다 <b>그 지표를 KPI로 잡은 라인들만</b> 모아 실적과 목표를 비교합니다.
+     캠페인 전체 노출·클릭·조회가 아니라, 그 지표를 <b>보장한 라인</b>의 합입니다.</p>
+   <p><b>얇은 막대 = 목표 페이스.</b> 각 라인의 목표를 그 라인의 <b>집행 일수로 나눠 하루치</b>를 구하고
+     오늘까지 지난 날만큼 더한 값입니다. 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않습니다.
+     달성이 이 선보다 앞서면 초록, 뒤처지면 붉은색입니다.</p>
+   <p>막대 안 구간은 <b>매체별 기여</b>입니다. 각 %는 “그 매체가 전체 목표의 몇 %를 채웠나”라서
+     모두 더하면 달성률이 됩니다.</p>
+   <p>맨 위 <b>N일차 · NN% 경과</b>는 달력상 경과일이라 목표 페이스와 값이 다를 수 있습니다.</p>`,
+  stat:`<p>조회 기간 동안의 <b>전체 합계</b>입니다. 필터를 걸면 그 범위만 집계됩니다.</p>
+   <p><b>제안 대비</b>는 “제안대로면 오늘쯤 여기까지” 와 비교한 값입니다.
+     볼륨·금액은 제안값 × 목표 페이스, 단가(CPM·CPC·CPV 등)는 제안 단가와 직접 견줍니다.
+     단가는 낮을수록 좋으므로 부호를 뒤집어 읽습니다.</p>
+   <p>카드 뒤 회색 선은 <b>일별 추이</b>입니다. 지표는 ⚙ 지표 설정에서 바꿉니다.</p>`,
+  kpi:`<p><b>캠페인 전체 노출·클릭·조회가 아닙니다.</b> 매체(또는 상품)마다
+     <b>그 매체가 KPI로 잡은 지표만</b> 골라 달성률을 그립니다.
+     예를 들어 CPV로 산 상품은 조회만, CPM으로 산 상품은 노출만 봅니다.</p>
+   <p>도넛의 <b>붉은 호가 목표 페이스</b>입니다. 달성 호는 살짝 비쳐 있어 페이스보다 앞서 있어도
+     목표 지점이 어디인지 보입니다.</p>
+   <p>맨 앞 카드는 전체 매체 기준 <b>예산 소진율</b>입니다.</p>`,
+  daily:`<p>막대는 물량, 꺾은선은 단가입니다. 위쪽 말풍선은 그 기간에 있었던 <b>운영 이슈</b>입니다.</p>
+   <p><b>예상 효율선</b>은 캠페인 설정에 넣은 제안값을 일평균으로 편 선입니다.
+     실제 선이 그 아래(단가) 또는 위(물량)에 있으면 제안보다 잘 나오고 있다는 뜻입니다.</p>`,
+  gantt:`<p>노출이 <b>1회 이상 발생한 날</b>을 게재한 날로 봅니다. 칸 색이 진할수록 그날 값이 큽니다.</p>
+   <p>농도 기준은 <b>행(소재)별 최댓값</b>입니다. 소재끼리의 절대 비교가 아니라
+     그 소재 안에서 어느 날이 셌는지를 봅니다.</p>`,
+  creative:`<p>기준별로 <b>단가가 낮은 순</b> 상위 소재입니다. 조회 효율은 CPV, 클릭 효율은 CPC,
+     노출 효율은 CPM 기준입니다.</p>
+   <p>분모가 0인 소재(조회가 없는데 CPV를 보는 등)는 순위에서 빠집니다.
+     소재를 누르면 원본과 지표를 볼 수 있습니다.</p>`,
+  heat:`<p>열마다 <b>그 라인이 KPI로 잡은 지표의 단가</b>를 봅니다. 열이 다르면 단위도 다릅니다.</p>
+   <p>색은 <b>같은 카테고리 · 같은 열 안에서만</b> 비교합니다.
+     요일별과 휴일·평일은 한 묶음으로 보고, 일자별은 따로 봅니다.
+     초록이 쌀수록(좋음), 빨강이 비쌀수록(나쁨)이고 가운데값은 회색입니다.</p>
+   <p>칸에 마우스를 올리면 그 구간의 노출·클릭·조회·소진금액을 볼 수 있습니다.</p>`,
+  treemap:`<p>면적은 값의 크기, 색은 매체입니다. 매체 → 광고상품 → 소재 순으로 물량이
+     어디에 몰려 있는지 봅니다.</p>
+   <p>색의 <b>농도는 단가 효율</b>입니다. 같은 매체 안에서 진할수록 단가가 낮습니다(= 효율이 좋습니다).</p>`,
+  bubble:`<p>가로·세로 두 축 모두 <b>단가</b>라서 <b>오른쪽 · 위로 갈수록 좋습니다.</b>
+     원의 크기는 노출량, 색은 매체입니다.</p>
+   <p>노출 분포와 <b>매체 색이 항상 같습니다.</b> 종료된 소재는 테두리만 그립니다.</p>`,
+  comment:`<p>이 캠페인에 대해 <b>시행사가 직접 적는</b> 운영 코멘트입니다.
+     ✎ 자동 작성을 누르면 지금 수치를 바탕으로 초안을 만들어 줍니다.</p>
+   <p>저장하면 광고주 화면에도 같이 보입니다.</p>`,
+  raw:`<p>날짜별 숫자를 그대로 봅니다. 주말·공휴일은 붉은 글씨, 값이 없는 칸은 회색입니다.</p>
+   <p>세로 · 가로 세그먼트로 매체별 · 상품별로 나눠 볼 수 있고,
+     가로로 길어지면 표 위 <b>세그먼트 미니맵</b>으로 건너뜁니다. 일자 · 요일 열은 왼쪽에 고정됩니다.</p>`,
+  mix:`<p><b>제안서용 표</b>입니다. 집행 실적이 아니라 캠페인 설정에 넣은 <b>예상 효율</b> 기준입니다.</p>
+   <p><b>굵은 파란 숫자는 게런티(보장) 항목</b>입니다. 묶인 라인이 모두 그 지표를 보장할 때만 표시됩니다.</p>
+   <p>KPI 목표 수는 각 라인이 자기 KPI로 잡은 목표의 합입니다.</p>`
+};
+function SUM_INFO(){return `<p>선택한 차원(매체 · 광고상품 · 타겟팅 등)으로 묶어 본 <b>집행 실적 요약</b>입니다.</p>
+  <p>목표 열은 캠페인 설정의 <b>예상 효율</b>, 나머지는 조회 기간의 실제 집행값입니다.
+    달성률 막대는 목표 대비 실적입니다.</p>
+  <p>⚙ 헤더 편집에서 열 구성과 묶음을 바꿀 수 있습니다.</p>`;}
+function attachInfo(tools,html,title){
+  if(!tools||tools.querySelector('.infowrap'))return;
+  const w=el('span','infowrap',tools);
+  w.innerHTML=`<button class="infoi" title="${esc(title||'설명')}" aria-label="설명">i</button>`
+    +`<div class="infopop">${title?`<div class="h">${esc(title)}</div>`:''}${html}</div>`;
+  const open=v=>w.classList.toggle('open',v);
+  w.addEventListener('mouseenter',()=>open(true));
+  w.addEventListener('mouseleave',()=>open(false));
+  w.querySelector('.infoi').onclick=e=>{e.stopPropagation();open(!w.classList.contains('open'));};
+}
+document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open')
+  .forEach(w=>w.classList.remove('open')));
+
+/* 각 섹션 제목 우측에 숨기기 버튼과 설명 아이콘을 붙인다 */
 (function wireHide(){
   document.querySelectorAll('.sec[data-sect]').forEach(sec=>{
     const key=sec.dataset.sect;
@@ -6251,7 +6755,8 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
     const b=document.createElement('button');
     b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
     b.onclick=()=>{HIDDEN.add(key);applyHidden();};
-    tools.appendChild(b);});
+    tools.appendChild(b);
+    if(SECT_INFO[key])attachInfo(tools,SECT_INFO[key],SECT_LABEL[key]||key);});
 })();
 
 /* ---------- 운영 코멘트 · 서머리 표시 순서 ----------
@@ -6831,8 +7336,10 @@ async function exportDashboard(){
 
     /* ---- 캠페인 집행 현황 (라벨 · 값 카드형) ---- */
     const b=aggFacts(paceFacts()),budget=sum(activeLines().map(lineGross));
-    const totW=sum(activeLines().map(lineGross));
-    const allAch=totW?sum(activeLines().map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
+    /* 화면의 캠페인 진행 현황과 같은 기준 — 각 라인이 자기 KPI 로 쌓은 실적 합 ÷ 목표 합 */
+    const kr=paceKpiRows();
+    const kAct=sum(kr.map(x=>x.act)),kGoal=sum(kr.map(x=>x.goal));
+    const allAch=kGoal?kAct/kGoal:0;
     push(R,[T('캠페인 집행 현황',3)]);
     const info=[
       ['캠페인명',{v:CAMPAIGN.name,s:XS.val}],
@@ -6842,6 +7349,8 @@ async function exportDashboard(){
       ['집행 경과',{v:`${ps.elapsed}일차 / ${ps.days}일`,s:XS.val}],
       ['총 광고비 (Gross)',{v:budget,n:1,s:XS.valWon}],
       ['소진 광고비',{v:b.cost,n:1,s:XS.valWon}],
+      ['목표 달성 수치',{v:kAct,n:1,s:XS.val}],
+      ['종합 목표',{v:kGoal,n:1,s:XS.val}],
       ['종합 KPI 달성률',{v:allAch,n:1,s:XS.valPct}],
       ['목표 페이스',{v:pr,n:1,s:XS.valPct}]
     ];
@@ -6851,31 +7360,7 @@ async function exportDashboard(){
       s1.merges.push({r1:r0,c1:1,r2:r0,c2:3});});
     blank(R);
 
-    /* ---- KPI 달성 현황 — 그래프 그림으로 ---- */
-    push(R,[T('KPI 달성 현황',3)]);
-    /* 예산 소진율 카드(.spend)는 리포트에 넣지 않는다 */
-    const donutSvgs=[...document.querySelectorAll('#donuts .donut')].filter(d=>!d.classList.contains('spend'));
-    const dpics=[];
-    for(const d of donutSvgs){
-      const svg=d.querySelector('svg');if(!svg)continue;
-      const pic=await svgToPng(svg,2);
-      if(pic)dpics.push({pic,name:(d.querySelector('.dhd .k')||{textContent:''}).textContent.trim()});}
-    if(dpics.length){
-      const SCALE=.62;
-      /* 그림이 놓일 열을 먼저 잡고, 그 위에 매체 이름을 적는다 */
-      const cols=[];let colAt=0;
-      dpics.forEach(x=>{cols.push(colAt);colAt+=Math.ceil(x.pic.w*SCALE/70)+1;});
-      const lbl=[];
-      dpics.forEach((x,i)=>{lbl[cols[i]]=T(x.name,XS.rowhdr);});
-      push(R,lbl);
-      blank(R);blank(R);blank(R);
-      const at=R.length;
-      const hpx=Math.max(...dpics.map(x=>x.pic.h))*SCALE;
-      for(let i=0;i<Math.ceil(hpx/18)+1;i++){const rr=[];rr.__h=13.5;push(R,rr);}
-      dpics.forEach((x,i)=>
-        s1.images.push({png:x.pic.png,w:x.pic.w*SCALE,h:x.pic.h*SCALE,row:at,col:cols[i]}));
-      blank(R);
-    }else{push(R,[T('그래프를 만들 수 없어 표로 대신합니다.',2)]);}
+    /* KPI 달성 현황은 리포트에 넣지 않는다 (화면에서만 본다) */
 
     /* ---- 일자별 효율 비교 — 차트 그림 ---- */
     const chartSvg=document.querySelector('#chartDaily svg');

@@ -79,6 +79,12 @@
     <div class="sec" data-sect="pace">캠페인 진행 현황</div>
     <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
 
+    <div class="sec gap" data-sect="stat">주요 지표
+      <div class="tools"><button class="btn sm agency-only" id="statCfgBtn">⚙ 지표 설정</button></div>
+    </div>
+    <div id="statCfgBox" class="hidden" data-sect="stat"></div>
+    <div class="strip" id="statStrip" data-sect="stat"></div>
+
     <div class="sec gap" data-sect="kpi">KPI 달성 현황
       <select class="ctl" id="kpiGroupSel">
         <option value="media">매체별</option><option value="product">상품별</option><option value="line">제품별</option>
@@ -90,12 +96,6 @@
       </div>
     </div>
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
-
-    <div class="sec gap" data-sect="stat">주요 지표
-      <div class="tools"><button class="btn sm agency-only" id="statCfgBtn">⚙ 지표 설정</button></div>
-    </div>
-    <div id="statCfgBox" class="hidden" data-sect="stat"></div>
-    <div class="grid strip" id="statStrip" data-sect="stat"></div>
 
     <div class="sec gap" data-sect="daily">일자별 효율 비교
       <div class="tools">
@@ -120,7 +120,7 @@
       </div>
     </div>
     <div id="cmtBlock">
-      <div class="sec gap" data-sect="comment">운영 코멘트
+      <div class="sec gap3" data-sect="comment">운영 코멘트
         <span class="note" id="cmtState"></span>
         <div class="tools agency-only">
           <button class="btn sm" id="cmtAuto">✎ 자동 작성</button>
@@ -151,12 +151,21 @@
       <div class="tools">
         <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>
         <span class="hint">각</span><select class="ctl" id="crTopN">
-          <option>3</option><option>4</option><option selected>5</option><option>10</option><option>15</option>
+          <option>3</option><option selected>4</option><option>5</option><option>6</option>
         </select><span class="hint">개</span>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>
     </div>
     <div id="creatives" data-sect="creative"></div>
+
+    <div class="sec gap3" data-sect="heat">요일별 · 일자별 효율 히트맵
+      <span class="note">각 열의 <b>KPI 지표 단가</b> · 색은 카테고리 안에서 비교 — 초록 = 좋음 · 회색 = 중간 · 빨강 = 나쁨</span>
+      <div class="tools">
+        <span class="hmramp"><em>좋음</em><i></i><em>나쁨</em></span>
+        <span class="switch on" id="heatDay"><i></i> 일자별</span>
+      </div>
+    </div>
+    <div class="card fit" data-sect="heat"><div class="tbl-wrap heatwrap"><table class="tbl heat" id="heatTbl"></table></div></div>
 
     <div class="duo">
       <div class="duocol">

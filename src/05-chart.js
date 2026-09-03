@@ -112,9 +112,14 @@ function renderDaily(){
   if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'#f7f9fb'},svg);
   ds.forEach((d,i)=>{
     let base=Y(0);const future=i>=EL;
-    series.forEach((s,si)=>{const v=future?(SHOW_FORECAST?s.fvals[i]:0):s.vals[i];if(v<=0)return;
+    /* 값이 0인 계열은 건너뛰므로, 맨 위에 실제로 그려지는 칸을 먼저 찾아 거기에만 둥근 모서리를 준다
+       (그렇지 않으면 날짜마다 맨 윗칸이 둥글기도, 각지기도 한다) */
+    const vOf=si=>future?(SHOW_FORECAST?series[si].fvals[i]:0):series[si].vals[i];
+    let topIdx=-1;
+    for(let si=series.length-1;si>=0;si--){if(vOf(si)>0){topIdx=si;break;}}
+    series.forEach((s,si)=>{const v=vOf(si);if(v<=0)return;
       const h=PH*(v/yMax),y=base-h;
-      S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===series.length-1?4:0),
+      S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===topIdx?4:0),
         fill:pal[si],opacity:future?.34:1},svg);
       base=y;});
     const rest=isRest(d);
@@ -229,8 +234,7 @@ function renderDaily(){
     x.innerHTML=`<span class="linekey"></span><span style="color:var(--acc2);font-weight:700">${METRICS[lk].l}</span> <span style="color:var(--muted)">(우측 축)</span>`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.34"></span>미집행 구간 예상값 (일할)`;}
-  if(SHOW_ISSUES){const x=el('span','it',lg);
-    x.innerHTML=`<span style="width:14px;height:9px;border-radius:3px;background:#eef1f5;border:1px solid #b9c4d0;display:inline-block"></span>운영 이슈`;}
+
 }
 
 /* ===== 6. 서머리 ===== */
@@ -374,6 +378,7 @@ function renderSummaries(){
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
+    if(typeof attachInfo==='function')attachInfo(tools,SUM_INFO(),s.name);
     const cfgBox=el('div','hidden',host);
     const card=el('div','card fit',host);
     /* 서머리는 세로 스크롤 없이 전체 높이를 그대로 노출한다 (가로 스크롤만) */
