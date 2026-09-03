@@ -186,7 +186,7 @@ function buildFacts(){
       const tot=sum(act.map(c=>c.share))||1;
       cs.forEach(c=>{
         const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
-        const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,target:l.target,
+        const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
           line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=Math.round(((l.daily[m]&&l.daily[m][i])||0)*k));
         f.cost=toGross(f.net,feeOf(l));
@@ -197,7 +197,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.target=l.target;c.line=l.line;});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;});
 }
 buildFacts();
 
@@ -352,7 +352,8 @@ const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
   const cy=new Date(CAMPAIGN.today+'T00:00:00').getFullYear();
   return (y!==cy?String(y).slice(2)+'/':'')+m+'/'+d;};
 
-const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'target',l:'타겟팅 그룹'},
+const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'slot',l:'광고 지면'},
+  {k:'target',l:'타겟팅 그룹'},
   {k:'line',l:'제품'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
@@ -369,23 +370,41 @@ const mkScope=(s,e)=>{
   return {i0,i1,days,elapsed:Math.max(0,Math.min(ELAPSED-i0,days)),
     start:ALLDATES[i0],end:ALLDATES[i1],startIso:iso(ALLDATES[i0]),endIso:iso(ALLDATES[i1])};
 };
-/* 진행 스코프 — 선택한 항목(구분·매체·제품)이 실제로 집행되는 구간.
-   달성률·목표 페이스·예산 소진처럼 "캠페인이 얼마나 진행됐나"를 말하는 값의 기준. */
-function paceScope(){
+/* 집행 스코프 — 선택한 항목(구분·매체·제품)이 실제로 집행되는 전체 구간.
+   달력 선택의 상한·하한을 정하는 바탕이다. */
+function campScope(){
   const ls=activeLines().filter(l=>l.start&&l.end);
   return mkScope(ls.length?ls.map(l=>l.start).sort()[0]:campStart(),
                  ls.length?ls.map(l=>l.end).sort().slice(-1)[0]:campEnd());
 }
-/* 조회 스코프 — 진행 스코프에 달력으로 고른 시작·종료일을 추가로 적용한 "보고 있는 구간".
-   차트·표·간트가 그리는 날짜 범위. */
+/* 조회 스코프 — 집행 스코프에 달력으로 고른 시작·종료일을 적용한 "보고 있는 구간".
+   기본값은 캠페인 첫날 ~ 어제(데이터가 확정된 마지막 날). */
 function viewScope(){
-  const p=paceScope();
-  /* 기본 종료일 = 어제 (데이터가 확정된 마지막 날). 달력으로 직접 고르면 그 값이 우선 */
+  const p=campScope();
   let s=p.startIso,e=p.endIso>YESTERDAY?(YESTERDAY>=s?YESTERDAY:s):p.endIso;
   if(FILTER.from&&FILTER.from>s)s=FILTER.from;
   if(FILTER.to)e=FILTER.to<p.endIso?FILTER.to:p.endIso;
   if(e<s)e=s;
   return mkScope(s,e);
+}
+/* 달력으로 기간을 직접 고른 상태인가 */
+const datePicked=()=>!!(FILTER.from||FILTER.to);
+/* 진행 스코프 —
+   · 기본(달력을 건드리지 않음) = 캠페인 전체 구간. 달성률 90.6% / 페이스 91.8% 처럼
+     "캠페인이 지금 어디까지 왔나"를 말한다.
+   · 달력으로 구간을 고르면 = 그 구간. 게이지 · 시작/종료일 · 실적 · 목표가 모두 그 구간 기준이 된다.
+     ([적용] 을 눌러도 날짜 게이지가 그대로이던 문제를 이렇게 고쳤다) */
+function paceScope(){return datePicked()?viewScope():campScope();}
+/* 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다.
+   달력을 건드리지 않았으면 원래 목표 그대로. */
+function goalIn(l,k){
+  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
+  if(!datePicked())return g;
+  const sc=viewScope();
+  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
+  const n=Math.max(1,z-a+1);
+  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
+  return ov<=0?0:g*Math.min(1,ov/n);
 }
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
@@ -403,4 +422,4 @@ function paceFacts(){
 const isClient=()=>document.body.dataset.role==='client';
 /* 달성률은 진행 스코프 기준 (달력으로 좁혀도 KPI 카드 값은 흔들리지 않게) */
 const paceSum=arr=>{const s=paceScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
-const kpiAch=l=>paceSum(l.daily[l.kpi])/l.e[l.kpi];
+const kpiAch=l=>paceSum(l.daily[l.kpi])/goalIn(l,l.kpi);

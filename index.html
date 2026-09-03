@@ -186,8 +186,9 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   color:var(--ink2);font-weight:600;font-size:13px}
 .subbar button:hover{background:rgba(255,255,255,.6)}
 .subbar button.on{background:var(--surface);color:var(--acc);border-color:#d0d6de;box-shadow:var(--shadow)}
-.subbar #reportBtn{margin-left:auto;height:30px;font-weight:700}
-.subbar #reportBtn.on{background:var(--surface)}
+/* 리포트 내려받기 묶음은 하위 탭 줄의 맨 오른쪽으로 민다 */
+.subbar .dlgrp{margin-left:auto}
+.subbar .pill.dl{height:30px;font-weight:700}
 /* 역할 표시 — 로그인 여부로 자동 결정 */
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
@@ -315,6 +316,10 @@ table.tbl.nogauge .gauge .track{display:none}
   gap:9px;justify-content:center;white-space:nowrap}
 .phead .sep{color:#cdd5de;font-weight:400}
 .phead .el{font-size:13px;font-weight:700;color:var(--acc)}
+.phead .vw{font-size:12px;font-weight:700;color:var(--muted);background:var(--acc-soft);
+  border-radius:20px;padding:3px 10px;letter-spacing:0}
+.tipbox .t .tsw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;
+  vertical-align:baseline}
 
 .pline{display:flex;flex-wrap:nowrap;align-items:center;gap:16px}
 .pline+.pline{margin-top:26px}
@@ -347,9 +352,9 @@ table.tbl.nogauge .gauge .track{display:none}
    물결을 배경으로 넣었기 때문에 매체 이름 글자보다 뒤에 있고, 구간 사이 간격(구분선)도 침범하지 않는다.
    --ambt(0~1, #paceBox 에서 한 번에 움직인다) 로 모든 지표가 같은 위상으로 흐른다. */
 .pbar .mstack>i{min-width:0;overflow:hidden;
-  background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 26%,
-      var(--ambc,rgba(0,0,0,0)) 44%,var(--ambc,rgba(0,0,0,0)) 56%,
-      rgba(0,0,0,0) 74%,rgba(0,0,0,0) 100%),var(--segbg);
+  background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
+      var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
+      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),var(--segbg);
   background-repeat:no-repeat,no-repeat;
   background-size:var(--wavew,0px) 100%,auto;
   background-position:calc(var(--ambt,.5) * (var(--barw,0px) + var(--wavew,0px))
@@ -396,41 +401,35 @@ table.tbl.nogauge .gauge .track{display:none}
 .pill.dl[disabled]{opacity:.55;cursor:default}
 @media (max-width:1180px){.dlgrp .lb{display:none}.pill.dl span{display:none}.pill.dl{padding:0 9px}}
 
-/* ===== 인쇄(PDF 저장) — 광고주 화면 기준, 일자별 상세 효율은 뺀다 ===== */
+/* ===== 인쇄(PDF 저장) =====
+   화면을 그대로 인쇄하지 않고, JS 가 만들어 둔 인쇄 전용 문서(#printdoc)만 찍는다.
+   영역마다 원래 폭을 픽셀로 고정하고 zoom 으로 줄여 두기 때문에 종이 위에서 배치가 흐트러지지 않는다. */
+#printdoc{display:none}
+#printdoc.measuring{display:block;position:absolute;left:0;top:0;z-index:-1;
+  visibility:hidden;pointer-events:none}
+/* 표의 고정(sticky) 칸은 인쇄본에서 전부 풀어 준다 —
+   스크롤 상자가 없어지면 sticky 칸이 오른쪽 끝으로 밀려 붙어 표가 어긋난다 */
+#printdoc table th,#printdoc table td{position:static !important;left:auto !important;
+  top:auto !important;z-index:auto !important}
+#printdoc .ghfix,#printdoc .hnav,#printdoc .cfmenu{display:none !important}
+#printdoc .cmtprint{font-size:12px;line-height:1.6;color:var(--ink2)}
+#printdoc .pbk{margin:0 0 16px}
+#printdoc .pbki{transform-origin:top left}
+#printdoc .phdr{margin:0 0 16px;padding:0 0 10px;border-bottom:1px solid var(--line)}
+#printdoc .phdr .t{font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--ink)}
+#printdoc .phdr .s{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px}
 @media print{
-  @page{size:A4 landscape;margin:10mm 9mm}
-  html,body{background:#fff !important}
+  @page{size:A4 landscape;margin:9mm}
+  html,body{background:#fff !important;width:auto !important;margin:0 !important;padding:0 !important}
   body::before,body::after{display:none !important}
-  .topbar,.tabs,.subbar,.demobar,.gate,.ghfix,.hnav,.tools,.tipbox,.infopop,
-  .modalwrap,.toast,#fileIn,.pill,.btn,.hidebtn,.infowrap,.colgrip,
-  .barlbl select,.barlbl button,.barlbl input,.switch{display:none !important}
-  .wrap{padding:0 !important;max-width:none !important}
-  #tab-input,#tab-setup,#sub-table{display:none !important}
-  #tab-dash,#sub-perf{display:block !important}
-  /* 미디어믹스도 이어서 인쇄한다 */
-  #sub-mix{display:block !important;break-before:page;margin-top:0}
-  .agency-only{display:none !important}
-  .card,.cr,.donut,.strip .tile{box-shadow:none !important}
-  .card{border-color:#dde3ea !important;break-inside:avoid}
-  .sec{break-after:avoid;break-inside:avoid}
-  .duo{break-inside:avoid}
-  .tbl-wrap,.gantt-wrap,.pacescroll,.heatwrap,.stripscroll,.donutrow{overflow:visible !important}
-  .grid.donuts{flex-wrap:wrap !important}
-  /* 필터 줄은 조작 항목뿐이라 리포트에서는 뺀다 */
-  .barlbl.row{display:none !important}
-  /* 스파크라인은 인쇄에서 글자와 겹쳐 보여 뺀다 */
-  .stat .spark{display:none !important}
-  .stat .tile{min-height:0 !important}
-  table.tbl{font-size:8.6px}
-  table.tbl th,table.tbl td{padding-top:3px;padding-bottom:3px}
-  /* 화면보다 좁은 종이에 맞춰 넓은 표·그래프를 줄인다 (자리는 인쇄 직전에 JS 가 잰다) */
-  .pz{zoom:var(--pz,1)}
+  body>*{display:none !important}
+  body>#printdoc{display:block !important}
+  #printdoc .card{box-shadow:none !important;border-color:#dde3ea !important}
+  #printdoc .sec{break-after:avoid;margin-top:0}
+  #printdoc .stat .spark{display:none !important}   /* 인쇄에서 글자와 겹친다 */
+  #printdoc .duo{break-inside:avoid}
   a[href]::after{content:'' !important}
 }
-/* 인쇄 준비 중에는 화면이 흔들리지 않게 잠깐 덮어 둔다 */
-body.pdfmode::after{content:'PDF 준비 중…';position:fixed;inset:0;z-index:400;
-  background:rgba(238,241,245,.94);display:grid;place-items:center;
-  font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
 
 /* ===== 열 너비 드래그 ===== */
 th.cresz{position:relative}
@@ -1626,7 +1625,7 @@ function buildFacts(){
       const tot=sum(act.map(c=>c.share))||1;
       cs.forEach(c=>{
         const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
-        const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,target:l.target,
+        const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
           line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=Math.round(((l.daily[m]&&l.daily[m][i])||0)*k));
         f.cost=toGross(f.net,feeOf(l));
@@ -1637,7 +1636,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.target=l.target;c.line=l.line;});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;});
 }
 buildFacts();
 
@@ -1792,7 +1791,8 @@ const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
   const cy=new Date(CAMPAIGN.today+'T00:00:00').getFullYear();
   return (y!==cy?String(y).slice(2)+'/':'')+m+'/'+d;};
 
-const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'target',l:'타겟팅 그룹'},
+const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'slot',l:'광고 지면'},
+  {k:'target',l:'타겟팅 그룹'},
   {k:'line',l:'제품'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
@@ -1809,23 +1809,41 @@ const mkScope=(s,e)=>{
   return {i0,i1,days,elapsed:Math.max(0,Math.min(ELAPSED-i0,days)),
     start:ALLDATES[i0],end:ALLDATES[i1],startIso:iso(ALLDATES[i0]),endIso:iso(ALLDATES[i1])};
 };
-/* 진행 스코프 — 선택한 항목(구분·매체·제품)이 실제로 집행되는 구간.
-   달성률·목표 페이스·예산 소진처럼 "캠페인이 얼마나 진행됐나"를 말하는 값의 기준. */
-function paceScope(){
+/* 집행 스코프 — 선택한 항목(구분·매체·제품)이 실제로 집행되는 전체 구간.
+   달력 선택의 상한·하한을 정하는 바탕이다. */
+function campScope(){
   const ls=activeLines().filter(l=>l.start&&l.end);
   return mkScope(ls.length?ls.map(l=>l.start).sort()[0]:campStart(),
                  ls.length?ls.map(l=>l.end).sort().slice(-1)[0]:campEnd());
 }
-/* 조회 스코프 — 진행 스코프에 달력으로 고른 시작·종료일을 추가로 적용한 "보고 있는 구간".
-   차트·표·간트가 그리는 날짜 범위. */
+/* 조회 스코프 — 집행 스코프에 달력으로 고른 시작·종료일을 적용한 "보고 있는 구간".
+   기본값은 캠페인 첫날 ~ 어제(데이터가 확정된 마지막 날). */
 function viewScope(){
-  const p=paceScope();
-  /* 기본 종료일 = 어제 (데이터가 확정된 마지막 날). 달력으로 직접 고르면 그 값이 우선 */
+  const p=campScope();
   let s=p.startIso,e=p.endIso>YESTERDAY?(YESTERDAY>=s?YESTERDAY:s):p.endIso;
   if(FILTER.from&&FILTER.from>s)s=FILTER.from;
   if(FILTER.to)e=FILTER.to<p.endIso?FILTER.to:p.endIso;
   if(e<s)e=s;
   return mkScope(s,e);
+}
+/* 달력으로 기간을 직접 고른 상태인가 */
+const datePicked=()=>!!(FILTER.from||FILTER.to);
+/* 진행 스코프 —
+   · 기본(달력을 건드리지 않음) = 캠페인 전체 구간. 달성률 90.6% / 페이스 91.8% 처럼
+     "캠페인이 지금 어디까지 왔나"를 말한다.
+   · 달력으로 구간을 고르면 = 그 구간. 게이지 · 시작/종료일 · 실적 · 목표가 모두 그 구간 기준이 된다.
+     ([적용] 을 눌러도 날짜 게이지가 그대로이던 문제를 이렇게 고쳤다) */
+function paceScope(){return datePicked()?viewScope():campScope();}
+/* 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다.
+   달력을 건드리지 않았으면 원래 목표 그대로. */
+function goalIn(l,k){
+  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
+  if(!datePicked())return g;
+  const sc=viewScope();
+  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
+  const n=Math.max(1,z-a+1);
+  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
+  return ov<=0?0:g*Math.min(1,ov/n);
 }
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
@@ -1843,7 +1861,7 @@ function paceFacts(){
 const isClient=()=>document.body.dataset.role==='client';
 /* 달성률은 진행 스코프 기준 (달력으로 좁혀도 KPI 카드 값은 흔들리지 않게) */
 const paceSum=arr=>{const s=paceScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
-const kpiAch=l=>paceSum(l.daily[l.kpi])/l.e[l.kpi];
+const kpiAch=l=>paceSum(l.daily[l.kpi])/goalIn(l,l.kpi);
 /* ===== 3. 공용 구성 빌더 (그룹형) ===== */
 const cfgCols=cfg=>cfg.groups.flatMap(g=>g.cols);
 function groupHeaderHTML(cfg,cdef,leadCols){
@@ -2320,7 +2338,7 @@ const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
-const AMB_OK=[126,196,152], AMB_NG=[214,131,120];
+const AMB_OK=[126,196,152], AMB_NG=[236,158,146];
 /* 페이스 대비 ±6%p 를 만점으로 본다. 1%p 만 벌어져도 색이 보이도록 바닥값(.32)을 준다 —
    ±10%p 기준일 때는 1%p 차이가 세기 .1 이라 붉은 기가 전혀 안 보였다. */
 function ambLevel(pr){
@@ -2364,7 +2382,7 @@ function paceKpiRows(){
   const per=new Map();
   activeLines().forEach(l=>{
     const k=l.kpi;if(!k)return;
-    const goal=(+(l.e&&l.e[k]))||0;if(!goal)return;
+    const goal=goalIn(l,k);if(!goal)return;
     if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
     const o=per.get(k);
     const a=Math.max(l.start?idxOf(l.start):sc.i0,sc.i0);
@@ -2408,19 +2426,24 @@ function renderPace(){
     return `<div class="pline" style="--tone:${tone}">
       <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
       <div class="pmid">
-        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"
-          title="목표 페이스 ${manUnit(x.due)} (${pct(pace/100,1)})"></i></div>
-        <div class="pbar">
+        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
+        <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
+          r,pr,tone,ambc}))}">
           <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
+  /* 머리글은 늘 캠페인 전체 기준으로 말한다 — 아래 게이지·막대는 고른 기간 기준 */
+  const cs=campScope();
+  /* 달력으로 직접 좁힌 경우에만 조회 구간을 덧붙인다 (기본값 = 캠페인 첫날~어제) */
+  const narrow=!!(FILTER.from||FILTER.to);
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
-        <span class="el">${Math.round(sc.elapsed/sc.days*100)}% 경과</span></div>
+      <div class="phead">집행 ${cs.elapsed}일차 <span class="sep">/</span> ${cs.days}일
+        <span class="el">${Math.round(cs.elapsed/cs.days*100)}% 경과</span>
+        ${narrow?`<span class="vw">조회 ${mdy(sc.startIso)} ~ ${mdy(sc.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -2441,7 +2464,7 @@ function fitPaceLabels(){
     const st=bar.querySelector('.mstack');if(!st)return;
     const x0=st.getBoundingClientRect().left;
     bar.style.setProperty('--barw',W.toFixed(1)+'px');
-    bar.style.setProperty('--wavew',(W*1.5).toFixed(1)+'px');
+    bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
     st.querySelectorAll(':scope>i').forEach(seg=>{
       seg.style.setProperty('--segoff',
         (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
@@ -2452,7 +2475,26 @@ function fitPaceLabels(){
     const need=nm.textContent.length*7.4+20;
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
+  wirePaceTip();
   startAmb();
+}
+/* 막대에 마우스를 올리면 그 지표의 색과 함께 페이스 대비 차이를 알려준다 */
+function wirePaceTip(){
+  document.querySelectorAll('#paceBox .pbar[data-tip]').forEach(bar=>{
+    if(bar.__tip)return;bar.__tip=1;
+    let d=null;try{d=JSON.parse(bar.dataset.tip);}catch(e){return;}
+    const gap=(d.pr-1)*100;
+    const ahead=d.pr>=1;
+    const sw=`<span class="tsw" style="background:${d.ambc}"></span>`;
+    const html=`<div class="t">${sw}${esc(d.l)} · 페이스 대비 `
+      +`<b style="color:${ahead?'#7ec98f':'#f0a89c'}">${(ahead?'+':'−')+Math.abs(gap).toFixed(1)}%p</b></div>`
+      +`<div class="r"><span class="l">달성률</span><b>${pct(d.r,1)}</b></div>`
+      +`<div class="r"><span class="l">목표 페이스</span><b>${pct(d.goal?d.due/d.goal:0,1)}</b></div>`
+      +`<div class="r"><span class="l">집행 / 목표</span><b>${fmt(Math.round(d.act))} / ${fmt(Math.round(d.goal))}</b></div>`
+      +`<div class="r"><span class="l">오늘까지 채웠어야 할 양</span><b>${fmt(Math.round(d.due))}</b></div>`
+      +`<div class="r"><span class="l">차이</span><b>${(d.act>=d.due?'+':'−')+fmt(Math.round(Math.abs(d.act-d.due)))}</b></div>`;
+    bar.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,html));
+    bar.addEventListener('mouseleave',hideTip);});
 }
 /* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
@@ -2556,7 +2598,7 @@ function renderDonuts(){
     const mk=k=>{
       const it=items.filter(l=>l.kpi===k),w=sum(it.map(lineGross));
       return {k,ach:safe(sum(it.map(l=>safe(kpiAch(l))*lineGross(l)))/w),
-        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>l.e[k])))};};
+        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>goalIn(l,k))))};};
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
     const restRows=restKpis.map(k=>({...mk(k),color:'var(--gray)'}));
     const c=el('div','card donut',box);
@@ -4460,7 +4502,8 @@ const SHEET_REQ=['date','media'];
 const SHEET_DIMS=[
   {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:false},
   {k:'media',l:'매체명',w:104,type:'dim',rule:'설정 › 라인 목록',lock:1,on:true},
-  {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
+  {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:true},
+  {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
@@ -4493,24 +4536,39 @@ const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
 let SHEET=LINES.map(l=>{
   const idx=ELAPSED-1,v=l.daily.view[idx];
   const cs=CREATIVES.filter(c=>c.lid===l.id);
-  return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,target:l.target,line:l.line,
+  return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,line:l.line,
     creative:cs.length?cs[0].name:'',cost:Math.round(toGross(l.daily.net[idx],feeOf(l))),
     imp:l.daily.imp[idx],click:l.daily.click[idx],view:v,eng:l.daily.eng[idx],conv:l.daily.conv[idx],
     lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],
     like:l.daily.like[idx],share:l.daily.share[idx],
     v3:l.daily.v3[idx],v15:l.daily.v15[idx],v30:l.daily.v30[idx],
     v25:l.daily.v25[idx],v50:l.daily.v50[idx],v75:l.daily.v75[idx],v100:l.daily.v100[idx]};});
-const DIM_CHAIN=['segment','media','product','target','line','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
+/* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
+   여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
+   조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
+const dimMatch=(l,k,v)=>{
+  if(!v)return true;
+  if(!MULTI_DIMS.includes(k))return l[k]===v;
+  if(l[k]===v)return true;
+  const set=new Set(lineMulti(l,k)),want=parseMulti(v);
+  return want.length>0&&want.every(x=>set.has(x));};
 const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
-  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>p==='creative'||!row[p]||l[p]===row[p]));
-  if(k==='creative')
-    return [...new Set(ls.flatMap(l=>CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name)))].filter(Boolean);
-  return [...new Set(ls.map(l=>l[k]))];};
-/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다 */
+  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>dimMatch(l,p,row[p])));
+  /* 조합 전체와 그 안의 개별 항목을 함께 고를 수 있게 둘 다 내려 준다 */
+  if(MULTI_DIMS.includes(k))
+    return [...new Set(ls.flatMap(l=>[l[k]].concat(lineMulti(l,k))))].filter(Boolean);
+  return [...new Set(ls.map(l=>l[k]))].filter(Boolean);};
+/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다.
+   광고상품·지면·타겟팅은 순서가 달라도, 조합 중 일부만 적어도 같은 라인으로 본다. */
 function rowLine(r){
-  const keys=['segment','media','product','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return null;
-  return LINES.find(l=>keys.every(k=>l[k]===r[k]))||null;}
+  const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
+  /* 조합이 정확히 같은 라인을 먼저 고르고, 없으면 그 항목을 품고 있는 라인 */
+  const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
+    ||lineMulti(l,k).length===parseMulti(r[k]).length));
+  return exact||LINES.find(ok)||null;}
 function rowBad(r){
   const l=rowLine(r);if(!l)return !!(r.media||r.product);
   return !(r.date>=l.start&&r.date<=l.end);}
@@ -4745,7 +4803,19 @@ function saveRows(){
     if(!rows.length)return;
     const i=ELAPSED-1;
     AMET.forEach(m=>{const before=l.daily[m][i];
-      l.daily[m][i]=sum(rows.map(r=>+r[m]||0));l.a[m]+=l.daily[m][i]-before;});});
+      l.daily[m][i]=sum(rows.map(r=>+r[m]||0));l.a[m]+=l.daily[m][i]-before;});
+    /* 한 라인을 소재별로 나눠 적었으면 그 비중을 소재 배분에 반영한다 —
+       예상 효율에서는 소재 2개를 한 줄로 등록했어도 실적은 소재마다 따로 넣을 수 있다 */
+    const byCr=new Map();
+    rows.forEach(r=>{const n2=String(r.creative||'').trim();if(!n2)return;
+      byCr.set(n2,(byCr.get(n2)||0)+(+r[l.kpi]||+r.imp||0));});
+    if(byCr.size>1){
+      const cs=CREATIVES.filter(c=>c.lid===l.id);
+      const tot=sum([...byCr.values()]);
+      if(tot>0&&cs.length){
+        cs.forEach(c=>{const v=byCr.get(c.name);if(v!=null)c.share=v/tot;});
+        const s2=sum(cs.map(c=>+c.share||0));
+        if(s2>0)cs.forEach(c=>c.share=(+c.share||0)/s2);}}});
   buildFacts();renderAll();switchTab('dash');}
 function renderIssues(){
   let h=`<thead><tr><th style="width:124px">시작일</th><th style="width:124px">종료일</th>
@@ -4905,7 +4975,8 @@ const LINE_REQ=['media','product'];
 const LINE_FIXED=[
   {k:'segment',l:'구분',w:88,type:'auto',on:false},
   {k:'media',l:'매체',w:92,type:'auto',on:true,lock:1},
-  {k:'product',l:'광고상품',w:142,type:'auto',on:true,lock:1},
+  {k:'product',l:'광고상품',w:150,type:'chips',on:true,lock:1},
+  {k:'slot',l:'광고 지면',w:150,type:'chips',on:false},
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
@@ -4938,13 +5009,31 @@ let LINE_COLS=lineColsDefault();
 const GKEY={e_imp:'imp',e_click:'click',e_view:'view'};
 const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
 
-/* ---- 소재 · 타겟팅 그룹: 한 라인에 여러 개를 칩으로 ---- */
+/* ---- 여러 개를 한 칸에 담는 차원 ----
+   광고상품 · 광고 지면 · 타겟팅 그룹 · 소재는 한 라인에 여러 개가 들어갈 수 있다.
+   (패키지로 파는 광고상품, 한 예산으로 함께 돌리는 타겟팅·소재 등)
+   라인에는 배열(products/slots/targets/creatives)로 두고,
+   집계용 차원 값(l.product 등)은 " · " 로 이어 붙인 한 덩어리로 유지한다. */
+const MULTI_DIMS=['product','slot','target','creative'];
+/* 콤마 · 가운뎃점 · 앰퍼샌드 어느 쪽으로 적어도 나눠 읽는다 */
+const MULTI_SPLIT=/[,\u00b7\u2022&]/;
+const parseMulti=v=>String(v==null?'':v).split(MULTI_SPLIT).map(x=>x.trim()).filter(Boolean);
+const joinMulti=a=>a.join(' · ');
 const lineCreatives=l=>Array.isArray(l.creatives)?l.creatives
   :CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name);
-const lineTargets=l=>Array.isArray(l.targets)?l.targets:(l.target?[l.target]:[]);
+const lineTargets=l=>Array.isArray(l.targets)?l.targets:parseMulti(l.target);
+const lineProducts=l=>Array.isArray(l.products)&&l.products.length?l.products:parseMulti(l.product);
+const lineSlots=l=>Array.isArray(l.slots)?l.slots:parseMulti(l.slot);
+/* 차원 이름 → 그 라인의 항목 배열 */
+const lineMulti=(l,k)=>k==='creative'?lineCreatives(l):k==='target'?lineTargets(l)
+  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):(l[k]?[l[k]]:[]);
 const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allProductNames=()=>[...new Set(LINES.flatMap(lineProducts))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#b3c1cf,#495e72)',
   'linear-gradient(140deg,#93a2b1,#35536f)','linear-gradient(140deg,#aabbcb,#495e72)',
@@ -4966,9 +5055,27 @@ function setLineCreatives(l,names){
 function setLineTargets(l,names){
   names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
   l.targets=names;
-  l.target=names.join(' · ')||'(미지정)';   /* 집계 차원 값은 하나로 유지 */
+  l.target=joinMulti(names)||'(미지정)';   /* 집계 차원 값은 하나로 유지 */
   buildFacts();
 }
+function setLineProducts(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.products=names;
+  l.product=joinMulti(names);
+  buildFacts();
+}
+function setLineSlots(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.slots=names;
+  l.slot=joinMulti(names);
+  buildFacts();
+}
+/* 칩 필드 종류별 동작 — 이름표 · 현재 값 · 저장 · 고를 수 있는 목록 */
+const CHIP_KIND={
+  creative:{label:'소재',      get:lineCreatives,set:setLineCreatives,all:allCreativeNames},
+  target:  {label:'타겟팅 그룹',get:lineTargets,  set:setLineTargets,  all:allTargetNames},
+  product: {label:'광고상품',   get:lineProducts, set:setLineProducts, all:allProductNames},
+  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames}};
 /* 기본은 "이미 등록된 항목 중에서 고르기". 새 이름이 필요할 때만 ＋ 버튼으로 직접 추가한다. */
 function chipFieldHTML(kind,li,items){
   return `<div class="chipfield" data-cf="${kind}" data-l="${li}">`
@@ -4979,10 +5086,10 @@ function chipFieldHTML(kind,li,items){
 function wireChipFields(root,onChange){
   root.querySelectorAll('.chipfield').forEach(fd=>{
     const kind=fd.dataset.cf,li=+fd.dataset.l,l=LINES[li];
-    const isCr=kind==='creative';
-    const label=isCr?'소재':'타겟팅 그룹';
-    const cur=()=>isCr?lineCreatives(l):lineTargets(l);
-    const set=v=>{isCr?setLineCreatives(l,v):setLineTargets(l,v);onChange();};
+    const K=CHIP_KIND[kind];if(!K||!l)return;
+    const label=K.label;
+    const cur=()=>K.get(l);
+    const set=v=>{K.set(l,v);onChange();};
     fd.querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{
       e.stopPropagation();set(cur().filter(x=>x!==b.dataset.rm));});
     /* 선택 ▾ — 등록된 목록에서 고르기 (기본 동작)
@@ -4991,7 +5098,7 @@ function wireChipFields(root,onChange){
     pickBtn.onclick=e=>{
       e.stopPropagation();
       document.querySelectorAll('.cfmenu').forEach(m=>m.remove());
-      const pool=(isCr?allCreativeNames():allTargetNames()).filter(n=>!cur().includes(n));
+      const pool=K.all().filter(n=>!cur().includes(n));
       const m=el('div','cfmenu',document.body);
       m.innerHTML=`<div class="mt">등록된 ${label}</div>`
         +(pool.length?pool.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
@@ -5036,7 +5143,7 @@ function renderKpiTable(){
       switch(c.type){
         case 'auto':return `<td class="${cls}">${inp('txt')} list="ld-${c.k}" value="${esc(l[c.k]||'')}"></td>`;
         case 'text':return `<td class="${cls}">${inp('txt')} value="${esc(l[c.k]||'')}"></td>`;
-        case 'chips':return `<td class="${cls}">${chipFieldHTML(c.k,i,c.k==='creative'?lineCreatives(l):lineTargets(l))}</td>`;
+        case 'chips':return `<td class="${cls}">${chipFieldHTML(c.k,i,(CHIP_KIND[c.k]||CHIP_KIND.target).get(l))}</td>`;
         case 'date':return `<td class="${cls}">${inp('')} type="date" value="${l[c.k]||''}"></td>`;
         case 'time':return `<td class="${cls}">${inp('')} type="time" value="${l[c.k]||''}"></td>`;
         case 'bid':return `<td class="${cls}"><select data-l="${i}" data-k="bid"><option value=""${l.bid?'':' selected'}>선택</option>${BID_TYPES.map(b=>`<option ${l.bid===b?'selected':''}>${b}</option>`).join('')}<option value="__add">+ 항목 추가…</option></select></td>`;
@@ -5126,6 +5233,7 @@ function renderKpiTable(){
     LINES.splice(i+1,0,n);
     /* 소재·타겟팅은 실제 레코드까지 함께 복제한다 */
     setLineTargets(n,lineTargets(src));setLineCreatives(n,lineCreatives(src));
+    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));
     rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();});
   /* 셀 선택 — 클릭한 칸이 선택 상태가 된다 */
   [...(t.tBodies[0]?t.tBodies[0].rows:[])].forEach((tr,ri)=>{
@@ -5218,7 +5326,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','target','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');
@@ -5778,8 +5886,8 @@ function blankLine(){
   const base=LINES[LINES.length-1]||{};
   const n=JSON.parse(JSON.stringify({...base,daily:undefined}));
   n.id='L'+Math.random().toString(36).slice(2,7);
-  ['segment','media','product','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
-  n.targets=[];n.creatives=[];n.creativeTxt='';n.device=[];
+  ['segment','media','product','slot','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
+  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.creativeTxt='';n.device=[];
   n.sec=0;n.price=0;n.gross=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
   n.e={};AMET.forEach(m=>n.e[m]=0);
   n.a={};AMET.forEach(m=>n.a[m]=0);
@@ -6706,9 +6814,12 @@ function saveFile(bytes,name,mime){
 /* ---------- 템플릿 정의 ---------- */
 /* 일자별 실적 — 직접 입력 열만 (계산 열 제외) */
 /* 여러 개를 한 칸에 적는 열은 머리글에 안내를 붙인다 */
+const TPL_NOTE='  (동일 예산 내 항목이 여러개인 경우 콤마로 표시)';
 const TPL_HINT={
-  creative:'소재  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)',
-  target:'타겟팅 그룹  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)'};
+  product:'광고상품'+TPL_NOTE,
+  slot:'광고 지면'+TPL_NOTE,
+  creative:'소재'+TPL_NOTE,
+  target:'타겟팅 그룹'+TPL_NOTE};
 /* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
 const TPL_HINT_DAILY={};
 const tplW=(k,l)=>k==='note'?40:k==='date'?14:Math.max(11,Math.min(26,l.length*1.5+7));
@@ -6733,7 +6844,9 @@ const TPL_DAILY_GUIDE=[
   '"일자별 실적" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '일자는 YYYY-MM-DD 로 적습니다. 8/3, 2026.8.3, 20260803 처럼 적어도 불러올 때 자동으로 바뀝니다.',
   '구분 · 매체명 · 광고상품명 · 타겟팅 그룹 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.',
-  '타겟팅 그룹은 한 행에 하나만 적습니다. 여러 그룹이면 행을 나눠 주세요 (콤마로 묶지 않습니다).',
+  '광고상품 · 타겟팅 그룹 · 소재는 예상 효율에 등록한 조합 그대로 적어도 되고, 그 안의 한 항목만 적어 따로 나누어 넣어도 됩니다.',
+  '조합으로 적을 때 순서는 상관없습니다. 포함된 항목이 같으면 같은 라인으로 봅니다.',
+  '날짜까지 완전히 똑같은 행은 불러올 때 한 번만 반영합니다. 파일에 계속 이어 붙여도 중복으로 쌓이지 않습니다.',
   '일별 광고비는 Net 기준으로 넣습니다. Gross 소진액은 설정의 수수료율로 자동 환산됩니다.',
   '값이 없는 항목은 열을 통째로 비워 두세요. 0 을 채워 넣을 필요 없습니다.',
   'CTR · CPM · CPV 같은 계산 항목은 템플릿에 없습니다. 불러오면 사이트가 자동으로 계산합니다.',
@@ -6745,9 +6858,9 @@ const TPL_DAILY_GUIDE=[
 const TPL_LINE_GUIDE=[
   '"예상 효율" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '한 줄 = 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹) 입니다.',
-  '타겟팅 그룹 · 소재를 한 칸에 여러 개 적을 때 — 타겟팅별로 예산을 나누어 세팅하는 경우에만 콤마(,) 로 구분합니다.',
-  '같은 예산 그룹으로 함께 운영하는(매체가 알아서 배분하는) 타겟팅 · 소재는 앰퍼샌드(&) 로 묶어 적습니다. 예) 20대남성&30대남성',
-  '예산을 나누어 세팅한 타겟팅은 콤마로 묶기보다 행을 나누어 각각의 예산을 적는 편이 정확합니다.',
+  '광고상품 · 광고 지면 · 타겟팅 그룹 · 소재는 동일 예산 안에 여러 개가 있으면 한 칸에 콤마(,) 로 이어 적습니다. 예) 20대남성, 30대남성',
+  '예산을 나누어 세팅한 항목은 행을 나누어 각각의 예산을 적어 주세요. 한 행 = 하나의 예산 단위입니다.',
+  '광고상품도 패키지로 판매하는 경우가 있어 타겟팅 · 소재와 똑같이 콤마로 여러 개를 적을 수 있습니다.',
   '시작일 · 종료일은 YYYY-MM-DD 로 적습니다.',
   'Gross 예산을 넣고 대행사 · 렙사 수수료율을 적으면 Net 예산 · 밸류 · 보너스율은 자동으로 역산됩니다.',
   '수수료율은 10 또는 10% 어느 쪽으로 적어도 됩니다.',
@@ -6793,6 +6906,25 @@ function downloadLineTemplate(){
 }
 
 /* ---------- 불러오기 ---------- */
+/* 여러 항목이 들어가는 칸은 순서가 달라도 같은 조합으로 본다.
+   조합이 통째로 들어왔으면 등록된 표기(" · " 연결)로 맞춰 두어 목록에서 바로 잡히게 한다. */
+function canonRow(r){
+  const l=rowLine(r);if(!l)return r;
+  MULTI_DIMS.forEach(k=>{
+    if(k==='creative'||!r[k])return;
+    const want=parseMulti(r[k]);
+    if(want.length>1&&want.length===lineMulti(l,k).length)r[k]=l[k];});
+  return r;
+}
+/* 완전히 같은 행인지 판단하는 열쇠 — 날짜 · 차원 · 모든 수치 */
+function rowKey(r){
+  const dims=['date','segment','media','product','slot','target','line','creative']
+    .map(k=>k!=='date'&&MULTI_DIMS.includes(k)
+      ? parseMulti(r[k]).slice().sort().join('|')
+      : String(r[k]==null?'':r[k]).trim());
+  const nums=SHEET_COLS.filter(c=>c.type==='num').map(c=>String(+r[c.k]||0));
+  return dims.concat(nums).join('\u0001');
+}
 const parseCSV=txt=>{
   const rows=[];let row=[],cur='',q=false;
   const t=txt.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
@@ -6869,7 +7001,7 @@ function importDaily(){
       '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
     const keys=mapHeader(grid[hi],cols);
     const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
-    const rows=[];
+    let rows=[];
     for(let i=hi+1;i<grid.length;i++){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
@@ -6884,10 +7016,20 @@ function importDaily(){
         else if(numK.has(k)){const n=cleanNum(raw);if(n!==null){o[k]=n;filled=true;}}
         else {o[k]=raw;filled=true;}});
       if(filled||o.date)rows.push(o);}
+    /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
+       "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
+    rows.forEach(canonRow);
+    /* 날짜까지 완전히 똑같은 행은 한 번만 남긴다 (엑셀에 계속 이어 붙이다 보면 생긴다) */
+    const seen=new Set();const uniq=[];let dup=0;
+    rows.forEach(r=>{const k=rowKey(r);
+      if(seen.has(k)){dup++;return;}
+      seen.add(k);uniq.push(r);});
+    rows=uniq;
     if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     const bad=rows.filter(rowBad).length;
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
+      +(dup?` 완전히 똑같은 중복 행 ${dup}개는 제외했습니다.`:'')
       +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
       ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
@@ -6910,16 +7052,18 @@ function importLines(){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
       const n=blankLine();
-      let filled=false,creatives=[],targets=[];
+      let filled=false,creatives=[],targets=[],products=[],slots=[];
       keys.forEach((k,ci)=>{
         if(!k)return;
         const raw=String(r[ci]==null?'':r[ci]).trim();
         if(raw==='')return;
         filled=true;
         const t=typeOf[k];
-        /* 콤마(예산을 나눈 경우) 와 & (같은 예산 그룹) 둘 다 구분 기호로 받는다 */
-        if(k==='creative'){creatives=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
-        else if(k==='target'){targets=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
+        /* 동일 예산 안에서 여러 개를 함께 돌리는 항목은 콤마로 이어 적는다 */
+        if(k==='creative'){creatives=parseMulti(raw);}
+        else if(k==='target'){targets=parseMulti(raw);}
+        else if(k==='product'){products=parseMulti(raw);}
+        else if(k==='slot'){slots=parseMulti(raw);}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
         else if(t==='pct'){const v=cleanNum(raw);if(v!==null)n[k]=v>1?v/100:v;}
@@ -6933,17 +7077,19 @@ function importLines(){
       if(!filled)continue;
       if(!n.bid&&BID_TYPES.length)n.bid='CPM';
       if(BID_KPI[n.bid]&&KPI_KEYS.includes(BID_KPI[n.bid])&&!keys.includes('kpi'))n.kpi=BID_KPI[n.bid];
-      n.__cr=creatives;n.__tg=targets;
+      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
       out.push(n);}
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     confirmModal(`${out.length}개 라인을 불러옵니다.`,
       '지금의 예상 효율 표를 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.',
       ()=>{
         pushLineUndo();
-        LINES=out.map(l=>{const {__cr,__tg,...rest}=l;return rest;});
+        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
         CREATIVES=CREATIVES.filter(()=>false);
         LINES.forEach((l,i)=>{
           const src=out[i];
+          if(src.__pd.length)setLineProducts(l,src.__pd);
+          if(src.__sl.length)setLineSlots(l,src.__sl);
           if(src.__tg.length)setLineTargets(l,src.__tg);
           if(src.__cr.length)setLineCreatives(l,src.__cr);});
         rebuildPeriod();buildFacts();
@@ -7812,59 +7958,129 @@ async function exportDashboard(){
   }finally{
     if(btn){btn.disabled=false;if(lb)lb.textContent=label||'엑셀';}}
 }
-/* A4 가로 한 장에 들어가는 실제 폭(96dpi 기준, 여백 제외) */
-const PRINT_W=1040;
-/* 종이보다 넓은 표·그래프는 그만큼 줄여서 잘리지 않게 한다.
-   화면에는 영향이 없도록 --pz 만 심어 두고 @media print 에서만 zoom 을 건다. */
-function fitForPrint(){
-  document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');x.style.removeProperty('--pz');});
-  const wide=document.querySelectorAll(
-    '#sub-perf .tbl-wrap, #sub-mix .tbl-wrap, .gantt-wrap, .heatwrap, .pacescroll, .stripscroll');
-  wide.forEach(w=>{
-    const inner=w.firstElementChild;
-    const cw=Math.max(w.scrollWidth,inner?inner.scrollWidth:0);
-    if(cw>PRINT_W+4){
-      w.classList.add('pz');
-      w.style.setProperty('--pz',(PRINT_W/cw).toFixed(3));}});
-}
 /* ---------- PDF 리포트 ----------
-   브라우저의 인쇄 기능을 그대로 쓴다(별도 라이브러리 없이 어디서나 동작).
-   인쇄용 스타일이 광고주 화면 기준으로 정리하고 일자별 상세 효율만 뺀다.
-   미디어믹스는 아직 안 그려져 있을 수 있으므로 미리 그려 둔 뒤 인쇄한다. */
+   화면을 그대로 인쇄하면 스크롤 상자·고정 머리글·가로로 긴 표가 종이 위에서 어긋난다.
+   그래서 인쇄할 때는 화면을 건드리지 않고 **인쇄 전용 문서(#printdoc)** 를 따로 만든다.
+   · 영역마다 복제본을 넣고, 그 영역의 원래 폭을 픽셀로 고정한 뒤 zoom 으로 종이 폭에 맞춘다
+     → 종이 위에서 다시 흐르지 않으므로 화면과 같은 배치가 그대로 나온다
+   · 조작 항목(버튼·선택·숨기기·ⓘ)과 시행사 전용 항목은 빼서 광고주가 보는 모습으로 만든다
+   · 일자별 상세 효율만 제외하고 미디어믹스까지 담는다
+   · beforeprint 에서 만들기 때문에 버튼을 눌러도, Ctrl+P 로 인쇄해도 똑같이 나온다 */
+const PRINT_W=1010;          /* A4 가로 · 여백 9mm 기준 실제 폭(px) */
+const PRINT_H=690;           /* 한 장에 들어가는 높이 — 이보다 크면 페이지를 넘겨서 이어 그린다 */
+function printHost(){
+  let h=$('printdoc');
+  if(!h){h=document.createElement('div');h.id='printdoc';document.body.appendChild(h);}
+  return h;
+}
+/* 복제본에서 조작 항목과 화면 전용 장치를 걷어낸다.
+   그래프 안의 id(그라데이션·곡선 경로)는 지우면 안 된다 — 지우면 url(#..) 참조가 끊겨
+   달성률 호가 통째로 사라지고 뒤의 붉은 페이스 호만 남는다. 대신 새 이름으로 바꿔 준다. */
+let PRINT_UID=0;
+function remapSvgIds(root){
+  root.querySelectorAll('svg').forEach(svg=>{
+    const map={};
+    svg.querySelectorAll('[id]').forEach(e=>{
+      const old=e.id, nw='p'+(++PRINT_UID);map[old]=nw;e.id=nw;});
+    if(!Object.keys(map).length)return;
+    svg.querySelectorAll('*').forEach(e=>{
+      [...e.attributes].forEach(a=>{
+        let v=a.value;
+        if(v.indexOf('#')<0)return;
+        Object.keys(map).forEach(o=>{
+          v=v.split('url(#'+o+')').join('url(#'+map[o]+')').split('#'+o+'"').join('#'+map[o]+'"');
+          if(a.name==='href'||a.name==='xlink:href'){if(v==='#'+o)v='#'+map[o];}});
+        if(v!==a.value)e.setAttribute(a.name,v);});});});
+}
+function cleanPrintNode(root){
+  root.querySelectorAll('.tools,.hidebtn,.infowrap,.agency-only,.hnav,.ghfix,.colgrip,'
+    +'button,select,input,.switch,.barlbl.row').forEach(e=>e.remove());
+  /* 코멘트 입력칸은 적힌 내용만 남긴다 */
+  root.querySelectorAll('textarea,[contenteditable]').forEach(e=>{
+    const txt=(e.value!==undefined?e.value:e.innerHTML)||'';
+    const d=document.createElement('div');d.className='cmtprint';
+    d.innerHTML=e.value!==undefined?esc(txt).replace(/\n/g,'<br>'):txt;
+    e.replaceWith(d);});
+  root.querySelectorAll('*').forEach(e=>{
+    if(e.namespaceURI&&e.namespaceURI.indexOf('svg')>=0)return;   /* 그래프 내부는 그대로 */
+    const st=getComputedStyle(e);
+    if(st.position==='sticky'||st.position==='fixed'){e.style.position='static';e.style.top='auto';e.style.left='auto';}
+    if(st.overflowX!=='visible'||st.overflowY!=='visible')e.style.overflow='visible';
+    if(st.maxHeight&&st.maxHeight!=='none')e.style.maxHeight='none';
+    e.style.animation='none';
+    if(e.id)e.removeAttribute('id');});
+  remapSvgIds(root);
+  return root;
+}
+/* 제목(.sec) 하나와 그 아래 딸린 카드들을 한 덩어리로 묶는다 */
+function printBlocks(container){
+  const out=[];let cur=null;
+  [...container.children].forEach(node=>{
+    if(node.classList.contains('hidden'))return;
+    if(!node.offsetParent&&getComputedStyle(node).display==='none')return;
+    if(node.classList.contains('barlbl'))return;          /* 필터 줄 */
+    if(node.classList.contains('sec')){cur=[node];out.push(cur);return;}
+    if(!cur){cur=[];out.push(cur);}
+    cur.push(node);});
+  return out.filter(g=>g.length);
+}
+function buildPrintDoc(){
+  const host=printHost();
+  host.innerHTML='';
+  /* 재는 동안에는 화면 밖에 펼쳐 둔다 */
+  host.className='measuring';
+  const W=Math.max(($('sub-perf')||document.body).getBoundingClientRect().width,900);
+  host.style.width=W+'px';
+  const head=document.createElement('div');
+  head.className='phdr';
+  const sc=viewScope();
+  head.innerHTML=`<div class="t">${esc(CAMPAIGN.name)}</div>`
+    +`<div class="s">${esc(CAMPAIGN.advertiser||'')}${CAMPAIGN.advertiser?' · ':''}`
+    +`조회 기간 ${sc.startIso} ~ ${sc.endIso} · 출력 ${iso(new Date())}</div>`;
+  host.appendChild(head);
+  const groups=[];
+  const perf=$('sub-perf'); if(perf)printBlocks(perf).forEach(g=>groups.push(g));
+  const mix=$('sub-mix');   if(mix) printBlocks(mix).forEach(g=>groups.push(g));
+  groups.forEach(g=>{
+    const bk=document.createElement('div');bk.className='pbk';
+    const inner=document.createElement('div');inner.className='pbki';
+    inner.style.width=W+'px';
+    g.forEach(n=>inner.appendChild(cleanPrintNode(n.cloneNode(true))));
+    bk.appendChild(inner);host.appendChild(bk);});
+  /* 실제 크기를 재서 종이 폭에 맞춘다 */
+  host.querySelectorAll('.pbk').forEach(bk=>{
+    const inner=bk.firstElementChild;
+    /* 가로로 흘러넘치는 것(KPI 카드 줄 · 넓은 표 · 간트)은 scrollWidth 만으로는 안 잡힌다.
+       실제 오른쪽 끝까지 재서 그 폭에 맞춰 줄인다 */
+    let nw=Math.max(inner.scrollWidth,W);
+    const x0=inner.getBoundingClientRect().left;
+    inner.querySelectorAll('table,.grid,.strip,.crcols,.tmap,svg,.dgauge,.pacebody').forEach(e=>{
+      const w=Math.max(e.scrollWidth||0,Math.ceil(e.getBoundingClientRect().right-x0));
+      if(w>nw)nw=w;});
+    const k=Math.min(1,PRINT_W/nw);
+    inner.style.width=nw+'px';
+    bk.style.zoom=k.toFixed(4);
+    /* 한 장을 넘는 덩어리는 잘라서 이어 그린다 (안 그러면 통째로 다음 장으로 밀린다) */
+    bk.style.breakInside=(inner.scrollHeight*k>PRINT_H)?'auto':'avoid';});
+  host.className='';
+  return host;
+}
+function clearPrintDoc(){const h=$('printdoc');if(h)h.innerHTML='';}
+/* 인쇄 직전에 항상 새로 만든다 — 버튼으로 눌러도, Ctrl+P 로 눌러도 같은 결과 */
+addEventListener('beforeprint',()=>{try{buildPrintDoc();}catch(e){}});
+addEventListener('afterprint',()=>{setTimeout(clearPrintDoc,300);});
 function exportPdfReport(){
   const b=$('pdfBtn');
-  if(b){b.disabled=true;}
-  /* 지금 보고 있던 자리를 기억해 두었다가 인쇄가 끝나면 그대로 되돌린다 */
-  const subOn=document.querySelector('#subbar button[data-sub].on');
-  const tabOn=document.querySelector('#tabs button.on');
-  const prev={sub:subOn?subOn.dataset.sub:'perf',tab:tabOn?tabOn.dataset.tab:'dash',
-    y:scrollY};
-  document.body.classList.add('pdfmode');
-  try{switchTab('dash');}catch(e){}
-  const goPerf=document.querySelector('#subbar button[data-sub="perf"]');
-  if(goPerf)goPerf.click();
-  /* 미디어믹스 · 효율 화면을 모두 그려 둔다 */
+  if(b)b.disabled=true;
+  /* 미디어믹스는 한 번도 열지 않았으면 아직 안 그려져 있다 */
+  try{renderMix();}catch(e){}
+  try{if($('sub-perf').classList.contains('hidden')){
+    const go=document.querySelector('#subbar button[data-sub="perf"]');if(go)go.click();}}catch(e){}
   setTimeout(()=>{
-    try{renderMix();}catch(e){}
-    try{renderCreatives();renderGantt();renderStrip();renderBubble();renderTreemap();renderHeat();}catch(e){}
-    setTimeout(()=>{
-      fitForPrint();
-      document.body.classList.remove('pdfmode');
-      const back=()=>{
-        const bs=document.querySelector(`#subbar button[data-sub="${prev.sub}"]`);
-        if(bs)bs.click();
-        if(prev.tab!=='dash'){try{switchTab(prev.tab);}catch(e){}}
-        scrollTo({top:prev.y});
-        document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');
-          x.style.removeProperty('--pz');});
-        if(b)b.disabled=false;};
-      const once=()=>{removeEventListener('afterprint',once);setTimeout(back,120);};
-      addEventListener('afterprint',once);
-      try{print();}catch(e){back();}
-      /* afterprint 를 안 주는 브라우저 대비 */
-      setTimeout(()=>{if(b&&b.disabled){removeEventListener('afterprint',once);back();}},4000);
-    },420);
-  },60);
+    try{buildPrintDoc();}catch(e){}
+    try{print();}catch(e){}
+    setTimeout(()=>{if(b)b.disabled=false;},600);
+  },260);
 }
 (function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
   const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();

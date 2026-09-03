@@ -474,7 +474,7 @@ const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
-const AMB_OK=[126,196,152], AMB_NG=[214,131,120];
+const AMB_OK=[126,196,152], AMB_NG=[236,158,146];
 /* 페이스 대비 ±6%p 를 만점으로 본다. 1%p 만 벌어져도 색이 보이도록 바닥값(.32)을 준다 —
    ±10%p 기준일 때는 1%p 차이가 세기 .1 이라 붉은 기가 전혀 안 보였다. */
 function ambLevel(pr){
@@ -518,7 +518,7 @@ function paceKpiRows(){
   const per=new Map();
   activeLines().forEach(l=>{
     const k=l.kpi;if(!k)return;
-    const goal=(+(l.e&&l.e[k]))||0;if(!goal)return;
+    const goal=goalIn(l,k);if(!goal)return;
     if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
     const o=per.get(k);
     const a=Math.max(l.start?idxOf(l.start):sc.i0,sc.i0);
@@ -562,19 +562,24 @@ function renderPace(){
     return `<div class="pline" style="--tone:${tone}">
       <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
       <div class="pmid">
-        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"
-          title="목표 페이스 ${manUnit(x.due)} (${pct(pace/100,1)})"></i></div>
-        <div class="pbar">
+        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
+        <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
+          r,pr,tone,ambc}))}">
           <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
+  /* 머리글은 늘 캠페인 전체 기준으로 말한다 — 아래 게이지·막대는 고른 기간 기준 */
+  const cs=campScope();
+  /* 달력으로 직접 좁힌 경우에만 조회 구간을 덧붙인다 (기본값 = 캠페인 첫날~어제) */
+  const narrow=!!(FILTER.from||FILTER.to);
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
-        <span class="el">${Math.round(sc.elapsed/sc.days*100)}% 경과</span></div>
+      <div class="phead">집행 ${cs.elapsed}일차 <span class="sep">/</span> ${cs.days}일
+        <span class="el">${Math.round(cs.elapsed/cs.days*100)}% 경과</span>
+        ${narrow?`<span class="vw">조회 ${mdy(sc.startIso)} ~ ${mdy(sc.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -595,7 +600,7 @@ function fitPaceLabels(){
     const st=bar.querySelector('.mstack');if(!st)return;
     const x0=st.getBoundingClientRect().left;
     bar.style.setProperty('--barw',W.toFixed(1)+'px');
-    bar.style.setProperty('--wavew',(W*1.5).toFixed(1)+'px');
+    bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
     st.querySelectorAll(':scope>i').forEach(seg=>{
       seg.style.setProperty('--segoff',
         (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
@@ -606,7 +611,26 @@ function fitPaceLabels(){
     const need=nm.textContent.length*7.4+20;
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
+  wirePaceTip();
   startAmb();
+}
+/* 막대에 마우스를 올리면 그 지표의 색과 함께 페이스 대비 차이를 알려준다 */
+function wirePaceTip(){
+  document.querySelectorAll('#paceBox .pbar[data-tip]').forEach(bar=>{
+    if(bar.__tip)return;bar.__tip=1;
+    let d=null;try{d=JSON.parse(bar.dataset.tip);}catch(e){return;}
+    const gap=(d.pr-1)*100;
+    const ahead=d.pr>=1;
+    const sw=`<span class="tsw" style="background:${d.ambc}"></span>`;
+    const html=`<div class="t">${sw}${esc(d.l)} · 페이스 대비 `
+      +`<b style="color:${ahead?'#7ec98f':'#f0a89c'}">${(ahead?'+':'−')+Math.abs(gap).toFixed(1)}%p</b></div>`
+      +`<div class="r"><span class="l">달성률</span><b>${pct(d.r,1)}</b></div>`
+      +`<div class="r"><span class="l">목표 페이스</span><b>${pct(d.goal?d.due/d.goal:0,1)}</b></div>`
+      +`<div class="r"><span class="l">집행 / 목표</span><b>${fmt(Math.round(d.act))} / ${fmt(Math.round(d.goal))}</b></div>`
+      +`<div class="r"><span class="l">오늘까지 채웠어야 할 양</span><b>${fmt(Math.round(d.due))}</b></div>`
+      +`<div class="r"><span class="l">차이</span><b>${(d.act>=d.due?'+':'−')+fmt(Math.round(Math.abs(d.act-d.due)))}</b></div>`;
+    bar.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,html));
+    bar.addEventListener('mouseleave',hideTip);});
 }
 /* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
@@ -710,7 +734,7 @@ function renderDonuts(){
     const mk=k=>{
       const it=items.filter(l=>l.kpi===k),w=sum(it.map(lineGross));
       return {k,ach:safe(sum(it.map(l=>safe(kpiAch(l))*lineGross(l)))/w),
-        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>l.e[k])))};};
+        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>goalIn(l,k))))};};
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
     const restRows=restKpis.map(k=>({...mk(k),color:'var(--gray)'}));
     const c=el('div','card donut',box);

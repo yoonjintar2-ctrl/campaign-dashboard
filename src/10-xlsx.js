@@ -119,9 +119,12 @@ function saveFile(bytes,name,mime){
 /* ---------- 템플릿 정의 ---------- */
 /* 일자별 실적 — 직접 입력 열만 (계산 열 제외) */
 /* 여러 개를 한 칸에 적는 열은 머리글에 안내를 붙인다 */
+const TPL_NOTE='  (동일 예산 내 항목이 여러개인 경우 콤마로 표시)';
 const TPL_HINT={
-  creative:'소재  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)',
-  target:'타겟팅 그룹  (예산을 나눠 세팅하면 콤마 , / 같은 예산으로 함께 돌리면 &)'};
+  product:'광고상품'+TPL_NOTE,
+  slot:'광고 지면'+TPL_NOTE,
+  creative:'소재'+TPL_NOTE,
+  target:'타겟팅 그룹'+TPL_NOTE};
 /* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
 const TPL_HINT_DAILY={};
 const tplW=(k,l)=>k==='note'?40:k==='date'?14:Math.max(11,Math.min(26,l.length*1.5+7));
@@ -146,7 +149,9 @@ const TPL_DAILY_GUIDE=[
   '"일자별 실적" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '일자는 YYYY-MM-DD 로 적습니다. 8/3, 2026.8.3, 20260803 처럼 적어도 불러올 때 자동으로 바뀝니다.',
   '구분 · 매체명 · 광고상품명 · 타겟팅 그룹 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.',
-  '타겟팅 그룹은 한 행에 하나만 적습니다. 여러 그룹이면 행을 나눠 주세요 (콤마로 묶지 않습니다).',
+  '광고상품 · 타겟팅 그룹 · 소재는 예상 효율에 등록한 조합 그대로 적어도 되고, 그 안의 한 항목만 적어 따로 나누어 넣어도 됩니다.',
+  '조합으로 적을 때 순서는 상관없습니다. 포함된 항목이 같으면 같은 라인으로 봅니다.',
+  '날짜까지 완전히 똑같은 행은 불러올 때 한 번만 반영합니다. 파일에 계속 이어 붙여도 중복으로 쌓이지 않습니다.',
   '일별 광고비는 Net 기준으로 넣습니다. Gross 소진액은 설정의 수수료율로 자동 환산됩니다.',
   '값이 없는 항목은 열을 통째로 비워 두세요. 0 을 채워 넣을 필요 없습니다.',
   'CTR · CPM · CPV 같은 계산 항목은 템플릿에 없습니다. 불러오면 사이트가 자동으로 계산합니다.',
@@ -158,9 +163,9 @@ const TPL_DAILY_GUIDE=[
 const TPL_LINE_GUIDE=[
   '"예상 효율" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)',
   '한 줄 = 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹) 입니다.',
-  '타겟팅 그룹 · 소재를 한 칸에 여러 개 적을 때 — 타겟팅별로 예산을 나누어 세팅하는 경우에만 콤마(,) 로 구분합니다.',
-  '같은 예산 그룹으로 함께 운영하는(매체가 알아서 배분하는) 타겟팅 · 소재는 앰퍼샌드(&) 로 묶어 적습니다. 예) 20대남성&30대남성',
-  '예산을 나누어 세팅한 타겟팅은 콤마로 묶기보다 행을 나누어 각각의 예산을 적는 편이 정확합니다.',
+  '광고상품 · 광고 지면 · 타겟팅 그룹 · 소재는 동일 예산 안에 여러 개가 있으면 한 칸에 콤마(,) 로 이어 적습니다. 예) 20대남성, 30대남성',
+  '예산을 나누어 세팅한 항목은 행을 나누어 각각의 예산을 적어 주세요. 한 행 = 하나의 예산 단위입니다.',
+  '광고상품도 패키지로 판매하는 경우가 있어 타겟팅 · 소재와 똑같이 콤마로 여러 개를 적을 수 있습니다.',
   '시작일 · 종료일은 YYYY-MM-DD 로 적습니다.',
   'Gross 예산을 넣고 대행사 · 렙사 수수료율을 적으면 Net 예산 · 밸류 · 보너스율은 자동으로 역산됩니다.',
   '수수료율은 10 또는 10% 어느 쪽으로 적어도 됩니다.',
@@ -206,6 +211,25 @@ function downloadLineTemplate(){
 }
 
 /* ---------- 불러오기 ---------- */
+/* 여러 항목이 들어가는 칸은 순서가 달라도 같은 조합으로 본다.
+   조합이 통째로 들어왔으면 등록된 표기(" · " 연결)로 맞춰 두어 목록에서 바로 잡히게 한다. */
+function canonRow(r){
+  const l=rowLine(r);if(!l)return r;
+  MULTI_DIMS.forEach(k=>{
+    if(k==='creative'||!r[k])return;
+    const want=parseMulti(r[k]);
+    if(want.length>1&&want.length===lineMulti(l,k).length)r[k]=l[k];});
+  return r;
+}
+/* 완전히 같은 행인지 판단하는 열쇠 — 날짜 · 차원 · 모든 수치 */
+function rowKey(r){
+  const dims=['date','segment','media','product','slot','target','line','creative']
+    .map(k=>k!=='date'&&MULTI_DIMS.includes(k)
+      ? parseMulti(r[k]).slice().sort().join('|')
+      : String(r[k]==null?'':r[k]).trim());
+  const nums=SHEET_COLS.filter(c=>c.type==='num').map(c=>String(+r[c.k]||0));
+  return dims.concat(nums).join('\u0001');
+}
 const parseCSV=txt=>{
   const rows=[];let row=[],cur='',q=false;
   const t=txt.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
@@ -282,7 +306,7 @@ function importDaily(){
       '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
     const keys=mapHeader(grid[hi],cols);
     const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
-    const rows=[];
+    let rows=[];
     for(let i=hi+1;i<grid.length;i++){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
@@ -297,10 +321,20 @@ function importDaily(){
         else if(numK.has(k)){const n=cleanNum(raw);if(n!==null){o[k]=n;filled=true;}}
         else {o[k]=raw;filled=true;}});
       if(filled||o.date)rows.push(o);}
+    /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
+       "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
+    rows.forEach(canonRow);
+    /* 날짜까지 완전히 똑같은 행은 한 번만 남긴다 (엑셀에 계속 이어 붙이다 보면 생긴다) */
+    const seen=new Set();const uniq=[];let dup=0;
+    rows.forEach(r=>{const k=rowKey(r);
+      if(seen.has(k)){dup++;return;}
+      seen.add(k);uniq.push(r);});
+    rows=uniq;
     if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     const bad=rows.filter(rowBad).length;
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
+      +(dup?` 완전히 똑같은 중복 행 ${dup}개는 제외했습니다.`:'')
       +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
       ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
@@ -323,16 +357,18 @@ function importLines(){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
       const n=blankLine();
-      let filled=false,creatives=[],targets=[];
+      let filled=false,creatives=[],targets=[],products=[],slots=[];
       keys.forEach((k,ci)=>{
         if(!k)return;
         const raw=String(r[ci]==null?'':r[ci]).trim();
         if(raw==='')return;
         filled=true;
         const t=typeOf[k];
-        /* 콤마(예산을 나눈 경우) 와 & (같은 예산 그룹) 둘 다 구분 기호로 받는다 */
-        if(k==='creative'){creatives=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
-        else if(k==='target'){targets=raw.split(/[,&]/).map(s=>s.trim()).filter(Boolean);}
+        /* 동일 예산 안에서 여러 개를 함께 돌리는 항목은 콤마로 이어 적는다 */
+        if(k==='creative'){creatives=parseMulti(raw);}
+        else if(k==='target'){targets=parseMulti(raw);}
+        else if(k==='product'){products=parseMulti(raw);}
+        else if(k==='slot'){slots=parseMulti(raw);}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
         else if(t==='pct'){const v=cleanNum(raw);if(v!==null)n[k]=v>1?v/100:v;}
@@ -346,17 +382,19 @@ function importLines(){
       if(!filled)continue;
       if(!n.bid&&BID_TYPES.length)n.bid='CPM';
       if(BID_KPI[n.bid]&&KPI_KEYS.includes(BID_KPI[n.bid])&&!keys.includes('kpi'))n.kpi=BID_KPI[n.bid];
-      n.__cr=creatives;n.__tg=targets;
+      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
       out.push(n);}
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     confirmModal(`${out.length}개 라인을 불러옵니다.`,
       '지금의 예상 효율 표를 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.',
       ()=>{
         pushLineUndo();
-        LINES=out.map(l=>{const {__cr,__tg,...rest}=l;return rest;});
+        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
         CREATIVES=CREATIVES.filter(()=>false);
         LINES.forEach((l,i)=>{
           const src=out[i];
+          if(src.__pd.length)setLineProducts(l,src.__pd);
+          if(src.__sl.length)setLineSlots(l,src.__sl);
           if(src.__tg.length)setLineTargets(l,src.__tg);
           if(src.__cr.length)setLineCreatives(l,src.__cr);});
         rebuildPeriod();buildFacts();

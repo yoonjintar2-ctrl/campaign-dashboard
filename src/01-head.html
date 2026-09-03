@@ -186,8 +186,9 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   color:var(--ink2);font-weight:600;font-size:13px}
 .subbar button:hover{background:rgba(255,255,255,.6)}
 .subbar button.on{background:var(--surface);color:var(--acc);border-color:#d0d6de;box-shadow:var(--shadow)}
-.subbar #reportBtn{margin-left:auto;height:30px;font-weight:700}
-.subbar #reportBtn.on{background:var(--surface)}
+/* 리포트 내려받기 묶음은 하위 탭 줄의 맨 오른쪽으로 민다 */
+.subbar .dlgrp{margin-left:auto}
+.subbar .pill.dl{height:30px;font-weight:700}
 /* 역할 표시 — 로그인 여부로 자동 결정 */
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
@@ -315,6 +316,10 @@ table.tbl.nogauge .gauge .track{display:none}
   gap:9px;justify-content:center;white-space:nowrap}
 .phead .sep{color:#cdd5de;font-weight:400}
 .phead .el{font-size:13px;font-weight:700;color:var(--acc)}
+.phead .vw{font-size:12px;font-weight:700;color:var(--muted);background:var(--acc-soft);
+  border-radius:20px;padding:3px 10px;letter-spacing:0}
+.tipbox .t .tsw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;
+  vertical-align:baseline}
 
 .pline{display:flex;flex-wrap:nowrap;align-items:center;gap:16px}
 .pline+.pline{margin-top:26px}
@@ -347,9 +352,9 @@ table.tbl.nogauge .gauge .track{display:none}
    물결을 배경으로 넣었기 때문에 매체 이름 글자보다 뒤에 있고, 구간 사이 간격(구분선)도 침범하지 않는다.
    --ambt(0~1, #paceBox 에서 한 번에 움직인다) 로 모든 지표가 같은 위상으로 흐른다. */
 .pbar .mstack>i{min-width:0;overflow:hidden;
-  background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 26%,
-      var(--ambc,rgba(0,0,0,0)) 44%,var(--ambc,rgba(0,0,0,0)) 56%,
-      rgba(0,0,0,0) 74%,rgba(0,0,0,0) 100%),var(--segbg);
+  background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
+      var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
+      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),var(--segbg);
   background-repeat:no-repeat,no-repeat;
   background-size:var(--wavew,0px) 100%,auto;
   background-position:calc(var(--ambt,.5) * (var(--barw,0px) + var(--wavew,0px))
@@ -396,41 +401,35 @@ table.tbl.nogauge .gauge .track{display:none}
 .pill.dl[disabled]{opacity:.55;cursor:default}
 @media (max-width:1180px){.dlgrp .lb{display:none}.pill.dl span{display:none}.pill.dl{padding:0 9px}}
 
-/* ===== 인쇄(PDF 저장) — 광고주 화면 기준, 일자별 상세 효율은 뺀다 ===== */
+/* ===== 인쇄(PDF 저장) =====
+   화면을 그대로 인쇄하지 않고, JS 가 만들어 둔 인쇄 전용 문서(#printdoc)만 찍는다.
+   영역마다 원래 폭을 픽셀로 고정하고 zoom 으로 줄여 두기 때문에 종이 위에서 배치가 흐트러지지 않는다. */
+#printdoc{display:none}
+#printdoc.measuring{display:block;position:absolute;left:0;top:0;z-index:-1;
+  visibility:hidden;pointer-events:none}
+/* 표의 고정(sticky) 칸은 인쇄본에서 전부 풀어 준다 —
+   스크롤 상자가 없어지면 sticky 칸이 오른쪽 끝으로 밀려 붙어 표가 어긋난다 */
+#printdoc table th,#printdoc table td{position:static !important;left:auto !important;
+  top:auto !important;z-index:auto !important}
+#printdoc .ghfix,#printdoc .hnav,#printdoc .cfmenu{display:none !important}
+#printdoc .cmtprint{font-size:12px;line-height:1.6;color:var(--ink2)}
+#printdoc .pbk{margin:0 0 16px}
+#printdoc .pbki{transform-origin:top left}
+#printdoc .phdr{margin:0 0 16px;padding:0 0 10px;border-bottom:1px solid var(--line)}
+#printdoc .phdr .t{font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--ink)}
+#printdoc .phdr .s{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px}
 @media print{
-  @page{size:A4 landscape;margin:10mm 9mm}
-  html,body{background:#fff !important}
+  @page{size:A4 landscape;margin:9mm}
+  html,body{background:#fff !important;width:auto !important;margin:0 !important;padding:0 !important}
   body::before,body::after{display:none !important}
-  .topbar,.tabs,.subbar,.demobar,.gate,.ghfix,.hnav,.tools,.tipbox,.infopop,
-  .modalwrap,.toast,#fileIn,.pill,.btn,.hidebtn,.infowrap,.colgrip,
-  .barlbl select,.barlbl button,.barlbl input,.switch{display:none !important}
-  .wrap{padding:0 !important;max-width:none !important}
-  #tab-input,#tab-setup,#sub-table{display:none !important}
-  #tab-dash,#sub-perf{display:block !important}
-  /* 미디어믹스도 이어서 인쇄한다 */
-  #sub-mix{display:block !important;break-before:page;margin-top:0}
-  .agency-only{display:none !important}
-  .card,.cr,.donut,.strip .tile{box-shadow:none !important}
-  .card{border-color:#dde3ea !important;break-inside:avoid}
-  .sec{break-after:avoid;break-inside:avoid}
-  .duo{break-inside:avoid}
-  .tbl-wrap,.gantt-wrap,.pacescroll,.heatwrap,.stripscroll,.donutrow{overflow:visible !important}
-  .grid.donuts{flex-wrap:wrap !important}
-  /* 필터 줄은 조작 항목뿐이라 리포트에서는 뺀다 */
-  .barlbl.row{display:none !important}
-  /* 스파크라인은 인쇄에서 글자와 겹쳐 보여 뺀다 */
-  .stat .spark{display:none !important}
-  .stat .tile{min-height:0 !important}
-  table.tbl{font-size:8.6px}
-  table.tbl th,table.tbl td{padding-top:3px;padding-bottom:3px}
-  /* 화면보다 좁은 종이에 맞춰 넓은 표·그래프를 줄인다 (자리는 인쇄 직전에 JS 가 잰다) */
-  .pz{zoom:var(--pz,1)}
+  body>*{display:none !important}
+  body>#printdoc{display:block !important}
+  #printdoc .card{box-shadow:none !important;border-color:#dde3ea !important}
+  #printdoc .sec{break-after:avoid;margin-top:0}
+  #printdoc .stat .spark{display:none !important}   /* 인쇄에서 글자와 겹친다 */
+  #printdoc .duo{break-inside:avoid}
   a[href]::after{content:'' !important}
 }
-/* 인쇄 준비 중에는 화면이 흔들리지 않게 잠깐 덮어 둔다 */
-body.pdfmode::after{content:'PDF 준비 중…';position:fixed;inset:0;z-index:400;
-  background:rgba(238,241,245,.94);display:grid;place-items:center;
-  font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
 
 /* ===== 열 너비 드래그 ===== */
 th.cresz{position:relative}

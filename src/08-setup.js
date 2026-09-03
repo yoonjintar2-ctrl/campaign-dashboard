@@ -22,7 +22,8 @@ const LINE_REQ=['media','product'];
 const LINE_FIXED=[
   {k:'segment',l:'구분',w:88,type:'auto',on:false},
   {k:'media',l:'매체',w:92,type:'auto',on:true,lock:1},
-  {k:'product',l:'광고상품',w:142,type:'auto',on:true,lock:1},
+  {k:'product',l:'광고상품',w:150,type:'chips',on:true,lock:1},
+  {k:'slot',l:'광고 지면',w:150,type:'chips',on:false},
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
@@ -55,13 +56,31 @@ let LINE_COLS=lineColsDefault();
 const GKEY={e_imp:'imp',e_click:'click',e_view:'view'};
 const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
 
-/* ---- 소재 · 타겟팅 그룹: 한 라인에 여러 개를 칩으로 ---- */
+/* ---- 여러 개를 한 칸에 담는 차원 ----
+   광고상품 · 광고 지면 · 타겟팅 그룹 · 소재는 한 라인에 여러 개가 들어갈 수 있다.
+   (패키지로 파는 광고상품, 한 예산으로 함께 돌리는 타겟팅·소재 등)
+   라인에는 배열(products/slots/targets/creatives)로 두고,
+   집계용 차원 값(l.product 등)은 " · " 로 이어 붙인 한 덩어리로 유지한다. */
+const MULTI_DIMS=['product','slot','target','creative'];
+/* 콤마 · 가운뎃점 · 앰퍼샌드 어느 쪽으로 적어도 나눠 읽는다 */
+const MULTI_SPLIT=/[,\u00b7\u2022&]/;
+const parseMulti=v=>String(v==null?'':v).split(MULTI_SPLIT).map(x=>x.trim()).filter(Boolean);
+const joinMulti=a=>a.join(' · ');
 const lineCreatives=l=>Array.isArray(l.creatives)?l.creatives
   :CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name);
-const lineTargets=l=>Array.isArray(l.targets)?l.targets:(l.target?[l.target]:[]);
+const lineTargets=l=>Array.isArray(l.targets)?l.targets:parseMulti(l.target);
+const lineProducts=l=>Array.isArray(l.products)&&l.products.length?l.products:parseMulti(l.product);
+const lineSlots=l=>Array.isArray(l.slots)?l.slots:parseMulti(l.slot);
+/* 차원 이름 → 그 라인의 항목 배열 */
+const lineMulti=(l,k)=>k==='creative'?lineCreatives(l):k==='target'?lineTargets(l)
+  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):(l[k]?[l[k]]:[]);
 const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allProductNames=()=>[...new Set(LINES.flatMap(lineProducts))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#b3c1cf,#495e72)',
   'linear-gradient(140deg,#93a2b1,#35536f)','linear-gradient(140deg,#aabbcb,#495e72)',
@@ -83,9 +102,27 @@ function setLineCreatives(l,names){
 function setLineTargets(l,names){
   names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
   l.targets=names;
-  l.target=names.join(' · ')||'(미지정)';   /* 집계 차원 값은 하나로 유지 */
+  l.target=joinMulti(names)||'(미지정)';   /* 집계 차원 값은 하나로 유지 */
   buildFacts();
 }
+function setLineProducts(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.products=names;
+  l.product=joinMulti(names);
+  buildFacts();
+}
+function setLineSlots(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.slots=names;
+  l.slot=joinMulti(names);
+  buildFacts();
+}
+/* 칩 필드 종류별 동작 — 이름표 · 현재 값 · 저장 · 고를 수 있는 목록 */
+const CHIP_KIND={
+  creative:{label:'소재',      get:lineCreatives,set:setLineCreatives,all:allCreativeNames},
+  target:  {label:'타겟팅 그룹',get:lineTargets,  set:setLineTargets,  all:allTargetNames},
+  product: {label:'광고상품',   get:lineProducts, set:setLineProducts, all:allProductNames},
+  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames}};
 /* 기본은 "이미 등록된 항목 중에서 고르기". 새 이름이 필요할 때만 ＋ 버튼으로 직접 추가한다. */
 function chipFieldHTML(kind,li,items){
   return `<div class="chipfield" data-cf="${kind}" data-l="${li}">`
@@ -96,10 +133,10 @@ function chipFieldHTML(kind,li,items){
 function wireChipFields(root,onChange){
   root.querySelectorAll('.chipfield').forEach(fd=>{
     const kind=fd.dataset.cf,li=+fd.dataset.l,l=LINES[li];
-    const isCr=kind==='creative';
-    const label=isCr?'소재':'타겟팅 그룹';
-    const cur=()=>isCr?lineCreatives(l):lineTargets(l);
-    const set=v=>{isCr?setLineCreatives(l,v):setLineTargets(l,v);onChange();};
+    const K=CHIP_KIND[kind];if(!K||!l)return;
+    const label=K.label;
+    const cur=()=>K.get(l);
+    const set=v=>{K.set(l,v);onChange();};
     fd.querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{
       e.stopPropagation();set(cur().filter(x=>x!==b.dataset.rm));});
     /* 선택 ▾ — 등록된 목록에서 고르기 (기본 동작)
@@ -108,7 +145,7 @@ function wireChipFields(root,onChange){
     pickBtn.onclick=e=>{
       e.stopPropagation();
       document.querySelectorAll('.cfmenu').forEach(m=>m.remove());
-      const pool=(isCr?allCreativeNames():allTargetNames()).filter(n=>!cur().includes(n));
+      const pool=K.all().filter(n=>!cur().includes(n));
       const m=el('div','cfmenu',document.body);
       m.innerHTML=`<div class="mt">등록된 ${label}</div>`
         +(pool.length?pool.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
@@ -153,7 +190,7 @@ function renderKpiTable(){
       switch(c.type){
         case 'auto':return `<td class="${cls}">${inp('txt')} list="ld-${c.k}" value="${esc(l[c.k]||'')}"></td>`;
         case 'text':return `<td class="${cls}">${inp('txt')} value="${esc(l[c.k]||'')}"></td>`;
-        case 'chips':return `<td class="${cls}">${chipFieldHTML(c.k,i,c.k==='creative'?lineCreatives(l):lineTargets(l))}</td>`;
+        case 'chips':return `<td class="${cls}">${chipFieldHTML(c.k,i,(CHIP_KIND[c.k]||CHIP_KIND.target).get(l))}</td>`;
         case 'date':return `<td class="${cls}">${inp('')} type="date" value="${l[c.k]||''}"></td>`;
         case 'time':return `<td class="${cls}">${inp('')} type="time" value="${l[c.k]||''}"></td>`;
         case 'bid':return `<td class="${cls}"><select data-l="${i}" data-k="bid"><option value=""${l.bid?'':' selected'}>선택</option>${BID_TYPES.map(b=>`<option ${l.bid===b?'selected':''}>${b}</option>`).join('')}<option value="__add">+ 항목 추가…</option></select></td>`;
@@ -243,6 +280,7 @@ function renderKpiTable(){
     LINES.splice(i+1,0,n);
     /* 소재·타겟팅은 실제 레코드까지 함께 복제한다 */
     setLineTargets(n,lineTargets(src));setLineCreatives(n,lineCreatives(src));
+    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));
     rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();});
   /* 셀 선택 — 클릭한 칸이 선택 상태가 된다 */
   [...(t.tBodies[0]?t.tBodies[0].rows:[])].forEach((tr,ri)=>{
@@ -335,7 +373,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','target','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');
@@ -895,8 +933,8 @@ function blankLine(){
   const base=LINES[LINES.length-1]||{};
   const n=JSON.parse(JSON.stringify({...base,daily:undefined}));
   n.id='L'+Math.random().toString(36).slice(2,7);
-  ['segment','media','product','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
-  n.targets=[];n.creatives=[];n.creativeTxt='';n.device=[];
+  ['segment','media','product','slot','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
+  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.creativeTxt='';n.device=[];
   n.sec=0;n.price=0;n.gross=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
   n.e={};AMET.forEach(m=>n.e[m]=0);
   n.a={};AMET.forEach(m=>n.a[m]=0);

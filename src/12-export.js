@@ -447,59 +447,129 @@ async function exportDashboard(){
   }finally{
     if(btn){btn.disabled=false;if(lb)lb.textContent=label||'엑셀';}}
 }
-/* A4 가로 한 장에 들어가는 실제 폭(96dpi 기준, 여백 제외) */
-const PRINT_W=1040;
-/* 종이보다 넓은 표·그래프는 그만큼 줄여서 잘리지 않게 한다.
-   화면에는 영향이 없도록 --pz 만 심어 두고 @media print 에서만 zoom 을 건다. */
-function fitForPrint(){
-  document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');x.style.removeProperty('--pz');});
-  const wide=document.querySelectorAll(
-    '#sub-perf .tbl-wrap, #sub-mix .tbl-wrap, .gantt-wrap, .heatwrap, .pacescroll, .stripscroll');
-  wide.forEach(w=>{
-    const inner=w.firstElementChild;
-    const cw=Math.max(w.scrollWidth,inner?inner.scrollWidth:0);
-    if(cw>PRINT_W+4){
-      w.classList.add('pz');
-      w.style.setProperty('--pz',(PRINT_W/cw).toFixed(3));}});
-}
 /* ---------- PDF 리포트 ----------
-   브라우저의 인쇄 기능을 그대로 쓴다(별도 라이브러리 없이 어디서나 동작).
-   인쇄용 스타일이 광고주 화면 기준으로 정리하고 일자별 상세 효율만 뺀다.
-   미디어믹스는 아직 안 그려져 있을 수 있으므로 미리 그려 둔 뒤 인쇄한다. */
+   화면을 그대로 인쇄하면 스크롤 상자·고정 머리글·가로로 긴 표가 종이 위에서 어긋난다.
+   그래서 인쇄할 때는 화면을 건드리지 않고 **인쇄 전용 문서(#printdoc)** 를 따로 만든다.
+   · 영역마다 복제본을 넣고, 그 영역의 원래 폭을 픽셀로 고정한 뒤 zoom 으로 종이 폭에 맞춘다
+     → 종이 위에서 다시 흐르지 않으므로 화면과 같은 배치가 그대로 나온다
+   · 조작 항목(버튼·선택·숨기기·ⓘ)과 시행사 전용 항목은 빼서 광고주가 보는 모습으로 만든다
+   · 일자별 상세 효율만 제외하고 미디어믹스까지 담는다
+   · beforeprint 에서 만들기 때문에 버튼을 눌러도, Ctrl+P 로 인쇄해도 똑같이 나온다 */
+const PRINT_W=1010;          /* A4 가로 · 여백 9mm 기준 실제 폭(px) */
+const PRINT_H=690;           /* 한 장에 들어가는 높이 — 이보다 크면 페이지를 넘겨서 이어 그린다 */
+function printHost(){
+  let h=$('printdoc');
+  if(!h){h=document.createElement('div');h.id='printdoc';document.body.appendChild(h);}
+  return h;
+}
+/* 복제본에서 조작 항목과 화면 전용 장치를 걷어낸다.
+   그래프 안의 id(그라데이션·곡선 경로)는 지우면 안 된다 — 지우면 url(#..) 참조가 끊겨
+   달성률 호가 통째로 사라지고 뒤의 붉은 페이스 호만 남는다. 대신 새 이름으로 바꿔 준다. */
+let PRINT_UID=0;
+function remapSvgIds(root){
+  root.querySelectorAll('svg').forEach(svg=>{
+    const map={};
+    svg.querySelectorAll('[id]').forEach(e=>{
+      const old=e.id, nw='p'+(++PRINT_UID);map[old]=nw;e.id=nw;});
+    if(!Object.keys(map).length)return;
+    svg.querySelectorAll('*').forEach(e=>{
+      [...e.attributes].forEach(a=>{
+        let v=a.value;
+        if(v.indexOf('#')<0)return;
+        Object.keys(map).forEach(o=>{
+          v=v.split('url(#'+o+')').join('url(#'+map[o]+')').split('#'+o+'"').join('#'+map[o]+'"');
+          if(a.name==='href'||a.name==='xlink:href'){if(v==='#'+o)v='#'+map[o];}});
+        if(v!==a.value)e.setAttribute(a.name,v);});});});
+}
+function cleanPrintNode(root){
+  root.querySelectorAll('.tools,.hidebtn,.infowrap,.agency-only,.hnav,.ghfix,.colgrip,'
+    +'button,select,input,.switch,.barlbl.row').forEach(e=>e.remove());
+  /* 코멘트 입력칸은 적힌 내용만 남긴다 */
+  root.querySelectorAll('textarea,[contenteditable]').forEach(e=>{
+    const txt=(e.value!==undefined?e.value:e.innerHTML)||'';
+    const d=document.createElement('div');d.className='cmtprint';
+    d.innerHTML=e.value!==undefined?esc(txt).replace(/\n/g,'<br>'):txt;
+    e.replaceWith(d);});
+  root.querySelectorAll('*').forEach(e=>{
+    if(e.namespaceURI&&e.namespaceURI.indexOf('svg')>=0)return;   /* 그래프 내부는 그대로 */
+    const st=getComputedStyle(e);
+    if(st.position==='sticky'||st.position==='fixed'){e.style.position='static';e.style.top='auto';e.style.left='auto';}
+    if(st.overflowX!=='visible'||st.overflowY!=='visible')e.style.overflow='visible';
+    if(st.maxHeight&&st.maxHeight!=='none')e.style.maxHeight='none';
+    e.style.animation='none';
+    if(e.id)e.removeAttribute('id');});
+  remapSvgIds(root);
+  return root;
+}
+/* 제목(.sec) 하나와 그 아래 딸린 카드들을 한 덩어리로 묶는다 */
+function printBlocks(container){
+  const out=[];let cur=null;
+  [...container.children].forEach(node=>{
+    if(node.classList.contains('hidden'))return;
+    if(!node.offsetParent&&getComputedStyle(node).display==='none')return;
+    if(node.classList.contains('barlbl'))return;          /* 필터 줄 */
+    if(node.classList.contains('sec')){cur=[node];out.push(cur);return;}
+    if(!cur){cur=[];out.push(cur);}
+    cur.push(node);});
+  return out.filter(g=>g.length);
+}
+function buildPrintDoc(){
+  const host=printHost();
+  host.innerHTML='';
+  /* 재는 동안에는 화면 밖에 펼쳐 둔다 */
+  host.className='measuring';
+  const W=Math.max(($('sub-perf')||document.body).getBoundingClientRect().width,900);
+  host.style.width=W+'px';
+  const head=document.createElement('div');
+  head.className='phdr';
+  const sc=viewScope();
+  head.innerHTML=`<div class="t">${esc(CAMPAIGN.name)}</div>`
+    +`<div class="s">${esc(CAMPAIGN.advertiser||'')}${CAMPAIGN.advertiser?' · ':''}`
+    +`조회 기간 ${sc.startIso} ~ ${sc.endIso} · 출력 ${iso(new Date())}</div>`;
+  host.appendChild(head);
+  const groups=[];
+  const perf=$('sub-perf'); if(perf)printBlocks(perf).forEach(g=>groups.push(g));
+  const mix=$('sub-mix');   if(mix) printBlocks(mix).forEach(g=>groups.push(g));
+  groups.forEach(g=>{
+    const bk=document.createElement('div');bk.className='pbk';
+    const inner=document.createElement('div');inner.className='pbki';
+    inner.style.width=W+'px';
+    g.forEach(n=>inner.appendChild(cleanPrintNode(n.cloneNode(true))));
+    bk.appendChild(inner);host.appendChild(bk);});
+  /* 실제 크기를 재서 종이 폭에 맞춘다 */
+  host.querySelectorAll('.pbk').forEach(bk=>{
+    const inner=bk.firstElementChild;
+    /* 가로로 흘러넘치는 것(KPI 카드 줄 · 넓은 표 · 간트)은 scrollWidth 만으로는 안 잡힌다.
+       실제 오른쪽 끝까지 재서 그 폭에 맞춰 줄인다 */
+    let nw=Math.max(inner.scrollWidth,W);
+    const x0=inner.getBoundingClientRect().left;
+    inner.querySelectorAll('table,.grid,.strip,.crcols,.tmap,svg,.dgauge,.pacebody').forEach(e=>{
+      const w=Math.max(e.scrollWidth||0,Math.ceil(e.getBoundingClientRect().right-x0));
+      if(w>nw)nw=w;});
+    const k=Math.min(1,PRINT_W/nw);
+    inner.style.width=nw+'px';
+    bk.style.zoom=k.toFixed(4);
+    /* 한 장을 넘는 덩어리는 잘라서 이어 그린다 (안 그러면 통째로 다음 장으로 밀린다) */
+    bk.style.breakInside=(inner.scrollHeight*k>PRINT_H)?'auto':'avoid';});
+  host.className='';
+  return host;
+}
+function clearPrintDoc(){const h=$('printdoc');if(h)h.innerHTML='';}
+/* 인쇄 직전에 항상 새로 만든다 — 버튼으로 눌러도, Ctrl+P 로 눌러도 같은 결과 */
+addEventListener('beforeprint',()=>{try{buildPrintDoc();}catch(e){}});
+addEventListener('afterprint',()=>{setTimeout(clearPrintDoc,300);});
 function exportPdfReport(){
   const b=$('pdfBtn');
-  if(b){b.disabled=true;}
-  /* 지금 보고 있던 자리를 기억해 두었다가 인쇄가 끝나면 그대로 되돌린다 */
-  const subOn=document.querySelector('#subbar button[data-sub].on');
-  const tabOn=document.querySelector('#tabs button.on');
-  const prev={sub:subOn?subOn.dataset.sub:'perf',tab:tabOn?tabOn.dataset.tab:'dash',
-    y:scrollY};
-  document.body.classList.add('pdfmode');
-  try{switchTab('dash');}catch(e){}
-  const goPerf=document.querySelector('#subbar button[data-sub="perf"]');
-  if(goPerf)goPerf.click();
-  /* 미디어믹스 · 효율 화면을 모두 그려 둔다 */
+  if(b)b.disabled=true;
+  /* 미디어믹스는 한 번도 열지 않았으면 아직 안 그려져 있다 */
+  try{renderMix();}catch(e){}
+  try{if($('sub-perf').classList.contains('hidden')){
+    const go=document.querySelector('#subbar button[data-sub="perf"]');if(go)go.click();}}catch(e){}
   setTimeout(()=>{
-    try{renderMix();}catch(e){}
-    try{renderCreatives();renderGantt();renderStrip();renderBubble();renderTreemap();renderHeat();}catch(e){}
-    setTimeout(()=>{
-      fitForPrint();
-      document.body.classList.remove('pdfmode');
-      const back=()=>{
-        const bs=document.querySelector(`#subbar button[data-sub="${prev.sub}"]`);
-        if(bs)bs.click();
-        if(prev.tab!=='dash'){try{switchTab(prev.tab);}catch(e){}}
-        scrollTo({top:prev.y});
-        document.querySelectorAll('.pz').forEach(x=>{x.classList.remove('pz');
-          x.style.removeProperty('--pz');});
-        if(b)b.disabled=false;};
-      const once=()=>{removeEventListener('afterprint',once);setTimeout(back,120);};
-      addEventListener('afterprint',once);
-      try{print();}catch(e){back();}
-      /* afterprint 를 안 주는 브라우저 대비 */
-      setTimeout(()=>{if(b&&b.disabled){removeEventListener('afterprint',once);back();}},4000);
-    },420);
-  },60);
+    try{buildPrintDoc();}catch(e){}
+    try{print();}catch(e){}
+    setTimeout(()=>{if(b)b.disabled=false;},600);
+  },260);
 }
 (function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
   const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();

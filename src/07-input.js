@@ -6,7 +6,8 @@ const SHEET_REQ=['date','media'];
 const SHEET_DIMS=[
   {k:'segment',l:'구분',w:110,type:'dim',rule:'캠페인 설정의 구분 목록',lock:1,on:false},
   {k:'media',l:'매체명',w:104,type:'dim',rule:'설정 › 라인 목록',lock:1,on:true},
-  {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
+  {k:'product',l:'광고상품명',w:150,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:true},
+  {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
@@ -39,24 +40,39 @@ const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
 let SHEET=LINES.map(l=>{
   const idx=ELAPSED-1,v=l.daily.view[idx];
   const cs=CREATIVES.filter(c=>c.lid===l.id);
-  return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,target:l.target,line:l.line,
+  return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,line:l.line,
     creative:cs.length?cs[0].name:'',cost:Math.round(toGross(l.daily.net[idx],feeOf(l))),
     imp:l.daily.imp[idx],click:l.daily.click[idx],view:v,eng:l.daily.eng[idx],conv:l.daily.conv[idx],
     lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],
     like:l.daily.like[idx],share:l.daily.share[idx],
     v3:l.daily.v3[idx],v15:l.daily.v15[idx],v30:l.daily.v30[idx],
     v25:l.daily.v25[idx],v50:l.daily.v50[idx],v75:l.daily.v75[idx],v100:l.daily.v100[idx]};});
-const DIM_CHAIN=['segment','media','product','target','line','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
+/* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
+   여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
+   조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
+const dimMatch=(l,k,v)=>{
+  if(!v)return true;
+  if(!MULTI_DIMS.includes(k))return l[k]===v;
+  if(l[k]===v)return true;
+  const set=new Set(lineMulti(l,k)),want=parseMulti(v);
+  return want.length>0&&want.every(x=>set.has(x));};
 const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
-  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>p==='creative'||!row[p]||l[p]===row[p]));
-  if(k==='creative')
-    return [...new Set(ls.flatMap(l=>CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name)))].filter(Boolean);
-  return [...new Set(ls.map(l=>l[k]))];};
-/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다 */
+  const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>dimMatch(l,p,row[p])));
+  /* 조합 전체와 그 안의 개별 항목을 함께 고를 수 있게 둘 다 내려 준다 */
+  if(MULTI_DIMS.includes(k))
+    return [...new Set(ls.flatMap(l=>[l[k]].concat(lineMulti(l,k))))].filter(Boolean);
+  return [...new Set(ls.map(l=>l[k]))].filter(Boolean);};
+/* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다.
+   광고상품·지면·타겟팅은 순서가 달라도, 조합 중 일부만 적어도 같은 라인으로 본다. */
 function rowLine(r){
-  const keys=['segment','media','product','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return null;
-  return LINES.find(l=>keys.every(k=>l[k]===r[k]))||null;}
+  const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
+  /* 조합이 정확히 같은 라인을 먼저 고르고, 없으면 그 항목을 품고 있는 라인 */
+  const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
+    ||lineMulti(l,k).length===parseMulti(r[k]).length));
+  return exact||LINES.find(ok)||null;}
 function rowBad(r){
   const l=rowLine(r);if(!l)return !!(r.media||r.product);
   return !(r.date>=l.start&&r.date<=l.end);}
@@ -291,7 +307,19 @@ function saveRows(){
     if(!rows.length)return;
     const i=ELAPSED-1;
     AMET.forEach(m=>{const before=l.daily[m][i];
-      l.daily[m][i]=sum(rows.map(r=>+r[m]||0));l.a[m]+=l.daily[m][i]-before;});});
+      l.daily[m][i]=sum(rows.map(r=>+r[m]||0));l.a[m]+=l.daily[m][i]-before;});
+    /* 한 라인을 소재별로 나눠 적었으면 그 비중을 소재 배분에 반영한다 —
+       예상 효율에서는 소재 2개를 한 줄로 등록했어도 실적은 소재마다 따로 넣을 수 있다 */
+    const byCr=new Map();
+    rows.forEach(r=>{const n2=String(r.creative||'').trim();if(!n2)return;
+      byCr.set(n2,(byCr.get(n2)||0)+(+r[l.kpi]||+r.imp||0));});
+    if(byCr.size>1){
+      const cs=CREATIVES.filter(c=>c.lid===l.id);
+      const tot=sum([...byCr.values()]);
+      if(tot>0&&cs.length){
+        cs.forEach(c=>{const v=byCr.get(c.name);if(v!=null)c.share=v/tot;});
+        const s2=sum(cs.map(c=>+c.share||0));
+        if(s2>0)cs.forEach(c=>c.share=(+c.share||0)/s2);}}});
   buildFacts();renderAll();switchTab('dash');}
 function renderIssues(){
   let h=`<thead><tr><th style="width:124px">시작일</th><th style="width:124px">종료일</th>
