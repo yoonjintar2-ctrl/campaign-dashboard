@@ -479,8 +479,8 @@ function capDash(cir,f,TH){
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
 const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
 /* 도넛 뒤 트랙 — 예전 #eaedf1 은 너무 밝아 흰 글씨가 안 읽혔다 */
-const DONUT_TRACK='#c9d1da';
-const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
+let DONUT_TRACK='#c9d1da';
+let PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
 const AMB_OK=[126,196,152], AMB_NG=[227,109,92];
@@ -491,7 +491,7 @@ function ambLevel(pr){
   return t<.03?0:.32+t*.5;
 }
 /* 달성률 숫자 색 — 남색에서 초록/붉은색으로 물든다 */
-const PACE_TONE='#3f5d80', TONE_OK='#4f8666', TONE_NG='#a85f57';
+let PACE_TONE='#3f5d80', TONE_OK='#4f8666', TONE_NG='#a85f57';
 /* 두 hex 색을 t(0~1) 만큼 섞는다 */
 function mixHex(a,b,t){
   const h=s=>[1,3,5].map(i=>parseInt(s.substr(i,2),16));
@@ -521,23 +521,22 @@ const manUnit=n=>{
    목표 페이스(due)는 단순 경과일 비율이 아니라 라인별 집행 기간을 반영한다 —
    각 라인의 목표를 그 라인의 집행 일수로 나눠 하루치를 구하고 오늘까지 지난 날만큼 더한다.
    그래서 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않는다. */
+/* 진행 현황에 세우는 지표 — 목표가 잡힌 지표는 모두 보여 준다.
+   예전에는 "그 라인의 KPI" 인 지표만 세어서, CPM 라인 하나뿐이면 노출이 캠페인 전체가 아니라
+   그 라인 것만 잡혀 실제보다 훨씬 작게 나왔다. 지금은 목표가 있는 모든 라인을 더한다. */
+const PACE_METRICS=['imp','click','view','conv','eng','lead','install'];
 function paceKpiRows(){
-  /* 목표·목표 페이스는 캠페인 전체 기준, 실적(paceSum)만 기간 필터를 따른다 */
-  const sc=campScope();
-  const idxOf=s2=>{const t=ALLDATES.findIndex(d=>iso(d)===s2);return t<0?sc.i0:t;};
+  /* 목표는 캠페인 전체 기준, 실적(paceSum)은 기간 필터를 따른다.
+     목표 페이스(due)는 라인 목표 ÷ 라인 전체 집행일수 × 지금까지 집행된 날 수 (paceDue) */
   const per=new Map();
   activeLines().forEach(l=>{
-    const k=kpiOf(l);if(!k)return;
-    const goal=goalIn(l,k);if(!goal)return;
-    if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
-    const o=per.get(k);
-    const a=Math.max(l.start?idxOf(l.start):sc.i0,sc.i0);
-    const z=Math.min(l.end?idxOf(l.end):sc.i1,sc.i1);
-    const n=Math.max(1,z-a+1);
-    const done=Math.max(0,Math.min(n,sc.i0+sc.elapsed-a));
-    const got=paceSum(l.daily[k])||0;
-    o.act+=got;o.goal+=goal;o.due+=goal*done/n;
-    o.media.set(l.media,(o.media.get(l.media)||0)+got);});
+    PACE_METRICS.forEach(k=>{
+      const goal=goalIn(l,k);if(!goal)return;
+      if(!per.has(k))per.set(k,{k,act:0,goal:0,due:0,media:new Map()});
+      const o=per.get(k);
+      const got=paceSum(l.daily[k])||0;
+      o.act+=got;o.goal+=goal;o.due+=paceDue(l,k);
+      o.media.set(l.media,(o.media.get(l.media)||0)+got);});});
   return [...per.values()].filter(x=>x.goal>0)
     .map(x=>({...x,media:[...x.media.entries()].map(([m,v])=>({m,v}))
       .filter(y=>y.v>0).sort((a,b)=>b.v-a.v)}))
@@ -744,11 +743,16 @@ function renderSpendDonut(box,pr){
   lg.innerHTML=`<span class="lg mute"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
     +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
 }
+/* KPI 달성 현황 카드의 좌우 순서 — 사용자가 끌어서 바꾼 순서를 기억한다 */
+let DONUT_ORDER={};
 function renderDonuts(){
   const box=$('donuts');box.innerHTML='';
   const mode=$('kpiGroupSel').value||'media';
   const ls=activeLines(),pr=paceRatio();
-  const keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
+  let keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
+  const ord=DONUT_ORDER[mode]||[];
+  if(ord.length){const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
+    keys=keys.slice().sort((a,b)=>ix(a)-ix(b));}
   renderSpendDonut(box,pr);
 
   /* 배경 그라데이션(청록빛 남색)과 같은 계열로 채도를 올린 링 색 */
@@ -770,6 +774,8 @@ function renderDonuts(){
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
     const restRows=restKpis.map(k=>({...mk(k),color:'var(--gray)'}));
     const c=el('div','card donut',box);
+    c.dataset.dk=name;c.draggable=true;
+    c.title='끌어서 순서를 바꿀 수 있습니다';
     /* 제목은 좌측 상단에 (주요 지표 타일과 같은 스타일) */
     c.innerHTML=`<div class="dhd"><div class="k">${esc(name)}</div>
         <div class="kpitag">KPI · ${allKpis.map(x=>KPI_LABEL[x.k]).join(' · ')}${restKpis.length?` <span style="opacity:.7">(상위 ${MAXRING})</span>`:''}</div></div>
@@ -883,6 +889,34 @@ function renderDonuts(){
     ctr.innerHTML=`<div class="ctrbox"><span class="achk">달성률</span>`
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
   });
+  wireDonutDrag(box,mode);
+}
+/* 카드를 끌어서 좌우 순서 바꾸기 (소진 광고비 카드는 늘 맨 앞에 고정) */
+function wireDonutDrag(box,mode){
+  let from=null;
+  const clear=()=>box.querySelectorAll('.donut').forEach(x=>x.classList.remove('dragging','dropL','dropR'));
+  box.querySelectorAll('.donut[data-dk]').forEach(c=>{
+    c.addEventListener('dragstart',e=>{from=c;c.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',c.dataset.dk);}catch(x){}});
+    c.addEventListener('dragend',()=>{from=null;clear();});
+    c.addEventListener('dragover',e=>{
+      if(!from||from===c)return;
+      e.preventDefault();
+      const r=c.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      c.classList.toggle('dropR',after);c.classList.toggle('dropL',!after);});
+    c.addEventListener('dragleave',()=>c.classList.remove('dropL','dropR'));
+    c.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!from||from===c)return;
+      const after=e.clientX>c.getBoundingClientRect().left+c.getBoundingClientRect().width/2;
+      const list=[...box.querySelectorAll('.donut[data-dk]')].map(x=>x.dataset.dk);
+      const moved=from.dataset.dk;
+      const a=list.indexOf(moved);if(a>=0)list.splice(a,1);
+      let b=list.indexOf(c.dataset.dk);if(b<0)b=list.length;
+      list.splice(after?b+1:b,0,moved);
+      DONUT_ORDER[mode]=list;
+      clear();renderDonuts();
+      try{markDirty();saveLocal();}catch(x){}});});
 }
 /* 페이스 대비 판정 기준 (%p) — 시행사 모드에서 변경 가능 */
 let VERDICT_BAND=5;

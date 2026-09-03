@@ -573,3 +573,186 @@ function exportPdfReport(){
 }
 (function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
   const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();
+
+/* =========================================================================
+   테마 색상 · 광고주 브랜딩
+   ========================================================================= */
+/* 고를 수 있는 색 계열 — CSS 의 [data-theme=…] 와 짝을 이룬다 */
+const THEMES=[
+  {k:'',       l:'남색 (기본)', sw:['#495e72','#8fb0cc','#eef1f5']},
+  {k:'red',    l:'붉은 톤',     sw:['#8f4a44','#c39894','#f5eeed']},
+  {k:'orange', l:'주황 톤',     sw:['#9a5f2b','#c8a683','#f6f0e9']},
+  {k:'mustard',l:'머스타드 톤', sw:['#8a7a24','#bdb37c','#f4f1e4']},
+  {k:'green',  l:'그린 톤',     sw:['#3c6b53','#8aa898','#ecf2ee']},
+  {k:'pink',   l:'핑크 톤',     sw:['#8d4468','#c294ab','#f6eef3']},
+  {k:'mono',   l:'무채색 화이트', sw:['#4b5257','#969ba0','#f2f3f4']},
+  {k:'dark',   l:'무채색 다크',  sw:['#8fb0cc','#5f7488','#171a1d']}
+];
+let THEME='';
+/* 그래프는 자바스크립트로 그리므로 테마가 바뀌면 색 값을 다시 읽어 온다.
+   효율 히트맵(HM_GOOD/MID/BAD)만은 손대지 않는다 — 잘 됨·안 됨을 뜻하는 색이라서. */
+function syncThemeColors(){
+  const v=n=>cssVar(n)||'';
+  ACC=v('--acc')||ACC; ACC2=v('--acc2')||ACC2; GRAY=v('--gray')||GRAY;
+  PACE=v('--pace')||PACE; PACE_LT=v('--pace-lt')||PACE_LT;
+  AXIS.fill=v('--muted')||AXIS.fill;
+  if(typeof DONUT_TRACK!=='undefined')DONUT_TRACK=v('--gline')||DONUT_TRACK;
+  if(typeof PACE_SEG!=='undefined')PACE_SEG=[v('--b5'),v('--b4'),v('--b3'),v('--b2'),v('--b1')]
+    .map((x,i)=>x||PACE_SEG[i]);
+  if(typeof PACE_TONE!=='undefined')PACE_TONE=v('--acc')||PACE_TONE;
+  if(typeof SHADE_LOW!=='undefined'){SHADE_LOW=cssRgb(v('--acc-soft')||'#e7ecf1');
+    SHADE_HIGH=cssRgb(v('--b3')||'#4c729a');}
+  /* 버블 색상표 — 첫 색만 테마 강조색으로 바꾸고 나머지는 계열을 유지한다 */
+  if(typeof BUB_HUES!=='undefined')BUB_HUES[0]=cssRgb(v('--acc')||'#3a668c');
+}
+function applyTheme(k,quiet){
+  THEME=THEMES.some(t=>t.k===k)?k:'';
+  if(THEME)document.documentElement.setAttribute('data-theme',THEME);
+  else document.documentElement.removeAttribute('data-theme');
+  syncThemeColors();
+  if(quiet)return;
+  try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
+  try{saveLocal();markDirty();}catch(e){}
+}
+function openThemePicker(){
+  const card=t=>`<button class="thcard${t.k===THEME?' on':''}" data-th="${t.k}">
+      <span class="sws">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
+      <span class="thl">${t.l}</span></button>`;
+  openModal('디자인 — 테마 색상',
+    `<div class="hint" style="margin-bottom:12px">이 캠페인 대시보드 전체(배경 · 강조색 · 표 · 그래프)의 색 계열을 바꿉니다.
+       광고주도 같은 색으로 봅니다.<br>
+       <b>효율 히트맵</b>(잘 된 곳 초록 · 저조한 곳 붉은색)은 뜻이 정해진 색이라 테마와 무관하게 그대로 둡니다.</div>
+     <div class="thgrid">${THEMES.map(card).join('')}</div>`,
+    '<button class="btn" data-close>닫기</button>',{w:660});
+  $('modalHost').querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{
+    applyTheme(b.dataset.th);
+    $('modalHost').querySelectorAll('[data-th]').forEach(x=>x.classList.toggle('on',x.dataset.th===THEME));});
+}
+
+/* ---------- 광고주 · 로고 ----------
+   광고주마다 로고를 한 번 등록해 두면 그 광고주의 캠페인을 열 때 좌상단에 함께 보인다. */
+let ADV_BOOK={};                        /* { 광고주명: {logo:dataURL} } */
+const ADV_KEY='dmd:advbook';
+function loadAdvBook(){try{ADV_BOOK=JSON.parse(localStorage.getItem(ADV_KEY)||'{}')||{};}catch(e){ADV_BOOK={};}}
+function saveAdvBook(){try{localStorage.setItem(ADV_KEY,JSON.stringify(ADV_BOOK));}catch(e){}}
+/* 지금까지 쓴 광고주 이름 — 내 캠페인 목록 + 로고를 등록해 둔 이름 */
+function advNames(){
+  const s=new Set(Object.keys(ADV_BOOK));
+  try{(CLOUD.list||[]).forEach(c=>{if(c.advertiser)s.add(c.advertiser);});}catch(e){}
+  if(CAMPAIGN.advertiser)s.add(CAMPAIGN.advertiser);
+  return [...s].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+}
+const advLogo=n=>(ADV_BOOK[n]&&ADV_BOOK[n].logo)||'';
+/* 좌상단 — [광고주 로고] 광고주명 · Digital Media Dashboard */
+function renderBrand(){
+  const mark=$('brandMark'),nm=$('brandAdv');
+  if(!mark||!nm)return;
+  const adv=CAMPAIGN.advertiser||'';
+  const logo=CAMPAIGN.advLogo||advLogo(adv);
+  const isDMD=!adv||/^digital media dashboard$/i.test(adv);
+  if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;}
+  else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
+  nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
+}
+let DMD_MARK='';
+/* 이미지 파일 → 데이터 URL (가로세로 1:1 ~ 3:1 만 받는다) */
+function pickLogo(cb){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/png,image/jpeg,image/svg+xml,image/webp';
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0];if(!f)return;
+    if(f.size>1.5*1024*1024){confirmModal('파일이 큽니다.','로고는 1.5MB 이하로 올려 주세요.',()=>{},'확인');return;}
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const url=String(rd.result||'');
+      const im=new Image();
+      im.onload=()=>{
+        const r=im.width/Math.max(im.height,1);
+        if(r<0.95||r>3.05){
+          confirmModal('가로세로 비율이 맞지 않습니다.',
+            `로고는 1:1 부터 3:1 까지 등록할 수 있습니다. (지금 ${r.toFixed(2)}:1)`,()=>{},'확인');return;}
+        cb(url);};
+      im.onerror=()=>cb(url);
+      im.src=url;};
+    rd.readAsDataURL(f);};
+  inp.click();
+}
+/* 광고주 고르기 UI — 기존 광고주 드롭다운 + 새 광고주 직접 입력 + 로고 */
+function advPickerHTML(cur,logo){
+  const names=advNames();
+  return `<div class="fld" style="flex:1;min-width:200px"><label>광고주</label>
+      <select id="advSel">
+        ${names.map(n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`).join('')}
+        <option value="__new" ${names.includes(cur)?'':'selected'}>＋ 새 광고주 직접 입력</option>
+      </select></div>
+    <div class="fld" id="advNewFld" style="flex:1;min-width:180px"><label>새 광고주명</label>
+      <input id="advNew" placeholder="예: OO전자" value="${names.includes(cur)?'':esc(cur||'')}"></div>
+    <div class="fld" style="flex:0 0 100%"><label>광고주 로고 <span class="hint">(선택 · 가로세로 1:1 ~ 3:1 · 높이는 자동으로 맞춰집니다)</span></label>
+      <div class="logopick">
+        <span class="prev" id="advPrev">${logo?`<img src="${logo}" alt="">`:'<em>없음</em>'}</span>
+        <button class="btn sm" id="advPick" type="button">🖼 이미지 선택</button>
+        <button class="btn sm" id="advClear" type="button">지우기</button>
+      </div></div>`;
+}
+function wireAdvPicker(state){
+  const sel=$('advSel'),nf=$('advNewFld');
+  const sync=()=>{const isNew=sel.value==='__new';nf.style.display=isNew?'':'none';
+    if(!isNew){state.logo=advLogo(sel.value)||'';paint();}};
+  const paint=()=>{const p=$('advPrev');
+    p.innerHTML=state.logo?`<img src="${state.logo}" alt="">`:'<em>없음</em>';};
+  sel.onchange=sync;sync();paint();
+  $('advPick').onclick=()=>pickLogo(u=>{state.logo=u;paint();});
+  $('advClear').onclick=()=>{state.logo='';paint();};
+  return ()=>({name:(sel.value==='__new'?($('advNew').value||'').trim():sel.value)||'',logo:state.logo});
+}
+function openAdvEditor(){
+  const st={logo:CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||''};
+  openModal('광고주 · 로고',
+    `<div class="hint" style="margin-bottom:10px">로고를 등록하면 이 캠페인 대시보드 왼쪽 위에
+       <b>로고 · 광고주명 · Digital Media Dashboard</b> 순서로 함께 보입니다.</div>
+     <div class="form-row">${advPickerHTML(CAMPAIGN.advertiser,st.logo)}</div>`,
+    '<button class="btn" data-close>취소</button><button class="btn primary" id="advGo">적용</button>',{w:620});
+  const read=wireAdvPicker(st);
+  $('advGo').onclick=()=>{
+    const v=read();
+    if(v.name){CAMPAIGN.advertiser=v.name;
+      ADV_BOOK[v.name]=ADV_BOOK[v.name]||{};ADV_BOOK[v.name].logo=v.logo||'';saveAdvBook();}
+    CAMPAIGN.advLogo=v.logo||'';
+    closeModal();renderBrand();renderCampBar();renderCampForm&&renderCampForm();
+    try{markDirty();saveLocal();}catch(e){}};
+}
+(function initBrandTheme(){
+  const go=()=>{
+    const m=$('brandMark');if(m)DMD_MARK=m.getAttribute('src')||'';
+    loadAdvBook();
+    const tb=$('themeBtn');if(tb)tb.onclick=openThemePicker;
+    const ab=$('advLogoBtn');if(ab)ab.onclick=openAdvEditor;
+    applyTheme(THEME,true);renderBrand();};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();
+
+/* ---------- 표 위쪽 가로 스크롤바 ----------
+   예상 효율처럼 세로로 긴 표는 스크롤바가 화면 밖 아래에 있어 좌우로 옮기기가 번거롭다.
+   같은 폭의 얇은 막대를 표 위에 하나 더 두고 서로 위치를 맞춘다. */
+function attachTopScroll(wrap){
+  if(!wrap||wrap.dataset.tsc)return;
+  wrap.dataset.tsc='1';
+  const bar=el('div','topscroll'),inner=el('i','',bar);
+  wrap.parentNode.insertBefore(bar,wrap);
+  let lock=false;
+  const sync=()=>{inner.style.width=wrap.scrollWidth+'px';
+    bar.style.display=wrap.scrollWidth>wrap.clientWidth+2?'':'none';};
+  bar.addEventListener('scroll',()=>{if(lock)return;lock=true;wrap.scrollLeft=bar.scrollLeft;lock=false;});
+  wrap.addEventListener('scroll',()=>{if(lock)return;lock=true;bar.scrollLeft=wrap.scrollLeft;lock=false;});
+  new ResizeObserver(sync).observe(wrap);
+  const t=wrap.querySelector('table');
+  if(t)new MutationObserver(()=>setTimeout(sync,0)).observe(t,{childList:true,subtree:true});
+  setTimeout(sync,120);
+}
+(function initTopScroll(){
+  const go=()=>{
+    const k=$('tblKpi');if(k)attachTopScroll(k.closest('.tbl-wrap'));
+    const sh=$('sheet');if(sh)attachTopScroll(sh.closest('.sheet-wrap'));
+    const mx=$('tblMix');if(mx)attachTopScroll(mx.closest('.tbl-wrap'));};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,80);
+})();

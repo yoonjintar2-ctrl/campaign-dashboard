@@ -144,8 +144,13 @@ document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open'
     let tools=sec.querySelector('.tools');
     if(!tools)tools=el('div','tools',sec);
     const b=document.createElement('button');
-    b.className='hidebtn agency-only';b.textContent='숨기기';b.title=`${SECT_LABEL[key]||key} 숨기기`;
-    b.onclick=()=>{HIDDEN.add(key);applyHidden();};
+    const nm=SECT_LABEL[key]||key;
+    b.className='hidebtn agency-only';b.textContent='이 영역 숨기기';b.title=`${nm}을(를) 대시보드에서 숨깁니다`;
+    b.onclick=()=>confirmModal(`‘${nm}’ 영역을 숨길까요?`,
+      '이 영역이 대시보드에서 사라지고, 광고주 화면에서도 보이지 않습니다.<br>'
+      +'다시 보이게 하려면 <b>페이지 맨 위의 숨김 목록</b>에서 되돌리면 됩니다.',
+      ()=>{HIDDEN.add(key);applyHidden();
+        try{markDirty();saveLocal();}catch(e){}},'숨기기',true);
     tools.appendChild(b);
     if(SECT_INFO[key])attachInfo(tools,SECT_INFO[key],SECT_LABEL[key]||key);});
 })();

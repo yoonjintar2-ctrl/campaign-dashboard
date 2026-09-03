@@ -11,10 +11,21 @@ const sum=a=>a.reduce((x,y)=>x+y,0);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uid=()=>'x'+Math.random().toString(36).slice(2,8);
 const SEP='';
-const ACC='#495e72',ACC2='#486a75',GRAY='#9aa4b0';
-const PACE='#b06a63',PACE_LT='#d9aca7';   /* 목표 페이스 — 붉은 계열 */
+let ACC='#495e72',ACC2='#486a75',GRAY='#9aa4b0';
+let PACE='#b06a63',PACE_LT='#d9aca7';   /* 목표 페이스 — 붉은 계열 */
 const HIDDEN=new Set();                   /* 숨긴 대시보드 항목 (p11) */
 const AXIS={fill:'#98a3b1',size:10.5,weight:400};
+/* ===== 테마 =====
+   화면 색은 모두 CSS 변수에서 나온다. 그래프는 자바스크립트로 그리기 때문에
+   테마를 바꿀 때 이 함수로 색 값을 다시 읽어 온다.
+   (효율 히트맵 색만은 테마와 무관하게 초록↔회색↔빨강을 유지한다) */
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+/* CSS 변수 값(#rrggbb 또는 rgb(...))을 [r,g,b] 로 — hex2rgb 는 p4 에 이미 있어 이름을 달리한다 */
+const cssRgb=h=>{h=String(h||'').trim();
+  const m=h.match(/^#?([0-9a-f]{6})$/i);
+  if(m)return [parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16)];
+  const r=h.match(/rgba?\(([^)]+)\)/i);
+  return r?r[1].split(',').slice(0,3).map(x=>+x.trim()):[73,94,114];};
 
 /* ===== 1. 캠페인 · 라인 ===== */
 /* 기준일은 언제나 "실제 오늘"이다. 예전에는 시연용 날짜(2026-09-25)가 박혀 있어서
@@ -197,7 +208,22 @@ function buildFacts(){
   LINES.forEach(l=>{
     const cs=CREATIVES.filter(c=>c.lid===l.id);
     for(let i=0;i<ELAPSED;i++){
-      const act=cs.filter(c=>c.run.some(([a,b])=>i>=a&&i<=b));
+      const d0i=ALLDATES[i];
+      /* 소재가 하나도 등록되지 않은 라인 — 실적을 버리지 않고 "(소재 미등록)" 한 줄로 담는다.
+         (예전에는 이런 라인의 숫자가 대시보드에서 통째로 사라졌다) */
+      if(!cs.length){
+        const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
+          target:l.target,line:l.line,creative:'(소재 미등록)',
+          month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
+        AMET.forEach(m=>f[m]=Math.round((l.daily[m]&&l.daily[m][i])||0));
+        f.cost=toGross(f.net,feeOf(l));
+        FACTS.push(f);
+        continue;}
+      let act=cs.filter(c=>Array.isArray(c.run)&&c.run.some(([a,b])=>i>=a&&i<=b));
+      /* 그 날 게재 중인 소재가 하나도 없으면 소재 기간이 잘못 잡힌 것이다.
+         실적을 0 으로 지우지 말고 그 라인의 모든 소재에 비중대로 나눠 담는다.
+         (소재 run 이 [[0,0]] 로 갇혀 이튿날부터 실적이 통째로 사라지던 문제) */
+      if(!act.length)act=cs;
       const tot=sum(act.map(c=>c.share))||1;
       cs.forEach(c=>{
         const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
@@ -250,18 +276,21 @@ const FIELDS=[
   ['imp','노출','imps.','노출','in',0,0,1,1],
   ['e_imp','목표 노출','est.imps.','노출','in',1,1,0,1],
   ['imp_r','노출 달성률','imps. achv.','노출','calc',0,0,1,1],
+  ['g_cpm','목표 CPM','goal CPM','노출','calc',0,1,1,1],
   ['cpm','CPM','CPM','노출','calc',0,1,1,1],
 
   ['click','클릭','click','클릭','in',0,0,1,1],
   ['e_click','목표 클릭','est.click','클릭','in',1,1,0,1],
   ['click_r','클릭 달성률','click achv.','클릭','calc',0,0,1,1],
   ['ctr','CTR','CTR','클릭','calc',0,1,1,1],
+  ['g_cpc','목표 CPC','goal CPC','클릭','calc',0,1,1,1],
   ['cpc','CPC','CPC','클릭','calc',0,1,1,1],
 
   ['view','조회','view','조회','in',0,0,1,1],
   ['e_view','목표 조회','est.view','조회','in',1,1,0,1],
   ['view_r','조회 달성률','view achv.','조회','calc',0,0,1,1],
   ['vtr','VTR','VTR','조회','calc',0,1,1,1],
+  ['g_cpv','목표 CPV','goal CPV','조회','calc',0,1,1,1],
   ['cpv','CPV','CPV','조회','calc',0,1,1,1],
   ['v25','25% 조회','25% view','조회','in',0,0,0,1],
   ['v50','50% 조회','50% view','조회','in',0,0,0,1],
@@ -282,6 +311,7 @@ const FIELDS=[
   ['e_conv','목표 전환','est.conversion','전환','in',0,1,0,1],
   ['conv_r','전환 달성률','conv. achv.','전환','calc',0,0,0,1],
   ['cvr','CVR','CVR','전환','calc',0,1,0,1],
+  ['g_cpa','목표 CPA','goal CPA','전환','calc',0,1,0,1],
   ['cpa','CPA','CPA','전환','calc',0,1,0,1],
   ['lead','양식제출','lead','전환','in',0,0,0,1],
 
@@ -292,6 +322,7 @@ const FIELDS=[
   ['eng','참여','Engagement','참여','in',0,0,0,1],
   ['e_eng','목표 참여','est.engagement','참여','in',0,1,0,1],
   ['etr','ETR','ETR','참여','calc',0,1,0,1],
+  ['g_cpe','목표 CPE','goal CPE','참여','calc',0,1,0,1],
   ['cpe','CPE','CPE','참여','calc',0,1,0,1],
   ['like','공감','like','참여','in',0,0,0,1],
   ['e_like','목표 공감','est.like','참여','in',0,1,0,1],
@@ -415,7 +446,36 @@ function paceScope(){return viewScope();}
    (기간을 좁혔다고 목표까지 줄면 달성률이 실제와 달라진다) */
 function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
-const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
+/* ===== 목표 페이스 =====
+   페이스는 "고른 기간이 얼마나 지났나"가 아니라
+   **라인 목표 ÷ 그 라인의 전체 집행일수 × 지금까지 집행된 날 수** 다.
+   9/1~9/2 를 골랐다고 2일 중 2일이 지났으니 100% 가 되면 안 된다 —
+   30일짜리 라인이 이틀 돌았으면 목표 페이스는 6.7% 다. */
+function lineSpan(l){
+  const a=l&&l.start?Math.max(dIdx(l.start),0):0;
+  let z=l&&l.end?Math.min(dIdx(l.end),TOTAL_DAYS-1):TOTAL_DAYS-1;
+  if(!(z>=a))z=a;
+  return {a,z,n:Math.max(1,z-a+1)};
+}
+/* 지금 보고 있는 구간 안에서 그 라인이 실제로 집행을 마친 날 수 */
+function lineDone(l){
+  const {a,z}=lineSpan(l),s=viewScope();
+  const lo=Math.max(a,s.i0), hi=Math.min(z,s.i1,ELAPSED-1);
+  return Math.max(0,hi-lo+1);
+}
+/* 라인 하나의 목표 페이스 수치 */
+function paceDue(l,k){
+  const g=goalIn(l,k);if(!g)return 0;
+  return g*lineDone(l)/lineSpan(l).n;
+}
+/* 화면 전체의 목표 페이스 비율 — 라인별 경과 비율을 예산으로 가중 평균 */
+const paceRatio=()=>{
+  let w=0,d=0;
+  activeLines().forEach(l=>{
+    const wt=(+l.gross||0)||1;
+    w+=wt;d+=wt*lineDone(l)/lineSpan(l).n;});
+  return w?d/w:0;
+};
 function factFilter(extra){
   const s=viewScope();
   return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1

@@ -36,7 +36,110 @@
   --radius:14px;
   --shadow:0 1px 2px rgba(31,44,61,.04), 0 4px 16px rgba(31,44,61,.05);
   --shadow2:0 10px 38px rgba(31,44,61,.15);
+  --bg1:126,155,186; --bg2:112,143,177; --bg3:160,184,210;   /* 배경 그라데이션 */
 }
+/* ===== 테마 =====
+   :root 는 기본(남색). 아래는 캠페인 설정 › 🎨 디자인 에서 고르는 색 계열이다.
+   배경 · 강조 · 표 머리글 · 그래프 색을 한 계열로 갈아 끼운다.
+   (효율 히트맵의 초록↔회색↔빨강만은 "잘 됨/안 됨"을 뜻하므로 테마와 무관하게 유지) */
+[data-theme="red"]{
+  --plane:#f5eeed; --plane2:#fcf8f7; --ink:#3a2523; --ink2:#7a5b58; --muted:#a98d8a; --sec:#6d4a47;
+  --line:#eee0de; --line2:#f6eceb; --gline:#d9c2bf; --cell:#ecdedc;
+  --acc:#8f4a44; --acc-d:#6f3833; --acc-lt:#c39894; --acc-soft:#f4e7e5; --acc-soft2:#fbf5f4;
+  --acc2:#a55f52; --acc2-lt:#cea197;
+  --hdr:#75403b; --hdr2:#8a4f49; --tot:#4a2724; --hdr-sub:#ab837e; --hdr-sub2:#bb9691;
+  --gray:#b09a98; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#8f4a44;
+  --b1:#dcc0bc; --b2:#c79a95; --b3:#ac6f68; --b4:#8f4a44; --b5:#6f3833; --neg:#a85f57;
+  --bg1:196,140,133; --bg2:186,124,116; --bg3:214,172,166;
+}
+[data-theme="orange"]{
+  --plane:#f6f0e9; --plane2:#fdfaf6; --ink:#3a2c1d; --ink2:#7a6650; --muted:#a89479; --sec:#6d573c;
+  --line:#eee4d6; --line2:#f7f0e6; --gline:#d9c8ae; --cell:#ece1d2;
+  --acc:#9a5f2b; --acc-d:#7a4a1f; --acc-lt:#c8a683; --acc-soft:#f5eade; --acc-soft2:#fcf7f1;
+  --acc2:#ab7434; --acc2-lt:#d1ac7e;
+  --hdr:#7f5427; --hdr2:#946434; --tot:#4c3117; --hdr-sub:#ad8f68; --hdr-sub2:#bda07c;
+  --gray:#b0a08a; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#9a5f2b;
+  --b1:#e0cbae; --b2:#cdab81; --b3:#b28453; --b4:#9a5f2b; --b5:#7a4a1f; --neg:#a85f57;
+  --bg1:206,163,113; --bg2:196,148,96; --bg3:222,192,156;
+}
+[data-theme="mustard"]{
+  --plane:#f4f1e4; --plane2:#fcfbf4; --ink:#33301b; --ink2:#6f6a4a; --muted:#9d9973; --sec:#635e3a;
+  --line:#eae6d2; --line2:#f5f2e4; --gline:#d2ccac; --cell:#e8e4cf;
+  --acc:#8a7a24; --acc-d:#6c5f18; --acc-lt:#bdb37c; --acc-soft:#f0eddb; --acc-soft2:#faf9ef;
+  --acc2:#9b8b34; --acc2-lt:#c7bd8a;
+  --hdr:#726526; --hdr2:#877833; --tot:#443c12; --hdr-sub:#a49c69; --hdr-sub2:#b4ad7f;
+  --gray:#a8a487; --pace:#7a5f8f; --pace-lt:#b9a8cb; --hol:#8a7a24;
+  --b1:#ded7ae; --b2:#c8bf82; --b3:#aa9e50; --b4:#8a7a24; --b5:#6c5f18; --neg:#a85f57;
+  --bg1:200,190,120; --bg2:188,177,104; --bg3:218,212,164;
+}
+[data-theme="green"]{
+  --plane:#ecf2ee; --plane2:#f6faf7; --ink:#1c2e25; --ink2:#54695d; --muted:#879a8f; --sec:#465c51;
+  --line:#e0eae4; --line2:#eef4f0; --gline:#c1d1c7; --cell:#dee8e2;
+  --acc:#3c6b53; --acc-d:#2b5240; --acc-lt:#8aa898; --acc-soft:#e8f0ec; --acc-soft2:#f4f9f6;
+  --acc2:#4a7a5f; --acc2-lt:#95b3a1;
+  --hdr:#335946; --hdr2:#426a55; --tot:#1f3830; --hdr-sub:#7c9788; --hdr-sub2:#8ea699;
+  --gray:#93a89b; --pace:#a8635c; --pace-lt:#d2a5a0; --hol:#a8635c;
+  --b1:#b6cabe; --b2:#93b0a0; --b3:#688f77; --b4:#3c6b53; --b5:#2b5240; --neg:#c08484;
+  --bg1:126,178,148; --bg2:110,164,133; --bg3:170,206,186;
+}
+[data-theme="pink"]{
+  --plane:#f6eef3; --plane2:#fdf8fb; --ink:#361f2c; --ink2:#775a69; --muted:#a68a99; --sec:#68455a;
+  --line:#f0e0e9; --line2:#f8eef4; --gline:#dcc0d0; --cell:#eddfe7;
+  --acc:#8d4468; --acc-d:#6e3350; --acc-lt:#c294ab; --acc-soft:#f4e6ee; --acc-soft2:#fbf4f8;
+  --acc2:#a15579; --acc2-lt:#cd9db4;
+  --hdr:#743a58; --hdr2:#8a4868; --tot:#48243a; --hdr-sub:#a97f95; --hdr-sub2:#ba93a6;
+  --gray:#b09aa5; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#8d4468;
+  --b1:#e0bfd1; --b2:#cc9ab4; --b3:#ac6e8e; --b4:#8d4468; --b5:#6e3350; --neg:#a85f57;
+  --bg1:204,140,174; --bg2:194,124,160; --bg3:224,176,200;
+}
+[data-theme="mono"]{
+  --plane:#f2f3f4; --plane2:#fafafb; --ink:#22262a; --ink2:#5f666d; --muted:#8f959b; --sec:#4c5359;
+  --line:#e6e8ea; --line2:#f1f2f4; --gline:#c8ccd0; --cell:#e4e6e9;
+  --acc:#4b5257; --acc-d:#363c40; --acc-lt:#969ba0; --acc-soft:#ecedef; --acc-soft2:#f7f8f8;
+  --acc2:#5b6267; --acc2-lt:#a2a7ab;
+  --hdr:#41474c; --hdr2:#51585d; --tot:#2a2f33; --hdr-sub:#868c92; --hdr-sub2:#979da2;
+  --gray:#9aa0a5; --pace:#a8635c; --pace-lt:#d2a5a0; --hol:#a8635c;
+  --b1:#c4c8cc; --b2:#a5aab0; --b3:#7c8288; --b4:#4b5257; --b5:#363c40; --neg:#b58a8a;
+  --bg1:168,174,180; --bg2:150,156,162; --bg3:198,203,208;
+}
+[data-theme="dark"]{
+  --plane:#171a1d; --plane2:#1e2225; --surface:#22272b;
+  --ink:#e9edf1; --ink2:#aab4bd; --muted:#7f8a94; --sec:#c3ccd4;
+  --line:#31373d; --line2:#2a3035; --gline:#454d54; --cell:#333a41;
+  --cell-d:rgba(255,255,255,.16);
+  --acc:#8fb0cc; --acc-d:#a8c4dc; --acc-lt:#5f7488; --acc-soft:#2b3239; --acc-soft2:#242a2f;
+  --acc2:#8ab3bc; --acc2-lt:#5e7981;
+  --hdr:#2c343b; --hdr2:#363f47; --tot:#1c2126; --hdr-sub:#4a545d; --hdr-sub2:#5a656e;
+  --gray:#78828c; --pace:#d09a94; --pace-lt:#8d6663; --hol:#d09a94;
+  --b1:#3c454d; --b2:#556069; --b3:#758392; --b4:#8fb0cc; --b5:#a8c4dc; --neg:#d09a94;
+  --shadow:0 1px 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.34);
+  --shadow2:0 10px 38px rgba(0,0,0,.55);
+  --bg1:44,58,74; --bg2:38,50,64; --bg3:56,72,90;
+}
+/* 다크 톤에서는 흰 카드 위 전제로 짠 몇 곳을 눌러 준다 */
+[data-theme="dark"] .card,[data-theme="dark"] .gatecard{background:var(--surface)}
+[data-theme="dark"] table.tbl tbody td{background:var(--surface)}
+[data-theme="dark"] body::before{opacity:.55}
+[data-theme="dark"] .notice{background:#232a31;border-color:#333c45;color:var(--ink2)}
+[data-theme="dark"] .demobar,[data-theme="dark"] .gate{background:rgba(20,24,28,.82)}
+[data-theme="dark"] .demobar{border-color:#3a3327;background:#2a2419;color:#e2d6bd}
+[data-theme="dark"] .demobar .btn{background:#3a3327;color:#e2d6bd;border-color:#4a4133}
+[data-theme="dark"] .demobar .btn:hover{background:#463d2e}
+[data-theme="dark"] .topbar,[data-theme="dark"] .tabs{background:var(--surface)}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{
+  background:var(--plane2);color:var(--ink);border-color:var(--line)}
+[data-theme="dark"] .btn{background:var(--surface);color:var(--ink);border-color:var(--line)}
+[data-theme="dark"] .btn:hover{background:var(--acc-soft)}
+[data-theme="dark"] .btn.primary{background:var(--acc);color:#18202a;border-color:var(--acc)}
+[data-theme="dark"] .pill{background:var(--surface);color:var(--ink);border-color:var(--line)}
+[data-theme="dark"] .modal,[data-theme="dark"] .memenu,[data-theme="dark"] .tip{background:var(--surface);color:var(--ink)}
+[data-theme="dark"] .cr,[data-theme="dark"] .stat,[data-theme="dark"] .donut{background:var(--surface)}
+[data-theme="dark"] .tmap{background:var(--plane2);border-color:var(--line)}
+[data-theme="dark"] .tmap .sect{border-color:var(--surface)}
+[data-theme="dark"] .tmap .grp{border-color:rgba(34,39,43,.92)}
+[data-theme="dark"] .tmap .tile{border-color:rgba(34,39,43,.55)}
+[data-theme="dark"] table.tbl tbody td{border-color:var(--cell)}
+[data-theme="dark"] .cmt{background:var(--surface);color:var(--ink)}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
@@ -45,11 +148,11 @@ body{background:var(--plane);color:var(--ink);font-size:13px;line-height:1.45;-w
    진한 층과 옅은 층의 명도 차를 벌리고 이동 폭을 키워 움직임이 눈에 보이게 한다 */
 body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none;opacity:.78;
   background:
-    radial-gradient(40% 44% at 12% 18%, rgba(126,155,186,.92), transparent 66%),
-    radial-gradient(34% 40% at 78% 10%, rgba(243,248,252,.32), transparent 70%),
-    radial-gradient(44% 48% at 88% 80%, rgba(112,143,177,.88), transparent 68%),
-    radial-gradient(36% 40% at 26% 90%, rgba(245,249,253,.30), transparent 72%),
-    radial-gradient(32% 36% at 54% 50%, rgba(160,184,210,.70), transparent 70%);
+    radial-gradient(40% 44% at 12% 18%, rgba(var(--bg1),.92), transparent 66%),
+    radial-gradient(34% 40% at 78% 10%, rgba(255,255,255,.32), transparent 70%),
+    radial-gradient(44% 48% at 88% 80%, rgba(var(--bg2),.88), transparent 68%),
+    radial-gradient(36% 40% at 26% 90%, rgba(255,255,255,.30), transparent 72%),
+    radial-gradient(32% 36% at 54% 50%, rgba(var(--bg3),.70), transparent 70%);
   filter:blur(30px);
   animation:bgdrift 26s ease-in-out infinite alternate}
 @keyframes bgdrift{
@@ -154,6 +257,16 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .logo:hover .mark{filter:brightness(1.06)}
 .logo .mark{width:52px;height:26px;border-radius:9px;flex:none;display:block;object-fit:cover;
   box-shadow:0 1px 3px rgba(31,44,61,.14)}
+/* 광고주 로고 — 높이는 26px 로 고정하고 가로만 비율대로(1:1 ~ 3:1) 늘린다 */
+.logo .mark.adv{height:26px;width:auto;max-width:78px;min-width:26px;object-fit:contain;
+  border-radius:6px;background:transparent;box-shadow:none}
+.logo .brandtx{display:inline-flex;align-items:baseline;gap:7px;min-width:0;white-space:nowrap}
+.logo .brandtx .adv{font-weight:800;font-size:14.5px;color:var(--ink);letter-spacing:-.2px}
+.logo .brandtx .adv::after{content:'·';margin-left:7px;color:var(--line);font-weight:600}
+.logo .brandtx .prod{font-weight:700;font-size:14px;color:var(--ink)}
+.logo .brandtx .adv+.prod{font-weight:600;color:var(--ink2)}
+.savedago{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+.savedago.on::before{content:'●';color:#6f9b83;margin-right:4px;font-size:9px;vertical-align:1px}
 .pill{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border:1px solid var(--line);
   border-radius:9px;background:var(--surface);cursor:pointer;color:var(--ink)}
 .pill:hover{background:var(--acc-soft2)}
@@ -180,7 +293,7 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
 /* 하위 탭 = 메인 탭 바로 아래 붙임 */
 .tabs{border-bottom:1px solid var(--line)}
-.subbar{background:#e4e7ec;border-bottom:1px solid #d7dadf;padding:11px 76px;
+.subbar{background:var(--acc-soft);border-bottom:1px solid var(--line);padding:11px 76px;
   position:sticky;top:97px;z-index:58;display:flex;gap:6px}
 .subbar button{border:1px solid transparent;background:transparent;padding:7px 18px;border-radius:9px;cursor:pointer;
   color:var(--ink2);font-weight:600;font-size:13px}
@@ -351,7 +464,7 @@ table.tbl.nogauge .gauge .track{display:none}
 .pdotrow{position:relative;height:13px}
 .pdotrow>i{position:absolute;bottom:2px;width:9px;height:9px;border-radius:50%;
   transform:translateX(-50%);background:var(--dotc,#4c729a);display:block}
-.pbar{position:relative;height:44px;border-radius:9px;background:#e9edf2;overflow:hidden}
+.pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
 .pbar .mstack>i{transition:background-color .18s}
 .pbar.hot .mstack>i{background-image:none !important;background-color:var(--hotc,#4c729a)}
@@ -390,10 +503,10 @@ table.tbl.nogauge .gauge .track{display:none}
 
 /* 집행 일자 게이지 — 다른 막대와 같은 남색 계열 */
 .dgauge{display:flex;gap:2px;width:100%}
-.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:#e3e8ee;display:block}
-.dgauge i.on{background:linear-gradient(160deg,#5f83a9,#4c729a)}
-.dgauge i.on.rest{background:linear-gradient(160deg,#87a2be,#7391b2)}
-.dgauge i.rest{background:#e9edf2}
+.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:var(--acc-soft);display:block}
+.dgauge i.on{background:linear-gradient(160deg,var(--b3),var(--b4))}
+.dgauge i.on.rest{background:linear-gradient(160deg,var(--b2),var(--b3))}
+.dgauge i.rest{background:var(--acc-soft2)}
 
 .pfoot{display:flex;align-items:center;gap:9px;margin-top:18px;padding-top:12px;
   border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2);font-weight:600;
@@ -578,10 +691,13 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   background:var(--plane2);border:1px solid var(--line2)}
 /* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
 .tmap .sect{position:absolute;overflow:hidden;border:4px solid var(--surface);border-radius:3px}
-/* 매체 머리글 — 아래 그룹 상자(.grp)가 2px 흰 테두리를 갖고 있어서
-   같은 두께의 투명 테두리를 줘야 색이 칠해지는 영역의 좌우가 정확히 맞는다 */
-.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;
-  border:2px solid transparent;background-clip:padding-box;display:flex;align-items:center;
+/* 매체 머리글 — 아래 그룹 상자(.grp)가 2px 흰 테두리를 갖고 있으므로
+   상품 머리글(.gh)이 칠해지는 자리와 똑같이 좌우를 2px 씩 들여 놓는다.
+   (예전에는 투명 테두리 + background-clip:padding-box 로 맞췄는데,
+    색을 style="background:…" 로 넣는 순간 단축 속성이 background-clip 을 되돌려
+    매체 띠만 좌우로 2px 씩 더 넓게 칠해졌다 — 여러 번 지적받은 그 문제다) */
+.tmap .sect>.sh{position:absolute;left:2px;right:2px;top:0;height:21px;
+  display:flex;align-items:center;
   gap:6px;padding:0 8px;font-size:11.5px;font-weight:800;color:#fff;
   white-space:nowrap;overflow:hidden;z-index:3}
 .tmap .sect>.sh .sv{margin-left:auto;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums}
@@ -933,9 +1049,8 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 /* 2위 이하 — 가로형 미니 카드 */
 .cr.mini{display:flex;align-items:stretch;min-height:0}
 /* 빈 슬롯 — 소재가 모자라도 카드 크기가 흔들리지 않게 자리를 잡아 둔다 */
-.cr.mini.empty{background:var(--plane2);border-style:dashed;box-shadow:none;
-  align-items:center;justify-content:center;cursor:default}
-.cr.mini.empty .ph{font-size:11px;color:#b6bfca;font-weight:600}
+/* 빈 슬롯 — 자리만 잡고 아무것도 그리지 않는다 (색·테두리·글자 없음) */
+.cr.mini.empty{background:transparent;border:0;box-shadow:none;cursor:default;pointer-events:none}
 .cr.mini .thumb{flex:none;height:100%;aspect-ratio:1/1;border-radius:0}
 .cr.mini .thumb .rankno{width:17px;height:17px;font-size:9.5px;top:5px;right:5px}
 .cr.mini .thumb.playable::after{width:22px;height:22px;font-size:9px}
@@ -1028,6 +1143,35 @@ table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
   background:linear-gradient(90deg,rgb(177,201,188),rgb(206,210,215),rgb(210,188,188))}
 .shlegend em{font-style:normal}
 .shlegend .ar{opacity:.55}
+
+
+/* KPI 달성 현황 카드 — 끌어서 좌우 순서 바꾸기 */
+.donut[draggable]{cursor:grab}
+.donut.dragging{opacity:.45;cursor:grabbing}
+.donut.dropL{box-shadow:inset 3px 0 0 var(--acc)}
+.donut.dropR{box-shadow:inset -3px 0 0 var(--acc)}
+/* 표 위쪽에 붙는 가로 스크롤바 — 표가 길 때 아래까지 내려가지 않아도 좌우로 옮길 수 있다 */
+.topscroll{overflow-x:auto;overflow-y:hidden;height:12px;margin:0 0 4px;
+  border-radius:8px;background:var(--plane2)}
+.topscroll>i{display:block;height:1px}
+.topscroll::-webkit-scrollbar{height:10px}
+.topscroll::-webkit-scrollbar-thumb{background:var(--gline);border-radius:8px}
+.topscroll::-webkit-scrollbar-track{background:transparent}
+/* 디자인 — 테마 고르기 */
+.thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.thcard{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:11px 12px;
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
+.thcard:hover{border-color:var(--acc-lt);background:var(--acc-soft2)}
+.thcard.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-soft)}
+.thcard .sws{display:flex;gap:4px}
+.thcard .sws i{width:22px;height:22px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.06)}
+.thcard .thl{font-size:12.5px;font-weight:700;color:var(--ink)}
+/* 광고주 로고 고르기 */
+.logopick{display:flex;align-items:center;gap:10px}
+.logopick .prev{display:inline-flex;align-items:center;justify-content:center;height:34px;min-width:60px;
+  max-width:120px;padding:0 8px;border:1px dashed var(--line);border-radius:9px;background:var(--plane2)}
+.logopick .prev img{height:26px;width:auto;max-width:104px;object-fit:contain;display:block}
+.logopick .prev em{font-style:normal;font-size:11.5px;color:var(--muted);font-weight:600}
 /* 요일별 · 일자별 효율 히트맵 */
 .hmramp{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600}
 .hmramp i{width:84px;height:9px;display:inline-block;border-radius:2px;

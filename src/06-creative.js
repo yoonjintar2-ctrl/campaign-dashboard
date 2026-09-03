@@ -511,8 +511,7 @@ function renderCreatives(){
       wireCrPlay(d.querySelector('.thumb'),c);
       d.onclick=()=>openLightbox(c);});
     /* 남는 칸은 빈 슬롯으로 채워 카드 크기를 고정한다 */
-    for(let k=Math.max(rows.length-1,0);k<slots;k++)
-      el('div','cr mini empty',rest).innerHTML='<div class="ph">소재 없음</div>';
+    for(let k=Math.max(rows.length-1,0);k<slots;k++)el('div','cr mini empty',rest);
   });
 }
 /* 전체 소재 보기 — 지금 조건에 걸린 소재를 지표와 함께 한 표로 (광고주도 볼 수 있다) */
@@ -850,8 +849,8 @@ function ganttRank(dim,val,c){
 /* 단일 붉은색 톤 — 값이 낮으면 아주 연한 빨강, 높을수록 진한 빨강.
    농도 기준은 "그 행(소재)의 최댓값"이므로 행마다 독립적으로 읽는다. */
 /* 효율(단가)을 못 구할 때만 쓰는 값 크기 농도 — 좋고 나쁨과 헷갈리지 않게 무채색 남색 계열 */
-const SHADE_LOW=[0xe7,0xec,0xf1],
-      SHADE_HIGH=[0x4c,0x72,0x9a];
+let SHADE_LOW=[0xe7,0xec,0xf1],
+    SHADE_HIGH=[0x4c,0x72,0x9a];
 const mixRGB=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
 function shade(t){
   const k=Math.max(0,Math.min(1,isFinite(t)?t:0));
@@ -1227,15 +1226,23 @@ const BUB_AXES=[
 ];
 let BUB={x:'cpc',y:'cpm',dim:'creative'};
 /* 매체별 색 계열 — 사용자가 바꿀 수 있고 캠페인 문서에 함께 저장된다 */
-const BUB_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
+let BUB_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
                 [64,130,138],[118,120,132],[196,120,150]];
 let BUB_COLORS={};
 const bubDef=k=>BUB_AXES.find(a=>a.k===k)||BUB_AXES[0];
 const BUB_LOWER=new Set(['cpm','cpc','cpv','cpa','cpi','cpe']);
 const OFF_HUE=[150,158,167];
-/* 조회 구간의 마지막 날에 노출이 있었는가 — 없으면 "리포트 시점에 꺼진" 것으로 본다 */
+/* 운영 중 판정 — 지금 고른 기간의 **마지막 집행일**까지 집행이 있었으면 운영 중으로 본다.
+   (기준일은 그 기간에 실제로 무언가 집행된 마지막 날이라, 주말처럼 전 매체가 쉰 날이
+    맨 뒤에 걸려도 모든 소재가 한꺼번에 OFF 로 뒤집히지 않는다) */
+function bubLastDay(fs){
+  let last=-1;
+  fs.forEach(f=>{if(f.d>last&&((f.imp||0)>0||(f.cost||0)>0||(f.click||0)>0))last=f.d;});
+  return last;
+}
 function bubIsOn(rows,last){
-  return rows.some(f=>f.d===last&&(f.imp||0)>0);
+  if(last<0)return false;
+  return rows.some(f=>f.d===last&&((f.imp||0)>0||(f.cost||0)>0||(f.click||0)>0));
 }
 function renderBubble(){
   const host=$('bubble');if(!host)return;
@@ -1247,7 +1254,7 @@ function renderBubble(){
     if(!m.has(key))m.set(key,{media:f.media,product:f.product,name:f[dim],rows:[]});
     m.get(key).rows.push(f);});
   const xd=bubDef(BUB.x),yd=bubDef(BUB.y);
-  const lastDay=fs.length?Math.max(...fs.map(f=>f.d)):0;
+  const lastDay=bubLastDay(fs);
   let pts=[...m.values()].map(g=>{
     const b=aggFacts(g.rows);
     return {...g,b,cost:b.cost,on:bubIsOn(g.rows,lastDay),
@@ -1352,7 +1359,7 @@ function renderBubble(){
     +`<span><b>크기</b> = 소진 광고비 (클수록 많이 쓴 ${dimL})</span>`
     +`<span><b>색</b> = 매체 · <b>진하기</b> = 그 매체 안의 광고상품</span>`
     +`<span><b>가로</b> ${xd.l} · <b>세로</b> ${yd.l} — 오른쪽·위로 갈수록 좋습니다</span>`
-    +`<span>회색 버블은 <b>리포트 기준일에 꺼져 있던</b> ${dimL}입니다</span>`
+    +`<span>회색 버블은 <b>고른 기간의 마지막 집행일에 집행이 없던</b> ${dimL}입니다</span>`
     +(sx.log||sy.log?`<span>값 차이가 커서 ${sx.log?'가로':''}${sx.log&&sy.log?'·':''}${sy.log?'세로':''}축은 <b>로그 눈금</b>으로 그렸습니다</span>`:'')
     +`<span>버블에 마우스를 올리면 ${dimL} 이름과 세부 값이 나옵니다</span>`
     +`</div>`;

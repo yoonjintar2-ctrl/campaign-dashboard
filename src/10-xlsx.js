@@ -391,6 +391,9 @@ function importLines(){
         pushLineUndo();
         LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
         CREATIVES=CREATIVES.filter(()=>false);
+        /* 소재를 만들기 **전에** 캠페인 기간부터 잡는다 —
+           그래야 소재 게재 기간이 캠페인 전체로 잡힌다 */
+        rebuildPeriod();
         LINES.forEach((l,i)=>{
           const src=out[i];
           if(src.__pd.length)setLineProducts(l,src.__pd);

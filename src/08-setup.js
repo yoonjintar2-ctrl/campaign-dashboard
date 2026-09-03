@@ -480,6 +480,7 @@ document.addEventListener('keydown',e=>{
 /* 기간을 다시 잡는다 — 날짜 배열만 새로 만들고 **입력된 일별 실적은 그대로 둔다**.
    예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
+  const PREV=TOTAL_DAYS;                  /* 기간이 바뀌기 전 길이 — 소재 게재 기간 보정에 쓴다 */
   d0=new Date(campStart()+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
   dT=new Date(CAMPAIGN.today+'T00:00:00');
   YESTERDAY=iso(new Date(dT.getTime()-DAY));
@@ -494,6 +495,16 @@ function rebuildPeriod(){
       const b=new Array(TOTAL_DAYS).fill(0);
       for(let i=0;i<Math.min(a.length,TOTAL_DAYS);i++)b[i]=+a[i]||0;
       l.daily[m]=b;});});
+  /* 소재 게재 기간도 새 기간에 맞춘다.
+     라인을 불러오는 시점에는 아직 캠페인 기간이 정해지지 않아 게재 기간이 [[0,0]] 처럼
+     하루로 잡히는 일이 있었고, 그러면 이튿날부터의 실적이 화면에서 통째로 사라졌다.
+     예전 마지막 날까지 걸쳐 있던 구간은 새 마지막 날까지 늘린다. */
+  if(typeof CREATIVES!=='undefined')CREATIVES.forEach(c=>{
+    const last=Math.max(TOTAL_DAYS-1,0);
+    if(!Array.isArray(c.run)||!c.run.length){c.run=[[0,last]];return;}
+    c.run=c.run.map(([a,z])=>[
+      Math.max(0,Math.min(+a||0,last)),
+      (+z>=(PREV||1)-1)?last:Math.max(0,Math.min(+z||0,last))]);});
 }
 /* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
 function seedDemoDaily(){
@@ -762,8 +773,10 @@ function openModal(title,body,footer,opts){
   $('modalHost').querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
   $('mdl').onclick=e=>{if(e.target.id==='mdl')closeModal();};}
 const closeModal=()=>$('modalHost').innerHTML='';
-function confirmModal(msg,sub,onYes,okLabel){
-  openModal('확인',`<div style="font-size:14px;font-weight:700;margin-bottom:6px">${esc(msg)}</div><div class="hint">${esc(sub||'')}</div>`,
+/* rawSub=true 면 설명 줄에 굵게·줄바꿈 같은 간단한 태그를 그대로 쓴다 (개발자가 쓴 문구 전용) */
+function confirmModal(msg,sub,onYes,okLabel,rawSub){
+  openModal('확인',`<div style="font-size:14px;font-weight:700;margin-bottom:6px">${esc(msg)}</div>`
+    +`<div class="hint">${rawSub?(sub||''):esc(sub||'')}</div>`,
     `<button class="btn" data-close>취소</button><button class="btn primary" id="cfmYes">${okLabel||'삭제'}</button>`,{w:460});
   $('cfmYes').onclick=()=>{closeModal();onYes();};}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});

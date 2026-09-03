@@ -59,7 +59,10 @@ function renderDaily(){
   const showFuture=SHOW_FORECAST&&SC.i1>=dIdx(YESTERDAY)&&PS.i1>SC.i1;
   const iEnd=showFuture?PS.i1:SC.i1;
   const ds=ALLDATES.slice(SC.i0,iEnd+1);
-  const EL=SC.elapsed;                                 /* 스코프 안 경과 일수 */
+  /* 실적이 확정된 마지막 날(어제)까지만 "집행 구간"이다.
+     오늘은 아직 데이터가 없으므로 오늘부터 옅은 음영을 깐다.
+     (예전에는 ELAPSED 를 그대로 써서 오늘 칸까지 진하게 보였다) */
+  const EL=Math.max(0,Math.min(dIdx(YESTERDAY)+1-SC.i0,ds.length));
   const W=1680,H=480,P={l:82,r:lk==='none'?22:96,t:16,b:36};
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart'},host);
   svg.style.height=H+'px';
@@ -270,6 +273,13 @@ const SUM_CELL={};
   SUM_CELL.cost=a=>[won(a.cost)];
   SUM_CELL.spend_r=(a,e,x)=>[null,x?NaN:a.cost/e.budget];
   SUM_CELL.progress=()=>[pct(paceRatio(),1)];
+  /* 목표 단가 — 예산(Gross) ÷ 목표 수치. 실적 단가(CPM·CPC…)와 같은 방식이라 나란히 비교된다 */
+  const goalCost=(k,mult)=>(a,e,x)=>[HA(x)||!e[k]||!e.budget?'–':won(e.budget/e[k]*(mult||1))];
+  SUM_CELL.g_cpm=goalCost('imp',1000);
+  SUM_CELL.g_cpc=goalCost('click');
+  SUM_CELL.g_cpv=goalCost('view');
+  SUM_CELL.g_cpa=goalCost('conv');
+  SUM_CELL.g_cpe=goalCost('eng');
   SUM_CELL.start=(a,e,x)=>[HA(x)||!e.dstart?'–':mdy(e.dstart)];
   SUM_CELL.end=(a,e,x)=>[HA(x)||!e.dend?'–':mdy(e.dend)];
   SUM_CELL.startT=()=>['–'];SUM_CELL.endT=()=>['–'];
@@ -279,6 +289,7 @@ const SUM_CELL={};
 })();
 /* 예상값이 들어가는 열 (소재 단위로 쪼개지면 위·아래 셀을 합쳐 표시) */
 SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
+  ||/^g_cp/.test(f.k)
   ||['budget','net','value','bonus','bonusRate','feeA','feeR','spend_r','start','end','period'].includes(f.k))
   .map(f=>f.k).concat(['period']));
 /* 기본 표시 열 — 열설정북의 "대시보드/데이터입력 탭에 디펄트 표시" 기준 */
@@ -287,9 +298,9 @@ const SUM_PRESET=()=>({
   rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false}],order:null,
   groups:[
     {id:uid(),name:'운영사항',cols:['period','budget','cost','spend_r','progress']},
-    {id:uid(),name:'노출 효율',cols:['e_imp','imp','imp_r','cpm']},
-    {id:uid(),name:'클릭 효율',cols:['e_click','click','click_r','ctr','cpc']},
-    {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','vtr','cpv']}
+    {id:uid(),name:'노출 효율',cols:['e_imp','imp','imp_r','g_cpm','cpm']},
+    {id:uid(),name:'클릭 효율',cols:['e_click','click','click_r','ctr','g_cpc','cpc']},
+    {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','vtr','g_cpv','cpv']}
   ].map(g=>({...g,cols:g.cols.filter(k=>SUM_CELL[k])}))
 });
 let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET()},

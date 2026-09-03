@@ -28,7 +28,8 @@ function serializeDoc(){
     AMET.concat(['cost']).forEach(m=>delete o['t_'+m]);return o;};
   return {
     v:1,
-    campaign:{name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,today:CAMPAIGN.today},
+    campaign:{name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,today:CAMPAIGN.today,
+      advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
     issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
@@ -37,7 +38,8 @@ function serializeDoc(){
     sheet:(typeof SHEET!=='undefined'?SHEET:[]),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
-           perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
+           perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
+           donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{})}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -66,6 +68,9 @@ function applyDoc(d,keepToday){
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
+  CAMPAIGN.advLogo=d.campaign?.advLogo||'';
+  if(typeof applyTheme==='function')applyTheme(d.campaign?.theme||'',true);
+  if(typeof renderBrand==='function')renderBrand();
   LINES=d.lines.map(l=>({...l,daily:{}}));
   migrateBudget(LINES);            /* 예전 net 기준 저장본을 Gross 기준으로 */
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
@@ -90,6 +95,7 @@ function applyDoc(d,keepToday){
   if(v.stat)STAT_CFG=v.stat;
   if(v.bub)BUB=v.bub;
   if(v.bubColors)BUB_COLORS=v.bubColors;
+  if(v.donutOrder&&typeof DONUT_ORDER!=='undefined')DONUT_ORDER=v.donutOrder;
 }
 /* 일별 실적 행 → 라인의 daily 배열 · 누적 a 로 되돌린다 */
 function applyDaily(rows){
@@ -107,22 +113,31 @@ function applyDaily(rows){
 }
 /* 데이터 입력 시트 → daily_stats upsert 행 */
 const DAILY_COLS=['imp','click','view','eng','conv','lead','install','rev','net'];
+/* daily_stats 의 기본키는 (캠페인 · 날짜 · 라인) 하나뿐이다.
+   시트에서 같은 라인·같은 날짜를 소재별로 나눠 적으면 행이 여러 개 나오는데,
+   그대로 upsert 하면 "ON CONFLICT DO UPDATE command cannot affect row a second time" 로 저장이 통째로 실패한다.
+   → 저장 직전에 (날짜 × 라인) 으로 합쳐서 한 행만 보낸다. 소재별 구분은 doc 의 입력 시트에 그대로 남는다. */
 function sheetToRows(){
-  const out=[];
+  const by=new Map();
   SHEET.forEach(r=>{
     const l=rowLine(r);if(!l||!r.date)return;
-    const row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),
-      creative:r.creative||''};
-    const extra={};
-    DAILY_COLS.forEach(k=>row[k]=+r[k]||0);
+    const key=r.date+''+LINE_KEY(l);
+    let row=by.get(key);
+    if(!row){
+      row={campaign_id:CLOUD.campaign.id,stat_date:r.date,line_key:LINE_KEY(l),
+        creative:'',extra:{}};
+      DAILY_COLS.forEach(k=>row[k]=0);
+      by.set(key,row);}
+    DAILY_COLS.forEach(k=>{if(k!=='net')row[k]+=+r[k]||0;});
     /* 시트는 Gross 소진비용을 받고, 저장은 Net 기준(DB 열이 net)이다 */
-    row.net=Math.round((+r.cost||0)*(1-feeOf(l)));
-    AMET.forEach(m=>{if(!DAILY_COLS.includes(m))extra[m]=+r[m]||0;});
+    row.net+=Math.round((+r.cost||0)*(1-feeOf(l)))||0;
+    if(+r.net&&!+r.cost)row.net+=+r.net||0;
+    AMET.forEach(m=>{if(!DAILY_COLS.includes(m))row.extra[m]=(+row.extra[m]||0)+(+r[m]||0);});
     /* 사용자가 열 설정에서 새로 만든 열도 함께 보관 */
-    SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))extra[c.k]=+r[c.k]||0;});
-    row.extra=extra;
-    out.push(row);});
-  return out;
+    SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))
+      row.extra[c.k]=(+row.extra[c.k]||0)+(+r[c.k]||0);});
+  });
+  return [...by.values()];
 }
 
 
@@ -567,39 +582,65 @@ async function cloudSave(silent){
   }).eq('id',CLOUD.campaign.id).select('id');
   if(error){cloudState('저장 실패: '+error.message);return;}
   if(!upd||!upd.length){cloudState('저장 권한이 없습니다 (조회 전용)');return;}
+  /* 일별 실적은 입력 시트가 원본이라 늘 통째로 다시 쓴다.
+     (예전에는 upsert 만 했는데, 같은 라인·같은 날짜가 두 줄이면
+      "ON CONFLICT DO UPDATE command cannot affect row a second time" 로 저장이 실패했다.
+      지금은 sheetToRows() 가 날짜×라인으로 합쳐 한 줄만 만들고, 옛 행은 먼저 지운다.
+      설정 문서(doc)에 시트가 이미 저장된 뒤라 중간에 실패해도 입력값은 남는다.) */
   const rows=sheetToRows();
-  if(rows.length){
-    const {error:e2}=await CLOUD.sb.from('daily_stats')
-      .upsert(rows,{onConflict:'campaign_id,stat_date,line_key,creative'});
+  const {error:eDel}=await CLOUD.sb.from('daily_stats').delete().eq('campaign_id',CLOUD.campaign.id);
+  if(eDel){cloudState('일별 실적 정리 실패: '+eDel.message);return;}
+  for(let i=0;i<rows.length;i+=500){
+    const {error:e2}=await CLOUD.sb.from('daily_stats').insert(rows.slice(i,i+500));
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   await CLOUD.sb.from('campaign_history').insert({
     campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
   CLOUD.savedAt=new Date();
+  CLOUD.dirty=false;
   paintSaved();
 }
-/* ---------- 자동 저장 · "00분 전에 저장됨" ---------- */
-const AUTO_SAVE_MS=3*60*1000;          /* 바뀐 내용이 있으면 3분마다 조용히 저장 */
+/* ---------- 자동 저장 · "00분 전에 저장됨" ----------
+   저장 버튼을 누르지 않아도 알아서 저장한다.
+   · 값이 바뀌면 20초 뒤(추가 변경이 있으면 다시 20초 뒤)에 조용히 저장
+   · 그와 별개로 최소 60초에 한 번만 실제로 올려 서버를 두드리지 않는다
+   · 마지막 저장 시각은 상단 ☁ 저장 버튼 왼쪽에 "n분 전 저장" 으로 계속 보인다 */
+const AUTO_SAVE_MS=60*1000;      /* 실제 저장 최소 간격 */
+const DIRTY_WAIT_MS=20*1000;     /* 마지막 변경 후 기다리는 시간 */
 function paintSaved(){
-  if(!CLOUD.savedAt)return;
+  const chip=$('savedAgo');
+  if(!chip)return;
+  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign){chip.textContent='';chip.classList.remove('on');return;}
+  if(!CLOUD.savedAt){chip.textContent=CLOUD.dirty?'저장 대기 중':'';chip.classList.remove('on');return;}
   const m=Math.floor((Date.now()-CLOUD.savedAt.getTime())/60000);
   const t=CLOUD.savedAt;
   const hhmm=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-  const el2=$('cloudState');
-  if(el2){
-    el2.textContent=m<1?'방금 저장됨':m<60?`${m}분 전에 저장됨`
-      :m<1440?`${Math.floor(m/60)}시간 전에 저장됨`:`${hhmm} 에 저장됨`;
-    el2.title=`마지막 저장 ${dFull(t)} ${hhmm}`;}
+  chip.classList.add('on');
+  chip.textContent=CLOUD.dirty?'변경됨 · 곧 저장'
+    :m<1?'방금 저장':m<60?`${m}분 전 저장`
+    :m<1440?`${Math.floor(m/60)}시간 전 저장`:`${hhmm} 저장`;
+  chip.title=`마지막 자동 저장 ${dFull(t)} ${hhmm} · 저장 버튼을 누르지 않아도 자동으로 저장됩니다`;
 }
 /* 화면에 바뀐 내용이 생기면 표시해 둔다 (자동 저장 대상) */
-function markDirty(){CLOUD.dirty=true;}
+let DIRTY_T=null;
+function markDirty(){
+  CLOUD.dirty=true;CLOUD.dirtyAt=Date.now();
+  paintSaved();
+  clearTimeout(DIRTY_T);
+  DIRTY_T=setTimeout(tryAutoSave,DIRTY_WAIT_MS);
+}
+function tryAutoSave(){
+  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign||CLOUD.role==='viewer')return;
+  if(!CLOUD.dirty||CLOUD.busy)return;
+  if(CLOUD.savedAt&&Date.now()-CLOUD.savedAt.getTime()<AUTO_SAVE_MS){
+    clearTimeout(DIRTY_T);
+    DIRTY_T=setTimeout(tryAutoSave,AUTO_SAVE_MS-(Date.now()-CLOUD.savedAt.getTime())+500);
+    return;}
+  CLOUD.dirty=false;cloudSave(true).then(paintSaved,paintSaved);
+}
 (function autoSave(){
-  setInterval(()=>{
-    paintSaved();
-    if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign||CLOUD.role==='viewer')return;
-    if(!CLOUD.dirty||CLOUD.busy)return;
-    if(CLOUD.savedAt&&Date.now()-CLOUD.savedAt.getTime()<AUTO_SAVE_MS)return;
-    CLOUD.dirty=false;cloudSave(true);
-  },30000);
+  setInterval(()=>{paintSaved();tryAutoSave();},15000);
+  /* 탭을 벗어나거나 창을 닫기 직전에도 한 번 */
+  addEventListener('visibilitychange',()=>{if(document.hidden)tryAutoSave();});
 })();
 /* 빈 캠페인으로 초기화 — 새 캠페인이 데모 데이터를 그대로 안고 저장되던 문제를 막는다 */
 /* 캠페인을 옮겨 다닐 때 앞 캠페인의 값이 남지 않도록 화면 상태를 통째로 비운다 */
@@ -624,25 +665,35 @@ function resetToBlank(name,advertiser){
 }
 async function createCampaign(){
   if(!CLOUD.on||!CLOUD.user){signInGoogle();return;}
+  /* ① 광고주를 먼저 고르고 ② 캠페인 이름을 정한다 */
+  const st={logo:''};
   openModal('새 캠페인',
-    `<div class="form-row">
-       <div class="fld" style="flex:2;min-width:220px"><label>캠페인명</label><input id="ncName" placeholder="예: 2026 하반기 브랜드 캠페인"></div>
-       <div class="fld" style="flex:1;min-width:160px"><label>광고주</label><input id="ncAdv" placeholder="예: OO전자"></div>
+    `<div class="hint" style="margin-bottom:10px"><b>①</b> 광고주를 먼저 고르고 <b>②</b> 캠페인 이름을 정합니다.
+       로고를 등록하면 이 광고주의 대시보드 왼쪽 위에 로고와 광고주명이 함께 보입니다.</div>
+     <div class="form-row">${advPickerHTML('',''  )}</div>
+     <div class="form-row" style="margin-top:6px">
+       <div class="fld" style="flex:1;min-width:260px"><label>캠페인명</label>
+         <input id="ncName" placeholder="예: 2026 하반기 브랜드 캠페인"></div>
      </div>
      <label class="tagchip" style="margin-top:12px;cursor:pointer">
        <input type="checkbox" id="ncDemo"> 지금 화면의 내용을 그대로 복사해서 시작
      </label>
      <div class="hint" style="margin-top:8px">체크하지 않으면 <b>빈 캠페인</b>으로 시작합니다.
        (예상 효율 · 일별 실적 없음)</div>`,
-    '<button class="btn" data-close>취소</button><button class="btn primary" id="ncGo">만들기</button>',{w:620});
+    '<button class="btn" data-close>취소</button><button class="btn primary" id="ncGo">만들기</button>',{w:660});
+  const readAdv=wireAdvPicker(st);
   $('ncGo').onclick=async()=>{
+    const av=readAdv();
+    if(!av.name){confirmModal('광고주를 골라 주세요.','기존 광고주를 고르거나 새 광고주명을 적어 주세요.',()=>{},'확인');return;}
     const name=($('ncName').value||'').trim()||'새 캠페인';
-    const adv=($('ncAdv').value||'').trim();
+    const adv=av.name;
     const copy=$('ncDemo').checked;
+    ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();
     closeModal();
     cloudState('만드는 중…');
     if(!copy)resetToBlank(name,adv);
     else{CAMPAIGN.name=name;CAMPAIGN.advertiser=adv;renderCampForm();renderCampBar();}
+    CAMPAIGN.advLogo=av.logo||'';renderBrand();
     const {data,error}=await CLOUD.sb.from('campaigns').insert({
       name,advertiser:adv,start_date:campStart(),end_date:campEnd(),
       doc:serializeDoc(),created_by:CLOUD.user.id,updated_by:CLOUD.user.id
