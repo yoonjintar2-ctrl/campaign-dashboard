@@ -362,11 +362,13 @@ table.tbl.nogauge .gauge .track{display:none}
 .pbar .mstack>i{min-width:0;overflow:hidden;
   background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
       var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
-      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),var(--segbg);
-  background-repeat:no-repeat,no-repeat;
-  background-size:var(--wavew,0px) 100%,auto;
+      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),
+    linear-gradient(var(--ambflat,rgba(0,0,0,0)),var(--ambflat,rgba(0,0,0,0))),
+    var(--segbg);
+  background-repeat:no-repeat,no-repeat,no-repeat;
+  background-size:var(--wavew,0px) 100%,100% 100%,auto;
   background-position:calc(var(--ambt,.5) * (var(--barw,0px) + var(--wavew,0px))
-    - var(--wavew,0px) - var(--segoff,0px)) 0, 0 0;
+    - var(--wavew,0px) - var(--segoff,0px)) 0, 0 0, 0 0;
   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
 .pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
@@ -928,6 +930,10 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .cr .meta .eff b{color:var(--acc);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 /* 2위 이하 — 가로형 미니 카드 */
 .cr.mini{display:flex;align-items:stretch;min-height:0}
+/* 빈 슬롯 — 소재가 모자라도 카드 크기가 흔들리지 않게 자리를 잡아 둔다 */
+.cr.mini.empty{background:var(--plane2);border-style:dashed;box-shadow:none;
+  align-items:center;justify-content:center;cursor:default}
+.cr.mini.empty .ph{font-size:11px;color:#b6bfca;font-weight:600}
 .cr.mini .thumb{flex:none;height:100%;aspect-ratio:1/1;border-radius:0}
 .cr.mini .thumb .rankno{width:17px;height:17px;font-size:9.5px;top:5px;right:5px}
 .cr.mini .thumb.playable::after{width:22px;height:22px;font-size:9px}
@@ -1282,8 +1288,11 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <div class="tools">
         <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>
         <span class="hint">각</span><select class="ctl" id="crTopN">
-          <option>3</option><option selected>4</option><option>5</option><option>6</option>
+          <option>3</option><option>4</option><option selected>5</option><option>6</option>
         </select><span class="hint">개</span>
+        <label class="gchk" title="켜면 매체 필터와 상관없이 모든 매체의 소재를 한 줄에서 비교합니다">
+          <input type="checkbox" id="crAllMedia"><span>매체 구분 없이 비교</span></label>
+        <button class="btn sm" id="crAllBtn">📁 전체 소재 보기</button>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>
     </div>
@@ -1567,14 +1576,17 @@ const DAY=86400000;
 const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||CAMPAIGN.today;
 const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||CAMPAIGN.today;
 let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
-const dT=new Date(CAMPAIGN.today+'T00:00:00');
+/* 오늘 · 어제는 캠페인을 새로 불러오면 다시 계산해야 한다 —
+   상수로 한 번만 잡아 두면 예전 캠페인의 날짜(예: 9/24)가 계속 남아
+   기간 필터의 종료일이 엉뚱한 날로 고정된다 */
+let dT=new Date(CAMPAIGN.today+'T00:00:00');
 let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.round((dT-d0)/DAY)+1;
 let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
 let dates=ALLDATES.slice(0,ELAPSED);
 const WD=['일','월','화','수','목','금','토'];
 const dFull=d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const YESTERDAY=iso(new Date(dT.getTime()-DAY));
+let YESTERDAY=iso(new Date(dT.getTime()-DAY));
 
 /* ===== 공휴일 (편집 가능) ===== */
 let HOLIDAYS=[
@@ -1853,12 +1865,18 @@ function viewScope(){
   if(e<s)e=s;
   return mkScope(s,e);
 }
-/* 진행 스코프 = 캠페인 설정에 적힌 집행 구간.
-   기간·날짜 게이지·시작/종료일·목표 페이스는 달력 선택과 무관하게 늘 여기를 기준으로 말한다.
-   (실적 수치는 아래 paceSum · paceFacts 처럼 달력으로 고른 구간만 더한다) */
-function paceScope(){return campScope();}
-/* 목표는 캠페인 전체 목표 그대로 — 기간을 좁혀도 목표가 줄지 않는다 */
-function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
+/* 진행 스코프 = 조회 스코프.
+   기간 필터에서 9/1~9/2 를 고르면 "집행 2일차 / 2일", 목표 페이스도 그 2일 기준으로 잡힌다. */
+function paceScope(){return viewScope();}
+/* 고른 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다 */
+function goalIn(l,k){
+  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
+  const sc=viewScope();
+  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
+  const n=Math.max(1,z-a+1);
+  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
+  return ov<=0?0:g*Math.min(1,ov/n);
+}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
 function factFilter(extra){
@@ -2191,17 +2209,20 @@ function pivotLayout(keys,rows){
       const nk=keys[ri+1];
       if(nk&&nk.slice(0,L+1).join(SEP)===vals.slice(0,L+1).join(SEP))continue;
       out.push({kind:'sub',level:L,vals:vals.slice(0,L+1)});}});
+  /* 소계 행도 자기 계층(level)까지는 위 데이터 행과 같은 칸으로 묶는다 —
+     그래야 "매체" 칸이 데이터 행 + 소계 행에 걸쳐 병합되고(A2:A3),
+     "○○ 소계" 문구는 그 오른쪽 열(B)부터 시작한다 */
   const span=out.map(()=>Array(D).fill(0));
   for(let c=0;c<D;c++){
     let i=0;
     while(i<out.length){
       const r=out[i];
-      if(r.kind==='sub'&&r.level<=c){i++;continue;}
+      if(r.kind==='sub'&&r.level<c){i++;continue;}
       const key=r.vals.slice(0,c+1).join(SEP);
       let j=i+1;
       while(j<out.length){
         const q=out[j];
-        if(q.kind==='sub'&&q.level<=c)break;
+        if(q.kind==='sub'&&q.level<c)break;
         if(q.vals.slice(0,c+1).join(SEP)!==key)break;
         j++;}
       span[i][c]=j-i;i=j;}}
@@ -2343,12 +2364,18 @@ const ACH_OPACITY=.8;
    호가 캡 지름보다 짧으면 캡을 접어(butt) 값이 과장되지 않게 한다. */
 function capDash(cir,f,TH){
   const len=cir*Math.min(Math.max(f,0),1);
+  if(len<=0.0001)  return {'stroke-dasharray':`0 ${cir}`,'stroke-linecap':'butt'};
   if(len>=cir-.5)  return {'stroke-dasharray':`${cir} ${cir}`,'stroke-linecap':'butt'};
-  if(len<=TH*1.05) return {'stroke-dasharray':`${len} ${cir}`,'stroke-linecap':'butt'};
+  /* 캡 지름보다 짧은 호는 대시를 0 에 가깝게 두고 둥근 캡만 남긴다 —
+     butt 로 자르면 아주 짧은 구간이 곧은 막대처럼 보였다 */
+  if(len<=TH*1.05) return {'stroke-dasharray':`0.01 ${cir}`,
+    'stroke-dashoffset':-(len/2),'stroke-linecap':'round'};
   return {'stroke-dasharray':`${len-TH} ${cir}`,'stroke-dashoffset':-TH/2,'stroke-linecap':'round'};
 }
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
 const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
+/* 도넛 뒤 트랙 — 예전 #eaedf1 은 너무 밝아 흰 글씨가 안 읽혔다 */
+const DONUT_TRACK='#c9d1da';
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
@@ -2428,6 +2455,8 @@ function renderPace(){
     const pr=x.due?x.act/x.due:1, ahead=pr>=1;
     const amb=ambLevel(pr), C=ahead?AMB_OK:AMB_NG;
     const ambc=`rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)})`;
+    /* 막대가 아주 짧으면 지나가는 물결만으로는 색이 안 보인다 — 옅은 고정 색조를 함께 깐다 */
+    const ambf=`rgba(${C[0]},${C[1]},${C[2]},${(amb*0.5).toFixed(3)})`;
     /* 오른쪽 달성률 숫자 색 — 물결과 같은 방향으로 남색에서 물든다 */
     const tone=mixHex(PACE_TONE, ahead?TONE_OK:TONE_NG, Math.min(Math.abs(pr-1)/.06,1));
     /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
@@ -2443,21 +2472,21 @@ function renderPace(){
         <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
           r,pr,tone,ambc}))}">
-          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc}">${segs}</div>
+          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambflat:${ambf}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
-  /* 머리글은 늘 캠페인 전체 기준으로 말한다 — 아래 게이지·막대는 고른 기간 기준 */
+  /* 머리글 · 게이지 · 목표 페이스 모두 기간 필터에서 고른 구간 기준.
+     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다. */
   const cs=campScope();
-  /* 달력으로 직접 좁힌 경우에만 조회 구간을 덧붙인다 (기본값 = 캠페인 첫날~어제) */
-  const narrow=!!(FILTER.from||FILTER.to);
+  const narrow=sc.startIso!==cs.startIso||sc.endIso!==cs.endIso;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${cs.elapsed}일차 <span class="sep">/</span> ${cs.days}일
-        <span class="el">${Math.round(cs.elapsed/cs.days*100)}% 경과</span>
-        ${narrow?`<span class="vw">조회 ${mdy(sc.startIso)} ~ ${mdy(sc.endIso)}</span>`:''}</div>
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
+        <span class="el">${Math.round(sc.elapsed/Math.max(sc.days,1)*100)}% 경과</span>
+        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -2548,7 +2577,7 @@ function renderSpendDonut(box,pr){
   const defs=S('defs',{},svg);
   const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
-  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
   /* 끝은 둥글게 — capDash 가 길이를 보정해서 회색 트랙을 침범하지 않는다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
     ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
@@ -2577,7 +2606,8 @@ function renderSpendDonut(box,pr){
       /* 호가 짧으면 호가 끝난 지점부터 트랙 위에 곡선으로 — 링 밖으로 튀어나가지 않게 */
       const id2=uid();
       S('path',{id:id2,d:arcPath(rad,360*f,360*f+179),fill:'none'},defs);
-      const t=S('text',{'font-size':11.5,'font-weight':800,fill:KPI_RING[0],'dominant-baseline':'central'},svg);
+      const t=S('text',{'font-size':11.5,'font-weight':800,fill:'#fff','dominant-baseline':'central',
+        stroke:'rgba(38,52,68,.42)','stroke-width':2.4,'paint-order':'stroke'},svg);
       const tp=document.createElementNS(NS,'textPath');
       tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+id2);
       tp.setAttribute('href','#'+id2);tp.setAttribute('startOffset','10');
@@ -2686,7 +2716,7 @@ function renderDonuts(){
     rings.forEach((r,i)=>{
       const rad=(VB/2-TH/2-24)-i*(TH+GAPR),cir=2*Math.PI*rad;
       const pf=Math.min(Math.max(pr,0),1), af=Math.min(Math.max(r.ach,0),1);
-      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
         ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
@@ -2705,7 +2735,11 @@ function renderDonuts(){
       if(cir*af>need){
         curvedFrom(rad,0,label,'#fff',12,800,1,12);
       }else{
-        curvedFrom(rad,aDeg,label,r.color,11.5,800,1,10);}
+        /* 호가 짧아 트랙 위에 얹힐 때도 글씨는 흰색 — 얇은 어두운 테두리로 읽히게 한다 */
+        const t2=curvedFrom(rad,aDeg,label,'#fff',11.5,800,1,10);
+        t2.setAttribute('stroke','rgba(38,52,68,.42)');
+        t2.setAttribute('stroke-width','2.4');
+        t2.setAttribute('paint-order','stroke');}
       /* 목표 페이스 — 호 끝 바깥쪽에 말풍선으로 (지시선 + 흰 박스) */
       /* 목표 페이스는 카드 왼쪽 아래 범례로 뺀다 (도넛 안이 좁아 읽기 어려웠다) */
       paceLegend.push({k:r.k,v:r.goal*pr,color:r.color});
@@ -2917,7 +2951,8 @@ function renderDaily(){
   const bk=$('barSel').value||'imp', lk=$('lineSel').value||'ctr';
   const fs=factFilter();
   const seriesKeys=[...new Set(fs.map(f=>f[SERIES_DIM]))].sort();
-  const SC=viewScope(), PS=paceScope();
+  /* 가로축은 늘 캠페인 시작일 ~ 종료일 전체 (기간 필터와 무관하게 흐름을 본다) */
+  const SC=campScope(), PS=paceScope();
   /* 조회 기간 슬롯. 다만 "현재 시점까지" 보고 있고 예상값 토글이 켜져 있으면
      미집행 구간 예측을 보여주기 위해 오른쪽 끝을 집행 종료일까지 늘린다. */
   const showFuture=SHOW_FORECAST&&SC.i1>=dIdx(YESTERDAY)&&PS.i1>SC.i1;
@@ -3216,9 +3251,11 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
-      for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
+      /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
+      for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],vals[ci]))}</td>`;}
-      h+=`<td class="head" colspan="${dims.length-L}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
+      const cs=Math.max(dims.length-(L+1),1);
+      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
       h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
     }});
@@ -3297,8 +3334,8 @@ function renderRaw(){
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
     if(!sub.length)return;
-    /* 화면은 최신 날짜가 위, 엑셀 리포트(RAW_ALLDAYS)는 빠른 날짜가 위 */
-    const ord=RAW_ALLDAYS?(a2,b2)=>a2-b2:(a2,b2)=>b2-a2;
+    /* 화면·엑셀 모두 예전 날짜가 위 (오름차순) */
+    const ord=(a2,b2)=>a2-b2;
     const days=RAW_ALLDAYS
       ? [...Array(TOTAL_DAYS)].map((_,i)=>i).sort(ord)
       : [...new Set(sub.map(f=>f.d))].sort(ord);
@@ -3614,10 +3651,13 @@ const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
   return b;};
 const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
+/* 켜면 매체 필터를 무시하고 모든 매체의 소재를 한 줄에서 견준다 */
+let CR_ALL_MEDIA=false;
 function filteredCreatives(){
-  /* 매체·구분·제품은 대시보드 공통 필터를 따른다 */
+  /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
+  const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   let a=CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&['segment','media','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -3634,7 +3674,7 @@ const CR_RANKS=[
 /* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
    순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
 let CR_RANK_ON=['cpv','cpc','cpm'];
-let CR_TOPN=4;
+let CR_TOPN=5;
 function renderRankPick(){
   const host=$('crRankPick');if(!host)return;
   host.innerHTML=CR_RANKS.map(r=>
@@ -3649,11 +3689,18 @@ function renderRankPick(){
 const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 /* 썸네일 뒤에는 항상 그라데이션을 깔아 둔다 —
    네트워크가 막힌 환경(사내망 · 오프라인)에서 이미지가 안 떠도 빈 칸이 되지 않는다 */
+/* 소재 배경 — 그라데이션이 없는 소재(엑셀로 불러온 것 등)도 빈 칸이 되지 않게 한다 */
+const crGrad=c=>{
+  if(c&&c.g)return c.g;
+  let h=0;const n2=String((c&&c.name)||'');
+  for(const ch of n2)h=(h*31+ch.charCodeAt(0))>>>0;
+  return GRADS[h%GRADS.length];};
 function crBg(c){
-  /* 직접 올린 파일(이미지 · 영상 대표 컷)이 먼저 — 인터넷이 막혀도 보인다 */
-  if(c.img)return `url("${c.img.slice(0,5)==='data:'?c.img:encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
-  if(c.yt)return `url("${ytThumb(ytId(c.yt))}"), ${c.g||'#dfe4ea'}`;
-  return c.g;
+  /* 큰따옴표를 쓰면 style="…" 속성이 그 자리에서 끊겨 배경이 통째로 사라진다 —
+     반드시 홑따옴표로 감쌀 것 (업로드한 이미지가 안 보이던 원인) */
+  if(c.img)return `url('${c.img.slice(0,5)==='data:'?c.img:encodeURI(c.img)}'), ${crGrad(c)}`;
+  if(c.yt)return `url('${ytThumb(ytId(c.yt))}'), ${crGrad(c)}`;
+  return crGrad(c);
 }
 /* 유튜브 플레이어는 file:// 로 열면 출처가 없어 "구성 오류 153" 을 낸다.
    그래서 http(s) 로 열렸을 때만 미리보기를 붙이고, 로컬 파일에서는 썸네일만 보여준다. */
@@ -3726,7 +3773,9 @@ function renderCreatives(){
     lead.onclick=()=>openLightbox(c0);
     /* --- 2위 이하 --- */
     const rest=el('div','crrest',duo);
-    rest.style.gridTemplateRows=`repeat(${Math.max(rows.length-1,1)},1fr)`;
+    /* 칸 수는 늘 CR_TOPN 기준으로 고정 — 소재가 적어도 카드 크기가 들쭉날쭉하지 않게 */
+    const slots=Math.max(CR_TOPN-1,1);
+    rest.style.gridTemplateRows=`repeat(${slots},1fr)`;
     rows.slice(1).forEach((x,i)=>{
       const c=x.c;
       const d=el('div','cr mini',rest);
@@ -3737,7 +3786,38 @@ function renderCreatives(){
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
       wireCrPlay(d.querySelector('.thumb'),c);
       d.onclick=()=>openLightbox(c);});
+    /* 남는 칸은 빈 슬롯으로 채워 카드 크기를 고정한다 */
+    for(let k=Math.max(rows.length-1,0);k<slots;k++)
+      el('div','cr mini empty',rest).innerHTML='<div class="ph">소재 없음</div>';
   });
+}
+/* 전체 소재 보기 — 지금 조건에 걸린 소재를 지표와 함께 한 표로 (광고주도 볼 수 있다) */
+function openCrAll(){
+  const pool=filteredCreatives();
+  const ranks=CR_RANKS.filter(r=>CR_RANK_ON.includes(r.k));
+  const rows=pool.map(c=>{const b=crAgg(c);
+    return {c,b,eff:ranks.map(r=>({k:r.k,l:METRICS[r.k].l,v:METRICS[r.k].c(b)}))};});
+  let h=`<div class="hint" style="margin-bottom:9px">지금 화면 조건(${CR_ALL_MEDIA?'매체 구분 없음':'매체 필터 적용'})에 걸린 소재 ${rows.length}개입니다.
+      소재를 누르면 원본과 지표를 볼 수 있습니다.</div>`;
+  if(!rows.length){h+='<div class="card" style="padding:20px;text-align:center">표시할 소재가 없습니다.</div>';}
+  else{
+    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:52px">미리보기</th><th style="min-width:190px">소재</th>
+      <th style="min-width:110px">매체 · 상품</th><th style="width:96px">노출</th>
+      <th style="width:88px">클릭</th><th style="width:88px">조회</th>
+      ${ranks.map(r=>`<th style="width:92px">${METRICS[r.k].l}</th>`).join('')}</tr></thead><tbody>`;
+    rows.forEach(x=>{
+      h+=`<tr data-crid="${esc(x.c.id)}" style="cursor:pointer">
+        <td><span class="crthumb-sm" style="background-image:${crBg(x.c)}"></span></td>
+        <td><b>${esc(x.c.name)}</b></td>
+        <td class="hint">${esc(x.c.media||'')}${x.c.product?' · '+esc(x.c.product):''}</td>
+        <td class="mono">${fmt(x.b.imp)}</td><td class="mono">${fmt(x.b.click)}</td><td class="mono">${fmt(x.b.view)}</td>
+        ${x.eff.map(e=>`<td class="mono">${isFinite(e.v)&&e.v>0?METRICS[e.k].f(e.v):'<span class="na">–</span>'}</td>`).join('')}
+      </tr>`;});
+    h+='</tbody></table>';}
+  openModal('전체 소재',h,'<button class="btn" data-close>닫기</button>',{w:1080});
+  $('modalHost').querySelectorAll('[data-crid]').forEach(tr=>tr.onclick=()=>{
+    const c=CREATIVES.find(x=>x.id===tr.dataset.crid);if(c){closeModal();openLightbox(c);}});
 }
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.
    같은 이름은 여러 매체·상품·타겟팅에 함께 쓰인 하나의 소재로 본다. */
@@ -4043,8 +4123,9 @@ function ganttRank(dim,val,c){
 /* 값 비율(0~1)을 연한 남색 → 짙은 남색으로 보간 */
 /* 단일 붉은색 톤 — 값이 낮으면 아주 연한 빨강, 높을수록 진한 빨강.
    농도 기준은 "그 행(소재)의 최댓값"이므로 행마다 독립적으로 읽는다. */
-const SHADE_LOW=[0xfa,0xee,0xec],   /* 낮음 — 아주 연한 빨강 */
-      SHADE_HIGH=[0x99,0x3f,0x37];  /* 높음 — 진한 빨강 */
+/* 효율(단가)을 못 구할 때만 쓰는 값 크기 농도 — 좋고 나쁨과 헷갈리지 않게 무채색 남색 계열 */
+const SHADE_LOW=[0xe7,0xec,0xf1],
+      SHADE_HIGH=[0x4c,0x72,0x9a];
 const mixRGB=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
 function shade(t){
   const k=Math.max(0,Math.min(1,isFinite(t)?t:0));
@@ -4058,15 +4139,27 @@ function rowEff(c,SC){
   const l=LINES.find(x=>x.id===c.lid);
   const unit=KPI_UNIT[kpiOf(l)]||'cpm';
   const baseK={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[unit]||'imp';
+  /* 금액이 없으면 KPI 지표 자체를 효율 대용으로 쓴다 —
+     이 경우엔 값이 클수록 좋은 것이라 부호를 뒤집어 hmFill 에 넘긴다 */
   const vals=[],by={};
+  let mode='cost';
   for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
     const cost=(c.daily.cost&&c.daily.cost[i])||0;
     const base=(c.daily[baseK]&&c.daily[baseK][i])||0;
     if(cost>0&&base>0){const u=unit==='cpm'?cost/base*1000:cost/base;
       by[i]=u;vals.push(u);}}
+  if(vals.length<2){
+    /* 금액이 없을 때 — 그 소재의 반응률(CTR·VTR)로 좋고 나쁨을 본다 */
+    mode='rate';
+    const rateBase={click:'imp',view:'imp',conv:'click',eng:'imp'}[baseK==='imp'?'click':baseK]||'imp';
+    vals.length=0;for(const k in by)delete by[k];
+    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+      const num=(c.daily[baseK]&&c.daily[baseK][i])||0;
+      const den=(c.daily[rateBase]&&c.daily[rateBase][i])||0;
+      if(num>0&&den>0){const u=-(num/den);by[i]=u;vals.push(u);}}}
   if(vals.length<2)return {ok:false};
   const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
-  return {ok:true,color:i=>by[i]===undefined?'#e9edf2':(hmFill(by[i],mn,md,mx)||'#e9edf2')};
+  return {ok:true,mode,color:i=>by[i]===undefined?'#eef1f5':(hmFill(by[i],mn,md,mx)||'#eef1f5')};
 }
 function renderGantt(){
   const t=$('ganttTbl'),list=filteredCreatives();
@@ -4796,6 +4889,7 @@ function markDirty(){
   /* 시안에서는 10분을 기다리지 않고 12초 뒤 저장되는 것으로 시연한다 */
   autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),12000);
   const el2=$('saveState');if(el2)el2.textContent='변경됨 · 저장 대기';
+  try{if(typeof saveLocal==='function')saveLocal();}catch(e){}
 }
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;
@@ -4927,7 +5021,8 @@ function applySheet(){
 let SHEET_APPLY_T=null;
 function syncSheet(){
   clearTimeout(SHEET_APPLY_T);
-  SHEET_APPLY_T=setTimeout(()=>{applySheet();renderAll();},220);
+  SHEET_APPLY_T=setTimeout(()=>{applySheet();renderAll();
+    try{if(typeof saveLocal==='function')saveLocal();}catch(e){}},220);
 }
 function saveRows(){applySheet();renderAll();switchTab('dash');}
 function renderIssues(){
@@ -5543,12 +5638,28 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();
   if(typing)ae.blur();
   moveLSel(...ARROW[e.key]);});
+/* 기간을 다시 잡는다 — 날짜 배열만 새로 만들고 **입력된 일별 실적은 그대로 둔다**.
+   예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
   d0=new Date(campStart()+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
+  dT=new Date(CAMPAIGN.today+'T00:00:00');
+  YESTERDAY=iso(new Date(dT.getTime()-DAY));
   TOTAL_DAYS=Math.round((dE-d0)/DAY)+1;ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
   ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
   dates=ALLDATES.slice(0,ELAPSED);
-  LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+  /* 길이만 새 기간에 맞춘다 (모자라면 0 으로 채우고, 넘치면 자른다) */
+  LINES.forEach(l=>{
+    if(!l.daily)l.daily={};
+    AMET.forEach(m=>{
+      const a=Array.isArray(l.daily[m])?l.daily[m]:[];
+      const b=new Array(TOTAL_DAYS).fill(0);
+      for(let i=0;i<Math.min(a.length,TOTAL_DAYS);i++)b[i]=+a[i]||0;
+      l.daily[m]=b;});});
+}
+/* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
+function seedDemoDaily(){
+  LINES.forEach((l,i)=>{l.daily={};
+    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 }
 function openLineColCfg(){
   openColCfgUI({
@@ -5693,9 +5804,10 @@ function renderMix(){
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
-      for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
+      for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(vals[ci])}</td>`;}
-      h+=`<td class="head" colspan="${dims.length-L}">${esc(vals[L])} Sub Total</td>`;
+      const cs=Math.max(dims.length-(L+1),1);
+      h+=`<td class="head" colspan="${cs}">${esc(vals[L])} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
   h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
@@ -5873,7 +5985,11 @@ function buildSelects(){
   const bd=$('bubDim');
   if(bd){bd.value=BUB.dim;bd.onchange=e=>{BUB.dim=e.target.value;renderBubble();};}
   $('crTopN').value=CR_TOPN;
-  $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||4;renderCreatives();};
+  $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||5;renderCreatives();};
+  const am=$('crAllMedia');
+  if(am){am.checked=CR_ALL_MEDIA;
+    am.onchange=e=>{CR_ALL_MEDIA=e.target.checked;renderCreatives();};}
+  const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
@@ -6134,6 +6250,8 @@ function serializeDoc(){
     creatives:CREATIVES.map(stripCr),
     issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
+    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다 */
+    sheet:(typeof SHEET!=='undefined'?SHEET:[]),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
@@ -6153,6 +6271,8 @@ function applyDoc(d){
   if(isFinite(d.verdictBand))VERDICT_BAND=d.verdictBand;
   if(d.cols?.line)LINE_COLS=mergeCols(d.cols.line,lineColsDefault());
   if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
+  /* 저장해 둔 입력 시트를 되살린다 (없으면 건드리지 않는다) */
+  if(Array.isArray(d.sheet))SHEET=d.sheet.map(r=>({...r}));
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -6224,6 +6344,34 @@ let DEMO_SNAP=null;
   }catch(e){}};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',grab):setTimeout(grab,0);
 })();
+/* ---------- 새로고침에도 남기기 ----------
+   클라우드에 저장하지 않아도(또는 저장 전에 새로고침해도) 입력한 값이 사라지지 않도록
+   이 브라우저에 마지막 상태를 적어 둔다. 캠페인마다 따로 저장한다. */
+const LS_KEY=()=>'dmd:doc:'+((CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'local');
+let LS_T=null;
+function saveLocal(){
+  clearTimeout(LS_T);
+  LS_T=setTimeout(()=>{
+    try{localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}
+  },500);
+}
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
+    const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
+    applyDoc(o.doc);
+    rebuildPeriod();
+    if(typeof applySheet==='function')applySheet();
+    buildFacts();buildFilters();buildSelects();
+    renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
+    renderCreatives();renderGantt();
+    return true;
+  }catch(e){return false;}
+}
+function clearLocal(){try{localStorage.removeItem(LS_KEY());}catch(e){}}
+/* 값이 바뀔 때마다 조용히 적어 둔다 */
+addEventListener('beforeunload',()=>{try{
+  localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}});
 function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
@@ -6234,6 +6382,7 @@ function restoreDemo(){
   buildFacts();buildFilters();buildSelects();
   renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
   renderRaw();renderCreatives();renderGantt();
+  clearLocal();
   return true;
 }
 const gateEl=()=>$('gate');
@@ -6318,7 +6467,11 @@ function gateReady(){
   /* 내려받은 파일을 그대로 열어 볼 때(file:// · localhost)는 ?nogate=1 로 건너뛸 수 있다.
      게시된 주소에서는 동작하지 않는다. */
   const local=location.protocol==='file:'||/^(localhost|127\.|\[::1\])/.test(location.hostname);
-  if(local&&qs.has('nogate')){hideGate();return;}
+  if(local&&qs.has('nogate')){
+    hideGate();
+    /* 새로고침해도 입력한 값이 남아 있게 — 이 브라우저에 적어 둔 마지막 상태를 되살린다 */
+    setTimeout(()=>{try{loadLocal();}catch(e){}},0);
+    return;}
   /* 주소에 ?code=XXXX 가 있으면 바로 열어 준다 */
   const q=qs.get('code');
   if(q){if(inp)inp.value=normCode(q);tryCode(q);}
@@ -6542,6 +6695,8 @@ async function openCampaign(id){
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
   applyDaily(rows);
+  /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
+  try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
@@ -6552,6 +6707,7 @@ async function openCampaign(id){
   paintCampSel();
   applyRoleLock();
   CLOUD.busy=false;
+  clearLocal();
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
 const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
@@ -7573,6 +7729,10 @@ function autoComment(){
     h+=`<h4>[${esc(m)}] <span class="mper">${mdy(ms)}~${mdy(me)}</span></h4>`;
     /* 아직 시작하지 않은 매체는 한 줄만 */
     if(ms>YESTERDAY){h+=`<ul><li><b>${mdy(ms)}</b> 온에어 예정</li></ul>`;return;}
+    /* 금액이 하나도 잡히지 않은 매체는 날짜와 무관하게 "집행 전" */
+    {const am=aggFacts(fs.filter(f=>f.media===m));
+     if(!(am.cost>0)){h+=`<ul><li>집행 전 (집행 금액 없음`
+       +(ms?` · 예정 ${mdy(ms)}`:'')+`)</li></ul>`;return;}}
     const prods=[...new Set(ls.map(l=>l.product))];
     prods.forEach((pd,pi)=>{
       const pls=ls.filter(l=>l.product===pd);
@@ -7581,6 +7741,11 @@ function autoComment(){
       const pe=pls.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||me;
       const period=`${mdy(later(ps,sc.startIso))}~${mdy(earlier(pe,sc.endIso))}`;
       if(ps>YESTERDAY){h+=`<h5>${pi+1}) ${esc(pd)}</h5><ul><li><b>${mdy(ps)}</b> 온에어 예정</li></ul>`;return;}
+      /* 날짜가 지났더라도 집행 금액이 0원이면 아직 시작하지 않은 것으로 본다 */
+      {const a0=aggFacts(fs.filter(f=>f.media===m&&f.product===pd));
+       if(!(a0.cost>0)){
+         h+=`<h5>${pi+1}) ${esc(pd)}</h5><ul><li>집행 전 (집행 금액 없음`
+           +(ps?` · 예정 ${mdy(ps)}`:'')+`)</li></ul>`;return;}}
       const pf=fs.filter(f=>f.media===m&&f.product===pd);
       const a=aggFacts(pf),e=aggExp(pls);
       const kpi=pls[0]?kpiOf(pls[0]):'imp';

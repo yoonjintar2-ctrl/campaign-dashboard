@@ -311,6 +311,10 @@ function autoComment(){
     h+=`<h4>[${esc(m)}] <span class="mper">${mdy(ms)}~${mdy(me)}</span></h4>`;
     /* 아직 시작하지 않은 매체는 한 줄만 */
     if(ms>YESTERDAY){h+=`<ul><li><b>${mdy(ms)}</b> 온에어 예정</li></ul>`;return;}
+    /* 금액이 하나도 잡히지 않은 매체는 날짜와 무관하게 "집행 전" */
+    {const am=aggFacts(fs.filter(f=>f.media===m));
+     if(!(am.cost>0)){h+=`<ul><li>집행 전 (집행 금액 없음`
+       +(ms?` · 예정 ${mdy(ms)}`:'')+`)</li></ul>`;return;}}
     const prods=[...new Set(ls.map(l=>l.product))];
     prods.forEach((pd,pi)=>{
       const pls=ls.filter(l=>l.product===pd);
@@ -319,6 +323,11 @@ function autoComment(){
       const pe=pls.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||me;
       const period=`${mdy(later(ps,sc.startIso))}~${mdy(earlier(pe,sc.endIso))}`;
       if(ps>YESTERDAY){h+=`<h5>${pi+1}) ${esc(pd)}</h5><ul><li><b>${mdy(ps)}</b> 온에어 예정</li></ul>`;return;}
+      /* 날짜가 지났더라도 집행 금액이 0원이면 아직 시작하지 않은 것으로 본다 */
+      {const a0=aggFacts(fs.filter(f=>f.media===m&&f.product===pd));
+       if(!(a0.cost>0)){
+         h+=`<h5>${pi+1}) ${esc(pd)}</h5><ul><li>집행 전 (집행 금액 없음`
+           +(ps?` · 예정 ${mdy(ps)}`:'')+`)</li></ul>`;return;}}
       const pf=fs.filter(f=>f.media===m&&f.product===pd);
       const a=aggFacts(pf),e=aggExp(pls);
       const kpi=pls[0]?kpiOf(pls[0]):'imp';

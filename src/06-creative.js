@@ -31,8 +31,8 @@ function renderRaw(){
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
     if(!sub.length)return;
-    /* 화면은 최신 날짜가 위, 엑셀 리포트(RAW_ALLDAYS)는 빠른 날짜가 위 */
-    const ord=RAW_ALLDAYS?(a2,b2)=>a2-b2:(a2,b2)=>b2-a2;
+    /* 화면·엑셀 모두 예전 날짜가 위 (오름차순) */
+    const ord=(a2,b2)=>a2-b2;
     const days=RAW_ALLDAYS
       ? [...Array(TOTAL_DAYS)].map((_,i)=>i).sort(ord)
       : [...new Set(sub.map(f=>f.d))].sort(ord);
@@ -348,10 +348,13 @@ const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
   return b;};
 const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
+/* 켜면 매체 필터를 무시하고 모든 매체의 소재를 한 줄에서 견준다 */
+let CR_ALL_MEDIA=false;
 function filteredCreatives(){
-  /* 매체·구분·제품은 대시보드 공통 필터를 따른다 */
+  /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
+  const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   let a=CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&['segment','media','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k]));
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -368,7 +371,7 @@ const CR_RANKS=[
 /* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
    순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
 let CR_RANK_ON=['cpv','cpc','cpm'];
-let CR_TOPN=4;
+let CR_TOPN=5;
 function renderRankPick(){
   const host=$('crRankPick');if(!host)return;
   host.innerHTML=CR_RANKS.map(r=>
@@ -383,11 +386,18 @@ function renderRankPick(){
 const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 /* 썸네일 뒤에는 항상 그라데이션을 깔아 둔다 —
    네트워크가 막힌 환경(사내망 · 오프라인)에서 이미지가 안 떠도 빈 칸이 되지 않는다 */
+/* 소재 배경 — 그라데이션이 없는 소재(엑셀로 불러온 것 등)도 빈 칸이 되지 않게 한다 */
+const crGrad=c=>{
+  if(c&&c.g)return c.g;
+  let h=0;const n2=String((c&&c.name)||'');
+  for(const ch of n2)h=(h*31+ch.charCodeAt(0))>>>0;
+  return GRADS[h%GRADS.length];};
 function crBg(c){
-  /* 직접 올린 파일(이미지 · 영상 대표 컷)이 먼저 — 인터넷이 막혀도 보인다 */
-  if(c.img)return `url("${c.img.slice(0,5)==='data:'?c.img:encodeURI(c.img)}"), ${c.g||'#dfe4ea'}`;
-  if(c.yt)return `url("${ytThumb(ytId(c.yt))}"), ${c.g||'#dfe4ea'}`;
-  return c.g;
+  /* 큰따옴표를 쓰면 style="…" 속성이 그 자리에서 끊겨 배경이 통째로 사라진다 —
+     반드시 홑따옴표로 감쌀 것 (업로드한 이미지가 안 보이던 원인) */
+  if(c.img)return `url('${c.img.slice(0,5)==='data:'?c.img:encodeURI(c.img)}'), ${crGrad(c)}`;
+  if(c.yt)return `url('${ytThumb(ytId(c.yt))}'), ${crGrad(c)}`;
+  return crGrad(c);
 }
 /* 유튜브 플레이어는 file:// 로 열면 출처가 없어 "구성 오류 153" 을 낸다.
    그래서 http(s) 로 열렸을 때만 미리보기를 붙이고, 로컬 파일에서는 썸네일만 보여준다. */
@@ -460,7 +470,9 @@ function renderCreatives(){
     lead.onclick=()=>openLightbox(c0);
     /* --- 2위 이하 --- */
     const rest=el('div','crrest',duo);
-    rest.style.gridTemplateRows=`repeat(${Math.max(rows.length-1,1)},1fr)`;
+    /* 칸 수는 늘 CR_TOPN 기준으로 고정 — 소재가 적어도 카드 크기가 들쭉날쭉하지 않게 */
+    const slots=Math.max(CR_TOPN-1,1);
+    rest.style.gridTemplateRows=`repeat(${slots},1fr)`;
     rows.slice(1).forEach((x,i)=>{
       const c=x.c;
       const d=el('div','cr mini',rest);
@@ -471,7 +483,38 @@ function renderCreatives(){
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
       wireCrPlay(d.querySelector('.thumb'),c);
       d.onclick=()=>openLightbox(c);});
+    /* 남는 칸은 빈 슬롯으로 채워 카드 크기를 고정한다 */
+    for(let k=Math.max(rows.length-1,0);k<slots;k++)
+      el('div','cr mini empty',rest).innerHTML='<div class="ph">소재 없음</div>';
   });
+}
+/* 전체 소재 보기 — 지금 조건에 걸린 소재를 지표와 함께 한 표로 (광고주도 볼 수 있다) */
+function openCrAll(){
+  const pool=filteredCreatives();
+  const ranks=CR_RANKS.filter(r=>CR_RANK_ON.includes(r.k));
+  const rows=pool.map(c=>{const b=crAgg(c);
+    return {c,b,eff:ranks.map(r=>({k:r.k,l:METRICS[r.k].l,v:METRICS[r.k].c(b)}))};});
+  let h=`<div class="hint" style="margin-bottom:9px">지금 화면 조건(${CR_ALL_MEDIA?'매체 구분 없음':'매체 필터 적용'})에 걸린 소재 ${rows.length}개입니다.
+      소재를 누르면 원본과 지표를 볼 수 있습니다.</div>`;
+  if(!rows.length){h+='<div class="card" style="padding:20px;text-align:center">표시할 소재가 없습니다.</div>';}
+  else{
+    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th style="width:52px">미리보기</th><th style="min-width:190px">소재</th>
+      <th style="min-width:110px">매체 · 상품</th><th style="width:96px">노출</th>
+      <th style="width:88px">클릭</th><th style="width:88px">조회</th>
+      ${ranks.map(r=>`<th style="width:92px">${METRICS[r.k].l}</th>`).join('')}</tr></thead><tbody>`;
+    rows.forEach(x=>{
+      h+=`<tr data-crid="${esc(x.c.id)}" style="cursor:pointer">
+        <td><span class="crthumb-sm" style="background-image:${crBg(x.c)}"></span></td>
+        <td><b>${esc(x.c.name)}</b></td>
+        <td class="hint">${esc(x.c.media||'')}${x.c.product?' · '+esc(x.c.product):''}</td>
+        <td class="mono">${fmt(x.b.imp)}</td><td class="mono">${fmt(x.b.click)}</td><td class="mono">${fmt(x.b.view)}</td>
+        ${x.eff.map(e=>`<td class="mono">${isFinite(e.v)&&e.v>0?METRICS[e.k].f(e.v):'<span class="na">–</span>'}</td>`).join('')}
+      </tr>`;});
+    h+='</tbody></table>';}
+  openModal('전체 소재',h,'<button class="btn" data-close>닫기</button>',{w:1080});
+  $('modalHost').querySelectorAll('[data-crid]').forEach(tr=>tr.onclick=()=>{
+    const c=CREATIVES.find(x=>x.id===tr.dataset.crid);if(c){closeModal();openLightbox(c);}});
 }
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.
    같은 이름은 여러 매체·상품·타겟팅에 함께 쓰인 하나의 소재로 본다. */
@@ -777,8 +820,9 @@ function ganttRank(dim,val,c){
 /* 값 비율(0~1)을 연한 남색 → 짙은 남색으로 보간 */
 /* 단일 붉은색 톤 — 값이 낮으면 아주 연한 빨강, 높을수록 진한 빨강.
    농도 기준은 "그 행(소재)의 최댓값"이므로 행마다 독립적으로 읽는다. */
-const SHADE_LOW=[0xfa,0xee,0xec],   /* 낮음 — 아주 연한 빨강 */
-      SHADE_HIGH=[0x99,0x3f,0x37];  /* 높음 — 진한 빨강 */
+/* 효율(단가)을 못 구할 때만 쓰는 값 크기 농도 — 좋고 나쁨과 헷갈리지 않게 무채색 남색 계열 */
+const SHADE_LOW=[0xe7,0xec,0xf1],
+      SHADE_HIGH=[0x4c,0x72,0x9a];
 const mixRGB=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
 function shade(t){
   const k=Math.max(0,Math.min(1,isFinite(t)?t:0));
@@ -792,15 +836,27 @@ function rowEff(c,SC){
   const l=LINES.find(x=>x.id===c.lid);
   const unit=KPI_UNIT[kpiOf(l)]||'cpm';
   const baseK={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'}[unit]||'imp';
+  /* 금액이 없으면 KPI 지표 자체를 효율 대용으로 쓴다 —
+     이 경우엔 값이 클수록 좋은 것이라 부호를 뒤집어 hmFill 에 넘긴다 */
   const vals=[],by={};
+  let mode='cost';
   for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
     const cost=(c.daily.cost&&c.daily.cost[i])||0;
     const base=(c.daily[baseK]&&c.daily[baseK][i])||0;
     if(cost>0&&base>0){const u=unit==='cpm'?cost/base*1000:cost/base;
       by[i]=u;vals.push(u);}}
+  if(vals.length<2){
+    /* 금액이 없을 때 — 그 소재의 반응률(CTR·VTR)로 좋고 나쁨을 본다 */
+    mode='rate';
+    const rateBase={click:'imp',view:'imp',conv:'click',eng:'imp'}[baseK==='imp'?'click':baseK]||'imp';
+    vals.length=0;for(const k in by)delete by[k];
+    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){
+      const num=(c.daily[baseK]&&c.daily[baseK][i])||0;
+      const den=(c.daily[rateBase]&&c.daily[rateBase][i])||0;
+      if(num>0&&den>0){const u=-(num/den);by[i]=u;vals.push(u);}}}
   if(vals.length<2)return {ok:false};
   const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
-  return {ok:true,color:i=>by[i]===undefined?'#e9edf2':(hmFill(by[i],mn,md,mx)||'#e9edf2')};
+  return {ok:true,mode,color:i=>by[i]===undefined?'#eef1f5':(hmFill(by[i],mn,md,mx)||'#eef1f5')};
 }
 function renderGantt(){
   const t=$('ganttTbl'),list=filteredCreatives();

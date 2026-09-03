@@ -115,14 +115,17 @@ const DAY=86400000;
 const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||CAMPAIGN.today;
 const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||CAMPAIGN.today;
 let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
-const dT=new Date(CAMPAIGN.today+'T00:00:00');
+/* 오늘 · 어제는 캠페인을 새로 불러오면 다시 계산해야 한다 —
+   상수로 한 번만 잡아 두면 예전 캠페인의 날짜(예: 9/24)가 계속 남아
+   기간 필터의 종료일이 엉뚱한 날로 고정된다 */
+let dT=new Date(CAMPAIGN.today+'T00:00:00');
 let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.round((dT-d0)/DAY)+1;
 let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
 let dates=ALLDATES.slice(0,ELAPSED);
 const WD=['일','월','화','수','목','금','토'];
 const dFull=d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const YESTERDAY=iso(new Date(dT.getTime()-DAY));
+let YESTERDAY=iso(new Date(dT.getTime()-DAY));
 
 /* ===== 공휴일 (편집 가능) ===== */
 let HOLIDAYS=[
@@ -401,12 +404,18 @@ function viewScope(){
   if(e<s)e=s;
   return mkScope(s,e);
 }
-/* 진행 스코프 = 캠페인 설정에 적힌 집행 구간.
-   기간·날짜 게이지·시작/종료일·목표 페이스는 달력 선택과 무관하게 늘 여기를 기준으로 말한다.
-   (실적 수치는 아래 paceSum · paceFacts 처럼 달력으로 고른 구간만 더한다) */
-function paceScope(){return campScope();}
-/* 목표는 캠페인 전체 목표 그대로 — 기간을 좁혀도 목표가 줄지 않는다 */
-function goalIn(l,k){return (+(l&&l.e&&l.e[k]))||0;}
+/* 진행 스코프 = 조회 스코프.
+   기간 필터에서 9/1~9/2 를 고르면 "집행 2일차 / 2일", 목표 페이스도 그 2일 기준으로 잡힌다. */
+function paceScope(){return viewScope();}
+/* 고른 구간에 해당하는 라인 목표 — 라인 집행 기간 중 겹치는 날 비율만큼 잘라 쓴다 */
+function goalIn(l,k){
+  const g=(+(l&&l.e&&l.e[k]))||0;if(!g)return 0;
+  const sc=viewScope();
+  const a=l.start?dIdx(l.start):0, z=l.end?dIdx(l.end):TOTAL_DAYS-1;
+  const n=Math.max(1,z-a+1);
+  const ov=Math.min(z,sc.i1)-Math.max(a,sc.i0)+1;
+  return ov<=0?0:g*Math.min(1,ov/n);
+}
 const viewDates=()=>{const s=viewScope();return ALLDATES.slice(s.i0,s.i1+1);};
 const paceRatio=()=>{const s=paceScope();return s.days?s.elapsed/s.days:0;};
 function factFilter(extra){

@@ -218,6 +218,7 @@ function markDirty(){
   /* 시안에서는 10분을 기다리지 않고 12초 뒤 저장되는 것으로 시연한다 */
   autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),12000);
   const el2=$('saveState');if(el2)el2.textContent='변경됨 · 저장 대기';
+  try{if(typeof saveLocal==='function')saveLocal();}catch(e){}
 }
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;
@@ -349,7 +350,8 @@ function applySheet(){
 let SHEET_APPLY_T=null;
 function syncSheet(){
   clearTimeout(SHEET_APPLY_T);
-  SHEET_APPLY_T=setTimeout(()=>{applySheet();renderAll();},220);
+  SHEET_APPLY_T=setTimeout(()=>{applySheet();renderAll();
+    try{if(typeof saveLocal==='function')saveLocal();}catch(e){}},220);
 }
 function saveRows(){applySheet();renderAll();switchTab('dash');}
 function renderIssues(){

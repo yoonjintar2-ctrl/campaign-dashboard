@@ -52,7 +52,8 @@ function renderDaily(){
   const bk=$('barSel').value||'imp', lk=$('lineSel').value||'ctr';
   const fs=factFilter();
   const seriesKeys=[...new Set(fs.map(f=>f[SERIES_DIM]))].sort();
-  const SC=viewScope(), PS=paceScope();
+  /* 가로축은 늘 캠페인 시작일 ~ 종료일 전체 (기간 필터와 무관하게 흐름을 본다) */
+  const SC=campScope(), PS=paceScope();
   /* 조회 기간 슬롯. 다만 "현재 시점까지" 보고 있고 예상값 토글이 켜져 있으면
      미집행 구간 예측을 보여주기 위해 오른쪽 끝을 집행 종료일까지 늘린다. */
   const showFuture=SHOW_FORECAST&&SC.i1>=dIdx(YESTERDAY)&&PS.i1>SC.i1;
@@ -351,9 +352,11 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
-      for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
+      /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
+      for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],vals[ci]))}</td>`;}
-      h+=`<td class="head" colspan="${dims.length-L}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
+      const cs=Math.max(dims.length-(L+1),1);
+      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
       h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
     }});

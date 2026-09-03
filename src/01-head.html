@@ -362,11 +362,13 @@ table.tbl.nogauge .gauge .track{display:none}
 .pbar .mstack>i{min-width:0;overflow:hidden;
   background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
       var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
-      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),var(--segbg);
-  background-repeat:no-repeat,no-repeat;
-  background-size:var(--wavew,0px) 100%,auto;
+      rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),
+    linear-gradient(var(--ambflat,rgba(0,0,0,0)),var(--ambflat,rgba(0,0,0,0))),
+    var(--segbg);
+  background-repeat:no-repeat,no-repeat,no-repeat;
+  background-size:var(--wavew,0px) 100%,100% 100%,auto;
   background-position:calc(var(--ambt,.5) * (var(--barw,0px) + var(--wavew,0px))
-    - var(--wavew,0px) - var(--segoff,0px)) 0, 0 0;
+    - var(--wavew,0px) - var(--segoff,0px)) 0, 0 0, 0 0;
   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
 .pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
@@ -928,6 +930,10 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .cr .meta .eff b{color:var(--acc);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 /* 2위 이하 — 가로형 미니 카드 */
 .cr.mini{display:flex;align-items:stretch;min-height:0}
+/* 빈 슬롯 — 소재가 모자라도 카드 크기가 흔들리지 않게 자리를 잡아 둔다 */
+.cr.mini.empty{background:var(--plane2);border-style:dashed;box-shadow:none;
+  align-items:center;justify-content:center;cursor:default}
+.cr.mini.empty .ph{font-size:11px;color:#b6bfca;font-weight:600}
 .cr.mini .thumb{flex:none;height:100%;aspect-ratio:1/1;border-radius:0}
 .cr.mini .thumb .rankno{width:17px;height:17px;font-size:9.5px;top:5px;right:5px}
 .cr.mini .thumb.playable::after{width:22px;height:22px;font-size:9px}

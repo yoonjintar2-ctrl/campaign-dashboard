@@ -477,12 +477,28 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();
   if(typing)ae.blur();
   moveLSel(...ARROW[e.key]);});
+/* 기간을 다시 잡는다 — 날짜 배열만 새로 만들고 **입력된 일별 실적은 그대로 둔다**.
+   예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
   d0=new Date(campStart()+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
+  dT=new Date(CAMPAIGN.today+'T00:00:00');
+  YESTERDAY=iso(new Date(dT.getTime()-DAY));
   TOTAL_DAYS=Math.round((dE-d0)/DAY)+1;ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
   ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
   dates=ALLDATES.slice(0,ELAPSED);
-  LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+  /* 길이만 새 기간에 맞춘다 (모자라면 0 으로 채우고, 넘치면 자른다) */
+  LINES.forEach(l=>{
+    if(!l.daily)l.daily={};
+    AMET.forEach(m=>{
+      const a=Array.isArray(l.daily[m])?l.daily[m]:[];
+      const b=new Array(TOTAL_DAYS).fill(0);
+      for(let i=0;i<Math.min(a.length,TOTAL_DAYS);i++)b[i]=+a[i]||0;
+      l.daily[m]=b;});});
+}
+/* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
+function seedDemoDaily(){
+  LINES.forEach((l,i)=>{l.daily={};
+    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 }
 function openLineColCfg(){
   openColCfgUI({
@@ -627,9 +643,10 @@ function renderMix(){
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
-      for(let ci=0;ci<L;ci++){const sp=span[i][ci];if(!sp)continue;
+      for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
         h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(vals[ci])}</td>`;}
-      h+=`<td class="head" colspan="${dims.length-L}">${esc(vals[L])} Sub Total</td>`;
+      const cs=Math.max(dims.length-(L+1),1);
+      h+=`<td class="head" colspan="${cs}">${esc(vals[L])} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
   h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
@@ -807,7 +824,11 @@ function buildSelects(){
   const bd=$('bubDim');
   if(bd){bd.value=BUB.dim;bd.onchange=e=>{BUB.dim=e.target.value;renderBubble();};}
   $('crTopN').value=CR_TOPN;
-  $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||4;renderCreatives();};
+  $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||5;renderCreatives();};
+  const am=$('crAllMedia');
+  if(am){am.checked=CR_ALL_MEDIA;
+    am.onchange=e=>{CR_ALL_MEDIA=e.target.checked;renderCreatives();};}
+  const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');

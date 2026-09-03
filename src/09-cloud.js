@@ -33,6 +33,8 @@ function serializeDoc(){
     creatives:CREATIVES.map(stripCr),
     issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
+    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다 */
+    sheet:(typeof SHEET!=='undefined'?SHEET:[]),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum')}
@@ -52,6 +54,8 @@ function applyDoc(d){
   if(isFinite(d.verdictBand))VERDICT_BAND=d.verdictBand;
   if(d.cols?.line)LINE_COLS=mergeCols(d.cols.line,lineColsDefault());
   if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
+  /* 저장해 둔 입력 시트를 되살린다 (없으면 건드리지 않는다) */
+  if(Array.isArray(d.sheet))SHEET=d.sheet.map(r=>({...r}));
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -123,6 +127,34 @@ let DEMO_SNAP=null;
   }catch(e){}};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',grab):setTimeout(grab,0);
 })();
+/* ---------- 새로고침에도 남기기 ----------
+   클라우드에 저장하지 않아도(또는 저장 전에 새로고침해도) 입력한 값이 사라지지 않도록
+   이 브라우저에 마지막 상태를 적어 둔다. 캠페인마다 따로 저장한다. */
+const LS_KEY=()=>'dmd:doc:'+((CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'local');
+let LS_T=null;
+function saveLocal(){
+  clearTimeout(LS_T);
+  LS_T=setTimeout(()=>{
+    try{localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}
+  },500);
+}
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
+    const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
+    applyDoc(o.doc);
+    rebuildPeriod();
+    if(typeof applySheet==='function')applySheet();
+    buildFacts();buildFilters();buildSelects();
+    renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
+    renderCreatives();renderGantt();
+    return true;
+  }catch(e){return false;}
+}
+function clearLocal(){try{localStorage.removeItem(LS_KEY());}catch(e){}}
+/* 값이 바뀔 때마다 조용히 적어 둔다 */
+addEventListener('beforeunload',()=>{try{
+  localStorage.setItem(LS_KEY(),JSON.stringify({t:Date.now(),doc:serializeDoc()}));}catch(e){}});
 function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
@@ -133,6 +165,7 @@ function restoreDemo(){
   buildFacts();buildFilters();buildSelects();
   renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
   renderRaw();renderCreatives();renderGantt();
+  clearLocal();
   return true;
 }
 const gateEl=()=>$('gate');
@@ -217,7 +250,11 @@ function gateReady(){
   /* 내려받은 파일을 그대로 열어 볼 때(file:// · localhost)는 ?nogate=1 로 건너뛸 수 있다.
      게시된 주소에서는 동작하지 않는다. */
   const local=location.protocol==='file:'||/^(localhost|127\.|\[::1\])/.test(location.hostname);
-  if(local&&qs.has('nogate')){hideGate();return;}
+  if(local&&qs.has('nogate')){
+    hideGate();
+    /* 새로고침해도 입력한 값이 남아 있게 — 이 브라우저에 적어 둔 마지막 상태를 되살린다 */
+    setTimeout(()=>{try{loadLocal();}catch(e){}},0);
+    return;}
   /* 주소에 ?code=XXXX 가 있으면 바로 열어 준다 */
   const q=qs.get('code');
   if(q){if(inp)inp.value=normCode(q);tryCode(q);}
@@ -441,6 +478,8 @@ async function openCampaign(id){
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
   applyDaily(rows);
+  /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
+  try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
@@ -451,6 +490,7 @@ async function openCampaign(id){
   paintCampSel();
   applyRoleLock();
   CLOUD.busy=false;
+  clearLocal();
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
 const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};

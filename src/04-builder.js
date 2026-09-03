@@ -313,17 +313,20 @@ function pivotLayout(keys,rows){
       const nk=keys[ri+1];
       if(nk&&nk.slice(0,L+1).join(SEP)===vals.slice(0,L+1).join(SEP))continue;
       out.push({kind:'sub',level:L,vals:vals.slice(0,L+1)});}});
+  /* 소계 행도 자기 계층(level)까지는 위 데이터 행과 같은 칸으로 묶는다 —
+     그래야 "매체" 칸이 데이터 행 + 소계 행에 걸쳐 병합되고(A2:A3),
+     "○○ 소계" 문구는 그 오른쪽 열(B)부터 시작한다 */
   const span=out.map(()=>Array(D).fill(0));
   for(let c=0;c<D;c++){
     let i=0;
     while(i<out.length){
       const r=out[i];
-      if(r.kind==='sub'&&r.level<=c){i++;continue;}
+      if(r.kind==='sub'&&r.level<c){i++;continue;}
       const key=r.vals.slice(0,c+1).join(SEP);
       let j=i+1;
       while(j<out.length){
         const q=out[j];
-        if(q.kind==='sub'&&q.level<=c)break;
+        if(q.kind==='sub'&&q.level<c)break;
         if(q.vals.slice(0,c+1).join(SEP)!==key)break;
         j++;}
       span[i][c]=j-i;i=j;}}
@@ -465,12 +468,18 @@ const ACH_OPACITY=.8;
    호가 캡 지름보다 짧으면 캡을 접어(butt) 값이 과장되지 않게 한다. */
 function capDash(cir,f,TH){
   const len=cir*Math.min(Math.max(f,0),1);
+  if(len<=0.0001)  return {'stroke-dasharray':`0 ${cir}`,'stroke-linecap':'butt'};
   if(len>=cir-.5)  return {'stroke-dasharray':`${cir} ${cir}`,'stroke-linecap':'butt'};
-  if(len<=TH*1.05) return {'stroke-dasharray':`${len} ${cir}`,'stroke-linecap':'butt'};
+  /* 캡 지름보다 짧은 호는 대시를 0 에 가깝게 두고 둥근 캡만 남긴다 —
+     butt 로 자르면 아주 짧은 구간이 곧은 막대처럼 보였다 */
+  if(len<=TH*1.05) return {'stroke-dasharray':`0.01 ${cir}`,
+    'stroke-dashoffset':-(len/2),'stroke-linecap':'round'};
   return {'stroke-dasharray':`${len-TH} ${cir}`,'stroke-dashoffset':-TH/2,'stroke-linecap':'round'};
 }
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
 const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
+/* 도넛 뒤 트랙 — 예전 #eaedf1 은 너무 밝아 흰 글씨가 안 읽혔다 */
+const DONUT_TRACK='#c9d1da';
 const PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
 /* 얇은 목표 페이스 막대 — 앞서면 초록 · 뒤처지면 붉은 계열 */
 /* 막대 위를 흐르는 색 물결 — 앞서면 초록 · 뒤처지면 붉은색. 남색 막대 위에 얹는다 */
@@ -550,6 +559,8 @@ function renderPace(){
     const pr=x.due?x.act/x.due:1, ahead=pr>=1;
     const amb=ambLevel(pr), C=ahead?AMB_OK:AMB_NG;
     const ambc=`rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)})`;
+    /* 막대가 아주 짧으면 지나가는 물결만으로는 색이 안 보인다 — 옅은 고정 색조를 함께 깐다 */
+    const ambf=`rgba(${C[0]},${C[1]},${C[2]},${(amb*0.5).toFixed(3)})`;
     /* 오른쪽 달성률 숫자 색 — 물결과 같은 방향으로 남색에서 물든다 */
     const tone=mixHex(PACE_TONE, ahead?TONE_OK:TONE_NG, Math.min(Math.abs(pr-1)/.06,1));
     /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
@@ -565,21 +576,21 @@ function renderPace(){
         <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
           r,pr,tone,ambc}))}">
-          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc}">${segs}</div>
+          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambflat:${ambf}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
-  /* 머리글은 늘 캠페인 전체 기준으로 말한다 — 아래 게이지·막대는 고른 기간 기준 */
+  /* 머리글 · 게이지 · 목표 페이스 모두 기간 필터에서 고른 구간 기준.
+     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다. */
   const cs=campScope();
-  /* 달력으로 직접 좁힌 경우에만 조회 구간을 덧붙인다 (기본값 = 캠페인 첫날~어제) */
-  const narrow=!!(FILTER.from||FILTER.to);
+  const narrow=sc.startIso!==cs.startIso||sc.endIso!==cs.endIso;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${cs.elapsed}일차 <span class="sep">/</span> ${cs.days}일
-        <span class="el">${Math.round(cs.elapsed/cs.days*100)}% 경과</span>
-        ${narrow?`<span class="vw">조회 ${mdy(sc.startIso)} ~ ${mdy(sc.endIso)}</span>`:''}</div>
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${sc.days}일
+        <span class="el">${Math.round(sc.elapsed/Math.max(sc.days,1)*100)}% 경과</span>
+        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(sc.start)}(${WD[sc.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -670,7 +681,7 @@ function renderSpendDonut(box,pr){
   const defs=S('defs',{},svg);
   const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
-  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+  S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
   /* 끝은 둥글게 — capDash 가 길이를 보정해서 회색 트랙을 침범하지 않는다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
     ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
@@ -699,7 +710,8 @@ function renderSpendDonut(box,pr){
       /* 호가 짧으면 호가 끝난 지점부터 트랙 위에 곡선으로 — 링 밖으로 튀어나가지 않게 */
       const id2=uid();
       S('path',{id:id2,d:arcPath(rad,360*f,360*f+179),fill:'none'},defs);
-      const t=S('text',{'font-size':11.5,'font-weight':800,fill:KPI_RING[0],'dominant-baseline':'central'},svg);
+      const t=S('text',{'font-size':11.5,'font-weight':800,fill:'#fff','dominant-baseline':'central',
+        stroke:'rgba(38,52,68,.42)','stroke-width':2.4,'paint-order':'stroke'},svg);
       const tp=document.createElementNS(NS,'textPath');
       tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+id2);
       tp.setAttribute('href','#'+id2);tp.setAttribute('startOffset','10');
@@ -808,7 +820,7 @@ function renderDonuts(){
     rings.forEach((r,i)=>{
       const rad=(VB/2-TH/2-24)-i*(TH+GAPR),cir=2*Math.PI*rad;
       const pf=Math.min(Math.max(pr,0),1), af=Math.min(Math.max(r.ach,0),1);
-      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'#eaedf1','stroke-width':TH},svg);
+      S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
         ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
@@ -827,7 +839,11 @@ function renderDonuts(){
       if(cir*af>need){
         curvedFrom(rad,0,label,'#fff',12,800,1,12);
       }else{
-        curvedFrom(rad,aDeg,label,r.color,11.5,800,1,10);}
+        /* 호가 짧아 트랙 위에 얹힐 때도 글씨는 흰색 — 얇은 어두운 테두리로 읽히게 한다 */
+        const t2=curvedFrom(rad,aDeg,label,'#fff',11.5,800,1,10);
+        t2.setAttribute('stroke','rgba(38,52,68,.42)');
+        t2.setAttribute('stroke-width','2.4');
+        t2.setAttribute('paint-order','stroke');}
       /* 목표 페이스 — 호 끝 바깥쪽에 말풍선으로 (지시선 + 흰 박스) */
       /* 목표 페이스는 카드 왼쪽 아래 범례로 뺀다 (도넛 안이 좁아 읽기 어려웠다) */
       paceLegend.push({k:r.k,v:r.goal*pr,color:r.color});
