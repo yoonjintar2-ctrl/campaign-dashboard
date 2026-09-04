@@ -78,7 +78,11 @@ function applyColWidths(tbl,cfg,cols){
   const small=px.filter((v,i)=>v<BIG&&!wide.has(cols[i]));
   const uni=small.length?Math.max(...small):0;
   /* 비고 같은 서술형 열은 폭을 고정하지 않고 남는 폭을 흡수하도록 둔다 (최소 폭만 지정) */
-  const finalW=px.map((v,i)=>wide.has(cols[i])?0:(v<BIG?uni:v));
+  /* 사용자가 드래그로 정한 폭이 있으면 그 값을 그대로 쓴다 */
+  const finalW=px.map((v,i)=>{
+    const sw=savedColW(cfg,cols[i]);
+    if(sw)return sw;
+    return wide.has(cols[i])?0:(v<BIG?uni:v);});
   let cg=tbl.querySelector('colgroup');
   if(cg)cg.remove();
   cg=document.createElement('colgroup');
@@ -139,7 +143,8 @@ function openBuilder(host,cfg,opts){
   host.innerHTML='';host.classList.remove('hidden');
   const b=el('div','builder',host);
   const used=k=>draft.groups.some(g=>g.cols.includes(k));
-  function draw(){
+  function draw(quiet){
+    if(!quiet)commit();
     b.innerHTML='';
     if(opts.useRows!==false){
       const r1=el('div','brow',b);r1.innerHTML='<div class="bkey">행 헤더</div>';
@@ -158,7 +163,7 @@ function openBuilder(host,cfg,opts){
           +(opts.useSub!==false?`<label><input type="checkbox" ${r.sub?'checked':''}> 소계</label>`:'')
           +`<span class="x">✕</span>`;
         c.querySelector('.x').onclick=e=>{e.stopPropagation();draft.rows.splice(i,1);draw();};
-        const cb=c.querySelector('input');if(cb)cb.onchange=e=>r.sub=e.target.checked;
+        const cb=c.querySelector('input');if(cb)cb.onchange=e=>{r.sub=e.target.checked;commit();};
         wireChip(c,'row');});
       z.ondragover=e=>{if(DRAG&&DRAG.kind==='row'){e.preventDefault();z.classList.add('over');}};
       z.ondragleave=()=>z.classList.remove('over');
@@ -214,7 +219,7 @@ function openBuilder(host,cfg,opts){
           ? `<button class="btn sm gmerge" title="열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다">이름 합치기</button>`:'')
         +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
       const nameInp=hd.querySelector('input.gname');
-      nameInp.oninput=e=>{g.name=e.target.value;};
+      nameInp.oninput=e=>{g.name=e.target.value;commit();};
       nameInp.onfocus=()=>{selG=g.id;
         gz.querySelectorAll('.gcard').forEach(x=>x.classList.remove('sel'));card.classList.add('sel');};
       nameInp.onmousedown=e=>e.stopPropagation();
@@ -262,19 +267,22 @@ function openBuilder(host,cfg,opts){
     add.onclick=()=>{const g={id:uid(),name:'새 그룹',cols:[]};draft.groups.push(g);selG=g.id;draw();};
     const ft=el('div','bfoot',b);
     ft.innerHTML='<button class="btn sm" data-a="reset" title="드래그로 바꾼 행 순서를 기본(가나다) 순서로 되돌립니다">행 순서 초기화</button>'
+      +'<span class="hint">바꾸는 즉시 표에 반영됩니다</span>'
       +'<span class="spacer"></span>'
-      +'<button class="btn sm" data-a="close">닫기</button><button class="btn sm primary" data-a="apply">적용</button>';
+      +'<button class="btn sm primary" data-a="close">닫기</button>';
     ft.querySelector('[data-a=close]').onclick=()=>{host.classList.add('hidden');host.innerHTML='';};
     ft.querySelector('[data-a=reset]').onclick=()=>{cfg.order=null;opts.onApply&&opts.onApply();};
-    ft.querySelector('[data-a=apply]').onclick=()=>{
-      /* 행 기준(차원)이 그대로면 드래그로 정한 행 순서를 유지한다 */
-      const same=cfg.rows.length===draft.rows.length&&cfg.rows.every((r,i)=>r.k===draft.rows[i].k);
-      cfg.rows=draft.rows.map(r=>({...r}));
-      cfg.groups=draft.groups.filter(g=>g.cols.length)
-        .map(g=>({id:g.id,name:g.name,solo:!!g.solo&&g.cols.length===1,cols:[...g.cols]}));
-      if(!cfg.groups.length)cfg.groups=[{id:uid(),name:'예상 효율',cols:[]}];
-      if(!same)cfg.order=null;
-      opts.onApply&&opts.onApply();};
+  }
+  /* 바꾸는 즉시 표에 반영한다 — 예전에는 [적용] 을 눌러야 했다 */
+  function commit(){
+    const same=cfg.rows.length===draft.rows.length&&cfg.rows.every((r,i)=>r.k===draft.rows[i].k);
+    cfg.rows=draft.rows.map(r=>({...r}));
+    cfg.groups=draft.groups.filter(g=>g.cols.length)
+      .map(g=>({id:g.id,name:g.name,solo:!!g.solo&&g.cols.length===1,cols:[...g.cols]}));
+    if(!cfg.groups.length)cfg.groups=[{id:uid(),name:'예상 효율',cols:[]}];
+    if(!same)cfg.order=null;
+    opts.onApply&&opts.onApply();
+    try{markDirty();saveLocal();}catch(e){}
   }
   function wireChip(c,kind){
     c.ondragstart=e=>{DRAG=kind==='row'?{kind:'row',i:+c.dataset.i}:{kind:'col',gi:+c.dataset.gi,ci:+c.dataset.ci};
@@ -292,7 +300,7 @@ function openBuilder(host,cfg,opts){
         draft.groups[tg].cols.splice(before?idx:idx+1,0,it);}
       DRAG=null;draw();};
   }
-  draw();
+  draw(true);
 }
 function mergeSpans(keys,depth){
   const span=keys.map(()=>Array(depth).fill(1));
@@ -332,7 +340,18 @@ function pivotLayout(keys,rows){
       span[i][c]=j-i;i=j;}}
   return {out,span};
 }
+/* 표에 보여 줄 차원 값. 광고상품처럼 한 라인에 여러 개가 들어간 칸은 **세로로 나열**한다
+   (이름이 길어 가로로 이으면 열이 지나치게 넓어진다) */
 const dimDisp=(k,v)=>k==='month'?(+String(v).slice(5))+'월':v;
+const dimCellHTML=(k,v)=>{
+  const t=dimDisp(k,v);
+  if(MULTI_DIMS.includes(k)){
+    const parts=parseMulti(t);
+    if(parts.length>1)return parts.map(x=>`<span class="mline">${esc(x)}</span>`).join('');}
+  return esc(t);
+};
+/* 사용자가 끌어서 정한 열 너비 — 표 설정(cfg.w)에 저장한다 */
+function savedColW(cfg,k){return (cfg&&cfg.w&&+cfg.w[k])||0;}
 /* 행 드래그 정렬 — 상위 그룹(마지막 차원을 제외한 prefix)이 같을 때만 */
 let RDRAG=null;
 /* 행 순서 드래그.
@@ -477,7 +496,7 @@ function capDash(cir,f,TH){
   return {'stroke-dasharray':`${len-TH} ${cir}`,'stroke-dashoffset':-TH/2,'stroke-linecap':'round'};
 }
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
-const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
+let KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];   /* 테마에 따라 syncThemeColors 가 갈아 끼운다 */
 /* 도넛 뒤 트랙 — 예전 #eaedf1 은 너무 밝아 흰 글씨가 안 읽혔다 */
 let DONUT_TRACK='#c9d1da';
 let PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
@@ -506,8 +525,11 @@ function renderCampBar(){
   const it=(k,v)=>`<div class="it"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   $('campBar').innerHTML=it('캠페인',CAMPAIGN.name)+it('광고주',CAMPAIGN.advertiser)
     +it('집행 기간',`${campStart().replace(/-/g,'.')} – ${campEnd().replace(/-/g,'.')}`)
-    +it('총 예산',won(gross))
-    +it('총 Value',`${won(sum(LINES.map(lineValue)))} <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(bonusRate(LINES),1)}</span>`);
+    +it('총 예산',won(gross));
+  /* 보너스가 없으면 보너스율은 굳이 적지 않는다 */
+  const br=bonusRate(LINES);
+  $('campBar').innerHTML+=it('총 Value',`${won(sum(LINES.map(lineValue)))}`
+    +(br>0.0005?` <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(br,1)}</span>`:''));
 }
 /* 만 · 억 단위 축약 (막대 안 · 종합 목표 내역에서 쓴다) */
 const manUnit=n=>{
@@ -552,8 +574,9 @@ function renderPace(){
     const gi=cs.i0+i;
     const d=ALLDATES[gi],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
     const on=gi>=sc.i0&&gi<=sc.i1&&gi<ELAPSED;
-    return `<i class="${on?'on':''}${rest?' rest':''}"`
-      +` title="${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}"></i>`;}).join('');
+    const kind=hol?'공휴일':(d.getDay()===0?'일요일':d.getDay()===6?'토요일':'평일');
+    return `<i class="${on?'on':''}${rest?' rest':''}" data-dtip="${esc(JSON.stringify({
+      d:`${dFull(d)} (${WD[d.getDay()]})`,kind,hol:hol||'',on,gi}))}"></i>`;}).join('');
   /* 지표마다 한 줄 — 합산 수치는 쓰지 않는다 */
   const line=(x,i)=>{
     const l=KPI_LABEL[x.k]||x.k, c=PACE_SEG[i%PACE_SEG.length];
@@ -565,14 +588,18 @@ function renderPace(){
     const amb=ambLevel(pr), C=ahead?AMB_OK:AMB_NG;
     const ambc=`rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)})`;
     /* 막대가 아주 짧으면 지나가는 물결만으로는 색이 안 보인다 — 옅은 고정 색조를 함께 깐다 */
-    const ambf=`rgba(${C[0]},${C[1]},${C[2]},${(amb*0.5).toFixed(3)})`;
+    const ambf=`${C[0]} ${C[1]} ${C[2]}`;            /* 고정 색조의 색만 — 세기는 --ambp 로 */
+    const amba=(amb*0.62).toFixed(3);
     /* 오른쪽 달성률 숫자 색 — 물결과 같은 방향으로 남색에서 물든다 */
     const tone=mixHex(PACE_TONE, ahead?TONE_OK:TONE_NG, Math.min(Math.abs(pr-1)/.06,1));
     /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
        각 구간의 %는 "그 매체가 전체 목표의 몇 %를 채웠나" 라서 다 더하면 달성률이 된다. */
     const bg=`linear-gradient(150deg,${adjust(c,.08,.05)},${c})`;
-    const segs=(x.media.length?x.media:[{m:'–',v:x.act}]).map(y=>
-      `<i style="flex:${Math.max(y.v,1)} 1 0" data-m="${esc(y.m)}">`
+    /* 매체 구간의 폭은 그 매체가 채운 양의 비율 그대로.
+       예전에는 Math.max(y.v,1) 이라 실적이 0 인 매체도 한 칸을 차지해 균등하게 보였다. */
+    const segList=(x.media.length?x.media.filter(y=>y.v>0):[]);
+    const segs=(segList.length?segList:[{m:'–',v:Math.max(x.act,1)}]).map(y=>
+      `<i style="flex:${y.v} 1 0" data-m="${esc(y.m)}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
     return `<div class="pline">
@@ -581,7 +608,7 @@ function renderPace(){
         <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
           r,pr,tone,ambc}))}">
-          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambflat:${ambf}">${segs}</div>
+          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambrgb:${ambf};--amba:${amba}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
@@ -596,9 +623,9 @@ function renderPace(){
   const den=narrow?sc.days:cs.days;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${den}일
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> 총 ${den}일
         <span class="el">${Math.round(sc.elapsed/Math.max(den,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)} · ${cs.days}일</span>`:''}</div>
+        ${narrow?`<span class="vw">캠페인 총 ${cs.days}일</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -608,7 +635,19 @@ function renderPace(){
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
         <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다</span></div>
     </div></div>`;
+  wireGaugeTip();
   fitPaceLabels();
+}
+/* 날짜 칸에 마우스를 올리면 그 날짜·요일·휴일 여부를 보여 준다 */
+function wireGaugeTip(){
+  document.querySelectorAll('#paceBox .dgauge i[data-dtip]').forEach(c=>{
+    let o=null;try{o=JSON.parse(c.dataset.dtip);}catch(e){return;}
+    c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+      `<div class="t">${esc(o.d)}</div>`
+      +`<div class="r"><span class="l">구분</span><b>${esc(o.kind)}</b></div>`
+      +(o.hol?`<div class="r"><span class="l">공휴일</span><b>${esc(o.hol)}</b></div>`:'')
+      +`<div class="r"><span class="l">집행</span><b>${o.on?'집행일':'조회 기간 밖'}</b></div>`));
+    c.addEventListener('mouseleave',hideTip);});
 }
 /* 구간이 좁으면 % → 매체명 순서로 글자를 지운다.
    같은 자리에서 물결의 좌표계(막대 폭 · 물결 폭 · 구간의 시작 위치)도 잡아 둔다 —
@@ -623,7 +662,13 @@ function fitPaceLabels(){
     st.querySelectorAll(':scope>i').forEach(seg=>{
       seg.style.setProperty('--segoff',
         (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
-  document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
+  /* 구간 안쪽 여백(9px×2)과 간격 때문에 짧은 막대가 실제 달성률보다 길어 보였다.
+     구간 하나당 22px 도 확보되지 않으면 여백을 모두 버리고 비율만 남긴다. */
+  document.querySelectorAll('#paceBox .mstack').forEach(st=>{
+    const w=st.getBoundingClientRect().width;
+    const n=st.children.length||1;
+    st.classList.toggle('tight',w/n<22);});
+  document.querySelectorAll('#paceBox .mstack:not(.tight)>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
     seg.classList.remove('nolb','nopc');
@@ -664,12 +709,16 @@ let AMB_RAF=null;
 function startAmb(){
   if(AMB_RAF!==null)return;
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){
-    const b=$('paceBox');if(b)b.style.setProperty('--ambt','.5');AMB_RAF=-1;return;}
+    const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
   const P=13000;
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
-    b.style.setProperty('--ambt',((1-Math.cos((ts%P)/P*2*Math.PI))/2).toFixed(4));
+    const t=(ts%P)/P;
+    b.style.setProperty('--ambt',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
+    /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
+       고정 색조의 세기도 같은 주기로 0 ↔ 1 을 오가게 해 기본 색과 번갈아 보이게 한다. */
+    b.style.setProperty('--ambp',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
     AMB_RAF=requestAnimationFrame(step);};
   AMB_RAF=requestAnimationFrame(step);
 }
@@ -935,17 +984,41 @@ let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
 /* 지표별 일자 시계열 — 진행 스코프 안에서, 집행이 끝난 날까지만 값을 만든다.
    (남은 집행일은 값 없이 비워 둔다 = 오른쪽이 비는 이유) */
 function dailySeries(k){
-  const sc=paceScope();
+  /* 가로축은 **캠페인 전체 기간** — 기간 필터를 좁혀도 캠페인 안에서 어디쯤인지 보이게 한다 */
+  const cs=campScope(), sc=paceScope();
   const fs=paceFacts();
   const byDay=new Map();
   fs.forEach(f=>{if(!byDay.has(f.d))byDay.set(f.d,zeroB());
     const b=byDay.get(f.d);AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});
-  const done=Math.max(Math.min(sc.i1+1,ELAPSED)-sc.i0,0);   /* 값이 있는 날 수 */
+  const lastIdx=Math.min(sc.i1,ELAPSED-1);
   const vals=[];
-  for(let i=0;i<done;i++){
-    const b=byDay.get(sc.i0+i);
+  for(let i=0;i<cs.days;i++){
+    const gi=cs.i0+i;
+    if(gi<sc.i0||gi>lastIdx){vals.push(NaN);continue;}
+    const b=byDay.get(gi);
     vals.push(b?mval(k,b):(METRICS[k].kind==='abs'?0:NaN));}
-  return {vals,days:sc.days,done,i0:sc.i0};
+  return {vals,days:cs.days,done:Math.max(lastIdx-cs.i0+1,0),i0:cs.i0};
+}
+/* 카드의 "제안 대비" 줄.
+   · 볼륨·금액 → 퍼센트 (제안 페이스 대비 얼마나 앞섰나)
+   · 단가(CPM·CPC·CPV·CPA·CPI·CPE) → **금액 차이**로 보여 준다. 제안보다 비싸면 붉은색, 싸면 녹색.
+     (단가는 "몇 % 좋다"보다 "얼마 비싸다"가 훨씬 빨리 읽힌다) */
+function dlHTML(k,o){
+  const {isAbs,lower,d,av,ev,due}=o;
+  if(!isAbs&&lower){
+    if(!isFinite(av)||!isFinite(ev)||!ev)return '<div class="dl na">제안 대비 –</div>';
+    const diff=av-ev;                          /* + = 제안보다 비싸다 = 나쁘다 */
+    const cheap=diff<0;
+    if(Math.abs(diff)<0.5)return `<div class="dl flat" title="제안 단가 ${METRICS[k].f(ev)} 와 같습니다">제안 대비 ±0</div>`;
+    return `<div class="dl ${cheap?'up':'down'}" title="제안 단가 ${METRICS[k].f(ev)} 보다 `
+      +`${won(Math.abs(diff))} ${cheap?'저렴합니다':'비쌉니다'}">`
+      +`제안 대비 ${cheap?'−':'+'}${won(Math.abs(diff)).replace('₩','')}원 <i>${cheap?'↓':'↑'}</i></div>`;}
+  if(!isFinite(d))return '<div class="dl na">제안 대비 –</div>';
+  const good=d>0;
+  return `<div class="dl ${good?'up':'down'}" title="${
+      isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${good?'앞서 있습니다':'뒤처져 있습니다'}`
+           :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}`}">`
+    +`제안 대비 ${good?'+':'−'}${pct(Math.abs(d),1)} <i>${good?'↑':'↓'}</i></div>`;
 }
 function renderStrip(){
   /* 달성률·페이스를 함께 보여주므로 진행 스코프 기준으로 (도넛·진행 현황과 동일) */
@@ -973,11 +1046,7 @@ function renderStrip(){
     c.innerHTML=`<div class="sbody">
         <div class="k">${METRICS[k].l}</div>
         <div class="v mono${(()=>{const n=METRICS[k].f(av).length;return n>13?' lng2':n>10?' lng':'';})()}">${METRICS[k].f(av)}</div>
-        ${isFinite(d)?`<div class="dl ${good?'up':'down'}" title="${
-            isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${d>0?'앞서 있습니다':'뒤처져 있습니다'}`
-                 :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${d>0?'좋습니다':'나쁩니다'}`}">
-            제안 대비 ${d>0?'+':'−'}${pct(Math.abs(d),1)} <i>${d>0?'↑':'↓'}</i></div>`
-          :'<div class="dl na">제안 대비 –</div>'}
+        ${dlHTML(k,{isAbs,lower,d,av,ev,due})}
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
           <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
@@ -1010,12 +1079,21 @@ function drawSpark(host,pill,ser,k){
   S('stop',{offset:'0%','stop-color':'var(--acc)','stop-opacity':'.13'},g);
   S('stop',{offset:'100%','stop-color':'var(--acc)','stop-opacity':'0'},g);
   S('path',{d:`${line} L${pts[pts.length-1][0]} ${H} L${pts[0][0]} ${H} Z`,fill:`url(#${gid})`},svg);
-  S('path',{d:line,fill:'none',stroke:'var(--acc)','stroke-width':1.8,opacity:.42,
+  /* 선 색 — 진행 현황 막대처럼 밝은 띠가 좌우로 흐른다 */
+  const lid=uid();
+  const lg=S('linearGradient',{id:lid,x1:'0',y1:'0',x2:'1',y2:'0',
+    gradientUnits:'objectBoundingBox'},svg);
+  S('stop',{offset:'0%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
+  const mid=S('stop',{offset:'50%','stop-color':'var(--acc2)','stop-opacity':'.85'},lg);
+  S('stop',{offset:'100%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
+  const an=S('animate',{attributeName:'offset',values:'0.02;0.98;0.02',dur:'11s',
+    repeatCount:'indefinite',calcMode:'spline',keySplines:'.45 0 .55 1;.45 0 .55 1',keyTimes:'0;.5;1'},mid);
+  S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2,
     'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'},svg);
-  /* 오늘(마지막 집행일) 표식 */
+  /* 마지막 집행일 표식 — 가운데까지 같은 색으로 채운 단색 점 */
   const lastPt=pts[pts.length-1];
-  S('circle',{cx:lastPt[0],cy:lastPt[1],r:3.4,fill:'var(--surface)',stroke:'var(--acc)',opacity:.75,
-    'stroke-width':2,'vector-effect':'non-scaling-stroke',class:'spk-now'},svg);
+  S('circle',{cx:lastPt[0],cy:lastPt[1],r:3.4,fill:'var(--acc)',stroke:'var(--acc)',opacity:.9,
+    'stroke-width':1,'vector-effect':'non-scaling-stroke',class:'spk-now'},svg);
   /* hover — 점선 + 점 + 알약 */
   const hl=S('line',{x1:0,y1:0,x2:0,y2:H,stroke:'var(--acc)','stroke-width':1,
     'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke',opacity:0},svg);

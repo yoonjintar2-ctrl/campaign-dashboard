@@ -37,94 +37,104 @@
   --shadow:0 1px 2px rgba(31,44,61,.04), 0 4px 16px rgba(31,44,61,.05);
   --shadow2:0 10px 38px rgba(31,44,61,.15);
   --bg1:126,155,186; --bg2:112,143,177; --bg3:160,184,210;   /* 배경 그라데이션 */
+  --sub0:#ccd6e2; --sub1:#dde4ec; --sub2:#e8edf3; --sub3:#f1f4f8;  /* 소계 단계 배경 */
 }
 /* ===== 테마 =====
    :root 는 기본(남색). 아래는 캠페인 설정 › 🎨 디자인 에서 고르는 색 계열이다.
    배경 · 강조 · 표 머리글 · 그래프 색을 한 계열로 갈아 끼운다.
    (효율 히트맵의 초록↔회색↔빨강만은 "잘 됨/안 됨"을 뜻하므로 테마와 무관하게 유지) */
 [data-theme="red"]{
-  --plane:#f5eeed; --plane2:#fcf8f7; --ink:#3a2523; --ink2:#7a5b58; --muted:#a98d8a; --sec:#6d4a47;
-  --line:#eee0de; --line2:#f6eceb; --gline:#d9c2bf; --cell:#ecdedc;
-  --acc:#8f4a44; --acc-d:#6f3833; --acc-lt:#c39894; --acc-soft:#f4e7e5; --acc-soft2:#fbf5f4;
-  --acc2:#a55f52; --acc2-lt:#cea197;
-  --hdr:#75403b; --hdr2:#8a4f49; --tot:#4a2724; --hdr-sub:#ab837e; --hdr-sub2:#bb9691;
-  --gray:#b09a98; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#8f4a44;
-  --b1:#dcc0bc; --b2:#c79a95; --b3:#ac6f68; --b4:#8f4a44; --b5:#6f3833; --neg:#a85f57;
-  --bg1:196,140,133; --bg2:186,124,116; --bg3:214,172,166;
+  --sub0:#d5c8c6; --sub1:#e3d9d7; --sub2:#ebe4e3; --sub3:#f2edec;
+  --plane:#f1eeee; --plane2:#f9f7f7; --ink:#2e2726; --ink2:#6b615f; --muted:#9a908e; --sec:#5d5250;
+  --line:#e7e1e0; --line2:#f1ecec; --gline:#cdc2c0; --cell:#e4dedd;
+  --acc:#8a5b56; --acc-d:#6e4744; --acc-lt:#b39a97; --acc-soft:#e9e2e1; --acc-soft2:#f4efef;
+  --acc2:#94685f; --acc2-lt:#bda49e;
+  --hdr:#6f4b47; --hdr2:#815a55; --tot:#3f2d2b; --hdr-sub:#9d8683; --hdr-sub2:#ad9793;
+  --gray:#a49897; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a5b56;
+  --b1:#cdbcba; --b2:#b79f9c; --b3:#9c7c78; --b4:#8a5b56; --b5:#6e4744; --neg:#9e6660;
+  --bg1:176,143,138; --bg2:166,132,127; --bg3:198,175,171;
 }
 [data-theme="orange"]{
-  --plane:#f6f0e9; --plane2:#fdfaf6; --ink:#3a2c1d; --ink2:#7a6650; --muted:#a89479; --sec:#6d573c;
-  --line:#eee4d6; --line2:#f7f0e6; --gline:#d9c8ae; --cell:#ece1d2;
-  --acc:#9a5f2b; --acc-d:#7a4a1f; --acc-lt:#c8a683; --acc-soft:#f5eade; --acc-soft2:#fcf7f1;
-  --acc2:#ab7434; --acc2-lt:#d1ac7e;
-  --hdr:#7f5427; --hdr2:#946434; --tot:#4c3117; --hdr-sub:#ad8f68; --hdr-sub2:#bda07c;
-  --gray:#b0a08a; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#9a5f2b;
-  --b1:#e0cbae; --b2:#cdab81; --b3:#b28453; --b4:#9a5f2b; --b5:#7a4a1f; --neg:#a85f57;
-  --bg1:206,163,113; --bg2:196,148,96; --bg3:222,192,156;
+  --sub0:#d8cdbc; --sub1:#e5ddd0; --sub2:#ede7dd; --sub3:#f4f0ea;
+  --plane:#f2efea; --plane2:#faf8f5; --ink:#2f2a22; --ink2:#6b6357; --muted:#9a9284; --sec:#5d5647;
+  --line:#e8e2d9; --line2:#f2ede6; --gline:#cdc4b5; --cell:#e5dfd5;
+  --acc:#8a6538; --acc-d:#6e502b; --acc-lt:#b5a184; --acc-soft:#eae4db; --acc-soft2:#f5f1eb;
+  --acc2:#95724a; --acc2-lt:#c0aa8e;
+  --hdr:#705333; --hdr2:#82633f; --tot:#3f2f1c; --hdr-sub:#9d8d75; --hdr-sub2:#ad9e88;
+  --gray:#a49b8c; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a6538;
+  --b1:#d3c5ae; --b2:#bfab8d; --b3:#a48a64; --b4:#8a6538; --b5:#6e502b; --neg:#9e6660;
+  --bg1:184,160,124; --bg2:174,148,110; --bg3:206,190,166;
 }
 [data-theme="mustard"]{
-  --plane:#f4f1e4; --plane2:#fcfbf4; --ink:#33301b; --ink2:#6f6a4a; --muted:#9d9973; --sec:#635e3a;
-  --line:#eae6d2; --line2:#f5f2e4; --gline:#d2ccac; --cell:#e8e4cf;
-  --acc:#8a7a24; --acc-d:#6c5f18; --acc-lt:#bdb37c; --acc-soft:#f0eddb; --acc-soft2:#faf9ef;
-  --acc2:#9b8b34; --acc2-lt:#c7bd8a;
-  --hdr:#726526; --hdr2:#877833; --tot:#443c12; --hdr-sub:#a49c69; --hdr-sub2:#b4ad7f;
-  --gray:#a8a487; --pace:#7a5f8f; --pace-lt:#b9a8cb; --hol:#8a7a24;
-  --b1:#ded7ae; --b2:#c8bf82; --b3:#aa9e50; --b4:#8a7a24; --b5:#6c5f18; --neg:#a85f57;
-  --bg1:200,190,120; --bg2:188,177,104; --bg3:218,212,164;
+  --sub0:#d4d1bc; --sub1:#e2dfd0; --sub2:#eae8dd; --sub3:#f2f0ea;
+  --plane:#f1f0e9; --plane2:#f9f8f3; --ink:#2b2a20; --ink2:#666352; --muted:#95927e; --sec:#585643;
+  --line:#e6e4d8; --line2:#f0efe6; --gline:#c9c6b2; --cell:#e3e1d3;
+  --acc:#7c7434; --acc-d:#615a26; --acc-lt:#aaa47f; --acc-soft:#e7e5d9; --acc-soft2:#f3f2ea;
+  --acc2:#8a8142; --acc2-lt:#b5af8c;
+  --hdr:#655e2c; --hdr2:#776f38; --tot:#39351a; --hdr-sub:#948e70; --hdr-sub2:#a49e83;
+  --gray:#9d9a86; --pace:#7a6482; --pace-lt:#b0a3b8; --hol:#7c7434;
+  --b1:#cfcbac; --b2:#b8b28c; --b3:#9a9362; --b4:#7c7434; --b5:#615a26; --neg:#9e6660;
+  --bg1:176,172,124; --bg2:164,160,110; --bg3:200,197,168;
 }
 [data-theme="green"]{
-  --plane:#ecf2ee; --plane2:#f6faf7; --ink:#1c2e25; --ink2:#54695d; --muted:#879a8f; --sec:#465c51;
-  --line:#e0eae4; --line2:#eef4f0; --gline:#c1d1c7; --cell:#dee8e2;
-  --acc:#3c6b53; --acc-d:#2b5240; --acc-lt:#8aa898; --acc-soft:#e8f0ec; --acc-soft2:#f4f9f6;
-  --acc2:#4a7a5f; --acc2-lt:#95b3a1;
-  --hdr:#335946; --hdr2:#426a55; --tot:#1f3830; --hdr-sub:#7c9788; --hdr-sub2:#8ea699;
-  --gray:#93a89b; --pace:#a8635c; --pace-lt:#d2a5a0; --hol:#a8635c;
-  --b1:#b6cabe; --b2:#93b0a0; --b3:#688f77; --b4:#3c6b53; --b5:#2b5240; --neg:#c08484;
-  --bg1:126,178,148; --bg2:110,164,133; --bg3:170,206,186;
+  --sub0:#c6d1ca; --sub1:#dae1dc; --sub2:#e5eae7; --sub3:#eff3f0;
+  --plane:#edf0ee; --plane2:#f6f8f6; --ink:#232c27; --ink2:#5c665f; --muted:#8c948e; --sec:#4e5852;
+  --line:#e1e7e3; --line2:#eef2f0; --gline:#c3ccc6; --cell:#dee4e0;
+  --acc:#4b6a58; --acc-d:#385244; --acc-lt:#93a89b; --acc-soft:#e5eae7; --acc-soft2:#f2f5f3;
+  --acc2:#567764; --acc2-lt:#9db0a4;
+  --hdr:#40594b; --hdr2:#4f6a5a; --tot:#263731; --hdr-sub:#849489; --hdr-sub2:#94a399;
+  --gray:#97a09a; --pace:#98625c; --pace-lt:#c4a5a1; --hol:#98625c;
+  --b1:#bdc9c1; --b2:#9db0a4; --b3:#748e7e; --b4:#4b6a58; --b5:#385244; --neg:#a97a76;
+  --bg1:140,168,152; --bg2:128,156,140; --bg3:176,198,186;
 }
 [data-theme="pink"]{
-  --plane:#f6eef3; --plane2:#fdf8fb; --ink:#361f2c; --ink2:#775a69; --muted:#a68a99; --sec:#68455a;
-  --line:#f0e0e9; --line2:#f8eef4; --gline:#dcc0d0; --cell:#eddfe7;
-  --acc:#8d4468; --acc-d:#6e3350; --acc-lt:#c294ab; --acc-soft:#f4e6ee; --acc-soft2:#fbf4f8;
-  --acc2:#a15579; --acc2-lt:#cd9db4;
-  --hdr:#743a58; --hdr2:#8a4868; --tot:#48243a; --hdr-sub:#a97f95; --hdr-sub2:#ba93a6;
-  --gray:#b09aa5; --pace:#5f7f8f; --pace-lt:#a8c0cb; --hol:#8d4468;
-  --b1:#e0bfd1; --b2:#cc9ab4; --b3:#ac6e8e; --b4:#8d4468; --b5:#6e3350; --neg:#a85f57;
-  --bg1:204,140,174; --bg2:194,124,160; --bg3:224,176,200;
+  --sub0:#d4c5cc; --sub1:#e2d7dc; --sub2:#eae2e6; --sub3:#f2ecef;
+  --plane:#f2eef0; --plane2:#faf7f8; --ink:#2e2529; --ink2:#6b5f65; --muted:#9a8e93; --sec:#5d5055;
+  --line:#e8e0e4; --line2:#f2ecee; --gline:#cec0c6; --cell:#e5dde0;
+  --acc:#84556a; --acc-d:#684354; --acc-lt:#b098a3; --acc-soft:#e9e1e5; --acc-soft2:#f4eff1;
+  --acc2:#916078; --acc2-lt:#bda3af;
+  --hdr:#6b4657; --hdr2:#7e5566; --tot:#3d2b33; --hdr-sub:#9b8390; --hdr-sub2:#ab949f;
+  --gray:#a3969b; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#84556a;
+  --b1:#ccbac2; --b2:#b69ea9; --b3:#9b7a89; --b4:#84556a; --b5:#684354; --neg:#9e6660;
+  --bg1:176,140,156; --bg2:164,128,146; --bg3:200,176,188;
 }
 [data-theme="mono"]{
-  --plane:#f2f3f4; --plane2:#fafafb; --ink:#22262a; --ink2:#5f666d; --muted:#8f959b; --sec:#4c5359;
-  --line:#e6e8ea; --line2:#f1f2f4; --gline:#c8ccd0; --cell:#e4e6e9;
-  --acc:#4b5257; --acc-d:#363c40; --acc-lt:#969ba0; --acc-soft:#ecedef; --acc-soft2:#f7f8f8;
-  --acc2:#5b6267; --acc2-lt:#a2a7ab;
-  --hdr:#41474c; --hdr2:#51585d; --tot:#2a2f33; --hdr-sub:#868c92; --hdr-sub2:#979da2;
-  --gray:#9aa0a5; --pace:#a8635c; --pace-lt:#d2a5a0; --hol:#a8635c;
-  --b1:#c4c8cc; --b2:#a5aab0; --b3:#7c8288; --b4:#4b5257; --b5:#363c40; --neg:#b58a8a;
-  --bg1:168,174,180; --bg2:150,156,162; --bg3:198,203,208;
+  --sub0:#cfd1d3; --sub1:#dfe0e2; --sub2:#e9eaeb; --sub3:#f2f2f3;
+  --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
+  --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
+  --acc:#4d5257; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
+  --acc2:#5c6165; --acc2-lt:#a3a6aa;
+  --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
+  --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
+  --b1:#c3c6c9; --b2:#a4a8ac; --b3:#7c8085; --b4:#4d5257; --b5:#383c40; --neg:#a78b8b;
+  --bg1:170,173,176; --bg2:154,157,160; --bg3:198,200,202;
 }
+/* 무채색 다크 — 채도 0 (R=G=B). 예전 값은 푸른 기가 섞여 있었다 */
 [data-theme="dark"]{
-  --plane:#171a1d; --plane2:#1e2225; --surface:#22272b;
-  --ink:#e9edf1; --ink2:#aab4bd; --muted:#7f8a94; --sec:#c3ccd4;
-  --line:#31373d; --line2:#2a3035; --gline:#454d54; --cell:#333a41;
+  --sub0:#3d3d3d; --sub1:#343434; --sub2:#2d2d2d; --sub3:#282828;
+  --plane:#191919; --plane2:#212121; --surface:#262626;
+  --ink:#ededed; --ink2:#b0b0b0; --muted:#868686; --sec:#c8c8c8;
+  --line:#363636; --line2:#2e2e2e; --gline:#4a4a4a; --cell:#383838;
   --cell-d:rgba(255,255,255,.16);
-  --acc:#8fb0cc; --acc-d:#a8c4dc; --acc-lt:#5f7488; --acc-soft:#2b3239; --acc-soft2:#242a2f;
-  --acc2:#8ab3bc; --acc2-lt:#5e7981;
-  --hdr:#2c343b; --hdr2:#363f47; --tot:#1c2126; --hdr-sub:#4a545d; --hdr-sub2:#5a656e;
-  --gray:#78828c; --pace:#d09a94; --pace-lt:#8d6663; --hol:#d09a94;
-  --b1:#3c454d; --b2:#556069; --b3:#758392; --b4:#8fb0cc; --b5:#a8c4dc; --neg:#d09a94;
+  --acc:#b4b4b4; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
+  --acc2:#9c9c9c; --acc2-lt:#6a6a6a;
+  --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
+  --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
+  --b1:#3c3c3c; --b2:#4f4f4f; --b3:#646464; --b4:#7a7a7a; --b5:#909090; --neg:#c39a95;
   --shadow:0 1px 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.34);
   --shadow2:0 10px 38px rgba(0,0,0,.55);
-  --bg1:44,58,74; --bg2:38,50,64; --bg3:56,72,90;
+  --bg1:64,64,64; --bg2:52,52,52; --bg3:82,82,82;
+  color-scheme:dark;
 }
 /* 다크 톤에서는 흰 카드 위 전제로 짠 몇 곳을 눌러 준다 */
 [data-theme="dark"] .card,[data-theme="dark"] .gatecard{background:var(--surface)}
 [data-theme="dark"] table.tbl tbody td{background:var(--surface)}
 [data-theme="dark"] body::before{opacity:.55}
-[data-theme="dark"] .notice{background:#232a31;border-color:#333c45;color:var(--ink2)}
+[data-theme="dark"] .notice{background:var(--acc-soft);border-color:var(--gline);color:var(--ink2)}
 [data-theme="dark"] .demobar,[data-theme="dark"] .gate{background:rgba(20,24,28,.82)}
-[data-theme="dark"] .demobar{border-color:#3a3327;background:#2a2419;color:#e2d6bd}
-[data-theme="dark"] .demobar .btn{background:#3a3327;color:#e2d6bd;border-color:#4a4133}
-[data-theme="dark"] .demobar .btn:hover{background:#463d2e}
+[data-theme="dark"] .demobar{border-color:#3a3a3a;background:#2b2b2b;color:#d8d2c4}
+[data-theme="dark"] .demobar .btn{background:#3a3a3a;color:#e6e6e6;border-color:#4a4a4a}
+[data-theme="dark"] .demobar .btn:hover{background:#464646}
 [data-theme="dark"] .topbar,[data-theme="dark"] .tabs{background:var(--surface)}
 [data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{
   background:var(--plane2);color:var(--ink);border-color:var(--line)}
@@ -161,9 +171,21 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
   100%{transform:translate3d(-4%,6%,0) scale(1.07) rotate(-0.6deg)}}
 @media (prefers-reduced-motion: reduce){body::before{animation:none}}
 
+
+/* ===== 첫 화면 가림막 =====
+   예전에는 접속 화면이 반투명이라 뒤에 깔린 **예시(샘플) 데이터가 잠깐 비쳐 보였다**.
+   자기 캠페인을 열기 전까지는 대시보드를 아예 보여 주지 않는다. */
+.bootveil{position:fixed;inset:0;z-index:950;display:grid;place-items:center;
+  background:var(--plane);transition:opacity .35s ease}
+.bootveil .bootlogo{font-size:15px;font-weight:800;color:var(--acc);letter-spacing:-.3px;opacity:.55;
+  animation:bootpulse 1.4s ease-in-out infinite alternate}
+@keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
+body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
+body.booting .topbar,body.booting .tabs,body.booting .subbar,
+body.booting .wrap,body.booting .demobar,body.booting #bgdots{visibility:hidden}
 /* ===== 접속 화면 (공유 코드 게이트) ===== */
 .gate{position:fixed;inset:0;z-index:900;display:grid;place-items:center;
-  background:rgba(238,242,246,.72);backdrop-filter:blur(9px) saturate(115%)}
+  background:var(--plane);backdrop-filter:blur(9px) saturate(115%)}
 .gate.hidden{display:none}
 .gatecard{width:min(430px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);
   border-radius:20px;box-shadow:0 24px 64px rgba(31,44,61,.20),0 2px 6px rgba(31,44,61,.10);
@@ -251,7 +273,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 
 /* ---------- top ---------- */
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:14px;padding:0 76px;height:56px}
+  display:flex;align-items:center;gap:14px;padding:0 116px;height:56px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
 .logo{cursor:pointer}
 .logo:hover .mark{filter:brightness(1.06)}
@@ -281,11 +303,11 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 #signIn{gap:7px;font-weight:700}
 #signIn svg{flex:none}
 .demobar{display:flex;align-items:center;gap:10px;background:#fff6e8;border-bottom:1px solid #f0dfc4;
-  color:#7a5a22;padding:8px 76px;font-size:12px}
+  color:#7a5a22;padding:8px 116px;font-size:12px}
 .demobar>span{font-size:13px}
 .demobar>div{flex:1}
 .demobar .btn{height:24px;padding:0 9px;font-size:11px;border-color:#e4d3b8;background:#fffdf8}
-.tabs{background:var(--surface);padding:0 76px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
+.tabs{background:var(--surface);padding:0 116px;display:flex;gap:4px;position:sticky;top:56px;z-index:59}
 @media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}
   .subbar{padding:11px 40px}.demobar{padding:9px 40px}}
 .tabs button{border:0;background:transparent;padding:12px 14px 10px;cursor:pointer;color:var(--ink2);
@@ -293,12 +315,12 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
 /* 하위 탭 = 메인 탭 바로 아래 붙임 */
 .tabs{border-bottom:1px solid var(--line)}
-.subbar{background:var(--acc-soft);border-bottom:1px solid var(--line);padding:11px 76px;
+.subbar{background:var(--acc-soft);border-bottom:1px solid var(--line);padding:11px 116px;
   position:sticky;top:97px;z-index:58;display:flex;gap:6px}
 .subbar button{border:1px solid transparent;background:transparent;padding:7px 18px;border-radius:9px;cursor:pointer;
   color:var(--ink2);font-weight:600;font-size:13px}
-.subbar button:hover{background:rgba(255,255,255,.6)}
-.subbar button.on{background:var(--surface);color:var(--acc);border-color:#d0d6de;box-shadow:var(--shadow)}
+.subbar button:hover{background:var(--acc-soft2);border-color:var(--line)}
+.subbar button.on{background:var(--surface);color:var(--acc);border-color:var(--gline);box-shadow:var(--shadow)}
 /* 리포트 내려받기 묶음은 하위 탭 줄의 맨 오른쪽으로 민다 */
 .subbar .dlgrp{margin-left:auto}
 .subbar .pill.dl{height:30px;font-weight:700}
@@ -337,7 +359,7 @@ table.tbl.nogauge .gauge .track{display:none}
 /* 효율 버블 차트 */
 #bubbleWrap{position:relative;width:100%}
 #bubble{position:relative;width:100%}
-#bubble svg{display:block;width:100%;height:auto;border-radius:12px;background:#fff}
+#bubble svg{display:block;width:100%;height:auto;border-radius:12px;background:var(--surface)}
 #bubble circle.bub{cursor:pointer;transition:fill-opacity .12s}
 #bubble circle.bub:hover{fill-opacity:.95}
 /* 버블 범례 — 그래프 위, 조금 크고 자세하게 */
@@ -370,8 +392,11 @@ table.tbl.nogauge .gauge .track{display:none}
   background:var(--acc-soft);border-radius:6px;padding:1px 7px;vertical-align:1px}
 
 /* ---------- layout ---------- */
-.wrap{padding:16px 76px 84px;max-width:1900px;margin:0 auto}
-@media (max-width:1500px){.wrap{padding:16px 40px 84px}}
+.wrap{padding:16px 116px 84px;max-width:1980px;margin:0 auto}
+@media (max-width:1600px){.wrap{padding:16px 64px 84px}
+  .topbar,.tabs{padding-left:64px;padding-right:64px}.subbar{padding-left:64px;padding-right:64px}}
+@media (max-width:1200px){.wrap{padding:16px 32px 84px}
+  .topbar,.tabs{padding-left:32px;padding-right:32px}.subbar{padding-left:32px;padding-right:32px}}
 .sec{font-size:19px;font-weight:700;color:var(--sec);margin:28px 0 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;letter-spacing:-.3px}
 .sec.gap{margin-top:40px}
 .sec.gap2{margin-top:56px}
@@ -476,13 +501,20 @@ table.tbl.nogauge .gauge .track{display:none}
   background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
       var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
       rgba(0,0,0,0) 92%,rgba(0,0,0,0) 100%),
-    linear-gradient(var(--ambflat,rgba(0,0,0,0)),var(--ambflat,rgba(0,0,0,0))),
+    linear-gradient(rgba(var(--ambrgb,0 0 0) / calc(var(--amba,0) * var(--ambp,.5))),
+      rgba(var(--ambrgb,0 0 0) / calc(var(--amba,0) * var(--ambp,.5)))),
     var(--segbg);
   background-repeat:no-repeat,no-repeat,no-repeat;
   background-size:var(--wavew,0px) 100%,100% 100%,auto;
   background-position:calc(var(--ambt,.5) * (var(--barw,0px) + var(--wavew,0px))
     - var(--wavew,0px) - var(--segoff,0px)) 0, 0 0, 0 0;
   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 9px}
+/* 막대가 짧으면 안쪽 여백·간격이 오히려 폭을 늘려 버린다 —
+   달성률 2.2% 인데 막대가 12% 처럼 보이고 매체 구간이 똑같이 쪼개져 보이던 원인.
+   좁을 때는 여백과 간격을 없애 비율 그대로 보이게 한다. */
+.pbar .mstack.tight{gap:1px}
+.pbar .mstack.tight>i{padding:0}
+.pbar .mstack.tight>i>*{display:none}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
 .pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
 .pbar .mstack>i:only-child{border-radius:9px}
@@ -503,7 +535,7 @@ table.tbl.nogauge .gauge .track{display:none}
 
 /* 집행 일자 게이지 — 다른 막대와 같은 남색 계열 */
 .dgauge{display:flex;gap:2px;width:100%}
-.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:var(--acc-soft);display:block}
+.dgauge i{flex:1 1 0;min-width:0;height:14px;border-radius:3px;background:var(--acc-soft);display:block;cursor:crosshair}
 .dgauge i.on{background:linear-gradient(160deg,var(--b3),var(--b4))}
 .dgauge i.on.rest{background:linear-gradient(160deg,var(--b2),var(--b3))}
 .dgauge i.rest{background:var(--acc-soft2)}
@@ -556,8 +588,9 @@ table.tbl.nogauge .gauge .track{display:none}
 
 /* ===== 열 너비 드래그 ===== */
 th.cresz{position:relative}
-.colgrip{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:6}
-.colgrip::after{content:'';position:absolute;left:2px;top:18%;bottom:18%;width:2px;border-radius:1px;
+/* 손잡이가 셀 밖으로 나가면 문서가 그만큼 가로로 넘친다 — 안쪽에 붙인다 */
+.colgrip{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:6}
+.colgrip::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;border-radius:1px;
   background:transparent;transition:background .12s}
 .colgrip:hover::after{background:rgba(255,255,255,.55)}
 body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:none !important}
@@ -565,7 +598,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* ===== 영역 설명 (ⓘ) ===== */
 .cmt h4 .mper{font-size:11.5px;font-weight:600;color:var(--muted);margin-left:7px;letter-spacing:0}
 .infowrap{position:relative;display:inline-flex}
-.infoi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#fff;
+.infoi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
   color:var(--muted);font-size:11.5px;font-weight:800;cursor:help;display:inline-flex;
   align-items:center;justify-content:center;line-height:1;padding:0;transition:.12s;
   font-family:inherit}
@@ -623,7 +656,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
 .donut .dlgd .lg.spend{color:var(--acc)}
 .donut .dlgd .lg.spend .sw{background:var(--acc)}
-.donut.spend{background:linear-gradient(180deg,#f7f9fb,#fff)}
+.donut.spend{background:linear-gradient(180deg,var(--acc-soft),var(--surface))}
 .donut .kwrap{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:7px}
 .donut .kline{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink2)}
 .donut .kline .kn{display:flex;align-items:center;gap:6px;font-weight:700}
@@ -634,28 +667,30 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
 .strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
   padding:5px 4px 10px;scroll-snap-type:x proximity}
-.strip>.stat{flex:1 0 244px;min-width:244px;scroll-snap-align:start}
-.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/.94;min-height:250px}
-.stat .sbody{position:relative;z-index:2;padding:18px 20px 0}
+.strip>.stat{flex:1 0 214px;min-width:214px;scroll-snap-align:start}
+/* 정방형에 가까운 비율은 그대로 두고 크기만 줄인다 */
+.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/.94;min-height:206px}
+.stat .sbody{position:relative;z-index:2;padding:14px 16px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
-.stat .v{font-size:32px;font-weight:800;letter-spacing:-1px;margin-top:2px;line-height:1.15;
+.stat .v{font-size:27px;font-weight:800;letter-spacing:-.9px;margin-top:1px;line-height:1.15;
   font-variant-numeric:tabular-nums;white-space:nowrap}
-.stat .v.lng{font-size:25px;letter-spacing:-1.2px}
-.stat .v.lng2{font-size:21px;letter-spacing:-1.2px}
+.stat .v.lng{font-size:22px;letter-spacing:-1.1px}
+.stat .v.lng2{font-size:18.5px;letter-spacing:-1.1px}
 .stat .dl{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;margin-top:4px;
   padding:1px 7px;border-radius:999px;white-space:nowrap}
 .stat .dl i{font-style:normal;font-size:11px}
 .stat .dl.up{color:#2f6b4c;background:#e8f2ec}
 .stat .dl.down{color:#a34d43;background:#f8eceb}
 .stat .dl.na{color:var(--muted)}
-.stat .e{font-size:11.5px;color:var(--ink2);margin-top:12px}
+.stat .dl.flat{color:var(--ink2);background:var(--acc-soft)}
+.stat .e{font-size:11.5px;color:var(--ink2);margin-top:9px}
 .stat .r{font-size:11.5px;color:var(--muted);margin-top:2px}
 .stat .r2{font-size:11.5px;color:var(--muted);margin-top:2px}
 .stat .r b,.stat .r2 b{color:var(--acc)}
 /* 목표 페이스 · 일평균은 강조하지 않는다 */
 .stat .r .sub,.stat .r2 .sub{color:var(--muted);font-weight:400}
 /* 배경 추이 — 좌우 여백·축·범례 없이 카드 아래쪽에 깔린다 */
-.stat .spark{position:absolute;left:0;right:0;bottom:0;height:52%;z-index:1;pointer-events:none}
+.stat .spark{position:absolute;left:0;right:0;bottom:0;height:46%;z-index:1;pointer-events:none}
 .stat svg.spk{display:block;width:100%;height:100%}
 .stat .spk-now{pointer-events:none}
 .stat .sppill{position:absolute;z-index:3;pointer-events:none;background:var(--surface);
@@ -734,7 +769,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* 일자별 상세 효율 — 가로 세그먼트 미니맵 */
 .hnav{display:flex;align-items:center;gap:8px;margin:0 0 8px}
 .hnav.idle{display:none}
-.hnav .nvb{width:26px;height:26px;flex:none;border:1px solid var(--line);background:#fff;border-radius:7px;
+.hnav .nvb{width:26px;height:26px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:7px;
   color:var(--ink2);font-size:11px;font-weight:800;cursor:pointer;line-height:1;
   display:inline-flex;align-items:center;justify-content:center}
 .hnav .nvb:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
@@ -816,8 +851,8 @@ table.tbl.fit{width:auto}
 .cmt .sub::before{content:'ㄴ ';color:var(--muted);font-weight:700}
 .cmtbar .grp{display:inline-flex;align-items:center;gap:4px}
 .cmtbar .glbl{font-size:11px;font-weight:700;color:var(--muted);margin-right:1px}
-.cmtbar button.hl{color:#2f6fb0;border-color:#c3d8ec;font-weight:800}
-.cmtbar button.hl:hover{background:#eaf2fa;color:#2f6fb0;border-color:#2f6fb0}
+.cmtbar button.hl{color:var(--acc);border-color:var(--acc-lt);font-weight:800}
+.cmtbar button.hl:hover{background:var(--acc-soft);color:var(--acc);border-color:var(--acc)}
 .cmt .cmtsum{background:var(--acc-soft2);border:1px solid var(--line);border-left:3px solid var(--acc);
   border-radius:9px;padding:10px 13px;margin:0 0 14px}
 .cmt .cmtsum .t{font-weight:800;color:var(--acc);display:block;margin-bottom:5px}
@@ -852,18 +887,18 @@ table.tbl td.head{background:var(--surface);font-weight:600;color:var(--ink)}
 /* 값이 없는 칸도 배경은 그 행의 색 그대로 — 열마다 배경이 달라 보이지 않게 한다(함정 2).
    비어 있다는 신호는 옅은 – 하나로 충분하다 */
 table.tbl td.blank .na{color:#b6bfca}
-table.tbl tr.sub td.blank .na{color:#8e9aa8}
+table.tbl tr.sub td.blank .na{color:var(--muted)}
 table.tbl tr.total td.blank .na{color:rgba(255,255,255,.5)}
 table.tbl tbody tr:hover td{background:var(--acc-soft2)}
 table.tbl tbody tr:hover td.head{background:var(--acc-soft)}
 /* 합계 행은 헤더 첫 행과 배경색을 구분한다 */
 table.tbl tr.total td,table.tbl tbody tr.total:hover td{background:var(--tot) !important;color:#fff;font-weight:800}
-table.tbl tr.sub td,table.tbl tbody tr.sub:hover td{background:#e9ecf0 !important;font-weight:700;color:var(--acc-d)}
+table.tbl tr.sub td,table.tbl tbody tr.sub:hover td{background:var(--sub2) !important;font-weight:700;color:var(--acc-d)}
 /* 소계가 여러 단계면 단계마다 배경을 조금씩 다르게 (1단계가 가장 진함) */
-table.tbl tr.sub.sub-l0 td,table.tbl tbody tr.sub.sub-l0:hover td{background:#ccd6e2 !important;color:#26313d}
-table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:#e0e7ef !important}
-table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:#edf1f6 !important}
-table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:#f5f8fb !important}
+table.tbl tr.sub.sub-l0 td,table.tbl tbody tr.sub.sub-l0:hover td{background:var(--sub0) !important;color:var(--ink)}
+table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:var(--sub1) !important}
+table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:var(--sub2) !important}
+table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:var(--sub3) !important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
 table.tbl tr.sub.sub-l0>td{border-top:2px solid #a9b8c8}
 table.tbl tr.drag td{cursor:grab}
@@ -884,21 +919,21 @@ table.tbl td.hol,table.tbl td.hol *{color:var(--hol) !important}
 table.tbl th.g input.ghdr{width:100%;min-width:60px;height:22px;border:1px solid rgba(255,255,255,.55);
   background:rgba(255,255,255,.16);color:#fff;font-weight:700;font-size:12.5px;text-align:center;
   border-radius:5px;padding:0 5px;outline:none}
-table.tbl.lite th.g input.ghdr{border-color:var(--acc);background:#fff;color:var(--acc-d)}
+table.tbl.lite th.g input.ghdr{border-color:var(--acc);background:var(--surface);color:var(--acc-d)}
 table.tbl td.gt{color:var(--acc);font-weight:800}
 table.tbl td.hl{color:var(--acc);font-weight:800}
 .gauge{display:inline-flex;flex-direction:column;align-items:center;gap:5px;min-width:64px;font-size:inherit}
-.gauge .track{width:58px;height:5px;border-radius:3px;background:#dee4ec;overflow:hidden}
+.gauge .track{width:58px;height:5px;border-radius:3px;background:var(--sub1);overflow:hidden}
 .gauge .track i{display:block;height:100%;border-radius:3px;background:var(--acc)}
 tr.total .gauge .track{background:rgba(255,255,255,.3)}
-tr.total .gauge .track i{background:#fff}
+tr.total .gauge .track i{background:var(--surface)}
 .na{color:#ccd3dc}
 /* 밝은 헤더 변형 — 라인별 설정 · 데이터 입력 · 팝업 표 */
 table.tbl.lite th{background:var(--acc-soft2);color:var(--ink2)}
 table.tbl.lite thead th,table.tbl.lite tr.total td,
 table.tbl.lite thead th.gsep,table.tbl.lite tr.total td.gsep{border-color:var(--cell)}
 table.tbl.lite th.g{background:var(--acc-soft);color:var(--acc)}
-table.tbl.lite tr.total td,table.tbl.lite tbody tr.total:hover td{background:#e0e4e9 !important;color:var(--acc-d)}
+table.tbl.lite tr.total td,table.tbl.lite tbody tr.total:hover td{background:var(--sub1) !important;color:var(--acc-d)}
 table.tbl input,table.tbl select{height:29px;border:1px solid var(--line);border-radius:7px;background:var(--surface);
   padding:0 7px;text-align:center;width:100%;min-width:70px;font-size:12px}
 table.tbl input.num{text-align:right}
@@ -916,7 +951,7 @@ td.expcell .gchk input{width:12px;height:12px;flex:none}   /* 게런티 체크�
 #tblKpi .gchk input{width:12px;height:12px}
 /* 예상효율 표 — 선택된 셀 */
 #tblKpi td.lsel{box-shadow:inset 0 0 0 2px var(--acc);background:var(--acc-soft)}
-#tblKpi td.lsel input,#tblKpi td.lsel select,#tblKpi td.lsel textarea{background:#fff}
+#tblKpi td.lsel input,#tblKpi td.lsel select,#tblKpi td.lsel textarea{background:var(--surface)}
 /* 예상효율 표 — 열 폭을 좁게, 값은 모두 가운데 정렬 */
 #tblKpi th,#tblKpi td{padding-left:5px;padding-right:5px}
 #tblKpi input,#tblKpi select{min-width:0;padding:0 4px}
@@ -1017,7 +1052,7 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
 .cr{overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
 .cr:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
-.cr .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;display:grid;place-items:center;background:#e9edf2}
+.cr .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;display:grid;place-items:center;background:var(--acc-soft)}
 .cr .thumb .fill{position:absolute;inset:0;background-size:cover;background-position:center}
 .cr .thumb .ytprev{position:absolute;left:50%;top:50%;width:178%;height:178%;
   transform:translate(-50%,-50%);border:0;pointer-events:none;z-index:1}
@@ -1119,14 +1154,14 @@ table.gantt td.lead.nm{text-align:left}
 table.gantt td.hl{color:var(--acc);font-weight:800}
 table.gantt td.day{min-width:13px;height:34px;vertical-align:middle;padding:3px 1px}
 table.gantt td.day .b{display:block;width:100%;height:100%;border-radius:2px}
-table.gantt td.day.we{background:#f6f8fb}
-table.gantt td.day.hol{background:#f0f2f5}
+table.gantt td.day.we{background:var(--acc-soft2)}
+table.gantt td.day.hol{background:var(--acc-soft)}
 table.gantt tbody tr:hover td.lead{background:var(--acc-soft2)}
 /* 행·열 하이라이트 (데이터 읽기 보조) */
 table.gantt tbody tr.rowhi td{background:var(--acc-soft2)}
 table.gantt tbody tr.rowhi td.lead{background:var(--acc-soft)}
-table.gantt td.day.colhi{background:#e2e7ed}
-table.gantt tbody tr.rowhi td.day.colhi{background:#d4dbe3}
+table.gantt td.day.colhi{background:var(--sub1)}
+table.gantt tbody tr.rowhi td.day.colhi{background:var(--sub0)}
 table.gantt th.dhd{cursor:default}
 table.gantt th.dhd.colhi{background:var(--acc);color:#fff!important}
 table.gantt td.day{cursor:crosshair}
@@ -1157,6 +1192,81 @@ table.gantt td.ins-bot{box-shadow:inset 0 -3px 0 var(--acc)}
 .topscroll::-webkit-scrollbar{height:10px}
 .topscroll::-webkit-scrollbar-thumb{background:var(--gline);border-radius:8px}
 .topscroll::-webkit-scrollbar-track{background:transparent}
+
+/* ===== 밝아서 잘 안 보이던 곳 일괄 정리 =====
+   흰색·연회색을 그대로 쓰던 자리를 테마 변수로 바꿔 어떤 테마에서도 경계가 보이게 한다. */
+/* 날짜 입력의 달력 아이콘 — 밝은 배경에 흰 아이콘이라 안 보였다 */
+input[type=date]{color-scheme:light}
+[data-theme="dark"] input[type=date]{color-scheme:dark}
+input[type=date]::-webkit-calendar-picker-indicator{
+  opacity:.85;cursor:pointer;padding:2px;border-radius:5px;
+  filter:grayscale(1) contrast(.9) brightness(.55)}
+input[type=date]::-webkit-calendar-picker-indicator:hover{background:var(--acc-soft);opacity:1}
+[data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.85)}
+/* 스크롤바 — 궤도와 손잡이를 뚜렷하게 */
+*{scrollbar-color:var(--gline) var(--acc-soft);scrollbar-width:thin}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-track{background:var(--acc-soft);border-radius:8px}
+::-webkit-scrollbar-thumb{background:var(--gline);border-radius:8px;
+  border:2px solid var(--acc-soft)}
+::-webkit-scrollbar-thumb:hover{background:var(--acc-lt)}
+::-webkit-scrollbar-corner{background:var(--acc-soft)}
+/* 선택 중인 드롭다운 · 입력 상자 */
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--acc);
+  box-shadow:0 0 0 3px var(--acc-soft);background:var(--surface)}
+select:hover,input:hover{border-color:var(--acc-lt)}
+
+/* 배경 — 광고주 로고 도트 패턴. 화면 가로의 절반 크기로 아주 천천히 떠다닌다 */
+/* 크기를 바꾸거나 transform 으로 밀면 문서가 가로로 넘친 것으로 잡힌다 —
+   위치(background-position)만 아주 천천히 움직인다 */
+#bgdots{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;overflow:hidden;
+  background-repeat:no-repeat;background-size:50vw auto;
+  transition:opacity .6s ease;
+  animation:bgdotdrift 96s ease-in-out infinite alternate}
+#bgdots.on{opacity:1}
+@keyframes bgdotdrift{
+  0%  {background-position:44% 40%}
+  50% {background-position:56% 52%}
+  100%{background-position:47% 58%}}
+@media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
+/* 밝은 광고주 로고 — 상단 바를 짙게 깔아 로고가 보이게 한다 */
+.topbar.darkbar{background:#2b3038;border-bottom-color:#3a4149}
+.topbar.darkbar .logo .brandtx .adv,.topbar.darkbar .logo .brandtx .prod{color:#eef1f4}
+.topbar.darkbar .logo .brandtx .adv::after{color:#5d666f}
+.topbar.darkbar .hint,.topbar.darkbar .savedago{color:#a7b0b9}
+.topbar.darkbar .btn,.topbar.darkbar .pill,.topbar.darkbar select{
+  background:#363c45;color:#eef1f4;border-color:#454c56}
+.topbar.darkbar .btn:hover,.topbar.darkbar .pill:hover{background:#414852}
+.topbar.darkbar .me .mail{color:#c9d0d7}
+
+/* 칩 고르기 메뉴 — 이름 검색 */
+.cfmenu .cfq{width:calc(100% - 16px);margin:2px 8px 6px;height:28px;border:1px solid var(--line);
+  border-radius:8px;padding:0 9px;font-size:12px;background:var(--plane2);color:var(--ink)}
+.cfmenu .cflist{max-height:210px;overflow:auto}
+
+/* 예상 효율 표 — 세로로 길어도 머리글이 붙어 있게 표 안에서 스크롤한다 */
+.tbl-wrap.kpiwrap{max-height:min(70vh,760px)}
+.tbl-wrap.kpiwrap table.tbl thead th{position:sticky;top:0;z-index:5}
+
+/* 머리글 끌어서 열 순서 바꾸기 */
+th.cmove{cursor:grab}
+th.cmove.cdrag{opacity:.5;cursor:grabbing}
+th.cdropL{box-shadow:inset 3px 0 0 var(--acc-d)}
+th.cdropR{box-shadow:inset -3px 0 0 var(--acc-d)}
+
+/* 여러 항목이 든 칸(광고상품 등) — 세로로 나열하고 좁아지면 줄바꿈 */
+table.tbl td.head .mline{display:block;line-height:1.35}
+table.tbl td.head{white-space:normal;word-break:break-word}
+table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
+
+/* 합쳐진 소재의 매체명 — 최대 두 줄, 넘치면 … */
+.cr.mini .meta .mm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;line-height:1.28;white-space:normal;word-break:break-word}
+.cr.lead .thumb .media{max-width:62%;white-space:normal;line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* 토글 스위치의 손잡이를 글자 오른쪽으로 (매체 구분 없이 비교) */
+.switch.right{flex-direction:row-reverse}
 /* 디자인 — 테마 고르기 */
 .thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .thcard{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:11px 12px;
@@ -1188,12 +1298,12 @@ table.tbl.heat thead th:last-child{border-right:0}
 table.tbl.heat th.lead{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700;
   border-bottom:0;vertical-align:middle}
 table.tbl.heat th.h1{background:var(--hdr);color:#fff;font-size:12.5px;font-weight:700}
-table.tbl.heat th.h2{background:#6d7b8a;color:#fff;font-size:11.5px;font-weight:600}
-table.tbl.heat th.h3{background:#eef1f5;color:var(--sec);font-size:10.5px;font-weight:700;
+table.tbl.heat th.h2{background:var(--hdr2);color:#fff;font-size:11.5px;font-weight:600}
+table.tbl.heat th.h3{background:var(--acc-soft);color:var(--sec);font-size:10.5px;font-weight:700;
   letter-spacing:.01em;white-space:nowrap}
 table.tbl.heat td{padding:0;background:transparent !important}
 /* 구분 열 — 가운데 정렬 · 남색 글씨 */
-table.tbl.heat td.head{padding:0 10px;background:#fbfcfe !important;font-weight:700;
+table.tbl.heat td.head{padding:0 10px;background:var(--acc-soft2) !important;font-weight:700;
   color:var(--acc-d);text-align:center;font-size:11.5px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
 table.tbl.heat tbody tr:hover td.head{background:var(--acc-soft) !important}
@@ -1204,10 +1314,10 @@ table.tbl.heat td.hm .c{display:block;margin:2px;border-radius:6px;padding:6px 8
   font-size:12px;font-weight:600;color:#243040;background:#f2f4f7;
   font-variant-numeric:tabular-nums;text-align:center;transition:filter .12s;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-table.tbl.heat td.hm .c.na{color:#c2c9d2;background:#f6f7f9;font-weight:500}
+table.tbl.heat td.hm .c.na{color:var(--muted);background:var(--acc-soft2);font-weight:500}
 table.tbl.heat td.hm:hover .c{filter:brightness(.94)}
 /* 카테고리 구분 줄 */
-table.tbl.heat tr.hcat td{background:#e6ebf1 !important;color:#26313d;font-weight:800;
+table.tbl.heat tr.hcat td{background:var(--sub2) !important;color:var(--ink);font-weight:800;
   text-align:left;letter-spacing:.02em;padding:7px 12px;font-size:12px}
 table.tbl.heat tr.hcat+tr td{padding-top:1px}
 /* 왼쪽 구분 열은 가로 스크롤에서도 붙어 있게 */
@@ -1224,13 +1334,13 @@ table.sheet th{position:sticky;top:0;z-index:3;background:var(--acc-soft2);color
 table.sheet td{padding:0;border-bottom:1px solid var(--line2);border-right:1px solid var(--line2);position:relative}
 table.sheet td input{width:100%;height:32px;border:0;background:transparent;padding:0 8px;text-align:center;
   outline:none;font-size:12.5px}
-table.sheet td.sel{background:var(--acc-soft)}
-table.sheet td.anchor input{box-shadow:inset 0 0 0 2px var(--acc);background:#fff}
+table.sheet td.sel{background:var(--acc-soft);box-shadow:inset 0 0 0 2px var(--acc)}
+table.sheet td.anchor input{box-shadow:inset 0 0 0 2px var(--acc);background:var(--surface)}
 /* 드롭다운 셀 — 누르면 바로 목록이 열리는 select */
 table.sheet td.dd select{width:100%;height:32px;border:0;background:transparent;padding:0 16px 0 8px;
   text-align:center;text-align-last:center;outline:none;font-size:12.5px;cursor:pointer;
   color:var(--ink);appearance:none;-webkit-appearance:none}
-table.sheet td.dd select:focus{box-shadow:inset 0 0 0 2px var(--acc);background:#fff}
+table.sheet td.dd select:focus{box-shadow:inset 0 0 0 2px var(--acc);background:var(--surface)}
 table.sheet td.dd select option[value=""]{color:var(--muted)}
 table.sheet td.dd::after{content:'▾';position:absolute;right:6px;top:50%;transform:translateY(-50%);
   color:var(--acc);font-size:10px;pointer-events:none;opacity:.75}
@@ -1257,13 +1367,13 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   height:35px;border-radius:9px;padding:0 11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fld .ro.ell{display:block;line-height:33px;overflow:hidden;text-overflow:ellipsis}
 .locked{background:#f1f3f6 !important;color:#93a0b0 !important}
-.notice{display:flex;gap:9px;align-items:flex-start;background:var(--acc-soft);border:1px solid #d9e7fa;
-  color:#1c5386;border-radius:11px;padding:11px 13px;font-size:12px}
+.notice{display:flex;gap:9px;align-items:flex-start;background:var(--acc-soft);border:1px solid var(--gline);
+  color:var(--sec);border-radius:11px;padding:11px 13px;font-size:12px}
 .tagchip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--ink2);background:var(--plane2)}
-.tagchip.on{background:var(--acc-soft);border-color:#d0d6de;color:var(--acc);font-weight:700}
+.tagchip.on{background:var(--acc-soft);border-color:var(--gline);color:var(--acc);font-weight:700}
 .switch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--ink2);font-weight:600}
-.switch i{width:34px;height:19px;border-radius:99px;background:#cfd8e3;position:relative;transition:.15s}
-.switch i::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.15s}
+.switch i{width:34px;height:19px;border-radius:99px;background:var(--gline);position:relative;transition:.15s}
+.switch i::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--surface);transition:.15s}
 .switch.on i{background:var(--acc)}
 .switch.on i::after{left:17px}
 .mock{position:fixed;right:16px;bottom:16px;background:rgba(31,44,61,.85);color:#fff;border-radius:999px;
@@ -1272,8 +1382,9 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   .card{break-inside:avoid;box-shadow:none}}
 </style>
 </head>
-<body>
+<body class="booting">
 <!-- ===== 접속 화면 — 공유 코드 입력 / 샘플 둘러보기 ===== -->
+<div id="boot" class="bootveil"><div class="bootlogo">Digital Media Dashboard</div></div>
 <div id="gate" class="gate">
   <div class="gatecard">
     <div class="glogo"><img class="mark" alt="DmD" id="gateLogo"><b>Digital Media Dashboard</b></div>
@@ -1292,10 +1403,11 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <div class="gfoot" id="gateHint"></div>
   </div>
 </div>
+<div id="bgdots" aria-hidden="true"></div>
 <div class="topbar">
   <div class="logo"><img class="mark" alt="DmD" src="data:image/png;base64,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" id="brandMark"><span class="brandtx"><b class="adv" id="brandAdv" hidden></b><span class="prod">Digital Media Dashboard</span></span></div>
   <select class="pill agency-only" id="campSel" title="캠페인 선택"></select>
-  <button class="btn sm agency-only" id="campMng" title="캠페인 관리 (새 캠페인 · 이름 변경 · 복제 · 삭제)">⚙ 캠페인 관리</button>
+  <button class="btn sm agency-only" id="campMng" title="캠페인과 광고주를 관리합니다 (새 캠페인 · 이름 변경 · 복제 · 삭제 · 광고주 로고)">⚙ 캠페인 및 광고주 관리</button>
   <button class="btn sm primary hidden" id="reqBtn" title="캠페인을 만들 수 있는 마스터 권한을 요청합니다">🔑 권한 요청하기</button>
   <div class="spacer"></div>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
@@ -1348,15 +1460,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <div class="cbar" id="campBar"></div>
 
   <div id="sub-perf">
-    <div class="barlbl row">필터
-      <div class="tools agency-only">
-        <span class="hint">표시 순서</span>
-        <select class="ctl" id="perfOrder" title="운영 코멘트와 서머리 중 어느 쪽을 위에 둘지 정합니다">
-          <option value="sum">서머리 먼저 · 코멘트 맨 아래</option>
-          <option value="cmt">코멘트 먼저 · 서머리 맨 아래</option>
-        </select>
-      </div>
-    </div>
+    <div class="barlbl row">조회 기간</div>
     <div class="filters" id="perfFilters"></div>
     <div id="hiddenBar" class="hiddenbar hidden"></div>
 
@@ -1418,9 +1522,20 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     </div>
 
     <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
-      <span class="note">노출이 1회 이상 발생한 날 = 게재 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준</span>
+      <span class="note">노출이 있었던 소재만 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준 · 정렬은 <b>같은 매체 안에서만</b> 적용됩니다</span>
       <div class="tools">
         <span class="shlegend"><em>효율 우수</em><i class="ramp"></i><em>저조</em></span>
+        <span class="hint">정렬</span><select class="ctl" id="ganttSort" title="같은 매체 안에서 소재 순서를 정합니다">
+          <option value="budget">기본 (예산 큰 순)</option>
+          <option value="ctr">CTR 높은 순</option>
+          <option value="vtr">VTR 높은 순</option>
+          <option value="cpc">CPC 낮은 순</option>
+          <option value="cpv">CPV 낮은 순</option>
+          <option value="imp">노출 많은 순</option>
+          <option value="click">클릭 많은 순</option>
+          <option value="view">조회 많은 순</option>
+          <option value="name">소재 이름 가나다순</option>
+        </select>
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
@@ -1437,7 +1552,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="hint">각</span><select class="ctl" id="crTopN">
           <option>3</option><option>4</option><option selected>5</option><option>6</option>
         </select><span class="hint">개</span>
-        <span class="switch" id="crAllMedia" title="켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐 비교합니다"><i></i> 매체 구분 없이 비교</span>
+        <span class="switch right" id="crAllMedia" title="켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐 비교합니다"><i></i> 매체 구분 없이 비교</span>
         <button class="btn sm" id="crAllBtn">📁 전체 소재 보기</button>
         <button class="btn sm agency-only" id="crManageBtn">🗂 소재 관리</button>
       </div>
@@ -1571,7 +1686,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <button class="btn sm" id="holBtn">🗓 공휴일 설정</button>
       <button class="btn sm" id="campHistBtn">🕘 변경 히스토리</button>
       <button class="btn sm" id="advLogoBtn" title="광고주 이름과 로고를 바꿉니다">🏷 광고주 · 로고</button>
-      <button class="btn sm primary" id="themeBtn" title="이 대시보드의 테마 색상을 바꿉니다">🎨 디자인</button>
+      <button class="btn sm" id="themeBtn" title="이 대시보드의 테마 색상을 바꿉니다">🎨 디자인</button>
       
     </div>
   </div>
@@ -1595,7 +1710,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     (여러 타겟팅·소재는 한 칸에 쉼표로 나열합니다.)</div></div>
   <div class="hint" style="margin:-4px 0 8px">키보드 — 셀을 한 번 누르면 <b>선택</b>, <b>Enter</b>(또는 더블클릭)로 입력 시작,
     다시 <b>Enter</b> 로 완료하면 셀 선택 상태로 돌아옵니다 · <b>방향키</b> 셀 이동 · <b>Ctrl+Z / Ctrl+Y</b> 실행 취소·다시 실행</div>
-  <div class="card"><div class="tbl-wrap" style="max-height:none"><table class="tbl lite" id="tblKpi"></table></div></div>
+  <div class="card"><div class="tbl-wrap kpiwrap"><table class="tbl lite" id="tblKpi"></table></div></div>
   <div class="hint" style="margin-top:8px">※ Gross 예산과 수수료율(대행사 + 렙사)을 넣으면 Net이 자동 역산됩니다 (Net = Gross × (1 − 합산 수수료율)).
     Value(밸류)는 직접 입력하며, 보너스는 Gross와의 차액으로 맞춰집니다.</div>
 
@@ -2180,7 +2295,11 @@ function applyColWidths(tbl,cfg,cols){
   const small=px.filter((v,i)=>v<BIG&&!wide.has(cols[i]));
   const uni=small.length?Math.max(...small):0;
   /* 비고 같은 서술형 열은 폭을 고정하지 않고 남는 폭을 흡수하도록 둔다 (최소 폭만 지정) */
-  const finalW=px.map((v,i)=>wide.has(cols[i])?0:(v<BIG?uni:v));
+  /* 사용자가 드래그로 정한 폭이 있으면 그 값을 그대로 쓴다 */
+  const finalW=px.map((v,i)=>{
+    const sw=savedColW(cfg,cols[i]);
+    if(sw)return sw;
+    return wide.has(cols[i])?0:(v<BIG?uni:v);});
   let cg=tbl.querySelector('colgroup');
   if(cg)cg.remove();
   cg=document.createElement('colgroup');
@@ -2241,7 +2360,8 @@ function openBuilder(host,cfg,opts){
   host.innerHTML='';host.classList.remove('hidden');
   const b=el('div','builder',host);
   const used=k=>draft.groups.some(g=>g.cols.includes(k));
-  function draw(){
+  function draw(quiet){
+    if(!quiet)commit();
     b.innerHTML='';
     if(opts.useRows!==false){
       const r1=el('div','brow',b);r1.innerHTML='<div class="bkey">행 헤더</div>';
@@ -2260,7 +2380,7 @@ function openBuilder(host,cfg,opts){
           +(opts.useSub!==false?`<label><input type="checkbox" ${r.sub?'checked':''}> 소계</label>`:'')
           +`<span class="x">✕</span>`;
         c.querySelector('.x').onclick=e=>{e.stopPropagation();draft.rows.splice(i,1);draw();};
-        const cb=c.querySelector('input');if(cb)cb.onchange=e=>r.sub=e.target.checked;
+        const cb=c.querySelector('input');if(cb)cb.onchange=e=>{r.sub=e.target.checked;commit();};
         wireChip(c,'row');});
       z.ondragover=e=>{if(DRAG&&DRAG.kind==='row'){e.preventDefault();z.classList.add('over');}};
       z.ondragleave=()=>z.classList.remove('over');
@@ -2316,7 +2436,7 @@ function openBuilder(host,cfg,opts){
           ? `<button class="btn sm gmerge" title="열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다">이름 합치기</button>`:'')
         +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
       const nameInp=hd.querySelector('input.gname');
-      nameInp.oninput=e=>{g.name=e.target.value;};
+      nameInp.oninput=e=>{g.name=e.target.value;commit();};
       nameInp.onfocus=()=>{selG=g.id;
         gz.querySelectorAll('.gcard').forEach(x=>x.classList.remove('sel'));card.classList.add('sel');};
       nameInp.onmousedown=e=>e.stopPropagation();
@@ -2364,19 +2484,22 @@ function openBuilder(host,cfg,opts){
     add.onclick=()=>{const g={id:uid(),name:'새 그룹',cols:[]};draft.groups.push(g);selG=g.id;draw();};
     const ft=el('div','bfoot',b);
     ft.innerHTML='<button class="btn sm" data-a="reset" title="드래그로 바꾼 행 순서를 기본(가나다) 순서로 되돌립니다">행 순서 초기화</button>'
+      +'<span class="hint">바꾸는 즉시 표에 반영됩니다</span>'
       +'<span class="spacer"></span>'
-      +'<button class="btn sm" data-a="close">닫기</button><button class="btn sm primary" data-a="apply">적용</button>';
+      +'<button class="btn sm primary" data-a="close">닫기</button>';
     ft.querySelector('[data-a=close]').onclick=()=>{host.classList.add('hidden');host.innerHTML='';};
     ft.querySelector('[data-a=reset]').onclick=()=>{cfg.order=null;opts.onApply&&opts.onApply();};
-    ft.querySelector('[data-a=apply]').onclick=()=>{
-      /* 행 기준(차원)이 그대로면 드래그로 정한 행 순서를 유지한다 */
-      const same=cfg.rows.length===draft.rows.length&&cfg.rows.every((r,i)=>r.k===draft.rows[i].k);
-      cfg.rows=draft.rows.map(r=>({...r}));
-      cfg.groups=draft.groups.filter(g=>g.cols.length)
-        .map(g=>({id:g.id,name:g.name,solo:!!g.solo&&g.cols.length===1,cols:[...g.cols]}));
-      if(!cfg.groups.length)cfg.groups=[{id:uid(),name:'예상 효율',cols:[]}];
-      if(!same)cfg.order=null;
-      opts.onApply&&opts.onApply();};
+  }
+  /* 바꾸는 즉시 표에 반영한다 — 예전에는 [적용] 을 눌러야 했다 */
+  function commit(){
+    const same=cfg.rows.length===draft.rows.length&&cfg.rows.every((r,i)=>r.k===draft.rows[i].k);
+    cfg.rows=draft.rows.map(r=>({...r}));
+    cfg.groups=draft.groups.filter(g=>g.cols.length)
+      .map(g=>({id:g.id,name:g.name,solo:!!g.solo&&g.cols.length===1,cols:[...g.cols]}));
+    if(!cfg.groups.length)cfg.groups=[{id:uid(),name:'예상 효율',cols:[]}];
+    if(!same)cfg.order=null;
+    opts.onApply&&opts.onApply();
+    try{markDirty();saveLocal();}catch(e){}
   }
   function wireChip(c,kind){
     c.ondragstart=e=>{DRAG=kind==='row'?{kind:'row',i:+c.dataset.i}:{kind:'col',gi:+c.dataset.gi,ci:+c.dataset.ci};
@@ -2394,7 +2517,7 @@ function openBuilder(host,cfg,opts){
         draft.groups[tg].cols.splice(before?idx:idx+1,0,it);}
       DRAG=null;draw();};
   }
-  draw();
+  draw(true);
 }
 function mergeSpans(keys,depth){
   const span=keys.map(()=>Array(depth).fill(1));
@@ -2434,7 +2557,18 @@ function pivotLayout(keys,rows){
       span[i][c]=j-i;i=j;}}
   return {out,span};
 }
+/* 표에 보여 줄 차원 값. 광고상품처럼 한 라인에 여러 개가 들어간 칸은 **세로로 나열**한다
+   (이름이 길어 가로로 이으면 열이 지나치게 넓어진다) */
 const dimDisp=(k,v)=>k==='month'?(+String(v).slice(5))+'월':v;
+const dimCellHTML=(k,v)=>{
+  const t=dimDisp(k,v);
+  if(MULTI_DIMS.includes(k)){
+    const parts=parseMulti(t);
+    if(parts.length>1)return parts.map(x=>`<span class="mline">${esc(x)}</span>`).join('');}
+  return esc(t);
+};
+/* 사용자가 끌어서 정한 열 너비 — 표 설정(cfg.w)에 저장한다 */
+function savedColW(cfg,k){return (cfg&&cfg.w&&+cfg.w[k])||0;}
 /* 행 드래그 정렬 — 상위 그룹(마지막 차원을 제외한 prefix)이 같을 때만 */
 let RDRAG=null;
 /* 행 순서 드래그.
@@ -2579,7 +2713,7 @@ function capDash(cir,f,TH){
   return {'stroke-dasharray':`${len-TH} ${cir}`,'stroke-dashoffset':-TH/2,'stroke-linecap':'round'};
 }
 /* KPI 링 · 진행 현황 막대 색 — 대시보드 배경 그라데이션과 같은 남색 계열, 채도를 살렸다 */
-const KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];
+let KPI_RING=['#3d6390','#5a80a8','#8AA3BE'];   /* 테마에 따라 syncThemeColors 가 갈아 끼운다 */
 /* 도넛 뒤 트랙 — 예전 #eaedf1 은 너무 밝아 흰 글씨가 안 읽혔다 */
 let DONUT_TRACK='#c9d1da';
 let PACE_SEG=['#34567c','#4c729a','#6f90b0','#98adc4','#bcc9d7'];
@@ -2608,8 +2742,11 @@ function renderCampBar(){
   const it=(k,v)=>`<div class="it"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   $('campBar').innerHTML=it('캠페인',CAMPAIGN.name)+it('광고주',CAMPAIGN.advertiser)
     +it('집행 기간',`${campStart().replace(/-/g,'.')} – ${campEnd().replace(/-/g,'.')}`)
-    +it('총 예산',won(gross))
-    +it('총 Value',`${won(sum(LINES.map(lineValue)))} <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(bonusRate(LINES),1)}</span>`);
+    +it('총 예산',won(gross));
+  /* 보너스가 없으면 보너스율은 굳이 적지 않는다 */
+  const br=bonusRate(LINES);
+  $('campBar').innerHTML+=it('총 Value',`${won(sum(LINES.map(lineValue)))}`
+    +(br>0.0005?` <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(br,1)}</span>`:''));
 }
 /* 만 · 억 단위 축약 (막대 안 · 종합 목표 내역에서 쓴다) */
 const manUnit=n=>{
@@ -2654,8 +2791,9 @@ function renderPace(){
     const gi=cs.i0+i;
     const d=ALLDATES[gi],hol=holName(d),rest=d.getDay()===0||d.getDay()===6||!!hol;
     const on=gi>=sc.i0&&gi<=sc.i1&&gi<ELAPSED;
-    return `<i class="${on?'on':''}${rest?' rest':''}"`
-      +` title="${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}"></i>`;}).join('');
+    const kind=hol?'공휴일':(d.getDay()===0?'일요일':d.getDay()===6?'토요일':'평일');
+    return `<i class="${on?'on':''}${rest?' rest':''}" data-dtip="${esc(JSON.stringify({
+      d:`${dFull(d)} (${WD[d.getDay()]})`,kind,hol:hol||'',on,gi}))}"></i>`;}).join('');
   /* 지표마다 한 줄 — 합산 수치는 쓰지 않는다 */
   const line=(x,i)=>{
     const l=KPI_LABEL[x.k]||x.k, c=PACE_SEG[i%PACE_SEG.length];
@@ -2667,14 +2805,18 @@ function renderPace(){
     const amb=ambLevel(pr), C=ahead?AMB_OK:AMB_NG;
     const ambc=`rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)})`;
     /* 막대가 아주 짧으면 지나가는 물결만으로는 색이 안 보인다 — 옅은 고정 색조를 함께 깐다 */
-    const ambf=`rgba(${C[0]},${C[1]},${C[2]},${(amb*0.5).toFixed(3)})`;
+    const ambf=`${C[0]} ${C[1]} ${C[2]}`;            /* 고정 색조의 색만 — 세기는 --ambp 로 */
+    const amba=(amb*0.62).toFixed(3);
     /* 오른쪽 달성률 숫자 색 — 물결과 같은 방향으로 남색에서 물든다 */
     const tone=mixHex(PACE_TONE, ahead?TONE_OK:TONE_NG, Math.min(Math.abs(pr-1)/.06,1));
     /* 매체 구간 — 색은 모두 같고 간격으로만 나눈다.
        각 구간의 %는 "그 매체가 전체 목표의 몇 %를 채웠나" 라서 다 더하면 달성률이 된다. */
     const bg=`linear-gradient(150deg,${adjust(c,.08,.05)},${c})`;
-    const segs=(x.media.length?x.media:[{m:'–',v:x.act}]).map(y=>
-      `<i style="flex:${Math.max(y.v,1)} 1 0" data-m="${esc(y.m)}">`
+    /* 매체 구간의 폭은 그 매체가 채운 양의 비율 그대로.
+       예전에는 Math.max(y.v,1) 이라 실적이 0 인 매체도 한 칸을 차지해 균등하게 보였다. */
+    const segList=(x.media.length?x.media.filter(y=>y.v>0):[]);
+    const segs=(segList.length?segList:[{m:'–',v:Math.max(x.act,1)}]).map(y=>
+      `<i style="flex:${y.v} 1 0" data-m="${esc(y.m)}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
     return `<div class="pline">
@@ -2683,7 +2825,7 @@ function renderPace(){
         <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
           r,pr,tone,ambc}))}">
-          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambflat:${ambf}">${segs}</div>
+          <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambrgb:${ambf};--amba:${amba}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
       </div>
@@ -2698,9 +2840,9 @@ function renderPace(){
   const den=narrow?sc.days:cs.days;
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> ${den}일
+      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> 총 ${den}일
         <span class="el">${Math.round(sc.elapsed/Math.max(den,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">캠페인 ${mdy(cs.startIso)} ~ ${mdy(cs.endIso)} · ${cs.days}일</span>`:''}</div>
+        ${narrow?`<span class="vw">캠페인 총 ${cs.days}일</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -2710,7 +2852,19 @@ function renderPace(){
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
         <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다</span></div>
     </div></div>`;
+  wireGaugeTip();
   fitPaceLabels();
+}
+/* 날짜 칸에 마우스를 올리면 그 날짜·요일·휴일 여부를 보여 준다 */
+function wireGaugeTip(){
+  document.querySelectorAll('#paceBox .dgauge i[data-dtip]').forEach(c=>{
+    let o=null;try{o=JSON.parse(c.dataset.dtip);}catch(e){return;}
+    c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+      `<div class="t">${esc(o.d)}</div>`
+      +`<div class="r"><span class="l">구분</span><b>${esc(o.kind)}</b></div>`
+      +(o.hol?`<div class="r"><span class="l">공휴일</span><b>${esc(o.hol)}</b></div>`:'')
+      +`<div class="r"><span class="l">집행</span><b>${o.on?'집행일':'조회 기간 밖'}</b></div>`));
+    c.addEventListener('mouseleave',hideTip);});
 }
 /* 구간이 좁으면 % → 매체명 순서로 글자를 지운다.
    같은 자리에서 물결의 좌표계(막대 폭 · 물결 폭 · 구간의 시작 위치)도 잡아 둔다 —
@@ -2725,7 +2879,13 @@ function fitPaceLabels(){
     st.querySelectorAll(':scope>i').forEach(seg=>{
       seg.style.setProperty('--segoff',
         (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
-  document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
+  /* 구간 안쪽 여백(9px×2)과 간격 때문에 짧은 막대가 실제 달성률보다 길어 보였다.
+     구간 하나당 22px 도 확보되지 않으면 여백을 모두 버리고 비율만 남긴다. */
+  document.querySelectorAll('#paceBox .mstack').forEach(st=>{
+    const w=st.getBoundingClientRect().width;
+    const n=st.children.length||1;
+    st.classList.toggle('tight',w/n<22);});
+  document.querySelectorAll('#paceBox .mstack:not(.tight)>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
     seg.classList.remove('nolb','nopc');
@@ -2766,12 +2926,16 @@ let AMB_RAF=null;
 function startAmb(){
   if(AMB_RAF!==null)return;
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){
-    const b=$('paceBox');if(b)b.style.setProperty('--ambt','.5');AMB_RAF=-1;return;}
+    const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
   const P=13000;
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
-    b.style.setProperty('--ambt',((1-Math.cos((ts%P)/P*2*Math.PI))/2).toFixed(4));
+    const t=(ts%P)/P;
+    b.style.setProperty('--ambt',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
+    /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
+       고정 색조의 세기도 같은 주기로 0 ↔ 1 을 오가게 해 기본 색과 번갈아 보이게 한다. */
+    b.style.setProperty('--ambp',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
     AMB_RAF=requestAnimationFrame(step);};
   AMB_RAF=requestAnimationFrame(step);
 }
@@ -3037,17 +3201,41 @@ let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
 /* 지표별 일자 시계열 — 진행 스코프 안에서, 집행이 끝난 날까지만 값을 만든다.
    (남은 집행일은 값 없이 비워 둔다 = 오른쪽이 비는 이유) */
 function dailySeries(k){
-  const sc=paceScope();
+  /* 가로축은 **캠페인 전체 기간** — 기간 필터를 좁혀도 캠페인 안에서 어디쯤인지 보이게 한다 */
+  const cs=campScope(), sc=paceScope();
   const fs=paceFacts();
   const byDay=new Map();
   fs.forEach(f=>{if(!byDay.has(f.d))byDay.set(f.d,zeroB());
     const b=byDay.get(f.d);AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});
-  const done=Math.max(Math.min(sc.i1+1,ELAPSED)-sc.i0,0);   /* 값이 있는 날 수 */
+  const lastIdx=Math.min(sc.i1,ELAPSED-1);
   const vals=[];
-  for(let i=0;i<done;i++){
-    const b=byDay.get(sc.i0+i);
+  for(let i=0;i<cs.days;i++){
+    const gi=cs.i0+i;
+    if(gi<sc.i0||gi>lastIdx){vals.push(NaN);continue;}
+    const b=byDay.get(gi);
     vals.push(b?mval(k,b):(METRICS[k].kind==='abs'?0:NaN));}
-  return {vals,days:sc.days,done,i0:sc.i0};
+  return {vals,days:cs.days,done:Math.max(lastIdx-cs.i0+1,0),i0:cs.i0};
+}
+/* 카드의 "제안 대비" 줄.
+   · 볼륨·금액 → 퍼센트 (제안 페이스 대비 얼마나 앞섰나)
+   · 단가(CPM·CPC·CPV·CPA·CPI·CPE) → **금액 차이**로 보여 준다. 제안보다 비싸면 붉은색, 싸면 녹색.
+     (단가는 "몇 % 좋다"보다 "얼마 비싸다"가 훨씬 빨리 읽힌다) */
+function dlHTML(k,o){
+  const {isAbs,lower,d,av,ev,due}=o;
+  if(!isAbs&&lower){
+    if(!isFinite(av)||!isFinite(ev)||!ev)return '<div class="dl na">제안 대비 –</div>';
+    const diff=av-ev;                          /* + = 제안보다 비싸다 = 나쁘다 */
+    const cheap=diff<0;
+    if(Math.abs(diff)<0.5)return `<div class="dl flat" title="제안 단가 ${METRICS[k].f(ev)} 와 같습니다">제안 대비 ±0</div>`;
+    return `<div class="dl ${cheap?'up':'down'}" title="제안 단가 ${METRICS[k].f(ev)} 보다 `
+      +`${won(Math.abs(diff))} ${cheap?'저렴합니다':'비쌉니다'}">`
+      +`제안 대비 ${cheap?'−':'+'}${won(Math.abs(diff)).replace('₩','')}원 <i>${cheap?'↓':'↑'}</i></div>`;}
+  if(!isFinite(d))return '<div class="dl na">제안 대비 –</div>';
+  const good=d>0;
+  return `<div class="dl ${good?'up':'down'}" title="${
+      isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${good?'앞서 있습니다':'뒤처져 있습니다'}`
+           :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}`}">`
+    +`제안 대비 ${good?'+':'−'}${pct(Math.abs(d),1)} <i>${good?'↑':'↓'}</i></div>`;
 }
 function renderStrip(){
   /* 달성률·페이스를 함께 보여주므로 진행 스코프 기준으로 (도넛·진행 현황과 동일) */
@@ -3075,11 +3263,7 @@ function renderStrip(){
     c.innerHTML=`<div class="sbody">
         <div class="k">${METRICS[k].l}</div>
         <div class="v mono${(()=>{const n=METRICS[k].f(av).length;return n>13?' lng2':n>10?' lng':'';})()}">${METRICS[k].f(av)}</div>
-        ${isFinite(d)?`<div class="dl ${good?'up':'down'}" title="${
-            isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${d>0?'앞서 있습니다':'뒤처져 있습니다'}`
-                 :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${d>0?'좋습니다':'나쁩니다'}`}">
-            제안 대비 ${d>0?'+':'−'}${pct(Math.abs(d),1)} <i>${d>0?'↑':'↓'}</i></div>`
-          :'<div class="dl na">제안 대비 –</div>'}
+        ${dlHTML(k,{isAbs,lower,d,av,ev,due})}
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
           <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
@@ -3112,12 +3296,21 @@ function drawSpark(host,pill,ser,k){
   S('stop',{offset:'0%','stop-color':'var(--acc)','stop-opacity':'.13'},g);
   S('stop',{offset:'100%','stop-color':'var(--acc)','stop-opacity':'0'},g);
   S('path',{d:`${line} L${pts[pts.length-1][0]} ${H} L${pts[0][0]} ${H} Z`,fill:`url(#${gid})`},svg);
-  S('path',{d:line,fill:'none',stroke:'var(--acc)','stroke-width':1.8,opacity:.42,
+  /* 선 색 — 진행 현황 막대처럼 밝은 띠가 좌우로 흐른다 */
+  const lid=uid();
+  const lg=S('linearGradient',{id:lid,x1:'0',y1:'0',x2:'1',y2:'0',
+    gradientUnits:'objectBoundingBox'},svg);
+  S('stop',{offset:'0%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
+  const mid=S('stop',{offset:'50%','stop-color':'var(--acc2)','stop-opacity':'.85'},lg);
+  S('stop',{offset:'100%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
+  const an=S('animate',{attributeName:'offset',values:'0.02;0.98;0.02',dur:'11s',
+    repeatCount:'indefinite',calcMode:'spline',keySplines:'.45 0 .55 1;.45 0 .55 1',keyTimes:'0;.5;1'},mid);
+  S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2,
     'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'},svg);
-  /* 오늘(마지막 집행일) 표식 */
+  /* 마지막 집행일 표식 — 가운데까지 같은 색으로 채운 단색 점 */
   const lastPt=pts[pts.length-1];
-  S('circle',{cx:lastPt[0],cy:lastPt[1],r:3.4,fill:'var(--surface)',stroke:'var(--acc)',opacity:.75,
-    'stroke-width':2,'vector-effect':'non-scaling-stroke',class:'spk-now'},svg);
+  S('circle',{cx:lastPt[0],cy:lastPt[1],r:3.4,fill:'var(--acc)',stroke:'var(--acc)',opacity:.9,
+    'stroke-width':1,'vector-effect':'non-scaling-stroke',class:'spk-now'},svg);
   /* hover — 점선 + 점 + 알약 */
   const hl=S('line',{x1:0,y1:0,x2:0,y2:H,stroke:'var(--acc)','stroke-width':1,
     'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke',opacity:0},svg);
@@ -3154,7 +3347,7 @@ const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',
 let SERIES_DIM='media';
 let ISSUE_OVERFLOW=0;
 let SHOW_FORECAST=true, SHOW_BENCH=true;
-const LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 단일 톤(그라데이션 기준색) */
+let LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 테마 강조색 */
 /* SVG 글자 폭 어림 — getComputedTextLength() 가 0 을 돌려줄 때만 쓴다 */
 function estTextW(s,size){
   let w=0;
@@ -3164,9 +3357,11 @@ function estTextW(s,size){
 }
 function roundRect(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h));
   return `M${x} ${y+h} L${x} ${y+r} Q${x} ${y} ${x+r} ${y} L${x+w-r} ${y} Q${x+w} ${y} ${x+w} ${y+r} L${x+w} ${y+h} Z`;}
+/* 막대 색 계열 — 테마의 b1~b5 를 그대로 쓴다 */
 function pickRamp(n){
-  const base=['#aab4bf','#8897a6','#677b8d','#495e72','#354758'];
-  if(n<=1)return ['#495e72'];
+  const base=[cssVar('--b1')||'#aab4bf',cssVar('--b2')||'#8897a6',cssVar('--b3')||'#677b8d',
+              cssVar('--b4')||'#495e72',cssVar('--b5')||'#354758'];
+  if(n<=1)return [cssVar('--b4')||'#495e72'];
   const out=[];for(let i=0;i<n;i++)out.push(base[Math.round(i*(base.length-1)/(n-1))]);
   return out.reverse();
 }
@@ -3248,20 +3443,21 @@ function renderDaily(){
   const minorDiv=(()=>{const m=majStep/Math.pow(10,Math.floor(Math.log10(majStep||1)));
     return Math.abs(m-2)<1e-6?4:Math.abs(m-2.5)<1e-6?5:5;})();
   const minStep=majStep/minorDiv;
+  /* 가로 눈금선은 그리지 않는다 — 축 옆 숫자와 짧은 눈금만 남긴다 */
   for(let v=minStep;v<yMax-1e-6;v+=minStep){
     if(Math.abs(v/majStep-Math.round(v/majStep))<1e-6)continue;
     const y=P.t+PH*(1-v/yMax);
-    S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'#f4f6f9','stroke-width':1},svg);
-    const t=S('text',{x:P.l-9,y:y+3,'text-anchor':'end','font-size':8.5,fill:'#aab4c0','font-weight':500},svg);
+    const t=S('text',{x:P.l-9,y:y+3,'text-anchor':'end','font-size':8.5,fill:'var(--muted)','font-weight':500,
+      opacity:.7},svg);
     t.textContent=bigNum(+v.toFixed(6));}
   bt.ticks.forEach(v=>{
     const y=P.t+PH*(1-v/yMax);
-    S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:v===0?'#d6dde6':'#e6eaf0','stroke-width':1},svg);
-    S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'#c5ccd6','stroke-width':1},svg);
+    if(v===0)S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
+    S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
     txt(P.l-9,y+3.5,bigNum(v));});
   const bw=Math.min(step-5,24),Y=v=>P.t+PH*(1-v/yMax);
   /* 미집행 구간 음영 */
-  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'#f7f9fb'},svg);
+  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'var(--acc-soft2)'},svg);
   ds.forEach((d,i)=>{
     let base=Y(0);const future=i>=EL;
     /* 값이 0인 계열은 건너뛰므로, 맨 위에 실제로 그려지는 칸을 먼저 찾아 거기에만 둥근 모서리를 준다
@@ -3276,9 +3472,9 @@ function renderDaily(){
       base=y;});
     const rest=isRest(d);
     const t=S('text',{x:cx(i),y:H-P.b+15,'text-anchor':'middle','font-size':9,
-      fill:rest?'#c9a5a2':AXIS.fill},svg);t.textContent=d.getDate();
+      fill:rest?'var(--hol)':AXIS.fill,opacity:rest?.8:1},svg);t.textContent=d.getDate();
     if(d.getDate()===1||i===0){
-      const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'#8d9cb0','font-weight':600},svg);
+      const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'var(--ink2)','font-weight':600},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
   let lineVals=null;
   if(lk!=='none'){
@@ -3300,7 +3496,7 @@ function renderDaily(){
     const lfmt=v=>['ctr','vtr','cvr'].includes(lk)?(v*100).toFixed(2)+'%':lk==='roas'?v.toFixed(2)+'x':fmt(v);
     const tickLabels=[];
     lt.ticks.forEach(v=>{const y=LY(v);
-      S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'#e2e7ed','stroke-width':1},svg);
+      S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
       tickLabels.push({y,el:txt(W-P.r+9,y+3.5,lfmt(v),'start')});});
     const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v)]:null).filter(Boolean);
     if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
@@ -3464,7 +3660,17 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const map=new Map();
   facts.forEach(f=>{const key=dims.map(d=>f[d]).join(SEP);
     if(!map.has(key))map.set(key,[]);map.get(key).push(f);});
-  let entries=[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0],'ko'));
+  /* 기본 정렬 — 예산(Gross)이 큰 순서. 같으면 이름순. (사용자가 끌어서 바꾼 순서가 있으면 그게 우선) */
+  const budgetOf=vals=>sum(LINES.filter(l=>vals.every((v,i)=>
+      NO_EXP_DIMS.includes(dims[i])||l[dims[i]]===v)).map(lineGross));
+  let entries=[...map.entries()].sort((a,b)=>{
+    const av=a[0].split(SEP),bv=b[0].split(SEP);
+    for(let i=0;i<dims.length;i++){
+      if(av[i]===bv[i])continue;
+      const ab=budgetOf(av.slice(0,i+1)),bb=budgetOf(bv.slice(0,i+1));
+      if(ab!==bb)return bb-ab;
+      return String(av[i]).localeCompare(String(bv[i]),'ko');}
+    return 0;});
   entries=applyOrder(entries,cfg);
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,rows);
@@ -3506,14 +3712,14 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
         /* 상위 계층 셀을 잡고 끌면 그 그룹 전체가 같은 부모 안에서 이동한다 */
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
-          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],v))}</td>`;});
+          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i])+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],vals[ci]))}</td>`;}
+        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
       h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
@@ -3526,6 +3732,47 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
+  /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
+  wirePivotColResize(tbl,cfg,cols,rerender);
+}
+/* 서머리 · 미디어믹스의 값 열 너비 조절 (2행 머리글이라 별도 처리) */
+function wirePivotColResize(tbl,cfg,cols,rerender){
+  const gs=(cfg.groups||[]).filter(g=>g.cols.length);
+  const soloThs=[...tbl.querySelectorAll('thead th.g.solo')];
+  const row2=tbl.tHead&&tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+  const ths=[];let si=0,ri=0;
+  gs.forEach(g=>{
+    if(g.solo&&g.cols.length===1)ths.push(soloThs[si++]);
+    else g.cols.forEach(()=>ths.push(row2[ri++]));});
+  ths.forEach((th,i)=>{
+    if(!th||th.querySelector('.colgrip'))return;
+    th.classList.add('cresz');
+    const g=document.createElement('span');
+    g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
+    th.appendChild(g);
+    let x0=0,w0=0;
+    const move=e=>{
+      const w=Math.max(52,Math.round(w0+e.clientX-x0));
+      cfg.w=cfg.w||{};cfg.w[cols[i]]=w;
+      th.style.minWidth=w+'px';
+      const cg=tbl.querySelector('colgroup');
+      const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
+      if(cg&&cg.children[leadN+i])cg.children[leadN+i].style.width=w+'px';};
+    const up=()=>{document.removeEventListener('mousemove',move);
+      document.removeEventListener('mouseup',up);
+      document.body.style.userSelect='';
+      try{markDirty();saveLocal();}catch(e){}};
+    g.addEventListener('mousedown',e=>{
+      e.preventDefault();e.stopPropagation();
+      x0=e.clientX;w0=th.getBoundingClientRect().width;
+      document.body.style.userSelect='none';
+      document.addEventListener('mousemove',move);
+      document.addEventListener('mouseup',up);});
+    g.addEventListener('dblclick',e=>{
+      e.stopPropagation();
+      if(cfg.w)delete cfg.w[cols[i]];
+      try{markDirty();saveLocal();}catch(x){}
+      rerender&&rerender();});});
 }
 function renderSummaries(){
   const host=$('summaryHost');host.innerHTML='';
@@ -3913,9 +4160,20 @@ const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
 /* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
+let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — 같은 매체 안에서만 적용 */
 /* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
    집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
    byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
+/* 합쳐진 소재의 매체 표시 — 예산을 많이 쓴 매체부터, 길면 …으로 줄인다 */
+function mediaLabel(c,maxN){
+  const list=c.medias&&c.medias.length?c.medias:[c.media].filter(Boolean);
+  if(list.length<=1)return list[0]||'';
+  const bud={};
+  LINES.forEach(l=>{bud[l.media]=(bud[l.media]||0)+lineGross(l);});
+  const sorted=list.slice().sort((a,b)=>(bud[b]||0)-(bud[a]||0));
+  const n=Math.max(1,maxN||2);
+  return sorted.length<=n?sorted.join(' · '):sorted.slice(0,n).join(' · ')+' …';
+}
 function mergeCreatives(list,byName){
   const KEYS=AMET.concat(['cost']);
   const m=new Map();
@@ -3956,8 +4214,20 @@ const CR_RANKS=[
   {k:'cpv',l:'조회 효율',sub:'CPV 낮은 순',base:'view'},
   {k:'cpm',l:'노출 효율',sub:'CPM 낮은 순',base:'imp'},
   {k:'cpc',l:'클릭 효율',sub:'CPC 낮은 순',base:'click'},
-  {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'}
+  {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'},
+  /* 반응률 — 높을수록 좋으므로 hi:true */
+  {k:'ctr',l:'CTR',sub:'클릭률 높은 순',base:'click',hi:true},
+  {k:'vtr',l:'VTR',sub:'조회율 높은 순',base:'view',hi:true}
 ];
+/* 지금 데이터로 값이 나오는 기준만 남긴다 — 조회수가 아직 0이면 조회 효율 칸 자체를 감춘다 */
+function crRanksLive(){
+  const pool=filteredCreatives();
+  return CR_RANKS.filter(r=>{
+    if(!CR_RANK_ON.includes(r.k))return false;
+    return pool.some(c=>{const b=crAgg(c);
+      const v=METRICS[r.k].c(b);
+      return (b[r.base]||0)>0&&isFinite(v)&&v>0;});});
+}
 /* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
    순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
 let CR_RANK_ON=['cpv','cpc','cpm'];
@@ -4035,11 +4305,14 @@ function renderCreatives(){
     host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
   /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
-  CR_RANK_ON.map(k=>CR_RANKS.find(r=>r.k===k)).filter(Boolean).forEach(r=>{
+  const live=crRanksLive();
+  if(!live.length){
+    host.innerHTML='<div class="card"><div class="bd hint">아직 효율을 계산할 수 있는 지표가 없습니다.</div></div>';return;}
+  live.forEach(r=>{
     const rows=pool.map(c=>{const b=crAgg(c);
         return {c,b,base:b[r.base]||0,eff:METRICS[r.k].c(b)};})
       .filter(x=>x.base>0&&isFinite(x.eff)&&x.eff>0)
-      .sort((a,b)=>a.eff-b.eff)
+      .sort((a,b)=>r.hi?b.eff-a.eff:a.eff-b.eff)
       .slice(0,CR_TOPN);
     const g=el('div','crcol',cols);
     const hd=el('div','crband',g);
@@ -4052,7 +4325,7 @@ function renderCreatives(){
     const lead=el('div','cr lead',duo);
     lead.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c0)}"></div>
         <div class="ribbon"><i>1위</i></div>
-        <div class="media">${esc(c0.media)}</div>
+        <div class="media" title="${esc(c0.media)}">${esc(mediaLabel(c0,2))}</div>
         <div class="rt">${c0.type==='video'?'▶ 영상':'🖼 이미지'}</div></div>
       <div class="meta"><div class="nm" title="${esc(c0.name)}">${esc(c0.name)}</div>
         <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x0.eff)}</b></div></div>`;
@@ -4069,7 +4342,7 @@ function renderCreatives(){
       d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c)}"></div>
           <div class="rankno">${i+2}</div></div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
-          <div class="mm">${esc(c.media)}</div>
+          <div class="mm" title="${esc(c.media)}">${esc(mediaLabel(c,2))}</div>
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
       wireCrPlay(d.querySelector('.thumb'),c);
       d.onclick=()=>openLightbox(c);});
@@ -4453,19 +4726,41 @@ function ganttEff(list,SC){
     color:(c,i)=>{const v=val[c.id+'|'+i];
       return v===undefined?'#dfe4ea':(hmFill(v,mn,md,mx)||'#dfe4ea');}};
 }
+/* 게재 히스토리 정렬 값 — 같은 매체 안에서만 견준다 */
+function ganttSortVal(c){
+  const b=crAgg(c);
+  switch(GANTT_SORT){
+    case 'ctr':  return -(b.imp?b.click/b.imp:-1);
+    case 'vtr':  return -(b.imp?b.view/b.imp:-1);
+    case 'cpc':  return b.click?b.cost/b.click:Infinity;
+    case 'cpv':  return b.view?b.cost/b.view:Infinity;
+    case 'imp':  return -(b.imp||0);
+    case 'click':return -(b.click||0);
+    case 'view': return -(b.view||0);
+    default:     return 0;}
+}
 function renderGantt(){
-  const t=$('ganttTbl'),list=filteredCreatives();
+  const t=$('ganttTbl');
+  /* 노출이 한 번도 없던 소재는 표에 올리지 않는다 */
+  const list=filteredCreatives().filter(c=>sum(c.daily.imp||[])>0);
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));
   /* 예산이 큰 순서로 (같으면 이름순) — 차원 순서대로 비교 */
   rowsData.sort((a,b)=>{
     for(let i=0;i<dims.length;i++){
+      /* 소재 열에 오면 사용자가 고른 정렬 기준을 적용한다 (같은 매체·같은 그룹 안에서만) */
+      if(dims[i]==='creative'&&GANTT_SORT!=='budget'){
+        if(GANTT_SORT==='name')
+          return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');
+        const av=ganttSortVal(a.c),bv=ganttSortVal(b.c);
+        if(av!==bv)return av-bv;
+        return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');}
       const ra=ganttRank(dims[i],a.vals[i],a.c),rb=ganttRank(dims[i],b.vals[i],b.c);
       if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
       if(a.vals[i]!==b.vals[i])return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');}
     return 0;});
-  if(GANTT.order){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
+  if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
   const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
   /* 기본은 캠페인 전체 일정, 설정에서 조회 기간으로 좁힐 수 있다 */
@@ -5116,6 +5411,9 @@ function renderSheet(){
     Gross 광고비 <b class="mono">${won(gross)}</b>`;
   /* 머리글 끝을 끌어 열 너비 조정 — 맨 앞 삭제 열 다음부터가 값 열이라 off=1 */
   enableColResize(t,cols,()=>markDirty(),1);
+  /* 머리글을 끌어 열 순서 바꾸기 */
+  if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
+    SHEET_COLS=applyColOrder(SHEET_COLS,view);renderSheet();markDirty();saveLocal();},1);
   t.querySelectorAll('td[data-r]').forEach(td=>{
     td.addEventListener('mousedown',e=>{const r=+td.dataset.r,c=+td.dataset.c;
       if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};selecting=true;paintSel();});
@@ -5325,21 +5623,51 @@ function syncSheet(){
     try{if(typeof saveLocal==='function')saveLocal();}catch(e){}},220);
 }
 function saveRows(){applySheet();renderAll();switchTab('dash');}
+/* 운영 이슈 — 시작일·종료일은 달력에서 고르고, 대상·유형 없이 내용만 적는다.
+   행마다 저장 버튼을 두어 적은 내용이 바로 반영된 것을 눈으로 확인할 수 있게 했다. */
 function renderIssues(){
-  let h=`<thead><tr><th style="width:124px">시작일</th><th style="width:124px">종료일</th>
-    <th style="width:190px">대상</th><th style="width:92px">유형</th><th>이슈 내용</th><th style="width:44px"></th></tr></thead><tbody>`;
+  let h=`<thead><tr><th style="width:150px">시작일</th><th style="width:150px">종료일</th>
+    <th>이슈 내용</th><th style="width:104px"></th></tr></thead><tbody>`;
   ISSUES.forEach((is,i)=>{
-    h+=`<tr><td><input value="${is.s}" data-is="${i}" data-k="s"></td>
-      <td><input value="${is.e}" data-is="${i}" data-k="e"></td>
-      <td><input value="${esc(is.scope)}" data-is="${i}" data-k="scope"></td>
-      <td><select data-is="${i}" data-k="type" style="min-width:0">${['홀딩','매체','단가','소재','기타'].map(o=>`<option ${o===is.type?'selected':''}>${o}</option>`).join('')}</select></td>
-      <td><input class="txt" value="${esc(is.txt)}" data-is="${i}" data-k="txt"></td>
-      <td><button class="btn sm" data-isdel="${i}">✕</button></td></tr>`;});
+    h+=`<tr><td><input type="date" value="${esc(is.s||'')}" data-is="${i}" data-k="s"
+          min="${campStart()}" max="${campEnd()}"></td>
+      <td><input type="date" value="${esc(is.e||'')}" data-is="${i}" data-k="e"
+          min="${campStart()}" max="${campEnd()}"></td>
+      <td><input class="txt" value="${esc(is.txt)}" data-is="${i}" data-k="txt"
+          placeholder="예: 소재 교체로 초기 학습 구간"></td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" data-issave="${i}" title="이 줄을 저장합니다">저장</button>
+        <button class="btn sm danger" data-isdel="${i}" title="이 줄을 삭제합니다" style="margin-left:4px">✕</button>
+      </td></tr>`;});
   const t=$('tblIssue');t.innerHTML=h+'</tbody>';
   const c=$('issueCount');if(c)c.textContent=`${ISSUES.length}건 등록됨`;
   t.querySelectorAll('[data-is]').forEach(inp=>inp.onchange=e=>{
-    ISSUES[+e.target.dataset.is][e.target.dataset.k]=e.target.value;renderDaily();});
-  t.querySelectorAll('[data-isdel]').forEach(b=>b.onclick=()=>{ISSUES.splice(+b.dataset.isdel,1);renderIssues();renderDaily();});}
+    ISSUES[+e.target.dataset.is][e.target.dataset.k]=e.target.value;
+    renderDaily();try{markDirty();}catch(x){}});
+  t.querySelectorAll('[data-issave]').forEach(b=>b.onclick=()=>{
+    const tr=b.closest('tr');
+    tr.querySelectorAll('[data-is]').forEach(inp=>{
+      ISSUES[+inp.dataset.is][inp.dataset.k]=inp.value;});
+    renderDaily();renderIssueAlert&&renderIssueAlert();
+    try{markDirty();saveLocal();}catch(x){}
+    b.textContent='✓ 저장됨';b.classList.add('primary');
+    setTimeout(()=>{b.textContent='저장';b.classList.remove('primary');},1300);});
+  t.querySelectorAll('[data-isdel]').forEach(b=>b.onclick=()=>{
+    ISSUES.splice(+b.dataset.isdel,1);renderIssues();renderDaily();
+    try{markDirty();saveLocal();}catch(x){}});
+  applyIssueFold();
+}
+/* 5건까지는 펼쳐 두고, 그보다 많으면 접어 둔다 */
+const ISSUE_OPEN_MAX=5;
+let ISSUE_FOLD_TOUCHED=false;
+function applyIssueFold(){
+  if(ISSUE_FOLD_TOUCHED)return;
+  const box=$('issueBox'),btn=$('issueFold');
+  if(!box||!btn)return;
+  const open=ISSUES.length<=ISSUE_OPEN_MAX;
+  box.classList.toggle('hidden',!open);
+  btn.textContent=open?'▴ 접기':`▾ 펼치기 (${ISSUES.length}건)`;
+}
 function openHistory(){
   const rowsOf=hs=>{
     if(hs.rows)return hs.rows;
@@ -5390,7 +5718,7 @@ function openColCfgUI(opt){
   const draft=opt.cols.map(c=>({...c}));
   const draw=()=>{
     let h=`<div class="hint" style="margin-bottom:10px">${opt.hint||'체크한 열만 표에 나타납니다.'}
-        <b>고친 내용은 아래 [저장]을 눌러야 반영됩니다.</b></div>
+        <b>바꾸는 즉시 화면에 반영됩니다.</b></div>
       <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden">
         <thead><tr><th style="width:34px">#</th><th style="width:56px">표시</th><th>열 이름</th>
         <th style="width:96px">유형</th><th style="text-align:center">입력 규칙 · 수식</th>
@@ -5420,18 +5748,19 @@ function openColCfgUI(opt){
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">
           ${keys.map(c=>`<span class="chip" data-ins="${c.k}">${esc(c.l)}</span>`).join('')}
           ${['+','-','*','/','(',')'].map(o=>`<span class="chip" data-ins="${o}" style="min-width:30px;justify-content:center">${o}</span>`).join('')}</div>
-        <div id="ncMsg" class="hint" style="margin-top:9px">열과 연산자 버튼만으로 수식을 구성합니다. 추가한 열도 [저장]을 눌러야 표에 나타납니다.</div></div>`;}
+        <div id="ncMsg" class="hint" style="margin-top:9px">열과 연산자 버튼만으로 수식을 구성합니다.</div></div>`;}
     return h;};
+  /* 바꾸는 즉시 화면에 반영한다 — [저장] 버튼 없이 [닫기] 하나만 둔다 */
+  const apply=()=>{try{opt.onSave(draft.map(c=>({...c})));}catch(e){}};
   const open=()=>{
-    openModal(opt.title,draw(),
-      '<button class="btn" data-close>닫기</button><button class="btn primary" id="colSave">저장</button>',{w:900});
+    openModal(opt.title,draw(),'<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:900});
     const host=$('modalHost');
-    host.querySelectorAll('[data-cc]').forEach(inp=>inp.onchange=e=>{
-      draft[+e.target.dataset.cc][e.target.dataset.k]=e.target.value;});
+    host.querySelectorAll('[data-cc]').forEach(inp=>inp.oninput=e=>{
+      draft[+e.target.dataset.cc][e.target.dataset.k]=e.target.value;apply();});
     host.querySelectorAll('[data-con]').forEach(cb=>cb.onchange=e=>{
-      draft[+e.target.dataset.con].on=e.target.checked;});
+      draft[+e.target.dataset.con].on=e.target.checked;apply();});
     host.querySelectorAll('[data-ccdel]').forEach(b=>b.onclick=()=>{
-      draft.splice(+b.dataset.ccdel,1);closeModal();open();});
+      draft.splice(+b.dataset.ccdel,1);apply();closeModal();open();});
     if(opt.allowFormula){
       const msg=$('ncMsg');
       host.querySelectorAll('[data-ins]').forEach(ch=>ch.onclick=()=>{
@@ -5446,8 +5775,8 @@ function openColCfgUI(opt){
         const err=checkFormula(f,draft);
         if(err){msg.innerHTML=`<span style="color:var(--neg);font-weight:700">✕ ${err}</span>`;return;}
         draft.push({k:'cx'+uid(),l:n,w:110,type:'calc',rule:f,on:true});
-        closeModal();open();};}
-    $('colSave').onclick=()=>{opt.onSave(draft);closeModal();};};
+        apply();closeModal();open();};}
+  };
   open();
 }
 function openColCfg(){
@@ -5539,7 +5868,8 @@ const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
-const allProductNames=()=>[...new Set(LINES.flatMap(lineProducts))]
+/* 광고상품은 매체를 넘겨 주면 그 매체에서 쓴 것만 돌려준다 */
+const allProductNames=(media)=>[...new Set((media?LINES.filter(l=>l.media===media):LINES).flatMap(lineProducts))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
@@ -5610,21 +5940,37 @@ function wireChipFields(root,onChange){
     pickBtn.onclick=e=>{
       e.stopPropagation();
       document.querySelectorAll('.cfmenu').forEach(m=>m.remove());
-      const pool=K.all().filter(n=>!cur().includes(n));
+      /* 광고상품만은 **그 매체에서 쓴 상품**으로 좁힌다.
+         타겟팅 그룹·소재·지면은 매체가 달라도 같은 이름을 함께 쓴다. */
+      const pool=(kind==='product'?K.all(l.media):K.all()).filter(n=>!cur().includes(n));
       const m=el('div','cfmenu',document.body);
-      m.innerHTML=`<div class="mt">등록된 ${label}</div>`
-        +(pool.length?pool.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
-                     :`<div class="mt" style="color:var(--muted)">추가할 ${label}이 없습니다 · ＋로 새로 만드세요</div>`);
+      const draw=q=>{
+        const f=q?pool.filter(n=>n.toLowerCase().includes(q.toLowerCase())):pool;
+        const list=m.querySelector('.cflist');
+        list.innerHTML=f.length
+          ? f.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
+          : `<div class="mt" style="color:var(--muted)">${q?'검색 결과가 없습니다':`추가할 ${label}이 없습니다 · ＋로 새로 만드세요`}</div>`;
+        list.querySelectorAll('[data-pick]').forEach(b=>b.onclick=ev=>{
+          ev.stopPropagation();m.remove();set(cur().concat([b.dataset.pick]));});};
+      m.innerHTML=`<div class="mt">등록된 ${label}${kind==='product'&&l.media?` <span style="color:var(--muted)">· ${esc(l.media)}</span>`:''}</div>`
+        +`<input class="cfq" placeholder="이름으로 검색" autocomplete="off">`
+        +`<div class="cflist"></div>`;
+      draw('');
       const r=pickBtn.getBoundingClientRect();
-      const mh=Math.min(m.scrollHeight||210,240);
+      const mh=Math.min(m.scrollHeight||210,300);
       const below=window.innerHeight-r.bottom;
       m.style.left=Math.min(r.left,window.innerWidth-m.offsetWidth-10)+'px';
       if(below<mh+12&&r.top>mh+12)m.style.top=(r.top-mh-6)+'px';
       else m.style.top=(r.bottom+5)+'px';
-      m.querySelectorAll('[data-pick]').forEach(b=>b.onclick=ev=>{
-        ev.stopPropagation();m.remove();set(cur().concat([b.dataset.pick]));});
-      setTimeout(()=>document.addEventListener('click',function h(){m.remove();
-        document.removeEventListener('click',h);},{once:true}),0);};
+      const q=m.querySelector('.cfq');
+      q.oninput=()=>draw(q.value.trim());
+      q.onclick=ev=>ev.stopPropagation();
+      q.onkeydown=ev=>{
+        if(ev.key==='Escape'){m.remove();return;}
+        if(ev.key==='Enter'){const b=m.querySelector('[data-pick]');if(b)b.click();}};
+      setTimeout(()=>{q.focus();
+        document.addEventListener('click',function h(){m.remove();
+          document.removeEventListener('click',h);},{once:true});},0);};
     /* ＋ — 목록에 없는 새 항목 만들기 */
     fd.querySelector('.cfadd').onclick=e=>{
       e.stopPropagation();
@@ -5729,6 +6075,8 @@ function renderKpiTable(){
   t.innerHTML=h;
   /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
   enableColResize(t,cols,()=>markDirty(),1);
+  if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
+    LINE_COLS=applyColOrder(LINE_COLS,view);renderKpiTable();markDirty();saveLocal();},1);
   wireChipFields(t,()=>{rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderAll();});
   t.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=e=>{
     pushLineUndo();
@@ -5788,13 +6136,8 @@ function renderKpiTable(){
       td.dataset.r=ri;td.dataset.c=ci;
       /* 엑셀처럼 — 한 번 누르면 "셀 선택", Enter 또는 더블클릭이면 "입력 시작".
          드롭다운·날짜·체크박스·칩은 기존처럼 바로 눌러서 쓴다. */
-      td.addEventListener('mousedown',e=>{
-        LSEL={r:ri,c:ci};paintLSel();
-        const tg=e.target;
-        const isTxt=(tg.tagName==='INPUT'&&(tg.type==='text'||!tg.getAttribute('type')))||tg.tagName==='TEXTAREA';
-        if(isTxt&&document.activeElement!==tg){
-          e.preventDefault();
-          if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}});
+      /* 클릭 한 번에 바로 입력 상태로 — 예전에는 한 번은 선택, 두 번째에 입력이었다 */
+      td.addEventListener('mousedown',()=>{LSEL={r:ri,c:ci};paintLSel();});
       td.addEventListener('dblclick',()=>{LSEL={r:ri,c:ci};paintLSel();editLineCell();});});});
   paintLSel();
 }
@@ -6021,7 +6364,17 @@ function renderMix(){
   const rows=mixRows();
   const grouped=new Map();
   rows.forEach(r=>{if(!grouped.has(r.key))grouped.set(r.key,[]);grouped.get(r.key).push(r);});
-  let entries=[...grouped.entries()].sort((a,b)=>a[0].localeCompare(b[0],'ko'));
+  /* 예산(Gross)이 큰 순서로 — 같으면 이름순 */
+  const bOf=vals=>sum(rows.filter(r=>vals.every((v,i)=>String(r.key.split(SEP)[i])===v))
+    .map(r=>lineGross(r.l)));
+  let entries=[...grouped.entries()].sort((a,b)=>{
+    const av=a[0].split(SEP),bv=b[0].split(SEP);
+    for(let i=0;i<dims.length;i++){
+      if(av[i]===bv[i])continue;
+      const ab=bOf(av.slice(0,i+1)),bb=bOf(bv.slice(0,i+1));
+      if(ab!==bb)return bb-ab;
+      return String(av[i]).localeCompare(String(bv[i]),'ko');}
+    return 0;});
   entries=applyOrder(entries,MIX_CFG);
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,MIX_CFG.rows);
@@ -6106,7 +6459,7 @@ function renderMix(){
       h+=`<tr data-key="${esc(entries[r.ri][0])}" data-pre="${esc(vals.slice(0,-1).join(SEP))}">`;
       vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
-          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${esc(v)}</td>`;});
+          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       /* 소재 행이 병합된 구간에서도 비고 열은 행마다 그리므로 구분선 클래스를 그대로 유지한다 */
       h+=(crIdx>0&&merge===0)
         ? cols.map((k,ci)=>k==='m_note'?`<td class="mono${seps.has(ci)?' gsep':''}">${cell(rs,k)}</td>`:'').join('')
@@ -6116,9 +6469,9 @@ function renderMix(){
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(vals[ci])}</td>`;}
+        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(vals[L])} Sub Total</td>`;
+      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
   h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
@@ -6130,6 +6483,7 @@ function renderMix(){
   mergeVertical($('tblMix'),'price');
   wireGroupRename($('tblMix'),MIX_CFG,renderMix);
   enableRowDrag($('tblMix'),MIX_CFG,renderMix);
+  wirePivotColResize($('tblMix'),MIX_CFG,cols,renderMix);
 }
 function openPerm(){
   /* 로그인 상태면 실제 캠페인 멤버·초대를 보여준다 (미로그인이면 예시 목록) */
@@ -6251,9 +6605,10 @@ const rangeSel=p=>{const sc=viewScope();
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
     <input type="date" id="${p}To" value="${FILTER.to||sc.endIso}" min="${campStart()}" max="${campEnd()}">
-    <button class="btn sm primary" id="${p}Apply" title="선택한 기간을 대시보드에 반영">적용</button>
   </span>`;};
 function buildFilters(){
+  /* 대시보드 상단 필터는 **기간 하나만** — 구분·매체·제품은 각 표의 행 구성으로 본다.
+     날짜는 고르는 즉시 반영된다 ([적용] 버튼 없음). */
   const dimSels=p=>selHTML(p+'Segment','구분',segments(),FILTER.segment)
     +selHTML(p+'Media','매체',[...new Set(LINES.map(l=>l.media))],FILTER.media)
     +selHTML(p+'Line','제품',[...new Set(LINES.map(l=>l.line))],FILTER.line);
@@ -6261,19 +6616,20 @@ function buildFilters(){
     ['Segment','Media','Line'].forEach((s,i)=>{
       const e2=$(p+s);if(!e2)return;
       const key=['segment','media','line'][i];
-      /* 차원을 바꾸면 사용자가 잡아둔 날짜는 풀고 그 항목의 집행 구간으로 다시 맞춘다 */
       e2.onchange=ev=>{FILTER[key]=ev.target.value;FILTER.from='';FILTER.to='';buildFilters();renderAll();};});
-    /* 날짜는 [적용] 을 눌러야 반영된다 (고르는 중에 화면이 바뀌지 않도록) */
-    const ap=$(p+'Apply');
-    if(ap)ap.onclick=()=>{
+    const apply=()=>{
       let f=($(p+'From')||{}).value||'',t=($(p+'To')||{}).value||'';
       if(f&&t&&t<f){const x=f;f=t;t=x;}
+      if(f===FILTER.from&&t===FILTER.to)return;
       FILTER.from=f;FILTER.to=t;
-      buildFilters();renderAll();};};
-  $('perfFilters').innerHTML=rangeSel('p')+dimSels('p')
+      buildFilters();renderAll();};
+    [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
+      e2.onchange=apply;e2.oninput=apply;});};
+  $('perfFilters').innerHTML=rangeSel('p')
     +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';
   wire('p');
-  $('rawFilters').innerHTML=rangeSel('r')+dimSels('r');
+  /* 일자별 상세 효율도 같은 규칙 — 기간만 */
+  $('rawFilters').innerHTML=rangeSel('r');
   wire('r');
   const mf=$('mixFilters');
   if(mf){mf.innerHTML=dimSels('m');wire('m');}
@@ -6304,6 +6660,9 @@ function buildSelects(){
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
       am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
+  const gs=$('ganttSort');
+  if(gs){gs.value=GANTT_SORT;
+    gs.onchange=e=>{GANTT_SORT=e.target.value;renderGantt();markDirty();saveLocal();};}
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
@@ -6457,12 +6816,19 @@ if($('guideBtn'))$('guideBtn').onclick=async()=>{
 };
 $('holBtn').onclick=openHolidays;
 
-$('issueFold').onclick=()=>{const b=$('issueBox'),open=b.classList.toggle('hidden');
-  $('issueFold').textContent=open?'▾ 펼치기':'▴ 접기';};
+$('issueFold').onclick=()=>{
+  ISSUE_FOLD_TOUCHED=true;
+  const b=$('issueBox'),closed=b.classList.toggle('hidden');
+  $('issueFold').textContent=closed?`▾ 펼치기 (${ISSUES.length}건)`:'▴ 접기';};
 $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);renderDaily();};
 $('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);renderDaily();};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};
-$('addIssue').onclick=()=>{ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});renderIssues();renderDaily();};
+$('addIssue').onclick=()=>{
+  ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});
+  ISSUE_FOLD_TOUCHED=true;
+  const b=$('issueBox');if(b)b.classList.remove('hidden');
+  $('issueFold').textContent='▴ 접기';
+  renderIssues();renderDaily();};
 /* 라인 추가 — 기본값 없이 전부 공란으로 (같은 값이 필요하면 행 우측 ⧉ 복제 버튼) */
 function blankLine(){
   const base=LINES[LINES.length-1]||{};
@@ -6760,7 +7126,13 @@ function restoreDemo(){
   return true;
 }
 const gateEl=()=>$('gate');
-function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
+function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');endBoot();}
+/* 가림막 걷기 — 화면이 실제로 그려진 다음 프레임에 */
+function startBoot(){try{document.body.classList.add('booting');}catch(e){}}
+function endBoot(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.body.classList.remove('booting');}));
+}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
 /* 코드로 들어온 사람 —
    뷰어 코드  → 광고주 (대시보드 열람 + 엑셀 다운로드만)
@@ -7055,9 +7427,11 @@ function paintCampSel(){
 }
 async function openCampaign(id){
   if(!CLOUD.on||!id)return;
+  /* 불러오는 동안 화면을 가린다 — 예전 캠페인이나 예시 데이터가 잠깐 비치지 않게 */
+  startBoot();
   CLOUD.busy=true;cloudState('불러오는 중…');
   const {data:c,error}=await CLOUD.sb.from('campaigns').select('*').eq('id',id).single();
-  if(error){CLOUD.busy=false;cloudState('열지 못했습니다: '+error.message);return;}
+  if(error){CLOUD.busy=false;endBoot();cloudState('열지 못했습니다: '+error.message);return;}
   CLOUD.campaign=c;
   const {data:mem}=await CLOUD.sb.from('campaign_members')
     .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
@@ -7082,6 +7456,7 @@ async function openCampaign(id){
   applyRoleLock();
   CLOUD.busy=false;
   clearLocal();
+  endBoot();
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
 const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
@@ -7103,6 +7478,7 @@ async function cloudSave(silent){
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
   cloudState('저장 중…');
+  const chip=$('savedAgo');if(chip){chip.textContent='저장 중…';chip.classList.remove('on');}
   const doc=serializeDoc();
   /* .select() 를 붙여 실제로 몇 행이 바뀌었는지 확인한다.
      권한이 없으면 RLS 가 오류 대신 "0행 수정"으로 조용히 넘어가기 때문. */
@@ -7129,6 +7505,8 @@ async function cloudSave(silent){
   CLOUD.savedAt=new Date();
   CLOUD.dirty=false;
   paintSaved();
+  /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
+  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
 }
 /* ---------- 자동 저장 · "00분 전에 저장됨" ----------
    저장 버튼을 누르지 않아도 알아서 저장한다.
@@ -7206,11 +7584,8 @@ async function createCampaign(){
        <div class="fld" style="flex:1;min-width:260px"><label>캠페인명</label>
          <input id="ncName" placeholder="예: 2026 하반기 브랜드 캠페인"></div>
      </div>
-     <label class="tagchip" style="margin-top:12px;cursor:pointer">
-       <input type="checkbox" id="ncDemo"> 지금 화면의 내용을 그대로 복사해서 시작
-     </label>
-     <div class="hint" style="margin-top:8px">체크하지 않으면 <b>빈 캠페인</b>으로 시작합니다.
-       (예상 효율 · 일별 실적 없음)</div>`,
+     <div class="hint" style="margin-top:10px"><b>빈 캠페인</b>으로 시작합니다 — 예상 효율과 일별 실적은
+       만든 뒤에 엑셀로 불러오거나 직접 입력합니다.</div>`,
     '<button class="btn" data-close>취소</button><button class="btn primary" id="ncGo">만들기</button>',{w:660});
   const readAdv=wireAdvPicker(st);
   $('ncGo').onclick=async()=>{
@@ -7218,12 +7593,10 @@ async function createCampaign(){
     if(!av.name){confirmModal('광고주를 골라 주세요.','기존 광고주를 고르거나 새 광고주명을 적어 주세요.',()=>{},'확인');return;}
     const name=($('ncName').value||'').trim()||'새 캠페인';
     const adv=av.name;
-    const copy=$('ncDemo').checked;
     ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();
     closeModal();
     cloudState('만드는 중…');
-    if(!copy)resetToBlank(name,adv);
-    else{CAMPAIGN.name=name;CAMPAIGN.advertiser=adv;renderCampForm();renderCampBar();}
+    resetToBlank(name,adv);
     CAMPAIGN.advLogo=av.logo||'';renderBrand();
     const {data,error}=await CLOUD.sb.from('campaigns').insert({
       name,advertiser:adv,start_date:campStart(),end_date:campEnd(),
@@ -7234,7 +7607,7 @@ async function createCampaign(){
     await loadCampaignList();
     await openCampaign(data.id);};
 }
-/* ---------- 캠페인 관리 (이름 변경 · 복제 · 삭제) ---------- */
+/* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
 async function openCampManage(){
   if(!CLOUD.on||!CLOUD.user){
     confirmModal('구글 로그인이 필요합니다.','로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.',
@@ -7281,7 +7654,7 @@ async function openCampManage(){
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 관리',h,
+  openModal('캠페인 및 광고주 관리',h,
     '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
@@ -7384,7 +7757,11 @@ async function removeMember(userId){
   document.addEventListener('click',e=>{
     const m=$('meMenu');
     if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
-  if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
+  if(b('cloudSave'))b('cloudSave').onclick=()=>{
+    /* 누르는 즉시 표시부터 바꾼다 — 저장이 끝나면 "방금 저장" 으로 확정된다 */
+    const c=$('savedAgo');if(c){c.classList.remove('on');c.textContent='저장 중…';}
+    if(typeof applySheet==='function'){try{applySheet();}catch(e){}}
+    cloudSave(false);};
   if(b('campMng'))b('campMng').onclick=openCampManage;
   /* 계정 관리 — 구글 계정 메뉴 안에서 연다 */
   if(b('acctBtn'))b('acctBtn').onclick=e=>{e.stopPropagation();
@@ -8864,12 +9241,17 @@ function syncThemeColors(){
     SHADE_HIGH=cssRgb(v('--b3')||'#4c729a');}
   /* 버블 색상표 — 첫 색만 테마 강조색으로 바꾸고 나머지는 계열을 유지한다 */
   if(typeof BUB_HUES!=='undefined')BUB_HUES[0]=cssRgb(v('--acc')||'#3a668c');
+  /* KPI 달성 현황 게이지 · 일자별 효율 비교 꺾은선도 테마 색으로 */
+  if(typeof KPI_RING!=='undefined')KPI_RING=[v('--acc')||KPI_RING[0],v('--acc2')||KPI_RING[1],v('--b2')||KPI_RING[2]];
+  if(typeof LINE_TONE!=='undefined')LINE_TONE=v('--acc2')||LINE_TONE;
+  /* 운영 코멘트 강조색 · 히트맵 배경은 CSS 변수로 처리한다 */
 }
 function applyTheme(k,quiet){
   THEME=THEMES.some(t=>t.k===k)?k:'';
   if(THEME)document.documentElement.setAttribute('data-theme',THEME);
   else document.documentElement.removeAttribute('data-theme');
   syncThemeColors();
+  try{refreshBgDots();}catch(e){}
   if(quiet)return;
   try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
@@ -8913,6 +9295,7 @@ function renderBrand(){
   if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;}
   else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
   nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
+  try{refreshBgDots();tuneTopbarForLogo();}catch(e){}
 }
 let DMD_MARK='';
 /* 이미지 파일 → 데이터 URL (가로세로 1:1 ~ 3:1 만 받는다) */
@@ -8950,20 +9333,32 @@ function advPickerHTML(cur,logo){
     <div class="fld" style="flex:0 0 100%"><label>광고주 로고 <span class="hint">(선택 · 가로세로 1:1 ~ 3:1 · 높이는 자동으로 맞춰집니다)</span></label>
       <div class="logopick">
         <span class="prev" id="advPrev">${logo?`<img src="${logo}" alt="">`:'<em>없음</em>'}</span>
-        <button class="btn sm" id="advPick" type="button">🖼 이미지 선택</button>
+        <button class="btn sm" id="advPick" type="button">이미지 선택</button>
         <button class="btn sm" id="advClear" type="button">지우기</button>
       </div></div>`;
 }
 function wireAdvPicker(state){
   const sel=$('advSel'),nf=$('advNewFld');
-  const sync=()=>{const isNew=sel.value==='__new';nf.style.display=isNew?'':'none';
-    if(!isNew){state.logo=advLogo(sel.value)||'';paint();}};
+  /* 광고주와 로고는 한 세트 — 광고주를 고르면 그 광고주의 로고가 따라오고,
+     로고를 바꾸면 그 광고주의 로고로 저장된다 */
+  const nameNow=()=>(sel.value==='__new'?($('advNew').value||'').trim():sel.value)||'';
   const paint=()=>{const p=$('advPrev');
-    p.innerHTML=state.logo?`<img src="${state.logo}" alt="">`:'<em>없음</em>';};
-  sel.onchange=sync;sync();paint();
-  $('advPick').onclick=()=>pickLogo(u=>{state.logo=u;paint();});
-  $('advClear').onclick=()=>{state.logo='';paint();};
-  return ()=>({name:(sel.value==='__new'?($('advNew').value||'').trim():sel.value)||'',logo:state.logo});
+    p.innerHTML=state.logo?`<img src="${state.logo}" alt="">`:'<em>없음</em>';
+    const t=$('advSetNote');
+    if(t)t.textContent=nameNow()?`“${nameNow()}” 광고주의 로고로 저장됩니다`:'광고주를 먼저 골라 주세요';};
+  const sync=()=>{const isNew=sel.value==='__new';nf.style.display=isNew?'':'none';
+    state.logo=isNew?(advLogo(($('advNew').value||'').trim())||state.logo||''):(advLogo(sel.value)||'');
+    paint();};
+  sel.onchange=sync;
+  const nv=$('advNew');if(nv)nv.oninput=()=>{const g=advLogo(nv.value.trim());if(g)state.logo=g;paint();};
+  sync();
+  $('advPick').onclick=()=>pickLogo(u=>{state.logo=u;
+    const n=nameNow();if(n){ADV_BOOK[n]=ADV_BOOK[n]||{};ADV_BOOK[n].logo=u;saveAdvBook();}
+    paint();});
+  $('advClear').onclick=()=>{state.logo='';
+    const n=nameNow();if(n&&ADV_BOOK[n]){ADV_BOOK[n].logo='';saveAdvBook();}
+    paint();};
+  return ()=>({name:nameNow(),logo:state.logo});
 }
 function openAdvEditor(){
   const st={logo:CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||''};
@@ -9016,6 +9411,138 @@ function attachTopScroll(wrap){
     const mx=$('tblMix');if(mx)attachTopScroll(mx.closest('.tbl-wrap'));};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,80);
 })();
+
+/* =========================================================================
+   배경 — 광고주 로고를 도트 패턴으로 크게 깔고 아주 천천히 움직인다.
+   · 로고를 작은 캔버스에 그린 뒤 밝기로 도트 격자를 만든다(글자·형태만 남는다)
+   · 색은 테마 강조색, 배경과 다투지 않도록 아주 옅게
+   · 크기는 화면(가로)의 약 50% → 넓이 기준 화면의 25% 정도를 차지한다
+   ========================================================================= */
+const BGDOT={url:'',theme:'',svg:''};
+function bgDotBuild(url,cb){
+  const im=new Image();
+  im.onload=()=>{
+    try{
+      const GRID=46;                                   /* 가로 도트 개수 */
+      const ratio=im.height/Math.max(im.width,1);
+      const gh=Math.max(6,Math.round(GRID*ratio));
+      const cv=document.createElement('canvas');
+      cv.width=GRID;cv.height=gh;
+      const cx=cv.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(im,0,0,GRID,gh);
+      const d=cx.getImageData(0,0,GRID,gh).data;
+      const dots=[];
+      for(let y=0;y<gh;y++)for(let x=0;x<GRID;x++){
+        const i=(y*GRID+x)*4, a=d[i+3]/255;
+        if(a<0.25)continue;
+        /* 밝기가 낮을수록(=로고의 잉크 부분) 크게 */
+        const l=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;
+        const w=(1-l)*a;
+        if(w<0.16)continue;
+        dots.push([x,y,(0.16+w*0.34).toFixed(3)]);}
+      if(dots.length<14){cb('');return;}
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${gh}">`
+        +dots.map(([x,y,r])=>`<circle cx="${x+.5}" cy="${y+.5}" r="${r}" fill="CLR"/>`).join('')
+        +'</svg>';
+      cb(svg);
+    }catch(e){cb('');}};
+  im.onerror=()=>cb('');
+  im.crossOrigin='anonymous';
+  im.src=url;
+}
+function paintBgDots(svg){
+  const host=$('bgdots');if(!host)return;
+  if(!svg){host.style.backgroundImage='';host.classList.remove('on');return;}
+  /* 테마 강조색을 옅게 — 배경 위에서 튀지 않을 만큼만 */
+  const c=cssRgb(cssVar('--acc')||'#495e72');
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const col=`rgba(${c[0]},${c[1]},${c[2]},${dark?0.14:0.10})`;
+  const url='data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace(/CLR/g,col));
+  host.style.backgroundImage=`url("${url}")`;
+  host.classList.add('on');
+}
+function refreshBgDots(){
+  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  const th=document.documentElement.getAttribute('data-theme')||'';
+  if(!url){BGDOT.url='';BGDOT.svg='';paintBgDots('');return;}
+  if(url===BGDOT.url){if(th!==BGDOT.theme){BGDOT.theme=th;paintBgDots(BGDOT.svg);}return;}
+  BGDOT.url=url;BGDOT.theme=th;
+  bgDotBuild(url,svg=>{BGDOT.svg=svg;paintBgDots(svg);});
+}
+/* 로고가 밝으면 상단 바를 짙게 — 흰 배경 위 흰 로고가 안 보이던 문제 */
+function tuneTopbarForLogo(){
+  const bar=document.querySelector('.topbar');if(!bar)return;
+  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  if(!url){bar.classList.remove('darkbar');return;}
+  const im=new Image();
+  im.onload=()=>{
+    try{
+      const cv=document.createElement('canvas');cv.width=24;cv.height=24;
+      const cx=cv.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(im,0,0,24,24);
+      const d=cx.getImageData(0,0,24,24).data;
+      let lum=0,n=0;
+      for(let i=0;i<d.length;i+=4){
+        const a=d[i+3]/255;if(a<0.25)continue;
+        lum+=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;n++;}
+      const avg=n?lum/n:0;
+      bar.classList.toggle('darkbar',n>0&&avg>0.72);
+    }catch(e){bar.classList.remove('darkbar');}};
+  im.onerror=()=>bar.classList.remove('darkbar');
+  im.crossOrigin='anonymous';
+  im.src=url;
+}
+
+/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록) */
+setTimeout(()=>{try{document.body.classList.remove('booting');}catch(e){}},6000);
+
+/* =========================================================================
+   표 머리글을 끌어서 열 순서 바꾸기 (일별 실적 입력 · 예상 효율)
+   ========================================================================= */
+function enableColDrag(tbl,cols,onDone,off){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[0])return;
+  off=off||0;
+  const ths=[...tbl.tHead.rows[0].cells];
+  let from=-1;
+  const clear=()=>ths.forEach(t=>t.classList.remove('cdrag','cdropL','cdropR'));
+  cols.forEach((c,i)=>{
+    const th=ths[off+i];if(!th)return;
+    th.draggable=true;
+    th.classList.add('cmove');
+    if(!th.title)th.title='끌어서 열 순서를 바꿀 수 있습니다';
+    th.addEventListener('dragstart',e=>{
+      /* 너비 조절 손잡이를 잡은 것이면 순서 바꾸기가 아니다 */
+      if(e.target.classList&&e.target.classList.contains('colgrip')){e.preventDefault();return;}
+      from=i;th.classList.add('cdrag');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','col');}catch(x){}});
+    th.addEventListener('dragend',()=>{from=-1;clear();});
+    th.addEventListener('dragover',e=>{
+      if(from<0||from===i)return;
+      e.preventDefault();
+      const r=th.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      th.classList.toggle('cdropR',after);th.classList.toggle('cdropL',!after);});
+    th.addEventListener('dragleave',()=>th.classList.remove('cdropL','cdropR'));
+    th.addEventListener('drop',e=>{
+      if(from<0||from===i)return;
+      e.preventDefault();
+      const r=th.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      /* 화면에 보이는 열(cols)의 순서를 원본 배열에서도 그대로 옮긴다 */
+      const moved=cols[from];
+      let to=i+(after?1:0);
+      if(from<to)to--;
+      const view=cols.slice();
+      view.splice(from,1);view.splice(to,0,moved);
+      onDone(view);
+      clear();from=-1;});});
+}
+/* 보이는 열만 담긴 배열(view)의 순서를 전체 열 배열에 반영한다 */
+function applyColOrder(all,view){
+  const order=view.map(c=>c.k);
+  const rest=all.filter(c=>!order.includes(c.k));
+  const moved=order.map(k=>all.find(c=>c.k===k)).filter(Boolean);
+  /* 숨긴 열은 원래 자리 근처에 그대로 둔다 — 뒤에 붙인다 */
+  return moved.concat(rest);
+}
 
 </script>
 </body>

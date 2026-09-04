@@ -145,6 +145,9 @@ function renderSheet(){
     Gross 광고비 <b class="mono">${won(gross)}</b>`;
   /* 머리글 끝을 끌어 열 너비 조정 — 맨 앞 삭제 열 다음부터가 값 열이라 off=1 */
   enableColResize(t,cols,()=>markDirty(),1);
+  /* 머리글을 끌어 열 순서 바꾸기 */
+  if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
+    SHEET_COLS=applyColOrder(SHEET_COLS,view);renderSheet();markDirty();saveLocal();},1);
   t.querySelectorAll('td[data-r]').forEach(td=>{
     td.addEventListener('mousedown',e=>{const r=+td.dataset.r,c=+td.dataset.c;
       if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};selecting=true;paintSel();});
@@ -354,21 +357,51 @@ function syncSheet(){
     try{if(typeof saveLocal==='function')saveLocal();}catch(e){}},220);
 }
 function saveRows(){applySheet();renderAll();switchTab('dash');}
+/* 운영 이슈 — 시작일·종료일은 달력에서 고르고, 대상·유형 없이 내용만 적는다.
+   행마다 저장 버튼을 두어 적은 내용이 바로 반영된 것을 눈으로 확인할 수 있게 했다. */
 function renderIssues(){
-  let h=`<thead><tr><th style="width:124px">시작일</th><th style="width:124px">종료일</th>
-    <th style="width:190px">대상</th><th style="width:92px">유형</th><th>이슈 내용</th><th style="width:44px"></th></tr></thead><tbody>`;
+  let h=`<thead><tr><th style="width:150px">시작일</th><th style="width:150px">종료일</th>
+    <th>이슈 내용</th><th style="width:104px"></th></tr></thead><tbody>`;
   ISSUES.forEach((is,i)=>{
-    h+=`<tr><td><input value="${is.s}" data-is="${i}" data-k="s"></td>
-      <td><input value="${is.e}" data-is="${i}" data-k="e"></td>
-      <td><input value="${esc(is.scope)}" data-is="${i}" data-k="scope"></td>
-      <td><select data-is="${i}" data-k="type" style="min-width:0">${['홀딩','매체','단가','소재','기타'].map(o=>`<option ${o===is.type?'selected':''}>${o}</option>`).join('')}</select></td>
-      <td><input class="txt" value="${esc(is.txt)}" data-is="${i}" data-k="txt"></td>
-      <td><button class="btn sm" data-isdel="${i}">✕</button></td></tr>`;});
+    h+=`<tr><td><input type="date" value="${esc(is.s||'')}" data-is="${i}" data-k="s"
+          min="${campStart()}" max="${campEnd()}"></td>
+      <td><input type="date" value="${esc(is.e||'')}" data-is="${i}" data-k="e"
+          min="${campStart()}" max="${campEnd()}"></td>
+      <td><input class="txt" value="${esc(is.txt)}" data-is="${i}" data-k="txt"
+          placeholder="예: 소재 교체로 초기 학습 구간"></td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" data-issave="${i}" title="이 줄을 저장합니다">저장</button>
+        <button class="btn sm danger" data-isdel="${i}" title="이 줄을 삭제합니다" style="margin-left:4px">✕</button>
+      </td></tr>`;});
   const t=$('tblIssue');t.innerHTML=h+'</tbody>';
   const c=$('issueCount');if(c)c.textContent=`${ISSUES.length}건 등록됨`;
   t.querySelectorAll('[data-is]').forEach(inp=>inp.onchange=e=>{
-    ISSUES[+e.target.dataset.is][e.target.dataset.k]=e.target.value;renderDaily();});
-  t.querySelectorAll('[data-isdel]').forEach(b=>b.onclick=()=>{ISSUES.splice(+b.dataset.isdel,1);renderIssues();renderDaily();});}
+    ISSUES[+e.target.dataset.is][e.target.dataset.k]=e.target.value;
+    renderDaily();try{markDirty();}catch(x){}});
+  t.querySelectorAll('[data-issave]').forEach(b=>b.onclick=()=>{
+    const tr=b.closest('tr');
+    tr.querySelectorAll('[data-is]').forEach(inp=>{
+      ISSUES[+inp.dataset.is][inp.dataset.k]=inp.value;});
+    renderDaily();renderIssueAlert&&renderIssueAlert();
+    try{markDirty();saveLocal();}catch(x){}
+    b.textContent='✓ 저장됨';b.classList.add('primary');
+    setTimeout(()=>{b.textContent='저장';b.classList.remove('primary');},1300);});
+  t.querySelectorAll('[data-isdel]').forEach(b=>b.onclick=()=>{
+    ISSUES.splice(+b.dataset.isdel,1);renderIssues();renderDaily();
+    try{markDirty();saveLocal();}catch(x){}});
+  applyIssueFold();
+}
+/* 5건까지는 펼쳐 두고, 그보다 많으면 접어 둔다 */
+const ISSUE_OPEN_MAX=5;
+let ISSUE_FOLD_TOUCHED=false;
+function applyIssueFold(){
+  if(ISSUE_FOLD_TOUCHED)return;
+  const box=$('issueBox'),btn=$('issueFold');
+  if(!box||!btn)return;
+  const open=ISSUES.length<=ISSUE_OPEN_MAX;
+  box.classList.toggle('hidden',!open);
+  btn.textContent=open?'▴ 접기':`▾ 펼치기 (${ISSUES.length}건)`;
+}
 function openHistory(){
   const rowsOf=hs=>{
     if(hs.rows)return hs.rows;
@@ -419,7 +452,7 @@ function openColCfgUI(opt){
   const draft=opt.cols.map(c=>({...c}));
   const draw=()=>{
     let h=`<div class="hint" style="margin-bottom:10px">${opt.hint||'체크한 열만 표에 나타납니다.'}
-        <b>고친 내용은 아래 [저장]을 눌러야 반영됩니다.</b></div>
+        <b>바꾸는 즉시 화면에 반영됩니다.</b></div>
       <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden">
         <thead><tr><th style="width:34px">#</th><th style="width:56px">표시</th><th>열 이름</th>
         <th style="width:96px">유형</th><th style="text-align:center">입력 규칙 · 수식</th>
@@ -449,18 +482,19 @@ function openColCfgUI(opt){
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">
           ${keys.map(c=>`<span class="chip" data-ins="${c.k}">${esc(c.l)}</span>`).join('')}
           ${['+','-','*','/','(',')'].map(o=>`<span class="chip" data-ins="${o}" style="min-width:30px;justify-content:center">${o}</span>`).join('')}</div>
-        <div id="ncMsg" class="hint" style="margin-top:9px">열과 연산자 버튼만으로 수식을 구성합니다. 추가한 열도 [저장]을 눌러야 표에 나타납니다.</div></div>`;}
+        <div id="ncMsg" class="hint" style="margin-top:9px">열과 연산자 버튼만으로 수식을 구성합니다.</div></div>`;}
     return h;};
+  /* 바꾸는 즉시 화면에 반영한다 — [저장] 버튼 없이 [닫기] 하나만 둔다 */
+  const apply=()=>{try{opt.onSave(draft.map(c=>({...c})));}catch(e){}};
   const open=()=>{
-    openModal(opt.title,draw(),
-      '<button class="btn" data-close>닫기</button><button class="btn primary" id="colSave">저장</button>',{w:900});
+    openModal(opt.title,draw(),'<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:900});
     const host=$('modalHost');
-    host.querySelectorAll('[data-cc]').forEach(inp=>inp.onchange=e=>{
-      draft[+e.target.dataset.cc][e.target.dataset.k]=e.target.value;});
+    host.querySelectorAll('[data-cc]').forEach(inp=>inp.oninput=e=>{
+      draft[+e.target.dataset.cc][e.target.dataset.k]=e.target.value;apply();});
     host.querySelectorAll('[data-con]').forEach(cb=>cb.onchange=e=>{
-      draft[+e.target.dataset.con].on=e.target.checked;});
+      draft[+e.target.dataset.con].on=e.target.checked;apply();});
     host.querySelectorAll('[data-ccdel]').forEach(b=>b.onclick=()=>{
-      draft.splice(+b.dataset.ccdel,1);closeModal();open();});
+      draft.splice(+b.dataset.ccdel,1);apply();closeModal();open();});
     if(opt.allowFormula){
       const msg=$('ncMsg');
       host.querySelectorAll('[data-ins]').forEach(ch=>ch.onclick=()=>{
@@ -475,8 +509,8 @@ function openColCfgUI(opt){
         const err=checkFormula(f,draft);
         if(err){msg.innerHTML=`<span style="color:var(--neg);font-weight:700">✕ ${err}</span>`;return;}
         draft.push({k:'cx'+uid(),l:n,w:110,type:'calc',rule:f,on:true});
-        closeModal();open();};}
-    $('colSave').onclick=()=>{opt.onSave(draft);closeModal();};};
+        apply();closeModal();open();};}
+  };
   open();
 }
 function openColCfg(){

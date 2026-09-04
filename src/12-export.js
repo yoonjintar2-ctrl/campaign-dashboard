@@ -604,12 +604,17 @@ function syncThemeColors(){
     SHADE_HIGH=cssRgb(v('--b3')||'#4c729a');}
   /* 버블 색상표 — 첫 색만 테마 강조색으로 바꾸고 나머지는 계열을 유지한다 */
   if(typeof BUB_HUES!=='undefined')BUB_HUES[0]=cssRgb(v('--acc')||'#3a668c');
+  /* KPI 달성 현황 게이지 · 일자별 효율 비교 꺾은선도 테마 색으로 */
+  if(typeof KPI_RING!=='undefined')KPI_RING=[v('--acc')||KPI_RING[0],v('--acc2')||KPI_RING[1],v('--b2')||KPI_RING[2]];
+  if(typeof LINE_TONE!=='undefined')LINE_TONE=v('--acc2')||LINE_TONE;
+  /* 운영 코멘트 강조색 · 히트맵 배경은 CSS 변수로 처리한다 */
 }
 function applyTheme(k,quiet){
   THEME=THEMES.some(t=>t.k===k)?k:'';
   if(THEME)document.documentElement.setAttribute('data-theme',THEME);
   else document.documentElement.removeAttribute('data-theme');
   syncThemeColors();
+  try{refreshBgDots();}catch(e){}
   if(quiet)return;
   try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
@@ -653,6 +658,7 @@ function renderBrand(){
   if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;}
   else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
   nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
+  try{refreshBgDots();tuneTopbarForLogo();}catch(e){}
 }
 let DMD_MARK='';
 /* 이미지 파일 → 데이터 URL (가로세로 1:1 ~ 3:1 만 받는다) */
@@ -690,20 +696,32 @@ function advPickerHTML(cur,logo){
     <div class="fld" style="flex:0 0 100%"><label>광고주 로고 <span class="hint">(선택 · 가로세로 1:1 ~ 3:1 · 높이는 자동으로 맞춰집니다)</span></label>
       <div class="logopick">
         <span class="prev" id="advPrev">${logo?`<img src="${logo}" alt="">`:'<em>없음</em>'}</span>
-        <button class="btn sm" id="advPick" type="button">🖼 이미지 선택</button>
+        <button class="btn sm" id="advPick" type="button">이미지 선택</button>
         <button class="btn sm" id="advClear" type="button">지우기</button>
       </div></div>`;
 }
 function wireAdvPicker(state){
   const sel=$('advSel'),nf=$('advNewFld');
-  const sync=()=>{const isNew=sel.value==='__new';nf.style.display=isNew?'':'none';
-    if(!isNew){state.logo=advLogo(sel.value)||'';paint();}};
+  /* 광고주와 로고는 한 세트 — 광고주를 고르면 그 광고주의 로고가 따라오고,
+     로고를 바꾸면 그 광고주의 로고로 저장된다 */
+  const nameNow=()=>(sel.value==='__new'?($('advNew').value||'').trim():sel.value)||'';
   const paint=()=>{const p=$('advPrev');
-    p.innerHTML=state.logo?`<img src="${state.logo}" alt="">`:'<em>없음</em>';};
-  sel.onchange=sync;sync();paint();
-  $('advPick').onclick=()=>pickLogo(u=>{state.logo=u;paint();});
-  $('advClear').onclick=()=>{state.logo='';paint();};
-  return ()=>({name:(sel.value==='__new'?($('advNew').value||'').trim():sel.value)||'',logo:state.logo});
+    p.innerHTML=state.logo?`<img src="${state.logo}" alt="">`:'<em>없음</em>';
+    const t=$('advSetNote');
+    if(t)t.textContent=nameNow()?`“${nameNow()}” 광고주의 로고로 저장됩니다`:'광고주를 먼저 골라 주세요';};
+  const sync=()=>{const isNew=sel.value==='__new';nf.style.display=isNew?'':'none';
+    state.logo=isNew?(advLogo(($('advNew').value||'').trim())||state.logo||''):(advLogo(sel.value)||'');
+    paint();};
+  sel.onchange=sync;
+  const nv=$('advNew');if(nv)nv.oninput=()=>{const g=advLogo(nv.value.trim());if(g)state.logo=g;paint();};
+  sync();
+  $('advPick').onclick=()=>pickLogo(u=>{state.logo=u;
+    const n=nameNow();if(n){ADV_BOOK[n]=ADV_BOOK[n]||{};ADV_BOOK[n].logo=u;saveAdvBook();}
+    paint();});
+  $('advClear').onclick=()=>{state.logo='';
+    const n=nameNow();if(n&&ADV_BOOK[n]){ADV_BOOK[n].logo='';saveAdvBook();}
+    paint();};
+  return ()=>({name:nameNow(),logo:state.logo});
 }
 function openAdvEditor(){
   const st={logo:CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||''};
@@ -756,3 +774,135 @@ function attachTopScroll(wrap){
     const mx=$('tblMix');if(mx)attachTopScroll(mx.closest('.tbl-wrap'));};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,80);
 })();
+
+/* =========================================================================
+   배경 — 광고주 로고를 도트 패턴으로 크게 깔고 아주 천천히 움직인다.
+   · 로고를 작은 캔버스에 그린 뒤 밝기로 도트 격자를 만든다(글자·형태만 남는다)
+   · 색은 테마 강조색, 배경과 다투지 않도록 아주 옅게
+   · 크기는 화면(가로)의 약 50% → 넓이 기준 화면의 25% 정도를 차지한다
+   ========================================================================= */
+const BGDOT={url:'',theme:'',svg:''};
+function bgDotBuild(url,cb){
+  const im=new Image();
+  im.onload=()=>{
+    try{
+      const GRID=46;                                   /* 가로 도트 개수 */
+      const ratio=im.height/Math.max(im.width,1);
+      const gh=Math.max(6,Math.round(GRID*ratio));
+      const cv=document.createElement('canvas');
+      cv.width=GRID;cv.height=gh;
+      const cx=cv.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(im,0,0,GRID,gh);
+      const d=cx.getImageData(0,0,GRID,gh).data;
+      const dots=[];
+      for(let y=0;y<gh;y++)for(let x=0;x<GRID;x++){
+        const i=(y*GRID+x)*4, a=d[i+3]/255;
+        if(a<0.25)continue;
+        /* 밝기가 낮을수록(=로고의 잉크 부분) 크게 */
+        const l=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;
+        const w=(1-l)*a;
+        if(w<0.16)continue;
+        dots.push([x,y,(0.16+w*0.34).toFixed(3)]);}
+      if(dots.length<14){cb('');return;}
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${gh}">`
+        +dots.map(([x,y,r])=>`<circle cx="${x+.5}" cy="${y+.5}" r="${r}" fill="CLR"/>`).join('')
+        +'</svg>';
+      cb(svg);
+    }catch(e){cb('');}};
+  im.onerror=()=>cb('');
+  im.crossOrigin='anonymous';
+  im.src=url;
+}
+function paintBgDots(svg){
+  const host=$('bgdots');if(!host)return;
+  if(!svg){host.style.backgroundImage='';host.classList.remove('on');return;}
+  /* 테마 강조색을 옅게 — 배경 위에서 튀지 않을 만큼만 */
+  const c=cssRgb(cssVar('--acc')||'#495e72');
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const col=`rgba(${c[0]},${c[1]},${c[2]},${dark?0.14:0.10})`;
+  const url='data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace(/CLR/g,col));
+  host.style.backgroundImage=`url("${url}")`;
+  host.classList.add('on');
+}
+function refreshBgDots(){
+  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  const th=document.documentElement.getAttribute('data-theme')||'';
+  if(!url){BGDOT.url='';BGDOT.svg='';paintBgDots('');return;}
+  if(url===BGDOT.url){if(th!==BGDOT.theme){BGDOT.theme=th;paintBgDots(BGDOT.svg);}return;}
+  BGDOT.url=url;BGDOT.theme=th;
+  bgDotBuild(url,svg=>{BGDOT.svg=svg;paintBgDots(svg);});
+}
+/* 로고가 밝으면 상단 바를 짙게 — 흰 배경 위 흰 로고가 안 보이던 문제 */
+function tuneTopbarForLogo(){
+  const bar=document.querySelector('.topbar');if(!bar)return;
+  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  if(!url){bar.classList.remove('darkbar');return;}
+  const im=new Image();
+  im.onload=()=>{
+    try{
+      const cv=document.createElement('canvas');cv.width=24;cv.height=24;
+      const cx=cv.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(im,0,0,24,24);
+      const d=cx.getImageData(0,0,24,24).data;
+      let lum=0,n=0;
+      for(let i=0;i<d.length;i+=4){
+        const a=d[i+3]/255;if(a<0.25)continue;
+        lum+=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;n++;}
+      const avg=n?lum/n:0;
+      bar.classList.toggle('darkbar',n>0&&avg>0.72);
+    }catch(e){bar.classList.remove('darkbar');}};
+  im.onerror=()=>bar.classList.remove('darkbar');
+  im.crossOrigin='anonymous';
+  im.src=url;
+}
+
+/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록) */
+setTimeout(()=>{try{document.body.classList.remove('booting');}catch(e){}},6000);
+
+/* =========================================================================
+   표 머리글을 끌어서 열 순서 바꾸기 (일별 실적 입력 · 예상 효율)
+   ========================================================================= */
+function enableColDrag(tbl,cols,onDone,off){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[0])return;
+  off=off||0;
+  const ths=[...tbl.tHead.rows[0].cells];
+  let from=-1;
+  const clear=()=>ths.forEach(t=>t.classList.remove('cdrag','cdropL','cdropR'));
+  cols.forEach((c,i)=>{
+    const th=ths[off+i];if(!th)return;
+    th.draggable=true;
+    th.classList.add('cmove');
+    if(!th.title)th.title='끌어서 열 순서를 바꿀 수 있습니다';
+    th.addEventListener('dragstart',e=>{
+      /* 너비 조절 손잡이를 잡은 것이면 순서 바꾸기가 아니다 */
+      if(e.target.classList&&e.target.classList.contains('colgrip')){e.preventDefault();return;}
+      from=i;th.classList.add('cdrag');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','col');}catch(x){}});
+    th.addEventListener('dragend',()=>{from=-1;clear();});
+    th.addEventListener('dragover',e=>{
+      if(from<0||from===i)return;
+      e.preventDefault();
+      const r=th.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      th.classList.toggle('cdropR',after);th.classList.toggle('cdropL',!after);});
+    th.addEventListener('dragleave',()=>th.classList.remove('cdropL','cdropR'));
+    th.addEventListener('drop',e=>{
+      if(from<0||from===i)return;
+      e.preventDefault();
+      const r=th.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      /* 화면에 보이는 열(cols)의 순서를 원본 배열에서도 그대로 옮긴다 */
+      const moved=cols[from];
+      let to=i+(after?1:0);
+      if(from<to)to--;
+      const view=cols.slice();
+      view.splice(from,1);view.splice(to,0,moved);
+      onDone(view);
+      clear();from=-1;});});
+}
+/* 보이는 열만 담긴 배열(view)의 순서를 전체 열 배열에 반영한다 */
+function applyColOrder(all,view){
+  const order=view.map(c=>c.k);
+  const rest=all.filter(c=>!order.includes(c.k));
+  const moved=order.map(k=>all.find(c=>c.k===k)).filter(Boolean);
+  /* 숨긴 열은 원래 자리 근처에 그대로 둔다 — 뒤에 붙인다 */
+  return moved.concat(rest);
+}

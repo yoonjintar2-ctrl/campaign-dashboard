@@ -6,7 +6,7 @@ const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',
 let SERIES_DIM='media';
 let ISSUE_OVERFLOW=0;
 let SHOW_FORECAST=true, SHOW_BENCH=true;
-const LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 단일 톤(그라데이션 기준색) */
+let LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 테마 강조색 */
 /* SVG 글자 폭 어림 — getComputedTextLength() 가 0 을 돌려줄 때만 쓴다 */
 function estTextW(s,size){
   let w=0;
@@ -16,9 +16,11 @@ function estTextW(s,size){
 }
 function roundRect(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h));
   return `M${x} ${y+h} L${x} ${y+r} Q${x} ${y} ${x+r} ${y} L${x+w-r} ${y} Q${x+w} ${y} ${x+w} ${y+r} L${x+w} ${y+h} Z`;}
+/* 막대 색 계열 — 테마의 b1~b5 를 그대로 쓴다 */
 function pickRamp(n){
-  const base=['#aab4bf','#8897a6','#677b8d','#495e72','#354758'];
-  if(n<=1)return ['#495e72'];
+  const base=[cssVar('--b1')||'#aab4bf',cssVar('--b2')||'#8897a6',cssVar('--b3')||'#677b8d',
+              cssVar('--b4')||'#495e72',cssVar('--b5')||'#354758'];
+  if(n<=1)return [cssVar('--b4')||'#495e72'];
   const out=[];for(let i=0;i<n;i++)out.push(base[Math.round(i*(base.length-1)/(n-1))]);
   return out.reverse();
 }
@@ -100,20 +102,21 @@ function renderDaily(){
   const minorDiv=(()=>{const m=majStep/Math.pow(10,Math.floor(Math.log10(majStep||1)));
     return Math.abs(m-2)<1e-6?4:Math.abs(m-2.5)<1e-6?5:5;})();
   const minStep=majStep/minorDiv;
+  /* 가로 눈금선은 그리지 않는다 — 축 옆 숫자와 짧은 눈금만 남긴다 */
   for(let v=minStep;v<yMax-1e-6;v+=minStep){
     if(Math.abs(v/majStep-Math.round(v/majStep))<1e-6)continue;
     const y=P.t+PH*(1-v/yMax);
-    S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'#f4f6f9','stroke-width':1},svg);
-    const t=S('text',{x:P.l-9,y:y+3,'text-anchor':'end','font-size':8.5,fill:'#aab4c0','font-weight':500},svg);
+    const t=S('text',{x:P.l-9,y:y+3,'text-anchor':'end','font-size':8.5,fill:'var(--muted)','font-weight':500,
+      opacity:.7},svg);
     t.textContent=bigNum(+v.toFixed(6));}
   bt.ticks.forEach(v=>{
     const y=P.t+PH*(1-v/yMax);
-    S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:v===0?'#d6dde6':'#e6eaf0','stroke-width':1},svg);
-    S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'#c5ccd6','stroke-width':1},svg);
+    if(v===0)S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
+    S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
     txt(P.l-9,y+3.5,bigNum(v));});
   const bw=Math.min(step-5,24),Y=v=>P.t+PH*(1-v/yMax);
   /* 미집행 구간 음영 */
-  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'#f7f9fb'},svg);
+  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'var(--acc-soft2)'},svg);
   ds.forEach((d,i)=>{
     let base=Y(0);const future=i>=EL;
     /* 값이 0인 계열은 건너뛰므로, 맨 위에 실제로 그려지는 칸을 먼저 찾아 거기에만 둥근 모서리를 준다
@@ -128,9 +131,9 @@ function renderDaily(){
       base=y;});
     const rest=isRest(d);
     const t=S('text',{x:cx(i),y:H-P.b+15,'text-anchor':'middle','font-size':9,
-      fill:rest?'#c9a5a2':AXIS.fill},svg);t.textContent=d.getDate();
+      fill:rest?'var(--hol)':AXIS.fill,opacity:rest?.8:1},svg);t.textContent=d.getDate();
     if(d.getDate()===1||i===0){
-      const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'#8d9cb0','font-weight':600},svg);
+      const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'var(--ink2)','font-weight':600},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
   let lineVals=null;
   if(lk!=='none'){
@@ -152,7 +155,7 @@ function renderDaily(){
     const lfmt=v=>['ctr','vtr','cvr'].includes(lk)?(v*100).toFixed(2)+'%':lk==='roas'?v.toFixed(2)+'x':fmt(v);
     const tickLabels=[];
     lt.ticks.forEach(v=>{const y=LY(v);
-      S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'#e2e7ed','stroke-width':1},svg);
+      S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
       tickLabels.push({y,el:txt(W-P.r+9,y+3.5,lfmt(v),'start')});});
     const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v)]:null).filter(Boolean);
     if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
@@ -316,7 +319,17 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const map=new Map();
   facts.forEach(f=>{const key=dims.map(d=>f[d]).join(SEP);
     if(!map.has(key))map.set(key,[]);map.get(key).push(f);});
-  let entries=[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0],'ko'));
+  /* 기본 정렬 — 예산(Gross)이 큰 순서. 같으면 이름순. (사용자가 끌어서 바꾼 순서가 있으면 그게 우선) */
+  const budgetOf=vals=>sum(LINES.filter(l=>vals.every((v,i)=>
+      NO_EXP_DIMS.includes(dims[i])||l[dims[i]]===v)).map(lineGross));
+  let entries=[...map.entries()].sort((a,b)=>{
+    const av=a[0].split(SEP),bv=b[0].split(SEP);
+    for(let i=0;i<dims.length;i++){
+      if(av[i]===bv[i])continue;
+      const ab=budgetOf(av.slice(0,i+1)),bb=budgetOf(bv.slice(0,i+1));
+      if(ab!==bb)return bb-ab;
+      return String(av[i]).localeCompare(String(bv[i]),'ko');}
+    return 0;});
   entries=applyOrder(entries,cfg);
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,rows);
@@ -358,14 +371,14 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
         /* 상위 계층 셀을 잡고 끌면 그 그룹 전체가 같은 부모 안에서 이동한다 */
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
-          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],v))}</td>`;});
+          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i])+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(dimDisp(dims[ci],vals[ci]))}</td>`;}
+        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
       h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
@@ -378,6 +391,47 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
+  /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
+  wirePivotColResize(tbl,cfg,cols,rerender);
+}
+/* 서머리 · 미디어믹스의 값 열 너비 조절 (2행 머리글이라 별도 처리) */
+function wirePivotColResize(tbl,cfg,cols,rerender){
+  const gs=(cfg.groups||[]).filter(g=>g.cols.length);
+  const soloThs=[...tbl.querySelectorAll('thead th.g.solo')];
+  const row2=tbl.tHead&&tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+  const ths=[];let si=0,ri=0;
+  gs.forEach(g=>{
+    if(g.solo&&g.cols.length===1)ths.push(soloThs[si++]);
+    else g.cols.forEach(()=>ths.push(row2[ri++]));});
+  ths.forEach((th,i)=>{
+    if(!th||th.querySelector('.colgrip'))return;
+    th.classList.add('cresz');
+    const g=document.createElement('span');
+    g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
+    th.appendChild(g);
+    let x0=0,w0=0;
+    const move=e=>{
+      const w=Math.max(52,Math.round(w0+e.clientX-x0));
+      cfg.w=cfg.w||{};cfg.w[cols[i]]=w;
+      th.style.minWidth=w+'px';
+      const cg=tbl.querySelector('colgroup');
+      const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
+      if(cg&&cg.children[leadN+i])cg.children[leadN+i].style.width=w+'px';};
+    const up=()=>{document.removeEventListener('mousemove',move);
+      document.removeEventListener('mouseup',up);
+      document.body.style.userSelect='';
+      try{markDirty();saveLocal();}catch(e){}};
+    g.addEventListener('mousedown',e=>{
+      e.preventDefault();e.stopPropagation();
+      x0=e.clientX;w0=th.getBoundingClientRect().width;
+      document.body.style.userSelect='none';
+      document.addEventListener('mousemove',move);
+      document.addEventListener('mouseup',up);});
+    g.addEventListener('dblclick',e=>{
+      e.stopPropagation();
+      if(cfg.w)delete cfg.w[cols[i]];
+      try{markDirty();saveLocal();}catch(x){}
+      rerender&&rerender();});});
 }
 function renderSummaries(){
   const host=$('summaryHost');host.innerHTML='';

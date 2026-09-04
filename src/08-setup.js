@@ -78,7 +78,8 @@ const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
-const allProductNames=()=>[...new Set(LINES.flatMap(lineProducts))]
+/* 광고상품은 매체를 넘겨 주면 그 매체에서 쓴 것만 돌려준다 */
+const allProductNames=(media)=>[...new Set((media?LINES.filter(l=>l.media===media):LINES).flatMap(lineProducts))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
@@ -149,21 +150,37 @@ function wireChipFields(root,onChange){
     pickBtn.onclick=e=>{
       e.stopPropagation();
       document.querySelectorAll('.cfmenu').forEach(m=>m.remove());
-      const pool=K.all().filter(n=>!cur().includes(n));
+      /* 광고상품만은 **그 매체에서 쓴 상품**으로 좁힌다.
+         타겟팅 그룹·소재·지면은 매체가 달라도 같은 이름을 함께 쓴다. */
+      const pool=(kind==='product'?K.all(l.media):K.all()).filter(n=>!cur().includes(n));
       const m=el('div','cfmenu',document.body);
-      m.innerHTML=`<div class="mt">등록된 ${label}</div>`
-        +(pool.length?pool.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
-                     :`<div class="mt" style="color:var(--muted)">추가할 ${label}이 없습니다 · ＋로 새로 만드세요</div>`);
+      const draw=q=>{
+        const f=q?pool.filter(n=>n.toLowerCase().includes(q.toLowerCase())):pool;
+        const list=m.querySelector('.cflist');
+        list.innerHTML=f.length
+          ? f.map(n=>`<button class="mi" data-pick="${esc(n)}">${esc(n)}</button>`).join('')
+          : `<div class="mt" style="color:var(--muted)">${q?'검색 결과가 없습니다':`추가할 ${label}이 없습니다 · ＋로 새로 만드세요`}</div>`;
+        list.querySelectorAll('[data-pick]').forEach(b=>b.onclick=ev=>{
+          ev.stopPropagation();m.remove();set(cur().concat([b.dataset.pick]));});};
+      m.innerHTML=`<div class="mt">등록된 ${label}${kind==='product'&&l.media?` <span style="color:var(--muted)">· ${esc(l.media)}</span>`:''}</div>`
+        +`<input class="cfq" placeholder="이름으로 검색" autocomplete="off">`
+        +`<div class="cflist"></div>`;
+      draw('');
       const r=pickBtn.getBoundingClientRect();
-      const mh=Math.min(m.scrollHeight||210,240);
+      const mh=Math.min(m.scrollHeight||210,300);
       const below=window.innerHeight-r.bottom;
       m.style.left=Math.min(r.left,window.innerWidth-m.offsetWidth-10)+'px';
       if(below<mh+12&&r.top>mh+12)m.style.top=(r.top-mh-6)+'px';
       else m.style.top=(r.bottom+5)+'px';
-      m.querySelectorAll('[data-pick]').forEach(b=>b.onclick=ev=>{
-        ev.stopPropagation();m.remove();set(cur().concat([b.dataset.pick]));});
-      setTimeout(()=>document.addEventListener('click',function h(){m.remove();
-        document.removeEventListener('click',h);},{once:true}),0);};
+      const q=m.querySelector('.cfq');
+      q.oninput=()=>draw(q.value.trim());
+      q.onclick=ev=>ev.stopPropagation();
+      q.onkeydown=ev=>{
+        if(ev.key==='Escape'){m.remove();return;}
+        if(ev.key==='Enter'){const b=m.querySelector('[data-pick]');if(b)b.click();}};
+      setTimeout(()=>{q.focus();
+        document.addEventListener('click',function h(){m.remove();
+          document.removeEventListener('click',h);},{once:true});},0);};
     /* ＋ — 목록에 없는 새 항목 만들기 */
     fd.querySelector('.cfadd').onclick=e=>{
       e.stopPropagation();
@@ -268,6 +285,8 @@ function renderKpiTable(){
   t.innerHTML=h;
   /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
   enableColResize(t,cols,()=>markDirty(),1);
+  if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
+    LINE_COLS=applyColOrder(LINE_COLS,view);renderKpiTable();markDirty();saveLocal();},1);
   wireChipFields(t,()=>{rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderAll();});
   t.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=e=>{
     pushLineUndo();
@@ -327,13 +346,8 @@ function renderKpiTable(){
       td.dataset.r=ri;td.dataset.c=ci;
       /* 엑셀처럼 — 한 번 누르면 "셀 선택", Enter 또는 더블클릭이면 "입력 시작".
          드롭다운·날짜·체크박스·칩은 기존처럼 바로 눌러서 쓴다. */
-      td.addEventListener('mousedown',e=>{
-        LSEL={r:ri,c:ci};paintLSel();
-        const tg=e.target;
-        const isTxt=(tg.tagName==='INPUT'&&(tg.type==='text'||!tg.getAttribute('type')))||tg.tagName==='TEXTAREA';
-        if(isTxt&&document.activeElement!==tg){
-          e.preventDefault();
-          if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}});
+      /* 클릭 한 번에 바로 입력 상태로 — 예전에는 한 번은 선택, 두 번째에 입력이었다 */
+      td.addEventListener('mousedown',()=>{LSEL={r:ri,c:ci};paintLSel();});
       td.addEventListener('dblclick',()=>{LSEL={r:ri,c:ci};paintLSel();editLineCell();});});});
   paintLSel();
 }
@@ -560,7 +574,17 @@ function renderMix(){
   const rows=mixRows();
   const grouped=new Map();
   rows.forEach(r=>{if(!grouped.has(r.key))grouped.set(r.key,[]);grouped.get(r.key).push(r);});
-  let entries=[...grouped.entries()].sort((a,b)=>a[0].localeCompare(b[0],'ko'));
+  /* 예산(Gross)이 큰 순서로 — 같으면 이름순 */
+  const bOf=vals=>sum(rows.filter(r=>vals.every((v,i)=>String(r.key.split(SEP)[i])===v))
+    .map(r=>lineGross(r.l)));
+  let entries=[...grouped.entries()].sort((a,b)=>{
+    const av=a[0].split(SEP),bv=b[0].split(SEP);
+    for(let i=0;i<dims.length;i++){
+      if(av[i]===bv[i])continue;
+      const ab=bOf(av.slice(0,i+1)),bb=bOf(bv.slice(0,i+1));
+      if(ab!==bb)return bb-ab;
+      return String(av[i]).localeCompare(String(bv[i]),'ko');}
+    return 0;});
   entries=applyOrder(entries,MIX_CFG);
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,MIX_CFG.rows);
@@ -645,7 +669,7 @@ function renderMix(){
       h+=`<tr data-key="${esc(entries[r.ri][0])}" data-pre="${esc(vals.slice(0,-1).join(SEP))}">`;
       vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
-          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${esc(v)}</td>`;});
+          +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       /* 소재 행이 병합된 구간에서도 비고 열은 행마다 그리므로 구분선 클래스를 그대로 유지한다 */
       h+=(crIdx>0&&merge===0)
         ? cols.map((k,ci)=>k==='m_note'?`<td class="mono${seps.has(ci)?' gsep':''}">${cell(rs,k)}</td>`:'').join('')
@@ -655,9 +679,9 @@ function renderMix(){
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${esc(vals[ci])}</td>`;}
+        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(vals[L])} Sub Total</td>`;
+      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
   h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
@@ -669,6 +693,7 @@ function renderMix(){
   mergeVertical($('tblMix'),'price');
   wireGroupRename($('tblMix'),MIX_CFG,renderMix);
   enableRowDrag($('tblMix'),MIX_CFG,renderMix);
+  wirePivotColResize($('tblMix'),MIX_CFG,cols,renderMix);
 }
 function openPerm(){
   /* 로그인 상태면 실제 캠페인 멤버·초대를 보여준다 (미로그인이면 예시 목록) */
@@ -790,9 +815,10 @@ const rangeSel=p=>{const sc=viewScope();
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
     <input type="date" id="${p}To" value="${FILTER.to||sc.endIso}" min="${campStart()}" max="${campEnd()}">
-    <button class="btn sm primary" id="${p}Apply" title="선택한 기간을 대시보드에 반영">적용</button>
   </span>`;};
 function buildFilters(){
+  /* 대시보드 상단 필터는 **기간 하나만** — 구분·매체·제품은 각 표의 행 구성으로 본다.
+     날짜는 고르는 즉시 반영된다 ([적용] 버튼 없음). */
   const dimSels=p=>selHTML(p+'Segment','구분',segments(),FILTER.segment)
     +selHTML(p+'Media','매체',[...new Set(LINES.map(l=>l.media))],FILTER.media)
     +selHTML(p+'Line','제품',[...new Set(LINES.map(l=>l.line))],FILTER.line);
@@ -800,19 +826,20 @@ function buildFilters(){
     ['Segment','Media','Line'].forEach((s,i)=>{
       const e2=$(p+s);if(!e2)return;
       const key=['segment','media','line'][i];
-      /* 차원을 바꾸면 사용자가 잡아둔 날짜는 풀고 그 항목의 집행 구간으로 다시 맞춘다 */
       e2.onchange=ev=>{FILTER[key]=ev.target.value;FILTER.from='';FILTER.to='';buildFilters();renderAll();};});
-    /* 날짜는 [적용] 을 눌러야 반영된다 (고르는 중에 화면이 바뀌지 않도록) */
-    const ap=$(p+'Apply');
-    if(ap)ap.onclick=()=>{
+    const apply=()=>{
       let f=($(p+'From')||{}).value||'',t=($(p+'To')||{}).value||'';
       if(f&&t&&t<f){const x=f;f=t;t=x;}
+      if(f===FILTER.from&&t===FILTER.to)return;
       FILTER.from=f;FILTER.to=t;
-      buildFilters();renderAll();};};
-  $('perfFilters').innerHTML=rangeSel('p')+dimSels('p')
+      buildFilters();renderAll();};
+    [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
+      e2.onchange=apply;e2.oninput=apply;});};
+  $('perfFilters').innerHTML=rangeSel('p')
     +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';
   wire('p');
-  $('rawFilters').innerHTML=rangeSel('r')+dimSels('r');
+  /* 일자별 상세 효율도 같은 규칙 — 기간만 */
+  $('rawFilters').innerHTML=rangeSel('r');
   wire('r');
   const mf=$('mixFilters');
   if(mf){mf.innerHTML=dimSels('m');wire('m');}
@@ -843,6 +870,9 @@ function buildSelects(){
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
       am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
+  const gs=$('ganttSort');
+  if(gs){gs.value=GANTT_SORT;
+    gs.onchange=e=>{GANTT_SORT=e.target.value;renderGantt();markDirty();saveLocal();};}
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
@@ -996,12 +1026,19 @@ if($('guideBtn'))$('guideBtn').onclick=async()=>{
 };
 $('holBtn').onclick=openHolidays;
 
-$('issueFold').onclick=()=>{const b=$('issueBox'),open=b.classList.toggle('hidden');
-  $('issueFold').textContent=open?'▾ 펼치기':'▴ 접기';};
+$('issueFold').onclick=()=>{
+  ISSUE_FOLD_TOUCHED=true;
+  const b=$('issueBox'),closed=b.classList.toggle('hidden');
+  $('issueFold').textContent=closed?`▾ 펼치기 (${ISSUES.length}건)`:'▴ 접기';};
 $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);renderDaily();};
 $('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);renderDaily();};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};
-$('addIssue').onclick=()=>{ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});renderIssues();renderDaily();};
+$('addIssue').onclick=()=>{
+  ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});
+  ISSUE_FOLD_TOUCHED=true;
+  const b=$('issueBox');if(b)b.classList.remove('hidden');
+  $('issueFold').textContent='▴ 접기';
+  renderIssues();renderDaily();};
 /* 라인 추가 — 기본값 없이 전부 공란으로 (같은 값이 필요하면 행 우측 ⧉ 복제 버튼) */
 function blankLine(){
   const base=LINES[LINES.length-1]||{};

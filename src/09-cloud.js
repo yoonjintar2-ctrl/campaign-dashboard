@@ -229,7 +229,13 @@ function restoreDemo(){
   return true;
 }
 const gateEl=()=>$('gate');
-function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
+function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');endBoot();}
+/* 가림막 걷기 — 화면이 실제로 그려진 다음 프레임에 */
+function startBoot(){try{document.body.classList.add('booting');}catch(e){}}
+function endBoot(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.body.classList.remove('booting');}));
+}
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
 /* 코드로 들어온 사람 —
    뷰어 코드  → 광고주 (대시보드 열람 + 엑셀 다운로드만)
@@ -524,9 +530,11 @@ function paintCampSel(){
 }
 async function openCampaign(id){
   if(!CLOUD.on||!id)return;
+  /* 불러오는 동안 화면을 가린다 — 예전 캠페인이나 예시 데이터가 잠깐 비치지 않게 */
+  startBoot();
   CLOUD.busy=true;cloudState('불러오는 중…');
   const {data:c,error}=await CLOUD.sb.from('campaigns').select('*').eq('id',id).single();
-  if(error){CLOUD.busy=false;cloudState('열지 못했습니다: '+error.message);return;}
+  if(error){CLOUD.busy=false;endBoot();cloudState('열지 못했습니다: '+error.message);return;}
   CLOUD.campaign=c;
   const {data:mem}=await CLOUD.sb.from('campaign_members')
     .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
@@ -551,6 +559,7 @@ async function openCampaign(id){
   applyRoleLock();
   CLOUD.busy=false;
   clearLocal();
+  endBoot();
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
 }
 const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
@@ -572,6 +581,7 @@ async function cloudSave(silent){
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
   cloudState('저장 중…');
+  const chip=$('savedAgo');if(chip){chip.textContent='저장 중…';chip.classList.remove('on');}
   const doc=serializeDoc();
   /* .select() 를 붙여 실제로 몇 행이 바뀌었는지 확인한다.
      권한이 없으면 RLS 가 오류 대신 "0행 수정"으로 조용히 넘어가기 때문. */
@@ -598,6 +608,8 @@ async function cloudSave(silent){
   CLOUD.savedAt=new Date();
   CLOUD.dirty=false;
   paintSaved();
+  /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
+  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
 }
 /* ---------- 자동 저장 · "00분 전에 저장됨" ----------
    저장 버튼을 누르지 않아도 알아서 저장한다.
@@ -675,11 +687,8 @@ async function createCampaign(){
        <div class="fld" style="flex:1;min-width:260px"><label>캠페인명</label>
          <input id="ncName" placeholder="예: 2026 하반기 브랜드 캠페인"></div>
      </div>
-     <label class="tagchip" style="margin-top:12px;cursor:pointer">
-       <input type="checkbox" id="ncDemo"> 지금 화면의 내용을 그대로 복사해서 시작
-     </label>
-     <div class="hint" style="margin-top:8px">체크하지 않으면 <b>빈 캠페인</b>으로 시작합니다.
-       (예상 효율 · 일별 실적 없음)</div>`,
+     <div class="hint" style="margin-top:10px"><b>빈 캠페인</b>으로 시작합니다 — 예상 효율과 일별 실적은
+       만든 뒤에 엑셀로 불러오거나 직접 입력합니다.</div>`,
     '<button class="btn" data-close>취소</button><button class="btn primary" id="ncGo">만들기</button>',{w:660});
   const readAdv=wireAdvPicker(st);
   $('ncGo').onclick=async()=>{
@@ -687,12 +696,10 @@ async function createCampaign(){
     if(!av.name){confirmModal('광고주를 골라 주세요.','기존 광고주를 고르거나 새 광고주명을 적어 주세요.',()=>{},'확인');return;}
     const name=($('ncName').value||'').trim()||'새 캠페인';
     const adv=av.name;
-    const copy=$('ncDemo').checked;
     ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();
     closeModal();
     cloudState('만드는 중…');
-    if(!copy)resetToBlank(name,adv);
-    else{CAMPAIGN.name=name;CAMPAIGN.advertiser=adv;renderCampForm();renderCampBar();}
+    resetToBlank(name,adv);
     CAMPAIGN.advLogo=av.logo||'';renderBrand();
     const {data,error}=await CLOUD.sb.from('campaigns').insert({
       name,advertiser:adv,start_date:campStart(),end_date:campEnd(),
@@ -703,7 +710,7 @@ async function createCampaign(){
     await loadCampaignList();
     await openCampaign(data.id);};
 }
-/* ---------- 캠페인 관리 (이름 변경 · 복제 · 삭제) ---------- */
+/* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
 async function openCampManage(){
   if(!CLOUD.on||!CLOUD.user){
     confirmModal('구글 로그인이 필요합니다.','로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.',
@@ -750,7 +757,7 @@ async function openCampManage(){
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 관리',h,
+  openModal('캠페인 및 광고주 관리',h,
     '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
@@ -853,7 +860,11 @@ async function removeMember(userId){
   document.addEventListener('click',e=>{
     const m=$('meMenu');
     if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
-  if(b('cloudSave'))b('cloudSave').onclick=()=>cloudSave(false);
+  if(b('cloudSave'))b('cloudSave').onclick=()=>{
+    /* 누르는 즉시 표시부터 바꾼다 — 저장이 끝나면 "방금 저장" 으로 확정된다 */
+    const c=$('savedAgo');if(c){c.classList.remove('on');c.textContent='저장 중…';}
+    if(typeof applySheet==='function'){try{applySheet();}catch(e){}}
+    cloudSave(false);};
   if(b('campMng'))b('campMng').onclick=openCampManage;
   /* 계정 관리 — 구글 계정 메뉴 안에서 연다 */
   if(b('acctBtn'))b('acctBtn').onclick=e=>{e.stopPropagation();

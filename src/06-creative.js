@@ -350,9 +350,20 @@ const crVal=(c,k)=>{const b=crAgg(c);
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
 /* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
+let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — 같은 매체 안에서만 적용 */
 /* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
    집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
    byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
+/* 합쳐진 소재의 매체 표시 — 예산을 많이 쓴 매체부터, 길면 …으로 줄인다 */
+function mediaLabel(c,maxN){
+  const list=c.medias&&c.medias.length?c.medias:[c.media].filter(Boolean);
+  if(list.length<=1)return list[0]||'';
+  const bud={};
+  LINES.forEach(l=>{bud[l.media]=(bud[l.media]||0)+lineGross(l);});
+  const sorted=list.slice().sort((a,b)=>(bud[b]||0)-(bud[a]||0));
+  const n=Math.max(1,maxN||2);
+  return sorted.length<=n?sorted.join(' · '):sorted.slice(0,n).join(' · ')+' …';
+}
 function mergeCreatives(list,byName){
   const KEYS=AMET.concat(['cost']);
   const m=new Map();
@@ -393,8 +404,20 @@ const CR_RANKS=[
   {k:'cpv',l:'조회 효율',sub:'CPV 낮은 순',base:'view'},
   {k:'cpm',l:'노출 효율',sub:'CPM 낮은 순',base:'imp'},
   {k:'cpc',l:'클릭 효율',sub:'CPC 낮은 순',base:'click'},
-  {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'}
+  {k:'cpa',l:'전환 효율',sub:'CPA 낮은 순',base:'conv'},
+  /* 반응률 — 높을수록 좋으므로 hi:true */
+  {k:'ctr',l:'CTR',sub:'클릭률 높은 순',base:'click',hi:true},
+  {k:'vtr',l:'VTR',sub:'조회율 높은 순',base:'view',hi:true}
 ];
+/* 지금 데이터로 값이 나오는 기준만 남긴다 — 조회수가 아직 0이면 조회 효율 칸 자체를 감춘다 */
+function crRanksLive(){
+  const pool=filteredCreatives();
+  return CR_RANKS.filter(r=>{
+    if(!CR_RANK_ON.includes(r.k))return false;
+    return pool.some(c=>{const b=crAgg(c);
+      const v=METRICS[r.k].c(b);
+      return (b[r.base]||0)>0&&isFinite(v)&&v>0;});});
+}
 /* 기본은 조회 · 클릭 · 노출 세 가지 — 좌 · 중 · 우 세 칸으로 나란히 놓는다.
    순서는 이 배열의 순서를 따른다. 다른 지표를 켜면 아래에 한 줄씩 더 붙는다. */
 let CR_RANK_ON=['cpv','cpc','cpm'];
@@ -472,11 +495,14 @@ function renderCreatives(){
     host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
   /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
-  CR_RANK_ON.map(k=>CR_RANKS.find(r=>r.k===k)).filter(Boolean).forEach(r=>{
+  const live=crRanksLive();
+  if(!live.length){
+    host.innerHTML='<div class="card"><div class="bd hint">아직 효율을 계산할 수 있는 지표가 없습니다.</div></div>';return;}
+  live.forEach(r=>{
     const rows=pool.map(c=>{const b=crAgg(c);
         return {c,b,base:b[r.base]||0,eff:METRICS[r.k].c(b)};})
       .filter(x=>x.base>0&&isFinite(x.eff)&&x.eff>0)
-      .sort((a,b)=>a.eff-b.eff)
+      .sort((a,b)=>r.hi?b.eff-a.eff:a.eff-b.eff)
       .slice(0,CR_TOPN);
     const g=el('div','crcol',cols);
     const hd=el('div','crband',g);
@@ -489,7 +515,7 @@ function renderCreatives(){
     const lead=el('div','cr lead',duo);
     lead.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c0)}"></div>
         <div class="ribbon"><i>1위</i></div>
-        <div class="media">${esc(c0.media)}</div>
+        <div class="media" title="${esc(c0.media)}">${esc(mediaLabel(c0,2))}</div>
         <div class="rt">${c0.type==='video'?'▶ 영상':'🖼 이미지'}</div></div>
       <div class="meta"><div class="nm" title="${esc(c0.name)}">${esc(c0.name)}</div>
         <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x0.eff)}</b></div></div>`;
@@ -506,7 +532,7 @@ function renderCreatives(){
       d.innerHTML=`<div class="thumb"><div class="fill" style="background-image:${crBg(c)}"></div>
           <div class="rankno">${i+2}</div></div>
         <div class="meta"><div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
-          <div class="mm">${esc(c.media)}</div>
+          <div class="mm" title="${esc(c.media)}">${esc(mediaLabel(c,2))}</div>
           <div class="eff"><span>${METRICS[r.k].l}</span><b>${METRICS[r.k].f(x.eff)}</b></div></div>`;
       wireCrPlay(d.querySelector('.thumb'),c);
       d.onclick=()=>openLightbox(c);});
@@ -890,19 +916,41 @@ function ganttEff(list,SC){
     color:(c,i)=>{const v=val[c.id+'|'+i];
       return v===undefined?'#dfe4ea':(hmFill(v,mn,md,mx)||'#dfe4ea');}};
 }
+/* 게재 히스토리 정렬 값 — 같은 매체 안에서만 견준다 */
+function ganttSortVal(c){
+  const b=crAgg(c);
+  switch(GANTT_SORT){
+    case 'ctr':  return -(b.imp?b.click/b.imp:-1);
+    case 'vtr':  return -(b.imp?b.view/b.imp:-1);
+    case 'cpc':  return b.click?b.cost/b.click:Infinity;
+    case 'cpv':  return b.view?b.cost/b.view:Infinity;
+    case 'imp':  return -(b.imp||0);
+    case 'click':return -(b.click||0);
+    case 'view': return -(b.view||0);
+    default:     return 0;}
+}
 function renderGantt(){
-  const t=$('ganttTbl'),list=filteredCreatives();
+  const t=$('ganttTbl');
+  /* 노출이 한 번도 없던 소재는 표에 올리지 않는다 */
+  const list=filteredCreatives().filter(c=>sum(c.daily.imp||[])>0);
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));
   /* 예산이 큰 순서로 (같으면 이름순) — 차원 순서대로 비교 */
   rowsData.sort((a,b)=>{
     for(let i=0;i<dims.length;i++){
+      /* 소재 열에 오면 사용자가 고른 정렬 기준을 적용한다 (같은 매체·같은 그룹 안에서만) */
+      if(dims[i]==='creative'&&GANTT_SORT!=='budget'){
+        if(GANTT_SORT==='name')
+          return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');
+        const av=ganttSortVal(a.c),bv=ganttSortVal(b.c);
+        if(av!==bv)return av-bv;
+        return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');}
       const ra=ganttRank(dims[i],a.vals[i],a.c),rb=ganttRank(dims[i],b.vals[i],b.c);
       if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
       if(a.vals[i]!==b.vals[i])return String(a.vals[i]).localeCompare(String(b.vals[i]),'ko');}
     return 0;});
-  if(GANTT.order){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
+  if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
   const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
   /* 기본은 캠페인 전체 일정, 설정에서 조회 기간으로 좁힐 수 있다 */
