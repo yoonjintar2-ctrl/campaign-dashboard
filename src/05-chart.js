@@ -233,7 +233,8 @@ function renderDaily(){
       if(b2<0||a>ds.length-1)return;
       const ax=cx(Math.max(a,0));
       const g=S('g',{},svg);g.style.cursor='pointer';
-      const label=`[${is.type}] ${is.txt}`;
+      /* 유형([기타] 등)은 앞에 붙이지 않는다 — 이슈 문구만 그대로 (자세한 건 툴팁에) */
+      const label=String(is.txt||is.type||'').trim()||'이슈';
       /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
       const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
       t.textContent=label;

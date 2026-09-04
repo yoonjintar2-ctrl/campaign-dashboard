@@ -420,11 +420,19 @@ function mediaLabel(c,maxN){
   const n=Math.max(1,maxN||2);
   return sorted.length<=n?sorted.join(' · '):sorted.slice(0,n).join(' · ')+' …';
 }
-function mergeCreatives(list,byName){
+/* mode
+   'name'  — 매체까지 무시하고 이름만으로 합친다 (효율 우수 소재의 "매체 구분 없이 비교")
+   'media' — 매체는 그대로 두고, 같은 매체 안에서 이름이 같으면 한 줄 (라인이 달라도)
+   그 외    — 구분 · 매체 · 라인 · 이름이 모두 같을 때만 합친다
+   (예전 호출부는 boolean 을 넘겼으므로 true = 'name' 으로 받아 준다) */
+function mergeCreatives(list,mode){
+  if(mode===true)mode='name';
   const KEYS=AMET.concat(['cost']);
   const m=new Map();
   list.forEach(c=>{
-    const k=byName?c.name:[c.segment,c.media,c.line,c.name].join(SEP);
+    const k=mode==='name'?c.name
+      :mode==='media'?[c.segment,c.media,c.name].join(SEP)
+      :[c.segment,c.media,c.line,c.name].join(SEP);
     let o=m.get(k);
     if(!o){
       o={...c,id:'mg'+m.size,lids:[c.lid],medias:[c.media],daily:{}};
@@ -448,7 +456,17 @@ function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA);
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
+  const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
+  a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
+  return a;}
+/* 게재 히스토리 전용 목록 —
+   **매체는 절대 합치지 않는다.** ("매체 구분 없이 비교" 토글의 영향을 받지 않는다)
+   대신 같은 매체 안에서 이름이 같은 소재는 라인이 달라도 한 줄로 합쳐 값을 더한다. */
+function ganttCreatives(){
+  const keys=['segment','media','line'];
+  const a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),'media');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -1001,7 +1019,7 @@ function ganttSortVal(c){
 function renderGantt(){
   const t=$('ganttTbl');
   /* 노출이 한 번도 없던 소재는 표에 올리지 않는다 */
-  const list=filteredCreatives().filter(c=>sum(c.daily.imp||[])>0);
+  const list=ganttCreatives().filter(c=>sum(c.daily.imp||[])>0);
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));

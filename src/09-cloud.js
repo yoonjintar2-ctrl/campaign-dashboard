@@ -32,10 +32,12 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
-    issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
+    issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
-    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다 */
-    sheet:(typeof SHEET!=='undefined'?SHEET:[]),
+    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
+       **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
+       화면 상태를 비우는 순간(clearWorkState) 문서 안의 시트까지 같이 지워진다. */
+    sheet:(typeof SHEET!=='undefined'?SHEET.map(r=>({...r})):[]),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
@@ -300,16 +302,23 @@ async function tryCode(raw){
   const kind=c.code_kind==='staff'?'staff':'viewer';
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
+  /* 이 브라우저에 남아 있던 다른 캠페인의 입력 시트·소재·이슈를 먼저 비운다.
+     (예전에는 이걸 빼먹어서 운영진 코드로 들어가면 데이터 입력 탭에
+      전에 보던 캠페인의 시트가 그대로 남아 있었다) */
+  clearWorkState();
   applyDoc(c.doc);
   rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
+  /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
+  try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
   buildFacts();buildFilters();buildSelects();
-  renderAll();renderIssues();renderIssueAlert();renderRaw();
+  renderAll();renderSheet();renderIssues();renderIssueAlert();renderRaw();
   renderCreatives();renderGantt();
+  try{renderKpiTable&&renderKpiTable();renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
   endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */

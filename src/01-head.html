@@ -581,7 +581,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donuts{display:flex!important;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;
   scroll-snap-type:x proximity}
 /* 주요 지표 타일과 정확히 같은 크기 (통일감) */
-.donuts>.donut{flex:0 0 246px;width:246px;height:261px;scroll-snap-align:start;
+.donuts>.donut{flex:0 0 295px;width:295px;height:313px;scroll-snap-align:start;
   display:flex;flex-direction:column}
 .donut{padding:11px 13px 10px;text-align:center;position:relative}
 .donut .ring{overflow:visible}
@@ -592,7 +592,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   text-overflow:ellipsis;white-space:nowrap}
 .donut .kpitag{margin-left:auto;flex:none;display:inline-block;font-size:10.5px;
   font-weight:700;padding:2px 8px;border-radius:6px;background:var(--acc-soft);color:var(--acc)}
-.donut .ring{margin:2px auto 2px;position:relative;width:186px;height:186px;flex:none}
+.donut .ring{margin:2px auto 2px;position:relative;width:223px;height:223px;flex:none}
 .donut .ring svg{overflow:visible}
 .donut .ctr{pointer-events:none}
 .donut .ctr{position:absolute;inset:0;display:grid;place-content:center;gap:0}
@@ -625,9 +625,9 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
 .strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
   padding:5px 4px 10px;scroll-snap-type:x proximity}
-.strip>.stat{flex:1 0 246px;min-width:246px;max-width:246px;scroll-snap-align:start}
+.strip>.stat{flex:1 0 295px;min-width:295px;max-width:295px;scroll-snap-align:start}
 /* 정방형에 가까운 비율은 그대로 두고 크기만 줄인다 */
-.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/1.06;min-height:196px}
+.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/1.06;min-height:235px}
 .stat .sbody{position:relative;z-index:2;padding:13px 14px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
 .stat .v{font-size:24px;font-weight:800;letter-spacing:-.8px;margin-top:1px;line-height:1.15;
@@ -1128,7 +1128,10 @@ table.gantt th,table.gantt td{border-right:1px solid var(--line2);border-bottom:
   font-size:11.5px;text-align:center;padding:0}
 table.gantt th{background:var(--hdr);color:#fff;font-weight:700;z-index:5;height:26px}
 /* 세로 스크롤이 없으므로 헤더는 아래의 떠 있는 머리글 막대(.ghfix)로 고정한다 */
-.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;box-shadow:0 4px 10px rgba(31,44,61,.13)}
+/* 떠 있는 머리글은 "보여 주기"만 한다 — 마우스는 통과시켜야 한다.
+   (안 그러면 막대에 가린 첫 행에는 드래그로 놓을 수가 없다) */
+.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;pointer-events:none;
+  box-shadow:0 4px 10px rgba(31,44,61,.13)}
 .ghfix.on{display:block}
 .ghfix .inner{overflow:hidden}
 .ghfix table.gantt{margin:0}
@@ -1223,7 +1226,8 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   animation:bgfloatX 47s cubic-bezier(.45,.05,.55,.95) infinite alternate;
   will-change:transform}
 #bgdots .bgfloat>i{display:block;position:absolute;inset:0;
-  background-repeat:no-repeat;background-size:54vw auto;background-position:76% 72%;
+  /* 예전보다 20% 크게, 화면 오른쪽·아래에서 조금씩 잘리는 자리에 둔다 */
+  background-repeat:no-repeat;background-size:65vw auto;background-position:78% 78%;
   animation:bgfloatY 31s cubic-bezier(.42,0,.58,1) infinite alternate,
             bgfloatR 89s ease-in-out infinite alternate;
   will-change:transform}

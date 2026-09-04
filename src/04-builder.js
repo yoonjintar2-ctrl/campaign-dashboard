@@ -496,7 +496,8 @@ function enableRowDrag(tbl,cfg,rerender){
       const from=keys.indexOf(RDRAG.key);let to;
       keys.splice(from,1);to=keys.indexOf(tr.dataset.key);
       keys.splice(before?to:to+1,0,RDRAG.key);
-      cfg.order=keys;RDRAG=null;rerender();};
+      cfg.order=keys;RDRAG=null;rerender();
+      try{markDirty();saveLocal();}catch(x){}};
   });
   /* 상위 계층 블록 이동 */
   tbl.querySelectorAll('tbody td[data-pk]').forEach(td=>{
@@ -528,7 +529,8 @@ function enableRowDrag(tbl,cfg,rerender){
       const last=rest.length-1-[...rest].reverse().findIndex(k=>inBlk(k,tgt));
       const at=before?first:last+1;
       rest.splice(at<0?rest.length:at,0,...moving);
-      cfg.order=rest;BDRAG=null;rerender();};
+      cfg.order=rest;BDRAG=null;rerender();
+      try{markDirty();saveLocal();}catch(x){}};
   });
 }
 /* 같은 상위 그룹 안에서 값이 같은(또는 빈) 세로 구간을 하나의 셀로 합친다 */
@@ -798,8 +800,12 @@ function wirePaceTip(){
   document.querySelectorAll('#paceBox .pbar[data-tip]').forEach(bar=>{
     if(bar.__tip)return;bar.__tip=1;
     let d=null;try{d=JSON.parse(bar.dataset.tip);}catch(e){return;}
-    const gap=(d.pr-1)*100;
-    const ahead=d.pr>=1;
+    /* 페이스 대비 = **달성률 − 목표 페이스** (%p 차이).
+       예전에는 집행/채웠어야 할 양의 비율(−25.7%)이라 "달성률 7.3% · 페이스 9.8%" 와
+       숫자가 맞지 않아 읽기 어려웠다. 이제는 7.3 − 9.8 = −2.5%p 로 바로 읽힌다. */
+    const paceR=d.goal?d.due/d.goal:0;
+    const gap=(d.r-paceR)*100;
+    const ahead=gap>=0;
     const sw=`<span class="tsw" style="background:${d.ambc}"></span>`;
     const html=`<div class="t">${sw}${esc(d.l)} · 페이스 대비 `
       +`<b style="color:${ahead?'#7ec98f':'#f0a89c'}">${(ahead?'+':'−')+Math.abs(gap).toFixed(1)}%p</b></div>`
@@ -1184,7 +1190,7 @@ function dailySeries(k){
    · 단가(CPM·CPC·CPV·CPA·CPI·CPE) → **금액 차이**로 보여 준다. 제안보다 비싸면 붉은색, 싸면 녹색.
      (단가는 "몇 % 좋다"보다 "얼마 비싸다"가 훨씬 빨리 읽힌다) */
 function dlHTML(k,o){
-  const {isAbs,lower,d,av,ev,due}=o;
+  const {isAbs,lower,d,av,ev,due,rate,pace}=o;
   if(!isAbs&&lower){
     if(!isFinite(av)||!isFinite(ev)||!ev)return '<div class="dl na">제안 대비 –</div>';
     const diff=av-ev;                          /* + = 제안보다 비싸다 = 나쁘다 */
@@ -1193,16 +1199,30 @@ function dlHTML(k,o){
     return `<div class="dl ${cheap?'up':'down'}" title="제안 단가 ${METRICS[k].f(ev)} 보다 `
       +`${won(Math.abs(diff))} ${cheap?'저렴합니다':'비쌉니다'}">`
       +`제안 대비 ${cheap?'−':'+'}${won(Math.abs(diff)).replace('₩','')}원 <i>${cheap?'↓':'↑'}</i></div>`;}
+  /* 볼륨·금액은 **달성률 − 목표 페이스** 를 %p 차이로 보여 준다.
+     "전체 제안 대비 몇 %" 가 아니라 "제안 페이스보다 몇 %p 앞섰나" 라야
+     바로 위에 적힌 달성률 · 목표 페이스와 숫자가 맞는다. */
+  if(isAbs){
+    if(!isFinite(rate)||!isFinite(pace))return '<div class="dl na">페이스 대비 –</div>';
+    const gap=(rate-pace)*100, good=gap>=0;
+    if(Math.abs(gap)<0.05)
+      return `<div class="dl flat" title="목표 페이스 ${pct(pace,1)} 와 같습니다">페이스 대비 ±0.0%p</div>`;
+    return `<div class="dl ${good?'up':'down'}" title="달성률 ${pct(rate,1)} − 목표 페이스 ${pct(pace,1)}`
+      +` (오늘까지 제안대로면 ${METRICS[k].f(due)})">`
+      +`페이스 대비 ${good?'+':'−'}${Math.abs(gap).toFixed(1)}%p <i>${good?'↑':'↓'}</i></div>`;}
   if(!isFinite(d))return '<div class="dl na">제안 대비 –</div>';
   const good=d>0;
-  return `<div class="dl ${good?'up':'down'}" title="${
-      isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${good?'앞서 있습니다':'뒤처져 있습니다'}`
-           :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}`}">`
+  return `<div class="dl ${good?'up':'down'}" title="제안 ${METRICS[k].f(ev)} 대비 `
+      +`${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}">`
     +`제안 대비 ${good?'+':'−'}${pct(Math.abs(d),1)} <i>${good?'↑':'↓'}</i></div>`;
 }
 function renderStrip(){
   /* 달성률·페이스를 함께 보여주므로 진행 스코프 기준으로 (도넛·진행 현황과 동일) */
   const a=aggFacts(paceFacts()),e=aggExp(activeLines()),pr=paceRatio();
+  /* 지표별 목표 페이스 — 캠페인 진행 현황과 **같은 계산**을 쓴다.
+     (예전에는 예산 가중 평균 하나로 뭉뚱그려 진행 현황과 숫자가 어긋났다) */
+  const paceOf={};
+  paceKpiRows().forEach(x=>{if(x.goal)paceOf[x.k]=x.due/x.goal;});
   const box=$('statStrip');box.innerHTML='';
   const cols=cfgCols(STAT_CFG);
   cols.forEach(k=>{
@@ -1216,20 +1236,21 @@ function renderStrip(){
     const lower=['cpm','cpc','cpv','cpa','cpi','cpe'].includes(k);
     /* 제안 대비 — "지금쯤 제안대로면 여기까지" 와 비교해 얼마나 앞서 있는가
        (볼륨·금액은 예상×목표 페이스, 단가는 제안 단가와 직접 비교) */
-    const due=isAbs?ev*pr:ev;
+    const pace=isFinite(paceOf[k])?paceOf[k]:pr;      /* 그 지표의 목표 페이스 */
+    const due=isAbs?ev*pace:ev;
     const d=isAbs
       ? (isFinite(av)&&isFinite(due)&&due?av/due-1:NaN)
       : (lower?(isFinite(ev)&&isFinite(av)&&av?ev/av-1:NaN)
               :(isFinite(av)&&isFinite(ev)&&ev?av/ev-1:NaN));
-    const good=d>0;
+    const good=isAbs?(rate-pace)>=0:d>0;
     const c=el('div','card stat',box);
     c.innerHTML=`<div class="sbody">
         <div class="k">${METRICS[k].l}</div>
         <div class="v mono${(()=>{const n=METRICS[k].f(av).length;return n>13?' lng2':n>10?' lng':'';})()}">${METRICS[k].f(av)}</div>
-        ${dlHTML(k,{isAbs,lower,d,av,ev,due})}
+        ${dlHTML(k,{isAbs,lower,d,av,ev,due,rate,pace})}
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
-          <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
+          <span class="sub">(목표 페이스 ${pct(pace,1)})</span></div>
         <div class="r2" title="조회 기간의 마지막 날(${mdy(viewScope().endIso)}) 실적입니다">D-1 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
           <span class="sub">(일평균 ${isFinite(avg)?METRICS[k].f(avg):'–'})</span></div>
       </div>

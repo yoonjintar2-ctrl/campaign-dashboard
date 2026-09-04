@@ -581,7 +581,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donuts{display:flex!important;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;
   scroll-snap-type:x proximity}
 /* 주요 지표 타일과 정확히 같은 크기 (통일감) */
-.donuts>.donut{flex:0 0 246px;width:246px;height:261px;scroll-snap-align:start;
+.donuts>.donut{flex:0 0 295px;width:295px;height:313px;scroll-snap-align:start;
   display:flex;flex-direction:column}
 .donut{padding:11px 13px 10px;text-align:center;position:relative}
 .donut .ring{overflow:visible}
@@ -592,7 +592,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   text-overflow:ellipsis;white-space:nowrap}
 .donut .kpitag{margin-left:auto;flex:none;display:inline-block;font-size:10.5px;
   font-weight:700;padding:2px 8px;border-radius:6px;background:var(--acc-soft);color:var(--acc)}
-.donut .ring{margin:2px auto 2px;position:relative;width:186px;height:186px;flex:none}
+.donut .ring{margin:2px auto 2px;position:relative;width:223px;height:223px;flex:none}
 .donut .ring svg{overflow:visible}
 .donut .ctr{pointer-events:none}
 .donut .ctr{position:absolute;inset:0;display:grid;place-content:center;gap:0}
@@ -625,9 +625,9 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
 .strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
   padding:5px 4px 10px;scroll-snap-type:x proximity}
-.strip>.stat{flex:1 0 246px;min-width:246px;max-width:246px;scroll-snap-align:start}
+.strip>.stat{flex:1 0 295px;min-width:295px;max-width:295px;scroll-snap-align:start}
 /* 정방형에 가까운 비율은 그대로 두고 크기만 줄인다 */
-.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/1.06;min-height:196px}
+.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/1.06;min-height:235px}
 .stat .sbody{position:relative;z-index:2;padding:13px 14px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
 .stat .v{font-size:24px;font-weight:800;letter-spacing:-.8px;margin-top:1px;line-height:1.15;
@@ -1128,7 +1128,10 @@ table.gantt th,table.gantt td{border-right:1px solid var(--line2);border-bottom:
   font-size:11.5px;text-align:center;padding:0}
 table.gantt th{background:var(--hdr);color:#fff;font-weight:700;z-index:5;height:26px}
 /* 세로 스크롤이 없으므로 헤더는 아래의 떠 있는 머리글 막대(.ghfix)로 고정한다 */
-.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;box-shadow:0 4px 10px rgba(31,44,61,.13)}
+/* 떠 있는 머리글은 "보여 주기"만 한다 — 마우스는 통과시켜야 한다.
+   (안 그러면 막대에 가린 첫 행에는 드래그로 놓을 수가 없다) */
+.ghfix{position:fixed;z-index:57;overflow:hidden;display:none;pointer-events:none;
+  box-shadow:0 4px 10px rgba(31,44,61,.13)}
 .ghfix.on{display:block}
 .ghfix .inner{overflow:hidden}
 .ghfix table.gantt{margin:0}
@@ -1223,7 +1226,8 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   animation:bgfloatX 47s cubic-bezier(.45,.05,.55,.95) infinite alternate;
   will-change:transform}
 #bgdots .bgfloat>i{display:block;position:absolute;inset:0;
-  background-repeat:no-repeat;background-size:54vw auto;background-position:76% 72%;
+  /* 예전보다 20% 크게, 화면 오른쪽·아래에서 조금씩 잘리는 자리에 둔다 */
+  background-repeat:no-repeat;background-size:65vw auto;background-position:78% 78%;
   animation:bgfloatY 31s cubic-bezier(.42,0,.58,1) infinite alternate,
             bgfloatR 89s ease-in-out infinite alternate;
   will-change:transform}
@@ -2722,7 +2726,8 @@ function enableRowDrag(tbl,cfg,rerender){
       const from=keys.indexOf(RDRAG.key);let to;
       keys.splice(from,1);to=keys.indexOf(tr.dataset.key);
       keys.splice(before?to:to+1,0,RDRAG.key);
-      cfg.order=keys;RDRAG=null;rerender();};
+      cfg.order=keys;RDRAG=null;rerender();
+      try{markDirty();saveLocal();}catch(x){}};
   });
   /* 상위 계층 블록 이동 */
   tbl.querySelectorAll('tbody td[data-pk]').forEach(td=>{
@@ -2754,7 +2759,8 @@ function enableRowDrag(tbl,cfg,rerender){
       const last=rest.length-1-[...rest].reverse().findIndex(k=>inBlk(k,tgt));
       const at=before?first:last+1;
       rest.splice(at<0?rest.length:at,0,...moving);
-      cfg.order=rest;BDRAG=null;rerender();};
+      cfg.order=rest;BDRAG=null;rerender();
+      try{markDirty();saveLocal();}catch(x){}};
   });
 }
 /* 같은 상위 그룹 안에서 값이 같은(또는 빈) 세로 구간을 하나의 셀로 합친다 */
@@ -3024,8 +3030,12 @@ function wirePaceTip(){
   document.querySelectorAll('#paceBox .pbar[data-tip]').forEach(bar=>{
     if(bar.__tip)return;bar.__tip=1;
     let d=null;try{d=JSON.parse(bar.dataset.tip);}catch(e){return;}
-    const gap=(d.pr-1)*100;
-    const ahead=d.pr>=1;
+    /* 페이스 대비 = **달성률 − 목표 페이스** (%p 차이).
+       예전에는 집행/채웠어야 할 양의 비율(−25.7%)이라 "달성률 7.3% · 페이스 9.8%" 와
+       숫자가 맞지 않아 읽기 어려웠다. 이제는 7.3 − 9.8 = −2.5%p 로 바로 읽힌다. */
+    const paceR=d.goal?d.due/d.goal:0;
+    const gap=(d.r-paceR)*100;
+    const ahead=gap>=0;
     const sw=`<span class="tsw" style="background:${d.ambc}"></span>`;
     const html=`<div class="t">${sw}${esc(d.l)} · 페이스 대비 `
       +`<b style="color:${ahead?'#7ec98f':'#f0a89c'}">${(ahead?'+':'−')+Math.abs(gap).toFixed(1)}%p</b></div>`
@@ -3410,7 +3420,7 @@ function dailySeries(k){
    · 단가(CPM·CPC·CPV·CPA·CPI·CPE) → **금액 차이**로 보여 준다. 제안보다 비싸면 붉은색, 싸면 녹색.
      (단가는 "몇 % 좋다"보다 "얼마 비싸다"가 훨씬 빨리 읽힌다) */
 function dlHTML(k,o){
-  const {isAbs,lower,d,av,ev,due}=o;
+  const {isAbs,lower,d,av,ev,due,rate,pace}=o;
   if(!isAbs&&lower){
     if(!isFinite(av)||!isFinite(ev)||!ev)return '<div class="dl na">제안 대비 –</div>';
     const diff=av-ev;                          /* + = 제안보다 비싸다 = 나쁘다 */
@@ -3419,16 +3429,30 @@ function dlHTML(k,o){
     return `<div class="dl ${cheap?'up':'down'}" title="제안 단가 ${METRICS[k].f(ev)} 보다 `
       +`${won(Math.abs(diff))} ${cheap?'저렴합니다':'비쌉니다'}">`
       +`제안 대비 ${cheap?'−':'+'}${won(Math.abs(diff)).replace('₩','')}원 <i>${cheap?'↓':'↑'}</i></div>`;}
+  /* 볼륨·금액은 **달성률 − 목표 페이스** 를 %p 차이로 보여 준다.
+     "전체 제안 대비 몇 %" 가 아니라 "제안 페이스보다 몇 %p 앞섰나" 라야
+     바로 위에 적힌 달성률 · 목표 페이스와 숫자가 맞는다. */
+  if(isAbs){
+    if(!isFinite(rate)||!isFinite(pace))return '<div class="dl na">페이스 대비 –</div>';
+    const gap=(rate-pace)*100, good=gap>=0;
+    if(Math.abs(gap)<0.05)
+      return `<div class="dl flat" title="목표 페이스 ${pct(pace,1)} 와 같습니다">페이스 대비 ±0.0%p</div>`;
+    return `<div class="dl ${good?'up':'down'}" title="달성률 ${pct(rate,1)} − 목표 페이스 ${pct(pace,1)}`
+      +` (오늘까지 제안대로면 ${METRICS[k].f(due)})">`
+      +`페이스 대비 ${good?'+':'−'}${Math.abs(gap).toFixed(1)}%p <i>${good?'↑':'↓'}</i></div>`;}
   if(!isFinite(d))return '<div class="dl na">제안 대비 –</div>';
   const good=d>0;
-  return `<div class="dl ${good?'up':'down'}" title="${
-      isAbs?`제안(${METRICS[k].f(due)})보다 ${pct(Math.abs(d),1)} ${good?'앞서 있습니다':'뒤처져 있습니다'}`
-           :`제안 ${METRICS[k].f(ev)} 대비 ${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}`}">`
+  return `<div class="dl ${good?'up':'down'}" title="제안 ${METRICS[k].f(ev)} 대비 `
+      +`${pct(Math.abs(d),1)} ${good?'좋습니다':'나쁩니다'}">`
     +`제안 대비 ${good?'+':'−'}${pct(Math.abs(d),1)} <i>${good?'↑':'↓'}</i></div>`;
 }
 function renderStrip(){
   /* 달성률·페이스를 함께 보여주므로 진행 스코프 기준으로 (도넛·진행 현황과 동일) */
   const a=aggFacts(paceFacts()),e=aggExp(activeLines()),pr=paceRatio();
+  /* 지표별 목표 페이스 — 캠페인 진행 현황과 **같은 계산**을 쓴다.
+     (예전에는 예산 가중 평균 하나로 뭉뚱그려 진행 현황과 숫자가 어긋났다) */
+  const paceOf={};
+  paceKpiRows().forEach(x=>{if(x.goal)paceOf[x.k]=x.due/x.goal;});
   const box=$('statStrip');box.innerHTML='';
   const cols=cfgCols(STAT_CFG);
   cols.forEach(k=>{
@@ -3442,20 +3466,21 @@ function renderStrip(){
     const lower=['cpm','cpc','cpv','cpa','cpi','cpe'].includes(k);
     /* 제안 대비 — "지금쯤 제안대로면 여기까지" 와 비교해 얼마나 앞서 있는가
        (볼륨·금액은 예상×목표 페이스, 단가는 제안 단가와 직접 비교) */
-    const due=isAbs?ev*pr:ev;
+    const pace=isFinite(paceOf[k])?paceOf[k]:pr;      /* 그 지표의 목표 페이스 */
+    const due=isAbs?ev*pace:ev;
     const d=isAbs
       ? (isFinite(av)&&isFinite(due)&&due?av/due-1:NaN)
       : (lower?(isFinite(ev)&&isFinite(av)&&av?ev/av-1:NaN)
               :(isFinite(av)&&isFinite(ev)&&ev?av/ev-1:NaN));
-    const good=d>0;
+    const good=isAbs?(rate-pace)>=0:d>0;
     const c=el('div','card stat',box);
     c.innerHTML=`<div class="sbody">
         <div class="k">${METRICS[k].l}</div>
         <div class="v mono${(()=>{const n=METRICS[k].f(av).length;return n>13?' lng2':n>10?' lng':'';})()}">${METRICS[k].f(av)}</div>
-        ${dlHTML(k,{isAbs,lower,d,av,ev,due})}
+        ${dlHTML(k,{isAbs,lower,d,av,ev,due,rate,pace})}
         <div class="e">${k==='cost'?'예산':'예상'} <b class="mono">${METRICS[k].f(ev)}</b></div>
         <div class="r">${k==='cost'?'소진율':'현재 달성률'} <b class="mono">${pct(rate,1)}</b>
-          <span class="sub">(목표 페이스 ${pct(pr,1)})</span></div>
+          <span class="sub">(목표 페이스 ${pct(pace,1)})</span></div>
         <div class="r2" title="조회 기간의 마지막 날(${mdy(viewScope().endIso)}) 실적입니다">D-1 <b class="mono">${isFinite(last)?METRICS[k].f(last):'–'}</b>
           <span class="sub">(일평균 ${isFinite(avg)?METRICS[k].f(avg):'–'})</span></div>
       </div>
@@ -3763,7 +3788,8 @@ function renderDaily(){
       if(b2<0||a>ds.length-1)return;
       const ax=cx(Math.max(a,0));
       const g=S('g',{},svg);g.style.cursor='pointer';
-      const label=`[${is.type}] ${is.txt}`;
+      /* 유형([기타] 등)은 앞에 붙이지 않는다 — 이슈 문구만 그대로 (자세한 건 툴팁에) */
+      const label=String(is.txt||is.type||'').trim()||'이슈';
       /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
       const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
       t.textContent=label;
@@ -4479,11 +4505,19 @@ function mediaLabel(c,maxN){
   const n=Math.max(1,maxN||2);
   return sorted.length<=n?sorted.join(' · '):sorted.slice(0,n).join(' · ')+' …';
 }
-function mergeCreatives(list,byName){
+/* mode
+   'name'  — 매체까지 무시하고 이름만으로 합친다 (효율 우수 소재의 "매체 구분 없이 비교")
+   'media' — 매체는 그대로 두고, 같은 매체 안에서 이름이 같으면 한 줄 (라인이 달라도)
+   그 외    — 구분 · 매체 · 라인 · 이름이 모두 같을 때만 합친다
+   (예전 호출부는 boolean 을 넘겼으므로 true = 'name' 으로 받아 준다) */
+function mergeCreatives(list,mode){
+  if(mode===true)mode='name';
   const KEYS=AMET.concat(['cost']);
   const m=new Map();
   list.forEach(c=>{
-    const k=byName?c.name:[c.segment,c.media,c.line,c.name].join(SEP);
+    const k=mode==='name'?c.name
+      :mode==='media'?[c.segment,c.media,c.name].join(SEP)
+      :[c.segment,c.media,c.line,c.name].join(SEP);
     let o=m.get(k);
     if(!o){
       o={...c,id:'mg'+m.size,lids:[c.lid],medias:[c.media],daily:{}};
@@ -4507,7 +4541,17 @@ function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA);
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
+  const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
+  a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
+  return a;}
+/* 게재 히스토리 전용 목록 —
+   **매체는 절대 합치지 않는다.** ("매체 구분 없이 비교" 토글의 영향을 받지 않는다)
+   대신 같은 매체 안에서 이름이 같은 소재는 라인이 달라도 한 줄로 합쳐 값을 더한다. */
+function ganttCreatives(){
+  const keys=['segment','media','line'];
+  const a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),'media');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -5060,7 +5104,7 @@ function ganttSortVal(c){
 function renderGantt(){
   const t=$('ganttTbl');
   /* 노출이 한 번도 없던 소재는 표에 올리지 않는다 */
-  const list=filteredCreatives().filter(c=>sum(c.daily.imp||[])>0);
+  const list=ganttCreatives().filter(c=>sum(c.daily.imp||[])>0);
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));
@@ -7258,10 +7302,12 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
-    issues:ISSUES,holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
+    issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
-    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다 */
-    sheet:(typeof SHEET!=='undefined'?SHEET:[]),
+    /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
+       **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
+       화면 상태를 비우는 순간(clearWorkState) 문서 안의 시트까지 같이 지워진다. */
+    sheet:(typeof SHEET!=='undefined'?SHEET.map(r=>({...r})):[]),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
@@ -7526,16 +7572,23 @@ async function tryCode(raw){
   const kind=c.code_kind==='staff'?'staff':'viewer';
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
+  /* 이 브라우저에 남아 있던 다른 캠페인의 입력 시트·소재·이슈를 먼저 비운다.
+     (예전에는 이걸 빼먹어서 운영진 코드로 들어가면 데이터 입력 탭에
+      전에 보던 캠페인의 시트가 그대로 남아 있었다) */
+  clearWorkState();
   applyDoc(c.doc);
   rebuildPeriod();resetDateFilter();
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
+  /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
+  try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
   buildFacts();buildFilters();buildSelects();
-  renderAll();renderIssues();renderIssueAlert();renderRaw();
+  renderAll();renderSheet();renderIssues();renderIssueAlert();renderRaw();
   renderCreatives();renderGantt();
+  try{renderKpiTable&&renderKpiTable();renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
   endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
