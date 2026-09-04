@@ -39,7 +39,15 @@ function serializeDoc(){
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
-           donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{})}
+           donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{}),
+           donutHide:(typeof DONUT_HIDE!=='undefined'?DONUT_HIDE:{}),
+           /* 효율 우수 소재 — 매체 구분 없이 비교 토글 · 표시 기준(CTR 등) */
+           crAllMedia:(typeof CR_ALL_MEDIA!=='undefined'?!!CR_ALL_MEDIA:false),
+           crRankOn:(typeof CR_RANK_ON!=='undefined'?CR_RANK_ON:null),
+           ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
+           /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
+           dailyOrder:(typeof DAILY_ORDER!=='undefined'?DAILY_ORDER:{}),
+           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{})}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -88,6 +96,16 @@ function applyDoc(d,keepToday){
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
+  if(v.rawOrder&&typeof RAW_ORDER!=='undefined')RAW_ORDER=v.rawOrder;
+  if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
+  if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
+  if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
+  if(v.ganttSort&&typeof GANTT_SORT!=='undefined')GANTT_SORT=v.ganttSort;
+  /* 저장해 둔 토글·기준을 화면 컨트롤에도 되돌려 놓는다 */
+  try{const am=$('crAllMedia');if(am)am.classList.toggle('on',!!CR_ALL_MEDIA);
+      const gs=$('ganttSort');if(gs)gs.value=GANTT_SORT;
+      if(typeof renderRankPick==='function')renderRankPick();}catch(e){}
+  if(v.dailyOrder&&typeof DAILY_ORDER!=='undefined')DAILY_ORDER=v.dailyOrder;
   if(v.perfOrder&&typeof PERF_ORDER!=='undefined'){PERF_ORDER=v.perfOrder;
     if(typeof applyPerfOrder==='function')applyPerfOrder();}
   if(v.gantt)GANTT=v.gantt;
@@ -244,8 +262,11 @@ function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.c
    운영진 코드 → 운영진 (그 캠페인 안에서는 마스터와 동등, 저장은 구글 로그인 후) */
 function enterShareView(name,kind){
   CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
+  if(name&&!CLOUD.campaign)CLOUD.campaign={id:null,name};
   hideGate();endBoot();
   if(typeof applyRole==='function')applyRole();
+  /* 상단바 캠페인 이름·광고주 표시를 지금 열린 캠페인으로 맞춘다 */
+  try{paintCampSel();renderBrand&&renderBrand();renderCampBar&&renderCampBar();}catch(e){}
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
   cloudState(kind==='staff'
     ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
@@ -528,8 +549,14 @@ async function loadCampaignList(listOnly){
 }
 function paintCampSel(){
   const s=$('campSel');if(!s)return;
+  /* 공유 코드로 들어온 화면 — 지금 열려 있는 그 캠페인 하나만 보여 주고 바꿀 수 없게 한다.
+     (예전에는 접속 화면에서 그려 둔 "…(데모)" 가 그대로 남아 상단바만 딴 캠페인을 가리켰다) */
+  if(CLOUD.shareView){
+    s.innerHTML=`<option>${esc((CLOUD.campaign&&CLOUD.campaign.name)||CAMPAIGN.name)}</option>`;
+    s.disabled=true;return;}
+  s.disabled=false;
   if(!CLOUD.user){
-    s.innerHTML=`<option>${esc(CAMPAIGN.name)} (데모)</option>`;return;}
+    s.innerHTML=`<option>${esc(CAMPAIGN.name)}${CLOUD.sample?' (샘플)':' (데모)'}</option>`;return;}
   s.innerHTML=CLOUD.list.map(c=>
     `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')
     ||'<option value="">캠페인 없음</option>';

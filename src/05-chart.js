@@ -219,7 +219,7 @@ function renderDaily(){
       S('line',{x1:X0,x2:W-P.r,y1:y,y2:y,stroke:ACC2,'stroke-width':1.5,opacity:.5,'stroke-dasharray':'6 4'},svg);
       tickLabels.forEach(t=>{if(Math.abs(t.y-y)<13&&t.el.parentNode)t.el.parentNode.removeChild(t.el);});
       const bx=W-P.r+6;
-      S('rect',{x:bx-2,y:y-9.5,width:P.r-9,height:19,rx:5,fill:'#e9f0f3',stroke:ACC2,'stroke-opacity':.35},svg);
+      S('rect',{x:bx-2,y:y-9.5,width:P.r-9,height:19,rx:5,fill:'var(--acc-soft)',stroke:ACC2,'stroke-opacity':.35},svg);
       const t2=S('text',{x:bx+3,y:y+3.6,'font-size':10,'font-weight':700,fill:ACC2},svg);
       t2.textContent=`예상 ${METRICS[lk].f(ev)}`;}
     }
@@ -234,7 +234,8 @@ function renderDaily(){
       const ax=cx(Math.max(a,0));
       const g=S('g',{},svg);g.style.cursor='pointer';
       const label=`[${is.type}] ${is.txt}`;
-      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'#33495f','font-weight':700},g);
+      /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
+      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
       t.textContent=label;
       /* 화면에 붙기 전이거나 폰트가 아직 안 잡히면 측정값이 0 으로 나와 라벨이 서로 겹친다.
          그럴 때는 글자 종류로 폭을 어림해 쓴다. */
@@ -418,21 +419,26 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
+        h+=`<td class="head" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
+      h+=`<td class="head" data-lvl="${L+1>=dims.length?L:L+1}" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
       h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
     }});
-  h+=`<tr class="total"><td class="head" colspan="${dims.length}">TOTAL</td>`
+  h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
     +cells(aggFacts(facts),aggExp(activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
   applyColWidths(tbl,cfg,cols);
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
+  /* 행 머리 열 고정을 먼저 — 손잡이(그립)가 static 머리글을 relative 로 바꾸기 전에
+     sticky 를 걸어 둬야 가로 고정이 살아남는다 */
+  freezeLeadCols(tbl,rows.length);
   /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
   wirePivotColResize(tbl,cfg,cols,rerender);
+  /* 세로 스크롤 시 떠 있는 머리글 */
+  mountFloatHead(tbl);
 }
 /* 서머리 · 미디어믹스의 열 너비 조절.
    머리글이 2행이라 값 열은 따로 찾아야 하고, **매체·광고상품 같은 행 머리 열도 함께** 잡는다
@@ -455,7 +461,10 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     th.classList.add('cresz');
     /* 손잡이는 th 를 기준으로 붙어야 한다 — 머리글이 static 이면 표 전체 오른쪽 끝에 붙어
        실제로는 잡히지 않았다 (sticky 인 머리글은 그대로 둔다) */
-    if(getComputedStyle(th).position==='static')th.style.position='relative';
+    /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
+       다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
+       그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
+    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -469,6 +478,8 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     const up=()=>{document.removeEventListener('mousemove',move);
       document.removeEventListener('mouseup',up);
       document.body.classList.remove('colresizing');
+      /* 행 머리 열 폭이 바뀌었으면 고정 위치도 다시 잡는다 */
+      try{freezeLeadCols(tbl,leadN);}catch(e){}
       try{markDirty();saveLocal();}catch(e){}};
     g.addEventListener('mousedown',e=>{
       e.preventDefault();e.stopPropagation();

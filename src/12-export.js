@@ -558,36 +558,22 @@ function clearPrintDoc(){const h=$('printdoc');if(h)h.innerHTML='';}
 /* 인쇄 직전에 항상 새로 만든다 — 버튼으로 눌러도, Ctrl+P 로 눌러도 같은 결과 */
 addEventListener('beforeprint',()=>{try{buildPrintDoc();}catch(e){}});
 addEventListener('afterprint',()=>{setTimeout(clearPrintDoc,300);});
-function exportPdfReport(){
-  const b=$('pdfBtn');
-  if(b)b.disabled=true;
-  /* 미디어믹스는 한 번도 열지 않았으면 아직 안 그려져 있다 */
-  try{renderMix();}catch(e){}
-  try{if($('sub-perf').classList.contains('hidden')){
-    const go=document.querySelector('#subbar button[data-sub="perf"]');if(go)go.click();}}catch(e){}
-  setTimeout(()=>{
-    try{buildPrintDoc();}catch(e){}
-    try{print();}catch(e){}
-    setTimeout(()=>{if(b)b.disabled=false;},600);
-  },260);
-}
-(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
-  const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();
+/* PDF 내려받기 버튼은 없앴다 — 브라우저 인쇄(Ctrl+P)는 그대로 쓸 수 있다 */
+(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;})();
 
 /* =========================================================================
    테마 색상 · 광고주 브랜딩
    ========================================================================= */
 /* 고를 수 있는 색 계열 — CSS 의 [data-theme=…] 와 짝을 이룬다 */
+/* 고르는 톤은 세 가지 — 남색 · 무채색 화이트 · 무채색 다크.
+   미리보기 스와치는 실제 팔레트(--acc / --acc-lt / --plane)와 같은 값이어야 한다.
+   (예전 다크 스와치는 푸른 기가 섞여 있어 실제 화면과 달라 보였다) */
 const THEMES=[
-  {k:'',       l:'남색 (기본)', sw:['#495e72','#8fb0cc','#eef1f5']},
-  {k:'red',    l:'붉은 톤',     sw:['#8f4a44','#c39894','#f5eeed']},
-  {k:'orange', l:'주황 톤',     sw:['#9a5f2b','#c8a683','#f6f0e9']},
-  {k:'mustard',l:'머스타드 톤', sw:['#8a7a24','#bdb37c','#f4f1e4']},
-  {k:'green',  l:'그린 톤',     sw:['#3c6b53','#8aa898','#ecf2ee']},
-  {k:'pink',   l:'핑크 톤',     sw:['#8d4468','#c294ab','#f6eef3']},
-  {k:'mono',   l:'무채색 화이트', sw:['#4b5257','#969ba0','#f2f3f4']},
-  {k:'dark',   l:'무채색 다크',  sw:['#8fb0cc','#5f7488','#171a1d']}
+  {k:'',       l:'남색 (기본)',   sw:['#495e72','#8897a6','#eef1f5']},
+  {k:'mono',   l:'무채색 화이트', sw:['#4d5257','#979a9e','#f1f2f2']},
+  {k:'dark',   l:'무채색 다크',   sw:['#b4b4b4','#727272','#191919']}
 ];
+/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 기본 남색으로 되돌아간다 */
 let THEME='';
 /* 그래프는 자바스크립트로 그리므로 테마가 바뀌면 색 값을 다시 읽어 온다.
    효율 히트맵(HM_GOOD/MID/BAD)만은 손대지 않는다 — 잘 됨·안 됨을 뜻하는 색이라서. */

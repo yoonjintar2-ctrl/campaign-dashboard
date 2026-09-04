@@ -24,7 +24,7 @@
   --line:#e4e8ee; --line2:#eff2f6; --gline:#c5ccd6;      /* 모든 구분선 단일 색 */
   --cell:#e2e7ed;                                        /* 표 셀 테두리 (밝은 행) */
   --cell-d:rgba(255,255,255,.22);                        /* 표 셀 테두리 (헤더·TOTAL 등 어두운 행) */
-  --acc:#495e72; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
+  --acc:#495e72; --accrgb:73 94 114; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
   --acc2:#486a75; --acc2-lt:#89a3ab;
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
@@ -43,72 +43,12 @@
    :root 는 기본(남색). 아래는 캠페인 설정 › 🎨 디자인 에서 고르는 색 계열이다.
    배경 · 강조 · 표 머리글 · 그래프 색을 한 계열로 갈아 끼운다.
    (효율 히트맵의 초록↔회색↔빨강만은 "잘 됨/안 됨"을 뜻하므로 테마와 무관하게 유지) */
-[data-theme="red"]{
-  --pacergb:95 116 130;
-  --sub0:#d5c8c6; --sub1:#e3d9d7; --sub2:#ebe4e3; --sub3:#f2edec;
-  --plane:#f1eeee; --plane2:#f9f7f7; --ink:#2e2726; --ink2:#6b615f; --muted:#9a908e; --sec:#5d5250;
-  --line:#e7e1e0; --line2:#f1ecec; --gline:#cdc2c0; --cell:#e4dedd;
-  --acc:#8a5b56; --acc-d:#6e4744; --acc-lt:#b39a97; --acc-soft:#e9e2e1; --acc-soft2:#f4efef;
-  --acc2:#94685f; --acc2-lt:#bda49e;
-  --hdr:#6f4b47; --hdr2:#815a55; --tot:#3f2d2b; --hdr-sub:#9d8683; --hdr-sub2:#ad9793;
-  --gray:#a49897; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a5b56;
-  --b1:#cdbcba; --b2:#b79f9c; --b3:#9c7c78; --b4:#8a5b56; --b5:#6e4744; --neg:#9e6660;
-  --bg1:176,143,138; --bg2:166,132,127; --bg3:198,175,171;
-}
-[data-theme="orange"]{
-  --pacergb:95 116 130;
-  --sub0:#d8cdbc; --sub1:#e5ddd0; --sub2:#ede7dd; --sub3:#f4f0ea;
-  --plane:#f2efea; --plane2:#faf8f5; --ink:#2f2a22; --ink2:#6b6357; --muted:#9a9284; --sec:#5d5647;
-  --line:#e8e2d9; --line2:#f2ede6; --gline:#cdc4b5; --cell:#e5dfd5;
-  --acc:#8a6538; --acc-d:#6e502b; --acc-lt:#b5a184; --acc-soft:#eae4db; --acc-soft2:#f5f1eb;
-  --acc2:#95724a; --acc2-lt:#c0aa8e;
-  --hdr:#705333; --hdr2:#82633f; --tot:#3f2f1c; --hdr-sub:#9d8d75; --hdr-sub2:#ad9e88;
-  --gray:#a49b8c; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a6538;
-  --b1:#d3c5ae; --b2:#bfab8d; --b3:#a48a64; --b4:#8a6538; --b5:#6e502b; --neg:#9e6660;
-  --bg1:184,160,124; --bg2:174,148,110; --bg3:206,190,166;
-}
-[data-theme="mustard"]{
-  --pacergb:122 100 130;
-  --sub0:#d4d1bc; --sub1:#e2dfd0; --sub2:#eae8dd; --sub3:#f2f0ea;
-  --plane:#f1f0e9; --plane2:#f9f8f3; --ink:#2b2a20; --ink2:#666352; --muted:#95927e; --sec:#585643;
-  --line:#e6e4d8; --line2:#f0efe6; --gline:#c9c6b2; --cell:#e3e1d3;
-  --acc:#7c7434; --acc-d:#615a26; --acc-lt:#aaa47f; --acc-soft:#e7e5d9; --acc-soft2:#f3f2ea;
-  --acc2:#8a8142; --acc2-lt:#b5af8c;
-  --hdr:#655e2c; --hdr2:#776f38; --tot:#39351a; --hdr-sub:#948e70; --hdr-sub2:#a49e83;
-  --gray:#9d9a86; --pace:#7a6482; --pace-lt:#b0a3b8; --hol:#7c7434;
-  --b1:#cfcbac; --b2:#b8b28c; --b3:#9a9362; --b4:#7c7434; --b5:#615a26; --neg:#9e6660;
-  --bg1:176,172,124; --bg2:164,160,110; --bg3:200,197,168;
-}
-[data-theme="green"]{
-  --pacergb:152 98 92;
-  --sub0:#c6d1ca; --sub1:#dae1dc; --sub2:#e5eae7; --sub3:#eff3f0;
-  --plane:#edf0ee; --plane2:#f6f8f6; --ink:#232c27; --ink2:#5c665f; --muted:#8c948e; --sec:#4e5852;
-  --line:#e1e7e3; --line2:#eef2f0; --gline:#c3ccc6; --cell:#dee4e0;
-  --acc:#4b6a58; --acc-d:#385244; --acc-lt:#93a89b; --acc-soft:#e5eae7; --acc-soft2:#f2f5f3;
-  --acc2:#567764; --acc2-lt:#9db0a4;
-  --hdr:#40594b; --hdr2:#4f6a5a; --tot:#263731; --hdr-sub:#849489; --hdr-sub2:#94a399;
-  --gray:#97a09a; --pace:#98625c; --pace-lt:#c4a5a1; --hol:#98625c;
-  --b1:#bdc9c1; --b2:#9db0a4; --b3:#748e7e; --b4:#4b6a58; --b5:#385244; --neg:#a97a76;
-  --bg1:140,168,152; --bg2:128,156,140; --bg3:176,198,186;
-}
-[data-theme="pink"]{
-  --pacergb:95 116 130;
-  --sub0:#d4c5cc; --sub1:#e2d7dc; --sub2:#eae2e6; --sub3:#f2ecef;
-  --plane:#f2eef0; --plane2:#faf7f8; --ink:#2e2529; --ink2:#6b5f65; --muted:#9a8e93; --sec:#5d5055;
-  --line:#e8e0e4; --line2:#f2ecee; --gline:#cec0c6; --cell:#e5dde0;
-  --acc:#84556a; --acc-d:#684354; --acc-lt:#b098a3; --acc-soft:#e9e1e5; --acc-soft2:#f4eff1;
-  --acc2:#916078; --acc2-lt:#bda3af;
-  --hdr:#6b4657; --hdr2:#7e5566; --tot:#3d2b33; --hdr-sub:#9b8390; --hdr-sub2:#ab949f;
-  --gray:#a3969b; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#84556a;
-  --b1:#ccbac2; --b2:#b69ea9; --b3:#9b7a89; --b4:#84556a; --b5:#684354; --neg:#9e6660;
-  --bg1:176,140,156; --bg2:164,128,146; --bg3:200,176,188;
-}
 [data-theme="mono"]{
   --pacergb:150 99 94;
   --sub0:#cfd1d3; --sub1:#dfe0e2; --sub2:#e9eaeb; --sub3:#f2f2f3;
   --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
-  --acc:#4d5257; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
+  --acc:#4d5257; --accrgb:77 82 87; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
   --acc2:#5c6165; --acc2-lt:#a3a6aa;
   --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
   --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
@@ -123,7 +63,7 @@
   --ink:#ededed; --ink2:#b0b0b0; --muted:#868686; --sec:#c8c8c8;
   --line:#363636; --line2:#2e2e2e; --gline:#4a4a4a; --cell:#383838;
   --cell-d:rgba(255,255,255,.16);
-  --acc:#b4b4b4; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
+  --acc:#b4b4b4; --accrgb:180 180 180; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
   --acc2:#9c9c9c; --acc2-lt:#6a6a6a;
   --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
   --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
@@ -495,15 +435,14 @@ table.tbl.nogauge .gauge .track{display:none}
 /* 목표 페이스 점 — 막대 "위"가 아니라 막대 바로 위쪽 줄에 찍는다.
    색은 그 막대와 같은 색을 쓴다. */
 .pdotrow{position:relative;height:13px}
-/* 목표 페이스 점 — 테마 강조색으로, 후레쉬처럼 은은히 깜빡이며 옆으로 빛이 번진다 */
-.pdotrow>i{position:absolute;bottom:2px;width:9px;height:9px;border-radius:50%;
-  transform:translateX(-50%);background:var(--pace);display:block;
+/* 목표 페이스 점 — 테마 강조색(--acc)으로, 후레쉬처럼 은은히 깜빡인다.
+   빛 번짐은 점 바로 옆까지만 (예전에는 반경 14px + 링 4px 이라 너무 넓었다) */
+.pdotrow>i{position:absolute;bottom:2px;width:8px;height:8px;border-radius:50%;
+  transform:translateX(-50%);background:var(--acc);display:block;
   animation:pacedot 2.6s ease-in-out infinite}
 @keyframes pacedot{
-  0%,100%{box-shadow:0 0 0 0 rgba(var(--pacergb,176 106 99)/.55),
-                     0 0 5px 1px rgba(var(--pacergb,176 106 99)/.40);opacity:.78}
-  45%    {box-shadow:0 0 0 4px rgba(var(--pacergb,176 106 99)/0),
-                     0 0 14px 4px rgba(var(--pacergb,176 106 99)/.75);opacity:1}}
+  0%,100%{box-shadow:0 0 2px 0 rgba(var(--accrgb,73 94 114)/.40);opacity:.76}
+  45%    {box-shadow:0 0 5px 1px rgba(var(--accrgb,73 94 114)/.62);opacity:1}}
 @media (prefers-reduced-motion: reduce){.pdotrow>i{animation:none}}
 .pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
@@ -796,10 +735,18 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .hnav .nvmap{flex:1;min-width:0}
 .hnav .nvchips{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
 .hnav .nvchips::-webkit-scrollbar{display:none}
-.hnav .nvc{border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px;
+.hnav .nvc{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;
   font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;flex:none}
 .hnav .nvc:hover{border-color:var(--acc);color:var(--acc)}
 .hnav .nvc.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* 세그먼트 순서 바꾸기 — 칩(가로) · 블록 제목(세로)을 끌어서 놓는다 */
+.segdrag{cursor:grab}
+.segdrag.dragging{opacity:.4;cursor:grabbing}
+.segdrag.segL{box-shadow:inset 3px 0 0 var(--acc)}
+.segdrag.segR{box-shadow:inset -3px 0 0 var(--acc)}
+.segdrag.segy.segL{box-shadow:inset 0 3px 0 var(--acc)}
+.segdrag.segy.segR{box-shadow:inset 0 -3px 0 var(--acc)}
+.subsec.segdrag{border-radius:8px;padding:2px 6px;margin-left:-6px}
 .hnav .nvbar{position:relative;height:4px;border-radius:3px;background:var(--acc-soft);margin-top:5px}
 .hnav .nvbar>i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--acc-lt);display:block}
 
@@ -883,11 +830,13 @@ table.tbl.fit{width:auto}
 .tbl-wrap{overflow:auto;max-height:74vh}
 /* 세로 스크롤 없이 전체 높이 그대로 (가로 스크롤만) — 효율 탭 서머리 */
 .tbl-wrap.noy{max-height:none;overflow-y:visible}
-/* 세로 스크롤이 없으면 헤더 고정도 불필요 — 고정 때문에 생기던 행 높이 단차도 사라진다 */
-.tbl-wrap.noy table.tbl th{position:static}
+/* 세로 스크롤이 없으면 세로 고정은 불필요 (떠 있는 머리글 막대가 대신한다).
+   다만 행 머리 열(.lfz)의 가로 고정은 살려 둔다 */
+.tbl-wrap.noy table.tbl th:not(.lfz){position:static}
 table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--cell);text-align:center;
-  font-size:12.5px;line-height:1.4;vertical-align:middle;font-family:inherit}
+/* 행 높이는 조금 낮게 — 글자는 칸 세로 가운데에 그대로 둔다 */
+table.tbl th,table.tbl td{padding:6.5px 10px;border-bottom:1px solid var(--cell);text-align:center;
+  font-size:12.5px;line-height:1.35;vertical-align:middle;font-family:inherit}
 /* 모든 세로 구분선은 같은 색 · 같은 굵기 */
 table.tbl th,table.tbl td{border-right:1px solid var(--cell)}
 table.tbl th:last-child,table.tbl td:last-child{border-right:0}
@@ -898,10 +847,19 @@ table.tbl tbody td{background:var(--surface)}
 table.tbl th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:2}
 table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
-table.tbl thead tr:nth-child(2) th{top:33px}
+/* 2행 헤더는 1행 아래에 붙어 고정된다 — 세로 스크롤이 없는 표(noy)에서는
+   고정을 안 쓰므로 이 오프셋도 꺼야 한다. (안 그러면 열 너비 그립 때문에
+   relative 로 바뀐 셀이 33px 아래로 밀려 헤더가 깨진다) */
+table.tbl thead tr:nth-child(2) th{top:30px}
+.tbl-wrap.noy table.tbl thead tr:nth-child(2) th{top:auto}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:var(--surface);font-weight:600;color:var(--ink)}
+/* 서머리 · 미디어믹스 — 가로로 스크롤해도 행 머리 열(구분 · 매체 · 광고상품)은 왼쪽에 붙는다.
+   left 값은 그려진 뒤에 실제 폭을 재서 JS 가 넣는다 (열 너비를 끌어 바꿀 수 있으므로). */
+table.tbl td.lfz{position:sticky;z-index:4}
+table.tbl th.lfz{position:sticky;z-index:9}
+table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
 /* 값이 없는 칸도 배경은 그 행의 색 그대로 — 열마다 배경이 달라 보이지 않게 한다(함정 2).
    비어 있다는 신호는 옅은 – 하나로 충분하다 */
@@ -1000,6 +958,17 @@ td.gt input.num{color:var(--acc);font-weight:800}
   width:19px;height:19px;border-radius:5px;cursor:pointer;font-size:12px;line-height:1;padding:0}
 .chipfield .cfadd:hover{background:var(--acc);color:#fff}
 /* body에 fixed로 띄워 표 스크롤 영역에 잘리지 않게 */
+/* KPI 달성 현황 — 표시 항목 고르기 */
+.dplist{max-height:min(52vh,420px);overflow:auto;border:1px solid var(--line);border-radius:10px}
+.dprow{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid var(--line2);
+  font-size:12.5px;font-weight:600;color:var(--ink);cursor:grab;background:var(--surface)}
+.dprow:last-child{border-bottom:0}
+.dprow .gr{color:var(--muted);font-size:11px;letter-spacing:-2px;flex:none}
+.dprow label{display:flex;align-items:center;gap:7px;flex:1;min-width:0;cursor:pointer}
+.dprow .bd{margin-left:auto;color:var(--muted);font-size:11.5px;font-weight:700;flex:none}
+.dprow.dragging{opacity:.4}
+.dprow.dropT{box-shadow:inset 0 3px 0 var(--acc)}
+.dprow.dropB{box-shadow:inset 0 -3px 0 var(--acc)}
 .cfmenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);
   border-radius:9px;box-shadow:var(--shadow2);padding:5px;min-width:200px;max-height:240px;overflow:auto;text-align:left}
 .cfmenu .mi{display:block;width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:6px;
@@ -1499,9 +1468,6 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <button class="pill dl" id="reportBtn" title="엑셀(.xlsx)로 내려받기">
       <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.6" width="14" height="12.8" rx="2" fill="#1f6b41"/><path d="M4.3 5.2h2.1L8 7.5l1.6-2.3h2.1L9.1 8.6l2.7 3.4H9.6L8 9.6l-1.6 2.4H4.3L7 8.6z" fill="#fff"/></svg>
       <span>엑셀</span></button>
-    <button class="pill dl" id="pdfBtn" title="PDF로 내려받기 (광고주 화면 기준)">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.6" width="14" height="12.8" rx="2" fill="#a8332b"/><path d="M3.6 11.6V4.6h2.2c1.3 0 2 .7 2 1.8s-.7 1.9-2 1.9h-.9v3.3zm1.3-4.4h.8c.5 0 .8-.3.8-.8s-.3-.7-.8-.7h-.8zM8.9 11.6V4.6h2c1.6 0 2.6 1.3 2.6 3.5s-1 3.5-2.6 3.5zm1.3-1.2h.6c.8 0 1.3-.8 1.3-2.3s-.5-2.3-1.3-2.3h-.6z" fill="#fff"/></svg>
-      <span>PDF</span></button>
   </span>
 </div>
 
@@ -1528,6 +1494,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <select class="ctl" id="kpiGroupSel">
         <option value="media">매체별</option><option value="product">상품별</option><option value="line">제품별</option>
       </select>
+      <button class="btn sm agency-only" id="kpiPickBtn" title="표시할 항목을 고르고 순서를 바꿉니다">⚙ 표시 항목</button>
     </div>
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
 
@@ -2286,7 +2253,10 @@ function enableColResize(tbl,cols,onDone,off){
   cols.forEach((c,i)=>{
     const th=ths[off+i];if(!th||th.querySelector('.colgrip'))return;
     th.classList.add('cresz');
-    if(getComputedStyle(th).position==='static')th.style.position='relative';
+    /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
+       다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
+       그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
+    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -2306,6 +2276,91 @@ function enableColResize(tbl,cols,onDone,off){
       delete c.w;th.style.minWidth='';th.style.width='';if(onDone)onDone();});});
 }
 
+/* ===== 서머리 · 미디어믹스 — 행 머리 열 고정 · 떠 있는 머리글 =====
+   (1) 가로로 스크롤해도 구분 · 매체 · 광고상품 같은 행 머리 열은 왼쪽에 붙어 있어야 하고
+   (2) 세로로 스크롤할 때는 머리글이 화면 위쪽에 붙어 있다가 표가 끝나면 사라져야 한다.
+   (2)는 히트맵 · 게재 히스토리와 같은 "복사본 머리글 막대" 방식을 쓴다. */
+function freezeLeadCols(tbl,leadN){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[0]||!leadN)return 0;
+  tbl.querySelectorAll('.lfz').forEach(c=>{c.classList.remove('lfz','lfze');c.style.left='';});
+  const ths=[...tbl.tHead.rows[0].cells].slice(0,leadN);
+  let acc=0;const L=[];
+  ths.forEach(th=>{L.push(acc);acc+=th.getBoundingClientRect().width;});
+  if(!acc)return 0;                                   /* 아직 화면에 없다 */
+  ths.forEach((th,i)=>{th.classList.add('lfz');th.classList.toggle('lfze',i===leadN-1);
+    th.style.left=Math.round(L[i])+'px';});
+  const tb=tbl.tBodies[0];
+  if(tb)[...tb.rows].forEach(tr=>{
+    [...tr.cells].forEach(td=>{
+      if(!td.classList.contains('head'))return;
+      const lv=+(td.dataset.lvl||0);
+      if(!(lv<leadN))return;
+      td.classList.add('lfz');
+      /* 고정 구간의 오른쪽 끝 칸에만 구분선을 둔다 (소계·합계는 여러 열을 덮는다) */
+      td.classList.toggle('lfze',lv+Math.max(td.colSpan,1)>=leadN);
+      td.style.left=Math.round(L[lv]||0)+'px';});});
+  tbl.classList.add('hasfz');
+  return Math.round(acc);
+}
+/* 표마다 하나씩 붙는 떠 있는 머리글 막대 */
+function mountFloatHead(tbl){
+  const wrap=tbl.closest('.tbl-wrap');if(!wrap||!tbl.tHead)return;
+  let bar=tbl.__fhBar;
+  if(!bar){bar=el('div','ghfix',document.body);tbl.__fhBar=bar;
+    if(!window.__fhList){window.__fhList=[];
+      const run=()=>window.__fhList.forEach(f=>{try{f();}catch(e){}});
+      addEventListener('scroll',run,true);addEventListener('resize',run);}}
+  bar.innerHTML='';
+  const inner=el('div','inner',bar);
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  const cg=document.createElement('colgroup');
+  clone.appendChild(cg);
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  /* 복사본에서는 세로 고정만 푼다 — 행 머리 열의 가로 고정(lfz)은 그대로 둬야
+     본문과 똑같이 왼쪽에 붙는다 */
+  clone.querySelectorAll('th').forEach(th=>{
+    th.style.top='auto';
+    if(!th.classList.contains('lfz')){th.style.position='static';th.style.left='auto';}
+    th.querySelectorAll('.colgrip').forEach(g=>g.remove());});
+  inner.appendChild(clone);
+  /* 열 너비는 띄우기 직전에 다시 잰다 (숨겨진 채로 그려졌으면 이 시점엔 0 이라서) */
+  let sized='';
+  const sizeCols=()=>{
+    const r0=[...tbl.tHead.rows[0].cells],r1=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+    const leadTh=r0.filter(th=>th.rowSpan>1||!r1.length);
+    const ws=leadTh.concat(r1).map(th=>Math.round(th.getBoundingClientRect().width));
+    if(!ws.length||ws.some(w=>!w))return false;
+    const sig=ws.join(',');
+    if(sig===sized)return true;
+    if(cg.childElementCount!==ws.length){cg.innerHTML='';
+      ws.forEach(()=>cg.appendChild(document.createElement('col')));}
+    [...cg.children].forEach((c,i)=>{c.style.width=ws[i]+'px';});
+    sized=sig;return true;};
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    if(!tbl.isConnected||!wrap.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+24&&sizeCols();
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    clone.style.maxWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
+  if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
+  tbl.__fhPlace=place;window.__fhList.push(place);
+  setTimeout(place,0);setTimeout(place,320);
+}
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
@@ -2503,7 +2558,7 @@ function openBuilder(host,cfg,opts){
         +`<input class="gname" value="${esc(g.name)}" placeholder="그룹 이름" title="열 그룹 이름을 직접 입력하세요">`
         +(g.cols.length===1
           ? `<button class="btn sm gmerge" title="열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다">이름 합치기</button>`:'')
-        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
+        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:var(--muted)" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
       const nameInp=hd.querySelector('input.gname');
       nameInp.oninput=e=>{g.name=e.target.value;commit();};
       nameInp.onfocus=()=>{selG=g.id;
@@ -2543,7 +2598,7 @@ function openBuilder(host,cfg,opts){
           selG=g.id;DRAG=null;draw();}};
       card.onclick=e=>{if(e.target===card||e.target.classList.contains('gbd')){selG=g.id;draw();}};
       const bd=el('div','gbd',card);
-      if(!g.cols.length)bd.innerHTML='<span style="color:#aab6c5;font-size:11px">위 목록에서 항목을 끌어다 놓거나 눌러서 추가</span>';
+      if(!g.cols.length)bd.innerHTML='<span style="color:var(--muted);font-size:11px">위 목록에서 항목을 끌어다 놓거나 눌러서 추가</span>';
       g.cols.forEach((k,ci)=>{
         const c=el('span','chip on',bd);c.draggable=true;c.dataset.kind='col';c.dataset.gi=gi;c.dataset.ci=ci;
         c.innerHTML=`⠿ ${cdef[k]?cdef[k].l:k} <span class="x">✕</span>`;
@@ -3083,14 +3138,75 @@ function renderSpendDonut(box,pr){
 }
 /* KPI 달성 현황 카드의 좌우 순서 — 사용자가 끌어서 바꾼 순서를 기억한다 */
 let DONUT_ORDER={};
+/* 화면에서 뺀 항목 — 기준(매체별/상품별/제품별)마다 따로 기억한다 */
+let DONUT_HIDE={};
+const donutKey=(l,mode)=>mode==='product'?l.media+' · '+l.product:l[mode];
+/* 그 기준에서 나올 수 있는 모든 항목 — 예산 큰 순, 끌어서 바꾼 순서가 있으면 그 순서 */
+function donutKeys(mode,all){
+  const ls=activeLines();
+  let keys=[...new Set(ls.map(l=>donutKey(l,mode)))];
+  const bud={};keys.forEach(k=>{bud[k]=sum(ls.filter(l=>donutKey(l,mode)===k).map(lineGross));});
+  keys.sort((a,b)=>(bud[b]-bud[a])||String(a).localeCompare(String(b),'ko'));
+  const ord=DONUT_ORDER[mode]||[];
+  if(ord.length){const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
+    keys=keys.slice().sort((a,b)=>ix(a)-ix(b));}
+  if(all)return keys;
+  const off=DONUT_HIDE[mode]||[];
+  return keys.filter(k=>off.indexOf(k)<0);
+}
+/* 표시 항목 고르기 — 체크로 넣고 빼고, 끌어서 순서를 바꾼다 */
+function openDonutPicker(){
+  const mode=$('kpiGroupSel').value||'media';
+  const label={media:'매체',product:'광고상품',line:'제품'}[mode]||'항목';
+  const ls=activeLines();
+  const draw=()=>{
+    const keys=donutKeys(mode,true),off=DONUT_HIDE[mode]||[];
+    const bud=k=>sum(ls.filter(l=>donutKey(l,mode)===k).map(lineGross));
+    $('dpList').innerHTML=keys.map(k=>
+      `<div class="dprow" draggable="true" data-k="${esc(k)}">
+         <span class="gr">⋮⋮</span>
+         <label><input type="checkbox" ${off.indexOf(k)<0?'checked':''} data-ck="${esc(k)}"> ${esc(k)}</label>
+         <span class="bd mono">${won(bud(k))}</span></div>`).join('');
+    $('dpList').querySelectorAll('[data-ck]').forEach(cb=>cb.onchange=()=>{
+      const cur=new Set(DONUT_HIDE[mode]||[]);
+      if(cb.checked)cur.delete(cb.dataset.ck);else cur.add(cb.dataset.ck);
+      DONUT_HIDE[mode]=[...cur];
+      renderDonuts();try{markDirty();saveLocal();}catch(e){}});
+    /* 행을 끌어서 순서 변경 */
+    let from=null;
+    $('dpList').querySelectorAll('.dprow').forEach(row=>{
+      row.addEventListener('dragstart',e=>{from=row.dataset.k;row.classList.add('dragging');
+        try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',from);}catch(x){}});
+      row.addEventListener('dragend',()=>{from=null;
+        $('dpList').querySelectorAll('.dprow').forEach(r=>r.classList.remove('dragging','dropT','dropB'));});
+      row.addEventListener('dragover',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+        row.classList.toggle('dropB',after);row.classList.toggle('dropT',!after);});
+      row.addEventListener('dragleave',()=>row.classList.remove('dropT','dropB'));
+      row.addEventListener('drop',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+        const list=donutKeys(mode,true);
+        const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+        let b2=list.indexOf(row.dataset.k);if(b2<0)b2=list.length;
+        list.splice(after?b2+1:b2,0,from);
+        DONUT_ORDER[mode]=list;from=null;
+        renderDonuts();draw();try{markDirty();saveLocal();}catch(e2){}});});};
+  openModal(`KPI 달성 현황 — 표시할 ${label}`,
+    `<div class="hint" style="margin-bottom:8px">체크를 풀면 화면에서 빠집니다. 왼쪽을 끌어 순서를 바꿀 수 있습니다.</div>`
+    +`<div id="dpList" class="dplist"></div>`,
+    `<button class="btn" id="dpAll">전체 표시</button>`
+    +`<button class="btn" id="dpNone">전체 숨김</button>`
+    +`<div class="spacer"></div><button class="btn primary" data-close>닫기</button>`,{w:520});
+  draw();
+  $('dpAll').onclick=()=>{DONUT_HIDE[mode]=[];renderDonuts();draw();try{markDirty();saveLocal();}catch(e){}};
+  $('dpNone').onclick=()=>{DONUT_HIDE[mode]=donutKeys(mode,true);renderDonuts();draw();
+    try{markDirty();saveLocal();}catch(e){}};
+}
 function renderDonuts(){
   const box=$('donuts');box.innerHTML='';
   const mode=$('kpiGroupSel').value||'media';
   const ls=activeLines(),pr=paceRatio();
-  let keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
-  const ord=DONUT_ORDER[mode]||[];
-  if(ord.length){const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
-    keys=keys.slice().sort((a,b)=>ix(a)-ix(b));}
+  let keys=donutKeys(mode);
   renderSpendDonut(box,pr);
 
   /* 배경 그라데이션(청록빛 남색)과 같은 계열로 채도를 올린 링 색 */
@@ -3633,7 +3749,7 @@ function renderDaily(){
       S('line',{x1:X0,x2:W-P.r,y1:y,y2:y,stroke:ACC2,'stroke-width':1.5,opacity:.5,'stroke-dasharray':'6 4'},svg);
       tickLabels.forEach(t=>{if(Math.abs(t.y-y)<13&&t.el.parentNode)t.el.parentNode.removeChild(t.el);});
       const bx=W-P.r+6;
-      S('rect',{x:bx-2,y:y-9.5,width:P.r-9,height:19,rx:5,fill:'#e9f0f3',stroke:ACC2,'stroke-opacity':.35},svg);
+      S('rect',{x:bx-2,y:y-9.5,width:P.r-9,height:19,rx:5,fill:'var(--acc-soft)',stroke:ACC2,'stroke-opacity':.35},svg);
       const t2=S('text',{x:bx+3,y:y+3.6,'font-size':10,'font-weight':700,fill:ACC2},svg);
       t2.textContent=`예상 ${METRICS[lk].f(ev)}`;}
     }
@@ -3648,7 +3764,8 @@ function renderDaily(){
       const ax=cx(Math.max(a,0));
       const g=S('g',{},svg);g.style.cursor='pointer';
       const label=`[${is.type}] ${is.txt}`;
-      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'#33495f','font-weight':700},g);
+      /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
+      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
       t.textContent=label;
       /* 화면에 붙기 전이거나 폰트가 아직 안 잡히면 측정값이 0 으로 나와 라벨이 서로 겹친다.
          그럴 때는 글자 종류로 폭을 어림해 쓴다. */
@@ -3832,21 +3949,26 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       /* 기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않는다 */
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
+        h+=`<td class="head" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
+      h+=`<td class="head" data-lvl="${L+1>=dims.length?L:L+1}" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
       h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
     }});
-  h+=`<tr class="total"><td class="head" colspan="${dims.length}">TOTAL</td>`
+  h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
     +cells(aggFacts(facts),aggExp(activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
   applyColWidths(tbl,cfg,cols);
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
+  /* 행 머리 열 고정을 먼저 — 손잡이(그립)가 static 머리글을 relative 로 바꾸기 전에
+     sticky 를 걸어 둬야 가로 고정이 살아남는다 */
+  freezeLeadCols(tbl,rows.length);
   /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
   wirePivotColResize(tbl,cfg,cols,rerender);
+  /* 세로 스크롤 시 떠 있는 머리글 */
+  mountFloatHead(tbl);
 }
 /* 서머리 · 미디어믹스의 열 너비 조절.
    머리글이 2행이라 값 열은 따로 찾아야 하고, **매체·광고상품 같은 행 머리 열도 함께** 잡는다
@@ -3869,7 +3991,10 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     th.classList.add('cresz');
     /* 손잡이는 th 를 기준으로 붙어야 한다 — 머리글이 static 이면 표 전체 오른쪽 끝에 붙어
        실제로는 잡히지 않았다 (sticky 인 머리글은 그대로 둔다) */
-    if(getComputedStyle(th).position==='static')th.style.position='relative';
+    /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
+       다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
+       그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
+    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -3883,6 +4008,8 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     const up=()=>{document.removeEventListener('mousemove',move);
       document.removeEventListener('mouseup',up);
       document.body.classList.remove('colresizing');
+      /* 행 머리 열 폭이 바뀌었으면 고정 위치도 다시 잡는다 */
+      try{freezeLeadCols(tbl,leadN);}catch(e){}
       try{markDirty();saveLocal();}catch(e){}};
     g.addEventListener('mousedown',e=>{
       e.preventDefault();e.stopPropagation();
@@ -3948,17 +4075,68 @@ let RAW_SEG='media';      /* 세로 세그먼트 — 표를 위아래로 나눈�
 let RAW_HSEG='product';   /* 가로 세그먼트 — 한 표 안에서 좌우로 나눈다 (기본 상품별) */
 const SEG_OPTS=[{k:'none',l:'없음'},{k:'segment',l:'구분별'},{k:'media',l:'매체별'},
   {k:'product',l:'상품별'},{k:'target',l:'타겟팅별'},{k:'creative',l:'소재별'}];
+/* 세그먼트 순서 — 사용자가 끌어서 바꾼 순서. 차원(매체/상품/…)별로 따로 기억한다. */
+let RAW_ORDER={};
+/* 정렬 기준이 되는 크기 — 예산(Gross). 소재처럼 라인에 없는 차원은 소진 광고비로 대신한다. */
+function segWeight(dim,v,fs){
+  if(!NO_EXP_DIMS.includes(dim))
+    return sum(activeLines().filter(l=>l[dim]===v).map(lineGross));
+  return sum(fs.filter(f=>f[dim]===v).map(f=>+f.cost||0));
+}
+/* 기본은 예산이 큰 세그먼트가 먼저. 같으면 이름순. 끌어서 바꾼 순서가 있으면 그게 우선. */
+function segSort(vals,dim,fs){
+  const w={};vals.forEach(v=>{w[v]=segWeight(dim,v,fs);});
+  let out=vals.slice().sort((a,b)=>(w[b]-w[a])||String(a).localeCompare(String(b),'ko'));
+  const ord=RAW_ORDER[dim];
+  if(Array.isArray(ord)&&ord.length){
+    const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
+    out=out.slice().sort((a,b)=>ix(a)-ix(b));}
+  return out;
+}
+/* 세그먼트 순서 바꾸기 — 가로는 미니맵 칩, 세로는 블록 제목을 끌어서 놓는다.
+   items = [{el,key}], axis 'x' | 'y' */
+function wireSegDrag(items,keys,dim,axis){
+  if(items.length<2)return;
+  let from=null;
+  const clear=()=>items.forEach(x=>x.el.classList.remove('dragging','segL','segR'));
+  items.forEach(({el:node,key})=>{
+    node.draggable=true;node.classList.add('segdrag');
+    if(axis==='y')node.classList.add('segy');
+    node.title='끌어서 순서 변경';
+    node.addEventListener('dragstart',e=>{from=key;node.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',key);}catch(x){}});
+    node.addEventListener('dragend',()=>{from=null;clear();});
+    const side=e=>{const r=node.getBoundingClientRect();
+      return axis==='y'?e.clientY>r.top+r.height/2:e.clientX>r.left+r.width/2;};
+    node.addEventListener('dragover',e=>{
+      if(from===null||from===key)return;
+      e.preventDefault();const after=side(e);
+      node.classList.toggle('segR',after);node.classList.toggle('segL',!after);});
+    node.addEventListener('dragleave',()=>node.classList.remove('segL','segR'));
+    node.addEventListener('drop',e=>{
+      if(from===null||from===key)return;
+      e.preventDefault();const after=side(e);
+      const list=keys.slice();
+      const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+      let b2=list.indexOf(key);if(b2<0)b2=list.length;
+      list.splice(after?b2+1:b2,0,from);
+      RAW_ORDER[dim]=list;
+      clear();from=null;renderRaw();
+      try{markDirty();saveLocal();}catch(x){}});});
+}
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
   const host=$('rawHost');host.innerHTML='';
-  const vSegs=RAW_SEG==='none'?[]:[...new Set(fs.map(f=>f[RAW_SEG]))].filter(Boolean).sort();
-  const hSegs=RAW_HSEG==='none'?[]:[...new Set(fs.map(f=>f[RAW_HSEG]))].filter(Boolean).sort();
+  /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) */
+  const vSegs=RAW_SEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_SEG]))].filter(Boolean),RAW_SEG,fs);
+  const hSegs=RAW_HSEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_HSEG]))].filter(Boolean),RAW_HSEG,fs);
   /* 가로 블록 — 맨 왼쪽은 언제나 합계(상위), 그 오른쪽이 하위 세그먼트 */
   const blocks=[{name:'합계',all:true}].concat(hSegs.map(v=>({name:v,all:false,val:v})));
   let totalRows=0;
   /* 세로 블록 — 맨 위가 합계, 아래가 하위 세그먼트 */
   const vBlocks=[{name:'합계',all:true}].concat(vSegs.map(v=>({name:v,all:false,val:v})));
+  const vDrag=[];                                   /* 블록 제목 — 끌어서 세로 순서 변경 */
   vBlocks.forEach((vb,vi)=>{
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
@@ -3974,7 +4152,8 @@ function renderRaw(){
       const t=el('div','subsec',wrapDiv);
       t.innerHTML=`<span>${esc(vb.all?'전체 합계':vb.val)}</span>`
         +`<span class="cnt">${days.length}일</span>`
-        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>':'');}
+        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>':'');
+      if(!vb.all)vDrag.push({el:t,key:vb.val});}
     /* 블록별 팩트 · 일자별 버킷 */
     const bf=blocks.map(bk=>bk.all?sub:sub.filter(f=>f[RAW_HSEG]===bk.val));
     const bDay=bf.map(arr=>{const m=new Map();
@@ -4027,8 +4206,9 @@ function renderRaw(){
     tbl.innerHTML=h+'</tbody>';
     markBlanks(tbl);
     /* 가로 세그먼트가 많으면 좌우 스크롤이 길어진다 — 블록 단위로 건너뛰는 미니맵을 붙인다 */
-    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks);
+    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks,hSegs,RAW_HSEG);
   });
+  wireSegDrag(vDrag,vSegs,RAW_SEG,'y');
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
   if(hSegs.length)note.push(`가로 ${SEG_OPTS.find(s=>s.k===RAW_HSEG).l} ${hSegs.length}개`);
@@ -4037,7 +4217,7 @@ function renderRaw(){
 
 /* 일자별 상세 효율 — 가로 세그먼트 미니맵 · 좌우 이동 버튼
    블록(가로 세그먼트) 하나씩 건너뛰고, 지금 보고 있는 블록을 칩으로 표시한다. */
-function mountHNav(wrapDiv,card,wrap,tbl,blocks){
+function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
   /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 */
   wrap.classList.add('hfrozen');
   const setFz=()=>{const r=tbl.querySelector('tbody tr');
@@ -4060,6 +4240,9 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks){
     if(!r)return 0;
     return Math.round([...r.children].slice(0,2).reduce((a,c)=>a+c.getBoundingClientRect().width,0));};
   const chips=[...nav.querySelectorAll('.nvc')];
+  /* 첫 칩은 "합계" 라 자리가 고정 — 나머지 칩을 끌어서 가로 순서를 바꾼다 */
+  if(hKeys&&hKeys.length>1)
+    wireSegDrag(chips.slice(1).map((c,i)=>({el:c,key:hKeys[i]})),hKeys,hDim,'x');
   const fill=nav.querySelector('.nvbar>i');
   const goTo=i=>{const L=lefts();if(!L.length)return;
     const k=Math.max(0,Math.min(L.length-1,i));
@@ -4362,7 +4545,8 @@ function renderRankPick(){
     const k=b.dataset.rk;
     CR_RANK_ON=CR_RANK_ON.includes(k)?CR_RANK_ON.filter(x=>x!==k):CR_RANK_ON.concat([k]);
     if(!CR_RANK_ON.length)CR_RANK_ON=[k];
-    renderRankPick();renderCreatives();});
+    renderRankPick();renderCreatives();
+    try{markDirty();saveLocal();}catch(e){}});
 }
 /* 유튜브 썸네일 · 미리보기 */
 const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
@@ -4482,7 +4666,7 @@ function openCrAll(){
       소재를 누르면 원본과 지표를 볼 수 있습니다.</div>`;
   if(!rows.length){h+='<div class="card" style="padding:20px;text-align:center">표시할 소재가 없습니다.</div>';}
   else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:52px">미리보기</th><th style="min-width:190px">소재</th>
       <th style="min-width:110px">매체 · 상품</th><th style="width:96px">노출</th>
       <th style="width:88px">클릭</th><th style="width:88px">조회</th>
@@ -4614,7 +4798,7 @@ function openCrManage(){
         <div style="font-weight:700;margin-bottom:6px">등록된 소재가 없습니다</div>
         <div class="hint">먼저 <b>캠페인 설정</b> 탭에서 라인을 추가하고 그 라인의 <b>소재</b> 항목에 소재명을 입력하세요.</div></div>`;
   }else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:56px">순서</th>
       <th style="width:52px">미리보기</th><th style="min-width:220px">소재명</th>
       <th style="min-width:240px">사용 중인 매체 · 상품</th>
@@ -4916,7 +5100,7 @@ function renderGantt(){
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
-  VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'#98a3b1':'#dbe4ee'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
+  VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'rgba(255,255,255,.42)':'rgba(255,255,255,.86)'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
   h+='</tr></thead><tbody>';
   rowsData.forEach((rd,ri)=>{
     const c=rd.c;
@@ -4925,7 +5109,7 @@ function renderGantt(){
       const isCr=dims[ci]==='creative';
       h+=`<td class="lead ${isCr?'nm':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
         +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
-        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${c.g}"></span>
+        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
            <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
     cols.forEach((k,i)=>{
       const days=c.daily.imp.filter(v=>v>0).length;
@@ -4965,13 +5149,22 @@ function mountGanttHead(tbl){
      본문 첫 행은 rowspan 때문에 칸 수가 모자랄 수 있어(머리글보다 적다) 폭이 어긋났다 —
      머리글 자체에서 잰다: 1행의 lead 칸들 + 2행의 나머지 칸들이 정확히 전체 열이다 */
   const cg=document.createElement('colgroup');
-  const leadTh=[...tbl.tHead.rows[0].cells].filter(th=>th.classList.contains('lead'));
-  const restTh=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
-  leadTh.concat(restTh).forEach(th=>{
-    const c=document.createElement('col');
-    c.style.width=Math.round(th.getBoundingClientRect().width)+'px';
-    cg.appendChild(c);});
   clone.insertBefore(cg,clone.firstChild);
+  /* 열 너비는 "띄우기 직전"에 다시 잰다.
+     표가 숨겨진 상태(다른 하위 탭)에서 그려졌으면 이 시점의 폭이 전부 0 이라,
+     한 번만 재고 끝내면 머리글이 통째로 어긋난다 — 스크롤할 때마다 다시 맞춘다. */
+  let sized='';
+  const sizeCols=()=>{
+    const leadTh=[...tbl.tHead.rows[0].cells].filter(th=>th.classList.contains('lead'));
+    const restTh=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+    const ws=leadTh.concat(restTh).map(th=>Math.round(th.getBoundingClientRect().width));
+    if(!ws.length||ws.some(w=>!w))return false;        /* 아직 화면에 없다 — 다음 기회에 */
+    const sig=ws.join(',');
+    if(sig===sized)return true;
+    if(cg.childElementCount!==ws.length){cg.innerHTML='';
+      ws.forEach(()=>cg.appendChild(document.createElement('col')));}
+    [...cg.children].forEach((c,i)=>{c.style.width=ws[i]+'px';});
+    sized=sig;return true;};
   /* 복사본에서는 고정(sticky)과 좌표를 모두 푼다 — 안 그러면 앞쪽 칸이 서로 겹친다 */
   clone.querySelectorAll('th').forEach(th=>{
     th.style.position='static';th.style.left='auto';th.style.zIndex='auto';});
@@ -4984,7 +5177,7 @@ function mountGanttHead(tbl){
     if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
     const r=wrap.getBoundingClientRect(),top=stick();
     const headH=tbl.tHead.getBoundingClientRect().height;
-    const on=r.top<top&&r.bottom>top+headH+20;
+    const on=r.top<top&&r.bottom>top+headH+20&&sizeCols();
     bar.classList.toggle('on',on);
     if(!on)return;
     bar.style.left=Math.round(r.left)+'px';
@@ -6603,12 +6796,12 @@ function renderMix(){
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
+        h+=`<td class="head" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
+      h+=`<td class="head" data-lvl="${L+1>=dims.length?L:L+1}" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
-  h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
+  h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
   $('tblMix').innerHTML=h;
   applyColWidths($('tblMix'),MIX_CFG,cols);
   markBlanks($('tblMix'));
@@ -6617,7 +6810,9 @@ function renderMix(){
   mergeVertical($('tblMix'),'price');
   wireGroupRename($('tblMix'),MIX_CFG,renderMix);
   enableRowDrag($('tblMix'),MIX_CFG,renderMix);
+  freezeLeadCols($('tblMix'),dims.length);
   wirePivotColResize($('tblMix'),MIX_CFG,cols,renderMix);
+  mountFloatHead($('tblMix'));
 }
 function openPerm(){
   /* 로그인 상태면 실제 캠페인 멤버·초대를 보여준다 (미로그인이면 예시 목록) */
@@ -6790,7 +6985,8 @@ function buildSelects(){
   const am=$('crAllMedia');
   if(am){am.classList.toggle('on',!!CR_ALL_MEDIA);
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
-      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
+      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();
+      try{markDirty();saveLocal();}catch(e){}};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   const gs=$('ganttSort');
   if(gs){gs.value=GANTT_SORT;
@@ -6806,6 +7002,7 @@ function buildSelects(){
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
   $('kpiGroupSel').onchange=renderDonuts;
+  {const b=$('kpiPickBtn');if(b)b.onclick=openDonutPicker;}
 }
 let pendingLeave=false;
 function switchTab(name){
@@ -7068,7 +7265,15 @@ function serializeDoc(){
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
-           donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{})}
+           donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{}),
+           donutHide:(typeof DONUT_HIDE!=='undefined'?DONUT_HIDE:{}),
+           /* 효율 우수 소재 — 매체 구분 없이 비교 토글 · 표시 기준(CTR 등) */
+           crAllMedia:(typeof CR_ALL_MEDIA!=='undefined'?!!CR_ALL_MEDIA:false),
+           crRankOn:(typeof CR_RANK_ON!=='undefined'?CR_RANK_ON:null),
+           ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
+           /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
+           dailyOrder:(typeof DAILY_ORDER!=='undefined'?DAILY_ORDER:{}),
+           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{})}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -7117,6 +7322,16 @@ function applyDoc(d,keepToday){
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
+  if(v.rawOrder&&typeof RAW_ORDER!=='undefined')RAW_ORDER=v.rawOrder;
+  if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
+  if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
+  if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
+  if(v.ganttSort&&typeof GANTT_SORT!=='undefined')GANTT_SORT=v.ganttSort;
+  /* 저장해 둔 토글·기준을 화면 컨트롤에도 되돌려 놓는다 */
+  try{const am=$('crAllMedia');if(am)am.classList.toggle('on',!!CR_ALL_MEDIA);
+      const gs=$('ganttSort');if(gs)gs.value=GANTT_SORT;
+      if(typeof renderRankPick==='function')renderRankPick();}catch(e){}
+  if(v.dailyOrder&&typeof DAILY_ORDER!=='undefined')DAILY_ORDER=v.dailyOrder;
   if(v.perfOrder&&typeof PERF_ORDER!=='undefined'){PERF_ORDER=v.perfOrder;
     if(typeof applyPerfOrder==='function')applyPerfOrder();}
   if(v.gantt)GANTT=v.gantt;
@@ -7273,8 +7488,11 @@ function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.c
    운영진 코드 → 운영진 (그 캠페인 안에서는 마스터와 동등, 저장은 구글 로그인 후) */
 function enterShareView(name,kind){
   CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
+  if(name&&!CLOUD.campaign)CLOUD.campaign={id:null,name};
   hideGate();endBoot();
   if(typeof applyRole==='function')applyRole();
+  /* 상단바 캠페인 이름·광고주 표시를 지금 열린 캠페인으로 맞춘다 */
+  try{paintCampSel();renderBrand&&renderBrand();renderCampBar&&renderCampBar();}catch(e){}
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
   cloudState(kind==='staff'
     ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
@@ -7557,8 +7775,14 @@ async function loadCampaignList(listOnly){
 }
 function paintCampSel(){
   const s=$('campSel');if(!s)return;
+  /* 공유 코드로 들어온 화면 — 지금 열려 있는 그 캠페인 하나만 보여 주고 바꿀 수 없게 한다.
+     (예전에는 접속 화면에서 그려 둔 "…(데모)" 가 그대로 남아 상단바만 딴 캠페인을 가리켰다) */
+  if(CLOUD.shareView){
+    s.innerHTML=`<option>${esc((CLOUD.campaign&&CLOUD.campaign.name)||CAMPAIGN.name)}</option>`;
+    s.disabled=true;return;}
+  s.disabled=false;
   if(!CLOUD.user){
-    s.innerHTML=`<option>${esc(CAMPAIGN.name)} (데모)</option>`;return;}
+    s.innerHTML=`<option>${esc(CAMPAIGN.name)}${CLOUD.sample?' (샘플)':' (데모)'}</option>`;return;}
   s.innerHTML=CLOUD.list.map(c=>
     `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')
     ||'<option value="">캠페인 없음</option>';
@@ -9335,36 +9559,22 @@ function clearPrintDoc(){const h=$('printdoc');if(h)h.innerHTML='';}
 /* 인쇄 직전에 항상 새로 만든다 — 버튼으로 눌러도, Ctrl+P 로 눌러도 같은 결과 */
 addEventListener('beforeprint',()=>{try{buildPrintDoc();}catch(e){}});
 addEventListener('afterprint',()=>{setTimeout(clearPrintDoc,300);});
-function exportPdfReport(){
-  const b=$('pdfBtn');
-  if(b)b.disabled=true;
-  /* 미디어믹스는 한 번도 열지 않았으면 아직 안 그려져 있다 */
-  try{renderMix();}catch(e){}
-  try{if($('sub-perf').classList.contains('hidden')){
-    const go=document.querySelector('#subbar button[data-sub="perf"]');if(go)go.click();}}catch(e){}
-  setTimeout(()=>{
-    try{buildPrintDoc();}catch(e){}
-    try{print();}catch(e){}
-    setTimeout(()=>{if(b)b.disabled=false;},600);
-  },260);
-}
-(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;
-  const p2=$('pdfBtn');if(p2)p2.onclick=exportPdfReport;})();
+/* PDF 내려받기 버튼은 없앴다 — 브라우저 인쇄(Ctrl+P)는 그대로 쓸 수 있다 */
+(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;})();
 
 /* =========================================================================
    테마 색상 · 광고주 브랜딩
    ========================================================================= */
 /* 고를 수 있는 색 계열 — CSS 의 [data-theme=…] 와 짝을 이룬다 */
+/* 고르는 톤은 세 가지 — 남색 · 무채색 화이트 · 무채색 다크.
+   미리보기 스와치는 실제 팔레트(--acc / --acc-lt / --plane)와 같은 값이어야 한다.
+   (예전 다크 스와치는 푸른 기가 섞여 있어 실제 화면과 달라 보였다) */
 const THEMES=[
-  {k:'',       l:'남색 (기본)', sw:['#495e72','#8fb0cc','#eef1f5']},
-  {k:'red',    l:'붉은 톤',     sw:['#8f4a44','#c39894','#f5eeed']},
-  {k:'orange', l:'주황 톤',     sw:['#9a5f2b','#c8a683','#f6f0e9']},
-  {k:'mustard',l:'머스타드 톤', sw:['#8a7a24','#bdb37c','#f4f1e4']},
-  {k:'green',  l:'그린 톤',     sw:['#3c6b53','#8aa898','#ecf2ee']},
-  {k:'pink',   l:'핑크 톤',     sw:['#8d4468','#c294ab','#f6eef3']},
-  {k:'mono',   l:'무채색 화이트', sw:['#4b5257','#969ba0','#f2f3f4']},
-  {k:'dark',   l:'무채색 다크',  sw:['#8fb0cc','#5f7488','#171a1d']}
+  {k:'',       l:'남색 (기본)',   sw:['#495e72','#8897a6','#eef1f5']},
+  {k:'mono',   l:'무채색 화이트', sw:['#4d5257','#979a9e','#f1f2f2']},
+  {k:'dark',   l:'무채색 다크',   sw:['#b4b4b4','#727272','#191919']}
 ];
+/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 기본 남색으로 되돌아간다 */
 let THEME='';
 /* 그래프는 자바스크립트로 그리므로 테마가 바뀌면 색 값을 다시 읽어 온다.
    효율 히트맵(HM_GOOD/MID/BAD)만은 손대지 않는다 — 잘 됨·안 됨을 뜻하는 색이라서. */

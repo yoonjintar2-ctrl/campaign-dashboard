@@ -679,12 +679,12 @@ function renderMix(){
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
       for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-        h+=`<td class="head"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
+        h+=`<td class="head" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],vals[ci])}</td>`;}
       const cs=Math.max(dims.length-(L+1),1);
-      h+=`<td class="head" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
+      h+=`<td class="head" data-lvl="${L+1>=dims.length?L:L+1}" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} Sub Total</td>`;
       const gr=rows.filter(x=>vals.every((v,y)=>x.vals[y]===v));
       h+=row(gr,1,true)+'</tr>';}});
-  h+=`<tr class="total"><td class="head" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
+  h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">Grand Total</td>`+row(rows,1,true)+'</tr></tbody>';
   $('tblMix').innerHTML=h;
   applyColWidths($('tblMix'),MIX_CFG,cols);
   markBlanks($('tblMix'));
@@ -693,7 +693,9 @@ function renderMix(){
   mergeVertical($('tblMix'),'price');
   wireGroupRename($('tblMix'),MIX_CFG,renderMix);
   enableRowDrag($('tblMix'),MIX_CFG,renderMix);
+  freezeLeadCols($('tblMix'),dims.length);
   wirePivotColResize($('tblMix'),MIX_CFG,cols,renderMix);
+  mountFloatHead($('tblMix'));
 }
 function openPerm(){
   /* 로그인 상태면 실제 캠페인 멤버·초대를 보여준다 (미로그인이면 예시 목록) */
@@ -866,7 +868,8 @@ function buildSelects(){
   const am=$('crAllMedia');
   if(am){am.classList.toggle('on',!!CR_ALL_MEDIA);
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
-      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();};}
+      am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();
+      try{markDirty();saveLocal();}catch(e){}};}
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   const gs=$('ganttSort');
   if(gs){gs.value=GANTT_SORT;
@@ -882,6 +885,7 @@ function buildSelects(){
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
   $('kpiGroupSel').onchange=renderDonuts;
+  {const b=$('kpiPickBtn');if(b)b.onclick=openDonutPicker;}
 }
 let pendingLeave=false;
 function switchTab(name){

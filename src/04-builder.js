@@ -27,7 +27,10 @@ function enableColResize(tbl,cols,onDone,off){
   cols.forEach((c,i)=>{
     const th=ths[off+i];if(!th||th.querySelector('.colgrip'))return;
     th.classList.add('cresz');
-    if(getComputedStyle(th).position==='static')th.style.position='relative';
+    /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
+       다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
+       그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
+    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -47,6 +50,91 @@ function enableColResize(tbl,cols,onDone,off){
       delete c.w;th.style.minWidth='';th.style.width='';if(onDone)onDone();});});
 }
 
+/* ===== 서머리 · 미디어믹스 — 행 머리 열 고정 · 떠 있는 머리글 =====
+   (1) 가로로 스크롤해도 구분 · 매체 · 광고상품 같은 행 머리 열은 왼쪽에 붙어 있어야 하고
+   (2) 세로로 스크롤할 때는 머리글이 화면 위쪽에 붙어 있다가 표가 끝나면 사라져야 한다.
+   (2)는 히트맵 · 게재 히스토리와 같은 "복사본 머리글 막대" 방식을 쓴다. */
+function freezeLeadCols(tbl,leadN){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[0]||!leadN)return 0;
+  tbl.querySelectorAll('.lfz').forEach(c=>{c.classList.remove('lfz','lfze');c.style.left='';});
+  const ths=[...tbl.tHead.rows[0].cells].slice(0,leadN);
+  let acc=0;const L=[];
+  ths.forEach(th=>{L.push(acc);acc+=th.getBoundingClientRect().width;});
+  if(!acc)return 0;                                   /* 아직 화면에 없다 */
+  ths.forEach((th,i)=>{th.classList.add('lfz');th.classList.toggle('lfze',i===leadN-1);
+    th.style.left=Math.round(L[i])+'px';});
+  const tb=tbl.tBodies[0];
+  if(tb)[...tb.rows].forEach(tr=>{
+    [...tr.cells].forEach(td=>{
+      if(!td.classList.contains('head'))return;
+      const lv=+(td.dataset.lvl||0);
+      if(!(lv<leadN))return;
+      td.classList.add('lfz');
+      /* 고정 구간의 오른쪽 끝 칸에만 구분선을 둔다 (소계·합계는 여러 열을 덮는다) */
+      td.classList.toggle('lfze',lv+Math.max(td.colSpan,1)>=leadN);
+      td.style.left=Math.round(L[lv]||0)+'px';});});
+  tbl.classList.add('hasfz');
+  return Math.round(acc);
+}
+/* 표마다 하나씩 붙는 떠 있는 머리글 막대 */
+function mountFloatHead(tbl){
+  const wrap=tbl.closest('.tbl-wrap');if(!wrap||!tbl.tHead)return;
+  let bar=tbl.__fhBar;
+  if(!bar){bar=el('div','ghfix',document.body);tbl.__fhBar=bar;
+    if(!window.__fhList){window.__fhList=[];
+      const run=()=>window.__fhList.forEach(f=>{try{f();}catch(e){}});
+      addEventListener('scroll',run,true);addEventListener('resize',run);}}
+  bar.innerHTML='';
+  const inner=el('div','inner',bar);
+  const clone=document.createElement('table');
+  clone.className=tbl.className;
+  clone.style.tableLayout='fixed';
+  const cg=document.createElement('colgroup');
+  clone.appendChild(cg);
+  clone.appendChild(tbl.tHead.cloneNode(true));
+  /* 복사본에서는 세로 고정만 푼다 — 행 머리 열의 가로 고정(lfz)은 그대로 둬야
+     본문과 똑같이 왼쪽에 붙는다 */
+  clone.querySelectorAll('th').forEach(th=>{
+    th.style.top='auto';
+    if(!th.classList.contains('lfz')){th.style.position='static';th.style.left='auto';}
+    th.querySelectorAll('.colgrip').forEach(g=>g.remove());});
+  inner.appendChild(clone);
+  /* 열 너비는 띄우기 직전에 다시 잰다 (숨겨진 채로 그려졌으면 이 시점엔 0 이라서) */
+  let sized='';
+  const sizeCols=()=>{
+    const r0=[...tbl.tHead.rows[0].cells],r1=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+    const leadTh=r0.filter(th=>th.rowSpan>1||!r1.length);
+    const ws=leadTh.concat(r1).map(th=>Math.round(th.getBoundingClientRect().width));
+    if(!ws.length||ws.some(w=>!w))return false;
+    const sig=ws.join(',');
+    if(sig===sized)return true;
+    if(cg.childElementCount!==ws.length){cg.innerHTML='';
+      ws.forEach(()=>cg.appendChild(document.createElement('col')));}
+    [...cg.children].forEach((c,i)=>{c.style.width=ws[i]+'px';});
+    sized=sig;return true;};
+  const stick=()=>parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--stick'),10)||144;
+  const place=()=>{
+    if(!tbl.isConnected||!wrap.offsetParent){bar.classList.remove('on');return;}
+    const r=wrap.getBoundingClientRect(),top=stick();
+    const headH=tbl.tHead.getBoundingClientRect().height;
+    const on=r.top<top&&r.bottom>top+headH+24&&sizeCols();
+    bar.classList.toggle('on',on);
+    if(!on)return;
+    bar.style.left=Math.round(r.left)+'px';
+    bar.style.top=top+'px';
+    bar.style.width=Math.round(r.width)+'px';
+    bar.style.height=Math.round(headH)+'px';
+    inner.style.width=Math.round(r.width)+'px';
+    clone.style.width=Math.round(tbl.getBoundingClientRect().width)+'px';
+    clone.style.minWidth=clone.style.width;
+    clone.style.maxWidth=clone.style.width;
+    inner.scrollLeft=wrap.scrollLeft;};
+  wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
+  if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
+  tbl.__fhPlace=place;window.__fhList.push(place);
+  setTimeout(place,0);setTimeout(place,320);
+}
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
@@ -244,7 +332,7 @@ function openBuilder(host,cfg,opts){
         +`<input class="gname" value="${esc(g.name)}" placeholder="그룹 이름" title="열 그룹 이름을 직접 입력하세요">`
         +(g.cols.length===1
           ? `<button class="btn sm gmerge" title="열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다">이름 합치기</button>`:'')
-        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:#9ba6b4" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
+        +(draft.groups.length>1?'<span class="x" style="cursor:pointer;color:var(--muted)" title="그룹과 그 안의 열을 함께 삭제">✕</span>':'');
       const nameInp=hd.querySelector('input.gname');
       nameInp.oninput=e=>{g.name=e.target.value;commit();};
       nameInp.onfocus=()=>{selG=g.id;
@@ -284,7 +372,7 @@ function openBuilder(host,cfg,opts){
           selG=g.id;DRAG=null;draw();}};
       card.onclick=e=>{if(e.target===card||e.target.classList.contains('gbd')){selG=g.id;draw();}};
       const bd=el('div','gbd',card);
-      if(!g.cols.length)bd.innerHTML='<span style="color:#aab6c5;font-size:11px">위 목록에서 항목을 끌어다 놓거나 눌러서 추가</span>';
+      if(!g.cols.length)bd.innerHTML='<span style="color:var(--muted);font-size:11px">위 목록에서 항목을 끌어다 놓거나 눌러서 추가</span>';
       g.cols.forEach((k,ci)=>{
         const c=el('span','chip on',bd);c.draggable=true;c.dataset.kind='col';c.dataset.gi=gi;c.dataset.ci=ci;
         c.innerHTML=`⠿ ${cdef[k]?cdef[k].l:k} <span class="x">✕</span>`;
@@ -824,14 +912,75 @@ function renderSpendDonut(box,pr){
 }
 /* KPI 달성 현황 카드의 좌우 순서 — 사용자가 끌어서 바꾼 순서를 기억한다 */
 let DONUT_ORDER={};
+/* 화면에서 뺀 항목 — 기준(매체별/상품별/제품별)마다 따로 기억한다 */
+let DONUT_HIDE={};
+const donutKey=(l,mode)=>mode==='product'?l.media+' · '+l.product:l[mode];
+/* 그 기준에서 나올 수 있는 모든 항목 — 예산 큰 순, 끌어서 바꾼 순서가 있으면 그 순서 */
+function donutKeys(mode,all){
+  const ls=activeLines();
+  let keys=[...new Set(ls.map(l=>donutKey(l,mode)))];
+  const bud={};keys.forEach(k=>{bud[k]=sum(ls.filter(l=>donutKey(l,mode)===k).map(lineGross));});
+  keys.sort((a,b)=>(bud[b]-bud[a])||String(a).localeCompare(String(b),'ko'));
+  const ord=DONUT_ORDER[mode]||[];
+  if(ord.length){const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
+    keys=keys.slice().sort((a,b)=>ix(a)-ix(b));}
+  if(all)return keys;
+  const off=DONUT_HIDE[mode]||[];
+  return keys.filter(k=>off.indexOf(k)<0);
+}
+/* 표시 항목 고르기 — 체크로 넣고 빼고, 끌어서 순서를 바꾼다 */
+function openDonutPicker(){
+  const mode=$('kpiGroupSel').value||'media';
+  const label={media:'매체',product:'광고상품',line:'제품'}[mode]||'항목';
+  const ls=activeLines();
+  const draw=()=>{
+    const keys=donutKeys(mode,true),off=DONUT_HIDE[mode]||[];
+    const bud=k=>sum(ls.filter(l=>donutKey(l,mode)===k).map(lineGross));
+    $('dpList').innerHTML=keys.map(k=>
+      `<div class="dprow" draggable="true" data-k="${esc(k)}">
+         <span class="gr">⋮⋮</span>
+         <label><input type="checkbox" ${off.indexOf(k)<0?'checked':''} data-ck="${esc(k)}"> ${esc(k)}</label>
+         <span class="bd mono">${won(bud(k))}</span></div>`).join('');
+    $('dpList').querySelectorAll('[data-ck]').forEach(cb=>cb.onchange=()=>{
+      const cur=new Set(DONUT_HIDE[mode]||[]);
+      if(cb.checked)cur.delete(cb.dataset.ck);else cur.add(cb.dataset.ck);
+      DONUT_HIDE[mode]=[...cur];
+      renderDonuts();try{markDirty();saveLocal();}catch(e){}});
+    /* 행을 끌어서 순서 변경 */
+    let from=null;
+    $('dpList').querySelectorAll('.dprow').forEach(row=>{
+      row.addEventListener('dragstart',e=>{from=row.dataset.k;row.classList.add('dragging');
+        try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',from);}catch(x){}});
+      row.addEventListener('dragend',()=>{from=null;
+        $('dpList').querySelectorAll('.dprow').forEach(r=>r.classList.remove('dragging','dropT','dropB'));});
+      row.addEventListener('dragover',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+        row.classList.toggle('dropB',after);row.classList.toggle('dropT',!after);});
+      row.addEventListener('dragleave',()=>row.classList.remove('dropT','dropB'));
+      row.addEventListener('drop',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+        const list=donutKeys(mode,true);
+        const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+        let b2=list.indexOf(row.dataset.k);if(b2<0)b2=list.length;
+        list.splice(after?b2+1:b2,0,from);
+        DONUT_ORDER[mode]=list;from=null;
+        renderDonuts();draw();try{markDirty();saveLocal();}catch(e2){}});});};
+  openModal(`KPI 달성 현황 — 표시할 ${label}`,
+    `<div class="hint" style="margin-bottom:8px">체크를 풀면 화면에서 빠집니다. 왼쪽을 끌어 순서를 바꿀 수 있습니다.</div>`
+    +`<div id="dpList" class="dplist"></div>`,
+    `<button class="btn" id="dpAll">전체 표시</button>`
+    +`<button class="btn" id="dpNone">전체 숨김</button>`
+    +`<div class="spacer"></div><button class="btn primary" data-close>닫기</button>`,{w:520});
+  draw();
+  $('dpAll').onclick=()=>{DONUT_HIDE[mode]=[];renderDonuts();draw();try{markDirty();saveLocal();}catch(e){}};
+  $('dpNone').onclick=()=>{DONUT_HIDE[mode]=donutKeys(mode,true);renderDonuts();draw();
+    try{markDirty();saveLocal();}catch(e){}};
+}
 function renderDonuts(){
   const box=$('donuts');box.innerHTML='';
   const mode=$('kpiGroupSel').value||'media';
   const ls=activeLines(),pr=paceRatio();
-  let keys=[...new Set(ls.map(l=>mode==='product'?l.media+' · '+l.product:l[mode]))];
-  const ord=DONUT_ORDER[mode]||[];
-  if(ord.length){const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
-    keys=keys.slice().sort((a,b)=>ix(a)-ix(b));}
+  let keys=donutKeys(mode);
   renderSpendDonut(box,pr);
 
   /* 배경 그라데이션(청록빛 남색)과 같은 계열로 채도를 올린 링 색 */

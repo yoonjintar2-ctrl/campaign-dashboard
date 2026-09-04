@@ -16,17 +16,68 @@ let RAW_SEG='media';      /* 세로 세그먼트 — 표를 위아래로 나눈�
 let RAW_HSEG='product';   /* 가로 세그먼트 — 한 표 안에서 좌우로 나눈다 (기본 상품별) */
 const SEG_OPTS=[{k:'none',l:'없음'},{k:'segment',l:'구분별'},{k:'media',l:'매체별'},
   {k:'product',l:'상품별'},{k:'target',l:'타겟팅별'},{k:'creative',l:'소재별'}];
+/* 세그먼트 순서 — 사용자가 끌어서 바꾼 순서. 차원(매체/상품/…)별로 따로 기억한다. */
+let RAW_ORDER={};
+/* 정렬 기준이 되는 크기 — 예산(Gross). 소재처럼 라인에 없는 차원은 소진 광고비로 대신한다. */
+function segWeight(dim,v,fs){
+  if(!NO_EXP_DIMS.includes(dim))
+    return sum(activeLines().filter(l=>l[dim]===v).map(lineGross));
+  return sum(fs.filter(f=>f[dim]===v).map(f=>+f.cost||0));
+}
+/* 기본은 예산이 큰 세그먼트가 먼저. 같으면 이름순. 끌어서 바꾼 순서가 있으면 그게 우선. */
+function segSort(vals,dim,fs){
+  const w={};vals.forEach(v=>{w[v]=segWeight(dim,v,fs);});
+  let out=vals.slice().sort((a,b)=>(w[b]-w[a])||String(a).localeCompare(String(b),'ko'));
+  const ord=RAW_ORDER[dim];
+  if(Array.isArray(ord)&&ord.length){
+    const ix=k=>{const i=ord.indexOf(k);return i<0?1e9:i;};
+    out=out.slice().sort((a,b)=>ix(a)-ix(b));}
+  return out;
+}
+/* 세그먼트 순서 바꾸기 — 가로는 미니맵 칩, 세로는 블록 제목을 끌어서 놓는다.
+   items = [{el,key}], axis 'x' | 'y' */
+function wireSegDrag(items,keys,dim,axis){
+  if(items.length<2)return;
+  let from=null;
+  const clear=()=>items.forEach(x=>x.el.classList.remove('dragging','segL','segR'));
+  items.forEach(({el:node,key})=>{
+    node.draggable=true;node.classList.add('segdrag');
+    if(axis==='y')node.classList.add('segy');
+    node.title='끌어서 순서 변경';
+    node.addEventListener('dragstart',e=>{from=key;node.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',key);}catch(x){}});
+    node.addEventListener('dragend',()=>{from=null;clear();});
+    const side=e=>{const r=node.getBoundingClientRect();
+      return axis==='y'?e.clientY>r.top+r.height/2:e.clientX>r.left+r.width/2;};
+    node.addEventListener('dragover',e=>{
+      if(from===null||from===key)return;
+      e.preventDefault();const after=side(e);
+      node.classList.toggle('segR',after);node.classList.toggle('segL',!after);});
+    node.addEventListener('dragleave',()=>node.classList.remove('segL','segR'));
+    node.addEventListener('drop',e=>{
+      if(from===null||from===key)return;
+      e.preventDefault();const after=side(e);
+      const list=keys.slice();
+      const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+      let b2=list.indexOf(key);if(b2<0)b2=list.length;
+      list.splice(after?b2+1:b2,0,from);
+      RAW_ORDER[dim]=list;
+      clear();from=null;renderRaw();
+      try{markDirty();saveLocal();}catch(x){}});});
+}
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
   const host=$('rawHost');host.innerHTML='';
-  const vSegs=RAW_SEG==='none'?[]:[...new Set(fs.map(f=>f[RAW_SEG]))].filter(Boolean).sort();
-  const hSegs=RAW_HSEG==='none'?[]:[...new Set(fs.map(f=>f[RAW_HSEG]))].filter(Boolean).sort();
+  /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) */
+  const vSegs=RAW_SEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_SEG]))].filter(Boolean),RAW_SEG,fs);
+  const hSegs=RAW_HSEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_HSEG]))].filter(Boolean),RAW_HSEG,fs);
   /* 가로 블록 — 맨 왼쪽은 언제나 합계(상위), 그 오른쪽이 하위 세그먼트 */
   const blocks=[{name:'합계',all:true}].concat(hSegs.map(v=>({name:v,all:false,val:v})));
   let totalRows=0;
   /* 세로 블록 — 맨 위가 합계, 아래가 하위 세그먼트 */
   const vBlocks=[{name:'합계',all:true}].concat(vSegs.map(v=>({name:v,all:false,val:v})));
+  const vDrag=[];                                   /* 블록 제목 — 끌어서 세로 순서 변경 */
   vBlocks.forEach((vb,vi)=>{
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
@@ -42,7 +93,8 @@ function renderRaw(){
       const t=el('div','subsec',wrapDiv);
       t.innerHTML=`<span>${esc(vb.all?'전체 합계':vb.val)}</span>`
         +`<span class="cnt">${days.length}일</span>`
-        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>':'');}
+        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>':'');
+      if(!vb.all)vDrag.push({el:t,key:vb.val});}
     /* 블록별 팩트 · 일자별 버킷 */
     const bf=blocks.map(bk=>bk.all?sub:sub.filter(f=>f[RAW_HSEG]===bk.val));
     const bDay=bf.map(arr=>{const m=new Map();
@@ -95,8 +147,9 @@ function renderRaw(){
     tbl.innerHTML=h+'</tbody>';
     markBlanks(tbl);
     /* 가로 세그먼트가 많으면 좌우 스크롤이 길어진다 — 블록 단위로 건너뛰는 미니맵을 붙인다 */
-    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks);
+    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks,hSegs,RAW_HSEG);
   });
+  wireSegDrag(vDrag,vSegs,RAW_SEG,'y');
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
   if(hSegs.length)note.push(`가로 ${SEG_OPTS.find(s=>s.k===RAW_HSEG).l} ${hSegs.length}개`);
@@ -105,7 +158,7 @@ function renderRaw(){
 
 /* 일자별 상세 효율 — 가로 세그먼트 미니맵 · 좌우 이동 버튼
    블록(가로 세그먼트) 하나씩 건너뛰고, 지금 보고 있는 블록을 칩으로 표시한다. */
-function mountHNav(wrapDiv,card,wrap,tbl,blocks){
+function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
   /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 */
   wrap.classList.add('hfrozen');
   const setFz=()=>{const r=tbl.querySelector('tbody tr');
@@ -128,6 +181,9 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks){
     if(!r)return 0;
     return Math.round([...r.children].slice(0,2).reduce((a,c)=>a+c.getBoundingClientRect().width,0));};
   const chips=[...nav.querySelectorAll('.nvc')];
+  /* 첫 칩은 "합계" 라 자리가 고정 — 나머지 칩을 끌어서 가로 순서를 바꾼다 */
+  if(hKeys&&hKeys.length>1)
+    wireSegDrag(chips.slice(1).map((c,i)=>({el:c,key:hKeys[i]})),hKeys,hDim,'x');
   const fill=nav.querySelector('.nvbar>i');
   const goTo=i=>{const L=lefts();if(!L.length)return;
     const k=Math.max(0,Math.min(L.length-1,i));
@@ -430,7 +486,8 @@ function renderRankPick(){
     const k=b.dataset.rk;
     CR_RANK_ON=CR_RANK_ON.includes(k)?CR_RANK_ON.filter(x=>x!==k):CR_RANK_ON.concat([k]);
     if(!CR_RANK_ON.length)CR_RANK_ON=[k];
-    renderRankPick();renderCreatives();});
+    renderRankPick();renderCreatives();
+    try{markDirty();saveLocal();}catch(e){}});
 }
 /* 유튜브 썸네일 · 미리보기 */
 const ytThumb=id=>`https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
@@ -550,7 +607,7 @@ function openCrAll(){
       소재를 누르면 원본과 지표를 볼 수 있습니다.</div>`;
   if(!rows.length){h+='<div class="card" style="padding:20px;text-align:center">표시할 소재가 없습니다.</div>';}
   else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:52px">미리보기</th><th style="min-width:190px">소재</th>
       <th style="min-width:110px">매체 · 상품</th><th style="width:96px">노출</th>
       <th style="width:88px">클릭</th><th style="width:88px">조회</th>
@@ -682,7 +739,7 @@ function openCrManage(){
         <div style="font-weight:700;margin-bottom:6px">등록된 소재가 없습니다</div>
         <div class="hint">먼저 <b>캠페인 설정</b> 탭에서 라인을 추가하고 그 라인의 <b>소재</b> 항목에 소재명을 입력하세요.</div></div>`;
   }else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:56px">순서</th>
       <th style="width:52px">미리보기</th><th style="min-width:220px">소재명</th>
       <th style="min-width:240px">사용 중인 매체 · 상품</th>
@@ -984,7 +1041,7 @@ function renderGantt(){
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
-  VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'#98a3b1':'#dbe4ee'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
+  VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'rgba(255,255,255,.42)':'rgba(255,255,255,.86)'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
   h+='</tr></thead><tbody>';
   rowsData.forEach((rd,ri)=>{
     const c=rd.c;
@@ -993,7 +1050,7 @@ function renderGantt(){
       const isCr=dims[ci]==='creative';
       h+=`<td class="lead ${isCr?'nm':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
         +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
-        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${c.g}"></span>
+        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
            <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
     cols.forEach((k,i)=>{
       const days=c.daily.imp.filter(v=>v>0).length;
@@ -1033,13 +1090,22 @@ function mountGanttHead(tbl){
      본문 첫 행은 rowspan 때문에 칸 수가 모자랄 수 있어(머리글보다 적다) 폭이 어긋났다 —
      머리글 자체에서 잰다: 1행의 lead 칸들 + 2행의 나머지 칸들이 정확히 전체 열이다 */
   const cg=document.createElement('colgroup');
-  const leadTh=[...tbl.tHead.rows[0].cells].filter(th=>th.classList.contains('lead'));
-  const restTh=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
-  leadTh.concat(restTh).forEach(th=>{
-    const c=document.createElement('col');
-    c.style.width=Math.round(th.getBoundingClientRect().width)+'px';
-    cg.appendChild(c);});
   clone.insertBefore(cg,clone.firstChild);
+  /* 열 너비는 "띄우기 직전"에 다시 잰다.
+     표가 숨겨진 상태(다른 하위 탭)에서 그려졌으면 이 시점의 폭이 전부 0 이라,
+     한 번만 재고 끝내면 머리글이 통째로 어긋난다 — 스크롤할 때마다 다시 맞춘다. */
+  let sized='';
+  const sizeCols=()=>{
+    const leadTh=[...tbl.tHead.rows[0].cells].filter(th=>th.classList.contains('lead'));
+    const restTh=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+    const ws=leadTh.concat(restTh).map(th=>Math.round(th.getBoundingClientRect().width));
+    if(!ws.length||ws.some(w=>!w))return false;        /* 아직 화면에 없다 — 다음 기회에 */
+    const sig=ws.join(',');
+    if(sig===sized)return true;
+    if(cg.childElementCount!==ws.length){cg.innerHTML='';
+      ws.forEach(()=>cg.appendChild(document.createElement('col')));}
+    [...cg.children].forEach((c,i)=>{c.style.width=ws[i]+'px';});
+    sized=sig;return true;};
   /* 복사본에서는 고정(sticky)과 좌표를 모두 푼다 — 안 그러면 앞쪽 칸이 서로 겹친다 */
   clone.querySelectorAll('th').forEach(th=>{
     th.style.position='static';th.style.left='auto';th.style.zIndex='auto';});
@@ -1052,7 +1118,7 @@ function mountGanttHead(tbl){
     if(!sec||!sec.offsetParent){bar.classList.remove('on');return;}
     const r=wrap.getBoundingClientRect(),top=stick();
     const headH=tbl.tHead.getBoundingClientRect().height;
-    const on=r.top<top&&r.bottom>top+headH+20;
+    const on=r.top<top&&r.bottom>top+headH+20&&sizeCols();
     bar.classList.toggle('on',on);
     if(!on)return;
     bar.style.left=Math.round(r.left)+'px';

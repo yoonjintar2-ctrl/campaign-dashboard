@@ -24,7 +24,7 @@
   --line:#e4e8ee; --line2:#eff2f6; --gline:#c5ccd6;      /* 모든 구분선 단일 색 */
   --cell:#e2e7ed;                                        /* 표 셀 테두리 (밝은 행) */
   --cell-d:rgba(255,255,255,.22);                        /* 표 셀 테두리 (헤더·TOTAL 등 어두운 행) */
-  --acc:#495e72; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
+  --acc:#495e72; --accrgb:73 94 114; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
   --acc2:#486a75; --acc2-lt:#89a3ab;
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
@@ -43,72 +43,12 @@
    :root 는 기본(남색). 아래는 캠페인 설정 › 🎨 디자인 에서 고르는 색 계열이다.
    배경 · 강조 · 표 머리글 · 그래프 색을 한 계열로 갈아 끼운다.
    (효율 히트맵의 초록↔회색↔빨강만은 "잘 됨/안 됨"을 뜻하므로 테마와 무관하게 유지) */
-[data-theme="red"]{
-  --pacergb:95 116 130;
-  --sub0:#d5c8c6; --sub1:#e3d9d7; --sub2:#ebe4e3; --sub3:#f2edec;
-  --plane:#f1eeee; --plane2:#f9f7f7; --ink:#2e2726; --ink2:#6b615f; --muted:#9a908e; --sec:#5d5250;
-  --line:#e7e1e0; --line2:#f1ecec; --gline:#cdc2c0; --cell:#e4dedd;
-  --acc:#8a5b56; --acc-d:#6e4744; --acc-lt:#b39a97; --acc-soft:#e9e2e1; --acc-soft2:#f4efef;
-  --acc2:#94685f; --acc2-lt:#bda49e;
-  --hdr:#6f4b47; --hdr2:#815a55; --tot:#3f2d2b; --hdr-sub:#9d8683; --hdr-sub2:#ad9793;
-  --gray:#a49897; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a5b56;
-  --b1:#cdbcba; --b2:#b79f9c; --b3:#9c7c78; --b4:#8a5b56; --b5:#6e4744; --neg:#9e6660;
-  --bg1:176,143,138; --bg2:166,132,127; --bg3:198,175,171;
-}
-[data-theme="orange"]{
-  --pacergb:95 116 130;
-  --sub0:#d8cdbc; --sub1:#e5ddd0; --sub2:#ede7dd; --sub3:#f4f0ea;
-  --plane:#f2efea; --plane2:#faf8f5; --ink:#2f2a22; --ink2:#6b6357; --muted:#9a9284; --sec:#5d5647;
-  --line:#e8e2d9; --line2:#f2ede6; --gline:#cdc4b5; --cell:#e5dfd5;
-  --acc:#8a6538; --acc-d:#6e502b; --acc-lt:#b5a184; --acc-soft:#eae4db; --acc-soft2:#f5f1eb;
-  --acc2:#95724a; --acc2-lt:#c0aa8e;
-  --hdr:#705333; --hdr2:#82633f; --tot:#3f2f1c; --hdr-sub:#9d8d75; --hdr-sub2:#ad9e88;
-  --gray:#a49b8c; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#8a6538;
-  --b1:#d3c5ae; --b2:#bfab8d; --b3:#a48a64; --b4:#8a6538; --b5:#6e502b; --neg:#9e6660;
-  --bg1:184,160,124; --bg2:174,148,110; --bg3:206,190,166;
-}
-[data-theme="mustard"]{
-  --pacergb:122 100 130;
-  --sub0:#d4d1bc; --sub1:#e2dfd0; --sub2:#eae8dd; --sub3:#f2f0ea;
-  --plane:#f1f0e9; --plane2:#f9f8f3; --ink:#2b2a20; --ink2:#666352; --muted:#95927e; --sec:#585643;
-  --line:#e6e4d8; --line2:#f0efe6; --gline:#c9c6b2; --cell:#e3e1d3;
-  --acc:#7c7434; --acc-d:#615a26; --acc-lt:#aaa47f; --acc-soft:#e7e5d9; --acc-soft2:#f3f2ea;
-  --acc2:#8a8142; --acc2-lt:#b5af8c;
-  --hdr:#655e2c; --hdr2:#776f38; --tot:#39351a; --hdr-sub:#948e70; --hdr-sub2:#a49e83;
-  --gray:#9d9a86; --pace:#7a6482; --pace-lt:#b0a3b8; --hol:#7c7434;
-  --b1:#cfcbac; --b2:#b8b28c; --b3:#9a9362; --b4:#7c7434; --b5:#615a26; --neg:#9e6660;
-  --bg1:176,172,124; --bg2:164,160,110; --bg3:200,197,168;
-}
-[data-theme="green"]{
-  --pacergb:152 98 92;
-  --sub0:#c6d1ca; --sub1:#dae1dc; --sub2:#e5eae7; --sub3:#eff3f0;
-  --plane:#edf0ee; --plane2:#f6f8f6; --ink:#232c27; --ink2:#5c665f; --muted:#8c948e; --sec:#4e5852;
-  --line:#e1e7e3; --line2:#eef2f0; --gline:#c3ccc6; --cell:#dee4e0;
-  --acc:#4b6a58; --acc-d:#385244; --acc-lt:#93a89b; --acc-soft:#e5eae7; --acc-soft2:#f2f5f3;
-  --acc2:#567764; --acc2-lt:#9db0a4;
-  --hdr:#40594b; --hdr2:#4f6a5a; --tot:#263731; --hdr-sub:#849489; --hdr-sub2:#94a399;
-  --gray:#97a09a; --pace:#98625c; --pace-lt:#c4a5a1; --hol:#98625c;
-  --b1:#bdc9c1; --b2:#9db0a4; --b3:#748e7e; --b4:#4b6a58; --b5:#385244; --neg:#a97a76;
-  --bg1:140,168,152; --bg2:128,156,140; --bg3:176,198,186;
-}
-[data-theme="pink"]{
-  --pacergb:95 116 130;
-  --sub0:#d4c5cc; --sub1:#e2d7dc; --sub2:#eae2e6; --sub3:#f2ecef;
-  --plane:#f2eef0; --plane2:#faf7f8; --ink:#2e2529; --ink2:#6b5f65; --muted:#9a8e93; --sec:#5d5055;
-  --line:#e8e0e4; --line2:#f2ecee; --gline:#cec0c6; --cell:#e5dde0;
-  --acc:#84556a; --acc-d:#684354; --acc-lt:#b098a3; --acc-soft:#e9e1e5; --acc-soft2:#f4eff1;
-  --acc2:#916078; --acc2-lt:#bda3af;
-  --hdr:#6b4657; --hdr2:#7e5566; --tot:#3d2b33; --hdr-sub:#9b8390; --hdr-sub2:#ab949f;
-  --gray:#a3969b; --pace:#5f7482; --pace-lt:#a4b3bd; --hol:#84556a;
-  --b1:#ccbac2; --b2:#b69ea9; --b3:#9b7a89; --b4:#84556a; --b5:#684354; --neg:#9e6660;
-  --bg1:176,140,156; --bg2:164,128,146; --bg3:200,176,188;
-}
 [data-theme="mono"]{
   --pacergb:150 99 94;
   --sub0:#cfd1d3; --sub1:#dfe0e2; --sub2:#e9eaeb; --sub3:#f2f2f3;
   --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
-  --acc:#4d5257; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
+  --acc:#4d5257; --accrgb:77 82 87; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
   --acc2:#5c6165; --acc2-lt:#a3a6aa;
   --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
   --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
@@ -123,7 +63,7 @@
   --ink:#ededed; --ink2:#b0b0b0; --muted:#868686; --sec:#c8c8c8;
   --line:#363636; --line2:#2e2e2e; --gline:#4a4a4a; --cell:#383838;
   --cell-d:rgba(255,255,255,.16);
-  --acc:#b4b4b4; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
+  --acc:#b4b4b4; --accrgb:180 180 180; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
   --acc2:#9c9c9c; --acc2-lt:#6a6a6a;
   --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
   --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
@@ -495,15 +435,14 @@ table.tbl.nogauge .gauge .track{display:none}
 /* 목표 페이스 점 — 막대 "위"가 아니라 막대 바로 위쪽 줄에 찍는다.
    색은 그 막대와 같은 색을 쓴다. */
 .pdotrow{position:relative;height:13px}
-/* 목표 페이스 점 — 테마 강조색으로, 후레쉬처럼 은은히 깜빡이며 옆으로 빛이 번진다 */
-.pdotrow>i{position:absolute;bottom:2px;width:9px;height:9px;border-radius:50%;
-  transform:translateX(-50%);background:var(--pace);display:block;
+/* 목표 페이스 점 — 테마 강조색(--acc)으로, 후레쉬처럼 은은히 깜빡인다.
+   빛 번짐은 점 바로 옆까지만 (예전에는 반경 14px + 링 4px 이라 너무 넓었다) */
+.pdotrow>i{position:absolute;bottom:2px;width:8px;height:8px;border-radius:50%;
+  transform:translateX(-50%);background:var(--acc);display:block;
   animation:pacedot 2.6s ease-in-out infinite}
 @keyframes pacedot{
-  0%,100%{box-shadow:0 0 0 0 rgba(var(--pacergb,176 106 99)/.55),
-                     0 0 5px 1px rgba(var(--pacergb,176 106 99)/.40);opacity:.78}
-  45%    {box-shadow:0 0 0 4px rgba(var(--pacergb,176 106 99)/0),
-                     0 0 14px 4px rgba(var(--pacergb,176 106 99)/.75);opacity:1}}
+  0%,100%{box-shadow:0 0 2px 0 rgba(var(--accrgb,73 94 114)/.40);opacity:.76}
+  45%    {box-shadow:0 0 5px 1px rgba(var(--accrgb,73 94 114)/.62);opacity:1}}
 @media (prefers-reduced-motion: reduce){.pdotrow>i{animation:none}}
 .pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
@@ -796,10 +735,18 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .hnav .nvmap{flex:1;min-width:0}
 .hnav .nvchips{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
 .hnav .nvchips::-webkit-scrollbar{display:none}
-.hnav .nvc{border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 10px;
+.hnav .nvc{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;
   font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;flex:none}
 .hnav .nvc:hover{border-color:var(--acc);color:var(--acc)}
 .hnav .nvc.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* 세그먼트 순서 바꾸기 — 칩(가로) · 블록 제목(세로)을 끌어서 놓는다 */
+.segdrag{cursor:grab}
+.segdrag.dragging{opacity:.4;cursor:grabbing}
+.segdrag.segL{box-shadow:inset 3px 0 0 var(--acc)}
+.segdrag.segR{box-shadow:inset -3px 0 0 var(--acc)}
+.segdrag.segy.segL{box-shadow:inset 0 3px 0 var(--acc)}
+.segdrag.segy.segR{box-shadow:inset 0 -3px 0 var(--acc)}
+.subsec.segdrag{border-radius:8px;padding:2px 6px;margin-left:-6px}
 .hnav .nvbar{position:relative;height:4px;border-radius:3px;background:var(--acc-soft);margin-top:5px}
 .hnav .nvbar>i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--acc-lt);display:block}
 
@@ -883,11 +830,13 @@ table.tbl.fit{width:auto}
 .tbl-wrap{overflow:auto;max-height:74vh}
 /* 세로 스크롤 없이 전체 높이 그대로 (가로 스크롤만) — 효율 탭 서머리 */
 .tbl-wrap.noy{max-height:none;overflow-y:visible}
-/* 세로 스크롤이 없으면 헤더 고정도 불필요 — 고정 때문에 생기던 행 높이 단차도 사라진다 */
-.tbl-wrap.noy table.tbl th{position:static}
+/* 세로 스크롤이 없으면 세로 고정은 불필요 (떠 있는 머리글 막대가 대신한다).
+   다만 행 머리 열(.lfz)의 가로 고정은 살려 둔다 */
+.tbl-wrap.noy table.tbl th:not(.lfz){position:static}
 table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--cell);text-align:center;
-  font-size:12.5px;line-height:1.4;vertical-align:middle;font-family:inherit}
+/* 행 높이는 조금 낮게 — 글자는 칸 세로 가운데에 그대로 둔다 */
+table.tbl th,table.tbl td{padding:6.5px 10px;border-bottom:1px solid var(--cell);text-align:center;
+  font-size:12.5px;line-height:1.35;vertical-align:middle;font-family:inherit}
 /* 모든 세로 구분선은 같은 색 · 같은 굵기 */
 table.tbl th,table.tbl td{border-right:1px solid var(--cell)}
 table.tbl th:last-child,table.tbl td:last-child{border-right:0}
@@ -898,10 +847,19 @@ table.tbl tbody td{background:var(--surface)}
 table.tbl th{background:var(--hdr);color:#fff;font-weight:700;position:sticky;top:0;z-index:2}
 table.tbl thead th,table.tbl tr.total td{border-color:var(--cell-d)}
 table.tbl th.g{background:var(--hdr2);z-index:3}
-table.tbl thead tr:nth-child(2) th{top:33px}
+/* 2행 헤더는 1행 아래에 붙어 고정된다 — 세로 스크롤이 없는 표(noy)에서는
+   고정을 안 쓰므로 이 오프셋도 꺼야 한다. (안 그러면 열 너비 그립 때문에
+   relative 로 바뀐 셀이 33px 아래로 밀려 헤더가 깨진다) */
+table.tbl thead tr:nth-child(2) th{top:30px}
+.tbl-wrap.noy table.tbl thead tr:nth-child(2) th{top:auto}
 table.tbl td.gsep,table.tbl th.gsep{border-left:1px solid var(--cell)}
 table.tbl thead th.gsep,table.tbl tr.total td.gsep{border-left-color:var(--cell-d)}
 table.tbl td.head{background:var(--surface);font-weight:600;color:var(--ink)}
+/* 서머리 · 미디어믹스 — 가로로 스크롤해도 행 머리 열(구분 · 매체 · 광고상품)은 왼쪽에 붙는다.
+   left 값은 그려진 뒤에 실제 폭을 재서 JS 가 넣는다 (열 너비를 끌어 바꿀 수 있으므로). */
+table.tbl td.lfz{position:sticky;z-index:4}
+table.tbl th.lfz{position:sticky;z-index:9}
+table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
 /* 값이 없는 칸도 배경은 그 행의 색 그대로 — 열마다 배경이 달라 보이지 않게 한다(함정 2).
    비어 있다는 신호는 옅은 – 하나로 충분하다 */
@@ -1000,6 +958,17 @@ td.gt input.num{color:var(--acc);font-weight:800}
   width:19px;height:19px;border-radius:5px;cursor:pointer;font-size:12px;line-height:1;padding:0}
 .chipfield .cfadd:hover{background:var(--acc);color:#fff}
 /* body에 fixed로 띄워 표 스크롤 영역에 잘리지 않게 */
+/* KPI 달성 현황 — 표시 항목 고르기 */
+.dplist{max-height:min(52vh,420px);overflow:auto;border:1px solid var(--line);border-radius:10px}
+.dprow{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid var(--line2);
+  font-size:12.5px;font-weight:600;color:var(--ink);cursor:grab;background:var(--surface)}
+.dprow:last-child{border-bottom:0}
+.dprow .gr{color:var(--muted);font-size:11px;letter-spacing:-2px;flex:none}
+.dprow label{display:flex;align-items:center;gap:7px;flex:1;min-width:0;cursor:pointer}
+.dprow .bd{margin-left:auto;color:var(--muted);font-size:11.5px;font-weight:700;flex:none}
+.dprow.dragging{opacity:.4}
+.dprow.dropT{box-shadow:inset 0 3px 0 var(--acc)}
+.dprow.dropB{box-shadow:inset 0 -3px 0 var(--acc)}
 .cfmenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);
   border-radius:9px;box-shadow:var(--shadow2);padding:5px;min-width:200px;max-height:240px;overflow:auto;text-align:left}
 .cfmenu .mi{display:block;width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:6px;
