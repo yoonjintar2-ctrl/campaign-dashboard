@@ -90,12 +90,17 @@ const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#
 function setLineCreatives(l,names){
   names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
   l.creatives=names;
+  /* 빠지는 소재의 이미지·영상은 자료함에 남겨 둔다 (이름이 다시 들어오면 자동으로 붙는다) */
+  try{CREATIVES.filter(c=>c.lid===l.id&&!names.includes(c.name)).forEach(c=>crAssetSave(c));}catch(e){}
   CREATIVES=CREATIVES.filter(c=>c.lid!==l.id||names.includes(c.name));
   names.forEach((n,i)=>{
     if(CREATIVES.some(c=>c.lid===l.id&&c.name===n))return;
-    CREATIVES.push({id:uid(),lid:l.id,name:n,type:/9:16|story|reels/i.test(n)?'video':'image',
+    /* 예전에 같은 이름으로 올려 둔 이미지·영상이 있으면 자동으로 다시 붙인다 */
+    const rec={id:uid(),lid:l.id,name:n,type:/9:16|story|reels/i.test(n)?'video':'image',
       ratio:'16:9',g:GRADS[(CREATIVES.length+i)%GRADS.length],
-      run:[[0,Math.max(TOTAL_DAYS-1,0)]],share:1});});
+      run:[[0,Math.max(TOTAL_DAYS-1,0)]],share:1};
+    if(typeof crAssetApply==='function')crAssetApply(rec);
+    CREATIVES.push(rec);});
   const cs=CREATIVES.filter(c=>c.lid===l.id);
   cs.forEach(c=>c.share=1/Math.max(cs.length,1));
   buildFacts();
@@ -320,11 +325,17 @@ function renderKpiTable(){
   const ca=$('lineClearAll');
   if(ca)ca.onclick=()=>confirmModal('예상 효율을 모두 지울까요?',
     `${LINES.length}개 라인이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
-    ()=>{pushLineUndo();LINES=[];CREATIVES=[];
+    ()=>{pushLineUndo();
+      /* 올려 둔 이미지·영상은 소재 자료함에 남겨 둔다 — 예상 효율을 다시 넣으면 이름으로 다시 붙는다 */
+      try{CREATIVES.forEach(c=>crAssetSave(c));}catch(e){}
+      LINES=[];CREATIVES=[];
       rebuildPeriod();buildFacts();buildFilters();buildSelects();
       renderKpiTable();renderCampForm();renderMix();renderAll();},'모두 지우기');
   t.querySelectorAll('[data-ldel]').forEach(b=>b.onclick=()=>{
-    pushLineUndo();LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
+    pushLineUndo();
+    try{const gone=LINES[+b.dataset.ldel];
+      CREATIVES.filter(c=>c.lid===gone.id).forEach(c=>crAssetSave(c));}catch(e){}
+    LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
     renderKpiTable();renderCampForm();renderAll();});
   /* 행 복제 — 같은 값으로 한 줄 더 */
   t.querySelectorAll('[data-ldup]').forEach(b=>b.onclick=()=>{
@@ -882,6 +893,7 @@ function buildSelects(){
   $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();};
   const gr=$('ganttRange');
   if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
+  {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
   $('kpiGroupSel').onchange=renderDonuts;

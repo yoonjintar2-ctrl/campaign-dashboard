@@ -335,6 +335,11 @@ table.tbl.nogauge .gauge .track{display:none}
   box-shadow:var(--shadow2);padding:9px;display:flex;gap:6px}
 .huepick button{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;padding:0}
 .huepick button.on{border-color:var(--ink)}
+/* 소재 관리 — 매칭 없음 표시 (좋고 나쁨을 뜻하므로 테마와 무관하게 경고색) */
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.badge.warn{background:rgba(190,110,100,.14);color:#a9615a;border:1px solid rgba(190,110,100,.3)}
+[data-theme="dark"] .badge.warn{background:rgba(200,140,132,.16);color:#d3a09a;
+  border-color:rgba(200,140,132,.34)}
 .cnt2{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--acc);
   background:var(--acc-soft);border-radius:6px;padding:1px 7px;vertical-align:1px}
 
@@ -1630,6 +1635,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       <div class="tools">
         <span class="hint">세로 세그먼트</span><select class="ctl" id="rawSeg"></select>
         <span class="hint">가로 세그먼트</span><select class="ctl" id="rawHSeg"></select>
+        <button class="btn sm" id="rawPickBtn" title="표시할 세그먼트를 고르고 순서를 바꿉니다">⚙ 표시 항목</button>
         <button class="btn sm agency-only" id="rawCfgBtn">⚙ 열 구성</button>
       </div>
     </div>
@@ -4150,13 +4156,87 @@ function wireSegDrag(items,keys,dim,axis){
       clear();from=null;renderRaw();
       try{markDirty();saveLocal();}catch(x){}});});
 }
+/* 화면에서 뺀 세그먼트 — 차원(매체/상품/…)마다 따로 기억한다 */
+let RAW_HIDE={};
+/* 그 차원에서 나올 수 있는 값 전부 — 예산 큰 순(+사용자 순서). all=false 면 숨긴 건 뺀다 */
+function segValues(dim,all){
+  if(!dim||dim==='none')return [];
+  const fs=factFilter();
+  const vals=segSort([...new Set(fs.map(f=>f[dim]))].filter(Boolean),dim,fs);
+  if(all)return vals;
+  const off=RAW_HIDE[dim]||[];
+  return vals.filter(v=>off.indexOf(v)<0);
+}
+/* 표시 항목 고르기 — 세로·가로 세그먼트를 한 창에서 (체크로 넣고 빼고, 끌어서 순서) */
+function openSegPicker(){
+  const dims=[];
+  if(RAW_SEG!=='none')dims.push({dim:RAW_SEG,axis:'세로'});
+  if(RAW_HSEG!=='none'&&RAW_HSEG!==RAW_SEG)dims.push({dim:RAW_HSEG,axis:'가로'});
+  if(!dims.length){
+    openModal('일자별 상세 효율 — 표시 항목',
+      '<div class="hint">세로·가로 세그먼트를 "없음" 이 아닌 값으로 고르면 여기서 항목을 고를 수 있습니다.</div>',
+      '<button class="btn primary" data-close>닫기</button>',{w:460});
+    return;}
+  const lab=k=>(SEG_OPTS.find(s=>s.k===k)||{l:k}).l.replace(/별$/,'');
+  const body=dims.map(d=>`<div class="sec gap" style="margin:4px 0 8px;font-size:14px">${d.axis} · ${esc(lab(d.dim))}
+      <span class="cnt2" data-cnt="${esc(d.dim)}"></span></div>
+    <div class="dplist" data-seglist="${esc(d.dim)}"></div>
+    <div style="margin:6px 0 16px"><button class="btn sm" data-sall="${esc(d.dim)}">전체 표시</button>
+      <button class="btn sm" data-snone="${esc(d.dim)}">전체 숨김</button></div>`).join('');
+  openModal('일자별 상세 효율 — 표시 항목',
+    `<div class="hint" style="margin-bottom:10px">체크를 풀면 표에서 빠집니다. 왼쪽을 끌어 순서를 바꿀 수 있습니다.</div>${body}`,
+    '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:560});
+  const host=$('modalHost');
+  const draw=()=>{
+    dims.forEach(({dim})=>{
+      const all=segValues(dim,true),off=RAW_HIDE[dim]||[];
+      const fs=factFilter();
+      const box=host.querySelector(`[data-seglist="${CSS.escape(dim)}"]`);
+      const cnt=host.querySelector(`[data-cnt="${CSS.escape(dim)}"]`);
+      if(cnt)cnt.textContent=`${all.length-off.length} / ${all.length}`;
+      if(!box)return;
+      box.innerHTML=all.map(v=>`<div class="dprow" draggable="true" data-k="${esc(v)}">
+          <span class="gr">⋮⋮</span>
+          <label><input type="checkbox" ${off.indexOf(v)<0?'checked':''} data-ck="${esc(v)}"> ${esc(v)}</label>
+          <span class="bd mono">${won(segWeight(dim,v,fs))}</span></div>`).join('')
+        ||'<div class="hint" style="padding:10px">항목이 없습니다</div>';
+      box.querySelectorAll('[data-ck]').forEach(cb=>cb.onchange=()=>{
+        const cur=new Set(RAW_HIDE[dim]||[]);
+        if(cb.checked)cur.delete(cb.dataset.ck);else cur.add(cb.dataset.ck);
+        RAW_HIDE[dim]=[...cur];
+        renderRaw();draw();try{markDirty();saveLocal();}catch(e){}});
+      let from=null;
+      box.querySelectorAll('.dprow').forEach(row=>{
+        row.addEventListener('dragstart',e=>{from=row.dataset.k;row.classList.add('dragging');
+          try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',from);}catch(x){}});
+        row.addEventListener('dragend',()=>{from=null;
+          box.querySelectorAll('.dprow').forEach(r=>r.classList.remove('dragging','dropT','dropB'));});
+        row.addEventListener('dragover',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+          const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+          row.classList.toggle('dropB',after);row.classList.toggle('dropT',!after);});
+        row.addEventListener('dragleave',()=>row.classList.remove('dropT','dropB'));
+        row.addEventListener('drop',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+          const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+          const list=segValues(dim,true);
+          const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+          let b2=list.indexOf(row.dataset.k);if(b2<0)b2=list.length;
+          list.splice(after?b2+1:b2,0,from);
+          RAW_ORDER[dim]=list;from=null;
+          renderRaw();draw();try{markDirty();saveLocal();}catch(x){}});});});
+    host.querySelectorAll('[data-sall]').forEach(b=>b.onclick=()=>{
+      RAW_HIDE[b.dataset.sall]=[];renderRaw();draw();try{markDirty();saveLocal();}catch(e){}});
+    host.querySelectorAll('[data-snone]').forEach(b=>b.onclick=()=>{
+      RAW_HIDE[b.dataset.snone]=segValues(b.dataset.snone,true);
+      renderRaw();draw();try{markDirty();saveLocal();}catch(e){}});};
+  draw();
+}
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
   const host=$('rawHost');host.innerHTML='';
-  /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) */
-  const vSegs=RAW_SEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_SEG]))].filter(Boolean),RAW_SEG,fs);
-  const hSegs=RAW_HSEG==='none'?[]:segSort([...new Set(fs.map(f=>f[RAW_HSEG]))].filter(Boolean),RAW_HSEG,fs);
+  /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) · 숨긴 항목은 뺀다 */
+  const vSegs=segValues(RAW_SEG);
+  const hSegs=segValues(RAW_HSEG);
   /* 가로 블록 — 맨 왼쪽은 언제나 합계(상위), 그 오른쪽이 하위 세그먼트 */
   const blocks=[{name:'합계',all:true}].concat(hSegs.map(v=>({name:v,all:false,val:v})));
   let totalRows=0;
@@ -4506,17 +4586,17 @@ function mediaLabel(c,maxN){
   return sorted.length<=n?sorted.join(' · '):sorted.slice(0,n).join(' · ')+' …';
 }
 /* mode
-   'name'  — 매체까지 무시하고 이름만으로 합친다 (효율 우수 소재의 "매체 구분 없이 비교")
-   'media' — 매체는 그대로 두고, 같은 매체 안에서 이름이 같으면 한 줄 (라인이 달라도)
-   그 외    — 구분 · 매체 · 라인 · 이름이 모두 같을 때만 합친다
+   배열   — 그 필드들 + 이름이 같을 때만 합친다 (게재 히스토리: 표 머리글에 세운 차원 그대로)
+   'name' — 매체까지 무시하고 이름만으로 합친다 (효율 우수 소재의 "매체 구분 없이 비교")
+   그 외   — 구분 · 매체 · 라인 · 이름이 모두 같을 때만 합친다
    (예전 호출부는 boolean 을 넘겼으므로 true = 'name' 으로 받아 준다) */
 function mergeCreatives(list,mode){
   if(mode===true)mode='name';
   const KEYS=AMET.concat(['cost']);
   const m=new Map();
   list.forEach(c=>{
-    const k=mode==='name'?c.name
-      :mode==='media'?[c.segment,c.media,c.name].join(SEP)
+    const k=Array.isArray(mode)?mode.map(f=>c[f]).concat(c.name).join(SEP)
+      :mode==='name'?c.name
       :[c.segment,c.media,c.line,c.name].join(SEP);
     let o=m.get(k);
     if(!o){
@@ -4546,12 +4626,15 @@ function filteredCreatives(){
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
 /* 게재 히스토리 전용 목록 —
-   **매체는 절대 합치지 않는다.** ("매체 구분 없이 비교" 토글의 영향을 받지 않는다)
-   대신 같은 매체 안에서 이름이 같은 소재는 라인이 달라도 한 줄로 합쳐 값을 더한다. */
+   **표 머리글에 세운 차원(GANTT.rows)만으로 나눈다.**
+   머리글이 "매체 · 소재" 뿐이면 광고상품 · 타겟팅이 달라도 같은 매체 안의 같은 이름은
+   한 줄로 합쳐 값을 더한다. "매체 구분 없이 비교" 토글의 영향은 받지 않는다. */
 function ganttCreatives(){
   const keys=['segment','media','line'];
+  /* 소재 이름은 항상 열쇠에 들어가므로 차원 목록에서는 뺀다 */
+  const dims=(GANTT.rows||[]).map(r=>r.k).filter(k=>k!=='creative');
   const a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),'media');
+    &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),dims);
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
   return a;}
@@ -4728,6 +4811,47 @@ function openCrAll(){
   $('modalHost').querySelectorAll('[data-crid]').forEach(tr=>tr.onclick=()=>{
     const c=CREATIVES.find(x=>x.id===tr.dataset.crid);if(c){closeModal();openLightbox(c);}});
 }
+/* ===== 소재 자료함 (캠페인 단위) =====
+   예상 효율(라인)을 지웠다 다시 넣으면 소재 레코드는 새로 만들어진다.
+   그때마다 올려 둔 이미지·영상이 날아가지 않도록 **이름을 열쇠로** 따로 보관한다.
+   같은 이름의 소재가 다시 등록되면 자동으로 다시 붙는다. */
+let CR_ASSETS={};
+const CR_ASSET_FIELDS=['img','clip','yt','type','ratio','g'];
+/* 소재에 붙은 파일·유형을 자료함에 적어 둔다 */
+function crAssetSave(c){
+  if(!c||!c.name)return;
+  const o=CR_ASSETS[c.name]||(CR_ASSETS[c.name]={});
+  CR_ASSET_FIELDS.forEach(k=>{if(c[k]!==undefined&&c[k]!=='')o[k]=c[k];});
+  o.at=Date.now();
+}
+/* 자료함에 같은 이름이 있으면 소재에 붙여 준다 (이미 값이 있으면 건드리지 않는다) */
+function crAssetApply(c){
+  const o=c&&CR_ASSETS[c.name];if(!o)return c;
+  CR_ASSET_FIELDS.forEach(k=>{if(!c[k]&&o[k])c[k]=o[k];});
+  return c;
+}
+/* 지금 등록된 소재 전체에 자료함을 다시 붙인다 (문서를 열거나 라인을 새로 넣은 뒤) */
+function crAssetRelink(){
+  if(typeof CREATIVES==='undefined')return 0;
+  let n=0;CREATIVES.forEach(c=>{if(CR_ASSETS[c.name]){crAssetApply(c);n++;}});
+  return n;
+}
+/* 자료함에는 있는데 지금 어느 라인에도 안 붙어 있는 이름 — 삭제를 권한다 */
+function crAssetOrphans(){
+  const used=new Set((typeof CREATIVES!=='undefined'?CREATIVES:[]).map(c=>c.name));
+  return Object.keys(CR_ASSETS).filter(n=>!used.has(n));
+}
+/* 문서에 담을 자료함 — **지금 소재에 붙어 있는 것은 뺀다.**
+   그건 creatives 안에 이미 들어 있고 문서를 열 때 crAssetSave 로 다시 채워지므로,
+   같은 이미지를 두 번 담아 문서 용량을 두 배로 키울 필요가 없다. */
+function crAssetsForSave(){
+  const out={};crAssetOrphans().forEach(n=>{out[n]=CR_ASSETS[n];});return out;
+}
+function crAssetRename(oldName,newName){
+  if(!CR_ASSETS[oldName]||oldName===newName)return;
+  CR_ASSETS[newName]={...CR_ASSETS[oldName],...(CR_ASSETS[newName]||{})};
+  delete CR_ASSETS[oldName];
+}
 /* 소재 관리 — 캠페인 설정에 입력된 소재명을 이름 기준으로 모아 보여준다.
    같은 이름은 여러 매체·상품·타겟팅에 함께 쓰인 하나의 소재로 본다. */
 function crNameGroups(){
@@ -4877,6 +5001,31 @@ function openCrManage(){
         <td><button class="btn sm danger" data-cdel="${esc(g.name)}">삭제</button></td></tr>`;});
     h+=`</tbody></table>`;
   }
+  /* 자료함에는 남아 있는데 지금 예상 효율 어디에도 없는 이름 —
+     예상 효율을 다시 넣을 때 이름이 바뀌었거나 빠진 소재다. 지우기를 권한다. */
+  const orphans=crAssetOrphans();
+  if(orphans.length){
+    h+=`<div class="sec gap" style="margin:18px 0 8px;font-size:14px">매칭 없음
+        <span class="cnt2">${orphans.length}개</span></div>
+      <div class="hint" style="margin-bottom:8px">올려 둔 이미지·영상은 남아 있지만
+        지금 <b>예상 효율에 같은 이름의 소재가 없습니다.</b>
+        예상 효율에 그 이름을 다시 넣으면 자동으로 연결되고, 쓸 일이 없다면 지우는 편이 좋습니다.</div>
+      <table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
+        <th style="width:52px">미리보기</th><th style="min-width:240px">소재명</th>
+        <th style="width:110px">유형</th><th style="min-width:200px">상태</th>
+        <th style="width:60px"></th></tr></thead><tbody>`;
+    orphans.forEach(n=>{
+      const a=CR_ASSETS[n]||{};
+      const bg=a.img?`url(&quot;${a.img.slice(0,4)==='data'?a.img:encodeURI(a.img)}&quot;)`:(a.g||crGrad({name:n}));
+      h+=`<tr>
+        <td><span class="crthumb-sm" style="background-image:${bg}"></span></td>
+        <td style="font-weight:700">${esc(n)}</td>
+        <td class="hint">${a.type==='video'?'영상':'이미지'}</td>
+        <td><span class="badge warn">매칭 없음 · 삭제 권장</span></td>
+        <td><button class="btn sm danger" data-adel="${esc(n)}">삭제</button></td></tr>`;});
+    h+=`</tbody></table>
+      <div style="margin-top:8px"><button class="btn sm danger" id="aDelAll">매칭 없는 소재 모두 삭제</button></div>`;
+  }
   h+=`<div class="hint" style="margin-top:12px">소재를 새로 추가하려면 <b>캠페인 설정</b> 탭에서
       해당 라인을 먼저 추가한 뒤 <b>소재</b> 칸에 이름을 적어 주세요.</div>
     <div class="hint" style="margin-top:6px">영상은 <b>원본이 올라가지 않습니다.</b>
@@ -4895,27 +5044,42 @@ function openCrManage(){
       if(f==='name'){const nv=v.trim();if(!nv)return;
         LINES.forEach(l=>{if(Array.isArray(l.creatives))
           l.creatives=l.creatives.map(n=>n===tr.dataset.cn?nv:n);});
+        crAssetRename(tr.dataset.cn,nv);
         list.forEach(c=>c.name=nv);}
       else if(f==='yt'){const id=ytId(v);list.forEach(c=>c.yt=id);}
       else list.forEach(c=>c[f]=v);
+      list.forEach(c=>crAssetSave(c));
       reopen();});
     const st=tr.querySelector('[data-cst]');
     const say=t=>{if(st)st.textContent=t;};
     const up=tr.querySelector('[data-cup]');
     if(up)up.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
       say('줄이는 중…');
-      shrinkImage(f,url=>{list.forEach(c=>{c.img=url;c.type='image';});reopen();});};
+      shrinkImage(f,url=>{list.forEach(c=>{c.img=url;c.type='image';crAssetSave(c);});reopen();});};
     /* 영상은 원본을 담지 않는다 — 대표 컷 + 4초 무음 미리보기로 줄여서 담는다 */
     const vup=tr.querySelector('[data-cvid]');
     if(vup)vup.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
       say('영상을 읽는 중…');
       encodeVideo(f,say,(r,msg)=>{
         if(!r){say(msg||'변환에 실패했습니다');return;}
-        list.forEach(c=>{c.img=r.poster||'';c.clip=r.clip||'';c.type='video';});
+        list.forEach(c=>{c.img=r.poster||'';c.clip=r.clip||'';c.type='video';crAssetSave(c);});
         if(msg)say(msg);
         reopen();});};
     const clr=tr.querySelector('[data-cclr]');
-    if(clr)clr.onclick=()=>{list.forEach(c=>{c.img='';c.clip='';});reopen();};});
+    if(clr)clr.onclick=()=>{list.forEach(c=>{c.img='';c.clip='';});
+      /* 자료함에서도 지운다 — 안 그러면 다시 그려질 때 되살아난다 */
+      const a=CR_ASSETS[list[0].name];if(a){delete a.img;delete a.clip;}
+      reopen();};});
+  host.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{
+    delete CR_ASSETS[b.dataset.adel];
+    try{markDirty();saveLocal();}catch(e){}
+    reopen();});
+  {const all=host.querySelector('#aDelAll');
+   if(all)all.onclick=()=>confirmModal('매칭 없는 소재를 모두 지울까요?',
+     '올려 둔 이미지·영상이 사라집니다. 예상 효율에 같은 이름을 다시 넣어도 연결되지 않습니다.',
+     ()=>{crAssetOrphans().forEach(n=>delete CR_ASSETS[n]);
+       try{markDirty();saveLocal();}catch(e){}
+       closeModal();openCrManage();},'모두 삭제');}
   host.querySelectorAll('[data-cup2]').forEach(b=>b.onclick=()=>{
     if(moveCrGroup(b.dataset.cup2,-1))reopen();});
   host.querySelectorAll('[data-cdn]').forEach(b=>b.onclick=()=>{
@@ -4926,6 +5090,7 @@ function openCrManage(){
       '이 이름을 쓰는 모든 라인에서 소재가 빠지고 일별 실적도 함께 사라집니다.',()=>{
       LINES.forEach(l=>{if(Array.isArray(l.creatives))l.creatives=l.creatives.filter(n=>n!==nm);});
       CREATIVES=CREATIVES.filter(x=>x.name!==nm);
+      delete CR_ASSETS[nm];                    /* 자료함에서도 완전히 지운다 */
       LINES.forEach(l=>{const cs=CREATIVES.filter(x=>x.lid===l.id);
         cs.forEach(x=>x.share=1/Math.max(cs.length,1));});
       reopen();},'삭제');});
@@ -5001,12 +5166,12 @@ function openLightbox(c){
   if(up)up.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
     shrinkImage(f,url=>{
       /* 같은 이름의 소재 전체에 반영 */
-      CREATIVES.filter(x=>x.name===c.name).forEach(x=>x.img=url);
+      CREATIVES.filter(x=>x.name===c.name).forEach(x=>{x.img=url;crAssetSave(x);});
       const m=host.querySelector('#lbImgMsg');if(m)m.textContent='업로드된 이미지가 있습니다';
       $('lbMedia').innerHTML=mediaHTML();renderCreatives();renderGantt();});};
   $('lbSave').onclick=()=>{
     const y=host.querySelector('#lbYt');
-    if(y)CREATIVES.filter(x=>x.name===c.name).forEach(x=>x.yt=ytId(y.value));
+    if(y)CREATIVES.filter(x=>x.name===c.name).forEach(x=>{x.yt=ytId(y.value);crAssetSave(x);});
     $('lbMedia').innerHTML=mediaHTML();
     renderCreatives();renderGantt();};
 }
@@ -6251,12 +6416,17 @@ const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#
 function setLineCreatives(l,names){
   names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
   l.creatives=names;
+  /* 빠지는 소재의 이미지·영상은 자료함에 남겨 둔다 (이름이 다시 들어오면 자동으로 붙는다) */
+  try{CREATIVES.filter(c=>c.lid===l.id&&!names.includes(c.name)).forEach(c=>crAssetSave(c));}catch(e){}
   CREATIVES=CREATIVES.filter(c=>c.lid!==l.id||names.includes(c.name));
   names.forEach((n,i)=>{
     if(CREATIVES.some(c=>c.lid===l.id&&c.name===n))return;
-    CREATIVES.push({id:uid(),lid:l.id,name:n,type:/9:16|story|reels/i.test(n)?'video':'image',
+    /* 예전에 같은 이름으로 올려 둔 이미지·영상이 있으면 자동으로 다시 붙인다 */
+    const rec={id:uid(),lid:l.id,name:n,type:/9:16|story|reels/i.test(n)?'video':'image',
       ratio:'16:9',g:GRADS[(CREATIVES.length+i)%GRADS.length],
-      run:[[0,Math.max(TOTAL_DAYS-1,0)]],share:1});});
+      run:[[0,Math.max(TOTAL_DAYS-1,0)]],share:1};
+    if(typeof crAssetApply==='function')crAssetApply(rec);
+    CREATIVES.push(rec);});
   const cs=CREATIVES.filter(c=>c.lid===l.id);
   cs.forEach(c=>c.share=1/Math.max(cs.length,1));
   buildFacts();
@@ -6481,11 +6651,17 @@ function renderKpiTable(){
   const ca=$('lineClearAll');
   if(ca)ca.onclick=()=>confirmModal('예상 효율을 모두 지울까요?',
     `${LINES.length}개 라인이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
-    ()=>{pushLineUndo();LINES=[];CREATIVES=[];
+    ()=>{pushLineUndo();
+      /* 올려 둔 이미지·영상은 소재 자료함에 남겨 둔다 — 예상 효율을 다시 넣으면 이름으로 다시 붙는다 */
+      try{CREATIVES.forEach(c=>crAssetSave(c));}catch(e){}
+      LINES=[];CREATIVES=[];
       rebuildPeriod();buildFacts();buildFilters();buildSelects();
       renderKpiTable();renderCampForm();renderMix();renderAll();},'모두 지우기');
   t.querySelectorAll('[data-ldel]').forEach(b=>b.onclick=()=>{
-    pushLineUndo();LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
+    pushLineUndo();
+    try{const gone=LINES[+b.dataset.ldel];
+      CREATIVES.filter(c=>c.lid===gone.id).forEach(c=>crAssetSave(c));}catch(e){}
+    LINES.splice(+b.dataset.ldel,1);rebuildPeriod();buildFacts();
     renderKpiTable();renderCampForm();renderAll();});
   /* 행 복제 — 같은 값으로 한 줄 더 */
   t.querySelectorAll('[data-ldup]').forEach(b=>b.onclick=()=>{
@@ -7043,6 +7219,7 @@ function buildSelects(){
   $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();};
   const gr=$('ganttRange');
   if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
+  {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
   $('kpiGroupSel').onchange=renderDonuts;
@@ -7302,6 +7479,8 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
+    /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
+    crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
     issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
     /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
@@ -7319,7 +7498,8 @@ function serializeDoc(){
            ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
            dailyOrder:(typeof DAILY_ORDER!=='undefined'?DAILY_ORDER:{}),
-           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{})}
+           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{}),
+           rawHide:(typeof RAW_HIDE!=='undefined'?RAW_HIDE:{})}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -7353,7 +7533,10 @@ function applyDoc(d,keepToday){
   if(typeof renderBrand==='function')renderBrand();
   LINES=d.lines.map(l=>({...l,daily:{}}));
   migrateBudget(LINES);            /* 예전 net 기준 저장본을 Gross 기준으로 */
+  if(typeof CR_ASSETS!=='undefined')CR_ASSETS=d.crAssets&&typeof d.crAssets==='object'?d.crAssets:{};
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
+  /* 지금 등록된 소재에 자료함을 다시 붙인다 (이름이 같으면 이미지가 되살아난다) */
+  try{if(typeof crAssetRelink==='function'){CREATIVES.forEach(c=>crAssetSave(c));crAssetRelink();}}catch(e){}
   if(d.issues)ISSUES=d.issues;
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
@@ -7369,6 +7552,7 @@ function applyDoc(d,keepToday){
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
   if(v.rawOrder&&typeof RAW_ORDER!=='undefined')RAW_ORDER=v.rawOrder;
+  if(v.rawHide&&typeof RAW_HIDE!=='undefined')RAW_HIDE=v.rawHide;
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;

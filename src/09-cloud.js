@@ -32,6 +32,8 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
+    /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
+    crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
     issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
     /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
@@ -49,7 +51,8 @@ function serializeDoc(){
            ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
            dailyOrder:(typeof DAILY_ORDER!=='undefined'?DAILY_ORDER:{}),
-           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{})}
+           rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{}),
+           rawHide:(typeof RAW_HIDE!=='undefined'?RAW_HIDE:{})}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -83,7 +86,10 @@ function applyDoc(d,keepToday){
   if(typeof renderBrand==='function')renderBrand();
   LINES=d.lines.map(l=>({...l,daily:{}}));
   migrateBudget(LINES);            /* 예전 net 기준 저장본을 Gross 기준으로 */
+  if(typeof CR_ASSETS!=='undefined')CR_ASSETS=d.crAssets&&typeof d.crAssets==='object'?d.crAssets:{};
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
+  /* 지금 등록된 소재에 자료함을 다시 붙인다 (이름이 같으면 이미지가 되살아난다) */
+  try{if(typeof crAssetRelink==='function'){CREATIVES.forEach(c=>crAssetSave(c));crAssetRelink();}}catch(e){}
   if(d.issues)ISSUES=d.issues;
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
@@ -99,6 +105,7 @@ function applyDoc(d,keepToday){
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
   if(v.rawOrder&&typeof RAW_ORDER!=='undefined')RAW_ORDER=v.rawOrder;
+  if(v.rawHide&&typeof RAW_HIDE!=='undefined')RAW_HIDE=v.rawHide;
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
