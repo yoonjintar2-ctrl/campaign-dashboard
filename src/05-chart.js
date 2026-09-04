@@ -61,10 +61,10 @@ function renderDaily(){
   const showFuture=SHOW_FORECAST&&SC.i1>=dIdx(YESTERDAY)&&PS.i1>SC.i1;
   const iEnd=showFuture?PS.i1:SC.i1;
   const ds=ALLDATES.slice(SC.i0,iEnd+1);
-  /* 실적이 확정된 마지막 날(어제)까지만 "집행 구간"이다.
-     오늘은 아직 데이터가 없으므로 오늘부터 옅은 음영을 깐다.
-     (예전에는 ELAPSED 를 그대로 써서 오늘 칸까지 진하게 보였다) */
-  const EL=Math.max(0,Math.min(dIdx(YESTERDAY)+1-SC.i0,ds.length));
+  /* 진하게 보여 줄 구간 = **지금 고른 조회 기간의 마지막 날**까지 (그리고 어제를 넘지 않는다).
+     9/1~9/2 를 골랐으면 9/2 까지만 진하고 9/3 부터 옅은 음영이 깔린다. */
+  const lastOn=Math.min(PS.i1,dIdx(YESTERDAY));
+  const EL=Math.max(0,Math.min(lastOn+1-SC.i0,ds.length));
   const W=1680,H=480,P={l:82,r:lk==='none'?22:96,t:16,b:36};
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart'},host);
   svg.style.height=H+'px';
@@ -114,7 +114,8 @@ function renderDaily(){
     if(v===0)S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
     S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
     txt(P.l-9,y+3.5,bigNum(v));});
-  const bw=Math.min(step-5,24),Y=v=>P.t+PH*(1-v/yMax);
+  /* 막대 사이 간격을 좁혀 그래프 폭을 줄인다 (남는 폭은 페이지 좌우 여백으로) */
+  const bw=Math.min(step-2,26),Y=v=>P.t+PH*(1-v/yMax);
   /* 미집행 구간 음영 */
   if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'var(--acc-soft2)'},svg);
   ds.forEach((d,i)=>{
@@ -167,11 +168,7 @@ function renderDaily(){
     S('stop',{offset:'100%','stop-color':'#1e4653'},lg2);
     S('path',{d:smoothPath(pts),fill:'none',stroke:'url(#lineGrad)','stroke-width':4.6,opacity:1,
       'stroke-linecap':'round','stroke-linejoin':'round'},svg);
-    pts.forEach(([x,y],i)=>{
-      const t2=pts.length>1?i/(pts.length-1):1;
-      const mix=(a,b)=>Math.round(a+(b-a)*t2);
-      const col=`rgb(${mix(0x8f,0x1e)},${mix(0xb3,0x46)},${mix(0xbd,0x53)})`;
-      S('circle',{cx:x,cy:y,r:3.4,fill:col,stroke:'#fff','stroke-width':1.5},svg);});
+    /* 선 위의 점은 그리지 않는다 — 값은 끝의 레이블과 툴팁으로 읽는다 */
     const li=pts.length-1;
     const lb=S('text',{x:pts[li][0]+9,y:pts[li][1]-11,'text-anchor':'start','font-size':12,'font-weight':700,fill:LINE_TONE},svg);
     lb.textContent=METRICS[lk].f(lineVals[EL-1]);
@@ -394,16 +391,23 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
   wirePivotColResize(tbl,cfg,cols,rerender);
 }
-/* 서머리 · 미디어믹스의 값 열 너비 조절 (2행 머리글이라 별도 처리) */
+/* 서머리 · 미디어믹스의 열 너비 조절.
+   머리글이 2행이라 값 열은 따로 찾아야 하고, **매체·광고상품 같은 행 머리 열도 함께** 잡는다
+   (예전에는 값 열에만 손잡이가 있어서 매체·상품 너비를 못 늘렸다). */
 function wirePivotColResize(tbl,cfg,cols,rerender){
   const gs=(cfg.groups||[]).filter(g=>g.cols.length);
   const soloThs=[...tbl.querySelectorAll('thead th.g.solo')];
   const row2=tbl.tHead&&tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+  const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
+  const leadThs=tbl.tHead&&tbl.tHead.rows[0]?[...tbl.tHead.rows[0].cells].slice(0,leadN):[];
   const ths=[];let si=0,ri=0;
   gs.forEach(g=>{
     if(g.solo&&g.cols.length===1)ths.push(soloThs[si++]);
     else g.cols.forEach(()=>ths.push(row2[ri++]));});
-  ths.forEach((th,i)=>{
+  /* 행 머리 열 — 키는 '_row0','_row1' … 로 저장한다 */
+  leadThs.forEach((th,i)=>grip(th,'_row'+i,i));
+  ths.forEach((th,i)=>grip(th,cols[i],leadN+i));
+  function grip(th,key,colIdx){
     if(!th||th.querySelector('.colgrip'))return;
     th.classList.add('cresz');
     const g=document.createElement('span');
@@ -412,26 +416,25 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     let x0=0,w0=0;
     const move=e=>{
       const w=Math.max(52,Math.round(w0+e.clientX-x0));
-      cfg.w=cfg.w||{};cfg.w[cols[i]]=w;
-      th.style.minWidth=w+'px';
+      cfg.w=cfg.w||{};cfg.w[key]=w;
+      th.style.minWidth=w+'px';th.style.width=w+'px';
       const cg=tbl.querySelector('colgroup');
-      const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
-      if(cg&&cg.children[leadN+i])cg.children[leadN+i].style.width=w+'px';};
+      if(cg&&cg.children[colIdx])cg.children[colIdx].style.width=w+'px';};
     const up=()=>{document.removeEventListener('mousemove',move);
       document.removeEventListener('mouseup',up);
-      document.body.style.userSelect='';
+      document.body.classList.remove('colresizing');
       try{markDirty();saveLocal();}catch(e){}};
     g.addEventListener('mousedown',e=>{
       e.preventDefault();e.stopPropagation();
       x0=e.clientX;w0=th.getBoundingClientRect().width;
-      document.body.style.userSelect='none';
+      document.body.classList.add('colresizing');
       document.addEventListener('mousemove',move);
       document.addEventListener('mouseup',up);});
     g.addEventListener('dblclick',e=>{
       e.stopPropagation();
-      if(cfg.w)delete cfg.w[cols[i]];
+      if(cfg.w)delete cfg.w[key];
       try{markDirty();saveLocal();}catch(x){}
-      rerender&&rerender();});});
+      rerender&&rerender();});}
 }
 function renderSummaries(){
   const host=$('summaryHost');host.innerHTML='';

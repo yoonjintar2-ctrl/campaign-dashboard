@@ -667,7 +667,7 @@ function pickLogo(cb){
   inp.type='file';inp.accept='image/png,image/jpeg,image/svg+xml,image/webp';
   inp.onchange=()=>{
     const f=inp.files&&inp.files[0];if(!f)return;
-    if(f.size>1.5*1024*1024){confirmModal('파일이 큽니다.','로고는 1.5MB 이하로 올려 주세요.',()=>{},'확인');return;}
+    if(f.size>3*1024*1024){confirmModal('파일이 큽니다.','로고는 3MB 이하로 올려 주세요.',()=>{},'확인');return;}
     const rd=new FileReader();
     rd.onload=()=>{
       const url=String(rd.result||'');
@@ -744,7 +744,6 @@ function openAdvEditor(){
     const m=$('brandMark');if(m)DMD_MARK=m.getAttribute('src')||'';
     loadAdvBook();
     const tb=$('themeBtn');if(tb)tb.onclick=openThemePicker;
-    const ab=$('advLogoBtn');if(ab)ab.onclick=openAdvEditor;
     applyTheme(THEME,true);renderBrand();};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();
@@ -905,4 +904,111 @@ function applyColOrder(all,view){
   const moved=order.map(k=>all.find(c=>c.k===k)).filter(Boolean);
   /* 숨긴 열은 원래 자리 근처에 그대로 둔다 — 뒤에 붙인다 */
   return moved.concat(rest);
+}
+
+/* =========================================================================
+   광고주 관리 — 목록 · 로고 · 추가 · 삭제
+   내가 만든(= 내 브라우저 장부에 있는) 광고주만 지울 수 있다.
+   다른 사람이 만든 캠페인에 붙은 광고주는 목록에 보이되 "다른 계정이 등록" 으로 잠근다.
+   ========================================================================= */
+function advOwnedByMe(name){
+  const rec=ADV_BOOK[name];
+  return !!(rec&&rec.mine!==false);
+}
+/* 그 광고주를 쓰고 있는 캠페인 수 */
+function advUseCount(name){
+  let n=0;
+  try{(CLOUD.list||[]).forEach(c=>{if(c.advertiser===name)n++;});}catch(e){}
+  if(CAMPAIGN.advertiser===name&&!n)n=1;
+  return n;
+}
+function openAdvManage(){
+  const draw=()=>{
+    const names=advNames();
+    let h=`<div class="hint" style="margin-bottom:12px">
+        광고주마다 로고를 한 번 등록해 두면, 그 광고주의 캠페인을 열 때
+        왼쪽 위에 <b>로고 · 광고주명 · Digital Media Dashboard</b> 순서로 함께 보입니다.<br>
+        로고는 가로세로 <b>1:1 ~ 3:1</b>, <b>3MB</b> 이하 이미지를 올려 주세요.
+        내가 등록한 광고주만 지울 수 있습니다.</div>`;
+    if(!names.length)h+='<div class="card" style="padding:22px;text-align:center">아직 등록된 광고주가 없습니다. 아래 <b>＋ 광고주 추가</b>로 시작하세요.</div>';
+    else{
+      h+=`<table class="tbl lite" style="background:var(--surface);border-radius:10px;overflow:hidden"><thead><tr>
+        <th style="width:120px">로고</th><th style="min-width:200px">광고주</th>
+        <th style="width:110px">캠페인</th><th style="width:230px"></th></tr></thead><tbody>`;
+      names.forEach(n=>{
+        const lg=advLogo(n),mine=advOwnedByMe(n),used=advUseCount(n);
+        h+=`<tr>
+          <td><span class="advprev">${lg?`<img src="${lg}" alt="">`:'<em>없음</em>'}</span></td>
+          <td style="text-align:left"><b>${esc(n)}</b>${CAMPAIGN.advertiser===n?' <span class="cnt2">지금 캠페인</span>':''}</td>
+          <td class="mono">${used?used+'개':'–'}</td>
+          <td class="acts"><div class="ln">
+            <button class="btn sm" data-alogo="${esc(n)}">${lg?'로고 변경':'로고 등록'}</button>
+            ${lg?`<button class="btn sm" data-aclear="${esc(n)}">로고 삭제</button>`:''}
+            <button class="btn sm" data-aren="${esc(n)}">이름 변경</button>
+            ${mine?`<button class="btn sm danger" data-adel="${esc(n)}">삭제</button>`
+                  :'<span class="hint">다른 계정이 등록</span>'}
+          </div></td></tr>`;});
+      h+='</tbody></table>';}
+    return h;};
+  const open=()=>{
+    openModal('광고주 관리',draw(),
+      '<button class="btn primary" id="advAdd">＋ 광고주 추가</button>'
+      +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:840});
+    const host=$('modalHost');
+    const redraw=()=>{closeModal();open();};
+    host.querySelectorAll('[data-alogo]').forEach(b=>b.onclick=()=>{
+      const n=b.dataset.alogo;
+      pickLogo(u=>{ADV_BOOK[n]=ADV_BOOK[n]||{};ADV_BOOK[n].logo=u;ADV_BOOK[n].mine=true;saveAdvBook();
+        if(CAMPAIGN.advertiser===n){CAMPAIGN.advLogo=u;renderBrand();try{markDirty();saveLocal();}catch(e){}}
+        redraw();});});
+    host.querySelectorAll('[data-aclear]').forEach(b=>b.onclick=()=>{
+      const n=b.dataset.aclear;
+      if(ADV_BOOK[n]){ADV_BOOK[n].logo='';saveAdvBook();}
+      if(CAMPAIGN.advertiser===n){CAMPAIGN.advLogo='';renderBrand();try{markDirty();saveLocal();}catch(e){}}
+      redraw();});
+    host.querySelectorAll('[data-aren]').forEach(b=>b.onclick=()=>{
+      const n=b.dataset.aren;
+      openModal('광고주 이름 변경',
+        `<div class="fld"><label>새 이름</label><input class="txt" id="advRenNew" value="${esc(n)}" style="width:100%"></div>
+         <div class="hint" style="margin-top:9px">이 광고주를 쓰는 캠페인 <b>${advUseCount(n)}개</b>의 표시 이름이 함께 바뀝니다.</div>`,
+        '<button class="btn" data-close>취소</button><button class="btn primary" id="advRenGo">바꾸기</button>',{w:460});
+      $('advRenGo').onclick=()=>{
+        const nv=($('advRenNew').value||'').trim();
+        if(!nv||nv===n){closeModal();open();return;}
+        ADV_BOOK[nv]={...(ADV_BOOK[n]||{}),mine:true};delete ADV_BOOK[n];saveAdvBook();
+        if(CAMPAIGN.advertiser===n){CAMPAIGN.advertiser=nv;renderBrand();renderCampBar();
+          try{markDirty();saveLocal();}catch(e){}}
+        closeModal();open();};});
+    host.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{
+      const n=b.dataset.adel,used=advUseCount(n);
+      confirmModal(`‘${n}’ 광고주를 지울까요?`,
+        used?`이 광고주를 쓰는 캠페인 <b>${used}개</b>는 그대로 남고, 목록과 로고만 사라집니다.`
+            :'등록해 둔 로고가 함께 사라집니다.',
+        ()=>{delete ADV_BOOK[n];saveAdvBook();
+          if(CAMPAIGN.advertiser===n){CAMPAIGN.advLogo='';renderBrand();}
+          open();},'삭제',true);});
+    $('advAdd').onclick=()=>{
+      const st={logo:''};
+      openModal('광고주 추가',
+        `<div class="form-row">
+           <div class="fld" style="flex:1;min-width:220px"><label>광고주명</label>
+             <input id="advNewName" placeholder="예: OO전자"></div>
+           <div class="fld" style="flex:0 0 100%"><label>로고 <span class="hint">(선택 · 1:1 ~ 3:1 · 3MB 이하)</span></label>
+             <div class="logopick">
+               <span class="prev" id="advPrev2"><em>없음</em></span>
+               <button class="btn sm" id="advPick2" type="button">이미지 선택</button>
+               <button class="btn sm" id="advClear2" type="button">지우기</button>
+             </div></div>
+         </div>`,
+        '<button class="btn" data-close>취소</button><button class="btn primary" id="advAddGo">추가</button>',{w:600});
+      const paint=()=>{$('advPrev2').innerHTML=st.logo?`<img src="${st.logo}" alt="">`:'<em>없음</em>';};
+      $('advPick2').onclick=()=>pickLogo(u=>{st.logo=u;paint();});
+      $('advClear2').onclick=()=>{st.logo='';paint();};
+      $('advAddGo').onclick=()=>{
+        const n=($('advNewName').value||'').trim();
+        if(!n){confirmModal('이름을 적어 주세요.','광고주명은 반드시 필요합니다.',()=>{},'확인');return;}
+        ADV_BOOK[n]={logo:st.logo||'',mine:true};saveAdvBook();
+        closeModal();open();};};
+  };
+  loadAdvBook();open();
 }

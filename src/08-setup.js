@@ -810,8 +810,7 @@ const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id=
   +opts.map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('')+'</select>';
 /* 기간 필터 — 달력에서 시작·종료일을 직접 고른다 (비우면 자동 = 선택한 항목의 집행 구간) */
 const rangeSel=p=>{const sc=viewScope();
-  return `<span class="lbl">기간</span>
-  <span class="daterange">
+  return `<span class="daterange">
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
     <input type="date" id="${p}To" value="${FILTER.to||sc.endIso}" min="${campStart()}" max="${campEnd()}">
@@ -863,8 +862,7 @@ function buildSelects(){
     sel.onchange=e=>{BUB[ax]=e.target.value;renderBubble();};});
   const bd=$('bubDim');
   if(bd){bd.value=BUB.dim;bd.onchange=e=>{BUB.dim=e.target.value;renderBubble();};}
-  $('crTopN').value=CR_TOPN;
-  $('crTopN').onchange=e=>{CR_TOPN=+e.target.value||5;renderCreatives();};
+  /* 표시 개수는 5개로 고정 (선택 메뉴 없음) */
   const am=$('crAllMedia');
   if(am){am.classList.toggle('on',!!CR_ALL_MEDIA);
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;

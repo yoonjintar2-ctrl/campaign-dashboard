@@ -883,9 +883,11 @@ function shade(t){
   /* 한 행 안의 값 차이가 크지 않아도 강약이 보이도록 대비를 세운다 */
   return `rgb(${mixRGB(SHADE_LOW,SHADE_HIGH,Math.pow(k,1.7)).join(',')})`;
 }
-/* 게재 히스토리 칸 색 — 표에 나온 모든 소재·모든 날을 통틀어 한 스케일로 본다.
-   (행마다 따로 재면 하루치만 있는 소재는 비교 대상이 없어 색이 안 나왔다)
-   기준은 그 소재의 KPI 단가(낮을수록 좋음)이고, 금액이 없으면 반응률(높을수록 좋음)을 쓴다. */
+/* 게재 히스토리 칸 색 — **행(소재)마다 그 소재 안에서** 비교한다.
+   이 표는 소재끼리 견주는 곳이 아니라 "한 소재가 날이 갈수록 어떻게 변하나"를 보는 곳이라,
+   행 안에서의 추이가 보여야 한다.
+   다만 그 소재에 비교할 날이 두 개도 없으면 색이 아예 안 나오므로, 그럴 때만 표 전체 스케일로 물러선다.
+   기준은 그 소재의 KPI 단가(낮을수록 좋음), 금액이 없으면 반응률(높을수록 좋음). */
 function ganttEff(list,SC){
   const val={};let mode='cost';
   const unitOf=c=>{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));
@@ -911,10 +913,20 @@ function ganttEff(list,SC){
       if(!(num>0&&den>0))return null;
       return -(num/den);});}          /* 반응률은 높을수록 좋으므로 부호를 뒤집는다 */
   if(!vals.length)return {ok:false};
-  const mn=Math.min(...vals),mx=Math.max(...vals),md=median(vals);
+  /* 행(소재)별 최소·중앙·최대 — 그 행 안에서의 추이를 색으로 본다 */
+  const byRow={};
+  list.forEach(c=>{
+    const a=[];
+    for(let i=SC.i0;i<=SC.i1;i++){const v=val[c.id+'|'+i];if(v!==undefined)a.push(v);}
+    if(a.length>=2)byRow[c.id]={mn:Math.min(...a),mx:Math.max(...a),md:median(a)};});
+  const gmn=Math.min(...vals),gmx=Math.max(...vals),gmd=median(vals);
+  const EMPTY=cssVar('--acc-soft')||'#dfe4ea';
   return {ok:true,mode,
-    color:(c,i)=>{const v=val[c.id+'|'+i];
-      return v===undefined?'#dfe4ea':(hmFill(v,mn,md,mx)||'#dfe4ea');}};
+    color:(c,i)=>{
+      const v=val[c.id+'|'+i];
+      if(v===undefined)return EMPTY;
+      const r=byRow[c.id];
+      return (r?hmFill(v,r.mn,r.md,r.mx):hmFill(v,gmn,gmd,gmx))||EMPTY;}};
 }
 /* 게재 히스토리 정렬 값 — 같은 매체 안에서만 견준다 */
 function ganttSortVal(c){

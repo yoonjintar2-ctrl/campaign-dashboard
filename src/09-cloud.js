@@ -759,9 +759,11 @@ async function openCampManage(){
     h+='</tbody></table>';}
   openModal('캠페인 및 광고주 관리',h,
     '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
+    +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
   const host=$('modalHost');
   if($('campNew'))$('campNew').onclick=()=>{closeModal();createCampaign();};
+  if($('advMng'))$('advMng').onclick=()=>{closeModal();openAdvManage();};
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeModal();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */

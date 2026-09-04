@@ -83,14 +83,40 @@ function applyColWidths(tbl,cfg,cols){
     const sw=savedColW(cfg,cols[i]);
     if(sw)return sw;
     return wide.has(cols[i])?0:(v<BIG?uni:v);});
+  /* 행 머리 열(매체·광고상품 등) — 글자 길이에 비례한 기본 폭.
+     여러 항목이 세로로 나열된 칸은 가장 긴 한 줄만 재서 지나치게 넓어지지 않게 한다. */
+  const leadW=[];
+  if(tbl.tBodies[0]){
+    for(let i=0;i<leadN;i++)leadW.push(0);
+    [...tbl.tBodies[0].rows].forEach(tr=>{
+      [...tr.cells].slice(0,leadN).forEach((c,i)=>{
+        if(!c.classList.contains('head'))return;
+        const ml=[...c.querySelectorAll('.mline')];
+        const lines=ml.length?ml.map(x=>x.textContent.trim())
+                             :[(c.textContent||'').trim()];
+        const longest=lines.reduce((m,x)=>Math.max(m,wOf(x)),0);
+        const at=+c.dataset.lvl;
+        const k=isFinite(at)?at:i;
+        if(k<leadN)leadW[k]=Math.max(leadW[k],longest);});});
+    const heads=tbl.tHead&&tbl.tHead.rows[0]?[...tbl.tHead.rows[0].cells].slice(0,leadN):[];
+    heads.forEach((th,i)=>{leadW[i]=Math.max(leadW[i]||0,wOf((th.textContent||'').trim())+.6);});}
+  const leadPx=leadW.map(l=>Math.max(78,Math.min(Math.round(l*CH+28),280)));
   let cg=tbl.querySelector('colgroup');
   if(cg)cg.remove();
   cg=document.createElement('colgroup');
   for(let i=0;i<nCol;i++){
     const c=document.createElement('col');
-    if(i>=leadN){const w=finalW[i-leadN];if(w)c.style.width=w+'px';}
+    if(i<leadN){
+      const sw=savedColW(cfg,'_row'+i)||leadPx[i];
+      if(sw)c.style.width=sw+'px';}
+    else{const w=finalW[i-leadN];if(w)c.style.width=w+'px';}
     cg.appendChild(c);}
   tbl.insertBefore(cg,tbl.firstChild);
+  /* 행 머리 열 머리글에도 min-width 를 걸어 눌리지 않게 */
+  if(tbl.tHead&&tbl.tHead.rows[0])
+    [...tbl.tHead.rows[0].cells].slice(0,leadN).forEach((th,i)=>{
+      const sw=savedColW(cfg,'_row'+i)||leadPx[i];
+      if(sw)th.style.minWidth=sw+'px';});
   /* colgroup 폭은 표가 컨테이너보다 넓어지면 눌리므로 헤더에 min-width도 함께 건다 */
   valHs.forEach((th,i)=>{if(!th)return;
     th.style.minWidth=(wide.has(cols[i])?250:finalW[i])+'px';});
@@ -718,7 +744,9 @@ function startAmb(){
     b.style.setProperty('--ambt',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
     /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
        고정 색조의 세기도 같은 주기로 0 ↔ 1 을 오가게 해 기본 색과 번갈아 보이게 한다. */
-    b.style.setProperty('--ambp',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
+    /* 고정 색조의 세기 — 0 에 더 오래 머물게 해서 기본 색이 보이는 시간을 늘린다 */
+    const w=(1-Math.cos(t*2*Math.PI))/2;
+    b.style.setProperty('--ambp',Math.pow(w,2.1).toFixed(4));
     AMB_RAF=requestAnimationFrame(step);};
   AMB_RAF=requestAnimationFrame(step);
 }
@@ -1083,12 +1111,12 @@ function drawSpark(host,pill,ser,k){
   const lid=uid();
   const lg=S('linearGradient',{id:lid,x1:'0',y1:'0',x2:'1',y2:'0',
     gradientUnits:'objectBoundingBox'},svg);
-  S('stop',{offset:'0%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
-  const mid=S('stop',{offset:'50%','stop-color':'var(--acc2)','stop-opacity':'.85'},lg);
-  S('stop',{offset:'100%','stop-color':'var(--acc)','stop-opacity':'.34'},lg);
-  const an=S('animate',{attributeName:'offset',values:'0.02;0.98;0.02',dur:'11s',
-    repeatCount:'indefinite',calcMode:'spline',keySplines:'.45 0 .55 1;.45 0 .55 1',keyTimes:'0;.5;1'},mid);
-  S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2,
+  S('stop',{offset:'0%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
+  const mid=S('stop',{offset:'50%','stop-color':'var(--acc-d)','stop-opacity':'1'},lg);
+  S('stop',{offset:'100%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
+  const an=S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'5.2s',
+    repeatCount:'indefinite',calcMode:'spline',keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid);
+  S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2.2,
     'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'},svg);
   /* 마지막 집행일 표식 — 가운데까지 같은 색으로 채운 단색 점 */
   const lastPt=pts[pts.length-1];
