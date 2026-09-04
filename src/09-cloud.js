@@ -229,7 +229,9 @@ function restoreDemo(){
   return true;
 }
 const gateEl=()=>$('gate');
-function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');endBoot();}
+/* 게이트(접속 화면)만 감춘다. 가림막(booting)은 **실제 데이터가 화면에 올라간 뒤에** 걷는다 —
+   그러지 않으면 내 캠페인을 불러오는 동안 예시 데이터가 잠깐 보인다. */
+function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 /* 가림막 걷기 — 화면이 실제로 그려진 다음 프레임에 */
 function startBoot(){try{document.body.classList.add('booting');}catch(e){}}
 function endBoot(){
@@ -242,7 +244,7 @@ function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.c
    운영진 코드 → 운영진 (그 캠페인 안에서는 마스터와 동등, 저장은 구글 로그인 후) */
 function enterShareView(name,kind){
   CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
-  hideGate();
+  hideGate();endBoot();
   if(typeof applyRole==='function')applyRole();
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
   cloudState(kind==='staff'
@@ -258,6 +260,7 @@ function enterSample(){
   hideGate();
   if(typeof applyRole==='function')applyRole();
   cloudState('샘플 데이터 둘러보기 · 시행사 화면');
+  endBoot();
   const bar=$('demoBar');
   if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');
 }
@@ -287,6 +290,7 @@ async function tryCode(raw){
   renderAll();renderIssues();renderIssueAlert();renderRaw();
   renderCreatives();renderGantt();
   enterShareView(c.name,kind);
+  endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
   if(kind==='staff'){try{sessionStorage.setItem('staffCode',code);}catch(e){}}
   return true;
@@ -319,7 +323,7 @@ function gateReady(){
   if(local&&qs.has('nogate')){
     hideGate();
     /* 새로고침해도 입력한 값이 남아 있게 — 이 브라우저에 적어 둔 마지막 상태를 되살린다 */
-    setTimeout(()=>{try{loadLocal();}catch(e){}},0);
+    setTimeout(()=>{try{loadLocal();}catch(e){}endBoot();},0);
     return;}
   /* 주소에 ?code=XXXX 가 있으면 바로 열어 준다 */
   const q=qs.get('code');
@@ -344,7 +348,7 @@ async function cloudInit(){
   const CFG=cfgOf();
   if(window.__offline||window.__noSupabase||window.__noConfig||!CFG||!CFG.url||!CFG.anonKey
      ||typeof supabase==='undefined'||!supabase.createClient){
-    cloudState('데모 모드 · 클라우드 미설정');gateReady();return;}
+    cloudState('데모 모드 · 클라우드 미설정');gateReady();endBoot();return;}
   CLOUD.sb=supabase.createClient(CFG.url,CFG.anonKey,
     {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   CLOUD.on=true;
@@ -354,7 +358,7 @@ async function cloudInit(){
     else if(!u&&CLOUD.user){CLOUD.user=null;paintAuth();cloudState('로그아웃됨 · 데모 모드');}});
   const {data}=await CLOUD.sb.auth.getSession();
   if(data?.session?.user){CLOUD.user=data.session.user;hideGate();await afterSignIn();}
-  else{paintAuth();cloudState('로그인하면 내 캠페인이 열립니다');gateReady();}
+  else{paintAuth();cloudState('로그인하면 내 캠페인이 열립니다');gateReady();endBoot();}
 }
 async function signInGoogle(){
   if(!CLOUD.on){alert('클라우드가 설정되지 않았습니다. config.js 의 Supabase URL / anon key 를 확인해 주세요.');return;}
@@ -393,6 +397,8 @@ async function afterSignIn(){
   await loadCampaignList();
   /* 아직 등급이 없고 참여 중인 캠페인도 없으면 권한을 요청하도록 안내 */
   if(CLOUD.appRole==='guest'&&!CLOUD.list.length)openAccessRequest();
+  /* 열 캠페인이 있으면 openCampaign 이 가림막을 걷는다. 없으면 여기서 걷는다. */
+  if(!CLOUD.list.length)endBoot();
 }
 /* ---------- 마스터 권한 요청 (게스트 → 슈퍼마스터에게) ---------- */
 async function openAccessRequest(){

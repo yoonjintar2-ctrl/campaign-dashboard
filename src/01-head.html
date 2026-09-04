@@ -29,7 +29,7 @@
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
   --gray:#9aa4b0;
-  --pace:#b06a63; --pace-lt:#d9aca7;                     /* 목표 페이스 — 붉은 계열 */
+  --pace:#b06a63; --pace-lt:#d9aca7; --pacergb:176 106 99;   /* 목표 페이스 — 붉은 계열 */
   --hol:#b8665f;                                         /* 휴일 텍스트 */
   --b1:#aab4bf; --b2:#8897a6; --b3:#677b8d; --b4:#495e72; --b5:#354758;
   --neg:#c98484;
@@ -44,6 +44,7 @@
    배경 · 강조 · 표 머리글 · 그래프 색을 한 계열로 갈아 끼운다.
    (효율 히트맵의 초록↔회색↔빨강만은 "잘 됨/안 됨"을 뜻하므로 테마와 무관하게 유지) */
 [data-theme="red"]{
+  --pacergb:95 116 130;
   --sub0:#d5c8c6; --sub1:#e3d9d7; --sub2:#ebe4e3; --sub3:#f2edec;
   --plane:#f1eeee; --plane2:#f9f7f7; --ink:#2e2726; --ink2:#6b615f; --muted:#9a908e; --sec:#5d5250;
   --line:#e7e1e0; --line2:#f1ecec; --gline:#cdc2c0; --cell:#e4dedd;
@@ -55,6 +56,7 @@
   --bg1:176,143,138; --bg2:166,132,127; --bg3:198,175,171;
 }
 [data-theme="orange"]{
+  --pacergb:95 116 130;
   --sub0:#d8cdbc; --sub1:#e5ddd0; --sub2:#ede7dd; --sub3:#f4f0ea;
   --plane:#f2efea; --plane2:#faf8f5; --ink:#2f2a22; --ink2:#6b6357; --muted:#9a9284; --sec:#5d5647;
   --line:#e8e2d9; --line2:#f2ede6; --gline:#cdc4b5; --cell:#e5dfd5;
@@ -66,6 +68,7 @@
   --bg1:184,160,124; --bg2:174,148,110; --bg3:206,190,166;
 }
 [data-theme="mustard"]{
+  --pacergb:122 100 130;
   --sub0:#d4d1bc; --sub1:#e2dfd0; --sub2:#eae8dd; --sub3:#f2f0ea;
   --plane:#f1f0e9; --plane2:#f9f8f3; --ink:#2b2a20; --ink2:#666352; --muted:#95927e; --sec:#585643;
   --line:#e6e4d8; --line2:#f0efe6; --gline:#c9c6b2; --cell:#e3e1d3;
@@ -77,6 +80,7 @@
   --bg1:176,172,124; --bg2:164,160,110; --bg3:200,197,168;
 }
 [data-theme="green"]{
+  --pacergb:152 98 92;
   --sub0:#c6d1ca; --sub1:#dae1dc; --sub2:#e5eae7; --sub3:#eff3f0;
   --plane:#edf0ee; --plane2:#f6f8f6; --ink:#232c27; --ink2:#5c665f; --muted:#8c948e; --sec:#4e5852;
   --line:#e1e7e3; --line2:#eef2f0; --gline:#c3ccc6; --cell:#dee4e0;
@@ -88,6 +92,7 @@
   --bg1:140,168,152; --bg2:128,156,140; --bg3:176,198,186;
 }
 [data-theme="pink"]{
+  --pacergb:95 116 130;
   --sub0:#d4c5cc; --sub1:#e2d7dc; --sub2:#eae2e6; --sub3:#f2ecef;
   --plane:#f2eef0; --plane2:#faf7f8; --ink:#2e2529; --ink2:#6b5f65; --muted:#9a8e93; --sec:#5d5055;
   --line:#e8e0e4; --line2:#f2ecee; --gline:#cec0c6; --cell:#e5dde0;
@@ -99,6 +104,7 @@
   --bg1:176,140,156; --bg2:164,128,146; --bg3:200,176,188;
 }
 [data-theme="mono"]{
+  --pacergb:150 99 94;
   --sub0:#cfd1d3; --sub1:#dfe0e2; --sub2:#e9eaeb; --sub3:#f2f2f3;
   --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
@@ -111,6 +117,7 @@
 }
 /* 무채색 다크 — 채도 0 (R=G=B). 예전 값은 푸른 기가 섞여 있었다 */
 [data-theme="dark"]{
+  --pacergb:195 154 149;
   --sub0:#3d3d3d; --sub1:#343434; --sub2:#2d2d2d; --sub3:#282828;
   --plane:#191919; --plane2:#212121; --surface:#262626;
   --ink:#ededed; --ink2:#b0b0b0; --muted:#868686; --sec:#c8c8c8;
@@ -368,7 +375,7 @@ table.tbl.nogauge .gauge .track{display:none}
 .bublgd .lgtop{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-start}
 .bublgd .mgrp{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .bublgd .bl{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--ink);
-  background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 8px;
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 8px;
   cursor:pointer;position:relative}
 .bublgd .bl:hover{border-color:var(--acc)}
 .bublgd .bl>i{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
@@ -488,8 +495,16 @@ table.tbl.nogauge .gauge .track{display:none}
 /* 목표 페이스 점 — 막대 "위"가 아니라 막대 바로 위쪽 줄에 찍는다.
    색은 그 막대와 같은 색을 쓴다. */
 .pdotrow{position:relative;height:13px}
+/* 목표 페이스 점 — 테마 강조색으로, 후레쉬처럼 은은히 깜빡이며 옆으로 빛이 번진다 */
 .pdotrow>i{position:absolute;bottom:2px;width:9px;height:9px;border-radius:50%;
-  transform:translateX(-50%);background:var(--dotc,#4c729a);display:block}
+  transform:translateX(-50%);background:var(--pace);display:block;
+  animation:pacedot 2.6s ease-in-out infinite}
+@keyframes pacedot{
+  0%,100%{box-shadow:0 0 0 0 rgba(var(--pacergb,176 106 99)/.55),
+                     0 0 5px 1px rgba(var(--pacergb,176 106 99)/.40);opacity:.78}
+  45%    {box-shadow:0 0 0 4px rgba(var(--pacergb,176 106 99)/0),
+                     0 0 14px 4px rgba(var(--pacergb,176 106 99)/.75);opacity:1}}
+@media (prefers-reduced-motion: reduce){.pdotrow>i{animation:none}}
 .pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
 .pbar .mstack>i{transition:background-color .18s}
@@ -513,7 +528,7 @@ table.tbl.nogauge .gauge .track{display:none}
 /* 막대가 짧으면 안쪽 여백·간격이 오히려 폭을 늘려 버린다 —
    달성률 2.2% 인데 막대가 12% 처럼 보이고 매체 구간이 똑같이 쪼개져 보이던 원인.
    좁을 때는 여백과 간격을 없애 비율 그대로 보이게 한다. */
-.pbar .mstack.tight{gap:1px}
+.pbar .mstack.tight{gap:0}
 .pbar .mstack.tight>i{padding:0}
 .pbar .mstack.tight>i>*{display:none}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
@@ -626,8 +641,10 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* KPI 카드 — 줄바꿈 없이 가로로 스크롤한다 (매체가 늘어도 한 줄) */
 .donuts{display:flex!important;gap:14px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;
   scroll-snap-type:x proximity}
-.donuts>.donut{flex:0 0 312px;scroll-snap-align:start}
-.donut{padding:12px 13px 14px;text-align:center;position:relative}
+/* 주요 지표 타일과 정확히 같은 크기 (통일감) */
+.donuts>.donut{flex:0 0 246px;width:246px;height:261px;scroll-snap-align:start;
+  display:flex;flex-direction:column}
+.donut{padding:11px 13px 10px;text-align:center;position:relative}
 .donut .ring{overflow:visible}
 .donut .nm{font-weight:700;font-size:14px}
 /* 제목은 좌측 상단, 부제목(KPI)은 그 오른쪽 */
@@ -636,7 +653,7 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   text-overflow:ellipsis;white-space:nowrap}
 .donut .kpitag{margin-left:auto;flex:none;display:inline-block;font-size:10.5px;
   font-weight:700;padding:2px 8px;border-radius:6px;background:var(--acc-soft);color:var(--acc)}
-.donut .ring{margin:6px auto 4px;position:relative;width:264px;height:264px}
+.donut .ring{margin:2px auto 2px;position:relative;width:186px;height:186px;flex:none}
 .donut .ring svg{overflow:visible}
 .donut .ctr{pointer-events:none}
 .donut .ctr{position:absolute;inset:0;display:grid;place-content:center;gap:0}
@@ -657,7 +674,8 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
 .donut .dlgd .lg.spend{color:var(--acc)}
 .donut .dlgd .lg.spend .sw{background:var(--acc)}
-.donut.spend{background:linear-gradient(180deg,var(--acc-soft),var(--surface))}
+/* 예산 소진율 카드도 다른 카드와 같은 배경 (예전에는 그라데이션이라 혼자 달라 보였다) */
+.donut.spend{background:var(--surface)}
 .donut .kwrap{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:7px}
 .donut .kline{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink2)}
 .donut .kline .kn{display:flex;align-items:center;gap:6px;font-weight:700}
@@ -668,9 +686,9 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 /* 주요 지표 — 좁아져도 카드를 찌그러뜨리지 않고 가로 스크롤로 넘긴다 */
 .strip{display:flex;gap:13px;overflow-x:auto;overflow-y:hidden;
   padding:5px 4px 10px;scroll-snap-type:x proximity}
-.strip>.stat{flex:1 0 190px;min-width:190px;max-width:236px;scroll-snap-align:start}
+.strip>.stat{flex:1 0 246px;min-width:246px;max-width:246px;scroll-snap-align:start}
 /* 정방형에 가까운 비율은 그대로 두고 크기만 줄인다 */
-.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/.94;min-height:182px}
+.stat{position:relative;overflow:hidden;padding:0;aspect-ratio:1/1.06;min-height:196px}
 .stat .sbody{position:relative;z-index:2;padding:13px 14px 0}
 .stat .k{color:var(--ink2);font-size:13.5px;font-weight:700}
 .stat .v{font-size:24px;font-weight:800;letter-spacing:-.8px;margin-top:1px;line-height:1.15;
@@ -1225,24 +1243,26 @@ select:hover,input:hover{border-color:var(--acc-lt)}
 
 /* 배경 — 광고주 로고 도트 패턴. 화면 가로의 절반 크기로 아주 천천히 떠다닌다 */
 /* 배경 광고주 로고 — 화면 우측 아래에 크게, 가장자리에서 잘리도록.
-   transform 이나 크기 변화를 주면 문서가 가로로 넘친 것으로 잡히므로
-   위치(background-position)만 아주 천천히, 그리고 **끊기지 않게** 움직인다.
-   (키프레임을 촘촘히 두고 linear 로 이어야 뚝뚝 끊기지 않는다) */
+   **풍선처럼 이리저리 떠다닌다.**
+   background-position 을 키프레임으로 옮기면 아무리 촘촘히 넣어도 마디가 느껴지고 방향도 단조롭다.
+   그래서 바깥(#bgdots)은 위치만 잡고, 안쪽 두 겹에 **주기가 서로 다른 transform** 을 걸어
+   가로·세로 움직임이 계속 어긋나게 했다(리사주 곡선). 문서 크기에는 영향을 주지 않는다. */
 #bgdots{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;overflow:hidden;
-  background-repeat:no-repeat;background-size:54vw auto;
-  transition:opacity .6s ease;
-  animation:bgdotdrift 150s linear infinite}
+  transition:opacity .6s ease;contain:strict}
 #bgdots.on{opacity:1}
-@keyframes bgdotdrift{
-  0%   {background-position:88% 84%}
-  12.5%{background-position:91% 87%}
-  25%  {background-position:94% 89%}
-  37.5%{background-position:95% 92%}
-  50%  {background-position:93% 95%}
-  62.5%{background-position:90% 93%}
-  75%  {background-position:87% 90%}
-  87.5%{background-position:86% 86%}
-  100% {background-position:88% 84%}}
+#bgdots .bgfloat{position:absolute;inset:-30%;
+  animation:bgfloatX 47s cubic-bezier(.45,.05,.55,.95) infinite alternate;
+  will-change:transform}
+#bgdots .bgfloat>i{display:block;position:absolute;inset:0;
+  background-repeat:no-repeat;background-size:54vw auto;background-position:76% 72%;
+  animation:bgfloatY 31s cubic-bezier(.42,0,.58,1) infinite alternate,
+            bgfloatR 89s ease-in-out infinite alternate;
+  will-change:transform}
+@keyframes bgfloatX{from{transform:translate3d(-4.5%,0,0)}to{transform:translate3d(6.5%,0,0)}}
+@keyframes bgfloatY{from{transform:translate3d(0,-5.5%,0)}to{transform:translate3d(0,5%,0)}}
+@keyframes bgfloatR{from{transform:rotate(-2.4deg) scale(1)}to{transform:rotate(2.8deg) scale(1.06)}}
+@media (prefers-reduced-motion: reduce){
+  #bgdots .bgfloat,#bgdots .bgfloat>i{animation:none}}
 @media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
 /* 밝은 광고주 로고 — 상단 바를 짙게 깔아 로고가 보이게 한다 */
 /* 밝은 로고용 짙은 상단 바 — 무채색 (예전에는 푸른 기가 있었다) */
@@ -1289,6 +1309,10 @@ table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
   max-width:104px;padding:0 6px;border:1px dashed var(--line);border-radius:8px;background:var(--plane2)}
 .advprev img{height:24px;width:auto;max-width:92px;object-fit:contain;display:block}
 .advprev em{font-style:normal;font-size:11px;color:var(--muted);font-weight:600}
+
+/* 효율 버블 — 다크에서 매체 이름표가 배경에 묻히지 않게 테두리·바탕을 뚜렷하게 */
+[data-theme="dark"] .bublgd .bl{background:var(--plane2);border-color:var(--gline)}
+[data-theme="dark"] .bublgd{background:var(--surface)}
 /* 디자인 — 테마 고르기 */
 .thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .thcard{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:11px 12px;

@@ -5,6 +5,8 @@ const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',
   {k:'target',l:'타겟팅'},{k:'line',l:'제품'},{k:'creative',l:'소재'}];
 let SERIES_DIM='media';
 let ISSUE_OVERFLOW=0;
+/* 일자별 효율 비교의 계열 순서 — 기본은 예산 큰 순, 범례를 끌어서 바꿀 수 있다 */
+let DAILY_ORDER={};
 let SHOW_FORECAST=true, SHOW_BENCH=true;
 let LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 테마 강조색 */
 /* SVG 글자 폭 어림 — getComputedTextLength() 가 0 을 돌려줄 때만 쓴다 */
@@ -49,11 +51,44 @@ function smoothPath(pts){
     d+=` C${p1[0]+(p2[0]-p0[0])/6} ${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6} ${p2[1]-(p3[1]-p1[1])/6} ${p2[0]} ${p2[1]}`;}
   return d;
 }
+/* 범례를 끌어 계열 순서 바꾸기 */
+function wireDailyLegendDrag(lg,keys){
+  let from=null;
+  const clear=()=>lg.querySelectorAll('.it').forEach(x=>x.classList.remove('dragging','dropL','dropR'));
+  lg.querySelectorAll('.it.drag').forEach(el2=>{
+    el2.addEventListener('dragstart',e=>{from=el2.dataset.k;el2.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',from);}catch(x){}});
+    el2.addEventListener('dragend',()=>{from=null;clear();});
+    el2.addEventListener('dragover',e=>{
+      if(from===null||from===el2.dataset.k)return;
+      e.preventDefault();
+      const r=el2.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      el2.classList.toggle('dropR',after);el2.classList.toggle('dropL',!after);});
+    el2.addEventListener('dragleave',()=>el2.classList.remove('dropL','dropR'));
+    el2.addEventListener('drop',e=>{
+      if(from===null||from===el2.dataset.k)return;
+      e.preventDefault();
+      const r=el2.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;
+      const list=keys.slice();
+      const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+      let b2=list.indexOf(el2.dataset.k);if(b2<0)b2=list.length;
+      list.splice(after?b2+1:b2,0,from);
+      DAILY_ORDER[SERIES_DIM]=list;
+      clear();from=null;renderDaily();
+      try{markDirty();saveLocal();}catch(x){}});});
+}
 function renderDaily(){
   const host=$('chartDaily');host.innerHTML='';
   const bk=$('barSel').value||'imp', lk=$('lineSel').value||'ctr';
   const fs=factFilter();
-  const seriesKeys=[...new Set(fs.map(f=>f[SERIES_DIM]))].sort();
+  /* 계열 순서 — 예산(Gross)이 큰 것부터. 같으면 이름순 (사용자가 범례에서 바꿀 수 있다) */
+  const budOf=k=>sum(activeLines().filter(l=>SERIES_DIM==='creative'
+      ? CREATIVES.some(c=>c.lid===l.id&&c.name===k) : l[SERIES_DIM]===k).map(lineGross));
+  let seriesKeys=[...new Set(fs.map(f=>f[SERIES_DIM]))]
+    .sort((a,b)=>(budOf(b)-budOf(a))||String(a).localeCompare(String(b),'ko'));
+  if(Array.isArray(DAILY_ORDER[SERIES_DIM])&&DAILY_ORDER[SERIES_DIM].length){
+    const ix=k=>{const i=DAILY_ORDER[SERIES_DIM].indexOf(k);return i<0?1e9:i;};
+    seriesKeys=seriesKeys.slice().sort((a,b)=>ix(a)-ix(b));}
   /* 가로축은 늘 캠페인 시작일 ~ 종료일 전체 (기간 필터와 무관하게 흐름을 본다) */
   const SC=campScope(), PS=paceScope();
   /* 조회 기간 슬롯. 다만 "현재 시점까지" 보고 있고 예상값 토글이 켜져 있으면
@@ -128,7 +163,7 @@ function renderDaily(){
     series.forEach((s,si)=>{const v=vOf(si);if(v<=0)return;
       const h=PH*(v/yMax),y=base-h;
       S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===topIdx?4:0),
-        fill:pal[si],opacity:future?.34:1},svg);
+        fill:pal[si],opacity:future?.18:1},svg);
       base=y;});
     const rest=isRest(d);
     const t=S('text',{x:cx(i),y:H-P.b+15,'text-anchor':'middle','font-size':9,
@@ -162,11 +197,16 @@ function renderDaily(){
     if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
     else{
     /* 꺾은선 — 굵게, 왼쪽에서 오른쪽으로 갈수록 진해지는 한 계열의 그라데이션 */
-    const lg2=S('linearGradient',{id:'lineGrad',x1:'0',y1:'0',x2:'1',y2:'0'},svg);
-    S('stop',{offset:'0%','stop-color':'#8fb3bd'},lg2);
-    S('stop',{offset:'45%','stop-color':'#4d7f8c'},lg2);
-    S('stop',{offset:'100%','stop-color':'#1e4653'},lg2);
-    S('path',{d:smoothPath(pts),fill:'none',stroke:'url(#lineGrad)','stroke-width':4.6,opacity:1,
+    /* 꺾은선 — 테마 강조색으로, 밝은 띠가 좌우로 흐른다 */
+    const gid2='lineGrad'+uid();
+    const lg2=S('linearGradient',{id:gid2,x1:'0',y1:'0',x2:'1',y2:'0'},svg);
+    S('stop',{offset:'0%','stop-color':'var(--acc-lt)'},lg2);
+    const mid2=S('stop',{offset:'50%','stop-color':'var(--acc-d)'},lg2);
+    S('stop',{offset:'100%','stop-color':'var(--acc-lt)'},lg2);
+    S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
+      repeatCount:'indefinite',calcMode:'spline',
+      keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid2);
+    S('path',{d:smoothPath(pts),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
       'stroke-linecap':'round','stroke-linejoin':'round'},svg);
     /* 선 위의 점은 그리지 않는다 — 값은 끝의 레이블과 툴팁으로 읽는다 */
     const li=pts.length-1;
@@ -207,13 +247,13 @@ function renderDaily(){
       const bx=Math.max(X0,Math.min(ax,W-P.r-pw));
       laneEnd[li]=Math.max(ax,bx)+pw;
       const y=laneTop+li*26;
-      const rect=S('rect',{x:bx,y,width:pw,height:19,rx:6,fill:'#eef1f5',stroke:'#b9c4d0'});
+      const rect=S('rect',{x:bx,y,width:pw,height:19,rx:6,fill:'var(--acc-soft)',stroke:'var(--gline)'});
       g.insertBefore(rect,t);
       t.setAttribute('x',bx+9);t.setAttribute('y',y+13.2);
-      const line=S('line',{x1:ax,x2:ax,y1:y+19,y2:H-P.b,stroke:'#c3ccd6','stroke-dasharray':'3 3','stroke-width':1});
+      const line=S('line',{x1:ax,x2:ax,y1:y+19,y2:H-P.b,stroke:'var(--gline)','stroke-dasharray':'3 3','stroke-width':1});
       g.insertBefore(line,rect);
       const bw2=Math.max((Math.min(b2,ds.length-1)-Math.max(a,0)+1)*step-3,6);
-      const band=S('rect',{x:cx(Math.max(a,0))-step/2+1.5,y:H-P.b-4,width:bw2,height:4,fill:'#a7b3c1',rx:2});
+      const band=S('rect',{x:cx(Math.max(a,0))-step/2+1.5,y:H-P.b-4,width:bw2,height:4,fill:'var(--acc-lt)',rx:2});
       g.insertBefore(band,line);
       g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
         `<div class="t">${is.s} ~ ${is.e}</div><div class="r"><span class="l">${esc(is.scope)}</span><b>${is.type}</b></div>
@@ -232,12 +272,15 @@ function renderDaily(){
       (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
   const lg=$('dailyLegend');lg.innerHTML='';
-  series.forEach((s,i)=>{const x=el('span','it',lg);
+  series.forEach((s,i)=>{const x=el('span','it drag',lg);
+    x.draggable=true;x.dataset.k=s.key;
+    x.title='끌어서 순서를 바꿀 수 있습니다 (기본은 예산 큰 순)';
     x.innerHTML=`<span class="dot" style="background:${pal[i]}"></span>${esc(s.key)}`;});
+  wireDailyLegendDrag(lg,seriesKeys);
   if(lk!=='none'){const x=el('span','it',lg);
     x.innerHTML=`<span class="linekey"></span><span style="color:var(--acc2);font-weight:700">${METRICS[lk].l}</span> <span style="color:var(--muted)">(우측 축)</span>`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
-    x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.34"></span>미집행 구간 예상값 (일할)`;}
+    x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.18"></span>미집행 구간 예상값 (일할)`;}
 
 }
 
@@ -410,6 +453,9 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
   function grip(th,key,colIdx){
     if(!th||th.querySelector('.colgrip'))return;
     th.classList.add('cresz');
+    /* 손잡이는 th 를 기준으로 붙어야 한다 — 머리글이 static 이면 표 전체 오른쪽 끝에 붙어
+       실제로는 잡히지 않았다 (sticky 인 머리글은 그대로 둔다) */
+    if(getComputedStyle(th).position==='static')th.style.position='relative';
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);

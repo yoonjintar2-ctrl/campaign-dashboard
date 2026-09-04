@@ -996,7 +996,7 @@ $('sumDup').onclick=()=>{
     copy.groups=copy.groups.map(g=>({...g,id:uid()}));
     SUMMARIES.push(copy);closeModal();renderSummaries();};};
 $('addRow').onclick=()=>addRow(1);$('addRow2').onclick=()=>addRow(1);
-/* KPI 판정 기준 (%p) */
+/* KPI 판정 기준 (%p) — 화면 메뉴는 없앴고 저장본 값만 그대로 쓴다 */
 (function(){const b=$('verdictBand');if(!b)return;b.value=VERDICT_BAND;
   b.onchange=e=>{const v=parseFloat(e.target.value);
     if(isFinite(v)&&v>0){VERDICT_BAND=v;renderDonuts();}else e.target.value=VERDICT_BAND;};})();

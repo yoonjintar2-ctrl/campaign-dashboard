@@ -814,13 +814,14 @@ function bgDotBuild(url,cb){
 }
 function paintBgDots(svg){
   const host=$('bgdots');if(!host)return;
-  if(!svg){host.style.backgroundImage='';host.classList.remove('on');return;}
+  const layer=host.querySelector('.bgfloat>i')||host;
+  if(!svg){layer.style.backgroundImage='';host.classList.remove('on');return;}
   /* 테마 강조색을 옅게 — 배경 위에서 튀지 않을 만큼만 */
   const c=cssRgb(cssVar('--acc')||'#495e72');
   const dark=document.documentElement.getAttribute('data-theme')==='dark';
   const col=`rgba(${c[0]},${c[1]},${c[2]},${dark?0.14:0.10})`;
   const url='data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace(/CLR/g,col));
-  host.style.backgroundImage=`url("${url}")`;
+  layer.style.backgroundImage=`url("${url}")`;
   host.classList.add('on');
 }
 function refreshBgDots(){

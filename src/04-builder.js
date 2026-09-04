@@ -27,6 +27,7 @@ function enableColResize(tbl,cols,onDone,off){
   cols.forEach((c,i)=>{
     const th=ths[off+i];if(!th||th.querySelector('.colgrip'))return;
     th.classList.add('cresz');
+    if(getComputedStyle(th).position==='static')th.style.position='relative';
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -631,7 +632,7 @@ function renderPace(){
     return `<div class="pline">
       <div class="pside"><div class="nm1">${esc(l)}</div><div class="sub1">집행 ${manUnit(x.act)}</div></div>
       <div class="pmid">
-        <div class="pdotrow"><i style="left:${pace}%;--dotc:${c}"></i></div>
+        <div class="pdotrow"><i style="left:${pace}%"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
           r,pr,tone,ambc}))}">
           <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambrgb:${ambf};--amba:${amba}">${segs}</div>
@@ -762,7 +763,8 @@ function renderSpendDonut(box,pr){
       <div class="kpitag">전체 매체</div></div><div class="ring"></div>`;
   const ring=c.querySelector('.ring');
   const CC=136,VB=272,TH=27;
-  const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:VB,height:VB});
+  /* 카드 크기에 맞춰 줄어들도록 — 고정 px 대신 100% */
+    const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:'100%',height:'100%'});
   const defs=S('defs',{},svg);
   const rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const f=Math.min(Math.max(rate,0),1),pf=Math.min(Math.max(pr,0),1);
@@ -860,7 +862,8 @@ function renderDonuts(){
     const ring=c.querySelector('.ring');
     /* 링 두께(TH)는 그대로 두고 전체 지름만 키워 가운데 구멍을 넓힌다 */
     const CC=136,VB=272;                     /* v18 — 카드 크기 80% */
-    const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:VB,height:VB});
+    /* 카드 크기에 맞춰 줄어들도록 — 고정 px 대신 100% */
+    const svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:'100%',height:'100%'});
     const defs=S('defs',{},svg);
     /* 링 두께 — 링이 여러 개면 얇게 해서 가운데 구멍을 넓힌다 (안쪽 라벨 자리 확보) */
     const TH=rings.length>1?21:27, GAPR=rings.length>1?6:7;
