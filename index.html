@@ -14,6 +14,8 @@
   add('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js','__noSupabase');
   /* 엑셀(.xlsx) 읽기용 — 없으면 CSV 로만 불러온다 */
   add('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','__noXlsx');
+  /* 화면을 이미지로 복사할 때 쓴다 — 없으면 복사 버튼이 안내만 띄운다 */
+  add('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','__noShot');
 })();
 </script>
 <style>
@@ -25,7 +27,7 @@
   --cell:#e2e7ed;                                        /* 표 셀 테두리 (밝은 행) */
   --cell-d:rgba(255,255,255,.22);                        /* 표 셀 테두리 (헤더·TOTAL 등 어두운 행) */
   --acc:#495e72; --accrgb:73 94 114; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
-  --acc2:#486a75; --acc2-lt:#89a3ab;
+  --acc2:#486a75; --acc2rgb:72 106 117; --acc2-lt:#89a3ab;
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
   --gray:#9aa4b0;
@@ -49,7 +51,7 @@
   --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
   --acc:#4d5257; --accrgb:77 82 87; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
-  --acc2:#5c6165; --acc2-lt:#a3a6aa;
+  --acc2:#5c6165; --acc2rgb:92 97 101; --acc2-lt:#a3a6aa;
   --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
   --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
   --b1:#c3c6c9; --b2:#a4a8ac; --b3:#7c8085; --b4:#4d5257; --b5:#383c40; --neg:#a78b8b;
@@ -64,7 +66,7 @@
   --line:#363636; --line2:#2e2e2e; --gline:#4a4a4a; --cell:#383838;
   --cell-d:rgba(255,255,255,.16);
   --acc:#b4b4b4; --accrgb:180 180 180; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
-  --acc2:#9c9c9c; --acc2-lt:#6a6a6a;
+  --acc2:#9c9c9c; --acc2rgb:156 156 156; --acc2-lt:#6a6a6a;
   --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
   --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
   --b1:#3c3c3c; --b2:#4f4f4f; --b3:#646464; --b4:#7a7a7a; --b5:#909090; --neg:#c39a95;
@@ -335,6 +337,22 @@ table.tbl.nogauge .gauge .track{display:none}
   box-shadow:var(--shadow2);padding:9px;display:flex;gap:6px}
 .huepick button{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;padding:0}
 .huepick button.on{border-color:var(--ink)}
+/* 데이터 입력 — "매칭 안 되는 행 N개" 안내. 누르면 그 행으로 데려간다 */
+/* 디자인 창의 배경 로고 고르기 — 테마 카드와 같은 모양, 설명 한 줄 추가 */
+.thgrid.bgpick .thcard{align-items:flex-start;gap:2px}
+.thgrid.bgpick .thcard .hint{font-size:11px;line-height:1.45}
+/* 이미지로 담는 동안 — 애니메이션을 멈추고 스크롤 그림자를 없앤다 */
+body.shooting *{animation:none!important;transition:none!important}
+body.shooting .tbl-wrap,body.shooting .gantt-wrap,body.shooting .heatwrap{overflow:visible!important}
+/* 겹쳐 띄운 팝업 — 아래 창은 잠시 감춘다 */
+.modal.stacked{display:none}
+.badjump{border:1px solid rgba(190,110,100,.42);background:rgba(190,110,100,.12);
+  color:var(--neg);border-radius:999px;padding:1px 10px;font-size:11.5px;font-weight:800;
+  cursor:pointer;font-family:inherit;line-height:1.6}
+.badjump:hover{background:rgba(190,110,100,.2);border-color:rgba(190,110,100,.62)}
+table.sheet tr.badflash>td{background:rgba(190,110,100,.28)!important;
+  transition:background .25s}
+table.sheet tr.badflash>td:first-child{box-shadow:inset 3px 0 0 var(--neg)}
 /* 소재 관리 — 매칭 없음 표시 (좋고 나쁨을 뜻하므로 테마와 무관하게 경고색) */
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.warn{background:rgba(190,110,100,.14);color:#a9615a;border:1px solid rgba(190,110,100,.3)}
@@ -614,7 +632,11 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
 .donut .dlgd b{color:var(--ink2)}
 .donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+/* 범례 — 목표 페이스(붉은 계열) · 실집행 달성률(링 색) */
 .donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
+.donut .dlgd .lg.ach .sw{background:var(--acc)}
+.donut .dlgd .lg.ach{color:var(--ink2);font-weight:700}
+[data-theme="dark"] .donut .dlgd .lg.ach .sw{background:var(--acc-d)}
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
 .donut .dlgd .lg.spend{color:var(--acc)}
 .donut .dlgd .lg.spend .sw{background:var(--acc)}
@@ -1239,8 +1261,31 @@ select:hover,input:hover{border-color:var(--acc-lt)}
 @keyframes bgfloatX{from{transform:translate3d(-4.5%,0,0)}to{transform:translate3d(6.5%,0,0)}}
 @keyframes bgfloatY{from{transform:translate3d(0,-5.5%,0)}to{transform:translate3d(0,5%,0)}}
 @keyframes bgfloatR{from{transform:rotate(-2.4deg) scale(1)}to{transform:rotate(2.8deg) scale(1.06)}}
+/* 로고 배경을 끄면 — 테마 색에 맞춘 은은한 그라데이션이 아주 천천히 흐른다.
+   두 겹의 주기를 어긋나게 해 방향이 단조롭지 않게 한다. */
+#bgdots .ambient{display:none;position:absolute;inset:-25%;filter:blur(34px);
+  background:
+    radial-gradient(26% 24% at 22% 28%, rgba(var(--accrgb,73 94 114)/.42), transparent 66%),
+    radial-gradient(22% 21% at 74% 24%, rgba(var(--acc2rgb,72 106 117)/.34), transparent 68%),
+    radial-gradient(30% 27% at 62% 78%, rgba(var(--accrgb,73 94 114)/.36), transparent 70%);
+  animation:ambDrift 41s ease-in-out infinite alternate;will-change:transform}
+#bgdots .ambient::after{content:'';position:absolute;inset:-10%;
+  background:
+    radial-gradient(22% 20% at 16% 74%, rgba(var(--acc2rgb,72 106 117)/.30), transparent 68%),
+    radial-gradient(20% 19% at 88% 62%, rgba(var(--accrgb,73 94 114)/.26), transparent 68%);
+  animation:ambDrift2 67s ease-in-out infinite alternate}
+#bgdots.amb .bgfloat{display:none}
+#bgdots.amb .ambient{display:block}
+[data-theme="dark"] #bgdots .ambient{filter:blur(40px);opacity:.9}
+@keyframes ambDrift{
+  0%{transform:translate3d(-3.5%,-2.5%,0) scale(1)}
+  55%{transform:translate3d(2.5%,3%,0) scale(1.08)}
+  100%{transform:translate3d(-1%,1.5%,0) scale(1.03)}}
+@keyframes ambDrift2{
+  0%{transform:translate3d(3%,2%,0) rotate(-2deg)}
+  100%{transform:translate3d(-3%,-2.5%,0) rotate(2.5deg)}}
 @media (prefers-reduced-motion: reduce){
-  #bgdots .bgfloat,#bgdots .bgfloat>i{animation:none}}
+  #bgdots .bgfloat,#bgdots .bgfloat>i,#bgdots .ambient,#bgdots .ambient::after{animation:none}}
 @media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
 /* 밝은 광고주 로고 — 상단 바를 짙게 깔아 로고가 보이게 한다 */
 /* 밝은 로고용 짙은 상단 바 — 무채색 (예전에는 푸른 기가 있었다) */
@@ -1432,7 +1477,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <div class="gfoot" id="gateHint"></div>
   </div>
 </div>
-<div id="bgdots" aria-hidden="true"><div class="bgfloat"><i></i></div></div>
+<div id="bgdots" aria-hidden="true"><div class="bgfloat"><i></i></div><div class="ambient"></div></div>
 <div class="topbar">
   <div class="logo"><img class="mark" alt="DmD" src="data:image/png;base64,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" id="brandMark"><span class="brandtx"><b class="adv" id="brandAdv" hidden></b><span class="prod">Digital Media Dashboard</span></span></div>
   <select class="pill agency-only" id="campSel" title="캠페인 선택"></select>
@@ -1472,6 +1517,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <button data-sub="perf" class="on">효율</button>
   <button data-sub="table">일자별 상세 효율</button>
   <button data-sub="mix">미디어믹스</button>
+  <button class="btn sm" id="shotBtn" title="지금 보고 있는 탭을 이미지로 복사합니다 (클립보드)">⧉ 이미지 복사</button>
   <span class="dlgrp" title="대시보드 리포트 내려받기">
     <span class="lb">⤓ 리포트</span>
     <button class="pill dl" id="reportBtn" title="엑셀(.xlsx)로 내려받기">
@@ -1616,6 +1662,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
             <option value="creative" selected>소재별</option>
             <option value="target">타겟팅 그룹별</option>
             <option value="product">광고상품별</option>
+            <option value="media">매체별</option>
           </select>
         </div>
       </div>
@@ -1945,6 +1992,27 @@ let CREATIVES=[
   g:'linear-gradient(140deg,#a9a3bd,#4e4766)',run:[[0,55]],share:1}
 ];
 let FACTS=[];
+/* 값 하나를 비중대로 나눠 담되 **합이 원래 값과 정확히 같도록** 나머지를 배분한다.
+   예전에는 소재마다 따로 Math.round 를 해서 소재 수만큼 ±1 씩 어긋났고,
+   그 오차가 라인 × 날짜만큼 쌓여 표 합계가 엑셀 원본과 수십~수백 차이가 났다. */
+function splitExact(total,ks){
+  const n=ks.length,out=new Array(n).fill(0);
+  if(!n)return out;
+  const neg=total<0, T=Math.round(Math.abs(total));
+  const raw=ks.map(k=>Math.abs(total)*(+k||0));
+  let acc=0;
+  const fl=raw.map(v=>{const f=Math.floor(v);acc+=f;return f;});
+  let rest=T-acc;
+  if(rest>0){
+    const order=raw.map((v,i)=>[v-Math.floor(v),i]).sort((a,b)=>b[0]-a[0]);
+    for(let j=0;rest>0&&j<order.length;j++,rest--)fl[order[j][1]]++;
+    /* 소재보다 남은 양이 많으면(비중이 전부 0 인 경우) 첫 칸에 몰아 준다 */
+    if(rest>0)fl[0]+=rest;}
+  else if(rest<0){                       /* 내림만 했는데도 넘치면 큰 칸부터 뺀다 */
+    const order=raw.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+    for(let j=0;rest<0&&j<order.length;j++,rest++)if(fl[order[j][1]]>0)fl[order[j][1]]--;}
+  return fl.map(v=>neg?-v:v);
+}
 function buildFacts(){
   FACTS=[];
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
@@ -1968,12 +2036,18 @@ function buildFacts(){
          (소재 run 이 [[0,0]] 로 갇혀 이튿날부터 실적이 통째로 사라지던 문제) */
       if(!act.length)act=cs;
       const tot=sum(act.map(c=>c.share))||1;
-      cs.forEach(c=>{
-        const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
+      /* 소재별 비중 — 나눈 값의 합이 라인 값과 정확히 같도록 splitExact 로 배분한다 */
+      const ks=cs.map(c=>act.includes(c)?(c.share/tot):0);
+      const part={};
+      AMET.forEach(m=>{part[m]=splitExact((l.daily[m]&&l.daily[m][i])||0,ks);});
+      /* 소진비용도 Gross 를 먼저 만든 뒤 나눈다 — 소재마다 따로 역산하면 합이 안 맞는다 */
+      part.cost=splitExact(toGross((l.daily.net&&l.daily.net[i])||0,feeOf(l)),ks);
+      cs.forEach((c,ci)=>{
+        const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
           line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
-        AMET.forEach(m=>f[m]=Math.round(((l.daily[m]&&l.daily[m][i])||0)*k));
-        f.cost=toGross(f.net,feeOf(l));
+        AMET.forEach(m=>f[m]=part[m][ci]);
+        f.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
         FACTS.push(f);
       });
@@ -2832,7 +2906,8 @@ function ringGrad(defs,color){
   return `url(#${id})`;
 }
 /* 달성률 호는 살짝 비쳐서, 페이스보다 앞서 있어도 뒤의 목표 페이스 호가 보인다 */
-const ACH_OPACITY=.8;
+/* 달성률 호는 거의 불투명하게 — 다크톤에서 목표 페이스 호와 구분이 안 되던 문제 */
+const ACH_OPACITY=.96;
 /* 끝이 둥근 호(round cap)를 정확한 길이로 그린다.
    round cap 은 양 끝에서 선 두께의 절반만큼 더 튀어나가므로,
    대시 길이를 두께만큼 줄이고 시작점을 절반 앞으로 밀어 실제로 보이는 구간을 맞춘다.
@@ -3149,8 +3224,8 @@ function renderSpendDonut(box,pr){
   ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
     +`<b class="achv mono">${pct(rate,1)}</b></div>`;
   const lg=el('div','dlgd',c);
-  lg.innerHTML=`<span class="lg mute"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
-    +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
+  lg.innerHTML=`<span class="lg ach"><span class="sw"></span>실집행 소진율</span>`
+    +`<span class="lg mute"><span class="sw"></span>목표 페이스</span>`;
 }
 /* KPI 달성 현황 카드의 좌우 순서 — 사용자가 끌어서 바꾼 순서를 기억한다 */
 let DONUT_ORDER={};
@@ -3353,9 +3428,9 @@ function renderDonuts(){
     const total=totW?sum(items.map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
     const ctr=el('div','ctr',ring);
     const lg=el('div','dlgd',c);
-    lg.innerHTML=paceLegend.map(x=>
-      `<span class="lg"><span class="sw"></span>${rings.length>1?esc(KPI_LABEL[x.k])+' ':''}목표 페이스`
-      +` <b class="mono">${fmt(x.v)}건</b><span class="pcpar">(${pct(pr,1)})</span></span>`).join('');
+    /* 범례는 "무슨 색이 무엇인지" 만 알려 준다 — 수치는 도넛 안(달성률)과 툴팁에서 본다 */
+    lg.innerHTML=`<span class="lg ach"><span class="sw"></span>실집행 달성률</span>`
+      +`<span class="lg mute"><span class="sw"></span>목표 페이스</span>`;
     const ctr2=null;
     ctr.innerHTML=`<div class="ctrbox"><span class="achk">달성률</span>`
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
@@ -4001,6 +4076,8 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   wirePivotColResize(tbl,cfg,cols,rerender);
   /* 세로 스크롤 시 떠 있는 머리글 */
   mountFloatHead(tbl);
+  /* 표 위쪽에도 가로 스크롤바를 하나 더 (표가 길면 아래 스크롤바가 화면 밖이라) */
+  try{if(typeof attachTopScroll==='function')attachTopScroll(tbl.closest('.tbl-wrap'));}catch(e){}
 }
 /* 서머리 · 미디어믹스의 열 너비 조절.
    머리글이 2행이라 값 열은 따로 찾아야 하고, **매체·광고상품 같은 행 머리 열도 함께** 잡는다
@@ -4382,7 +4459,8 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
 const KPI_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa',eng:'cpe',install:'cpi',
   lead:'cpa',like:'cpe',share:'cpe'};
 /* 중앙값은 회색 — 좋고 나쁨이 뚜렷한 양 끝만 색으로 */
-const HM_GOOD=[111,155,131],HM_MID=[164,172,180],HM_BAD=[176,106,99];
+/* 좋음(녹색)만 채도를 조금 더 높였다 — 저조(붉은색)와 한눈에 갈리도록 */
+const HM_GOOD=[86,162,116],HM_MID=[164,172,180],HM_BAD=[176,106,99];
 const HM_COLW=132;        /* 값 열 최대 폭 — 매체가 적어도 너무 벌어지지 않게 */
 const HM_LEADW=190;       /* 구분 열 폭 */
 let HEAT_DAILY=false;     /* 일자별은 기본으로 접어 둔다 */
@@ -5643,9 +5721,14 @@ function renderBubble(){
   const fs=factFilter();
   const dim=BUB.dim;
   const m=new Map();
+  /* 묶음 단위 — 고른 항목까지만 쪼갠다.
+     매체별을 고르면 광고상품이 달라도 **매체 하나에 원 하나**가 된다 */
   fs.forEach(f=>{
-    const key=[f.media,f.product,f[dim]].join(SEP);
-    if(!m.has(key))m.set(key,{media:f.media,product:f.product,name:f[dim],rows:[]});
+    const key=dim==='media'?f.media
+      :dim==='product'?[f.media,f.product].join(SEP)
+      :[f.media,f.product,f[dim]].join(SEP);
+    if(!m.has(key))m.set(key,{media:f.media,
+      product:dim==='media'?'':f.product,name:f[dim],rows:[]});
     m.get(key).rows.push(f);});
   const xd=bubDef(BUB.x),yd=bubDef(BUB.y);
   const lastDay=bubLastDay(fs);
@@ -5730,7 +5813,7 @@ function renderBubble(){
     c.addEventListener('mouseleave',hideTip);});
   /* ---- 범례 (그래프 위) ---- */
   if(!lgd)return;
-  const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품'}[BUB.dim]||'소재';
+  const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품',media:'매체'}[BUB.dim]||'소재';
   const offN=pts.filter(p=>!p.on).length;
   lgd.innerHTML=`<div class="lgtop">`
     +medias.map(md=>{
@@ -5875,9 +5958,41 @@ function rowLine(r){
   const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
     ||lineMulti(l,k).length===parseMulti(r[k]).length));
   return exact||LINES.find(ok)||null;}
-function rowBad(r){
-  const l=rowLine(r);if(!l)return !!(r.media||r.product);
-  return !(r.date>=l.start&&r.date<=l.end);}
+/* 이 행이 예상 효율(라인)에 붙지 못하는 이유 —
+   '' 정상 · 'line' 어느 라인과도 매칭되지 않음(매체·상품·타겟팅 이름이 다름 등)
+   · 'date' 라인은 찾았지만 그 라인의 집행 기간 밖의 날짜 */
+function rowIssue(r){
+  const l=rowLine(r);
+  if(!l)return (r.media||r.product||r.target||r.segment||r.line)?'line':'';
+  return (r.date>=l.start&&r.date<=l.end)?'':'date';}
+const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
+  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+function rowBad(r){return !!rowIssue(r);}
+/* 매칭 안 되는 행들의 위치 (0부터) */
+const badRowIdx=()=>SHEET.map((r,i)=>rowBad(r)?i:-1).filter(i=>i>=0);
+/* 안내 문구를 누를 때마다 다음 "매칭 안 되는 행" 으로 데려간다 */
+let BAD_CURSOR=-1;
+function jumpToBadRow(){
+  const idx=badRowIdx();
+  if(!idx.length)return;
+  BAD_CURSOR=(BAD_CURSOR+1)%idx.length;
+  const ri=idx[BAD_CURSOR];
+  const tr=document.querySelector(`#sheet tbody tr[data-ri="${ri}"]`);
+  if(!tr)return;
+  const wrap=tr.closest('.sheet-wrap');
+  /* 표 안에서 세로로 가운데 오도록 (표 자체가 스크롤 상자다) */
+  if(wrap){const wr=wrap.getBoundingClientRect(),rr=tr.getBoundingClientRect();
+    wrap.scrollTop+=(rr.top-wr.top)-wrap.clientHeight/2+rr.height/2;}
+  /* 표가 화면 밖이면 페이지도 함께 */
+  const r2=tr.getBoundingClientRect();
+  if(r2.top<120||r2.bottom>innerHeight-40)
+    scrollTo({top:scrollY+r2.top-innerHeight/2,behavior:'smooth'});
+  document.querySelectorAll('#sheet tr.badflash').forEach(x=>x.classList.remove('badflash'));
+  tr.classList.add('badflash');
+  setTimeout(()=>tr.classList.remove('badflash'),2200);
+  const jb=$('sheetBadJump');
+  if(jb)jb.textContent=`매칭 안 되는 행 ${idx.length}개 · ${BAD_CURSOR+1}번째 ▸`;
+}
 let SEL={r1:0,c1:0,r2:0,c2:0},selecting=false;
 const inSel=(r,c)=>r>=Math.min(SEL.r1,SEL.r2)&&r<=Math.max(SEL.r1,SEL.r2)&&c>=Math.min(SEL.c1,SEL.c2)&&c<=Math.max(SEL.c1,SEL.c2);
 function evalFormula(f,row){
@@ -5906,7 +6021,9 @@ function renderSheet(){
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
     +cols.map(c=>`<th style="min-width:${c.w||110}px">${c.l}${c.type==='calc'?' ƒ':''}</th>`).join('')+'</tr></thead><tbody>';
   SHEET.forEach((r,ri)=>{
-    h+=`<tr class="${rowBad(r)?'bad':''}"><td class="rm"><button data-del="${ri}">✕</button></td>`;
+    const iss=rowIssue(r);
+    h+=`<tr class="${iss?'bad':''}" data-ri="${ri}"${iss?` title="${esc(ROW_ISSUE_LABEL[iss])}"`:''}>`
+      +`<td class="rm"><button data-del="${ri}">✕</button></td>`;
     cols.forEach((c,ci)=>{
       if(c.type==='calc'){h+=`<td class="calc mono">${fmt(evalFormula(c.rule,r))}</td>`;return;}
       /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 */
@@ -5936,9 +6053,18 @@ function renderSheet(){
     });
     h+='</tr>';});
   t.innerHTML=h+'</tbody>'+dl;
-  const bad=SHEET.filter(rowBad).length;
+  /* 매칭 실패는 "기간" 만의 문제가 아니다 — 상품명·타겟팅 이름이 달라도 붙지 않는다.
+     그래서 문구를 매칭 기준으로 바꾸고, 누르면 그 행으로 차례차례 데려간다. */
+  const badIdx=badRowIdx();
+  const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
+  const nDate=badIdx.length-nLine;
   $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
-    +(bad?` · <b style="color:var(--neg)">기간을 벗어난 행 ${bad}개</b>`:'');
+    +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
+        title="누를 때마다 다음 행으로 이동합니다&#10;`
+        +`${nLine?`· 매칭되는 라인 없음 ${nLine}개`:''}${nLine&&nDate?'&#10;':''}`
+        +`${nDate?`· 집행 기간 밖 ${nDate}개`:''}">매칭 안 되는 행 ${badIdx.length}개 ▸</button>`:'');
+  {const jb=$('sheetBadJump');
+   if(jb)jb.onclick=()=>jumpToBadRow();}
   const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
@@ -7129,20 +7255,47 @@ function openHolidays(){
     closeModal();openHolidays();renderAll();};}
 
 /* ===== 11. 모달 · 필터 · 탭 ===== */
+/* ---------- 겹쳐 띄우는 팝업 ----------
+   목록 창(캠페인 및 광고주 관리) 위에 작업 창(이름 변경 · 복제 · 광고주 추가)을 얹는다.
+   작업 창을 닫으면 **아래 목록 창이 그대로 다시 보인다** — 예전처럼 통째로 닫히지 않는다. */
 function openModal(title,body,footer,opts){
   const w=(opts&&opts.w)||900;
-  $('modalHost').innerHTML=`<div class="modal" id="mdl"><div class="box" style="max-width:min(${w}px,94vw)">
+  const host=$('modalHost');
+  /* 이미 떠 있는 창은 잠시 감춰 스택에 남긴다 */
+  const cur=host.querySelector('.modal:not(.stacked)');
+  if(cur){cur.classList.add('stacked');cur.removeAttribute('id');}
+  const box=document.createElement('div');
+  box.className='modal';box.id='mdl';
+  box.innerHTML=`<div class="box" style="max-width:min(${w}px,94vw)">
     <div class="mhd"><b>${esc(title)}</b><div class="spacer"></div><button class="x" data-close>✕</button></div>
-    <div class="mbd">${body}</div>${footer?`<div class="mft">${footer}</div>`:''}</div></div>`;
-  $('modalHost').querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
-  $('mdl').onclick=e=>{if(e.target.id==='mdl')closeModal();};}
-const closeModal=()=>$('modalHost').innerHTML='';
+    <div class="mbd">${body}</div>${footer?`<div class="mft">${footer}</div>`:''}</div>`;
+  host.appendChild(box);
+  box.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  box.onclick=e=>{if(e.target===box)closeModal();};
+  return box;}
+function closeModal(){
+  const host=$('modalHost');if(!host)return;
+  const top=host.querySelector('.modal#mdl');
+  if(top)top.remove();else{host.innerHTML='';return;}
+  /* 바로 아래 창을 다시 꺼내 준다 */
+  const prev=[...host.querySelectorAll('.modal.stacked')].pop();
+  if(prev){prev.classList.remove('stacked');prev.id='mdl';}}
+/* 지금 맨 위 팝업의 본문만 갈아 끼운다 (창을 닫았다 열지 않고 목록을 새로 그릴 때) */
+function repaintModal(body,footer){
+  const host=$('modalHost'),top=host&&host.querySelector('.modal#mdl');
+  if(!top)return false;
+  const bd=top.querySelector('.mbd');if(bd)bd.innerHTML=body;
+  if(footer!==undefined){const ft=top.querySelector('.mft');if(ft)ft.innerHTML=footer;}
+  top.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  return true;}
 /* rawSub=true 면 설명 줄에 굵게·줄바꿈 같은 간단한 태그를 그대로 쓴다 (개발자가 쓴 문구 전용) */
 function confirmModal(msg,sub,onYes,okLabel,rawSub){
   openModal('확인',`<div style="font-size:14px;font-weight:700;margin-bottom:6px">${esc(msg)}</div>`
     +`<div class="hint">${rawSub?(sub||''):esc(sub||'')}</div>`,
     `<button class="btn" data-close>취소</button><button class="btn primary" id="cfmYes">${okLabel||'삭제'}</button>`,{w:460});
   $('cfmYes').onclick=()=>{closeModal();onYes();};}
+/* 겹쳐 띄운 창 전부 닫기 */
+function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id="${id}"><option value="all">전체</option>`
@@ -7229,9 +7382,12 @@ let pendingLeave=false;
 function switchTab(name){
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
     const n=SHEET.filter(rowBad).length;
-    confirmModal(`집행 기간을 벗어난 행이 ${n}개 있습니다.`,
-      '붉게 표시된 행의 일자 또는 라인 정보를 확인해 주세요. 그대로 이동하면 해당 행은 저장되지 않습니다.',
-      ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동');
+    confirmModal(`예상 효율과 매칭되지 않는 행이 ${n}개 있습니다.`,
+      '붉게 표시된 행의 <b>매체 · 광고상품 · 타겟팅 이름</b>이 예상 효율과 같은지, '
+      +'<b>일자</b>가 그 라인의 집행 기간 안인지 확인해 주세요.<br>'
+      +'그대로 이동하면 해당 행은 집계되지 않습니다. '
+      +'(데이터 입력 탭의 <b>“매칭 안 되는 행 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
+      ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동',true);
     return;}
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   ['dash','input','setup'].forEach(n=>$('tab-'+n).classList.toggle('hidden',n!==name));
@@ -7241,8 +7397,12 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.d
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
   ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
-  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderStrip();renderBubble();
-    equalizeDuo();renderTreemap();}
+  /* 효율 탭을 열 때는 **히트맵까지** 전부 다시 그린다 —
+     예전에는 renderHeat() 가 빠져 있어 "일자별 토글을 눌러야 갱신되는" 것처럼 보였다 */
+  if(b.dataset.sub==='perf'){
+    try{renderCreatives();renderGantt();renderHeat();renderStrip();renderBubble();
+      equalizeDuo();renderTreemap();}catch(e){}
+    PERF_STALE=false;}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();});
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
@@ -7441,7 +7601,23 @@ function renderAll(){
   renderCampForm();renderMix();
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
+  else PERF_STALE=true;                     /* 숨어 있는 동안 바뀐 건 다시 열 때 그린다 */
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
+/* 효율 탭이 숨어 있는 사이에 데이터가 바뀌었는지 */
+let PERF_STALE=false;
+/* 데이터가 바뀌면 어느 경로로 들어와도 빠지는 영역 없이 전부 다시 그린다.
+   (히트맵·버블·트리맵이 갱신되지 않아 "일자별 토글을 눌러야 바뀌던" 문제) */
+function renderEverything(){
+  try{buildFilters();buildSelects();}catch(e){}
+  renderAll();
+  try{renderSheet();}catch(e){}
+  try{renderIssues();renderIssueAlert();}catch(e){}
+  try{renderKpiTable();}catch(e){}
+  try{renderRaw();}catch(e){}
+  try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
+  try{equalizeDuo();renderTreemap();}catch(e){}
+  PERF_STALE=false;
+}
 buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */
@@ -7476,7 +7652,10 @@ function serializeDoc(){
   return {
     v:1,
     campaign:{name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,today:CAMPAIGN.today,
-      advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
+      advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:''),
+      /* 배경 로고 — 'none'(앰비언트) · 'adv'(광고주) · 'agency'(대행사). 캠페인마다 따로 */
+      bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
+      agencyLogo:CAMPAIGN.agencyLogo||''},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
@@ -7529,6 +7708,11 @@ function applyDoc(d,keepToday){
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
+  CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
+  delete CAMPAIGN.bgLogo;
+  CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
+  /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
+  try{if(!CAMPAIGN.agencyLogo&&typeof agencyLogo==='function')CAMPAIGN.agencyLogo=agencyLogo();}catch(e){}
   if(typeof applyTheme==='function')applyTheme(d.campaign?.theme||'',true);
   if(typeof renderBrand==='function')renderBrand();
   LINES=d.lines.map(l=>({...l,daily:{}}));
@@ -7680,9 +7864,7 @@ function loadLocal(){
     rebuildPeriod();resetDateFilter();
     unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
     if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
-    buildFacts();buildFilters();buildSelects();
-    renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
-    renderCreatives();renderGantt();
+    buildFacts();renderEverything();
     return true;
   }catch(e){return false;}
 }
@@ -7696,9 +7878,7 @@ function restoreDemo(){
   rebuildPeriod();resetDateFilter();
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
-  buildFacts();buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();
+  buildFacts();renderEverything();
   clearLocal();
   return true;
 }
@@ -7769,10 +7949,9 @@ async function tryCode(raw){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderIssueAlert();renderRaw();
-  renderCreatives();renderGantt();
-  try{renderKpiTable&&renderKpiTable();renderCampForm&&renderCampForm();}catch(e){}
+  buildFacts();
+  renderEverything();
+  try{renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
   endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
@@ -8047,10 +8226,7 @@ async function openCampaign(id){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();
-  buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();
+  buildFacts();renderEverything();
   paintCampSel();
   applyRoleLock();
   CLOUD.busy=false;
@@ -8068,14 +8244,22 @@ function applyRoleLock(){
   if(mk)mk.classList.toggle('hidden',!!(CLOUD.on&&CLOUD.user));
 }
 
-/* ---------- 저장 ---------- */
+/* ---------- 저장 ----------
+   **한 번에 하나만 돌아야 한다.**
+   자동 저장(20초 뒤)과 ☁ 저장 버튼이 겹치면 두 번 모두
+   "일별 실적 전부 지우기 → 다시 넣기" 를 하다가 서로의 삽입과 부딪혀
+   duplicate key … daily_stats_campaign_id_stat_date_line_key_creative_key 로 실패했다.
+   지금은 ① 진행 중이면 예약만 걸고 돌아가고 ② 삽입도 upsert 라 겹쳐도 깨지지 않는다. */
 async function cloudSave(silent){
+  if(CLOUD.saving){CLOUD.saveAgain=true;return;}     /* 이미 저장 중 — 끝나면 한 번 더 */
   if(!CLOUD.on||!CLOUD.user){
     if(!silent)confirmModal('데모 모드입니다.','구글 로그인을 하면 이 캠페인을 클라우드에 저장할 수 있습니다.',
       ()=>signInGoogle(),'구글 로그인');
     return;}
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
+  CLOUD.saving=true;CLOUD.saveAgain=false;
+  try{
   cloudState('저장 중…');
   const chip=$('savedAgo');if(chip){chip.textContent='저장 중…';chip.classList.remove('on');}
   const doc=serializeDoc();
@@ -8096,8 +8280,11 @@ async function cloudSave(silent){
   const rows=sheetToRows();
   const {error:eDel}=await CLOUD.sb.from('daily_stats').delete().eq('campaign_id',CLOUD.campaign.id);
   if(eDel){cloudState('일별 실적 정리 실패: '+eDel.message);return;}
+  /* insert 가 아니라 upsert — 같은 (캠페인·날짜·라인·소재) 가 남아 있어도 덮어쓴다.
+     저장이 겹치거나 지우기가 덜 끝나도 오류로 멈추지 않는다. */
   for(let i=0;i<rows.length;i+=500){
-    const {error:e2}=await CLOUD.sb.from('daily_stats').insert(rows.slice(i,i+500));
+    const {error:e2}=await CLOUD.sb.from('daily_stats')
+      .upsert(rows.slice(i,i+500),{onConflict:'campaign_id,stat_date,line_key,creative'});
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   await CLOUD.sb.from('campaign_history').insert({
     campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
@@ -8106,6 +8293,11 @@ async function cloudSave(silent){
   paintSaved();
   /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
   const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
+  }finally{
+    CLOUD.saving=false;
+    /* 저장하는 동안 또 바뀌었으면 한 번만 더 돌린다 */
+    if(CLOUD.saveAgain){CLOUD.saveAgain=false;setTimeout(()=>cloudSave(true),400);}
+  }
 }
 /* ---------- 자동 저장 · "00분 전에 저장됨" ----------
    저장 버튼을 누르지 않아도 알아서 저장한다.
@@ -8166,12 +8358,9 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
   clearWorkState();
-  rebuildPeriod();buildFacts();
-  buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();renderTreemap();
+  rebuildPeriod();buildFacts();renderEverything();
 }
-async function createCampaign(){
+async function createCampaign(after){
   if(!CLOUD.on||!CLOUD.user){signInGoogle();return;}
   /* ① 광고주를 먼저 고르고 ② 캠페인 이름을 정한다 */
   const st={logo:''};
@@ -8193,7 +8382,8 @@ async function createCampaign(){
     const name=($('ncName').value||'').trim()||'새 캠페인';
     const adv=av.name;
     ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();
-    closeModal();
+    closeModal();                       /* 위에 얹힌 "새 캠페인" 창만 닫는다 */
+    if(typeof after==='function')closeAllModals();
     cloudState('만드는 중…');
     resetToBlank(name,adv);
     CAMPAIGN.advLogo=av.logo||'';renderBrand();
@@ -8207,7 +8397,8 @@ async function createCampaign(){
     await openCampaign(data.id);};
 }
 /* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
-async function openCampManage(){
+/* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
+async function openCampManage(inplace){
   if(!CLOUD.on||!CLOUD.user){
     confirmModal('구글 로그인이 필요합니다.','로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.',
       ()=>signInGoogle(),'구글 로그인');return;}
@@ -8253,15 +8444,16 @@ async function openCampManage(){
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 및 광고주 관리',h,
-    '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
+  const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
-    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
-  const host=$('modalHost');
-  if($('campNew'))$('campNew').onclick=()=>{closeModal();createCampaign();};
-  if($('advMng'))$('advMng').onclick=()=>{closeModal();openAdvManage();};
+    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
+  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1140});
+  const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+  const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
+  if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
+  if($('advMng'))$('advMng').onclick=()=>openAdvManage(redraw);
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
-    closeModal();await openCampaign(b.dataset.open);});
+    closeAllModals();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
   host.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.copy);if(!c)return;
@@ -8275,19 +8467,31 @@ async function openCampManage(){
   /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
-    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeModal();await openCampaign(c.id);}
-    else closeModal();
+    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeAllModals();await openCampaign(c.id);}
+    else closeAllModals();
     if(typeof openPermCloud==='function')openPermCloud();});
-  host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
+  /* 이름 변경 — 위에 작은 창을 하나 더 띄운다 (목록 창은 그대로) · 광고주는 드롭다운 */
+  host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
-    const nm=prompt('캠페인 이름',c.name||'');if(nm===null)return;
-    const adv=prompt('광고주',c.advertiser||'');if(adv===null)return;
-    const {data,error}=await CLOUD.sb.from('campaigns')
-      .update({name:nm.trim()||c.name,advertiser:(adv||'').trim()}).eq('id',c.id).select('id');
-    if(error||!data||!data.length){cloudState('이름을 바꾸지 못했습니다 (권한 확인)');return;}
-    if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CAMPAIGN.name=nm.trim()||c.name;
-      CAMPAIGN.advertiser=(adv||'').trim();renderCampForm();renderCampBar();}
-    await loadCampaignList(true);closeModal();openCampManage();});
+    const st={logo:advLogo(c.advertiser)||''};
+    openModal('캠페인 이름 · 광고주',
+      `<div class="form-row"><div class="fld" style="flex:1;min-width:280px"><label>캠페인명</label>
+         <input id="renName" value="${esc(c.name||'')}"></div></div>
+       <div class="form-row" style="margin-top:6px">${advPickerHTML(c.advertiser||'',st.logo)}</div>`,
+      '<button class="btn" data-close>취소</button><button class="btn primary" id="renGo">저장</button>',{w:660});
+    const readAdv=wireAdvPicker(st);
+    $('renGo').onclick=async()=>{
+      const nm=($('renName').value||'').trim()||c.name;
+      const av=readAdv();
+      const adv=(av.name||'').trim();
+      if(adv){ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();}
+      const {data,error}=await CLOUD.sb.from('campaigns')
+        .update({name:nm,advertiser:adv}).eq('id',c.id).select('id');
+      if(error||!data||!data.length){cloudState('이름을 바꾸지 못했습니다 (권한 확인)');return;}
+      if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CAMPAIGN.name=nm;CAMPAIGN.advertiser=adv;
+        CAMPAIGN.advLogo=av.logo||'';renderCampForm();renderCampBar();renderBrand();
+        try{refreshBgDots();}catch(e){}}
+      closeModal();openCampManage(true);};});
   host.querySelectorAll('[data-dup]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.dup);if(!c)return;
     cloudState('복제 중…');
@@ -8303,19 +8507,34 @@ async function openCampManage(){
     if(rows&&rows.length){
       const copy=rows.map(r=>{const o={...r};delete o.id;o.campaign_id=ins.id;return o;});
       await CLOUD.sb.from('daily_stats').insert(copy);}
-    await loadCampaignList(true);closeModal();openCampManage();
+    await loadCampaignList(true);openCampManage(true);
     cloudState('복제 완료');});
   host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.del);if(!c)return;
     confirmModal(`"${c.name}" 캠페인을 삭제할까요?`,
       '이 캠페인의 설정과 일별 실적이 모두 사라집니다. 되돌릴 수 없습니다.',async()=>{
-        const {data,error}=await CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id');
-        if(error||!data||!data.length){cloudState('삭제하지 못했습니다 (마스터 권한 필요)');return;}
+        /* ① 서버 함수로 먼저 시도한다 — 슈퍼마스터 · 만든 사람 · 그 캠페인 마스터면 지워진다.
+           (예전 RLS 정책만 깔린 DB 에서는 직접 delete 가 조용히 0행이 되어
+            "마스터 권한 필요" 라고만 떴다) */
+        let gone=false,msg='';
+        try{const {data:rp,error:er}=await CLOUD.sb.rpc('delete_campaign',{p_id:c.id});
+          if(!er&&rp)gone=true;else if(er)msg=er.message;}catch(e){msg=String(e&&e.message||e);}
+        if(!gone){
+          const {data,error}=await CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id');
+          if(!error&&data&&data.length)gone=true;else msg=(error&&error.message)||msg;}
+        if(!gone){
+          confirmModal('삭제하지 못했습니다.',
+            '이 캠페인을 지울 권한이 확인되지 않았습니다.<br>'
+            +'슈퍼마스터인데도 이 창이 뜨면 Supabase SQL 편집기에서 <b>schema.sql</b> 을 다시 한 번 실행해 주세요 '
+            +'(캠페인 삭제 정책과 <code>delete_campaign</code> 함수가 최신이어야 합니다).'
+            +(msg?`<br><span class="hint">서버 응답: ${esc(msg)}</span>`:''),
+            ()=>{},'확인',true);
+          return;}
         if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CLOUD.campaign=null;CLOUD.role=null;}
         await loadCampaignList(true);
         if(!CLOUD.list.length)resetToBlank('새 캠페인','');
         else await openCampaign(CLOUD.list[0].id);
-        closeModal();openCampManage();},'삭제');});
+        openCampManage(true);},'삭제');});
 }
 
 /* ---------- 권한 · 초대 (계정 · 권한 팝업) ---------- */
@@ -8647,9 +8866,16 @@ function findHeader(grid,cols){
     if(hit>=2)return i;}
   return -1;
 }
+/* 머리글 → 항목 열쇠. **같은 이름의 열이 두 개면 첫 번째만 쓴다.**
+   (실무 엑셀에는 "소진비용 (Gross)" 옆에 같은 이름의 비고 열이 붙어 있는 경우가 있는데,
+    예전에는 뒤쪽 열이 앞 열을 덮어써서 그 행의 금액이 비고 속 숫자로 바뀌었다) */
 function mapHeader(headRow,cols){
   const byLabel={};cols.forEach(c=>byLabel[normHdr(c.l)]=c.k);
-  return (headRow||[]).map(h=>byLabel[normHdr(h)]||null);
+  const used=new Set();
+  return (headRow||[]).map(h=>{
+    const k=byLabel[normHdr(h)]||null;
+    if(!k||used.has(k))return null;
+    used.add(k);return k;});
 }
 /* 비드 타입 정규화 — "경매형CPC", "Bid CPC", "CPC(자동입찰)" 같은 표기도 CPC 로 */
 function normBid(v){
@@ -8668,9 +8894,19 @@ function readGrid(file){
         rej(new Error('이 화면에서는 .xlsx 를 바로 읽을 수 없습니다. 엑셀에서 [다른 이름으로 저장 → CSV]로 바꿔 올려 주세요.'));return;}
       const r=new FileReader();
       r.onload=()=>{try{
-        const wb=XLSX.read(new Uint8Array(r.result),{type:'array'});
+        /* cellDates — 날짜 칸을 진짜 날짜로 읽는다 ("09월 01일" 처럼 연도가 안 보이는 서식 대비) */
+        const wb=XLSX.read(new Uint8Array(r.result),{type:'array',cellDates:true});
         const ws=wb.Sheets[wb.SheetNames[0]];
-        res(XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}));
+        const OPT={header:1,defval:''};
+        const shown=XLSX.utils.sheet_to_json(ws,{...OPT,raw:false});  /* 보이는 대로 (글자·날짜) */
+        const val=XLSX.utils.sheet_to_json(ws,{...OPT,raw:true});     /* 원래 값 (숫자) */
+        /* 숫자는 **서식에 반올림된 글자 대신 원래 값**을 쓴다 —
+           셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
+        res(shown.map((row,ri)=>row.map((v,ci)=>{
+          const rv=val[ri]?val[ri][ci]:undefined;
+          if(rv instanceof Date&&!isNaN(rv))
+            return `${rv.getFullYear()}-${String(rv.getMonth()+1).padStart(2,'0')}-${String(rv.getDate()).padStart(2,'0')}`;
+          return (typeof rv==='number'&&isFinite(rv))?rv:v;})));
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
       r.readAsArrayBuffer(file);
@@ -8702,6 +8938,9 @@ function importDaily(){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
       const o={date:'',segment:'',media:'',product:'',target:'',line:''};
+      /* 원본 줄 전체를 기억해 둔다 — 대시보드가 쓰지 않는 열(광고그룹명 등)만 다른 행을
+         "똑같은 행" 으로 잘못 지우지 않기 위해서 */
+      o.__src=r.map(v=>String(v==null?'':v).trim()).join('\u0002');
       SHEET_COLS.filter(c=>c.type==='num').forEach(c=>o[c.k]='');
       let filled=false;
       keys.forEach((k,ci)=>{
@@ -8715,17 +8954,19 @@ function importDaily(){
     /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
        "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
     rows.forEach(canonRow);
-    /* 날짜까지 완전히 똑같은 행은 한 번만 남긴다 (엑셀에 계속 이어 붙이다 보면 생긴다) */
-    const seen=new Set();const uniq=[];let dup=0;
-    rows.forEach(r=>{const k=rowKey(r);
-      if(seen.has(k)){dup++;return;}
-      seen.add(k);uniq.push(r);});
-    rows=uniq;
+    /* **행은 하나도 버리지 않는다.**
+       매체 리포트에는 값까지 똑같은 줄이 실제로 두 번 나오는 경우가 있어서
+       (광고그룹만 다르고 숫자가 같은 경우 등) 예전처럼 지우면 합계가 원본과 어긋난다.
+       대신 몇 줄이 완전히 같은지 세어 알려만 준다. */
+    const seen=new Set();let dup=0;
+    rows.forEach(r=>{const k=(r.__src||'')+'\u0002'+rowKey(r);
+      if(seen.has(k))dup++;else seen.add(k);});
+    rows.forEach(r=>{delete r.__src;});
     if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     const bad=rows.filter(rowBad).length;
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
-      +(dup?` 완전히 똑같은 중복 행 ${dup}개는 제외했습니다.`:'')
+      +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
       +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
       ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();applySheet();renderAll();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
@@ -9851,11 +10092,62 @@ function openThemePicker(){
     `<div class="hint" style="margin-bottom:12px">이 캠페인 대시보드 전체(배경 · 강조색 · 표 · 그래프)의 색 계열을 바꿉니다.
        광고주도 같은 색으로 봅니다.<br>
        <b>효율 히트맵</b>(잘 된 곳 초록 · 저조한 곳 붉은색)은 뜻이 정해진 색이라 테마와 무관하게 그대로 둡니다.</div>
-     <div class="thgrid">${THEMES.map(card).join('')}</div>`,
+     <div class="thgrid">${THEMES.map(card).join('')}</div>
+     <div class="sec gap" style="margin:22px 0 8px;font-size:14px">배경 로고</div>
+     <div class="hint" style="margin-bottom:10px">배경에 로고를 <b>도트로 크게 깔고</b> 천천히 떠다니게 합니다.
+       <b>없음</b>을 고르면 테마 색에 맞춘 은은한 그라데이션이 대신 흐릅니다. 캠페인마다 따로 정해집니다.</div>
+     <div class="thgrid bgpick">
+       ${[{k:'none',l:'없음 (앰비언트)',d:'테마 색 그라데이션'},
+          {k:'adv', l:'광고주 로고',    d:'이 캠페인의 광고주 로고'},
+          {k:'agency',l:'대행사 로고',  d:'우리 회사 로고 (전 캠페인 공용)'}]
+        .map(o=>`<button class="thcard${bgModeNow()===o.k?' on':''}" data-bg="${o.k}">
+            <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+     </div>
+     <div class="form-row" id="bgAgencyRow" style="margin-top:12px${bgModeNow()==='agency'?'':';display:none'}">
+       <div class="fld" style="flex:0 0 100%"><label>대행사 로고
+         <span class="hint">(1:1 ~ 3:1 · 3MB 이하 · 한 번 올리면 다른 캠페인에서도 쓸 수 있습니다)</span></label>
+         <div class="logopick">
+           <span class="prev" id="agyPrev">${agencyLogo()?`<img src="${agencyLogo()}" alt="">`:'<em>없음</em>'}</span>
+           <button class="btn sm" id="agyPick" type="button">이미지 선택</button>
+           <button class="btn sm" id="agyClear" type="button">지우기</button>
+         </div></div>
+     </div>`,
     '<button class="btn" data-close>닫기</button>',{w:660});
   $('modalHost').querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{
     applyTheme(b.dataset.th);
     $('modalHost').querySelectorAll('[data-th]').forEach(x=>x.classList.toggle('on',x.dataset.th===THEME));});
+  const host2=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+  const paintAgy=()=>{const p=$('agyPrev');
+    if(p)p.innerHTML=agencyLogo()?`<img src="${agencyLogo()}" alt="">`:'<em>없음</em>';};
+  host2.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{
+    CAMPAIGN.bgMode=b.dataset.bg;delete CAMPAIGN.bgLogo;      /* 옛 boolean 은 버린다 */
+    host2.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('on',x.dataset.bg===CAMPAIGN.bgMode));
+    const row=$('bgAgencyRow');if(row)row.style.display=CAMPAIGN.bgMode==='agency'?'':'none';
+    try{refreshBgDots();}catch(e){}
+    try{markDirty();saveLocal();}catch(e){}});
+  {const pk=$('agyPick');
+   if(pk)pk.onclick=()=>pickLogo(u=>{setAgencyLogo(u);paintAgy();
+     try{refreshBgDots();markDirty();saveLocal();}catch(e){}});}
+  {const cl=$('agyClear');
+   if(cl)cl.onclick=()=>{setAgencyLogo('');paintAgy();
+     try{refreshBgDots();markDirty();saveLocal();}catch(e){}};}
+}
+/* 배경 로고 종류 — 'none' 앰비언트 · 'adv' 광고주 로고 · 'agency' 대행사 로고.
+   예전 저장본의 bgLogo(true/false) 도 그대로 읽어 준다. */
+function bgModeNow(){
+  if(CAMPAIGN.bgMode)return CAMPAIGN.bgMode;
+  return CAMPAIGN.bgLogo===false?'none':'adv';
+}
+/* 대행사 로고는 캠페인이 아니라 **회사** 것이라 브라우저에도 남긴다.
+   (광고주에게 보이는 화면을 위해 캠페인 문서에도 함께 담는다) */
+const AGY_KEY='dmd:agencylogo';
+function agencyLogo(){
+  if(CAMPAIGN.agencyLogo)return CAMPAIGN.agencyLogo;
+  try{return localStorage.getItem(AGY_KEY)||'';}catch(e){return '';}
+}
+function setAgencyLogo(u){
+  CAMPAIGN.agencyLogo=u||'';
+  try{if(u)localStorage.setItem(AGY_KEY,u);else localStorage.removeItem(AGY_KEY);}catch(e){}
 }
 
 /* ---------- 광고주 · 로고 ----------
@@ -9999,6 +10291,64 @@ function attachTopScroll(wrap){
 })();
 
 /* =========================================================================
+   지금 보고 있는 탭을 이미지로 복사
+   ========================================================================= */
+/* 화면에 있는 그대로 담되, 버튼·손잡이처럼 보고서에 필요 없는 것은 잠시 감춘다 */
+const SHOT_HIDE='.tools,.hidebtn,.infowrap,.colgrip,.ghfix,.topscroll,.hnav,.cfmenu,#tip,.dlgrp,#shotBtn';
+function shotTarget(){
+  const sub=['perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');});
+  return {el:sub?$('sub-'+sub):$('tab-dash'),
+    name:{perf:'효율',table:'일자별 상세 효율',mix:'미디어믹스'}[sub]||'대시보드'};
+}
+async function copyTabImage(){
+  const btn=$('shotBtn');
+  if(typeof html2canvas==='undefined'){
+    confirmModal('이미지로 복사할 수 없습니다.',
+      '이미지 변환 기능을 불러오지 못했습니다. 인터넷에 연결된 상태에서 다시 시도하거나, '
+      +'브라우저 인쇄(Ctrl+P)로 저장해 주세요.',()=>{},'확인');return;}
+  const {el,name}=shotTarget();
+  if(!el)return;
+  const was=btn?btn.textContent:'';
+  if(btn){btn.textContent='만드는 중…';btn.disabled=true;}
+  /* 담기 전에 잠시 감출 것들 */
+  const hidden=[...el.querySelectorAll(SHOT_HIDE)].filter(e=>e.offsetParent!==null);
+  hidden.forEach(e=>{e.dataset.shotVis=e.style.visibility||'';e.style.visibility='hidden';});
+  document.body.classList.add('shooting');
+  try{
+    const bg=getComputedStyle(document.body).backgroundColor;
+    /* 화면이 아주 길면 배율을 1 로 — 2 배로 담으면 픽셀이 네 배라 한참 걸린다 */
+    const tall=el.scrollHeight>3200;
+    const cv=await html2canvas(el,{backgroundColor:bg&&bg!=='rgba(0, 0, 0, 0)'?bg:'#ffffff',
+      scale:tall?1:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false});
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    let ok=false;
+    try{
+      if(navigator.clipboard&&window.ClipboardItem&&window.isSecureContext){
+        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);ok=true;}
+    }catch(e){}
+    if(ok){if(btn)btn.textContent='복사됨 ✓';}
+    else{
+      /* 클립보드를 못 쓰는 환경(파일로 직접 열었을 때 등)에서는 파일로 내려준다 */
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`${CAMPAIGN.name||'대시보드'}_${name}.png`;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      if(btn)btn.textContent='이미지 저장됨';}
+  }catch(e){
+    confirmModal('이미지를 만들지 못했습니다.',String(e&&e.message||e),()=>{},'확인');
+  }finally{
+    hidden.forEach(e=>{e.style.visibility=e.dataset.shotVis||'';delete e.dataset.shotVis;});
+    document.body.classList.remove('shooting');
+    if(btn){btn.disabled=false;setTimeout(()=>{btn.textContent=was||'⧉ 이미지 복사';},1600);}
+  }
+}
+(function wireShot(){
+  const go=()=>{const b=$('shotBtn');if(b)b.onclick=copyTabImage;};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,60);
+})();
+
+/* =========================================================================
    배경 — 광고주 로고를 도트 패턴으로 크게 깔고 아주 천천히 움직인다.
    · 로고를 작은 캔버스에 그린 뒤 밝기로 도트 격자를 만든다(글자·형태만 남는다)
    · 색은 테마 강조색, 배경과 다투지 않도록 아주 옅게
@@ -10049,7 +10399,13 @@ function paintBgDots(svg){
   host.classList.add('on');
 }
 function refreshBgDots(){
-  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  const host=$('bgdots');
+  const mode=bgModeNow();
+  /* 없음 → 테마색 앰비언트 그라데이션 */
+  if(host)host.classList.toggle('amb',mode==='none');
+  if(mode==='none'){BGDOT.url='';BGDOT.svg='';paintBgDots('');if(host)host.classList.add('on');return;}
+  const url=mode==='agency'?agencyLogo()
+    :(CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'');
   const th=document.documentElement.getAttribute('data-theme')||'';
   if(!url){BGDOT.url='';BGDOT.svg='';paintBgDots('');return;}
   if(url===BGDOT.url){if(th!==BGDOT.theme){BGDOT.theme=th;paintBgDots(BGDOT.svg);}return;}
@@ -10147,7 +10503,7 @@ function advUseCount(name){
   if(CAMPAIGN.advertiser===name&&!n)n=1;
   return n;
 }
-function openAdvManage(){
+function openAdvManage(after){
   const draw=()=>{
     const names=advNames();
     let h=`<div class="hint" style="margin-bottom:12px">
@@ -10175,12 +10531,19 @@ function openAdvManage(){
           </div></td></tr>`;});
       h+='</tbody></table>';}
     return h;};
+  let wire=()=>{};
   const open=()=>{
     openModal('광고주 관리',draw(),
       '<button class="btn primary" id="advAdd">＋ 광고주 추가</button>'
       +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:840});
-    const host=$('modalHost');
-    const redraw=()=>{closeModal();open();};
+    wire=()=>{
+    const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+    /* 창을 닫았다 열지 않고 본문만 갈아 끼운다 */
+    const redraw=()=>{
+      if(!repaintModal(draw()))
+        {closeModal();open();return;}
+      wire();
+      if(typeof after==='function')after();};
     host.querySelectorAll('[data-alogo]').forEach(b=>b.onclick=()=>{
       const n=b.dataset.alogo;
       pickLogo(u=>{ADV_BOOK[n]=ADV_BOOK[n]||{};ADV_BOOK[n].logo=u;ADV_BOOK[n].mine=true;saveAdvBook();
@@ -10199,11 +10562,11 @@ function openAdvManage(){
         '<button class="btn" data-close>취소</button><button class="btn primary" id="advRenGo">바꾸기</button>',{w:460});
       $('advRenGo').onclick=()=>{
         const nv=($('advRenNew').value||'').trim();
-        if(!nv||nv===n){closeModal();open();return;}
+        if(!nv||nv===n){closeModal();return;}
         ADV_BOOK[nv]={...(ADV_BOOK[n]||{}),mine:true};delete ADV_BOOK[n];saveAdvBook();
         if(CAMPAIGN.advertiser===n){CAMPAIGN.advertiser=nv;renderBrand();renderCampBar();
           try{markDirty();saveLocal();}catch(e){}}
-        closeModal();open();};});
+        closeModal();redraw();};});
     host.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{
       const n=b.dataset.adel,used=advUseCount(n);
       confirmModal(`‘${n}’ 광고주를 지울까요?`,
@@ -10211,7 +10574,7 @@ function openAdvManage(){
             :'등록해 둔 로고가 함께 사라집니다.',
         ()=>{delete ADV_BOOK[n];saveAdvBook();
           if(CAMPAIGN.advertiser===n){CAMPAIGN.advLogo='';renderBrand();}
-          open();},'삭제',true);});
+          redraw();},'삭제',true);});
     $('advAdd').onclick=()=>{
       const st={logo:''};
       openModal('광고주 추가',
@@ -10233,7 +10596,9 @@ function openAdvManage(){
         const n=($('advNewName').value||'').trim();
         if(!n){confirmModal('이름을 적어 주세요.','광고주명은 반드시 필요합니다.',()=>{},'확인');return;}
         ADV_BOOK[n]={logo:st.logo||'',mine:true};saveAdvBook();
-        closeModal();open();};};
+        closeModal();redraw();};};
+    };
+    wire();
   };
   loadAdvBook();open();
 }
