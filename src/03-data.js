@@ -501,14 +501,17 @@ function paceDue(l,k){
   const g=goalIn(l,k);if(!g)return 0;
   return g*lineDone(l)/lineSpan(l).n;
 }
-/* 화면 전체의 목표 페이스 비율 — 라인별 경과 비율을 예산으로 가중 평균 */
-const paceRatio=()=>{
+/* 라인 묶음의 목표 페이스 비율 — 라인별 경과 비율을 예산으로 가중 평균.
+   아직 시작일이 오지 않은 라인은 lineDone 이 0 이라 페이스도 0 이 된다. */
+const paceRatioOf=ls=>{
   let w=0,d=0;
-  activeLines().forEach(l=>{
-    const wt=(+l.gross||0)||1;
+  (ls||[]).forEach(l=>{
+    const wt=(+lineGross(l)||0)||1;
     w+=wt;d+=wt*lineDone(l)/lineSpan(l).n;});
   return w?d/w:0;
 };
+/* 화면 전체의 목표 페이스 비율 */
+const paceRatio=()=>paceRatioOf(activeLines());
 function factFilter(extra){
   const s=viewScope();
   return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1

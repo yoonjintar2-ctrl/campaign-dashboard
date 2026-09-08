@@ -55,7 +55,11 @@ function serializeDoc(){
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
            dailyOrder:(typeof DAILY_ORDER!=='undefined'?DAILY_ORDER:{}),
            rawOrder:(typeof RAW_ORDER!=='undefined'?RAW_ORDER:{}),
-           rawHide:(typeof RAW_HIDE!=='undefined'?RAW_HIDE:{})}
+           rawHide:(typeof RAW_HIDE!=='undefined'?RAW_HIDE:{}),
+           /* 노출 분포(트리맵) 의 기준 지표 · 묶음 · KPI 달성 현황 묶음 기준 */
+           tmap:(typeof TMAP!=='undefined'?{metric:TMAP.metric,dims:(TMAP.dims||[]).slice()}:null),
+           kpiGroup:(function(){try{const e=$('kpiGroupSel');return e?e.value:null;}catch(x){return null;}})(),
+           heatDaily:(typeof HEAT_DAILY!=='undefined'?!!HEAT_DAILY:false)}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -123,6 +127,15 @@ function applyDoc(d,keepToday){
       const gs=$('ganttSort');if(gs)gs.value=GANTT_SORT;
       if(typeof renderRankPick==='function')renderRankPick();}catch(e){}
   if(v.dailyOrder&&typeof DAILY_ORDER!=='undefined')DAILY_ORDER=v.dailyOrder;
+  /* 노출 분포 기준 · KPI 묶음 기준도 되돌린다 (예전에는 새로고침하면 기본값으로 돌아갔다) */
+  if(v.tmap&&typeof TMAP!=='undefined'){
+    if(v.tmap.metric)TMAP.metric=v.tmap.metric;
+    if(Array.isArray(v.tmap.dims)&&v.tmap.dims.length)TMAP.dims=v.tmap.dims.slice();
+    try{const m=$('tmapMetric');if(m)m.value=TMAP.metric;
+        const d2=$('tmapMode');if(d2)d2.value=TMAP.dims.join('|');}catch(e){}}
+  if(v.kpiGroup){try{const g=$('kpiGroupSel');
+    if(g&&[...g.options].some(o=>o.value===v.kpiGroup))g.value=v.kpiGroup;}catch(e){}}
+  if(typeof v.heatDaily==='boolean'&&typeof HEAT_DAILY!=='undefined')HEAT_DAILY=v.heatDaily;
   if(v.perfOrder&&typeof PERF_ORDER!=='undefined'){PERF_ORDER=v.perfOrder;
     if(typeof applyPerfOrder==='function')applyPerfOrder();}
   if(v.gantt)GANTT=v.gantt;
@@ -576,11 +589,11 @@ function paintCampSel(){
   s.disabled=false;
   if(!CLOUD.user){
     s.innerHTML=`<option>${esc(CAMPAIGN.name)}${CLOUD.sample?' (샘플)':' (데모)'}</option>`;return;}
-  /* 목록 맨 아래에 "＋ 캠페인 추가" — 고르면 캠페인 관리의 새 캠페인과 같은 화면이 뜬다 */
+  /* 목록 맨 아래 — 고르면 설정의 "캠페인 관리" 화면이 그대로 열린다 */
   s.innerHTML=(CLOUD.list.map(c=>
     `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')
     ||'<option value="">캠페인 없음</option>')
-    +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가</option>';
+    +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가 및 관리</option>';
 }
 async function openCampaign(id){
   if(!CLOUD.on||!id)return;
@@ -629,6 +642,43 @@ function applyRoleLock(){
    "일별 실적 전부 지우기 → 다시 넣기" 를 하다가 서로의 삽입과 부딪혀
    duplicate key … daily_stats_campaign_id_stat_date_line_key_creative_key 로 실패했다.
    지금은 ① 진행 중이면 예약만 걸고 돌아가고 ② 삽입도 upsert 라 겹쳐도 깨지지 않는다. */
+/* 서버 요청이 하염없이 매달려 있지 않게 — 정해진 시간이 지나면 실패로 본다.
+   (예전에는 저장이 멈추면 "저장 중…" 이 몇십 분씩 그대로 남아 있었다) */
+const withTimeout=(pr,ms,what)=>Promise.race([
+  Promise.resolve(pr),
+  new Promise((_,rej)=>setTimeout(()=>rej(new Error((what||'요청')+' — 서버 응답이 없습니다 (시간 초과)')),ms||20000))]);
+/* 일별 실적 전부 지우기 — 한 번에 지우다 서버 제한(statement timeout)에 걸리는 캠페인이 있어
+   실패하면 날짜를 잘라 여러 번 나눠 지운다. */
+async function wipeDaily(campId,onStep){
+  const one=()=>CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId);
+  try{
+    const {error}=await withTimeout(one(),15000,'일별 실적 정리');
+    if(!error)return null;
+    if(!/timeout|시간 초과/i.test(error.message||''))return error.message;
+  }catch(e){/* 시간 초과 — 아래에서 나눠 지운다 */}
+  /* 날짜를 7일씩 끊어서 */
+  const days=(typeof ALLDATES!=='undefined'?ALLDATES:[]).map(d=>iso(d));
+  const chunks=[];
+  for(let i=0;i<days.length;i+=7)chunks.push([days[i],days[Math.min(i+6,days.length-1)]]);
+  for(let i=0;i<chunks.length;i++){
+    if(onStep)onStep(i+1,chunks.length+2);
+    try{const {error}=await withTimeout(
+      CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
+        .gte('stat_date',chunks[i][0]).lte('stat_date',chunks[i][1]),20000,'일별 실적 정리');
+      if(error)return error.message;
+    }catch(e){return String(e&&e.message||e);}}
+  /* 캠페인 기간 밖에 남은 줄도 */
+  if(days.length){
+    try{
+      if(onStep)onStep(chunks.length+1,chunks.length+2);
+      await withTimeout(CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
+        .lt('stat_date',days[0]),20000,'일별 실적 정리');
+      if(onStep)onStep(chunks.length+2,chunks.length+2);
+      await withTimeout(CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
+        .gt('stat_date',days[days.length-1]),20000,'일별 실적 정리');
+    }catch(e){return String(e&&e.message||e);}}
+  return null;
+}
 async function cloudSave(silent){
   if(CLOUD.saving){CLOUD.saveAgain=true;return;}     /* 이미 저장 중 — 끝나면 한 번 더 */
   if(!CLOUD.on||!CLOUD.user){
@@ -644,11 +694,13 @@ async function cloudSave(silent){
   const doc=serializeDoc();
   /* .select() 를 붙여 실제로 몇 행이 바뀌었는지 확인한다.
      권한이 없으면 RLS 가 오류 대신 "0행 수정"으로 조용히 넘어가기 때문. */
-  const {data:upd,error}=await CLOUD.sb.from('campaigns').update({
+  let upd,error;
+  try{({data:upd,error}=await withTimeout(CLOUD.sb.from('campaigns').update({
     name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,
     start_date:campStart(),end_date:campEnd(),
     doc,updated_at:new Date().toISOString(),updated_by:CLOUD.user.id
-  }).eq('id',CLOUD.campaign.id).select('id');
+  }).eq('id',CLOUD.campaign.id).select('id'),30000,'설정 저장'));
+  }catch(e){error={message:String(e&&e.message||e)};}
   if(error){cloudState('저장 실패: '+error.message);return;}
   if(!upd||!upd.length){cloudState('저장 권한이 없습니다 (조회 전용)');return;}
   /* 일별 실적은 입력 시트가 원본이라 늘 통째로 다시 쓴다.
@@ -657,23 +709,33 @@ async function cloudSave(silent){
       지금은 sheetToRows() 가 날짜×라인으로 합쳐 한 줄만 만들고, 옛 행은 먼저 지운다.
       설정 문서(doc)에 시트가 이미 저장된 뒤라 중간에 실패해도 입력값은 남는다.) */
   const rows=sheetToRows();
-  const {error:eDel}=await CLOUD.sb.from('daily_stats').delete().eq('campaign_id',CLOUD.campaign.id);
-  if(eDel){cloudState('일별 실적 정리 실패: '+eDel.message);return;}
+  const eDel=await wipeDaily(CLOUD.campaign.id);
+  if(eDel){cloudState('일별 실적 정리 실패: '+eDel);return;}
   /* insert 가 아니라 upsert — 같은 (캠페인·날짜·라인·소재) 가 남아 있어도 덮어쓴다.
      저장이 겹치거나 지우기가 덜 끝나도 오류로 멈추지 않는다. */
-  for(let i=0;i<rows.length;i+=500){
-    const {error:e2}=await CLOUD.sb.from('daily_stats')
-      .upsert(rows.slice(i,i+500),{onConflict:'campaign_id,stat_date,line_key,creative'});
+  const CH=500;
+  for(let i=0;i<rows.length;i+=CH){
+    if(rows.length>CH)cloudState(`일별 실적 저장 중… ${Math.min(i+CH,rows.length).toLocaleString()} / ${rows.length.toLocaleString()}행`);
+    let e2=null;
+    try{({error:e2}=await withTimeout(CLOUD.sb.from('daily_stats')
+      .upsert(rows.slice(i,i+CH),{onConflict:'campaign_id,stat_date,line_key,creative'}),
+      30000,'일별 실적 저장'));
+    }catch(e){e2={message:String(e&&e.message||e)};}
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
-  await CLOUD.sb.from('campaign_history').insert({
-    campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
+  try{await withTimeout(CLOUD.sb.from('campaign_history').insert({
+    campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id}),
+    15000,'히스토리 기록');}catch(e){}
   CLOUD.savedAt=new Date();
   CLOUD.dirty=false;
   paintSaved();
   /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
   const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
+  }catch(e){
+    cloudState('저장 실패: '+String(e&&e.message||e));
   }finally{
     CLOUD.saving=false;
+    /* 성공이든 실패든 "저장 중…" 표시는 반드시 걷어 낸다 */
+    try{paintSaved();}catch(e){}
     /* 저장하는 동안 또 바뀌었으면 한 번만 더 돌린다 */
     if(CLOUD.saveAgain){CLOUD.saveAgain=false;setTimeout(()=>cloudSave(true),400);}
   }
@@ -895,17 +957,40 @@ async function openCampManage(inplace){
         /* ① 서버 함수로 먼저 시도한다 — 슈퍼마스터 · 만든 사람 · 그 캠페인 마스터면 지워진다.
            (예전 RLS 정책만 깔린 DB 에서는 직접 delete 가 조용히 0행이 되어
             "마스터 권한 필요" 라고만 떴다) */
-        let gone=false,msg='';
-        try{const {data:rp,error:er}=await CLOUD.sb.rpc('delete_campaign',{p_id:c.id});
-          if(!er&&rp)gone=true;else if(er)msg=er.message;}catch(e){msg=String(e&&e.message||e);}
+        let gone=false,msg='',timedOut=false;
+        /* ⓪ 일별 실적을 **먼저 나눠서** 지운다 —
+           행이 많은 캠페인은 한 번에 지우다 서버 제한(statement timeout)에 걸려
+           "canceling statement due to statement timeout" 으로 통째로 실패했다. */
+        progOpen('캠페인을 지우는 중');
+        progSet(null,'일별 실적을 정리하는 중…');
+        await uiTick();
+        const eW=await wipeDaily(c.id,(i,n)=>progSet(Math.round(i/n*70),
+          `일별 실적을 정리하는 중… ${i} / ${n}`));
+        if(eW&&/timeout|시간 초과/i.test(eW))timedOut=true;
+        progSet(78,'캠페인 정보를 지우는 중…');
+        await uiTick();
+        try{const {data:rp,error:er}=await withTimeout(
+            CLOUD.sb.rpc('delete_campaign',{p_id:c.id}),30000,'캠페인 삭제');
+          if(!er&&rp)gone=true;else if(er)msg=er.message;
+        }catch(e){msg=String(e&&e.message||e);}
         if(!gone){
-          const {data,error}=await CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id');
-          if(!error&&data&&data.length)gone=true;else msg=(error&&error.message)||msg;}
+          try{const {data,error}=await withTimeout(
+              CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id'),30000,'캠페인 삭제');
+            if(!error&&data&&data.length)gone=true;else msg=(error&&error.message)||msg;
+          }catch(e){msg=String(e&&e.message||e);}}
+        progSet(100,'');
+        progClose();
         if(!gone){
+          const slow=timedOut||/timeout|시간 초과/i.test(msg);
           confirmModal('삭제하지 못했습니다.',
-            '이 캠페인을 지울 권한이 확인되지 않았습니다.<br>'
-            +'슈퍼마스터인데도 이 창이 뜨면 Supabase SQL 편집기에서 <b>schema.sql</b> 을 다시 한 번 실행해 주세요 '
-            +'(캠페인 삭제 정책과 <code>delete_campaign</code> 함수가 최신이어야 합니다).'
+            (slow
+              ? '데이터가 많아 서버가 시간 안에 다 지우지 못했습니다.<br>'
+                +'<b>한 번 더 눌러 주세요</b> — 이미 지운 만큼은 줄어 있어 대개 두세 번이면 끝납니다.<br>'
+                +'계속 같은 화면이 뜨면 Supabase SQL 편집기에서 <b>schema.sql</b> 을 다시 실행해 주세요 '
+                +'(<code>delete_campaign</code> 함수의 시간 제한이 늘어납니다).'
+              : '이 캠페인을 지울 권한이 확인되지 않았습니다.<br>'
+                +'슈퍼마스터인데도 이 창이 뜨면 Supabase SQL 편집기에서 <b>schema.sql</b> 을 다시 한 번 실행해 주세요 '
+                +'(캠페인 삭제 정책과 <code>delete_campaign</code> 함수가 최신이어야 합니다).')
             +(msg?`<br><span class="hint">서버 응답: ${esc(msg)}</span>`:''),
             ()=>{},'확인',true);
           return;}
@@ -975,7 +1060,7 @@ async function removeMember(userId){
       '구글 로그인');};
   if(b('campSel'))b('campSel').onchange=e=>{
     const v=e.target.value;
-    if(v==='__new'){paintCampSel();createCampaign();return;}
+    if(v==='__new'){paintCampSel();openCampManage();return;}
     if(v)openCampaign(v);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');

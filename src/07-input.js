@@ -156,15 +156,122 @@ function checkFormula(f,cols){
   const test={};(cols||SHEET_COLS).forEach(c=>test[c.k]=2);
   if(!isFinite(evalFormula(f,test)))return '수식을 계산할 수 없습니다.';
   return null;}
+/* ===== 표 머리글 정렬 · 필터 (엑셀처럼) =====
+   화면에 보이는 순서·범위만 바꾼다 — 원본 배열은 그대로 두므로
+   행 번호(data-ri)로 값을 고치고 지우는 기존 동작이 흔들리지 않는다. */
+const TBL_SORT={};      /* {표이름:{k,dir}} */
+const TBL_FILTER={};    /* {표이름:{열:[허용값…]}} */
+const tblStr=v=>v==null?'':String(v).trim();
+function tblViewIdx(id,arr,isNum,getVal){
+  let idx=arr.map((_,i)=>i);
+  const f=TBL_FILTER[id]||{};
+  Object.keys(f).forEach(k=>{
+    const allow=f[k];if(!allow||!allow.length)return;
+    const set=new Set(allow);
+    idx=idx.filter(i=>set.has(tblStr(getVal(arr[i],k))));});
+  const so=TBL_SORT[id];
+  if(so&&so.k){
+    const num=isNum(so.k);
+    idx=idx.slice().sort((a,b)=>{
+      const va=getVal(arr[a],so.k),vb=getVal(arr[b],so.k);
+      let d;
+      if(num)d=(+va||0)-(+vb||0);
+      else d=tblStr(va).localeCompare(tblStr(vb),'ko',{numeric:true});
+      return (d||(a-b))*so.dir;});}
+  return idx;
+}
+const tblHasFilter=(id,k)=>!!((TBL_FILTER[id]||{})[k]||[]).length;
+const tblSortMark=(id,k)=>{const s=TBL_SORT[id];
+  return s&&s.k===k?(s.dir>0?' ▲':' ▼'):'';};
+/* 머리글에 붙이는 작은 버튼 */
+const tblMenuBtn=(id,k)=>`<button type="button" class="thmenu${tblHasFilter(id,k)?' on':''}`
+  +`${(TBL_SORT[id]&&TBL_SORT[id].k===k)?' sorted':''}" data-thm="${esc(k)}"`
+  +` title="정렬 · 필터">${(TBL_SORT[id]&&TBL_SORT[id].k===k)?(TBL_SORT[id].dir>0?'▲':'▼'):(tblHasFilter(id,k)?'▼':'⋮')}</button>`;
+function closeTblMenu(){document.querySelectorAll('.thpop').forEach(x=>x.remove());}
+document.addEventListener('mousedown',e=>{
+  if(!e.target.closest('.thpop')&&!e.target.closest('.thmenu'))closeTblMenu();});
+function openTblMenu(btn,id,k,label,arr,getVal,rerender){
+  closeTblMenu();
+  const vals=[...new Set(arr.map(x=>tblStr(getVal(x,k))))]
+    .sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
+  const cur=new Set((TBL_FILTER[id]||{})[k]||vals);
+  const pop=document.createElement('div');
+  pop.className='thpop';
+  const draw=(q)=>{
+    const list=vals.filter(v=>!q||v.toLowerCase().includes(q.toLowerCase()));
+    pop.querySelector('.thlist').innerHTML=list.map(v=>
+      `<label><input type="checkbox" data-v="${esc(v)}" ${cur.has(v)?'checked':''}>`
+      +`<span>${v===''?'<i>(빈칸)</i>':esc(v)}</span></label>`).join('')
+      ||'<div class="hint" style="padding:8px">찾는 값이 없습니다</div>';
+    pop.querySelectorAll('.thlist [data-v]').forEach(cb=>cb.onchange=()=>{
+      if(cb.checked)cur.add(cb.dataset.v);else cur.delete(cb.dataset.v);});};
+  pop.innerHTML=`<div class="thttl">${esc(label)}</div>
+    <button type="button" class="thi" data-sort="1">▲ 오름차순 정렬</button>
+    <button type="button" class="thi" data-sort="-1">▼ 내림차순 정렬</button>
+    <button type="button" class="thi" data-sort="0">정렬 해제</button>
+    <div class="thsep"></div>
+    <input class="thq" placeholder="값 검색">
+    <div class="thbtns"><button type="button" class="thmini" data-all="1">전체 선택</button>
+      <button type="button" class="thmini" data-all="0">전체 해제</button></div>
+    <div class="thlist"></div>
+    <div class="thfoot"><button type="button" class="btn sm" data-clear="1">필터 해제</button>
+      <div class="spacer"></div><button type="button" class="btn sm primary" data-ok="1">적용</button></div>`;
+  document.body.appendChild(pop);
+  draw('');
+  const r=btn.getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(innerWidth-pop.offsetWidth-8,r.left-10))+'px';
+  pop.style.top=Math.min(innerHeight-pop.offsetHeight-8,r.bottom+6)+'px';
+  pop.querySelector('.thq').oninput=e=>draw(e.target.value);
+  pop.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{
+    const d=+b.dataset.sort;
+    if(!d)delete TBL_SORT[id];else TBL_SORT[id]={k,dir:d};
+    closeTblMenu();rerender();});
+  pop.querySelectorAll('[data-all]').forEach(b=>b.onclick=()=>{
+    const on=b.dataset.all==='1';
+    cur.clear();if(on)vals.forEach(v=>cur.add(v));
+    draw(pop.querySelector('.thq').value);});
+  pop.querySelector('[data-clear]').onclick=()=>{
+    if(TBL_FILTER[id])delete TBL_FILTER[id][k];
+    closeTblMenu();rerender();};
+  pop.querySelector('[data-ok]').onclick=()=>{
+    TBL_FILTER[id]=TBL_FILTER[id]||{};
+    if(cur.size>=vals.length)delete TBL_FILTER[id][k];
+    else TBL_FILTER[id][k]=[...cur];
+    closeTblMenu();rerender();};
+}
 function renderSheet(){
   const t=$('sheet'),cols=sheetCols();
-  let dl='';
-  SHEET.forEach((r,i)=>{['segment','media','product','target','line'].forEach(k=>{
-    dl+=`<datalist id="dl-${k}-${i}">${dimOpts(k,r).map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;});});
+  /* 예전에는 행마다 <datalist> 를 5개씩 만들었다 — 1,400행이면 7,000개 · 40,000 옵션.
+     실제로는 아무 칸도 참조하지 않는 죽은 마크업이라 통째로 뺐다(렌더가 몇 배 빨라진다). */
+  /* 같은 상위 조합이면 고를 수 있는 목록도 같다 — 한 번만 만들어 돌려 쓴다 */
+  const OPT_MEMO=new Map();
+  const optsFor=(k,r)=>{
+    const i=DIM_CHAIN.indexOf(k);
+    const key=k+'\u0001'+DIM_CHAIN.slice(0,i).map(p2=>r[p2]||'').join('\u0002');
+    let v=OPT_MEMO.get(key);
+    if(!v){v=dimOpts(k,r);OPT_MEMO.set(key,v);}
+    return v;};
+  const OPT_HTML=new Map();
+  const optHtml=(k,r)=>{
+    const i=DIM_CHAIN.indexOf(k);
+    const key=k+'\u0001'+DIM_CHAIN.slice(0,i).map(p2=>r[p2]||'').join('\u0002');
+    let h2=OPT_HTML.get(key);
+    if(h2===undefined){
+      h2=optsFor(k,r).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+      OPT_HTML.set(key,h2);}
+    return h2;};
   let h='<thead><tr><th style="width:34px" class="rm">'
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
-    +cols.map(c=>`<th style="min-width:${c.w||110}px">${c.l}${c.type==='calc'?' ƒ':''}</th>`).join('')+'</tr></thead><tbody>';
-  SHEET.forEach((r,ri)=>{
+    +cols.map(c=>`<th style="min-width:${c.w||110}px" class="thsf">`
+      +`<span class="thl">${c.l}${c.type==='calc'?' ƒ':''}</span>`
+      +tblMenuBtn('sheet',c.k)+`</th>`).join('')+'</tr></thead><tbody>';
+  /* 정렬·필터가 걸려 있으면 그 순서·범위로만 그린다 (원본 배열은 그대로) */
+  const view=tblViewIdx('sheet',SHEET,
+    k=>{const c=SHEET_COLS.find(x=>x.k===k);return !!c&&(c.type==='num'||c.type==='calc');},
+    (r,k)=>{const c=SHEET_COLS.find(x=>x.k===k);
+      return c&&c.type==='calc'?evalFormula(c.rule,r):r[k];});
+  view.forEach(ri=>{
+    const r=SHEET[ri];
     /* 매칭 실패는 행 전체가 아니라 "문제가 된 칸" 만 표시한다 */
     const cIss=rowCellIssues(r),badSet=new Set(cIss.cells);
     h+=`<tr data-ri="${ri}">`
@@ -180,14 +287,15 @@ function renderSheet(){
       const bt=isBad?` title="${esc(CELL_ISSUE_LABEL[c.k]||ROW_ISSUE_LABEL[cIss.kind]||'')}"`:'';
       if(c.type==='dim'){
         /* 클릭하면 곧바로 선택 목록이 열리도록 select 사용 */
-        const opts=dimOpts(c.k,r);
+        const opts=optsFor(c.k,r);
         /* 대소문자·공백만 다른 이름은 등록된 표기 쪽이 골라진 것으로 본다 */
         const raw=r[c.k]||'';
         const cur=opts.find(o=>dimKey(o)===dimKey(raw))||raw;
-        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}><select data-r="${ri}" data-c="${ci}">`
-          +`<option value=""${cur?'':' selected'}>선택</option>`
-          +opts.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('')
-          +(cur&&!opts.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')
+        /* 목록은 **누를 때** 채운다 — 1,400행이면 옵션이 2만 개가 넘어 처음 그릴 때 몇 초씩 걸렸다.
+           접혀 있는 동안에는 지금 값 한 줄만 있으면 화면이 똑같다. */
+        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}>`
+          +`<select data-r="${ri}" data-c="${ci}" data-lazy="1">`
+          +`<option value="${esc(cur)}" selected>${cur?esc(cur):'선택'}</option>`
           +`</select></td>`;
       }else if(c.k==='date'){
         /* 텍스트로 자유 입력 + 우측 달력 아이콘으로 날짜 선택 */
@@ -202,20 +310,37 @@ function renderSheet(){
         h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}><input type="text" data-r="${ri}" data-c="${ci}" value="${esc(v)}"></td>`;}
     });
     h+='</tr>';});
-  t.innerHTML=h+'</tbody>'+dl;
+  t.innerHTML=h+'</tbody>';
+  /* 접혀 있던 목록을 누르는 순간에만 채운다 */
+  const fillSel=sel=>{
+    if(!sel||!sel.dataset.lazy)return;
+    delete sel.dataset.lazy;
+    const ri=+sel.dataset.r,ci=+sel.dataset.c;
+    const r=SHEET[ri],c=cols[ci];if(!r||!c)return;
+    const cur=sel.value;
+    const opts=optsFor(c.k,r);
+    sel.innerHTML=`<option value="">선택</option>`+optHtml(c.k,r)
+      +(cur&&!opts.includes(cur)?`<option value="${esc(cur)}">${esc(cur)}</option>`:'');
+    sel.value=cur;};
+  t.__fillSel=fillSel;
   /* 매칭 실패는 "기간" 만의 문제가 아니다 — 상품명·타겟팅 이름이 달라도 붙지 않는다.
      그래서 문구를 매칭 기준으로 바꾸고, 누르면 그 행으로 차례차례 데려간다. */
   const badIdx=badRowIdx();
   const nCell=badCellCount();
+  const hid=SHEET.length-view.length;
   const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
   const nDate=badIdx.length-nLine;
-  $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
+  $('sheetNote').innerHTML=`${SHEET.length}행`
+    +(hid?` · <button type="button" class="badjump" id="sheetFilterOff" title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`:'')
+    +` · 새 행 기본 일자 = 어제(${YESTERDAY})`
     +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
         title="누를 때마다 다음 행으로 이동합니다&#10;`
         +`${nLine?`· 이름이 맞지 않는 칸 ${nLine}행`:''}${nLine&&nDate?'&#10;':''}`
         +`${nDate?`· 집행 기간 밖 ${nDate}행`:''}">매칭 안 되는 셀 ${nCell}개 ▸</button>`:'');
   {const jb=$('sheetBadJump');
-   if(jb)jb.onclick=()=>jumpToBadRow();}
+   if(jb)jb.onclick=()=>jumpToBadRow();
+   const fo=$('sheetFilterOff');
+   if(fo)fo.onclick=()=>{delete TBL_FILTER.sheet;delete TBL_SORT.sheet;renderSheet();};}
   const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
@@ -225,32 +350,73 @@ function renderSheet(){
   /* 머리글 끝을 끌어 열 너비 조정 — 맨 앞 삭제 열 다음부터가 값 열이라 off=1 */
   enableColResize(t,cols,()=>markDirty(),1);
   /* 머리글을 끌어 열 순서 바꾸기 */
-  if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
-    SHEET_COLS=applyColOrder(SHEET_COLS,view);renderSheet();markDirty();saveLocal();},1);
-  t.querySelectorAll('td[data-r]').forEach(td=>{
-    td.addEventListener('mousedown',e=>{const r=+td.dataset.r,c=+td.dataset.c;
-      if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};selecting=true;paintSel();});
-    td.addEventListener('mouseenter',()=>{if(selecting){SEL.r2=+td.dataset.r;SEL.c2=+td.dataset.c;paintSel();}});});
-  t.querySelectorAll('input[data-c],select[data-c]').forEach(inp=>inp.addEventListener('change',e=>{
-    pushUndo();
-    setCell(+e.target.dataset.r,cols[+e.target.dataset.c].k,e.target.value);renderSheet();syncSheet();}));
-  /* 달력 아이콘 → 네이티브 데이트피커 */
-  t.querySelectorAll('[data-dp]').forEach(b=>b.onclick=e=>{
+  if(typeof enableColDrag==='function')enableColDrag(t,cols,v2=>{
+    SHEET_COLS=applyColOrder(SHEET_COLS,v2);renderSheet();markDirty();saveLocal();},1);
+  /* 머리글의 ⋮ — 정렬 · 필터 */
+  t.querySelectorAll('th [data-thm]').forEach(b=>b.onclick=e=>{
     e.preventDefault();e.stopPropagation();
-    const n=t.querySelector(`[data-dn="${b.dataset.dp}"]`);if(!n)return;
-    if(n.showPicker)try{n.showPicker();}catch(err){n.click();}else n.click();});
-  t.querySelectorAll('[data-dn]').forEach(n=>n.addEventListener('change',e=>{
-    if(e.target.value){pushUndo();SHEET[+e.target.dataset.dn].date=e.target.value;renderSheet();syncSheet();}}));
-  t.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndo();SHEET.splice(+b.dataset.del,1);renderSheet();syncSheet();});
+    const k=b.dataset.thm,c=SHEET_COLS.find(x=>x.k===k)||{l:k};
+    openTblMenu(b,'sheet',k,c.l||k,SHEET,
+      (r,kk)=>{const cc=SHEET_COLS.find(x=>x.k===kk);
+        return cc&&cc.type==='calc'?evalFormula(cc.rule,r):r[kk];},
+      ()=>renderSheet());});
+  /* 셀마다 리스너를 붙이면 1,400행 × 10칸 = 28,000개가 된다 — 표 하나에만 걸고 위임한다 */
+  if(!t.__wired){
+    t.__wired=1;
+    t.addEventListener('mousedown',e=>{
+      const sel=e.target.closest('select[data-lazy]');
+      if(sel&&t.__fillSel)t.__fillSel(sel);
+      const td=e.target.closest('td[data-r]');if(!td)return;
+      const r=+td.dataset.r,c=+td.dataset.c;
+      if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};
+      selecting=true;paintSel();});
+    t.addEventListener('focusin',e=>{
+      const sel=e.target.closest&&e.target.closest('select[data-lazy]');
+      if(sel&&t.__fillSel)t.__fillSel(sel);});
+    t.addEventListener('mouseover',e=>{
+      if(!selecting)return;
+      const td=e.target.closest('td[data-r]');if(!td)return;
+      SEL.r2=+td.dataset.r;SEL.c2=+td.dataset.c;paintSel();});
+    t.addEventListener('change',e=>{
+      const el2=e.target;
+      if(el2.matches('[data-dn]')){
+        if(el2.value){pushUndo();SHEET[+el2.dataset.dn].date=el2.value;renderSheet();syncSheet();}
+        return;}
+      if(!el2.matches('input[data-c],select[data-c]'))return;
+      pushUndo();
+      setCell(+el2.dataset.r,sheetCols()[+el2.dataset.c].k,el2.value);renderSheet();syncSheet();});
+    /* 달력 아이콘 → 네이티브 데이트피커 · 행 삭제 */
+    t.addEventListener('click',e=>{
+      const dp=e.target.closest('[data-dp]');
+      if(dp){e.preventDefault();e.stopPropagation();
+        const n=t.querySelector(`[data-dn="${dp.dataset.dp}"]`);
+        if(n){if(n.showPicker)try{n.showPicker();}catch(err){n.click();}else n.click();}
+        return;}
+      const del=e.target.closest('[data-del]');
+      if(del){pushUndo();SHEET.splice(+del.dataset.del,1);renderSheet();syncSheet();}});
+  }
   /* 헤더의 ✕ = 모두 지우기 (확인 후 실행) */
   const ca=$('sheetClearAll');
   if(ca)ca.onclick=()=>confirmModal('입력한 일별 실적을 모두 지울까요?',
     `${SHEET.length}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
     ()=>{pushUndo();SHEET.length=0;renderSheet();buildFacts();renderAll();},'모두 지우기');
 }
-function paintSel(){document.querySelectorAll('#sheet td[data-r]').forEach(td=>{
-  const r=+td.dataset.r,c=+td.dataset.c;
-  td.classList.toggle('sel',inSel(r,c));td.classList.toggle('anchor',r===SEL.r1&&c===SEL.c1);});}
+/* 선택 표시는 "지금 칠해진 칸"만 지우고 새로 칠한다 — 매번 2만 칸을 훑지 않게 */
+let SEL_PAINTED=[];
+function paintSel(){
+  const t=$('sheet');if(!t)return;
+  SEL_PAINTED.forEach(td=>td.classList.remove('sel','anchor'));
+  SEL_PAINTED=[];
+  const r1=Math.min(SEL.r1,SEL.r2),r2=Math.max(SEL.r1,SEL.r2);
+  const c1=Math.min(SEL.c1,SEL.c2),c2=Math.max(SEL.c1,SEL.c2);
+  const tb=t.tBodies[0];if(!tb)return;
+  for(let r=r1;r<=r2;r++){
+    const tr=tb.querySelector(`tr[data-ri="${r}"]`);if(!tr)continue;
+    for(let c=c1;c<=c2;c++){
+      const td=tr.querySelector(`td[data-c="${c}"]`);if(!td)continue;
+      td.classList.add('sel');
+      if(r===SEL.r1&&c===SEL.c1)td.classList.add('anchor');
+      SEL_PAINTED.push(td);}}}
 /* 사용자가 어떻게 입력하든 YYYY-MM-DD 로 정규화 (연도 생략 시 캠페인 기준 연도) */
 function normDate(raw,fallback){
   const s=String(raw||'').trim();

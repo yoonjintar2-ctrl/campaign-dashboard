@@ -351,22 +351,29 @@ const SUM_PRESET=()=>({
 let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET()},
                {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),
                 rows:[{k:'target',sub:false}]}];
-/* 과금 방식(KPI) → 서머리의 실적 단가 열 · 목표 단가 열 · 계산 밑값 */
-const KPI_COST={CPM:{c:'cpm',g:'g_cpm',b:'imp',m:1000},CPC:{c:'cpc',g:'g_cpc',b:'click',m:1},
-  CPV:{c:'cpv',g:'g_cpv',b:'view',m:1},CPA:{c:'cpa',g:'g_cpa',b:'conv',m:1},
-  CPE:{c:'cpe',g:'g_cpe',b:'eng',m:1},CPI:{c:'cpi',g:'',b:'install',m:1}};
-/* 이 행에 걸린 라인들이 모두 같은 과금 방식이면 그 지표 열을 KPI 로 본다 */
-const bidNorm=l=>{
-  const m=String((l&&l.bid)||'').toUpperCase().match(/CP[MCVAIETD]/);
-  if(!m)return '';
-  return ({CPT:'CPM',CPD:'CPM'})[m[0]]||m[0];};
+/* **KPI 지표** → 그 지표의 비용 효율 열 · 목표 단가 열 · 계산 밑값.
+   비드 타입이 아니라 라인에 정해 둔 KPI 를 따른다 —
+   KPI 가 "클릭" 이면 CPM 이 아니라 목표 CPC · CPC 를 견준다. */
+const KPI_COSTCOL={
+  imp:{c:'cpm',g:'g_cpm',b:'imp',m:1000},
+  click:{c:'cpc',g:'g_cpc',b:'click',m:1},
+  view:{c:'cpv',g:'g_cpv',b:'view',m:1},
+  conv:{c:'cpa',g:'g_cpa',b:'conv',m:1},
+  lead:{c:'cpa',g:'g_cpa',b:'lead',m:1},
+  eng:{c:'cpe',g:'g_cpe',b:'eng',m:1},
+  install:{c:'cpi',g:'',b:'install',m:1}};
+/* 화면에 보이는 값(원 단위)이 실제로 다를 때만 "저조" 로 본다 —
+   1원 미만 차이는 같은 값으로 읽히므로 붉게 칠하지 않는다 */
+const kpiWorse=(act,goal)=>isFinite(act)&&isFinite(goal)&&goal>0
+  &&Math.round(act)-Math.round(goal)>=1;
+/* 이 행에 걸린 라인들의 KPI 지표가 하나로 모이면 그 지표의 단가 열을 강조한다 */
 function rowKpi(ls,cols){
   if(!ls||!ls.length)return null;
-  const bid=bidNorm(ls[0]);
-  if(!bid||ls.some(l=>bidNorm(l)!==bid))return null;
-  const d=KPI_COST[bid];
+  const k=kpiOf(ls[0]);
+  if(!k||ls.some(l=>kpiOf(l)!==k))return null;
+  const d=KPI_COSTCOL[k];
   if(!d||!cols.includes(d.c))return null;
-  return d;}
+  return {...d,kpi:k};}
 const gauge=v=>!isFinite(v)?'<span class="na">–</span>'
   :`<span class="gauge"><b class="mono">${pct(v)}</b><span class="track"><i style="width:${Math.min(v,1)*100}%"></i></span></span>`;
 function buildPivot(tbl,cfg,cdef,cellDef,rerender){
@@ -415,17 +422,19 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       kc=' kpicol';
       const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
       const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
-      if(isFinite(act)&&isFinite(goal)&&goal>0&&act>goal)kc+=' kpibad';}
+      /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
+      if(kpiWorse(act,goal))kc+=' kpibad';}
     return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${kc?` title="${esc(kpiTip(kpi,src,ex))}"`:''}>`
       +`${g!==undefined?gauge(g):txt}</td>`;}).join('');
   const kpiTip=(kpi,src,ex)=>{
     const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
     const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
-    const nm=Object.keys(KPI_COST).find(x=>KPI_COST[x].c===kpi.c)||'';
+    const nm=`${KPI_LABEL[kpi.kpi]||kpi.kpi} · ${(METRICS[kpi.c]||{l:kpi.c}).l}`;
     if(!isFinite(act)||!isFinite(goal)||!goal)return `이 라인의 KPI 지표 (${nm})`;
-    const d=(act-goal)/goal;
-    return `이 라인의 KPI 지표 (${nm}) · 목표 ${won(goal)} 대비 `
-      +`${d>0?'+':''}${(d*100).toFixed(1)}% ${d>0?'(저조)':'(우수)'}`;};
+    const d=Math.round(act)-Math.round(goal);
+    if(!d)return `KPI 지표 (${nm}) · 목표 ${won(goal)}와 같음`;
+    return `KPI 지표 (${nm}) · 목표 ${won(goal)} 대비 `
+      +`${d>0?'+':''}${(d/goal*100).toFixed(1)}% ${d>0?'(저조)':'(우수)'}`;};
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
   if(finer&&expIdx.length){

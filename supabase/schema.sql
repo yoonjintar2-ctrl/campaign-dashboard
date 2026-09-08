@@ -569,8 +569,14 @@ begin
           or public.is_master(p_id))
     into ok;
   if not ok then return false; end if;
-  delete from public.campaigns where id = p_id;   -- 자식 테이블은 on delete cascade
+  -- 일별 실적이 아주 많은 캠페인은 cascade 한 번으로 지우면 시간 제한에 걸린다.
+  -- 자식부터 먼저 지우고 마지막에 캠페인 행을 지운다. (v48)
+  delete from public.daily_stats      where campaign_id = p_id;
+  delete from public.campaign_history where campaign_id = p_id;
+  delete from public.campaigns where id = p_id;   -- 남은 자식 테이블은 on delete cascade
   return true;
 end;
 $$;
+-- 이 함수 안에서만 시간 제한을 넉넉히 준다 (기본값은 몇 초라 큰 캠페인에서 취소된다)
+alter function public.delete_campaign(uuid) set statement_timeout = '300s';
 grant execute on function public.delete_campaign(uuid) to authenticated;

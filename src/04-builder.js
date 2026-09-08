@@ -728,9 +728,13 @@ function renderPace(){
        예전에는 Math.max(y.v,1) 이라 실적이 0 인 매체도 한 칸을 차지해 균등하게 보였다. */
     const segList=(x.media.length?x.media.filter(y=>y.v>0):[]);
     const useList=(segList.length?segList:[{m:'–',v:Math.max(x.act,1)}]);
-    /* 실적이 적어도 매체가 각각 보이도록 최소 폭을 준다 (예전엔 소수점 폭이라 한 덩어리로 보였다) */
+    /* 구간 폭은 **실적 비율 그대로**.
+       예전에는 flex-grow 로 나눴는데, 안쪽 여백(9px×2)이 flex-basis 밖에 붙어서
+       실적이 적을 때는 여백이 폭을 지배해 모든 매체가 똑같은 너비로 보였다.
+       → 퍼센트로 못 박고 여백은 box-sizing 안으로 넣는다. */
+    const segTot=sum(useList.map(y=>+y.v||0))||1;
     const segs=useList.map((y,si)=>
-      `<i style="flex:${y.v} 1 0" data-m="${esc(y.m)}" data-si="${si}">`
+      `<i style="width:${(y.v/segTot*100).toFixed(4)}%" data-m="${esc(y.m)}" data-si="${si}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
     return `<div class="pline">
@@ -745,18 +749,19 @@ function renderPace(){
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
-  /* 머리글 · 목표 페이스는 기간 필터에서 고른 구간 기준 —
-     9/1~9/2 를 고르면 "집행 2일차 / 2일" 이 되고 페이스 점도 그 2일 기준으로 잡힌다.
-     기간을 따로 잡지 않았으면 분모는 캠페인 전체 일수를 쓴다(33일차 / 61일). */
-  /* 기본 구간(캠페인 시작 ~ 어제)과 다를 때만 "좁혀 본" 것으로 친다 */
+  /* 머리글 — **총 일수는 언제나 캠페인 전체 일수**.
+     조회 기간을 좁혀도 "총 N일" 이 그 구간 길이로 줄어들면 캠페인이 짧아진 것처럼 보인다.
+     좁혀 본 경우에는 그 구간을 따로 덧붙여 알려 준다. */
   const dflt=mkScope(cs.startIso,cs.endIso>YESTERDAY?(YESTERDAY>=cs.startIso?YESTERDAY:cs.startIso):cs.endIso);
   const narrow=sc.startIso!==dflt.startIso||sc.endIso!==dflt.endIso;
-  const den=narrow?sc.days:cs.days;
+  const den=cs.days;
+  /* 며칠째인가도 캠페인 시작일 기준 — 조회 시작일이 아니라 */
+  const elapsedAll=Math.min(cs.days,Math.max(0,dIdx(sc.endIso)-cs.i0+1));
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
-      <div class="phead">집행 ${sc.elapsed}일차 <span class="sep">/</span> 총 ${den}일
-        <span class="el">${Math.round(sc.elapsed/Math.max(den,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">캠페인 총 ${cs.days}일</span>`:''}</div>
+      <div class="phead">집행 ${elapsedAll}일차 <span class="sep">/</span> 총 ${den}일
+        <span class="el">${Math.round(elapsedAll/Math.max(den,1)*100)}% 경과</span>
+        ${narrow?`<span class="vw">조회 기간 ${sc.days}일 (${sc.startIso.slice(5).replace('-','/')}~${sc.endIso.slice(5).replace('-','/')})</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -802,7 +807,9 @@ function fitPaceLabels(){
   document.querySelectorAll('#paceBox .mstack:not(.tight)>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
-    seg.classList.remove('nolb','nopc');
+    seg.classList.remove('nolb','nopc','nopad');
+    /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 — 비율이 뭉개지지 않게 */
+    if(w<40)seg.classList.add('nopad');
     const need=nm.textContent.length*7.4+20;
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
@@ -954,7 +961,13 @@ function renderSpendDonut(box,pr){
 let DONUT_ORDER={};
 /* 화면에서 뺀 항목 — 기준(매체별/상품별/제품별)마다 따로 기억한다 */
 let DONUT_HIDE={};
-const donutKey=(l,mode)=>mode==='product'?l.media+' · '+l.product:l[mode];
+/* 묶음 기준 — 매체 / 구분 · 매체 / 구분 / 매체 · 광고상품 / 제품.
+   같은 매체를 여러 구분에서 집행하면 매체만으로는 나눌 수 없어서 "구분 · 매체" 를 넣었다. */
+const donutKey=(l,mode)=>
+  mode==='product'?l.media+' · '+l.product
+  :mode==='segmedia'?(l.segment||'구분 없음')+' · '+l.media
+  :mode==='segment'?(l.segment||'구분 없음')
+  :l[mode];
 /* 그 기준에서 나올 수 있는 모든 항목 — 예산 큰 순, 끌어서 바꾼 순서가 있으면 그 순서 */
 function donutKeys(mode,all){
   const ls=activeLines();
@@ -971,7 +984,8 @@ function donutKeys(mode,all){
 /* 표시 항목 고르기 — 체크로 넣고 빼고, 끌어서 순서를 바꾼다 */
 function openDonutPicker(){
   const mode=$('kpiGroupSel').value||'media';
-  const label={media:'매체',product:'광고상품',line:'제품'}[mode]||'항목';
+  const label={media:'매체',segmedia:'구분 · 매체',segment:'구분',
+    product:'광고상품',line:'제품'}[mode]||'항목';
   const ls=activeLines();
   const draw=()=>{
     const keys=donutKeys(mode,true),off=DONUT_HIDE[mode]||[];
@@ -1026,7 +1040,10 @@ function renderDonuts(){
   /* 배경 그라데이션(청록빛 남색)과 같은 계열로 채도를 올린 링 색 */
   const COL=KPI_RING;
   keys.forEach(name=>{
-    const items=ls.filter(l=>(mode==='product'?l.media+' · '+l.product:l[mode])===name);
+    const items=ls.filter(l=>donutKey(l,mode)===name);
+    /* 목표 페이스는 **이 카드에 걸린 라인들** 기준 —
+       아직 시작일이 오지 않은 매체는 페이스가 0 이어야 한다 (예전엔 캠페인 전체 비율을 썼다) */
+    const cardPace=paceRatioOf(items);
     /* KPI가 섞여 있으면 예산이 큰 순으로 최대 2개까지만 겹쳐 그린다 (3개 이상은 판독이 어려움) */
     const MAXRING=2;
     const allKpis=[...new Set(items.map(kpiOf))]
@@ -1037,8 +1054,12 @@ function renderDonuts(){
     const safe=v=>isFinite(v)?v:0;
     const mk=k=>{
       const it=items.filter(l=>kpiOf(l)===k),w=sum(it.map(lineGross));
+      const goal=safe(sum(it.map(l=>goalIn(l,k))));
+      const due=safe(sum(it.map(l=>paceDue(l,k))));
       return {k,ach:safe(sum(it.map(l=>safe(kpiAch(l))*lineGross(l)))/w),
-        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal:safe(sum(it.map(l=>goalIn(l,k))))};};
+        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal,due,
+        /* 지표별 목표 페이스 — 목표가 없으면 라인 기간만으로 잡는다 */
+        pace:goal?due/goal:paceRatioOf(it)};};
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
     const restRows=restKpis.map(k=>({...mk(k),color:'var(--gray)'}));
     const c=el('div','card donut',box);
@@ -1103,7 +1124,7 @@ function renderDonuts(){
     const paceLegend=[];
     rings.forEach((r,i)=>{
       const rad=(VB/2-TH/2-24)-i*(TH+GAPR),cir=2*Math.PI*rad;
-      const pf=Math.min(Math.max(pr,0),1), af=Math.min(Math.max(r.ach,0),1);
+      const pf=Math.min(Math.max(safe(r.pace),0),1), af=Math.min(Math.max(r.ach,0),1);
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
@@ -1130,7 +1151,13 @@ function renderDonuts(){
         t2.setAttribute('paint-order','stroke');}
       /* 목표 페이스 — 호 끝 바깥쪽에 말풍선으로 (지시선 + 흰 박스) */
       /* 목표 페이스는 카드 왼쪽 아래 범례로 뺀다 (도넛 안이 좁아 읽기 어려웠다) */
-      paceLegend.push({k:r.k,v:r.goal*pr,color:r.color});
+      paceLegend.push({k:r.k,v:r.goal*pf,color:r.color});
+      /* 링 바깥에 목표 페이스 위치를 아주 작은 점으로 찍는다
+         (캠페인 진행 현황 막대의 점과 같은 뜻 · 크기는 훨씬 작게) */
+      if(pf>0.0005){
+        const [dx,dy]=pxy(360*pf,rad+TH/2+4.5);
+        S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:2.6,fill:PACE,
+          stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
       });
     /* 마우스를 올리면 그 KPI의 세부 데이터를 보여준다 (하단 목록 대신) */
     rings.concat(restRows).forEach((r,i)=>{
@@ -1142,8 +1169,10 @@ function renderDonuts(){
         +`<div class="r"><span class="l">집행</span><b>${fmt(r.act)}</b></div>`
         +`<div class="r"><span class="l">목표</span><b>${fmt(r.goal)}</b></div>`
         +`<div class="r"><span class="l">달성률</span><b>${pct(r.ach,1)}</b></div>`
-        +`<div class="r"><span class="l">목표 페이스</span><b>${pct(pr,1)} (${fmt(r.goal*pr)})</b></div>`
-        +`<div class="r"><span class="l">페이스 대비</span><b>${(r.ach-pr>=0?'+':'−')+Math.abs((r.ach-pr)*100).toFixed(1)}%p</b></div>`));
+        +`<div class="r"><span class="l">목표 페이스</span><b>${pct(safe(r.pace),1)} (${fmt(r.goal*safe(r.pace))})</b></div>`
+        +`<div class="r"><span class="l">페이스 대비</span>`
+        +`<b>${(r.ach-safe(r.pace)>=0?'+':'−')+Math.abs((r.ach-safe(r.pace))*100).toFixed(1)}%p</b></div>`
+        +(lineSpanNote(items.filter(l=>kpiOf(l)===r.k))||'')));
       hit.addEventListener('mouseleave',hideTip);});
     ring.appendChild(svg);
     /* 가운데 — 달성률만 (KPI가 여러 개면 예산 가중 평균) */
@@ -1159,6 +1188,16 @@ function renderDonuts(){
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
   });
   wireDonutDrag(box,mode);
+}
+/* 아직 시작하지 않았거나 이미 끝난 라인이면 그 사실을 툴팁에 덧붙인다 */
+function lineSpanNote(ls){
+  if(!ls||!ls.length)return '';
+  const started=ls.filter(l=>lineDone(l)>0).length;
+  if(started===ls.length)return '';
+  if(!started){
+    const st=ls.map(l=>l.start).filter(Boolean).sort()[0];
+    return `<div class="r"><span class="l">집행 상태</span><b>아직 시작 전${st?` (${st.slice(5).replace('-','/')} 시작)`:''}</b></div>`;}
+  return `<div class="r"><span class="l">집행 상태</span><b>${ls.length}개 중 ${started}개만 시작</b></div>`;
 }
 /* 카드를 끌어서 좌우 순서 바꾸기 (소진 광고비 카드는 늘 맨 앞에 고정) */
 function wireDonutDrag(box,mode){

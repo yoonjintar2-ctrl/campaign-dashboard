@@ -232,12 +232,30 @@ function renderKpiTable(){
   let prevG=null;
   const head=cols.map(c=>{const sep=(c.g||'')!==prevG;prevG=c.g||'';
     const gk=GKEY[c.k];
-    return `<th class="${sep?'gsep':''}" style="min-width:${c.w}px">${c.l}</th>`;}).join('');
+    return `<th class="${sep?'gsep ':''}thsf" style="min-width:${c.w}px">`
+      +`<span class="thl">${c.l}</span>${tblMenuBtn('line',c.k)}</th>`;}).join('');
   /* 행 조작(복제 · 삭제)은 맨 앞 열로 — 표가 가로로 길어 오른쪽 끝까지 가기 번거로웠다 */
   let h=`<thead><tr><th class="rm" rowspan="1" style="width:74px">`
     +`<button class="btn sm danger" id="lineClearAll" title="예상 효율 값을 모두 지웁니다"`
     +` style="padding:0 6px">✕</button></th>${head}</tr></thead><tbody>`;
-  LINES.forEach((l,i)=>{
+  /* 정렬·필터는 보이는 순서만 바꾼다 (LINES 배열 자체는 그대로) */
+  const lineVal=(l,k)=>{
+    const c=LINE_COLS.find(x=>x.k===k);
+    if(!c)return l[k];
+    if(c.type==='exp')return l.e?l.e[k.slice(2)]:'';
+    if(c.type==='gross'||c.k==='budget')return lineGross(l);
+    if(c.type==='val')return lineValue(l);
+    if(c.type==='ro')return k==='net'?lineNet(l):k==='budget'?lineGross(l):lineValue(l);
+    if(c.type==='ro2')return bonusRate([l]);
+    if(c.type==='chips')return ((CHIP_KIND[k]||CHIP_KIND.target).get(l)||[]).join(' · ');
+    if(c.type==='kpi')return KPI_LABEL[kpiOf(l)]||'';
+    if(c.type==='dev')return (l.device||[]).join(',');
+    return l[k];};
+  const lineNum=k=>{const c=LINE_COLS.find(x=>x.k===k);
+    return !!c&&['exp','gross','val','ro','ro2','pct','num'].includes(c.type);};
+  const lview=tblViewIdx('line',LINES,lineNum,lineVal);
+  lview.forEach(i=>{
+    const l=LINES[i];
     prevG=null;
     h+=`<tr><td class="rm" style="white-space:nowrap;padding-left:3px;padding-right:3px">`
       +`<button class="btn sm" data-ldup="${i}" title="이 행을 같은 값으로 복제" style="padding:0 6px">⧉</button>`
@@ -288,6 +306,18 @@ function renderKpiTable(){
     else if(c.k==='feeR')v=((sum(LINES.map(l=>lineGross(l)*l.feeR))/gross)*100).toFixed(1)+'%';
     return `<td class="${cls}">${v}</td>`;}).join('')+'</tr></tbody>'+dl;
   t.innerHTML=h;
+  t.classList.add('lines');
+  /* 머리글의 ⋮ — 정렬 · 필터 */
+  t.querySelectorAll('th [data-thm]').forEach(b=>b.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    const k=b.dataset.thm,c=LINE_COLS.find(x=>x.k===k)||{l:k};
+    openTblMenu(b,'line',k,c.l||k,LINES,lineVal,()=>renderKpiTable());});
+  {const st=$('lineSaveState');
+   const hid=LINES.length-lview.length;
+   if(st&&hid>0)st.innerHTML=`<button type="button" class="badjump" id="lineFilterOff"`
+     +` title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`;
+   const fo=$('lineFilterOff');
+   if(fo)fo.onclick=()=>{delete TBL_FILTER.line;delete TBL_SORT.line;renderKpiTable();};}
   /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
   enableColResize(t,cols,()=>markDirty(),1);
   if(typeof enableColDrag==='function')enableColDrag(t,cols,view=>{
@@ -843,6 +873,31 @@ function confirmModal(msg,sub,onYes,okLabel,rawSub){
     `<button class="btn" data-close>취소</button><button class="btn primary" id="cfmYes">${okLabel||'삭제'}</button>`,{w:460});
   $('cfmYes').onclick=()=>{closeModal();onYes();};}
 /* 겹쳐 띄운 창 전부 닫기 */
+/* ---------- 진행 표시 ----------
+   큰 엑셀을 불러올 때 화면이 몇 초씩 멈춰 있으면 "먹통이 됐다"고 느껴진다.
+   단계마다 얼마나 왔는지 보여 주고, 사이사이 브라우저가 화면을 그릴 틈을 준다. */
+let PROG=null;
+function progOpen(title){
+  progClose();
+  const w=document.createElement('div');
+  w.className='progwrap';
+  w.innerHTML=`<div class="progbox"><div class="pt"></div>
+    <div class="pbarx"><i></i></div><div class="ps"></div></div>`;
+  w.querySelector('.pt').textContent=title||'처리 중';
+  document.body.appendChild(w);
+  PROG={w,bar:w.querySelector('.pbarx>i'),sub:w.querySelector('.ps'),t:w.querySelector('.pt')};
+  return PROG;}
+function progSet(pct,label){
+  if(!PROG)return;
+  /* pct 가 null 이면 "얼마나 걸릴지 모르는 단계" — 막대가 스스로 흐른다 */
+  const idle=pct==null;
+  PROG.w.querySelector('.pbarx').classList.toggle('idle',idle);
+  if(!idle)PROG.bar.style.width=Math.max(0,Math.min(100,pct))+'%';
+  if(label!=null)PROG.sub.textContent=label;}
+function progTitle(t){if(PROG)PROG.t.textContent=t;}
+function progClose(){if(PROG&&PROG.w.parentNode)PROG.w.remove();PROG=null;}
+/* 화면이 실제로 다시 그려질 때까지 한 번 쉬어 준다 */
+const uiTick=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
 function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
@@ -892,9 +947,11 @@ function buildSelects(){
   fill('dimSel',SERIES_DIMS.map(d=>d.k),'media',k=>SERIES_DIMS.find(d=>d.k===k).l);
   fill('ganttMetric',['imp','click','view','cost'],'imp',k=>METRICS[k].l);
   fill('tmapMetric',TMAP_METRICS,TMAP.metric,k=>METRICS[k].l);
-  $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();};
+  $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();
+    try{markDirty();saveLocal();}catch(x){}};
   $('tmapMode').value=TMAP.dims.join('|');
-  $('tmapMode').onchange=e=>{TMAP.dims=e.target.value.split('|');renderTreemap();};
+  $('tmapMode').onchange=e=>{TMAP.dims=e.target.value.split('|');renderTreemap();
+    try{markDirty();saveLocal();}catch(x){}};
   /* 효율 버블 — 축 선택 */
   ['x','y'].forEach(ax=>{
     const sel=$(ax==='x'?'bubX':'bubY');if(!sel)return;
@@ -923,7 +980,7 @@ function buildSelects(){
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
-  $('kpiGroupSel').onchange=renderDonuts;
+  $('kpiGroupSel').onchange=()=>{renderDonuts();try{markDirty();saveLocal();}catch(x){}};
   {const b=$('kpiPickBtn');if(b)b.onclick=openDonutPicker;}
 }
 let pendingLeave=false;
@@ -1002,9 +1059,10 @@ function applyRole(){
   const chip=$('roleChip');
   if(chip){const nm=roleName();
     chip.textContent=nm;chip.classList.toggle('agency',!c);
-    /* 슈퍼마스터는 금, 마스터는 은 — 한눈에 등급이 보이도록 */
+    /* 슈퍼마스터는 금, 마스터는 은, 운영진은 동 — 한눈에 등급이 보이도록 */
     chip.classList.toggle('gold',nm==='슈퍼마스터');
     chip.classList.toggle('silver',nm==='마스터');
+    chip.classList.toggle('bronze',nm==='운영진');
     chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
       :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
   /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */

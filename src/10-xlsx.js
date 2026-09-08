@@ -252,6 +252,15 @@ const parseCSV=txt=>{
 };
 const cleanNum=v=>{const s=String(v==null?'':v).replace(/[^0-9.\-]/g,'');
   return s===''||s==='-'?null:+s;};
+/* 엑셀 시트의 "쓴 범위" 는 종종 1,048,576행(최대치)으로 잡혀 있다.
+   뒤쪽 빈 줄을 잘라 내지 않으면 백만 줄을 헛돌게 된다. */
+function trimGrid(g){
+  let last=-1;
+  for(let i=g.length-1;i>=0;i--){
+    const r=g[i];
+    if(r&&r.some(v=>String(v==null?'':v).trim()!=='')){last=i;break;}}
+  return last<0?[]:g.slice(0,last+1);
+}
 /* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 낸다
    ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹") */
 const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'');
@@ -290,6 +299,27 @@ function xlsDay(d){
   const t=Math.round((d.getTime()-d.getTimezoneOffset()*60000)/864e5)*864e5, x=new Date(t);
   return `${x.getUTCFullYear()}-${String(x.getUTCMonth()+1).padStart(2,'0')}-${String(x.getUTCDate()).padStart(2,'0')}`;
 }
+const XLS_MAX_ROWS=300000;
+/* 시트의 "쓴 범위(!ref)" 가 A1:L1048576 처럼 최대치로 잡혀 있는 파일이 많다.
+   그대로 읽으면 1,200만 칸을 두 번 훑느라 30초씩 걸린다 —
+   실제로 값이 들어 있는 마지막 행·열까지로 줄여 두고 읽는다. */
+function tightenRef(ws){
+  try{
+    if(!ws||!ws['!ref']||typeof XLSX==='undefined')return;
+    const r0=XLSX.utils.decode_range(ws['!ref']);
+    let maxR=-1,maxC=-1;
+    for(const k in ws){
+      if(k.charCodeAt(0)===33)continue;                 /* '!' 로 시작하는 메타 */
+      const c=ws[k];
+      if(!c||c.v===undefined||c.v===null||String(c.v).trim()==='')continue;
+      const a=XLSX.utils.decode_cell(k);
+      if(a.r>maxR)maxR=a.r;
+      if(a.c>maxC)maxC=a.c;}
+    if(maxR<0)return;
+    ws['!ref']=XLSX.utils.encode_range({s:{r:r0.s.r,c:r0.s.c},
+      e:{r:Math.min(r0.e.r,maxR),c:Math.min(r0.e.c,maxC)}});
+  }catch(e){}
+}
 /* 파일 → 2차원 배열. .xlsx 는 SheetJS 가 있을 때만 (배포본에서는 자동 로드) */
 function readGrid(file){
   return new Promise((res,rej)=>{
@@ -300,17 +330,21 @@ function readGrid(file){
       const r=new FileReader();
       r.onload=()=>{try{
         /* cellDates — 날짜 칸을 진짜 날짜로 읽는다 ("09월 01일" 처럼 연도가 안 보이는 서식 대비) */
-        const wb=XLSX.read(new Uint8Array(r.result),{type:'array',cellDates:true});
+        /* sheetRows — "쓴 범위" 가 백만 행으로 잡힌 파일에서 XML 을 끝까지 훑지 않게 한다.
+           (16MB 짜리 실무 파일에서 12초 → 5초) 실제 리포트가 30만 행을 넘을 일은 없다. */
+        const wb=XLSX.read(new Uint8Array(r.result),
+          {type:'array',cellDates:true,sheetRows:XLS_MAX_ROWS});
         const ws=wb.Sheets[wb.SheetNames[0]];
+        tightenRef(ws);
         const OPT={header:1,defval:''};
         const shown=XLSX.utils.sheet_to_json(ws,{...OPT,raw:false});  /* 보이는 대로 (글자·날짜) */
         const val=XLSX.utils.sheet_to_json(ws,{...OPT,raw:true});     /* 원래 값 (숫자) */
         /* 숫자는 **서식에 반올림된 글자 대신 원래 값**을 쓴다 —
            셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
-        res(shown.map((row,ri)=>row.map((v,ci)=>{
+        res(trimGrid(shown.map((row,ri)=>row.map((v,ci)=>{
           const rv=val[ri]?val[ri][ci]:undefined;
           if(rv instanceof Date&&!isNaN(rv))return xlsDay(rv);
-          return (typeof rv==='number'&&isFinite(rv))?rv:v;})));
+          return (typeof rv==='number'&&isFinite(rv))?rv:v;}))));
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
       r.readAsArrayBuffer(file);
@@ -329,16 +363,28 @@ function pickFile(cb){
 function importDaily(f){
   const run=(async file=>{
     let grid;
+    progOpen('일자별 실적을 불러오는 중');
+    progSet(null,`${file.name||'파일'} 읽는 중…`);
+    await uiTick();
     try{grid=await readGrid(file);}catch(e){
-      confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
+      progClose();confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
+    progSet(26,`${grid.length.toLocaleString()}줄 · 머리글 찾는 중…`);
+    await uiTick();
     const cols=dailyColsOf(true);
     const hi=findHeader(grid,cols);
-    if(hi<0){confirmModal('머리글 줄을 찾지 못했습니다.',
+    if(hi<0){progClose();confirmModal('머리글 줄을 찾지 못했습니다.',
       '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
     const keys=mapHeader(grid[hi],cols);
     const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
     let rows=[];
+    const NROW=Math.max(1,grid.length-hi-1);
+    let tick=performance.now();
     for(let i=hi+1;i<grid.length;i++){
+      /* 0.1초에 한 번만 화면에 숨 쉴 틈을 준다 (줄 수로 세면 빈 줄이 많을 때 오히려 느려진다) */
+      if(performance.now()-tick>100){
+        progSet(26+((i-hi)/NROW)*30,
+          `${rows.length.toLocaleString()} / ${NROW.toLocaleString()}행 정리 중…`);
+        await uiTick();tick=performance.now();}
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
       const o={date:'',segment:'',media:'',product:'',target:'',line:''};
@@ -357,27 +403,58 @@ function importDaily(f){
       if(filled||o.date)rows.push(o);}
     /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
        "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
-    rows.forEach(canonRow);
+    progSet(58,'예상 효율과 맞춰 보는 중…');await uiTick();
+    tick=performance.now();
+    for(let i=0;i<rows.length;i++){
+      if(performance.now()-tick>100){
+        progSet(58+(i/Math.max(rows.length,1))*22,
+          `${i.toLocaleString()} / ${rows.length.toLocaleString()}행 맞춰 보는 중…`);
+        await uiTick();tick=performance.now();}
+      canonRow(rows[i]);}
     /* **행은 하나도 버리지 않는다.**
        매체 리포트에는 값까지 똑같은 줄이 실제로 두 번 나오는 경우가 있어서
        (광고그룹만 다르고 숫자가 같은 경우 등) 예전처럼 지우면 합계가 원본과 어긋난다.
        대신 몇 줄이 완전히 같은지 세어 알려만 준다. */
+    progSet(82,'같은 줄이 있는지 보는 중…');await uiTick();
     const seen=new Set();let dup=0;
     rows.forEach(r=>{const k=(r.__src||'')+'\u0002'+rowKey(r);
       if(seen.has(k))dup++;else seen.add(k);});
     rows.forEach(r=>{delete r.__src;});
-    if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
+    if(!rows.length){progClose();
+      confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
+    progSet(94,'매칭 결과 확인 중…');await uiTick();
     const bad=rows.filter(rowBad).length;
     const badC=rows.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
+    progSet(100,'');
+    progClose();
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
       +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
       +(bad?` 예상 효율과 맞지 않는 칸이 ${badC}개(${bad}행) 있어 그 칸만 붉게 표시됩니다.`:''),
-      ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();applySheet();renderAll();
-        const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
+      ()=>{applyImportedRows(rows);},'불러오기');
   });
   /* 버튼에 그냥 걸면 클릭 이벤트가 첫 인자로 들어온다 — 진짜 파일일 때만 바로 읽는다 */
   (f instanceof Blob)?run(f):pickFile(run);
+}
+/* 표에 얹고 대시보드까지 반영 — 여기도 몇 초 걸리므로 진행 표시를 이어서 보여 준다 */
+async function applyImportedRows(rows){
+  progOpen('표에 반영하는 중');
+  progSet(8,`${rows.length.toLocaleString()}행을 표에 옮기는 중…`);
+  await uiTick();
+  pushUndo();
+  SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};
+  renderSheet();
+  progSet(58,'대시보드에 반영하는 중…');
+  await uiTick();
+  applySheet();
+  progSet(84,'그래프를 다시 그리는 중…');
+  await uiTick();
+  renderAll();
+  const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;
+  progSet(100,'완료');
+  await uiTick();
+  progClose();
+  try{markDirty();saveLocal();}catch(err){}
 }
 function importLines(f){
   const run=(async file=>{

@@ -285,8 +285,13 @@ function mountHNav(parts,blocks,hKeys,hDim){
     if(r&&r.children[0])pt.wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');});
   parts.forEach(pt=>pt.wrap.classList.add('hfrozen'));
   setFz();setTimeout(setFz,0);addEventListener('resize',setFz);
-  /* 어느 블록을 밀든 나머지도 같은 위치로 따라온다 */
-  let syncing=false;
+  /* 어느 블록을 밀든 나머지도 같은 위치로 따라온다.
+     ⚠ 버튼으로 부드럽게 옮기는 동안에는 서로 따라가기를 잠시 멈춘다 —
+        안 그러면 첫 블록이 움직이자마자 그 위치를 나머지에 복사해 버려서
+        모든 블록의 부드러운 이동이 취소되고 "찔끔" 움직이다 멈춘다. */
+  let syncing=false,syncT=null;
+  const holdSync=ms=>{syncing=true;clearTimeout(syncT);
+    syncT=setTimeout(()=>{syncing=false;},ms||900);};
   const syncFrom=src=>{
     if(syncing)return;syncing=true;
     parts.forEach(pt=>{if(pt.wrap!==src)pt.wrap.scrollLeft=src.scrollLeft;});
@@ -313,15 +318,29 @@ function mountHNav(parts,blocks,hKeys,hDim){
   if(hKeys&&hKeys.length>1)
     wireSegDrag(chips.slice(1).map((c,i)=>({el:c,key:hKeys[i]})),hKeys,hDim,'x');
   const fill=nav.querySelector('.nvbar>i');
+  let wantIdx=-1;
   const goTo=i=>{const L=lefts();if(!L.length)return;
     const k=Math.max(0,Math.min(L.length-1,i));
     const x=Math.max(0,L[k]-frozen());
-    parts.forEach(pt=>pt.wrap.scrollTo({left:x,behavior:'smooth'}));};
+    wantIdx=k;
+    holdSync(900);
+    parts.forEach(pt=>pt.wrap.scrollTo({left:x,behavior:'smooth'}));
+    /* 부드러운 이동이 끝난 뒤 위치를 한 번 더 맞춰 준다 (중간에 멈춘 블록이 없도록) */
+    setTimeout(()=>{parts.forEach(pt=>{pt.wrap.scrollLeft=x;});paint();},760);};
   /* 지금 보고 있는 블록 — 스크롤 위치와 가장 가까운 블록 */
   const cur=()=>{const L=lefts();if(!L.length)return 0;
-    const fz=frozen(),x=wrap.scrollLeft;let k=0,best=Infinity;
+    const fz=frozen(),x=wrap.scrollLeft;
+    /* 마지막 세그먼트처럼 더 밀 수 없어 끝에 걸린 경우에도, 방금 고른 칩을 현재로 본다 */
+    if(wantIdx>=0&&wantIdx<L.length){
+      const mx=Math.max(0,wrap.scrollWidth-wrap.clientWidth);
+      const t=Math.min(mx,Math.max(0,L[wantIdx]-fz));
+      if(Math.abs(t-x)<4)return wantIdx;}
+    let k=0,best=Infinity;
     L.forEach((v,i)=>{const d=Math.abs(Math.max(0,v-fz)-x);if(d<best){best=d;k=i;}});
     return k;};
+  /* 손으로 밀면 "방금 고른 칩" 기억은 버린다 */
+  parts.forEach(pt=>['wheel','pointerdown','touchstart'].forEach(ev=>
+    pt.wrap.addEventListener(ev,()=>{wantIdx=-1;},{passive:true})));
   const paint=()=>{
     const k=cur();
     chips.forEach((c,i)=>c.classList.toggle('on',i===k));
@@ -528,7 +547,8 @@ function mountHeatHead(tbl){
 (function wireHeat(){
   const b=$('heatDay');if(!b)return;
   b.classList.toggle('on',HEAT_DAILY);
-  b.onclick=()=>{HEAT_DAILY=!HEAT_DAILY;b.classList.toggle('on',HEAT_DAILY);renderHeat();};
+  b.onclick=()=>{HEAT_DAILY=!HEAT_DAILY;b.classList.toggle('on',HEAT_DAILY);renderHeat();
+    try{markDirty();saveLocal();}catch(e){}};
 })();
 
 /* ===== 8. 소재 운영 ===== */
