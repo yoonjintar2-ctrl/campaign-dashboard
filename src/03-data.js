@@ -432,7 +432,13 @@ const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
 /* 기간 기본값 — 시작일은 캠페인 첫날, 종료일은 어제(데이터가 확정된 마지막 날) */
-function resetDateFilter(){
+/* 사람이 조회 기간을 직접 고른 적이 있으면, 페이지를 떠나거나 새로고침하기 전까지는
+   그 날짜를 그대로 둔다. (캠페인을 바꿔 열 때만 force 로 초기화) */
+let FILTER_TOUCHED=false;
+function resetDateFilter(force){
+  if(!force&&FILTER_TOUCHED&&FILTER.from&&FILTER.to)return;
+  return resetDateFilter0();}
+function resetDateFilter0(){
   const p=campScope();
   FILTER.from=p.startIso;
   FILTER.to=p.endIso>YESTERDAY?(YESTERDAY>=p.startIso?YESTERDAY:p.startIso):p.endIso;

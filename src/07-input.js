@@ -51,12 +51,15 @@ const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
    조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
+/* 이름 비교용 열쇠 — 앞뒤 공백 · 중간 공백 개수 · 영문 대소문자 차이는 같은 이름으로 본다.
+   (매체 시트가 "TOSS" 로 내려 주고 예상 효율에는 "Toss" 로 적혀 있어도 붙는다) */
+const dimKey=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' ');
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
-  if(!MULTI_DIMS.includes(k))return l[k]===v;
-  if(l[k]===v)return true;
-  const set=new Set(lineMulti(l,k)),want=parseMulti(v);
-  return want.length>0&&want.every(x=>set.has(x));};
+  if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
+  if(dimKey(l[k])===dimKey(v))return true;
+  const set=new Set(lineMulti(l,k).map(dimKey)),want=parseMulti(v);
+  return want.length>0&&want.every(x=>set.has(dimKey(x)));};
 const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
   const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>dimMatch(l,p,row[p])));
   /* 조합 전체와 그 안의 개별 항목을 함께 고를 수 있게 둘 다 내려 준다 */
@@ -76,15 +79,35 @@ function rowLine(r){
 /* 이 행이 예상 효율(라인)에 붙지 못하는 이유 —
    '' 정상 · 'line' 어느 라인과도 매칭되지 않음(매체·상품·타겟팅 이름이 다름 등)
    · 'date' 라인은 찾았지만 그 라인의 집행 기간 밖의 날짜 */
-function rowIssue(r){
-  const l=rowLine(r);
-  if(!l)return (r.media||r.product||r.target||r.segment||r.line)?'line':'';
-  return (r.date>=l.start&&r.date<=l.end)?'':'date';}
+/* 어느 "칸" 때문에 붙지 못했는지까지 짚어 준다.
+   앞 차원부터 차례로 후보 라인을 좁혀 가다가, 어떤 칸에서 후보가 0이 되면
+   그 칸을 범인으로 적어 두고 그 칸은 조건에서 빼고 계속 좁힌다.
+   → 행 전체가 아니라 문제가 된 칸만 남는다. */
+function rowCellIssues(r){
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
+  if(!keys.length)return {kind:'',cells:[]};
+  let pool=LINES,bad=[];
+  DIM_CHAIN.forEach(k=>{
+    if(!keys.includes(k))return;
+    const next=pool.filter(l=>dimMatch(l,k,r[k]));
+    if(next.length)pool=next;else bad.push(k);});
+  if(bad.length)return {kind:'line',cells:bad};
+  const l=rowLine(r)||pool[0];
+  if(l&&!(r.date>=l.start&&r.date<=l.end))return {kind:'date',cells:['date']};
+  return {kind:'',cells:[]};}
+function rowIssue(r){return rowCellIssues(r).kind;}
 const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
+  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+const CELL_ISSUE_LABEL={
+  segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
+  product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
+  target:'앞 칸과 맞는 타겟팅 그룹이 아닙니다',line:'앞 칸과 맞는 제품이 아닙니다',
   date:'그 라인의 집행 기간 밖의 날짜입니다'};
 function rowBad(r){return !!rowIssue(r);}
 /* 매칭 안 되는 행들의 위치 (0부터) */
 const badRowIdx=()=>SHEET.map((r,i)=>rowBad(r)?i:-1).filter(i=>i>=0);
+/* 매칭 안 되는 "칸" 개수 */
+const badCellCount=()=>SHEET.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
 /* 안내 문구를 누를 때마다 다음 "매칭 안 되는 행" 으로 데려간다 */
 let BAD_CURSOR=-1;
 function jumpToBadRow(){
@@ -102,11 +125,17 @@ function jumpToBadRow(){
   const r2=tr.getBoundingClientRect();
   if(r2.top<120||r2.bottom>innerHeight-40)
     scrollTo({top:scrollY+r2.top-innerHeight/2,behavior:'smooth'});
-  document.querySelectorAll('#sheet tr.badflash').forEach(x=>x.classList.remove('badflash'));
-  tr.classList.add('badflash');
-  setTimeout(()=>tr.classList.remove('badflash'),2200);
+  document.querySelectorAll('#sheet td.badflash').forEach(x=>x.classList.remove('badflash'));
+  const cells=tr.querySelectorAll('td.badcell');
+  (cells.length?cells:tr.querySelectorAll('td')).forEach(td=>td.classList.add('badflash'));
+  /* 문제가 된 칸이 가로로 숨어 있으면 그 칸까지 옆으로 굴려 준다 */
+  if(wrap&&cells.length){const cr=cells[0].getBoundingClientRect(),wr2=wrap.getBoundingClientRect();
+    if(cr.left<wr2.left+40||cr.right>wr2.right-10)
+      wrap.scrollLeft+=(cr.left-wr2.left)-wrap.clientWidth/2+cr.width/2;}
+  setTimeout(()=>document.querySelectorAll('#sheet td.badflash')
+    .forEach(x=>x.classList.remove('badflash')),2200);
   const jb=$('sheetBadJump');
-  if(jb)jb.textContent=`매칭 안 되는 행 ${idx.length}개 · ${BAD_CURSOR+1}번째 ▸`;
+  if(jb)jb.textContent=`매칭 안 되는 셀 ${badCellCount()}개 · ${BAD_CURSOR+1}번째 행 ▸`;
 }
 let SEL={r1:0,c1:0,r2:0,c2:0},selecting=false;
 const inSel=(r,c)=>r>=Math.min(SEL.r1,SEL.r2)&&r<=Math.max(SEL.r1,SEL.r2)&&c>=Math.min(SEL.c1,SEL.c2)&&c<=Math.max(SEL.c1,SEL.c2);
@@ -136,27 +165,33 @@ function renderSheet(){
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
     +cols.map(c=>`<th style="min-width:${c.w||110}px">${c.l}${c.type==='calc'?' ƒ':''}</th>`).join('')+'</tr></thead><tbody>';
   SHEET.forEach((r,ri)=>{
-    const iss=rowIssue(r);
-    h+=`<tr class="${iss?'bad':''}" data-ri="${ri}"${iss?` title="${esc(ROW_ISSUE_LABEL[iss])}"`:''}>`
+    /* 매칭 실패는 행 전체가 아니라 "문제가 된 칸" 만 표시한다 */
+    const cIss=rowCellIssues(r),badSet=new Set(cIss.cells);
+    h+=`<tr data-ri="${ri}">`
       +`<td class="rm"><button data-del="${ri}">✕</button></td>`;
     cols.forEach((c,ci)=>{
       if(c.type==='calc'){h+=`<td class="calc mono">${fmt(evalFormula(c.rule,r))}</td>`;return;}
       /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 */
       const v=c.type==='num'?(+r[c.k]?fmt(r[c.k]):''):(r[c.k]||'');
+      const isBad=badSet.has(c.k);
       const cls=[c.type==='dim'?'dd':'',c.k==='date'?'dt':'',inSel(ri,ci)?'sel':'',
+        isBad?'badcell':'',
         (ri===SEL.r1&&ci===SEL.c1)?'anchor':''].filter(Boolean).join(' ');
+      const bt=isBad?` title="${esc(CELL_ISSUE_LABEL[c.k]||ROW_ISSUE_LABEL[cIss.kind]||'')}"`:'';
       if(c.type==='dim'){
         /* 클릭하면 곧바로 선택 목록이 열리도록 select 사용 */
         const opts=dimOpts(c.k,r);
-        const cur=r[c.k]||'';
-        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"><select data-r="${ri}" data-c="${ci}">`
+        /* 대소문자·공백만 다른 이름은 등록된 표기 쪽이 골라진 것으로 본다 */
+        const raw=r[c.k]||'';
+        const cur=opts.find(o=>dimKey(o)===dimKey(raw))||raw;
+        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}><select data-r="${ri}" data-c="${ci}">`
           +`<option value=""${cur?'':' selected'}>선택</option>`
           +opts.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('')
           +(cur&&!opts.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')
           +`</select></td>`;
       }else if(c.k==='date'){
         /* 텍스트로 자유 입력 + 우측 달력 아이콘으로 날짜 선택 */
-        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"><span class="datecell">`
+        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}><span class="datecell">`
           +`<input type="text" class="dtxt" data-r="${ri}" data-c="${ci}" value="${esc(v)}" `
           +`placeholder="YYYY-MM-DD" title="8/3, 08-03, 2026-08-03 등 자유롭게 입력하면 자동 변환됩니다">`
           +`<button type="button" class="dpick" data-dp="${ri}" title="달력에서 선택">`
@@ -164,20 +199,21 @@ function renderSheet(){
           +`<input type="date" class="dnative" data-dn="${ri}" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(v)?v:'')}" tabindex="-1">`
           +`</span></td>`;
       }else{
-        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"><input type="text" data-r="${ri}" data-c="${ci}" value="${esc(v)}"></td>`;}
+        h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}><input type="text" data-r="${ri}" data-c="${ci}" value="${esc(v)}"></td>`;}
     });
     h+='</tr>';});
   t.innerHTML=h+'</tbody>'+dl;
   /* 매칭 실패는 "기간" 만의 문제가 아니다 — 상품명·타겟팅 이름이 달라도 붙지 않는다.
      그래서 문구를 매칭 기준으로 바꾸고, 누르면 그 행으로 차례차례 데려간다. */
   const badIdx=badRowIdx();
+  const nCell=badCellCount();
   const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
   const nDate=badIdx.length-nLine;
   $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
     +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
         title="누를 때마다 다음 행으로 이동합니다&#10;`
-        +`${nLine?`· 매칭되는 라인 없음 ${nLine}개`:''}${nLine&&nDate?'&#10;':''}`
-        +`${nDate?`· 집행 기간 밖 ${nDate}개`:''}">매칭 안 되는 행 ${badIdx.length}개 ▸</button>`:'');
+        +`${nLine?`· 이름이 맞지 않는 칸 ${nLine}행`:''}${nLine&&nDate?'&#10;':''}`
+        +`${nDate?`· 집행 기간 밖 ${nDate}행`:''}">매칭 안 되는 셀 ${nCell}개 ▸</button>`:'');
   {const jb=$('sheetBadJump');
    if(jb)jb.onclick=()=>jumpToBadRow();}
   const gross=sum(SHEET.map(r=>+r.cost||0));
@@ -380,13 +416,13 @@ function applySheet(){
   touched.forEach(l=>{
     const rows=SHEET.filter(r=>rowLine(r)===l);
     const byCr=new Map();
-    rows.forEach(r=>{const n2=String(r.creative||'').trim();if(!n2)return;
+    rows.forEach(r=>{const n2=dimKey(r.creative);if(!n2)return;
       byCr.set(n2,(byCr.get(n2)||0)+(+r[kpiOf(l)]||+r.imp||0));});
     if(byCr.size>1){
       const cs=CREATIVES.filter(c=>c.lid===l.id);
       const tot=sum([...byCr.values()]);
       if(tot>0&&cs.length){
-        cs.forEach(c=>{const v=byCr.get(c.name);if(v!=null)c.share=v/tot;});
+        cs.forEach(c=>{const v=byCr.get(dimKey(c.name));if(v!=null)c.share=v/tot;});
         const s2=sum(cs.map(c=>+c.share||0));
         if(s2>0)cs.forEach(c=>c.share=(+c.share||0)/s2);}}});
   buildFacts();

@@ -870,7 +870,7 @@ function buildFilters(){
       let f=($(p+'From')||{}).value||'',t=($(p+'To')||{}).value||'';
       if(f&&t&&t<f){const x=f;f=t;t=x;}
       if(f===FILTER.from&&t===FILTER.to)return;
-      FILTER.from=f;FILTER.to=t;
+      FILTER.from=f;FILTER.to=t;FILTER_TOUCHED=true;
       buildFilters();renderAll();};
     [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
       e2.onchange=apply;e2.oninput=apply;});};
@@ -929,20 +929,28 @@ function buildSelects(){
 let pendingLeave=false;
 function switchTab(name){
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
-    const n=SHEET.filter(rowBad).length;
-    confirmModal(`예상 효율과 매칭되지 않는 행이 ${n}개 있습니다.`,
-      '붉게 표시된 행의 <b>매체 · 광고상품 · 타겟팅 이름</b>이 예상 효율과 같은지, '
+    const n=SHEET.filter(rowBad).length,nc=badCellCount();
+    confirmModal(`예상 효율과 매칭되지 않는 셀이 ${nc}개 있습니다. (${n}행)`,
+      '붉게 표시된 <b>칸</b>의 이름이 예상 효율과 같은지, '
       +'<b>일자</b>가 그 라인의 집행 기간 안인지 확인해 주세요.<br>'
       +'그대로 이동하면 해당 행은 집계되지 않습니다. '
-      +'(데이터 입력 탭의 <b>“매칭 안 되는 행 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
+      +'(리포트 데이터 입력 탭의 <b>“매칭 안 되는 셀 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
       ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동',true);
     return;}
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
+  /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
+  try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
+    &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
   ['dash','input','setup'].forEach(n=>$('tab-'+n).classList.toggle('hidden',n!==name));
   $('subbar').classList.toggle('hidden',name!=='dash');
-  scrollTo({top:0});}
+  /* 일자별 상세 효율로 돌아왔으면 보던 자리로, 그 밖에는 맨 위로 */
+  const backRaw=name==='dash'&&$('sub-table')&&!$('sub-table').classList.contains('hidden');
+  if(backRaw&&typeof renderRaw==='function'){renderRaw();}
+  else scrollTo({top:0});}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
+  /* 일자별 상세 효율에서 나갈 때는 보던 자리를 기억해 둔다 */
+  try{if(typeof rawRemember==='function'&&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
   ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
   /* 효율 탭을 열 때는 **히트맵까지** 전부 다시 그린다 —
@@ -952,7 +960,9 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
       equalizeDuo();renderTreemap();}catch(e){}
     PERF_STALE=false;}
   if(b.dataset.sub==='table')renderRaw();
-  if(b.dataset.sub==='mix')renderMix();});
+  if(b.dataset.sub==='mix')renderMix();
+  /* 숨어 있는 동안 그려진 표는 폭을 재지 못해 머리 열 고정이 걸리지 않는다 — 다시 건다 */
+  try{if(typeof refreezeAll==='function')setTimeout(refreezeAll,0);}catch(e){}});
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
    · 클라우드가 설정되지 않은 데모(로컬 파일)  → 시행사 (시안을 그대로 둘러볼 수 있게)
    · 클라우드가 있는데 로그인 안 함 · 조회 권한 → 광고주 (대시보드만)
@@ -990,7 +1000,11 @@ function applyRole(){
   const role=currentRole(),c=role==='client';
   document.body.dataset.role=role;
   const chip=$('roleChip');
-  if(chip){chip.textContent=roleName();chip.classList.toggle('agency',!c);
+  if(chip){const nm=roleName();
+    chip.textContent=nm;chip.classList.toggle('agency',!c);
+    /* 슈퍼마스터는 금, 마스터는 은 — 한눈에 등급이 보이도록 */
+    chip.classList.toggle('gold',nm==='슈퍼마스터');
+    chip.classList.toggle('silver',nm==='마스터');
     chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
       :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
   /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */

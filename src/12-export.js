@@ -821,6 +821,17 @@ function shotTarget(){
   return {el:sub?$('sub-'+sub):$('tab-dash'),
     name:{perf:'효율',table:'일자별 상세 효율',mix:'미디어믹스'}[sub]||'대시보드'};
 }
+/* 담기 전에 적어 둔 값을 먼저 확정한다.
+   화면 전체를 한 장으로 담을 때는 몇 초씩 걸리는데, 그 사이에 브라우저가 탭을 정리하거나
+   사용자가 새로고침하면 아직 저장되지 않은 입력이 사라진다.
+   (이번에 섹션별로 쪼갠 것도 같은 이유 — 한 번에 담는 양이 확 줄어든다) */
+function flushBeforeShot(){
+  try{if(typeof SHEET_APPLY_T!=='undefined'&&SHEET_APPLY_T){clearTimeout(SHEET_APPLY_T);
+    if(typeof applySheet==='function')applySheet();}}catch(e){}
+  try{if(typeof LS_T!=='undefined'&&LS_T)clearTimeout(LS_T);
+    if(typeof LS_KEY==='function'&&typeof lsPack==='function')
+      localStorage.setItem(LS_KEY(),lsPack());}catch(e){}
+}
 async function copyTabImage(){
   const btn=$('shotBtn');
   if(typeof html2canvas==='undefined'){
@@ -829,6 +840,7 @@ async function copyTabImage(){
       +'브라우저 인쇄(Ctrl+P)로 저장해 주세요.',()=>{},'확인');return;}
   const {el,name}=shotTarget();
   if(!el)return;
+  flushBeforeShot();
   const was=btn?btn.textContent:'';
   if(btn){btn.textContent='만드는 중…';btn.disabled=true;}
   /* 담기 전에 잠시 감출 것들 */
@@ -840,7 +852,8 @@ async function copyTabImage(){
     /* 화면이 아주 길면 배율을 1 로 — 2 배로 담으면 픽셀이 네 배라 한참 걸린다 */
     const tall=el.scrollHeight>3200;
     const cv=await html2canvas(el,{backgroundColor:bg&&bg!=='rgba(0, 0, 0, 0)'?bg:'#ffffff',
-      scale:tall?1:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false});
+      scale:tall?1:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,
+      ignoreElements:shotIgnore});
     const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
     let ok=false;
     try{
@@ -867,6 +880,101 @@ async function copyTabImage(){
 (function wireShot(){
   const go=()=>{const b=$('shotBtn');if(b)b.onclick=copyTabImage;};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,60);
+})();
+
+/* ---------- 섹션별 이미지 복사 ----------
+   제목(.sec)과 그 아래 카드는 같은 data-sect 값을 쓴다.
+   그 값이 다른 형제만 잠시 감추고 부모를 담으면 그 섹션만 딱 떨어진다
+   (노드를 옮기지 않으므로 그래프·입력값이 흐트러지지 않는다). */
+/* 담을 때 아예 복제조차 하지 않을 것들 — 다른 탭(특히 수천 행짜리 입력 시트)과
+   숨어 있는 서브 탭. html2canvas 는 문서 전체를 복제한 뒤 대상을 찾기 때문에
+   이걸 걸러 주는 것만으로 시간이 크게 줄어든다. */
+const SHOT_SKIP_ID=['tab-input','tab-setup','modalHost','printHost','gate','bgdots','hubHost'];
+function shotIgnore(e){
+  if(!e||e.nodeType!==1)return false;
+  if(e.dataset&&e.dataset.shotOff!==undefined)return true;
+  if(SHOT_SKIP_ID.includes(e.id))return true;
+  if(e.classList&&e.classList.contains('hidden')
+    &&['sub-perf','sub-table','sub-mix'].includes(e.id))return true;
+  return false;}
+function sectNodes(sect){
+  const all=[...document.querySelectorAll(`#tab-dash [data-sect="${sect}"]`)]
+    .filter(n=>!n.closest('.hidden')&&n.offsetParent!==null);
+  return all;}
+async function copySection(sect,btn){
+  if(typeof html2canvas==='undefined'){
+    confirmModal('이미지로 복사할 수 없습니다.',
+      '이미지 변환 기능을 불러오지 못했습니다. 인터넷에 연결된 상태에서 다시 시도해 주세요.',
+      ()=>{},'확인');return;}
+  const nodes=sectNodes(sect);
+  if(!nodes.length)return;
+  flushBeforeShot();
+  const host=nodes[0].parentNode;
+  const keep=new Set(nodes);
+  const off=[...host.children].filter(n=>!keep.has(n));
+  const hidden=[...host.querySelectorAll(SHOT_HIDE)].filter(e=>e.offsetParent!==null);
+  const was=btn?btn.innerHTML:'';
+  if(btn){btn.innerHTML='담는 중…';btn.disabled=true;}
+  off.forEach(n=>{n.dataset.shotOff=n.style.display||'\u0000';n.style.display='none';});
+  hidden.forEach(e=>{e.dataset.shotVis=e.style.visibility||'\u0000';e.style.visibility='hidden';});
+  document.body.classList.add('shooting');
+  /* 옆으로 밀려 잘려 있던 것(카드 줄 · 넓은 표)까지 다 담기도록 잠시 펼친다 */
+  const spread=[...host.querySelectorAll('*')].filter(e=>{
+    if(e.namespaceURI&&e.namespaceURI.indexOf('svg')>=0)return false;
+    if(e.scrollWidth<=e.clientWidth+2)return false;
+    const ov=getComputedStyle(e).overflowX;
+    return ov==='auto'||ov==='scroll'||ov==='hidden';});
+  spread.forEach(e=>{e.dataset.shotOv=e.style.overflow||'\u0000';e.style.overflow='visible';});
+  let needW=host.scrollWidth;
+  {const hr=host.getBoundingClientRect();
+   host.querySelectorAll('*').forEach(e=>{
+     const r=e.getBoundingClientRect();
+     if(r.width)needW=Math.max(needW,Math.ceil(r.right-hr.left));});}
+  const title=(nodes[0].innerText||sect).replace(/\s+/g,' ').trim().slice(0,40)||sect;
+  try{
+    const bg=getComputedStyle(document.body).backgroundColor;
+    const cv=await html2canvas(host,{backgroundColor:bg&&bg!=='rgba(0, 0, 0, 0)'?bg:'#ffffff',
+      scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,
+      width:needW,windowWidth:Math.max(document.documentElement.clientWidth,needW+48),
+      ignoreElements:shotIgnore});
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    let ok=false;
+    try{
+      if(navigator.clipboard&&window.ClipboardItem&&window.isSecureContext){
+        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);ok=true;}
+    }catch(e){}
+    if(ok){if(btn)btn.innerHTML='복사됨 ✓';}
+    else{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`${(CAMPAIGN.name||'대시보드').replace(/[\\/:*?"<>|]/g,'')}_${title}.png`;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      if(btn)btn.innerHTML='저장됨 ✓';}
+  }catch(e){
+    confirmModal('이미지를 만들지 못했습니다.',String(e&&e.message||e),()=>{},'확인');
+  }finally{
+    spread.forEach(e=>{const v=e.dataset.shotOv;e.style.overflow=v==='\u0000'?'':v;delete e.dataset.shotOv;});
+    off.forEach(n=>{const v=n.dataset.shotOff;n.style.display=v==='\u0000'?'':v;delete n.dataset.shotOff;});
+    hidden.forEach(e=>{const v=e.dataset.shotVis;e.style.visibility=v==='\u0000'?'':v;delete e.dataset.shotVis;});
+    document.body.classList.remove('shooting');
+    if(btn){btn.disabled=false;setTimeout(()=>{btn.innerHTML=was||'⧉ 복사';},1500);}
+  }
+}
+function mountSectionShots(){
+  document.querySelectorAll('#tab-dash .sec[data-sect]').forEach(sec=>{
+    if(sec.querySelector('.shotsec'))return;
+    let tools=sec.querySelector('.tools');
+    if(!tools){tools=document.createElement('div');tools.className='tools';sec.appendChild(tools);}
+    const b=document.createElement('button');
+    b.type='button';b.className='btn sm shotsec';b.innerHTML='⧉ 복사';
+    b.title='이 섹션만 이미지로 복사합니다 (클립보드)';
+    b.onclick=()=>copySection(sec.dataset.sect,b);
+    tools.appendChild(b);});
+}
+(function wireSectionShots(){
+  const go=()=>mountSectionShots();
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,140);
 })();
 
 /* =========================================================================
@@ -1123,3 +1231,34 @@ function openAdvManage(after){
   };
   loadAdvBook();open();
 }
+
+/* ---------- ⚙ 통합 설정 ----------
+   상단바 오른쪽 톱니바퀴 하나에 설정을 모았다.
+   실제 동작은 화면에 숨겨 둔 원래 버튼(#hubHost)을 눌러 그대로 재사용한다. */
+const HUB_ITEMS=[
+  {id:'guideBtn',ic:'📘',t:'사용 가이드',d:'PDF 사용 설명서를 내려받습니다'},
+  {id:'holBtn',ic:'🗓',t:'공휴일 설정',d:'집행일 계산에서 뺄 날을 정합니다'},
+  {id:'campHistBtn',ic:'🕘',t:'변경 히스토리',d:'누가 언제 무엇을 바꿨는지 봅니다'},
+  {id:'themeBtn',ic:'🎨',t:'디자인',d:'테마 색상과 배경을 고릅니다'},
+  {id:'campMng',ic:'🗂',t:'캠페인 관리',d:'새 캠페인 · 이름 변경 · 복제 · 삭제',agency:true},
+  {id:'__adv',ic:'🏷',t:'광고주 관리',d:'광고주 이름과 로고를 관리합니다',agency:true}
+];
+function openSettingsHub(){
+  const agency=!(typeof isClient==='function'&&isClient());
+  const items=HUB_ITEMS.filter(x=>!x.agency||agency);
+  openModal('설정',
+    `<div class="hubgrid">`+items.map(x=>
+      `<button class="hubcard" type="button" data-hub="${x.id}">
+         <span class="ic">${x.ic}</span><b>${x.t}</b><i>${x.d}</i></button>`).join('')
+    +`</div>`,'<button class="btn" data-close>닫기</button>',{w:640});
+  document.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.hub;
+    closeModal();
+    setTimeout(()=>{
+      if(id==='__adv'){if(typeof openAdvManage==='function')openAdvManage();return;}
+      const t=$(id);if(t&&t.onclick)t.onclick();},30);});
+}
+(function initHub(){
+  const go=()=>{const g=$('gearBtn');if(g)g.onclick=openSettingsHub;};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();

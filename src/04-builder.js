@@ -54,8 +54,19 @@ function enableColResize(tbl,cols,onDone,off){
    (1) 가로로 스크롤해도 구분 · 매체 · 광고상품 같은 행 머리 열은 왼쪽에 붙어 있어야 하고
    (2) 세로로 스크롤할 때는 머리글이 화면 위쪽에 붙어 있다가 표가 끝나면 사라져야 한다.
    (2)는 히트맵 · 게재 히스토리와 같은 "복사본 머리글 막대" 방식을 쓴다. */
+/* 한 번 고정을 건 표는 기억해 둔다 — 탭이 숨어 있는 동안 그려서 폭을 재지 못했거나
+   창 크기가 바뀌면 다시 걸어야 한다 (안 그러면 가로로 밀 때 머리 열이 같이 밀려 나간다) */
+window.__fzList=window.__fzList||[];
+function refreezeAll(){
+  window.__fzList=window.__fzList.filter(x=>x.t&&x.t.isConnected);
+  window.__fzList.forEach(x=>{try{if(x.t.offsetParent)freezeLeadCols(x.t,x.n);}catch(e){}});}
+if(!window.__fzWired){window.__fzWired=1;
+  addEventListener('resize',()=>{clearTimeout(window.__fzT);
+    window.__fzT=setTimeout(refreezeAll,160);});}
 function freezeLeadCols(tbl,leadN){
   if(!tbl||!tbl.tHead||!tbl.tHead.rows[0]||!leadN)return 0;
+  if(!window.__fzList.some(x=>x.t===tbl))window.__fzList.push({t:tbl,n:leadN});
+  else window.__fzList.find(x=>x.t===tbl).n=leadN;
   tbl.querySelectorAll('.lfz').forEach(c=>{c.classList.remove('lfz','lfze');c.style.left='';});
   const ths=[...tbl.tHead.rows[0].cells].slice(0,leadN);
   let acc=0;const L=[];
@@ -716,8 +727,10 @@ function renderPace(){
     /* 매체 구간의 폭은 그 매체가 채운 양의 비율 그대로.
        예전에는 Math.max(y.v,1) 이라 실적이 0 인 매체도 한 칸을 차지해 균등하게 보였다. */
     const segList=(x.media.length?x.media.filter(y=>y.v>0):[]);
-    const segs=(segList.length?segList:[{m:'–',v:Math.max(x.act,1)}]).map(y=>
-      `<i style="flex:${y.v} 1 0" data-m="${esc(y.m)}">`
+    const useList=(segList.length?segList:[{m:'–',v:Math.max(x.act,1)}]);
+    /* 실적이 적어도 매체가 각각 보이도록 최소 폭을 준다 (예전엔 소수점 폭이라 한 덩어리로 보였다) */
+    const segs=useList.map((y,si)=>
+      `<i style="flex:${y.v} 1 0" data-m="${esc(y.m)}" data-si="${si}">`
       +`<span class="nm">${esc(y.m)}</span>`
       +`<span class="pc">${pct(x.goal?y.v/x.goal:0,1)}</span></i>`).join('');
     return `<div class="pline">
@@ -725,7 +738,7 @@ function renderPace(){
       <div class="pmid">
         <div class="pdotrow"><i style="left:${pace}%"></i></div>
         <div class="pbar" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,
-          r,pr,tone,ambc}))}">
+          r,pr,tone,ambc,media:useList}))}">
           <div class="mstack" style="width:${f}%;--segbg:${bg};--ambc:${ambc};--ambrgb:${ambf};--amba:${amba}">${segs}</div>
           <div class="sheen" style="width:${f}%"></div>
         </div>
@@ -823,7 +836,27 @@ function wirePaceTip(){
     bar.style.setProperty('--hotc',`rgb(${mixc.join(',')})`);
     bar.addEventListener('mouseenter',()=>bar.classList.add('hot'));
     bar.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,html));
-    bar.addEventListener('mouseleave',()=>{bar.classList.remove('hot');hideTip();});});
+    bar.addEventListener('mouseleave',()=>{bar.classList.remove('hot');hideTip();});
+    /* 매체 구간 하나에 올리면 — 그 매체 값 + 전체 매체 현황을 함께 보여 준다 */
+    const ml=Array.isArray(d.media)?d.media:[];
+    const tot=sum(ml.map(y=>+y.v||0))||0;
+    bar.querySelectorAll('.mstack>i[data-si]').forEach(seg=>{
+      const y=ml[+seg.dataset.si];if(!y)return;
+      const mine=`<div class="t">${sw}${esc(y.m)} · ${esc(d.l)}</div>`
+        +`<div class="r"><span class="l">이 매체 집행</span><b>${fmt(Math.round(y.v))}</b></div>`
+        +`<div class="r"><span class="l">전체 목표 대비</span><b>${pct(d.goal?y.v/d.goal:0,1)}</b></div>`
+        +`<div class="r"><span class="l">집행분 중 비중</span><b>${pct(tot?y.v/tot:0,1)}</b></div>`;
+      const all=`<div class="tsec">전체 ${esc(d.l)}</div>`
+        +`<div class="r"><span class="l">달성률 · 목표 페이스</span>`
+        +`<b>${pct(d.r,1)} · ${pct(d.goal?d.due/d.goal:0,1)}</b></div>`
+        +`<div class="r"><span class="l">집행 / 목표</span>`
+        +`<b>${fmt(Math.round(d.act))} / ${fmt(Math.round(d.goal))}</b></div>`
+        +`<div class="tsec">매체별 집행</div>`
+        +ml.map(z=>`<div class="r${z.m===y.m?' me':''}"><span class="l">${esc(z.m)}</span>`
+          +`<b>${fmt(Math.round(z.v))} <span class="sm">${pct(tot?z.v/tot:0,1)}</span></b></div>`).join('');
+      seg.addEventListener('mousemove',e=>{e.stopPropagation();
+        bar.classList.add('hot');showTip(e.clientX,e.clientY,mine+all);});
+      seg.addEventListener('mouseleave',e=>{e.stopPropagation();});});});
 }
 /* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */

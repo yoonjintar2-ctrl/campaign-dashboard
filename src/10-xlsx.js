@@ -215,10 +215,16 @@ function downloadLineTemplate(){
    조합이 통째로 들어왔으면 등록된 표기(" · " 연결)로 맞춰 두어 목록에서 바로 잡히게 한다. */
 function canonRow(r){
   const l=rowLine(r);if(!l)return r;
+  /* 대소문자·공백만 다른 이름은 예상 효율에 등록된 표기로 맞춰 둔다
+     ("TOSS" → "Toss") — 목록에서 바로 잡히고, 화면 표기도 하나로 통일된다 */
+  ['segment','media','line'].forEach(k=>{
+    if(r[k]&&l[k]&&r[k]!==l[k]&&dimKey(r[k])===dimKey(l[k]))r[k]=l[k];});
   MULTI_DIMS.forEach(k=>{
     if(k==='creative'||!r[k])return;
     const want=parseMulti(r[k]);
-    if(want.length>1&&want.length===lineMulti(l,k).length)r[k]=l[k];});
+    if(want.length>1&&want.length===lineMulti(l,k).length){r[k]=l[k];return;}
+    const reg=lineMulti(l,k).find(x=>dimKey(x)===dimKey(r[k]));
+    if(reg&&reg!==r[k])r[k]=reg;});
   return r;
 }
 /* 완전히 같은 행인지 판단하는 열쇠 — 날짜 · 차원 · 모든 수치 */
@@ -320,8 +326,8 @@ function pickFile(cb){
   inp.onchange=()=>{const f=inp.files&&inp.files[0];if(f)cb(f);};
   inp.click();
 }
-function importDaily(){
-  pickFile(async file=>{
+function importDaily(f){
+  const run=(async file=>{
     let grid;
     try{grid=await readGrid(file);}catch(e){
       confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
@@ -362,16 +368,19 @@ function importDaily(){
     rows.forEach(r=>{delete r.__src;});
     if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     const bad=rows.filter(rowBad).length;
+    const badC=rows.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
       +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
-      +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
+      +(bad?` 예상 효율과 맞지 않는 칸이 ${badC}개(${bad}행) 있어 그 칸만 붉게 표시됩니다.`:''),
       ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();applySheet();renderAll();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');
   });
+  /* 버튼에 그냥 걸면 클릭 이벤트가 첫 인자로 들어온다 — 진짜 파일일 때만 바로 읽는다 */
+  (f instanceof Blob)?run(f):pickFile(run);
 }
-function importLines(){
-  pickFile(async file=>{
+function importLines(f){
+  const run=(async file=>{
     let grid;
     try{grid=await readGrid(file);}catch(e){
       confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
@@ -436,13 +445,55 @@ function importLines(){
         const e=$('lineSaveState');if(e)e.textContent=`엑셀 ${LINES.length}개 라인 불러옴 · 저장 대기`;
       },'불러오기');
   });
+  (f instanceof Blob)?run(f):pickFile(run);
 }
 /* ---------- 배선 ---------- */
 (function wireXlsx(){
   const on=(id,fn)=>{const b=$(id);if(b)b.onclick=fn;};
   on('tplDaily',downloadDailyTemplate);
-  on('upDaily',importDaily);
+  on('upDaily',()=>importDaily());
   on('tplLine',downloadLineTemplate);
-  on('upLine',importLines);
+  on('upLine',()=>importLines());
   on('crManageBtn',openCrManage);
+})();
+/* ---------- 파일 끌어다 놓기 ----------
+   엑셀·CSV 를 탭 위로 끌어오면 안내가 뜨고, 놓으면 그대로 불러온다.
+   (버튼을 찾아 누르지 않아도 되도록 — 리포트 데이터 입력 · 예상효율 입력 둘 다) */
+const DROP_OK=/\.(xlsx|xls|csv|tsv|txt)$/i;
+function enableFileDrop(host,label,onFile){
+  if(!host||host.dataset.drop)return;
+  host.dataset.drop='1';
+  const ov=el('div','dropzone');
+  ov.innerHTML=`<div class="dzbox"><span class="dzic">⤓</span><b>여기에 놓으면 불러옵니다</b>
+    <i>${label} · xlsx · csv · tsv</i></div>`;
+  host.appendChild(ov);
+  let depth=0;
+  const hasFile=e=>{const dt=e.dataTransfer;if(!dt)return false;
+    return [...(dt.types||[])].includes('Files');};
+  host.addEventListener('dragenter',e=>{if(!hasFile(e))return;
+    e.preventDefault();depth++;host.classList.add('dragon');});
+  host.addEventListener('dragover',e=>{if(!hasFile(e))return;
+    e.preventDefault();e.dataTransfer.dropEffect='copy';});
+  host.addEventListener('dragleave',e=>{if(!hasFile(e))return;
+    depth=Math.max(0,depth-1);if(!depth)host.classList.remove('dragon');});
+  host.addEventListener('drop',e=>{
+    if(!hasFile(e))return;
+    e.preventDefault();depth=0;host.classList.remove('dragon');
+    const f=e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(!f)return;
+    if(!DROP_OK.test(f.name)){
+      confirmModal('이 파일은 불러올 수 없습니다.',
+        `<b>${esc(f.name)}</b><br>엑셀(.xlsx) · CSV · TSV · 텍스트 파일만 불러옵니다.`,()=>{},'확인',true);
+      return;}
+    onFile(f);});
+}
+(function wireDrop(){
+  const go=()=>{
+    enableFileDrop($('tab-input'),'일자별 실적',f=>importDaily(f));
+    enableFileDrop($('tab-setup'),'예상 효율(미디어믹스)',f=>importLines(f));
+    /* 브라우저가 파일을 그냥 열어 버리지 않게 */
+    ['dragover','drop'].forEach(ev=>document.addEventListener(ev,e=>{
+      if(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes('Files')
+        &&!e.target.closest('#tab-input,#tab-setup'))e.preventDefault();}));};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();

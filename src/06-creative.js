@@ -139,6 +139,16 @@ function openSegPicker(){
       renderRaw();draw();try{markDirty();saveLocal();}catch(e){}});};
   draw();
 }
+/* 다른 탭에 갔다 와도 보던 자리를 그대로 — 가로 위치와 페이지 세로 위치를 기억한다 */
+let RAW_VIEW={x:0,y:0};
+function rawRemember(){
+  const w=document.querySelector('#rawHost .tbl-wrap');
+  RAW_VIEW={x:w?w.scrollLeft:RAW_VIEW.x,
+    y:$('sub-table')&&!$('sub-table').classList.contains('hidden')?scrollY:RAW_VIEW.y};}
+function rawRestore(){
+  const ws=[...document.querySelectorAll('#rawHost .tbl-wrap')];
+  if(RAW_VIEW.x)ws.forEach(w=>{w.scrollLeft=RAW_VIEW.x;});
+  if(RAW_VIEW.y)scrollTo({top:RAW_VIEW.y});}
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
@@ -152,6 +162,22 @@ function renderRaw(){
   /* 세로 블록 — 맨 위가 합계, 아래가 하위 세그먼트 */
   const vBlocks=[{name:'합계',all:true}].concat(vSegs.map(v=>({name:v,all:false,val:v})));
   const vDrag=[];                                   /* 블록 제목 — 끌어서 세로 순서 변경 */
+  const hParts=[];                                  /* 가로 이동을 함께 시킬 블록들 */
+  /* 열 너비는 **모든 세로 블록을 통틀어** 한 번만 정한다 —
+     블록마다 폭이 다르면 위쪽 이동 버튼으로 가로로 옮길 때 서로 어긋난다. */
+  const widths=(()=>{
+    const mx=cols.map(k=>RAW_DEF[k].l.length*1.55);
+    const eat=b2=>cols.forEach((k,i)=>{mx[i]=Math.max(mx[i],METRICS[k].f(mval(k,b2)).length);});
+    vBlocks.forEach(vb=>{
+      if(!vb.all&&!vSegs.length)return;
+      const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
+      if(!sub.length)return;
+      blocks.forEach(bk=>{
+        const arr=bk.all?sub:sub.filter(f=>f[RAW_HSEG]===bk.val);
+        const m=new Map();arr.forEach(f=>{if(!m.has(f.d))m.set(f.d,[]);m.get(f.d).push(f);});
+        m.forEach(g=>eat(aggFacts(g)));
+        eat(aggFacts(arr));});});
+    return mx.map(v=>Math.round(Math.max(46,v*7.6+16)));})();
   vBlocks.forEach((vb,vi)=>{
     if(!vb.all&&!vSegs.length)return;
     const sub=vb.all?fs:fs.filter(f=>f[RAW_SEG]===vb.val);
@@ -177,14 +203,6 @@ function renderRaw(){
     const card=el('div','card fit',wrapDiv);
     const wrap=el('div','tbl-wrap',card);
     const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
-    /* 열 너비 — 실제 값 길이에 맞춘다 */
-    const wOf=k=>{
-      let mx=RAW_DEF[k].l.length*1.55;
-      bDay.forEach((m,bi)=>{days.forEach(di=>{const g=m.get(di);
-        if(g)mx=Math.max(mx,METRICS[k].f(mval(k,aggFacts(g))).length);});
-        mx=Math.max(mx,METRICS[k].f(mval(k,bTot[bi])).length);});
-      return Math.round(Math.max(46,mx*7.6+16));};
-    const widths=cols.map(wOf);
     const many=blocks.length>1;
     let h='<thead>';
     if(many){
@@ -220,24 +238,60 @@ function renderRaw(){
         +'</tr>';});
     tbl.innerHTML=h+'</tbody>';
     markBlanks(tbl);
-    /* 가로 세그먼트가 많으면 좌우 스크롤이 길어진다 — 블록 단위로 건너뛰는 미니맵을 붙인다 */
-    if(many)mountHNav(wrapDiv,card,wrap,tbl,blocks,hSegs,RAW_HSEG);
+    if(many)hParts.push({wrapDiv,card,wrap,tbl});
   });
+  /* 가로 이동 버튼은 맨 위에 하나만 — 누르면 아래 블록들도 같이 움직인다 */
+  if(hParts.length)mountHNav(hParts,blocks,hSegs,RAW_HSEG);
   wireSegDrag(vDrag,vSegs,RAW_SEG,'y');
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
   if(hSegs.length)note.push(`가로 ${SEG_OPTS.find(s=>s.k===RAW_HSEG).l} ${hSegs.length}개`);
   $('rawNote').textContent=note.join(' · ');
+  /* 보던 자리로 되돌린다 (표를 다 그린 뒤라야 폭이 잡힌다) */
+  setTimeout(rawRestore,0);
+  document.querySelectorAll('#rawHost .tbl-wrap').forEach(w=>
+    w.addEventListener('scroll',()=>{RAW_VIEW.x=w.scrollLeft;},{passive:true}));
 }
 
 /* 일자별 상세 효율 — 가로 세그먼트 미니맵 · 좌우 이동 버튼
    블록(가로 세그먼트) 하나씩 건너뛰고, 지금 보고 있는 블록을 칩으로 표시한다. */
-function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
-  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 */
-  wrap.classList.add('hfrozen');
-  const setFz=()=>{const r=tbl.querySelector('tbody tr');
-    if(r&&r.children[0])wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');};
+/* 세로 블록끼리 열 폭을 똑같이 맞춘다 —
+   글자 수로 어림한 최소 폭만으로는 실제 픽셀이 블록마다 조금씩 달라져
+   위쪽 버튼으로 가로로 옮길 때 아래 블록이 미묘하게 어긋났다. 그려진 뒤 실측해서 맞춘다. */
+function equalizeRawCols(parts){
+  if(!parts||parts.length<2)return;
+  const hrs=parts.map(pt=>{const r=pt.tbl.tHead.rows;return r[1]||r[0];}).filter(Boolean);
+  if(hrs.length!==parts.length)return;
+  const n=Math.min(...hrs.map(r=>r.cells.length));
+  const mx=[];
+  for(let i=0;i<n;i++)mx[i]=Math.max(...hrs.map(r=>r.cells[i].getBoundingClientRect().width));
+  hrs.forEach(r=>{for(let i=0;i<n;i++)r.cells[i].style.minWidth=Math.ceil(mx[i])+'px';});
+  /* 왼쪽에 고정되는 일자 · 요일 두 열도 */
+  const lead=parts.map(pt=>{const tr=pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
+    return tr?[...tr.cells].slice(0,2):null;}).filter(Boolean);
+  if(lead.length===parts.length)[0,1].forEach(i=>{
+    const w=Math.ceil(Math.max(...lead.map(L=>L[i].getBoundingClientRect().width)));
+    lead.forEach(L=>{L[i].style.minWidth=w+'px';});
+    parts.forEach(pt=>{[...pt.tbl.tBodies[0].rows].forEach(tr=>{
+      if(tr.cells[i])tr.cells[i].style.minWidth=w+'px';});});});
+}
+function mountHNav(parts,blocks,hKeys,hDim){
+  equalizeRawCols(parts);
+  const first=parts[0];
+  const {card,tbl}=first;
+  const wrap=first.wrap;
+  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 (모든 블록) */
+  const setFz=()=>parts.forEach(pt=>{const r=pt.tbl.querySelector('tbody tr');
+    if(r&&r.children[0])pt.wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');});
+  parts.forEach(pt=>pt.wrap.classList.add('hfrozen'));
   setFz();setTimeout(setFz,0);addEventListener('resize',setFz);
+  /* 어느 블록을 밀든 나머지도 같은 위치로 따라온다 */
+  let syncing=false;
+  const syncFrom=src=>{
+    if(syncing)return;syncing=true;
+    parts.forEach(pt=>{if(pt.wrap!==src)pt.wrap.scrollLeft=src.scrollLeft;});
+    syncing=false;};
+  parts.forEach(pt=>pt.wrap.addEventListener('scroll',()=>syncFrom(pt.wrap),{passive:true}));
   const nav=document.createElement('div');
   nav.className='hnav';
   nav.innerHTML='<button class="nvb" data-step="-1" title="이전 세그먼트로">◀</button>'
@@ -261,7 +315,8 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
   const fill=nav.querySelector('.nvbar>i');
   const goTo=i=>{const L=lefts();if(!L.length)return;
     const k=Math.max(0,Math.min(L.length-1,i));
-    wrap.scrollTo({left:Math.max(0,L[k]-frozen()),behavior:'smooth'});};
+    const x=Math.max(0,L[k]-frozen());
+    parts.forEach(pt=>pt.wrap.scrollTo({left:x,behavior:'smooth'}));};
   /* 지금 보고 있는 블록 — 스크롤 위치와 가장 가까운 블록 */
   const cur=()=>{const L=lefts();if(!L.length)return 0;
     const fz=frozen(),x=wrap.scrollLeft;let k=0,best=Infinity;
@@ -433,6 +488,15 @@ function mountHeatHead(tbl){
   clone.querySelectorAll('th').forEach(th=>{th.style.position='static';});
   inner.appendChild(clone);
   bar.innerHTML='';bar.appendChild(inner);
+  /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
+  bar.style.pointerEvents='none';
+  clone.querySelectorAll('th.dhd').forEach(th=>{
+    th.style.pointerEvents='auto';
+    const di=th.dataset.di;
+    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
+    th.addEventListener('mousemove',e=>{
+      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
+    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -1176,6 +1240,7 @@ function ganttSortVal(c){
     case 'view': return -(b.view||0);
     default:     return 0;}
 }
+let GANTT_I0=0;
 function renderGantt(){
   const t=$('ganttTbl');
   /* 노출이 한 번도 없던 소재는 표에 올리지 않는다 */
@@ -1202,6 +1267,7 @@ function renderGantt(){
   const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
   /* 기본은 캠페인 전체 일정, 설정에서 조회 기간으로 좁힐 수 있다 */
   const SC=GANTT_RANGE==='view'?viewScope():mkScope(campStart(),campEnd());
+  GANTT_I0=SC.i0;
   const VD=ALLDATES.slice(SC.i0,SC.i1+1);
   const months=[];let cm=null;
   VD.forEach(d=>{const m=d.getMonth()+1;if(!cm||cm.m!==m){cm={m,n:0};months.push(cm);}cm.n++;});
@@ -1248,7 +1314,7 @@ function renderGantt(){
   markBlanks(t);
   t.style.minWidth=(leadTotal+VD.length*13)+'px';
   enableRowDrag(t,GANTT,renderGantt);
-  wireGanttHover(t,SC);
+  wireGanttHover(t,SC,rowsData.map(r=>r.c));
   mountGanttHead(t);
 }
 /* ---- 떠 있는 머리글 막대 ----
@@ -1289,6 +1355,15 @@ function mountGanttHead(tbl){
     th.style.position='static';th.style.left='auto';th.style.zIndex='auto';});
   inner.appendChild(clone);
   bar.innerHTML='';bar.appendChild(inner);
+  /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
+  bar.style.pointerEvents='none';
+  clone.querySelectorAll('th.dhd').forEach(th=>{
+    th.style.pointerEvents='auto';
+    const di=th.dataset.di;
+    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
+    th.addEventListener('mousemove',e=>{
+      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
+    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -1319,7 +1394,7 @@ function mountGanttHead(tbl){
 }
 /* 날짜 칸·날짜 헤더에 마우스를 올리면 해당 행·열을 살짝 강조하고,
    칸 위에서는 그 날짜·그 소재의 광고 효율을 툴팁으로 보여준다 */
-function wireGanttHover(t,SC){
+function wireGanttHover(t,SC,list){
   const paint=(di,on)=>{
     t.querySelectorAll(`[data-di="${di}"]`).forEach(e=>e.classList.toggle('colhi',on));};
   const dayEff=(c,gi)=>{
@@ -1332,7 +1407,7 @@ function wireGanttHover(t,SC){
     td.addEventListener('mouseenter',()=>{paint(di,true);td.closest('tr').classList.add('rowhi');});
     td.addEventListener('mouseleave',()=>{paint(di,false);td.closest('tr').classList.remove('rowhi');hideTip();});
     td.addEventListener('mousemove',e=>{
-      const c=CREATIVES.find(x=>x.id===cid);if(!c)return;
+      const c=byId[cid]||CREATIVES.find(x=>x.id===cid);if(!c)return;
       const d=ALLDATES[gi],hol=holName(d);
       if(gi>=ELAPSED){showTip(e.clientX,e.clientY,
         `<div class="t">${dFull(d)} (${WD[d.getDay()]})</div><div class="r"><span class="l">${esc(c.name)}</span><b>미집행</b></div>`);return;}
@@ -1345,11 +1420,42 @@ function wireGanttHover(t,SC){
         +row('노출',fmt(b.imp))+row('클릭',fmt(b.click))+row('조회',fmt(b.view))
         +row('CTR',pct(b.click/b.imp))+row('VTR',pct(b.view/b.imp))
         +row('CPM',won(b.cost/b.imp*1000))+row('CPC',won(b.cost/b.click))+row('CPV',won(b.cost/b.view))
-        +row('광고비',won(b.cost)));});});
+        +row('광고비',won(b.cost))
+        /* 그 날 전체(표에 올라온 소재 합계)도 같이 */
+        +(()=>{const a=dayAll(gi);
+          return `<div class="tsec">이 날 전체 (${fmt(a.live)}/${fmt(a.total)}개 소재)</div>`
+            +row('노출 · 클릭',`${fmt(a.imp)} · ${fmt(a.click)}`)
+            +row('광고비',won(a.cost));})());});});
+  /* 그 날짜에 표에 올라온 소재 전체의 합 */
+  const shown=(list||[]).filter(Boolean);
+  const byId={};shown.forEach(c=>{byId[c.id]=c;});
+  const dayAll=gi=>{
+    const b={imp:0,click:0,view:0,conv:0,cost:0};
+    let live=0;
+    shown.forEach(c=>{const g=k=>(c.daily[k]&&c.daily[k][gi])||0;
+      const im=g('imp');if(im>0||g('cost')>0)live++;
+      b.imp+=im;b.click+=g('click');b.view+=g('view');b.conv+=g('conv');b.cost+=g('cost');});
+    return {...b,live,total:shown.length};};
+  const rowT=(l,v)=>`<div class="r"><span class="l">${l}</span><b>${v}</b></div>`;
+  const dayHtml=gi=>{
+    const d=ALLDATES[gi],hol=holName(d);
+    const head=`<div class="t">${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}</div>`;
+    if(gi>=ELAPSED)return head+rowT('집행','미집행');
+    const b=dayAll(gi);
+    return head
+      +rowT('집행 소재',`${fmt(b.live)} / ${fmt(b.total)}개`)
+      +rowT('노출',fmt(b.imp))+rowT('클릭',fmt(b.click))+rowT('조회',fmt(b.view))
+      +rowT('CTR · VTR',`${pct(b.click/b.imp)} · ${pct(b.view/b.imp)}`)
+      +rowT('CPM · CPC',`${won(b.cost/b.imp*1000)} · ${won(b.cost/b.click)}`)
+      +rowT('광고비',won(b.cost));};
+  /* 날짜 칸(머리글)에 올리면 그 날 전체 실적을 보여 준다 */
   t.querySelectorAll('th.dhd').forEach(th=>{
-    const di=th.dataset.di;
+    const di=th.dataset.di,gi=SC.i0+(+di);
     th.addEventListener('mouseenter',()=>paint(di,true));
-    th.addEventListener('mouseleave',()=>paint(di,false));});
+    th.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,dayHtml(gi)));
+    th.addEventListener('mouseleave',()=>{paint(di,false);hideTip();});});
+  /* 떠 있는 머리글(복사본)에서도 같은 팝업이 뜨도록 밖에서 부를 수 있게 남겨 둔다 */
+  t.__dayHtml=dayHtml;t.__paintCol=paint;
 }
 
 /* ===== 8-2. 트리맵 — 어느 매체·상품·소재에서 물량이 나오는지 =====
@@ -1530,8 +1636,13 @@ const BUB_AXES=[
 ];
 let BUB={x:'cpc',y:'cpm',dim:'creative'};
 /* 매체별 색 계열 — 사용자가 바꿀 수 있고 캠페인 문서에 함께 저장된다 */
+/* 매체가 많아도 옆 칸끼리 헷갈리지 않도록 색상환을 넓게 벌려 늘어놓았다.
+   (앞 8개는 예전 그대로 — 저장해 둔 색 선택이 그대로 살아 있게) */
 let BUB_HUES=[[58,102,140],[176,106,99],[79,124,101],[139,110,160],[186,143,74],
-                [64,130,138],[118,120,132],[196,120,150]];
+                [64,130,138],[118,120,132],[196,120,150],
+                [92,146,68],[70,96,182],[204,138,88],[152,86,142],
+                [96,164,176],[132,104,66],[170,170,80],[86,120,204],
+                [200,104,120],[64,142,116]];
 let BUB_COLORS={};
 const bubDef=k=>BUB_AXES.find(a=>a.k===k)||BUB_AXES[0];
 const BUB_LOWER=new Set(['cpm','cpc','cpv','cpa','cpi','cpe']);
@@ -1643,6 +1754,18 @@ function renderBubble(){
       +`<div class="r"><span class="l">노출 · 클릭</span><b>${fmt(p.b.imp)} · ${fmt(p.b.click)}</b></div>`
       +`<div class="r"><span class="l">조회 · 전환</span><b>${fmt(p.b.view)} · ${fmt(p.b.conv)}</b></div>`));
     c.addEventListener('mouseleave',hideTip);});
+  /* 매체별로 묶었을 때, 충분히 큰 버블에는 매체 이름을 얹어 준다
+     (범례를 오가지 않아도 어느 원이 어느 매체인지 바로 보인다) */
+  if(dim==='media')pts.slice().sort((a,b)=>b.cost-a.cost).forEach(p=>{
+    const r=R(p.cost);
+    const fs2=Math.max(10,Math.min(15,r*0.42));
+    /* 글자가 원 안에 들어가는 경우에만 */
+    if(r<24||String(p.name||'').length*fs2*0.62>r*1.8)return;
+    const t=S('text',{x:X(p.xv),y:Y(p.yv)+fs2*0.35,'text-anchor':'middle',
+      'font-size':fs2,'font-weight':800,fill:'#fff','pointer-events':'none',
+      'paint-order':'stroke','stroke':'rgba(30,40,52,.34)','stroke-width':2.6,
+      'stroke-linejoin':'round'},svg);
+    t.textContent=p.name||'';});
   /* ---- 범례 (그래프 위) ---- */
   if(!lgd)return;
   const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품',media:'매체'}[BUB.dim]||'소재';
@@ -1651,7 +1774,8 @@ function renderBubble(){
     +medias.map(md=>{
       const ps=prodOf[md]||[];
       /* 매체 색이 위, 그 아래에 광고상품별 색 (모두 동그란 점) */
-      const subs=ps.map(pd=>
+      /* 매체 단위로 묶었을 때는 그 아래 항목이 없다 — 빈 점만 남으므로 아예 그리지 않는다 */
+      const subs=dim==='media'?'':ps.filter(Boolean).map(pd=>
         `<span class="sb"><i style="background:rgb(${mixWhite(bubHue(md),shadeT(md,pd)).join(',')})"></i>`
         +`${esc(pd)}</span>`).join('');
       return `<span class="mgrp">`
@@ -1664,9 +1788,10 @@ function renderBubble(){
       +`현재 OFF <span class="pen">${offN}개</span></span></span>`:'')
     +`</div>`
     +`<div class="how">`
-    +`<span><b>버블 하나</b> = ${dimL} 1개 (매체 × 광고상품 × ${dimL} 기준)</span>`
+    +`<span><b>버블 하나</b> = ${dim==='media'?'매체 1개':`${dimL} 1개 (매체 × 광고상품 × ${dimL} 기준)`}</span>`
     +`<span><b>크기</b> = 소진 광고비 (클수록 많이 쓴 ${dimL})</span>`
-    +`<span><b>색</b> = 매체 · <b>진하기</b> = 그 매체 안의 광고상품</span>`
+    +(dim==='media'?`<span><b>색</b> = 매체</span>`
+      :`<span><b>색</b> = 매체 · <b>진하기</b> = 그 매체 안의 광고상품</span>`)
     +`<span><b>가로</b> ${xd.l} · <b>세로</b> ${yd.l} — 오른쪽·위로 갈수록 좋습니다</span>`
     +`<span>회색 버블은 <b>고른 기간의 마지막 집행일에 집행이 없던</b> ${dimL}입니다</span>`
     +(sx.log||sy.log?`<span>값 차이가 커서 ${sx.log?'가로':''}${sx.log&&sy.log?'·':''}${sy.log?'세로':''}축은 <b>로그 눈금</b>으로 그렸습니다</span>`:'')

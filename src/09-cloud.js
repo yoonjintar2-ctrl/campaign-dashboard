@@ -252,7 +252,7 @@ function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
   applyDoc(DEMO_SNAP,true);
-  rebuildPeriod();resetDateFilter();
+  rebuildPeriod();resetDateFilter(true);
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
   buildFacts();renderEverything();
@@ -318,7 +318,7 @@ async function tryCode(raw){
       전에 보던 캠페인의 시트가 그대로 남아 있었다) */
   clearWorkState();
   applyDoc(c.doc);
-  rebuildPeriod();resetDateFilter();
+  rebuildPeriod();resetDateFilter(true);
   const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
   /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
@@ -576,9 +576,11 @@ function paintCampSel(){
   s.disabled=false;
   if(!CLOUD.user){
     s.innerHTML=`<option>${esc(CAMPAIGN.name)}${CLOUD.sample?' (샘플)':' (데모)'}</option>`;return;}
-  s.innerHTML=CLOUD.list.map(c=>
+  /* 목록 맨 아래에 "＋ 캠페인 추가" — 고르면 캠페인 관리의 새 캠페인과 같은 화면이 뜬다 */
+  s.innerHTML=(CLOUD.list.map(c=>
     `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')
-    ||'<option value="">캠페인 없음</option>';
+    ||'<option value="">캠페인 없음</option>')
+    +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가</option>';
 }
 async function openCampaign(id){
   if(!CLOUD.on||!id)return;
@@ -593,7 +595,7 @@ async function openCampaign(id){
   CLOUD.role=mem?.role||'viewer';
   clearWorkState();
   applyDoc(c.doc);
-  rebuildPeriod();resetDateFilter();
+  rebuildPeriod();resetDateFilter(true);
   const {data:rows}=await CLOUD.sb.from('daily_stats')
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
@@ -971,7 +973,10 @@ async function removeMember(userId){
         else confirmModal('지금은 샘플 화면입니다.',
           '실제 사이트에 올린 뒤에는 이 버튼으로 바로 권한을 요청할 수 있습니다.',()=>{},'확인');},
       '구글 로그인');};
-  if(b('campSel'))b('campSel').onchange=e=>{if(e.target.value)openCampaign(e.target.value);};
+  if(b('campSel'))b('campSel').onchange=e=>{
+    const v=e.target.value;
+    if(v==='__new'){paintCampSel();createCampaign();return;}
+    if(v)openCampaign(v);};
   if(b('demoHide'))b('demoHide').onclick=()=>{
     b('demoBar').classList.add('hidden');
     try{sessionStorage.setItem('demoBarHidden','1');}catch(err){}};

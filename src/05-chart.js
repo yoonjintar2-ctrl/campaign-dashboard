@@ -351,6 +351,22 @@ const SUM_PRESET=()=>({
 let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET()},
                {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),
                 rows:[{k:'target',sub:false}]}];
+/* 과금 방식(KPI) → 서머리의 실적 단가 열 · 목표 단가 열 · 계산 밑값 */
+const KPI_COST={CPM:{c:'cpm',g:'g_cpm',b:'imp',m:1000},CPC:{c:'cpc',g:'g_cpc',b:'click',m:1},
+  CPV:{c:'cpv',g:'g_cpv',b:'view',m:1},CPA:{c:'cpa',g:'g_cpa',b:'conv',m:1},
+  CPE:{c:'cpe',g:'g_cpe',b:'eng',m:1},CPI:{c:'cpi',g:'',b:'install',m:1}};
+/* 이 행에 걸린 라인들이 모두 같은 과금 방식이면 그 지표 열을 KPI 로 본다 */
+const bidNorm=l=>{
+  const m=String((l&&l.bid)||'').toUpperCase().match(/CP[MCVAIETD]/);
+  if(!m)return '';
+  return ({CPT:'CPM',CPD:'CPM'})[m[0]]||m[0];};
+function rowKpi(ls,cols){
+  if(!ls||!ls.length)return null;
+  const bid=bidNorm(ls[0]);
+  if(!bid||ls.some(l=>bidNorm(l)!==bid))return null;
+  const d=KPI_COST[bid];
+  if(!d||!cols.includes(d.c))return null;
+  return d;}
 const gauge=v=>!isFinite(v)?'<span class="na">–</span>'
   :`<span class="gauge"><b class="mono">${pct(v)}</b><span class="track"><i style="width:${Math.min(v,1)*100}%"></i></span></span>`;
 function buildPivot(tbl,cfg,cdef,cellDef,rerender){
@@ -386,13 +402,30 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const EXPCOL=cellDef.__exp||new Set();
   const lead=rows.map(r=>`<th rowspan="2">${(DIMS.find(d=>d.k===r.k)||{l:r.k}).l}</th>`);
   let h='<thead>'+groupHeaderHTML(cfg,cdef,lead)+'</thead><tbody>';
-  const cells=(a,e,x,merge)=>cols.map((k,i)=>{
+  const cells=(a,e,x,merge,kpi)=>cols.map((k,i)=>{
     const isExp=EXPCOL.has(k);
     if(merge&&isExp&&merge.skip)return '';               /* 병합된 구간의 두 번째 행부터는 셀 자체를 그리지 않음 */
     const src=(merge&&isExp)?merge.agg:a, ex=(merge&&isExp)?merge.exp:e;
     const [txt,g]=cellDef[k](src,ex,x);
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
-    return `<td class="mono${seps.has(i)?' gsep':''}"${rs}>${g!==undefined?gauge(g):txt}</td>`;}).join('');
+    /* 이 행의 KPI 지표 열은 눈에 띄게 — 목표 단가보다 비싸면(=효율이 나쁘면) 살짝 붉게.
+       소계 · TOTAL 행은 KPI 가 섞이므로 표시하지 않는다(kpi 를 넘기지 않음) */
+    let kc='';
+    if(kpi&&(k===kpi.c||k===kpi.g)){
+      kc=' kpicol';
+      const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
+      const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
+      if(isFinite(act)&&isFinite(goal)&&goal>0&&act>goal)kc+=' kpibad';}
+    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${kc?` title="${esc(kpiTip(kpi,src,ex))}"`:''}>`
+      +`${g!==undefined?gauge(g):txt}</td>`;}).join('');
+  const kpiTip=(kpi,src,ex)=>{
+    const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
+    const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
+    const nm=Object.keys(KPI_COST).find(x=>KPI_COST[x].c===kpi.c)||'';
+    if(!isFinite(act)||!isFinite(goal)||!goal)return `이 라인의 KPI 지표 (${nm})`;
+    const d=(act-goal)/goal;
+    return `이 라인의 KPI 지표 (${nm}) · 목표 ${won(goal)} 대비 `
+      +`${d>0?'+':''}${(d*100).toFixed(1)}% ${d>0?'(저조)':'(우수)'}`;};
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
   if(finer&&expIdx.length){
@@ -414,7 +447,8 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
         /* 상위 계층 셀을 잡고 끌면 그 그룹 전체가 같은 부모 안에서 이동한다 */
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
           +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
-      h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i])+'</tr>';
+      const rls=LINES.filter(l=>expIdx.every(i2=>i2>=vals.length||l[dims[i2]]===vals[i2]));
+      h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols))+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
