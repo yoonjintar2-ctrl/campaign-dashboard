@@ -596,7 +596,8 @@ function ringGrad(defs,color){
   return `url(#${id})`;
 }
 /* 달성률 호는 살짝 비쳐서, 페이스보다 앞서 있어도 뒤의 목표 페이스 호가 보인다 */
-const ACH_OPACITY=.8;
+/* 달성률 호는 거의 불투명하게 — 다크톤에서 목표 페이스 호와 구분이 안 되던 문제 */
+const ACH_OPACITY=.96;
 /* 끝이 둥근 호(round cap)를 정확한 길이로 그린다.
    round cap 은 양 끝에서 선 두께의 절반만큼 더 튀어나가므로,
    대시 길이를 두께만큼 줄이고 시작점을 절반 앞으로 밀어 실제로 보이는 구간을 맞춘다.
@@ -913,8 +914,8 @@ function renderSpendDonut(box,pr){
   ctr.innerHTML=`<div class="ctrbox"><span class="achk">소진율</span>`
     +`<b class="achv mono">${pct(rate,1)}</b></div>`;
   const lg=el('div','dlgd',c);
-  lg.innerHTML=`<span class="lg mute"><span class="sw"></span>목표 페이스 <b class="mono">${won(budget*pr)}</b>`
-    +`<span class="pcpar">(${pct(pr,1)})</span></span>`;
+  lg.innerHTML=`<span class="lg ach"><span class="sw"></span>실집행 소진율</span>`
+    +`<span class="lg mute"><span class="sw"></span>목표 페이스</span>`;
 }
 /* KPI 달성 현황 카드의 좌우 순서 — 사용자가 끌어서 바꾼 순서를 기억한다 */
 let DONUT_ORDER={};
@@ -1117,9 +1118,9 @@ function renderDonuts(){
     const total=totW?sum(items.map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
     const ctr=el('div','ctr',ring);
     const lg=el('div','dlgd',c);
-    lg.innerHTML=paceLegend.map(x=>
-      `<span class="lg"><span class="sw"></span>${rings.length>1?esc(KPI_LABEL[x.k])+' ':''}목표 페이스`
-      +` <b class="mono">${fmt(x.v)}건</b><span class="pcpar">(${pct(pr,1)})</span></span>`).join('');
+    /* 범례는 "무슨 색이 무엇인지" 만 알려 준다 — 수치는 도넛 안(달성률)과 툴팁에서 본다 */
+    lg.innerHTML=`<span class="lg ach"><span class="sw"></span>실집행 달성률</span>`
+      +`<span class="lg mute"><span class="sw"></span>목표 페이스</span>`;
     const ctr2=null;
     ctr.innerHTML=`<div class="ctrbox"><span class="achk">달성률</span>`
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;

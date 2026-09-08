@@ -14,6 +14,8 @@
   add('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js','__noSupabase');
   /* 엑셀(.xlsx) 읽기용 — 없으면 CSV 로만 불러온다 */
   add('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','__noXlsx');
+  /* 화면을 이미지로 복사할 때 쓴다 — 없으면 복사 버튼이 안내만 띄운다 */
+  add('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','__noShot');
 })();
 </script>
 <style>
@@ -25,7 +27,7 @@
   --cell:#e2e7ed;                                        /* 표 셀 테두리 (밝은 행) */
   --cell-d:rgba(255,255,255,.22);                        /* 표 셀 테두리 (헤더·TOTAL 등 어두운 행) */
   --acc:#495e72; --accrgb:73 94 114; --acc-d:#354758; --acc-lt:#8897a6; --acc-soft:#eceef1; --acc-soft2:#f6f7f9;
-  --acc2:#486a75; --acc2-lt:#89a3ab;
+  --acc2:#486a75; --acc2rgb:72 106 117; --acc2-lt:#89a3ab;
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
   --gray:#9aa4b0;
@@ -49,7 +51,7 @@
   --plane:#f1f2f2; --plane2:#f9f9f9; --ink:#24262a; --ink2:#61656b; --muted:#909499; --sec:#4d5157;
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
   --acc:#4d5257; --accrgb:77 82 87; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
-  --acc2:#5c6165; --acc2-lt:#a3a6aa;
+  --acc2:#5c6165; --acc2rgb:92 97 101; --acc2-lt:#a3a6aa;
   --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
   --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
   --b1:#c3c6c9; --b2:#a4a8ac; --b3:#7c8085; --b4:#4d5257; --b5:#383c40; --neg:#a78b8b;
@@ -64,7 +66,7 @@
   --line:#363636; --line2:#2e2e2e; --gline:#4a4a4a; --cell:#383838;
   --cell-d:rgba(255,255,255,.16);
   --acc:#b4b4b4; --accrgb:180 180 180; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
-  --acc2:#9c9c9c; --acc2-lt:#6a6a6a;
+  --acc2:#9c9c9c; --acc2rgb:156 156 156; --acc2-lt:#6a6a6a;
   --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
   --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
   --b1:#3c3c3c; --b2:#4f4f4f; --b3:#646464; --b4:#7a7a7a; --b5:#909090; --neg:#c39a95;
@@ -335,6 +337,22 @@ table.tbl.nogauge .gauge .track{display:none}
   box-shadow:var(--shadow2);padding:9px;display:flex;gap:6px}
 .huepick button{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;padding:0}
 .huepick button.on{border-color:var(--ink)}
+/* 데이터 입력 — "매칭 안 되는 행 N개" 안내. 누르면 그 행으로 데려간다 */
+/* 디자인 창의 배경 로고 고르기 — 테마 카드와 같은 모양, 설명 한 줄 추가 */
+.thgrid.bgpick .thcard{align-items:flex-start;gap:2px}
+.thgrid.bgpick .thcard .hint{font-size:11px;line-height:1.45}
+/* 이미지로 담는 동안 — 애니메이션을 멈추고 스크롤 그림자를 없앤다 */
+body.shooting *{animation:none!important;transition:none!important}
+body.shooting .tbl-wrap,body.shooting .gantt-wrap,body.shooting .heatwrap{overflow:visible!important}
+/* 겹쳐 띄운 팝업 — 아래 창은 잠시 감춘다 */
+.modal.stacked{display:none}
+.badjump{border:1px solid rgba(190,110,100,.42);background:rgba(190,110,100,.12);
+  color:var(--neg);border-radius:999px;padding:1px 10px;font-size:11.5px;font-weight:800;
+  cursor:pointer;font-family:inherit;line-height:1.6}
+.badjump:hover{background:rgba(190,110,100,.2);border-color:rgba(190,110,100,.62)}
+table.sheet tr.badflash>td{background:rgba(190,110,100,.28)!important;
+  transition:background .25s}
+table.sheet tr.badflash>td:first-child{box-shadow:inset 3px 0 0 var(--neg)}
 /* 소재 관리 — 매칭 없음 표시 (좋고 나쁨을 뜻하므로 테마와 무관하게 경고색) */
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.warn{background:rgba(190,110,100,.14);color:#a9615a;border:1px solid rgba(190,110,100,.3)}
@@ -614,7 +632,11 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
   margin:2px 2px 0;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
 .donut .dlgd b{color:var(--ink2)}
 .donut .dlgd .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+/* 범례 — 목표 페이스(붉은 계열) · 실집행 달성률(링 색) */
 .donut .dlgd .sw{width:9px;height:9px;border-radius:3px;background:var(--pace);flex:none}
+.donut .dlgd .lg.ach .sw{background:var(--acc)}
+.donut .dlgd .lg.ach{color:var(--ink2);font-weight:700}
+[data-theme="dark"] .donut .dlgd .lg.ach .sw{background:var(--acc-d)}
 .donut .dlgd .pcpar{margin-left:2px;font-variant-numeric:tabular-nums;font-weight:700}
 .donut .dlgd .lg.spend{color:var(--acc)}
 .donut .dlgd .lg.spend .sw{background:var(--acc)}
@@ -1239,8 +1261,31 @@ select:hover,input:hover{border-color:var(--acc-lt)}
 @keyframes bgfloatX{from{transform:translate3d(-4.5%,0,0)}to{transform:translate3d(6.5%,0,0)}}
 @keyframes bgfloatY{from{transform:translate3d(0,-5.5%,0)}to{transform:translate3d(0,5%,0)}}
 @keyframes bgfloatR{from{transform:rotate(-2.4deg) scale(1)}to{transform:rotate(2.8deg) scale(1.06)}}
+/* 로고 배경을 끄면 — 테마 색에 맞춘 은은한 그라데이션이 아주 천천히 흐른다.
+   두 겹의 주기를 어긋나게 해 방향이 단조롭지 않게 한다. */
+#bgdots .ambient{display:none;position:absolute;inset:-25%;filter:blur(34px);
+  background:
+    radial-gradient(26% 24% at 22% 28%, rgba(var(--accrgb,73 94 114)/.42), transparent 66%),
+    radial-gradient(22% 21% at 74% 24%, rgba(var(--acc2rgb,72 106 117)/.34), transparent 68%),
+    radial-gradient(30% 27% at 62% 78%, rgba(var(--accrgb,73 94 114)/.36), transparent 70%);
+  animation:ambDrift 41s ease-in-out infinite alternate;will-change:transform}
+#bgdots .ambient::after{content:'';position:absolute;inset:-10%;
+  background:
+    radial-gradient(22% 20% at 16% 74%, rgba(var(--acc2rgb,72 106 117)/.30), transparent 68%),
+    radial-gradient(20% 19% at 88% 62%, rgba(var(--accrgb,73 94 114)/.26), transparent 68%);
+  animation:ambDrift2 67s ease-in-out infinite alternate}
+#bgdots.amb .bgfloat{display:none}
+#bgdots.amb .ambient{display:block}
+[data-theme="dark"] #bgdots .ambient{filter:blur(40px);opacity:.9}
+@keyframes ambDrift{
+  0%{transform:translate3d(-3.5%,-2.5%,0) scale(1)}
+  55%{transform:translate3d(2.5%,3%,0) scale(1.08)}
+  100%{transform:translate3d(-1%,1.5%,0) scale(1.03)}}
+@keyframes ambDrift2{
+  0%{transform:translate3d(3%,2%,0) rotate(-2deg)}
+  100%{transform:translate3d(-3%,-2.5%,0) rotate(2.5deg)}}
 @media (prefers-reduced-motion: reduce){
-  #bgdots .bgfloat,#bgdots .bgfloat>i{animation:none}}
+  #bgdots .bgfloat,#bgdots .bgfloat>i,#bgdots .ambient,#bgdots .ambient::after{animation:none}}
 @media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
 /* 밝은 광고주 로고 — 상단 바를 짙게 깔아 로고가 보이게 한다 */
 /* 밝은 로고용 짙은 상단 바 — 무채색 (예전에는 푸른 기가 있었다) */

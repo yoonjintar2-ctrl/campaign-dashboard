@@ -551,3 +551,26 @@ create policy profiles_select on public.profiles for select to authenticated
          or exists(select 1 from public.campaign_members m1
                     join public.campaign_members m2 on m1.campaign_id = m2.campaign_id
                    where m1.user_id = auth.uid() and m2.user_id = public.profiles.id));
+
+-- ---------------------------------------------------------------------
+-- 캠페인 삭제 (v45)
+--   RLS 정책이 예전 버전으로 남아 있는 프로젝트에서도 확실히 지워지도록
+--   서버 함수로 한 번 더 길을 열어 둔다.
+--   지울 수 있는 사람 — 슈퍼마스터 · 그 캠페인을 만든 사람 · 그 캠페인의 마스터
+-- ---------------------------------------------------------------------
+drop function if exists public.delete_campaign(uuid);
+create or replace function public.delete_campaign(p_id uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare ok boolean;
+begin
+  select (public.is_super()
+          or exists(select 1 from public.campaigns c
+                     where c.id = p_id and c.created_by = auth.uid())
+          or public.is_master(p_id))
+    into ok;
+  if not ok then return false; end if;
+  delete from public.campaigns where id = p_id;   -- 자식 테이블은 on delete cascade
+  return true;
+end;
+$$;
+grant execute on function public.delete_campaign(uuid) to authenticated;

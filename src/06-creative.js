@@ -291,7 +291,8 @@ function mountHNav(wrapDiv,card,wrap,tbl,blocks,hKeys,hDim){
 const KPI_UNIT={imp:'cpm',click:'cpc',view:'cpv',conv:'cpa',eng:'cpe',install:'cpi',
   lead:'cpa',like:'cpe',share:'cpe'};
 /* 중앙값은 회색 — 좋고 나쁨이 뚜렷한 양 끝만 색으로 */
-const HM_GOOD=[111,155,131],HM_MID=[164,172,180],HM_BAD=[176,106,99];
+/* 좋음(녹색)만 채도를 조금 더 높였다 — 저조(붉은색)와 한눈에 갈리도록 */
+const HM_GOOD=[86,162,116],HM_MID=[164,172,180],HM_BAD=[176,106,99];
 const HM_COLW=132;        /* 값 열 최대 폭 — 매체가 적어도 너무 벌어지지 않게 */
 const HM_LEADW=190;       /* 구분 열 폭 */
 let HEAT_DAILY=false;     /* 일자별은 기본으로 접어 둔다 */
@@ -1552,9 +1553,14 @@ function renderBubble(){
   const fs=factFilter();
   const dim=BUB.dim;
   const m=new Map();
+  /* 묶음 단위 — 고른 항목까지만 쪼갠다.
+     매체별을 고르면 광고상품이 달라도 **매체 하나에 원 하나**가 된다 */
   fs.forEach(f=>{
-    const key=[f.media,f.product,f[dim]].join(SEP);
-    if(!m.has(key))m.set(key,{media:f.media,product:f.product,name:f[dim],rows:[]});
+    const key=dim==='media'?f.media
+      :dim==='product'?[f.media,f.product].join(SEP)
+      :[f.media,f.product,f[dim]].join(SEP);
+    if(!m.has(key))m.set(key,{media:f.media,
+      product:dim==='media'?'':f.product,name:f[dim],rows:[]});
     m.get(key).rows.push(f);});
   const xd=bubDef(BUB.x),yd=bubDef(BUB.y);
   const lastDay=bubLastDay(fs);
@@ -1639,7 +1645,7 @@ function renderBubble(){
     c.addEventListener('mouseleave',hideTip);});
   /* ---- 범례 (그래프 위) ---- */
   if(!lgd)return;
-  const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품'}[BUB.dim]||'소재';
+  const dimL={creative:'소재',target:'타겟팅 그룹',product:'광고상품',media:'매체'}[BUB.dim]||'소재';
   const offN=pts.filter(p=>!p.on).length;
   lgd.innerHTML=`<div class="lgtop">`
     +medias.map(md=>{

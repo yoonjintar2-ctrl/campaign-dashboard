@@ -440,6 +440,8 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   wirePivotColResize(tbl,cfg,cols,rerender);
   /* 세로 스크롤 시 떠 있는 머리글 */
   mountFloatHead(tbl);
+  /* 표 위쪽에도 가로 스크롤바를 하나 더 (표가 길면 아래 스크롤바가 화면 밖이라) */
+  try{if(typeof attachTopScroll==='function')attachTopScroll(tbl.closest('.tbl-wrap'));}catch(e){}
 }
 /* 서머리 · 미디어믹스의 열 너비 조절.
    머리글이 2행이라 값 열은 따로 찾아야 하고, **매체·광고상품 같은 행 머리 열도 함께** 잡는다

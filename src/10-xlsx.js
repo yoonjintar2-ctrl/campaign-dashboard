@@ -256,9 +256,16 @@ function findHeader(grid,cols){
     if(hit>=2)return i;}
   return -1;
 }
+/* 머리글 → 항목 열쇠. **같은 이름의 열이 두 개면 첫 번째만 쓴다.**
+   (실무 엑셀에는 "소진비용 (Gross)" 옆에 같은 이름의 비고 열이 붙어 있는 경우가 있는데,
+    예전에는 뒤쪽 열이 앞 열을 덮어써서 그 행의 금액이 비고 속 숫자로 바뀌었다) */
 function mapHeader(headRow,cols){
   const byLabel={};cols.forEach(c=>byLabel[normHdr(c.l)]=c.k);
-  return (headRow||[]).map(h=>byLabel[normHdr(h)]||null);
+  const used=new Set();
+  return (headRow||[]).map(h=>{
+    const k=byLabel[normHdr(h)]||null;
+    if(!k||used.has(k))return null;
+    used.add(k);return k;});
 }
 /* 비드 타입 정규화 — "경매형CPC", "Bid CPC", "CPC(자동입찰)" 같은 표기도 CPC 로 */
 function normBid(v){
@@ -277,9 +284,19 @@ function readGrid(file){
         rej(new Error('이 화면에서는 .xlsx 를 바로 읽을 수 없습니다. 엑셀에서 [다른 이름으로 저장 → CSV]로 바꿔 올려 주세요.'));return;}
       const r=new FileReader();
       r.onload=()=>{try{
-        const wb=XLSX.read(new Uint8Array(r.result),{type:'array'});
+        /* cellDates — 날짜 칸을 진짜 날짜로 읽는다 ("09월 01일" 처럼 연도가 안 보이는 서식 대비) */
+        const wb=XLSX.read(new Uint8Array(r.result),{type:'array',cellDates:true});
         const ws=wb.Sheets[wb.SheetNames[0]];
-        res(XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}));
+        const OPT={header:1,defval:''};
+        const shown=XLSX.utils.sheet_to_json(ws,{...OPT,raw:false});  /* 보이는 대로 (글자·날짜) */
+        const val=XLSX.utils.sheet_to_json(ws,{...OPT,raw:true});     /* 원래 값 (숫자) */
+        /* 숫자는 **서식에 반올림된 글자 대신 원래 값**을 쓴다 —
+           셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
+        res(shown.map((row,ri)=>row.map((v,ci)=>{
+          const rv=val[ri]?val[ri][ci]:undefined;
+          if(rv instanceof Date&&!isNaN(rv))
+            return `${rv.getFullYear()}-${String(rv.getMonth()+1).padStart(2,'0')}-${String(rv.getDate()).padStart(2,'0')}`;
+          return (typeof rv==='number'&&isFinite(rv))?rv:v;})));
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
       r.readAsArrayBuffer(file);
@@ -311,6 +328,9 @@ function importDaily(){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
       const o={date:'',segment:'',media:'',product:'',target:'',line:''};
+      /* 원본 줄 전체를 기억해 둔다 — 대시보드가 쓰지 않는 열(광고그룹명 등)만 다른 행을
+         "똑같은 행" 으로 잘못 지우지 않기 위해서 */
+      o.__src=r.map(v=>String(v==null?'':v).trim()).join('\u0002');
       SHEET_COLS.filter(c=>c.type==='num').forEach(c=>o[c.k]='');
       let filled=false;
       keys.forEach((k,ci)=>{
@@ -324,17 +344,19 @@ function importDaily(){
     /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
        "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
     rows.forEach(canonRow);
-    /* 날짜까지 완전히 똑같은 행은 한 번만 남긴다 (엑셀에 계속 이어 붙이다 보면 생긴다) */
-    const seen=new Set();const uniq=[];let dup=0;
-    rows.forEach(r=>{const k=rowKey(r);
-      if(seen.has(k)){dup++;return;}
-      seen.add(k);uniq.push(r);});
-    rows=uniq;
+    /* **행은 하나도 버리지 않는다.**
+       매체 리포트에는 값까지 똑같은 줄이 실제로 두 번 나오는 경우가 있어서
+       (광고그룹만 다르고 숫자가 같은 경우 등) 예전처럼 지우면 합계가 원본과 어긋난다.
+       대신 몇 줄이 완전히 같은지 세어 알려만 준다. */
+    const seen=new Set();let dup=0;
+    rows.forEach(r=>{const k=(r.__src||'')+'\u0002'+rowKey(r);
+      if(seen.has(k))dup++;else seen.add(k);});
+    rows.forEach(r=>{delete r.__src;});
     if(!rows.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     const bad=rows.filter(rowBad).length;
     confirmModal(`${rows.length}행을 불러옵니다.`,
       `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
-      +(dup?` 완전히 똑같은 중복 행 ${dup}개는 제외했습니다.`:'')
+      +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
       +(bad?` 집행 기간이나 라인 정보가 맞지 않는 행이 ${bad}개 있어 붉게 표시됩니다.`:''),
       ()=>{pushUndo();SHEET=rows;SEL={r1:0,c1:0,r2:0,c2:0};renderSheet();applySheet();renderAll();
         const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;},'불러오기');

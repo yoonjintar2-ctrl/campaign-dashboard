@@ -613,11 +613,62 @@ function openThemePicker(){
     `<div class="hint" style="margin-bottom:12px">이 캠페인 대시보드 전체(배경 · 강조색 · 표 · 그래프)의 색 계열을 바꿉니다.
        광고주도 같은 색으로 봅니다.<br>
        <b>효율 히트맵</b>(잘 된 곳 초록 · 저조한 곳 붉은색)은 뜻이 정해진 색이라 테마와 무관하게 그대로 둡니다.</div>
-     <div class="thgrid">${THEMES.map(card).join('')}</div>`,
+     <div class="thgrid">${THEMES.map(card).join('')}</div>
+     <div class="sec gap" style="margin:22px 0 8px;font-size:14px">배경 로고</div>
+     <div class="hint" style="margin-bottom:10px">배경에 로고를 <b>도트로 크게 깔고</b> 천천히 떠다니게 합니다.
+       <b>없음</b>을 고르면 테마 색에 맞춘 은은한 그라데이션이 대신 흐릅니다. 캠페인마다 따로 정해집니다.</div>
+     <div class="thgrid bgpick">
+       ${[{k:'none',l:'없음 (앰비언트)',d:'테마 색 그라데이션'},
+          {k:'adv', l:'광고주 로고',    d:'이 캠페인의 광고주 로고'},
+          {k:'agency',l:'대행사 로고',  d:'우리 회사 로고 (전 캠페인 공용)'}]
+        .map(o=>`<button class="thcard${bgModeNow()===o.k?' on':''}" data-bg="${o.k}">
+            <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+     </div>
+     <div class="form-row" id="bgAgencyRow" style="margin-top:12px${bgModeNow()==='agency'?'':';display:none'}">
+       <div class="fld" style="flex:0 0 100%"><label>대행사 로고
+         <span class="hint">(1:1 ~ 3:1 · 3MB 이하 · 한 번 올리면 다른 캠페인에서도 쓸 수 있습니다)</span></label>
+         <div class="logopick">
+           <span class="prev" id="agyPrev">${agencyLogo()?`<img src="${agencyLogo()}" alt="">`:'<em>없음</em>'}</span>
+           <button class="btn sm" id="agyPick" type="button">이미지 선택</button>
+           <button class="btn sm" id="agyClear" type="button">지우기</button>
+         </div></div>
+     </div>`,
     '<button class="btn" data-close>닫기</button>',{w:660});
   $('modalHost').querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{
     applyTheme(b.dataset.th);
     $('modalHost').querySelectorAll('[data-th]').forEach(x=>x.classList.toggle('on',x.dataset.th===THEME));});
+  const host2=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+  const paintAgy=()=>{const p=$('agyPrev');
+    if(p)p.innerHTML=agencyLogo()?`<img src="${agencyLogo()}" alt="">`:'<em>없음</em>';};
+  host2.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{
+    CAMPAIGN.bgMode=b.dataset.bg;delete CAMPAIGN.bgLogo;      /* 옛 boolean 은 버린다 */
+    host2.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('on',x.dataset.bg===CAMPAIGN.bgMode));
+    const row=$('bgAgencyRow');if(row)row.style.display=CAMPAIGN.bgMode==='agency'?'':'none';
+    try{refreshBgDots();}catch(e){}
+    try{markDirty();saveLocal();}catch(e){}});
+  {const pk=$('agyPick');
+   if(pk)pk.onclick=()=>pickLogo(u=>{setAgencyLogo(u);paintAgy();
+     try{refreshBgDots();markDirty();saveLocal();}catch(e){}});}
+  {const cl=$('agyClear');
+   if(cl)cl.onclick=()=>{setAgencyLogo('');paintAgy();
+     try{refreshBgDots();markDirty();saveLocal();}catch(e){}};}
+}
+/* 배경 로고 종류 — 'none' 앰비언트 · 'adv' 광고주 로고 · 'agency' 대행사 로고.
+   예전 저장본의 bgLogo(true/false) 도 그대로 읽어 준다. */
+function bgModeNow(){
+  if(CAMPAIGN.bgMode)return CAMPAIGN.bgMode;
+  return CAMPAIGN.bgLogo===false?'none':'adv';
+}
+/* 대행사 로고는 캠페인이 아니라 **회사** 것이라 브라우저에도 남긴다.
+   (광고주에게 보이는 화면을 위해 캠페인 문서에도 함께 담는다) */
+const AGY_KEY='dmd:agencylogo';
+function agencyLogo(){
+  if(CAMPAIGN.agencyLogo)return CAMPAIGN.agencyLogo;
+  try{return localStorage.getItem(AGY_KEY)||'';}catch(e){return '';}
+}
+function setAgencyLogo(u){
+  CAMPAIGN.agencyLogo=u||'';
+  try{if(u)localStorage.setItem(AGY_KEY,u);else localStorage.removeItem(AGY_KEY);}catch(e){}
 }
 
 /* ---------- 광고주 · 로고 ----------
@@ -761,6 +812,64 @@ function attachTopScroll(wrap){
 })();
 
 /* =========================================================================
+   지금 보고 있는 탭을 이미지로 복사
+   ========================================================================= */
+/* 화면에 있는 그대로 담되, 버튼·손잡이처럼 보고서에 필요 없는 것은 잠시 감춘다 */
+const SHOT_HIDE='.tools,.hidebtn,.infowrap,.colgrip,.ghfix,.topscroll,.hnav,.cfmenu,#tip,.dlgrp,#shotBtn';
+function shotTarget(){
+  const sub=['perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');});
+  return {el:sub?$('sub-'+sub):$('tab-dash'),
+    name:{perf:'효율',table:'일자별 상세 효율',mix:'미디어믹스'}[sub]||'대시보드'};
+}
+async function copyTabImage(){
+  const btn=$('shotBtn');
+  if(typeof html2canvas==='undefined'){
+    confirmModal('이미지로 복사할 수 없습니다.',
+      '이미지 변환 기능을 불러오지 못했습니다. 인터넷에 연결된 상태에서 다시 시도하거나, '
+      +'브라우저 인쇄(Ctrl+P)로 저장해 주세요.',()=>{},'확인');return;}
+  const {el,name}=shotTarget();
+  if(!el)return;
+  const was=btn?btn.textContent:'';
+  if(btn){btn.textContent='만드는 중…';btn.disabled=true;}
+  /* 담기 전에 잠시 감출 것들 */
+  const hidden=[...el.querySelectorAll(SHOT_HIDE)].filter(e=>e.offsetParent!==null);
+  hidden.forEach(e=>{e.dataset.shotVis=e.style.visibility||'';e.style.visibility='hidden';});
+  document.body.classList.add('shooting');
+  try{
+    const bg=getComputedStyle(document.body).backgroundColor;
+    /* 화면이 아주 길면 배율을 1 로 — 2 배로 담으면 픽셀이 네 배라 한참 걸린다 */
+    const tall=el.scrollHeight>3200;
+    const cv=await html2canvas(el,{backgroundColor:bg&&bg!=='rgba(0, 0, 0, 0)'?bg:'#ffffff',
+      scale:tall?1:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false});
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    let ok=false;
+    try{
+      if(navigator.clipboard&&window.ClipboardItem&&window.isSecureContext){
+        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);ok=true;}
+    }catch(e){}
+    if(ok){if(btn)btn.textContent='복사됨 ✓';}
+    else{
+      /* 클립보드를 못 쓰는 환경(파일로 직접 열었을 때 등)에서는 파일로 내려준다 */
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`${CAMPAIGN.name||'대시보드'}_${name}.png`;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      if(btn)btn.textContent='이미지 저장됨';}
+  }catch(e){
+    confirmModal('이미지를 만들지 못했습니다.',String(e&&e.message||e),()=>{},'확인');
+  }finally{
+    hidden.forEach(e=>{e.style.visibility=e.dataset.shotVis||'';delete e.dataset.shotVis;});
+    document.body.classList.remove('shooting');
+    if(btn){btn.disabled=false;setTimeout(()=>{btn.textContent=was||'⧉ 이미지 복사';},1600);}
+  }
+}
+(function wireShot(){
+  const go=()=>{const b=$('shotBtn');if(b)b.onclick=copyTabImage;};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,60);
+})();
+
+/* =========================================================================
    배경 — 광고주 로고를 도트 패턴으로 크게 깔고 아주 천천히 움직인다.
    · 로고를 작은 캔버스에 그린 뒤 밝기로 도트 격자를 만든다(글자·형태만 남는다)
    · 색은 테마 강조색, 배경과 다투지 않도록 아주 옅게
@@ -811,7 +920,13 @@ function paintBgDots(svg){
   host.classList.add('on');
 }
 function refreshBgDots(){
-  const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
+  const host=$('bgdots');
+  const mode=bgModeNow();
+  /* 없음 → 테마색 앰비언트 그라데이션 */
+  if(host)host.classList.toggle('amb',mode==='none');
+  if(mode==='none'){BGDOT.url='';BGDOT.svg='';paintBgDots('');if(host)host.classList.add('on');return;}
+  const url=mode==='agency'?agencyLogo()
+    :(CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'');
   const th=document.documentElement.getAttribute('data-theme')||'';
   if(!url){BGDOT.url='';BGDOT.svg='';paintBgDots('');return;}
   if(url===BGDOT.url){if(th!==BGDOT.theme){BGDOT.theme=th;paintBgDots(BGDOT.svg);}return;}
@@ -909,7 +1024,7 @@ function advUseCount(name){
   if(CAMPAIGN.advertiser===name&&!n)n=1;
   return n;
 }
-function openAdvManage(){
+function openAdvManage(after){
   const draw=()=>{
     const names=advNames();
     let h=`<div class="hint" style="margin-bottom:12px">
@@ -937,12 +1052,19 @@ function openAdvManage(){
           </div></td></tr>`;});
       h+='</tbody></table>';}
     return h;};
+  let wire=()=>{};
   const open=()=>{
     openModal('광고주 관리',draw(),
       '<button class="btn primary" id="advAdd">＋ 광고주 추가</button>'
       +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:840});
-    const host=$('modalHost');
-    const redraw=()=>{closeModal();open();};
+    wire=()=>{
+    const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+    /* 창을 닫았다 열지 않고 본문만 갈아 끼운다 */
+    const redraw=()=>{
+      if(!repaintModal(draw()))
+        {closeModal();open();return;}
+      wire();
+      if(typeof after==='function')after();};
     host.querySelectorAll('[data-alogo]').forEach(b=>b.onclick=()=>{
       const n=b.dataset.alogo;
       pickLogo(u=>{ADV_BOOK[n]=ADV_BOOK[n]||{};ADV_BOOK[n].logo=u;ADV_BOOK[n].mine=true;saveAdvBook();
@@ -961,11 +1083,11 @@ function openAdvManage(){
         '<button class="btn" data-close>취소</button><button class="btn primary" id="advRenGo">바꾸기</button>',{w:460});
       $('advRenGo').onclick=()=>{
         const nv=($('advRenNew').value||'').trim();
-        if(!nv||nv===n){closeModal();open();return;}
+        if(!nv||nv===n){closeModal();return;}
         ADV_BOOK[nv]={...(ADV_BOOK[n]||{}),mine:true};delete ADV_BOOK[n];saveAdvBook();
         if(CAMPAIGN.advertiser===n){CAMPAIGN.advertiser=nv;renderBrand();renderCampBar();
           try{markDirty();saveLocal();}catch(e){}}
-        closeModal();open();};});
+        closeModal();redraw();};});
     host.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{
       const n=b.dataset.adel,used=advUseCount(n);
       confirmModal(`‘${n}’ 광고주를 지울까요?`,
@@ -973,7 +1095,7 @@ function openAdvManage(){
             :'등록해 둔 로고가 함께 사라집니다.',
         ()=>{delete ADV_BOOK[n];saveAdvBook();
           if(CAMPAIGN.advertiser===n){CAMPAIGN.advLogo='';renderBrand();}
-          open();},'삭제',true);});
+          redraw();},'삭제',true);});
     $('advAdd').onclick=()=>{
       const st={logo:''};
       openModal('광고주 추가',
@@ -995,7 +1117,9 @@ function openAdvManage(){
         const n=($('advNewName').value||'').trim();
         if(!n){confirmModal('이름을 적어 주세요.','광고주명은 반드시 필요합니다.',()=>{},'확인');return;}
         ADV_BOOK[n]={logo:st.logo||'',mine:true};saveAdvBook();
-        closeModal();open();};};
+        closeModal();redraw();};};
+    };
+    wire();
   };
   loadAdvBook();open();
 }

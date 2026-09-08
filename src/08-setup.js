@@ -803,20 +803,47 @@ function openHolidays(){
     closeModal();openHolidays();renderAll();};}
 
 /* ===== 11. 모달 · 필터 · 탭 ===== */
+/* ---------- 겹쳐 띄우는 팝업 ----------
+   목록 창(캠페인 및 광고주 관리) 위에 작업 창(이름 변경 · 복제 · 광고주 추가)을 얹는다.
+   작업 창을 닫으면 **아래 목록 창이 그대로 다시 보인다** — 예전처럼 통째로 닫히지 않는다. */
 function openModal(title,body,footer,opts){
   const w=(opts&&opts.w)||900;
-  $('modalHost').innerHTML=`<div class="modal" id="mdl"><div class="box" style="max-width:min(${w}px,94vw)">
+  const host=$('modalHost');
+  /* 이미 떠 있는 창은 잠시 감춰 스택에 남긴다 */
+  const cur=host.querySelector('.modal:not(.stacked)');
+  if(cur){cur.classList.add('stacked');cur.removeAttribute('id');}
+  const box=document.createElement('div');
+  box.className='modal';box.id='mdl';
+  box.innerHTML=`<div class="box" style="max-width:min(${w}px,94vw)">
     <div class="mhd"><b>${esc(title)}</b><div class="spacer"></div><button class="x" data-close>✕</button></div>
-    <div class="mbd">${body}</div>${footer?`<div class="mft">${footer}</div>`:''}</div></div>`;
-  $('modalHost').querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
-  $('mdl').onclick=e=>{if(e.target.id==='mdl')closeModal();};}
-const closeModal=()=>$('modalHost').innerHTML='';
+    <div class="mbd">${body}</div>${footer?`<div class="mft">${footer}</div>`:''}</div>`;
+  host.appendChild(box);
+  box.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  box.onclick=e=>{if(e.target===box)closeModal();};
+  return box;}
+function closeModal(){
+  const host=$('modalHost');if(!host)return;
+  const top=host.querySelector('.modal#mdl');
+  if(top)top.remove();else{host.innerHTML='';return;}
+  /* 바로 아래 창을 다시 꺼내 준다 */
+  const prev=[...host.querySelectorAll('.modal.stacked')].pop();
+  if(prev){prev.classList.remove('stacked');prev.id='mdl';}}
+/* 지금 맨 위 팝업의 본문만 갈아 끼운다 (창을 닫았다 열지 않고 목록을 새로 그릴 때) */
+function repaintModal(body,footer){
+  const host=$('modalHost'),top=host&&host.querySelector('.modal#mdl');
+  if(!top)return false;
+  const bd=top.querySelector('.mbd');if(bd)bd.innerHTML=body;
+  if(footer!==undefined){const ft=top.querySelector('.mft');if(ft)ft.innerHTML=footer;}
+  top.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  return true;}
 /* rawSub=true 면 설명 줄에 굵게·줄바꿈 같은 간단한 태그를 그대로 쓴다 (개발자가 쓴 문구 전용) */
 function confirmModal(msg,sub,onYes,okLabel,rawSub){
   openModal('확인',`<div style="font-size:14px;font-weight:700;margin-bottom:6px">${esc(msg)}</div>`
     +`<div class="hint">${rawSub?(sub||''):esc(sub||'')}</div>`,
     `<button class="btn" data-close>취소</button><button class="btn primary" id="cfmYes">${okLabel||'삭제'}</button>`,{w:460});
   $('cfmYes').onclick=()=>{closeModal();onYes();};}
+/* 겹쳐 띄운 창 전부 닫기 */
+function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id="${id}"><option value="all">전체</option>`
@@ -903,9 +930,12 @@ let pendingLeave=false;
 function switchTab(name){
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
     const n=SHEET.filter(rowBad).length;
-    confirmModal(`집행 기간을 벗어난 행이 ${n}개 있습니다.`,
-      '붉게 표시된 행의 일자 또는 라인 정보를 확인해 주세요. 그대로 이동하면 해당 행은 저장되지 않습니다.',
-      ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동');
+    confirmModal(`예상 효율과 매칭되지 않는 행이 ${n}개 있습니다.`,
+      '붉게 표시된 행의 <b>매체 · 광고상품 · 타겟팅 이름</b>이 예상 효율과 같은지, '
+      +'<b>일자</b>가 그 라인의 집행 기간 안인지 확인해 주세요.<br>'
+      +'그대로 이동하면 해당 행은 집계되지 않습니다. '
+      +'(데이터 입력 탭의 <b>“매칭 안 되는 행 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
+      ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동',true);
     return;}
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   ['dash','input','setup'].forEach(n=>$('tab-'+n).classList.toggle('hidden',n!==name));
@@ -915,8 +945,12 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.d
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
   ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
-  if(b.dataset.sub==='perf'){renderCreatives();renderGantt();renderStrip();renderBubble();
-    equalizeDuo();renderTreemap();}
+  /* 효율 탭을 열 때는 **히트맵까지** 전부 다시 그린다 —
+     예전에는 renderHeat() 가 빠져 있어 "일자별 토글을 눌러야 갱신되는" 것처럼 보였다 */
+  if(b.dataset.sub==='perf'){
+    try{renderCreatives();renderGantt();renderHeat();renderStrip();renderBubble();
+      equalizeDuo();renderTreemap();}catch(e){}
+    PERF_STALE=false;}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();});
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
@@ -1115,7 +1149,23 @@ function renderAll(){
   renderCampForm();renderMix();
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();}
+  else PERF_STALE=true;                     /* 숨어 있는 동안 바뀐 건 다시 열 때 그린다 */
   if(!$('sub-table').classList.contains('hidden'))renderRaw();}
+/* 효율 탭이 숨어 있는 사이에 데이터가 바뀌었는지 */
+let PERF_STALE=false;
+/* 데이터가 바뀌면 어느 경로로 들어와도 빠지는 영역 없이 전부 다시 그린다.
+   (히트맵·버블·트리맵이 갱신되지 않아 "일자별 토글을 눌러야 바뀌던" 문제) */
+function renderEverything(){
+  try{buildFilters();buildSelects();}catch(e){}
+  renderAll();
+  try{renderSheet();}catch(e){}
+  try{renderIssues();renderIssueAlert();}catch(e){}
+  try{renderKpiTable();}catch(e){}
+  try{renderRaw();}catch(e){}
+  try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
+  try{equalizeDuo();renderTreemap();}catch(e){}
+  PERF_STALE=false;
+}
 buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */

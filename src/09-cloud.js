@@ -29,7 +29,10 @@ function serializeDoc(){
   return {
     v:1,
     campaign:{name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,today:CAMPAIGN.today,
-      advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:'')},
+      advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:''),
+      /* 배경 로고 — 'none'(앰비언트) · 'adv'(광고주) · 'agency'(대행사). 캠페인마다 따로 */
+      bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
+      agencyLogo:CAMPAIGN.agencyLogo||''},
     lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
     creatives:CREATIVES.map(stripCr),
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
@@ -82,6 +85,11 @@ function applyDoc(d,keepToday){
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
+  CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
+  delete CAMPAIGN.bgLogo;
+  CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
+  /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
+  try{if(!CAMPAIGN.agencyLogo&&typeof agencyLogo==='function')CAMPAIGN.agencyLogo=agencyLogo();}catch(e){}
   if(typeof applyTheme==='function')applyTheme(d.campaign?.theme||'',true);
   if(typeof renderBrand==='function')renderBrand();
   LINES=d.lines.map(l=>({...l,daily:{}}));
@@ -233,9 +241,7 @@ function loadLocal(){
     rebuildPeriod();resetDateFilter();
     unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
     if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
-    buildFacts();buildFilters();buildSelects();
-    renderAll();renderSheet();renderIssues();renderKpiTable();renderRaw();
-    renderCreatives();renderGantt();
+    buildFacts();renderEverything();
     return true;
   }catch(e){return false;}
 }
@@ -249,9 +255,7 @@ function restoreDemo(){
   rebuildPeriod();resetDateFilter();
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
-  buildFacts();buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();
+  buildFacts();renderEverything();
   clearLocal();
   return true;
 }
@@ -322,10 +326,9 @@ async function tryCode(raw){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderIssueAlert();renderRaw();
-  renderCreatives();renderGantt();
-  try{renderKpiTable&&renderKpiTable();renderCampForm&&renderCampForm();}catch(e){}
+  buildFacts();
+  renderEverything();
+  try{renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
   endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
@@ -600,10 +603,7 @@ async function openCampaign(id){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();
-  buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();
+  buildFacts();renderEverything();
   paintCampSel();
   applyRoleLock();
   CLOUD.busy=false;
@@ -621,14 +621,22 @@ function applyRoleLock(){
   if(mk)mk.classList.toggle('hidden',!!(CLOUD.on&&CLOUD.user));
 }
 
-/* ---------- 저장 ---------- */
+/* ---------- 저장 ----------
+   **한 번에 하나만 돌아야 한다.**
+   자동 저장(20초 뒤)과 ☁ 저장 버튼이 겹치면 두 번 모두
+   "일별 실적 전부 지우기 → 다시 넣기" 를 하다가 서로의 삽입과 부딪혀
+   duplicate key … daily_stats_campaign_id_stat_date_line_key_creative_key 로 실패했다.
+   지금은 ① 진행 중이면 예약만 걸고 돌아가고 ② 삽입도 upsert 라 겹쳐도 깨지지 않는다. */
 async function cloudSave(silent){
+  if(CLOUD.saving){CLOUD.saveAgain=true;return;}     /* 이미 저장 중 — 끝나면 한 번 더 */
   if(!CLOUD.on||!CLOUD.user){
     if(!silent)confirmModal('데모 모드입니다.','구글 로그인을 하면 이 캠페인을 클라우드에 저장할 수 있습니다.',
       ()=>signInGoogle(),'구글 로그인');
     return;}
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
+  CLOUD.saving=true;CLOUD.saveAgain=false;
+  try{
   cloudState('저장 중…');
   const chip=$('savedAgo');if(chip){chip.textContent='저장 중…';chip.classList.remove('on');}
   const doc=serializeDoc();
@@ -649,8 +657,11 @@ async function cloudSave(silent){
   const rows=sheetToRows();
   const {error:eDel}=await CLOUD.sb.from('daily_stats').delete().eq('campaign_id',CLOUD.campaign.id);
   if(eDel){cloudState('일별 실적 정리 실패: '+eDel.message);return;}
+  /* insert 가 아니라 upsert — 같은 (캠페인·날짜·라인·소재) 가 남아 있어도 덮어쓴다.
+     저장이 겹치거나 지우기가 덜 끝나도 오류로 멈추지 않는다. */
   for(let i=0;i<rows.length;i+=500){
-    const {error:e2}=await CLOUD.sb.from('daily_stats').insert(rows.slice(i,i+500));
+    const {error:e2}=await CLOUD.sb.from('daily_stats')
+      .upsert(rows.slice(i,i+500),{onConflict:'campaign_id,stat_date,line_key,creative'});
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   await CLOUD.sb.from('campaign_history').insert({
     campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id});
@@ -659,6 +670,11 @@ async function cloudSave(silent){
   paintSaved();
   /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
   const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
+  }finally{
+    CLOUD.saving=false;
+    /* 저장하는 동안 또 바뀌었으면 한 번만 더 돌린다 */
+    if(CLOUD.saveAgain){CLOUD.saveAgain=false;setTimeout(()=>cloudSave(true),400);}
+  }
 }
 /* ---------- 자동 저장 · "00분 전에 저장됨" ----------
    저장 버튼을 누르지 않아도 알아서 저장한다.
@@ -719,12 +735,9 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
   clearWorkState();
-  rebuildPeriod();buildFacts();
-  buildFilters();buildSelects();
-  renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
-  renderRaw();renderCreatives();renderGantt();renderTreemap();
+  rebuildPeriod();buildFacts();renderEverything();
 }
-async function createCampaign(){
+async function createCampaign(after){
   if(!CLOUD.on||!CLOUD.user){signInGoogle();return;}
   /* ① 광고주를 먼저 고르고 ② 캠페인 이름을 정한다 */
   const st={logo:''};
@@ -746,7 +759,8 @@ async function createCampaign(){
     const name=($('ncName').value||'').trim()||'새 캠페인';
     const adv=av.name;
     ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();
-    closeModal();
+    closeModal();                       /* 위에 얹힌 "새 캠페인" 창만 닫는다 */
+    if(typeof after==='function')closeAllModals();
     cloudState('만드는 중…');
     resetToBlank(name,adv);
     CAMPAIGN.advLogo=av.logo||'';renderBrand();
@@ -760,7 +774,8 @@ async function createCampaign(){
     await openCampaign(data.id);};
 }
 /* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
-async function openCampManage(){
+/* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
+async function openCampManage(inplace){
   if(!CLOUD.on||!CLOUD.user){
     confirmModal('구글 로그인이 필요합니다.','로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.',
       ()=>signInGoogle(),'구글 로그인');return;}
@@ -806,15 +821,16 @@ async function openCampManage(){
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
     h+='</tbody></table>';}
-  openModal('캠페인 및 광고주 관리',h,
-    '<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
+  const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
-    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>',{w:1140});
-  const host=$('modalHost');
-  if($('campNew'))$('campNew').onclick=()=>{closeModal();createCampaign();};
-  if($('advMng'))$('advMng').onclick=()=>{closeModal();openAdvManage();};
+    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
+  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1140});
+  const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
+  const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
+  if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
+  if($('advMng'))$('advMng').onclick=()=>openAdvManage(redraw);
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
-    closeModal();await openCampaign(b.dataset.open);});
+    closeAllModals();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
   host.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.copy);if(!c)return;
@@ -828,19 +844,31 @@ async function openCampManage(){
   /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
-    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeModal();await openCampaign(c.id);}
-    else closeModal();
+    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeAllModals();await openCampaign(c.id);}
+    else closeAllModals();
     if(typeof openPermCloud==='function')openPermCloud();});
-  host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
+  /* 이름 변경 — 위에 작은 창을 하나 더 띄운다 (목록 창은 그대로) · 광고주는 드롭다운 */
+  host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
-    const nm=prompt('캠페인 이름',c.name||'');if(nm===null)return;
-    const adv=prompt('광고주',c.advertiser||'');if(adv===null)return;
-    const {data,error}=await CLOUD.sb.from('campaigns')
-      .update({name:nm.trim()||c.name,advertiser:(adv||'').trim()}).eq('id',c.id).select('id');
-    if(error||!data||!data.length){cloudState('이름을 바꾸지 못했습니다 (권한 확인)');return;}
-    if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CAMPAIGN.name=nm.trim()||c.name;
-      CAMPAIGN.advertiser=(adv||'').trim();renderCampForm();renderCampBar();}
-    await loadCampaignList(true);closeModal();openCampManage();});
+    const st={logo:advLogo(c.advertiser)||''};
+    openModal('캠페인 이름 · 광고주',
+      `<div class="form-row"><div class="fld" style="flex:1;min-width:280px"><label>캠페인명</label>
+         <input id="renName" value="${esc(c.name||'')}"></div></div>
+       <div class="form-row" style="margin-top:6px">${advPickerHTML(c.advertiser||'',st.logo)}</div>`,
+      '<button class="btn" data-close>취소</button><button class="btn primary" id="renGo">저장</button>',{w:660});
+    const readAdv=wireAdvPicker(st);
+    $('renGo').onclick=async()=>{
+      const nm=($('renName').value||'').trim()||c.name;
+      const av=readAdv();
+      const adv=(av.name||'').trim();
+      if(adv){ADV_BOOK[adv]=ADV_BOOK[adv]||{};ADV_BOOK[adv].logo=av.logo||'';saveAdvBook();}
+      const {data,error}=await CLOUD.sb.from('campaigns')
+        .update({name:nm,advertiser:adv}).eq('id',c.id).select('id');
+      if(error||!data||!data.length){cloudState('이름을 바꾸지 못했습니다 (권한 확인)');return;}
+      if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CAMPAIGN.name=nm;CAMPAIGN.advertiser=adv;
+        CAMPAIGN.advLogo=av.logo||'';renderCampForm();renderCampBar();renderBrand();
+        try{refreshBgDots();}catch(e){}}
+      closeModal();openCampManage(true);};});
   host.querySelectorAll('[data-dup]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.dup);if(!c)return;
     cloudState('복제 중…');
@@ -856,19 +884,34 @@ async function openCampManage(){
     if(rows&&rows.length){
       const copy=rows.map(r=>{const o={...r};delete o.id;o.campaign_id=ins.id;return o;});
       await CLOUD.sb.from('daily_stats').insert(copy);}
-    await loadCampaignList(true);closeModal();openCampManage();
+    await loadCampaignList(true);openCampManage(true);
     cloudState('복제 완료');});
   host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.del);if(!c)return;
     confirmModal(`"${c.name}" 캠페인을 삭제할까요?`,
       '이 캠페인의 설정과 일별 실적이 모두 사라집니다. 되돌릴 수 없습니다.',async()=>{
-        const {data,error}=await CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id');
-        if(error||!data||!data.length){cloudState('삭제하지 못했습니다 (마스터 권한 필요)');return;}
+        /* ① 서버 함수로 먼저 시도한다 — 슈퍼마스터 · 만든 사람 · 그 캠페인 마스터면 지워진다.
+           (예전 RLS 정책만 깔린 DB 에서는 직접 delete 가 조용히 0행이 되어
+            "마스터 권한 필요" 라고만 떴다) */
+        let gone=false,msg='';
+        try{const {data:rp,error:er}=await CLOUD.sb.rpc('delete_campaign',{p_id:c.id});
+          if(!er&&rp)gone=true;else if(er)msg=er.message;}catch(e){msg=String(e&&e.message||e);}
+        if(!gone){
+          const {data,error}=await CLOUD.sb.from('campaigns').delete().eq('id',c.id).select('id');
+          if(!error&&data&&data.length)gone=true;else msg=(error&&error.message)||msg;}
+        if(!gone){
+          confirmModal('삭제하지 못했습니다.',
+            '이 캠페인을 지울 권한이 확인되지 않았습니다.<br>'
+            +'슈퍼마스터인데도 이 창이 뜨면 Supabase SQL 편집기에서 <b>schema.sql</b> 을 다시 한 번 실행해 주세요 '
+            +'(캠페인 삭제 정책과 <code>delete_campaign</code> 함수가 최신이어야 합니다).'
+            +(msg?`<br><span class="hint">서버 응답: ${esc(msg)}</span>`:''),
+            ()=>{},'확인',true);
+          return;}
         if(CLOUD.campaign&&CLOUD.campaign.id===c.id){CLOUD.campaign=null;CLOUD.role=null;}
         await loadCampaignList(true);
         if(!CLOUD.list.length)resetToBlank('새 캠페인','');
         else await openCampaign(CLOUD.list[0].id);
-        closeModal();openCampManage();},'삭제');});
+        openCampManage(true);},'삭제');});
 }
 
 /* ---------- 권한 · 초대 (계정 · 권한 팝업) ---------- */

@@ -202,6 +202,27 @@ let CREATIVES=[
   g:'linear-gradient(140deg,#a9a3bd,#4e4766)',run:[[0,55]],share:1}
 ];
 let FACTS=[];
+/* 값 하나를 비중대로 나눠 담되 **합이 원래 값과 정확히 같도록** 나머지를 배분한다.
+   예전에는 소재마다 따로 Math.round 를 해서 소재 수만큼 ±1 씩 어긋났고,
+   그 오차가 라인 × 날짜만큼 쌓여 표 합계가 엑셀 원본과 수십~수백 차이가 났다. */
+function splitExact(total,ks){
+  const n=ks.length,out=new Array(n).fill(0);
+  if(!n)return out;
+  const neg=total<0, T=Math.round(Math.abs(total));
+  const raw=ks.map(k=>Math.abs(total)*(+k||0));
+  let acc=0;
+  const fl=raw.map(v=>{const f=Math.floor(v);acc+=f;return f;});
+  let rest=T-acc;
+  if(rest>0){
+    const order=raw.map((v,i)=>[v-Math.floor(v),i]).sort((a,b)=>b[0]-a[0]);
+    for(let j=0;rest>0&&j<order.length;j++,rest--)fl[order[j][1]]++;
+    /* 소재보다 남은 양이 많으면(비중이 전부 0 인 경우) 첫 칸에 몰아 준다 */
+    if(rest>0)fl[0]+=rest;}
+  else if(rest<0){                       /* 내림만 했는데도 넘치면 큰 칸부터 뺀다 */
+    const order=raw.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+    for(let j=0;rest<0&&j<order.length;j++,rest++)if(fl[order[j][1]]>0)fl[order[j][1]]--;}
+  return fl.map(v=>neg?-v:v);
+}
 function buildFacts(){
   FACTS=[];
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
@@ -225,12 +246,18 @@ function buildFacts(){
          (소재 run 이 [[0,0]] 로 갇혀 이튿날부터 실적이 통째로 사라지던 문제) */
       if(!act.length)act=cs;
       const tot=sum(act.map(c=>c.share))||1;
-      cs.forEach(c=>{
-        const k=act.includes(c)?c.share/tot:0, d=ALLDATES[i];
+      /* 소재별 비중 — 나눈 값의 합이 라인 값과 정확히 같도록 splitExact 로 배분한다 */
+      const ks=cs.map(c=>act.includes(c)?(c.share/tot):0);
+      const part={};
+      AMET.forEach(m=>{part[m]=splitExact((l.daily[m]&&l.daily[m][i])||0,ks);});
+      /* 소진비용도 Gross 를 먼저 만든 뒤 나눈다 — 소재마다 따로 역산하면 합이 안 맞는다 */
+      part.cost=splitExact(toGross((l.daily.net&&l.daily.net[i])||0,feeOf(l)),ks);
+      cs.forEach((c,ci)=>{
+        const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
           line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
-        AMET.forEach(m=>f[m]=Math.round(((l.daily[m]&&l.daily[m][i])||0)*k));
-        f.cost=toGross(f.net,feeOf(l));
+        AMET.forEach(m=>f[m]=part[m][ci]);
+        f.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
         FACTS.push(f);
       });

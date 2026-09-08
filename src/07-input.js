@@ -73,9 +73,41 @@ function rowLine(r){
   const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
     ||lineMulti(l,k).length===parseMulti(r[k]).length));
   return exact||LINES.find(ok)||null;}
-function rowBad(r){
-  const l=rowLine(r);if(!l)return !!(r.media||r.product);
-  return !(r.date>=l.start&&r.date<=l.end);}
+/* 이 행이 예상 효율(라인)에 붙지 못하는 이유 —
+   '' 정상 · 'line' 어느 라인과도 매칭되지 않음(매체·상품·타겟팅 이름이 다름 등)
+   · 'date' 라인은 찾았지만 그 라인의 집행 기간 밖의 날짜 */
+function rowIssue(r){
+  const l=rowLine(r);
+  if(!l)return (r.media||r.product||r.target||r.segment||r.line)?'line':'';
+  return (r.date>=l.start&&r.date<=l.end)?'':'date';}
+const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
+  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+function rowBad(r){return !!rowIssue(r);}
+/* 매칭 안 되는 행들의 위치 (0부터) */
+const badRowIdx=()=>SHEET.map((r,i)=>rowBad(r)?i:-1).filter(i=>i>=0);
+/* 안내 문구를 누를 때마다 다음 "매칭 안 되는 행" 으로 데려간다 */
+let BAD_CURSOR=-1;
+function jumpToBadRow(){
+  const idx=badRowIdx();
+  if(!idx.length)return;
+  BAD_CURSOR=(BAD_CURSOR+1)%idx.length;
+  const ri=idx[BAD_CURSOR];
+  const tr=document.querySelector(`#sheet tbody tr[data-ri="${ri}"]`);
+  if(!tr)return;
+  const wrap=tr.closest('.sheet-wrap');
+  /* 표 안에서 세로로 가운데 오도록 (표 자체가 스크롤 상자다) */
+  if(wrap){const wr=wrap.getBoundingClientRect(),rr=tr.getBoundingClientRect();
+    wrap.scrollTop+=(rr.top-wr.top)-wrap.clientHeight/2+rr.height/2;}
+  /* 표가 화면 밖이면 페이지도 함께 */
+  const r2=tr.getBoundingClientRect();
+  if(r2.top<120||r2.bottom>innerHeight-40)
+    scrollTo({top:scrollY+r2.top-innerHeight/2,behavior:'smooth'});
+  document.querySelectorAll('#sheet tr.badflash').forEach(x=>x.classList.remove('badflash'));
+  tr.classList.add('badflash');
+  setTimeout(()=>tr.classList.remove('badflash'),2200);
+  const jb=$('sheetBadJump');
+  if(jb)jb.textContent=`매칭 안 되는 행 ${idx.length}개 · ${BAD_CURSOR+1}번째 ▸`;
+}
 let SEL={r1:0,c1:0,r2:0,c2:0},selecting=false;
 const inSel=(r,c)=>r>=Math.min(SEL.r1,SEL.r2)&&r<=Math.max(SEL.r1,SEL.r2)&&c>=Math.min(SEL.c1,SEL.c2)&&c<=Math.max(SEL.c1,SEL.c2);
 function evalFormula(f,row){
@@ -104,7 +136,9 @@ function renderSheet(){
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
     +cols.map(c=>`<th style="min-width:${c.w||110}px">${c.l}${c.type==='calc'?' ƒ':''}</th>`).join('')+'</tr></thead><tbody>';
   SHEET.forEach((r,ri)=>{
-    h+=`<tr class="${rowBad(r)?'bad':''}"><td class="rm"><button data-del="${ri}">✕</button></td>`;
+    const iss=rowIssue(r);
+    h+=`<tr class="${iss?'bad':''}" data-ri="${ri}"${iss?` title="${esc(ROW_ISSUE_LABEL[iss])}"`:''}>`
+      +`<td class="rm"><button data-del="${ri}">✕</button></td>`;
     cols.forEach((c,ci)=>{
       if(c.type==='calc'){h+=`<td class="calc mono">${fmt(evalFormula(c.rule,r))}</td>`;return;}
       /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 */
@@ -134,9 +168,18 @@ function renderSheet(){
     });
     h+='</tr>';});
   t.innerHTML=h+'</tbody>'+dl;
-  const bad=SHEET.filter(rowBad).length;
+  /* 매칭 실패는 "기간" 만의 문제가 아니다 — 상품명·타겟팅 이름이 달라도 붙지 않는다.
+     그래서 문구를 매칭 기준으로 바꾸고, 누르면 그 행으로 차례차례 데려간다. */
+  const badIdx=badRowIdx();
+  const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
+  const nDate=badIdx.length-nLine;
   $('sheetNote').innerHTML=`${SHEET.length}행 · 새 행 기본 일자 = 어제(${YESTERDAY})`
-    +(bad?` · <b style="color:var(--neg)">기간을 벗어난 행 ${bad}개</b>`:'');
+    +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
+        title="누를 때마다 다음 행으로 이동합니다&#10;`
+        +`${nLine?`· 매칭되는 라인 없음 ${nLine}개`:''}${nLine&&nDate?'&#10;':''}`
+        +`${nDate?`· 집행 기간 밖 ${nDate}개`:''}">매칭 안 되는 행 ${badIdx.length}개 ▸</button>`:'');
+  {const jb=$('sheetBadJump');
+   if(jb)jb.onclick=()=>jumpToBadRow();}
   const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
