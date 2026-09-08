@@ -275,6 +275,15 @@ function normBid(v){
   return String(v||'').trim();
 }
 const isYes=v=>/^(o|y|yes|예|보장|true|1|✓|v)$/i.test(String(v==null?'':v).trim());
+/* 엑셀 날짜 칸 → 'YYYY-MM-DD'.
+   **시간대 보정이 필요하다.** SheetJS 는 브라우저 시간대만큼 값을 밀어서 돌려주기 때문에
+   한국(UTC+9)에서는 9월 1일이 8월 31일 14:59Z 로 나온다 — 그대로 읽으면 날짜가 하루 당겨진다.
+   가장 가까운 UTC 자정으로 반올림한 뒤 UTC 기준으로 읽으면 어느 시간대에서나 같은 날짜가 된다. */
+function xlsDay(d){
+  /* SheetJS 가 뺀 만큼(그 날짜의 시간대 오프셋) 도로 더한 뒤, 가장 가까운 UTC 자정으로 맞춘다 */
+  const t=Math.round((d.getTime()-d.getTimezoneOffset()*60000)/864e5)*864e5, x=new Date(t);
+  return `${x.getUTCFullYear()}-${String(x.getUTCMonth()+1).padStart(2,'0')}-${String(x.getUTCDate()).padStart(2,'0')}`;
+}
 /* 파일 → 2차원 배열. .xlsx 는 SheetJS 가 있을 때만 (배포본에서는 자동 로드) */
 function readGrid(file){
   return new Promise((res,rej)=>{
@@ -294,8 +303,7 @@ function readGrid(file){
            셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
         res(shown.map((row,ri)=>row.map((v,ci)=>{
           const rv=val[ri]?val[ri][ci]:undefined;
-          if(rv instanceof Date&&!isNaN(rv))
-            return `${rv.getFullYear()}-${String(rv.getMonth()+1).padStart(2,'0')}-${String(rv.getDate()).padStart(2,'0')}`;
+          if(rv instanceof Date&&!isNaN(rv))return xlsDay(rv);
           return (typeof rv==='number'&&isFinite(rv))?rv:v;})));
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
