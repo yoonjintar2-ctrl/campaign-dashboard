@@ -10,8 +10,100 @@ const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:
 function applyHidden(){
   document.querySelectorAll('[data-sect]').forEach(elm=>{
     elm.style.display=HIDDEN.has(elm.dataset.sect)?'none':'';});
+  applySectOrder();
   renderHiddenBar();
 }
+/* ---------- 영역 순서 ----------
+   효율 화면의 덩어리(제목 + 그 아래 카드들)를 통째로 옮긴다.
+   노출 분포 · 효율 버블은 두 칸 배치(.duo)라 한 덩어리로 다룬다. */
+let SECT_ORDER=[];
+const DUO_KEY='__duo';
+function sectBlocks(){
+  const host=$('sub-perf');if(!host)return [];
+  const out=[];
+  [...host.children].forEach(n=>{
+    if(n.id==='slotEnd')return;
+    if(n.classList.contains('duo')){out.push({k:DUO_KEY,label:'노출 분포 · 효율 버블',nodes:[n]});return;}
+    /* 서머리 · 운영 코멘트는 감싼 상자가 따로 있다 */
+    if(n.id==='sumBlock'){out.push({k:'sum',label:'서머리(상세 효율 비교)',nodes:[n]});return;}
+    if(n.id==='cmtBlock'){out.push({k:'comment',label:SECT_LABEL.comment,nodes:[n]});return;}
+    const k=n.dataset.sect;
+    if(!k)return;                       /* 필터 줄 · 숨긴 항목 줄 등은 건드리지 않는다 */
+    let b=out.find(x=>x.k===k);
+    if(!b){b={k,label:SECT_LABEL[k]||k,nodes:[]};out.push(b);}
+    b.nodes.push(n);});
+  return out;
+}
+function applySectOrder(){
+  const host=$('sub-perf');if(!host||!SECT_ORDER.length)return;
+  const blocks=sectBlocks();
+  const by={};blocks.forEach(b=>by[b.k]=b);
+  const anchor=$('slotEnd');
+  /* 정한 순서대로 · 목록에 없는 것은 원래 순서 그대로 뒤에 */
+  const order=SECT_ORDER.filter(k=>by[k]).concat(blocks.map(b=>b.k).filter(k=>SECT_ORDER.indexOf(k)<0));
+  order.forEach(k=>{const b=by[k];if(!b)return;
+    b.nodes.forEach(n=>host.insertBefore(n,anchor));});
+}
+/* 영역 관리 — 보이기/숨기기 체크 + 끌어서 순서 바꾸기 */
+function openSectManage(){
+  const draw=()=>{
+    const blocks=sectBlocks();
+    const by={};blocks.forEach(b=>by[b.k]=b);
+    const order=SECT_ORDER.filter(k=>by[k])
+      .concat(blocks.map(b=>b.k).filter(k=>SECT_ORDER.indexOf(k)<0));
+    const on=k=>k==='sum'
+      ? SUMMARIES.some(s=>!HIDDEN.has('sum:'+s.id))
+      : k===DUO_KEY?(!HIDDEN.has('treemap')||!HIDDEN.has('bubble')):!HIDDEN.has(k);
+    const host=$('smList');if(!host)return;
+    host.innerHTML=order.map(k=>
+      `<div class="dprow" draggable="true" data-k="${esc(k)}">
+         <span class="gr">⋮⋮</span>
+         <label><input type="checkbox" ${on(k)?'checked':''} data-ck="${esc(k)}"> ${esc(by[k].label)}</label>
+       </div>`).join('');
+    host.querySelectorAll('[data-ck]').forEach(cb=>cb.onchange=()=>{
+      const k=cb.dataset.ck,show=cb.checked;
+      const keys=k===DUO_KEY?['treemap','bubble']:k==='sum'?[]:[k];
+      if(k==='sum')SUMMARIES.forEach(s=>{show?HIDDEN.delete('sum:'+s.id):HIDDEN.add('sum:'+s.id);});
+      keys.forEach(x=>{show?HIDDEN.delete(x):HIDDEN.add(x);});
+      applyHidden();renderSummaries();
+      try{markDirty();saveLocal();}catch(e){}});
+    /* 끌어서 순서 바꾸기 */
+    let from=null;
+    host.querySelectorAll('.dprow').forEach(row=>{
+      row.addEventListener('dragstart',e=>{from=row.dataset.k;row.classList.add('dragging');
+        try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',from);}catch(x){}});
+      row.addEventListener('dragend',()=>{from=null;
+        host.querySelectorAll('.dprow').forEach(r=>r.classList.remove('dragging','dropT','dropB'));});
+      row.addEventListener('dragover',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const r=row.getBoundingClientRect(),after=e.clientY>r.top+r.height/2;
+        row.classList.toggle('dropB',after);row.classList.toggle('dropT',!after);});
+      row.addEventListener('dragleave',()=>row.classList.remove('dropT','dropB'));
+      row.addEventListener('drop',e=>{if(from===null||from===row.dataset.k)return;e.preventDefault();
+        const after=e.clientY>row.getBoundingClientRect().top+row.getBoundingClientRect().height/2;
+        const list=order.slice();
+        const a=list.indexOf(from);if(a>=0)list.splice(a,1);
+        let b2=list.indexOf(row.dataset.k);if(b2<0)b2=list.length;
+        list.splice(after?b2+1:b2,0,from);
+        SECT_ORDER=list;from=null;
+        applySectOrder();draw();
+        try{markDirty();saveLocal();}catch(x){}});});
+  };
+  openModal('영역 관리',
+    `<div class="hint" style="margin-bottom:8px">체크를 풀면 화면에서 빠집니다. 왼쪽 손잡이를 끌어 순서를 바꿉니다.</div>`
+    +`<div id="smList" class="dplist"></div>`,
+    `<button class="btn" id="smAll">전체 표시</button>`
+    +`<button class="btn" id="smReset">순서 초기화</button>`
+    +`<div class="spacer"></div><button class="btn primary" data-close>닫기</button>`,{w:520});
+  draw();
+  $('smAll').onclick=()=>{HIDDEN.clear();applyHidden();renderSummaries();draw();
+    try{markDirty();saveLocal();}catch(e){}};
+  $('smReset').onclick=()=>{SECT_ORDER=[];applySectOrder();draw();
+    try{markDirty();saveLocal();}catch(e){}};
+}
+(function wireSectMng(){
+  const go=()=>{const b=$('sectMngBtn');if(b)b.onclick=openSectManage;};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,90);
+})();
 function renderHiddenBar(){
   const bar=$('hiddenBar');if(!bar)return;
   const keys=[...HIDDEN];
@@ -36,8 +128,8 @@ function syncStick(){
   const r=base.getBoundingClientRect();
   const top=Math.max(0,Math.round(r.bottom-(base.style.position==='fixed'?0:0)));
   /* 화면 맨 위에 붙어 있을 때의 높이를 쓴다 (스크롤 위치와 무관하게) */
-  const h=(document.querySelector('.topbar')?.offsetHeight||0)
-    +(tb?.offsetHeight||0)+(sb&&sb.offsetParent?sb.offsetHeight:0);
+  /* v49 — 하위 탭이 메인 탭 줄 안으로 들어와서 따로 더하지 않는다 */
+  const h=(document.querySelector('.topbar')?.offsetHeight||0)+(tb?.offsetHeight||0);
   document.documentElement.style.setProperty('--stick',h+'px');
 }
 addEventListener('resize',syncStick);
@@ -162,13 +254,23 @@ let PERF_ORDER='sum';   /* 'sum' = 서머리 먼저 · 코멘트 맨 아래 */
 function applyPerfOrder(){
   const mid=$('slotMid'),end=$('slotEnd'),cb=$('cmtBlock'),sb=$('sumBlock');
   if(!mid||!end||!cb||!sb)return;
+  const sel=$('perfOrder');if(sel&&sel.value!==PERF_ORDER)sel.value=PERF_ORDER;
+  /* 영역 관리에서 순서를 정해 두었으면 그쪽이 우선이다 (v49) —
+     예전에는 여기서 서머리·코멘트를 고정 자리로 되돌려 놓아 순서가 어긋났다 */
+  if(typeof SECT_ORDER!=='undefined'&&SECT_ORDER.length){applySectOrder();return;}
   const first=PERF_ORDER==='cmt'?cb:sb, last=PERF_ORDER==='cmt'?sb:cb;
   mid.after(first);end.before(last);
-  const sel=$('perfOrder');if(sel&&sel.value!==PERF_ORDER)sel.value=PERF_ORDER;
 }
 (function wirePerfOrder(){
   const sel=$('perfOrder');if(!sel)return;
-  sel.onchange=()=>{PERF_ORDER=sel.value;applyPerfOrder();
+  sel.onchange=()=>{
+    /* 영역 관리 순서를 쓰고 있으면 그 목록에서 두 항목의 자리만 바꿔 준다 */
+    PERF_ORDER=sel.value;
+    if(typeof SECT_ORDER!=='undefined'&&SECT_ORDER.length){
+      const a=SECT_ORDER.indexOf('sum'),b2=SECT_ORDER.indexOf('comment');
+      if(a>=0&&b2>=0){const want=PERF_ORDER==='cmt';
+        if((a<b2)===want){SECT_ORDER[a]='comment';SECT_ORDER[b2]='sum';}}}
+    applyPerfOrder();
     if(typeof markDirty==='function')markDirty();
     if(typeof syncStick==='function')syncStick();};
   applyPerfOrder();

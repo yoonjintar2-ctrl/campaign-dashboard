@@ -59,7 +59,10 @@ function serializeDoc(){
            /* 노출 분포(트리맵) 의 기준 지표 · 묶음 · KPI 달성 현황 묶음 기준 */
            tmap:(typeof TMAP!=='undefined'?{metric:TMAP.metric,dims:(TMAP.dims||[]).slice()}:null),
            kpiGroup:(function(){try{const e=$('kpiGroupSel');return e?e.value:null;}catch(x){return null;}})(),
-           heatDaily:(typeof HEAT_DAILY!=='undefined'?!!HEAT_DAILY:false)}
+           heatDaily:(typeof HEAT_DAILY!=='undefined'?!!HEAT_DAILY:false),
+           /* 영역 숨김 · 순서 (v49) */
+           hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
+           sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -136,6 +139,10 @@ function applyDoc(d,keepToday){
   if(v.kpiGroup){try{const g=$('kpiGroupSel');
     if(g&&[...g.options].some(o=>o.value===v.kpiGroup))g.value=v.kpiGroup;}catch(e){}}
   if(typeof v.heatDaily==='boolean'&&typeof HEAT_DAILY!=='undefined')HEAT_DAILY=v.heatDaily;
+  if(Array.isArray(v.sectOrder)&&typeof SECT_ORDER!=='undefined')SECT_ORDER=v.sectOrder.slice();
+  if(Array.isArray(v.hidden)&&typeof HIDDEN!=='undefined'){
+    HIDDEN.clear();v.hidden.forEach(k=>HIDDEN.add(k));}
+  try{if(typeof applyHidden==='function')applyHidden();}catch(e){}
   if(v.perfOrder&&typeof PERF_ORDER!=='undefined'){PERF_ORDER=v.perfOrder;
     if(typeof applyPerfOrder==='function')applyPerfOrder();}
   if(v.gantt)GANTT=v.gantt;
@@ -652,7 +659,7 @@ const withTimeout=(pr,ms,what)=>Promise.race([
 async function wipeDaily(campId,onStep){
   const one=()=>CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId);
   try{
-    const {error}=await withTimeout(one(),15000,'일별 실적 정리');
+    const {error}=await withTimeout(one(),12000,'일별 실적 정리');
     if(!error)return null;
     if(!/timeout|시간 초과/i.test(error.message||''))return error.message;
   }catch(e){/* 시간 초과 — 아래에서 나눠 지운다 */}
@@ -664,7 +671,7 @@ async function wipeDaily(campId,onStep){
     if(onStep)onStep(i+1,chunks.length+2);
     try{const {error}=await withTimeout(
       CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
-        .gte('stat_date',chunks[i][0]).lte('stat_date',chunks[i][1]),20000,'일별 실적 정리');
+        .gte('stat_date',chunks[i][0]).lte('stat_date',chunks[i][1]),12000,'일별 실적 정리');
       if(error)return error.message;
     }catch(e){return String(e&&e.message||e);}}
   /* 캠페인 기간 밖에 남은 줄도 */
@@ -672,10 +679,10 @@ async function wipeDaily(campId,onStep){
     try{
       if(onStep)onStep(chunks.length+1,chunks.length+2);
       await withTimeout(CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
-        .lt('stat_date',days[0]),20000,'일별 실적 정리');
+        .lt('stat_date',days[0]),12000,'일별 실적 정리');
       if(onStep)onStep(chunks.length+2,chunks.length+2);
       await withTimeout(CLOUD.sb.from('daily_stats').delete().eq('campaign_id',campId)
-        .gt('stat_date',days[days.length-1]),20000,'일별 실적 정리');
+        .gt('stat_date',days[days.length-1]),12000,'일별 실적 정리');
     }catch(e){return String(e&&e.message||e);}}
   return null;
 }

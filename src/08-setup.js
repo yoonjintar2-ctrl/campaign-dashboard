@@ -836,6 +836,14 @@ function openHolidays(){
 /* ---------- 겹쳐 띄우는 팝업 ----------
    목록 창(캠페인 및 광고주 관리) 위에 작업 창(이름 변경 · 복제 · 광고주 추가)을 얹는다.
    작업 창을 닫으면 **아래 목록 창이 그대로 다시 보인다** — 예전처럼 통째로 닫히지 않는다. */
+/* 겹쳐 뜨는 것들은 **나중에 띄운 것이 항상 위**로 오도록 z-index 를 차례로 올려 준다.
+   (예전에는 캠페인 삭제 진행 게이지가 설정 팝업 뒤에 깔려 보이지 않았다) */
+let Z_TOP=500;
+const nextZ=()=>{Z_TOP+=2;return Z_TOP;};
+/* 화면에 겹쳐 뜬 것이 하나도 없으면 처음 값으로 되돌린다 (숫자가 계속 커지지 않게) */
+function resetZ(){
+  const host=$('modalHost');
+  if((!host||!host.children.length)&&!document.querySelector('.progwrap'))Z_TOP=500;}
 function openModal(title,body,footer,opts){
   const w=(opts&&opts.w)||900;
   const host=$('modalHost');
@@ -843,7 +851,7 @@ function openModal(title,body,footer,opts){
   const cur=host.querySelector('.modal:not(.stacked)');
   if(cur){cur.classList.add('stacked');cur.removeAttribute('id');}
   const box=document.createElement('div');
-  box.className='modal';box.id='mdl';
+  box.className='modal';box.id='mdl';box.style.zIndex=nextZ();
   box.innerHTML=`<div class="box" style="max-width:min(${w}px,94vw)">
     <div class="mhd"><b>${esc(title)}</b><div class="spacer"></div><button class="x" data-close>✕</button></div>
     <div class="mbd">${body}</div>${footer?`<div class="mft">${footer}</div>`:''}</div>`;
@@ -854,10 +862,11 @@ function openModal(title,body,footer,opts){
 function closeModal(){
   const host=$('modalHost');if(!host)return;
   const top=host.querySelector('.modal#mdl');
-  if(top)top.remove();else{host.innerHTML='';return;}
+  if(top)top.remove();else{host.innerHTML='';resetZ();return;}
   /* 바로 아래 창을 다시 꺼내 준다 */
   const prev=[...host.querySelectorAll('.modal.stacked')].pop();
-  if(prev){prev.classList.remove('stacked');prev.id='mdl';}}
+  if(prev){prev.classList.remove('stacked');prev.id='mdl';}
+  resetZ();}
 /* 지금 맨 위 팝업의 본문만 갈아 끼운다 (창을 닫았다 열지 않고 목록을 새로 그릴 때) */
 function repaintModal(body,footer){
   const host=$('modalHost'),top=host&&host.querySelector('.modal#mdl');
@@ -884,6 +893,7 @@ function progOpen(title){
   w.innerHTML=`<div class="progbox"><div class="pt"></div>
     <div class="pbarx"><i></i></div><div class="ps"></div></div>`;
   w.querySelector('.pt').textContent=title||'처리 중';
+  w.style.zIndex=nextZ();
   document.body.appendChild(w);
   PROG={w,bar:w.querySelector('.pbarx>i'),sub:w.querySelector('.ps'),t:w.querySelector('.pt')};
   return PROG;}
@@ -895,10 +905,10 @@ function progSet(pct,label){
   if(!idle)PROG.bar.style.width=Math.max(0,Math.min(100,pct))+'%';
   if(label!=null)PROG.sub.textContent=label;}
 function progTitle(t){if(PROG)PROG.t.textContent=t;}
-function progClose(){if(PROG&&PROG.w.parentNode)PROG.w.remove();PROG=null;}
+function progClose(){if(PROG&&PROG.w.parentNode)PROG.w.remove();PROG=null;resetZ();}
 /* 화면이 실제로 다시 그려질 때까지 한 번 쉬어 준다 */
 const uiTick=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
-function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';}
+function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';resetZ();}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id="${id}"><option value="all">전체</option>`

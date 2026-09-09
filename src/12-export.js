@@ -1099,14 +1099,14 @@ function openAdvManage(after){
    실제 동작은 화면에 숨겨 둔 원래 버튼(#hubHost)을 눌러 그대로 재사용한다. */
 /* 자주 쓰는 셋은 큰 카드로, 가끔 쓰는 셋은 아래에 작게 */
 const HUB_MAIN=[
-  {id:'campMng',ic:'🗂',t:'캠페인 관리',d:'새 캠페인 · 이름 변경 · 복제 · 삭제 · 코드 전달',need:'camp'},
-  {id:'__adv',ic:'🏷',t:'광고주 관리',d:'광고주 이름과 로고를 관리합니다',need:'adv'},
-  {id:'themeBtn',ic:'🎨',t:'디자인',d:'테마 색상과 배경을 고릅니다'}
+  {id:'campMng',t:'캠페인 관리',d:'새 캠페인 · 이름 변경 · 복제 · 삭제 · 코드 전달',need:'camp'},
+  {id:'__adv',t:'광고주 관리',d:'광고주 이름과 로고를 관리합니다',need:'adv'},
+  {id:'themeBtn',t:'디자인',d:'테마 색상과 배경을 고릅니다'}
 ];
 const HUB_SUB=[
-  {id:'guideBtn',ic:'📘',t:'사용 가이드'},
-  {id:'holBtn',ic:'🗓',t:'공휴일 설정'},
-  {id:'campHistBtn',ic:'🕘',t:'변경 히스토리'}
+  {id:'guideBtn',t:'사용 가이드'},
+  {id:'holBtn',t:'공휴일 설정'},
+  {id:'campHistBtn',t:'변경 히스토리'}
 ];
 /* 광고주·캠페인 관리는 **내 계정으로 로그인한 관리자**만.
    공유 링크(운영진 코드)로 들어온 화면에서는 열 수 없다. */
@@ -1134,10 +1134,9 @@ function openSettingsHub(){
   const box=openModal('설정',
     (items.length?`<div class="hubgrid">`+items.map(x=>
       `<button class="hubcard" type="button" data-hub="${x.id}">
-         <span class="ic">${x.ic}</span><b>${x.t}</b><i>${x.d}</i></button>`).join('')+`</div>`:'')
+         <b>${x.t}</b><i>${x.d}</i></button>`).join('')+`</div>`:'')
     +`<div class="hubsub">`+HUB_SUB.map(x=>
-      `<button class="hubmini" type="button" data-hub="${x.id}">`
-      +`<span class="ic">${x.ic}</span>${x.t}</button>`).join('')+`</div>`,
+      `<button class="hubmini" type="button" data-hub="${x.id}">${x.t}</button>`).join('')+`</div>`,
     '<button class="btn" data-close>닫기</button>',{w:640});
   /* 하위 화면은 **설정 위에 겹쳐** 연다 — 닫으면 설정으로 돌아온다 */
   box.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{

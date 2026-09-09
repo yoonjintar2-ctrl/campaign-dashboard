@@ -546,7 +546,10 @@ function renderSummaries(){
     const sec=el('div','sec gap3',host);
     sec.innerHTML=`<span data-nm="${i}" style="cursor:${isClient()?'default':'pointer'}">${esc(s.name)}</span>`;
     const tools=el('div','tools',sec);
-    tools.innerHTML=(isClient()?''
+    /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
+    tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
+      +`<i></i>KPI 개선 고려</span>`
+      +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>

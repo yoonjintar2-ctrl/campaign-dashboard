@@ -57,15 +57,18 @@
   <button class="btn sm" id="demoHide">닫기</button>
 </div>
 
+<!-- 상단 메뉴는 한 줄 — 메인 탭 · (대시보드일 때) 하위 탭 · 오른쪽에 영역 관리와 리포트 -->
 <div class="tabs" id="tabs">
   <button data-tab="dash" class="on">대시보드</button>
   <button data-tab="input">리포트 데이터 입력</button>
   <button data-tab="setup">예상효율 입력</button>
-</div>
-<div class="subbar" id="subbar">
-  <button data-sub="perf" class="on">효율</button>
-  <button data-sub="table">일자별 상세 효율</button>
-  <button data-sub="mix">미디어믹스</button>
+  <div class="subbar" id="subbar">
+    <button data-sub="perf" class="on">효율</button>
+    <button data-sub="table">일자별 상세 효율</button>
+    <button data-sub="mix">미디어믹스</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn sm agency-only" id="sectMngBtn" title="화면에 보일 영역과 순서를 정합니다">영역 관리</button>
   <span class="dlgrp" title="대시보드 리포트 내려받기">
     <span class="lb">⤓ 리포트</span>
     <button class="pill dl" id="reportBtn" title="엑셀(.xlsx)로 내려받기">

@@ -561,7 +561,21 @@ const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
   const b=zeroB();
   AMET.concat(['cost']).forEach(k=>b[k]=sum((c.daily[k]||[]).slice(a,b2)));
   return b;};
-const crVal=(c,k)=>{const b=crAgg(c);
+/* 목표 단가 — 그 소재가 속한 라인들의 (예산 ÷ 목표 수치).
+   단가는 비중과 무관하므로 라인 전체 값으로 구해도 같다. */
+const CR_GOALC={g_cpm:{b:'imp',m:1000},g_cpc:{b:'click',m:1},g_cpv:{b:'view',m:1},
+  g_cpa:{b:'conv',m:1},g_cpe:{b:'eng',m:1},g_cpi:{b:'install',m:1}};
+const crLines=c=>{const ids=Array.isArray(c.lids)?c.lids:[c.lid];
+  return ids.map(id=>LINES.find(x=>x.id===id)).filter(Boolean);};
+function crGoalCost(c,k){
+  const d=CR_GOALC[k];if(!d)return NaN;
+  const ls=crLines(c);if(!ls.length)return NaN;
+  const bud=sum(ls.map(lineGross)),base=sum(ls.map(l=>goalIn(l,d.b)||0));
+  return base?bud/base*d.m:NaN;}
+const crVal=(c,k)=>{
+  if(CR_GOALC[k]){const v=crGoalCost(c,k);return isFinite(v)&&v>0?won(v):'–';}
+  const b=crAgg(c);
+  if(!METRICS[k])return '–';
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
 /* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
@@ -1169,8 +1183,13 @@ function openLightbox(c){
     $('lbMedia').innerHTML=mediaHTML();
     renderCreatives();renderGantt();};
 }
+/* 목표 단가 열 — 실집행 단가(CPM·CPC…) 바로 옆에 놓고 견주라고 넣었다 */
+const GANTT_GOAL_COLS=[
+  {k:'g_cpm',l:'목표 CPM'},{k:'g_cpc',l:'목표 CPC'},{k:'g_cpv',l:'목표 CPV'},
+  {k:'g_cpa',l:'목표 CPA'},{k:'g_cpe',l:'목표 CPE'},{k:'g_cpi',l:'목표 CPI'}];
 const GANTT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k])
-  .concat([{g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
+  .concat([{g:'목표 단가',cols:GANTT_GOAL_COLS},
+           {g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
 const GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 let GANTT_RANGE='all';
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
