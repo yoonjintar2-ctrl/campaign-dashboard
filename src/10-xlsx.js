@@ -426,19 +426,18 @@ function importDaily(f){
     const bad=rows.filter(rowBad).length;
     const badC=rows.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
     progSet(100,'');
-    progClose();
-    confirmModal(`${rows.length}행을 불러옵니다.`,
-      `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
-      +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
-      +(bad?` 예상 효율과 맞지 않는 칸이 ${badC}개(${bad}행) 있어 그 칸만 붉게 표시됩니다.`:''),
-      ()=>{applyImportedRows(rows);},'불러오기');
+    /* v51 — 확인 팝업 없이 바로 반영한다. 파일을 넣는 것 자체가 "불러오기" 의사표시다.
+       (되돌리려면 Ctrl+Z · 맞지 않는 칸은 표에서 붉게 표시되고 탭을 옮길 때 알려 준다) */
+    await applyImportedRows(rows,{dup,bad,badC});
   });
   /* 버튼에 그냥 걸면 클릭 이벤트가 첫 인자로 들어온다 — 진짜 파일일 때만 바로 읽는다 */
   (f instanceof Blob)?run(f):pickFile(run);
 }
 /* 표에 얹고 대시보드까지 반영 — 여기도 몇 초 걸리므로 진행 표시를 이어서 보여 준다 */
-async function applyImportedRows(rows){
-  progOpen('표에 반영하는 중');
+async function applyImportedRows(rows,note){
+  /* 이미 진행 표시가 떠 있으면 제목만 바꿔 이어 간다 (깜빡임 없이) */
+  if(typeof PROG!=='undefined'&&PROG)progTitle('표에 반영하는 중');
+  else progOpen('표에 반영하는 중');
   progSet(8,`${rows.length.toLocaleString()}행을 표에 옮기는 중…`);
   await uiTick();
   pushUndo();
@@ -450,7 +449,13 @@ async function applyImportedRows(rows){
   progSet(84,'그래프를 다시 그리는 중…');
   await uiTick();
   renderAll();
-  const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;
+  /* 확인 팝업을 없앤 대신(v51), 결과 요약은 표 위 문구에 남긴다 */
+  const n=note||{};
+  const e=$('saveState');
+  if(e)e.textContent=`엑셀 ${rows.length.toLocaleString()}행 불러옴`
+    +(n.dup?` · 값까지 같은 행 ${n.dup}개 포함`:'')
+    +(n.bad?` · 예상 효율과 맞지 않는 칸 ${n.badC}개(${n.bad}행)는 붉게 표시`:'')
+    +` · 저장 대기`;
   progSet(100,'완료');
   await uiTick();
   progClose();

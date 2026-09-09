@@ -799,6 +799,11 @@ function wireGaugeTip(){
    같은 자리에서 물결의 좌표계(막대 폭 · 물결 폭 · 구간의 시작 위치)도 잡아 둔다 —
    구간마다 배경을 따로 그리지만 시작 위치를 빼 주기 때문에 물결은 막대 전체를 하나로 지나간다. */
 function fitPaceLabels(){
+  /* 화면에 안 붙어 있거나 아직 폭이 0 이면 재지 않는다 (v51).
+     예전에는 이때 잰 0 을 그대로 믿고 `.tight` 를 걸어 버려서
+     탭을 열고 나서도 매체 이름이 영영 안 나왔다. */
+  const box=$('paceBox');
+  if(!box||!box.offsetParent||box.getBoundingClientRect().width<10)return;
   document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
     const W=bar.getBoundingClientRect().width;
     const st=bar.querySelector('.mstack');if(!st)return;
@@ -814,13 +819,16 @@ function fitPaceLabels(){
     const w=st.getBoundingClientRect().width;
     const n=st.children.length||1;
     st.classList.toggle('tight',w/n<22);});
-  document.querySelectorAll('#paceBox .mstack:not(.tight)>i').forEach(seg=>{
+  /* 글자를 지울지는 **구간마다 따로** 정한다 — 좁은 구간이 많다고 넓은 구간의
+     매체 이름까지 같이 사라지면 안 된다 (v51). */
+  document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
     seg.classList.remove('nolb','nopc','nopad');
-    /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 — 비율이 뭉개지지 않게 */
-    if(w<40)seg.classList.add('nopad');
-    const need=nm.textContent.length*7.4+20;
+    /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 */
+    const nopad=w<40;
+    if(nopad)seg.classList.add('nopad');
+    const need=nm.textContent.length*7.4+(nopad?4:20);
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
   wirePaceTip();
@@ -897,6 +905,20 @@ function startAmb(){
   AMB_RAF=requestAnimationFrame(step);
 }
 addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
+/* 숨어 있던 영역이 다시 보이거나 폭이 바뀌면 그때 다시 잰다 (v51).
+   대시보드가 아닌 탭에서 그려졌거나 영역을 접었다 편 경우, 폭 0 으로 잰 값이 굳어
+   매체 이름이 안 나오던 문제를 여기서 푼다. */
+(function watchPaceWidth(){
+  if(typeof ResizeObserver!=='function')return;
+  let last=-1;
+  const ro=new ResizeObserver(()=>{
+    const box=$('paceBox');if(!box)return;
+    const w=Math.round(box.getBoundingClientRect().width);
+    if(w<10||w===last)return;
+    last=w;fitPaceLabels();});
+  const arm=()=>{const box=$('paceBox');if(box){try{ro.observe(box);}catch(e){}}};
+  addEventListener('load',arm);setTimeout(arm,0);setTimeout(arm,900);
+})();
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
 function renderSpendDonut(box,pr){
   const ls=activeLines();

@@ -1160,8 +1160,11 @@ $('issueFold').onclick=()=>{
   ISSUE_FOLD_TOUCHED=true;
   const b=$('issueBox'),closed=b.classList.toggle('hidden');
   $('issueFold').textContent=closed?`▾ 펼치기 (${ISSUES.length}건)`:'▴ 접기';};
-$('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);renderDaily();};
-$('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);renderDaily();};
+/* 두 토글은 문서(views.forecast · views.bench)에 저장된다 — 껐으면 새로고침해도 꺼져 있어야 한다 (v51) */
+$('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);
+  renderDaily();markDirty();};
+$('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);
+  renderDaily();markDirty();};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};
 $('addIssue').onclick=()=>{
   ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});

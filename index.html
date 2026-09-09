@@ -581,9 +581,10 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 /* 막대가 짧으면 안쪽 여백·간격이 오히려 폭을 늘려 버린다 —
    달성률 2.2% 인데 막대가 12% 처럼 보이고 매체 구간이 똑같이 쪼개져 보이던 원인.
    좁을 때는 여백과 간격을 없애 비율 그대로 보이게 한다. */
+/* v51 — .tight 는 **간격만** 없앤다. 예전에는 여기서 매체 이름까지 통째로 숨겨서,
+   구간이 많은 캠페인에서는 넓은 구간에도 글자가 하나도 안 나왔다.
+   글자를 지울지는 아래 `fitPaceLabels()` 가 구간마다 따로 정한다(.nolb/.nopc/.nopad). */
 .pbar .mstack.tight{gap:0}
-.pbar .mstack.tight>i{padding:0}
-.pbar .mstack.tight>i>*{display:none}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
 .pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
 .pbar .mstack>i:only-child{border-radius:9px}
@@ -1006,11 +1007,11 @@ table.tbl td.lfz{position:sticky;z-index:4}
 table.tbl th.lfz{position:sticky;z-index:9}
 table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 /* 그 라인의 KPI 지표에 해당하는 단가 열 —
-   평소에는 **글자만 연한 붉은색**, 목표 단가보다 비싸면 칸 배경과 테두리까지 (소계 · TOTAL 제외) */
-table.tbl td.kpicol{font-weight:800;color:#a04a43}
+   v51: 평소에는 **굵게만** (붉은 글자는 부정적으로 읽혔다).
+   목표 단가보다 비쌀 때만 칸 배경 · 테두리 · 글자색까지 (소계 · TOTAL 제외) */
+table.tbl td.kpicol{font-weight:800}
 table.tbl td.kpicol.kpibad{background:rgba(190,110,100,.15)!important;color:#8f4038;
   box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.5)}
-[data-theme="dark"] table.tbl td.kpicol{color:#dd9a92}
 [data-theme="dark"] table.tbl td.kpicol.kpibad{background:rgba(200,130,120,.2)!important;color:#f0b3aa;
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.44)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
@@ -1751,7 +1752,6 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="note" id="cmtState"></span>
         <div class="tools agency-only">
           <button class="btn sm" id="cmtAuto">✎ 자동 작성</button>
-          <button class="btn sm" id="cmtSave">저장</button>
         </div>
       </div>
       <div class="card" data-sect="comment"><div class="bd">
@@ -3283,6 +3283,11 @@ function wireGaugeTip(){
    같은 자리에서 물결의 좌표계(막대 폭 · 물결 폭 · 구간의 시작 위치)도 잡아 둔다 —
    구간마다 배경을 따로 그리지만 시작 위치를 빼 주기 때문에 물결은 막대 전체를 하나로 지나간다. */
 function fitPaceLabels(){
+  /* 화면에 안 붙어 있거나 아직 폭이 0 이면 재지 않는다 (v51).
+     예전에는 이때 잰 0 을 그대로 믿고 `.tight` 를 걸어 버려서
+     탭을 열고 나서도 매체 이름이 영영 안 나왔다. */
+  const box=$('paceBox');
+  if(!box||!box.offsetParent||box.getBoundingClientRect().width<10)return;
   document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
     const W=bar.getBoundingClientRect().width;
     const st=bar.querySelector('.mstack');if(!st)return;
@@ -3298,13 +3303,16 @@ function fitPaceLabels(){
     const w=st.getBoundingClientRect().width;
     const n=st.children.length||1;
     st.classList.toggle('tight',w/n<22);});
-  document.querySelectorAll('#paceBox .mstack:not(.tight)>i').forEach(seg=>{
+  /* 글자를 지울지는 **구간마다 따로** 정한다 — 좁은 구간이 많다고 넓은 구간의
+     매체 이름까지 같이 사라지면 안 된다 (v51). */
+  document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
     const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
     seg.classList.remove('nolb','nopc','nopad');
-    /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 — 비율이 뭉개지지 않게 */
-    if(w<40)seg.classList.add('nopad');
-    const need=nm.textContent.length*7.4+20;
+    /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 */
+    const nopad=w<40;
+    if(nopad)seg.classList.add('nopad');
+    const need=nm.textContent.length*7.4+(nopad?4:20);
     if(w<need)seg.classList.add('nolb');
     else if(w<need+14)seg.classList.add('nopc');});
   wirePaceTip();
@@ -3381,6 +3389,20 @@ function startAmb(){
   AMB_RAF=requestAnimationFrame(step);
 }
 addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
+/* 숨어 있던 영역이 다시 보이거나 폭이 바뀌면 그때 다시 잰다 (v51).
+   대시보드가 아닌 탭에서 그려졌거나 영역을 접었다 편 경우, 폭 0 으로 잰 값이 굳어
+   매체 이름이 안 나오던 문제를 여기서 푼다. */
+(function watchPaceWidth(){
+  if(typeof ResizeObserver!=='function')return;
+  let last=-1;
+  const ro=new ResizeObserver(()=>{
+    const box=$('paceBox');if(!box)return;
+    const w=Math.round(box.getBoundingClientRect().width);
+    if(w<10||w===last)return;
+    last=w;fitPaceLabels();});
+  const arm=()=>{const box=$('paceBox');if(box){try{ro.observe(box);}catch(e){}}};
+  addEventListener('load',arm);setTimeout(arm,0);setTimeout(arm,900);
+})();
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
 function renderSpendDonut(box,pr){
   const ls=activeLines();
@@ -8280,8 +8302,11 @@ $('issueFold').onclick=()=>{
   ISSUE_FOLD_TOUCHED=true;
   const b=$('issueBox'),closed=b.classList.toggle('hidden');
   $('issueFold').textContent=closed?`▾ 펼치기 (${ISSUES.length}건)`:'▴ 접기';};
-$('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);renderDaily();};
-$('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);renderDaily();};
+/* 두 토글은 문서(views.forecast · views.bench)에 저장된다 — 껐으면 새로고침해도 꺼져 있어야 한다 (v51) */
+$('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.toggle('on',SHOW_FORECAST);
+  renderDaily();markDirty();};
+$('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);
+  renderDaily();markDirty();};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};
 $('addIssue').onclick=()=>{
   ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});
@@ -8392,6 +8417,22 @@ function cloudReady(cb){
 }
 const LINE_KEY=l=>['segment','media','product','target','line'].map(k=>String(l[k]||'')).join('|');
 const cloudState=t=>{const e=$('cloudState');if(e)e.textContent=t;};
+/* 진행 중 문구("저장 중…")를 걷어 내고 평소 문구로 되돌린다 (v51).
+   예전에는 저장이 끝나도 상단에 "저장 중…" 이 그대로 남아 안 끝난 것처럼 보였다. */
+function cloudStateIdle(){
+  try{
+    if(!CLOUD.on){cloudState('데모 모드 · 클라우드 미설정');return;}
+    if(!CLOUD.user){cloudState('로그인하면 내 캠페인이 열립니다');return;}
+    if(!CLOUD.campaign){cloudState('캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요');return;}
+    const r=(typeof ROLE_LABEL!=='undefined'&&ROLE_LABEL[CLOUD.role])||CLOUD.role||'';
+    cloudState(`${CLOUD.campaign.name} · ${r} · 저장됨`);
+  }catch(e){}
+}
+/* 지금 상단 문구가 "…중…" 진행 표시면 평소 문구로 되돌린다 (오류 문구는 그대로 둔다) */
+function cloudStateDone(){
+  try{const e=$('cloudState');
+    if(!e||/중…/.test(e.textContent||''))cloudStateIdle();}catch(x){}
+}
 
 /* ---------- 직렬화 ----------
    캠페인 설정·소재·이슈·화면 구성은 JSON 문서 한 덩어리(campaigns.doc),
@@ -8416,6 +8457,9 @@ function serializeDoc(){
        **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
        화면 상태를 비우는 순간(clearWorkState) 문서 안의 시트까지 같이 지워진다. */
     sheet:(typeof SHEET!=='undefined'?SHEET.map(r=>({...r})):[]),
+    /* 운영 코멘트 본문 — v51 부터 문서에 같이 담는다.
+       예전에는 어디에도 저장되지 않아 새로고침하면 사라졌다. */
+    comment:(function(){try{const e=$('cmtBody');return e?e.innerHTML:'';}catch(x){return '';}})(),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
@@ -8433,6 +8477,9 @@ function serializeDoc(){
            tmap:(typeof TMAP!=='undefined'?{metric:TMAP.metric,dims:(TMAP.dims||[]).slice()}:null),
            kpiGroup:(function(){try{const e=$('kpiGroupSel');return e?e.value:null;}catch(x){return null;}})(),
            heatDaily:(typeof HEAT_DAILY!=='undefined'?!!HEAT_DAILY:false),
+           /* 일자별 효율 비교의 두 토글 — 예상 효율선 · 남은 기간 예측 (v51) */
+           bench:(typeof SHOW_BENCH!=='undefined'?!!SHOW_BENCH:true),
+           forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
            sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
@@ -8486,6 +8533,12 @@ function applyDoc(d,keepToday){
   if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
   /* 저장해 둔 입력 시트를 되살린다 (없으면 건드리지 않는다) */
   if(Array.isArray(d.sheet))SHEET=d.sheet.map(r=>({...r}));
+  /* 운영 코멘트 (v51) */
+  if(typeof d.comment==='string'){try{const e=$('cmtBody');
+    if(e){e.innerHTML=d.comment;
+      if(typeof CMT_SAVED!=='undefined')CMT_SAVED=d.comment;
+      if(typeof cmtSnap==='function')cmtSnap();
+      const cs=$('cmtState');if(cs)cs.textContent='';}}catch(x){}}
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -8512,6 +8565,11 @@ function applyDoc(d,keepToday){
   if(v.kpiGroup){try{const g=$('kpiGroupSel');
     if(g&&[...g.options].some(o=>o.value===v.kpiGroup))g.value=v.kpiGroup;}catch(e){}}
   if(typeof v.heatDaily==='boolean'&&typeof HEAT_DAILY!=='undefined')HEAT_DAILY=v.heatDaily;
+  /* 예상 효율선 · 예측선 토글 (v51) — 화면 버튼 표시까지 함께 되돌린다 */
+  if(typeof v.bench==='boolean'&&typeof SHOW_BENCH!=='undefined')SHOW_BENCH=v.bench;
+  if(typeof v.forecast==='boolean'&&typeof SHOW_FORECAST!=='undefined')SHOW_FORECAST=v.forecast;
+  try{const bt=$('benchToggle');if(bt)bt.classList.toggle('on',SHOW_BENCH);
+      const ft=$('fcToggle');if(ft)ft.classList.toggle('on',SHOW_FORECAST);}catch(e){}
   if(Array.isArray(v.sectOrder)&&typeof SECT_ORDER!=='undefined')SECT_ORDER=v.sectOrder.slice();
   if(Array.isArray(v.hidden)&&typeof HIDDEN!=='undefined'){
     HIDDEN.clear();v.hidden.forEach(k=>HIDDEN.add(k));}
@@ -9109,13 +9167,15 @@ async function cloudSave(silent){
   CLOUD.dirty=false;
   paintSaved();
   /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
-  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
+  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';paintCmtState('방금 저장');}
+  cloudStateIdle();                       /* 상단 "저장 중…" 을 평소 문구로 (v51) */
   }catch(e){
     cloudState('저장 실패: '+String(e&&e.message||e));
   }finally{
     CLOUD.saving=false;
     /* 성공이든 실패든 "저장 중…" 표시는 반드시 걷어 낸다 */
     try{paintSaved();}catch(e){}
+    cloudStateDone();
     /* 저장하는 동안 또 바뀌었으면 한 번만 더 돌린다 */
     if(CLOUD.saveAgain){CLOUD.saveAgain=false;setTimeout(()=>cloudSave(true),400);}
   }
@@ -9127,11 +9187,15 @@ async function cloudSave(silent){
    · 마지막 저장 시각은 상단 ☁ 저장 버튼 왼쪽에 "n분 전 저장" 으로 계속 보인다 */
 const AUTO_SAVE_MS=60*1000;      /* 실제 저장 최소 간격 */
 const DIRTY_WAIT_MS=20*1000;     /* 마지막 변경 후 기다리는 시간 */
+/* 운영 코멘트 옆 문구는 상단 저장 표시를 그대로 비춘다 (v51 — 코멘트 전용 저장 없음) */
+const paintCmtState=t=>{try{const e=$('cmtState');if(e)e.textContent=t||'';}catch(x){}};
 function paintSaved(){
   const chip=$('savedAgo');
   if(!chip)return;
-  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign){chip.textContent='';chip.classList.remove('on');return;}
-  if(!CLOUD.savedAt){chip.textContent=CLOUD.dirty?'저장 대기 중':'';chip.classList.remove('on');return;}
+  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign){chip.textContent='';chip.classList.remove('on');
+    paintCmtState('');return;}
+  if(!CLOUD.savedAt){const t0=CLOUD.dirty?'저장 대기 중':'';
+    chip.textContent=t0;chip.classList.remove('on');paintCmtState(t0);return;}
   const m=Math.floor((Date.now()-CLOUD.savedAt.getTime())/60000);
   const t=CLOUD.savedAt;
   const hhmm=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
@@ -9140,6 +9204,7 @@ function paintSaved(){
     :m<1?'방금 저장':m<60?`${m}분 전 저장`
     :m<1440?`${Math.floor(m/60)}시간 전 저장`:`${hhmm} 저장`;
   chip.title=`마지막 자동 저장 ${dFull(t)} ${hhmm} · 저장 버튼을 누르지 않아도 자동으로 저장됩니다`;
+  paintCmtState(chip.textContent);
 }
 /* 화면에 바뀐 내용이 생기면 표시해 둔다 (자동 저장 대상) */
 let DIRTY_T=null;
@@ -9171,6 +9236,9 @@ function clearWorkState(){
   if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
   if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
   try{HIDDEN.clear();}catch(e){}
+  /* 다른 캠페인의 운영 코멘트가 남지 않게 (v51) */
+  try{const e=$('cmtBody');if(e)e.innerHTML='';
+      const cs=$('cmtState');if(cs)cs.textContent='';}catch(e){}
   try{DIRTY_AT=null;}catch(e){}
   try{LINE_DIRTY=null;}catch(e){}
 }
@@ -9883,19 +9951,18 @@ function importDaily(f){
     const bad=rows.filter(rowBad).length;
     const badC=rows.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
     progSet(100,'');
-    progClose();
-    confirmModal(`${rows.length}행을 불러옵니다.`,
-      `표의 기존 행을 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.`
-      +(dup?` 값까지 똑같은 행이 ${dup}개 있지만 원본 그대로 불러옵니다.`:'')
-      +(bad?` 예상 효율과 맞지 않는 칸이 ${badC}개(${bad}행) 있어 그 칸만 붉게 표시됩니다.`:''),
-      ()=>{applyImportedRows(rows);},'불러오기');
+    /* v51 — 확인 팝업 없이 바로 반영한다. 파일을 넣는 것 자체가 "불러오기" 의사표시다.
+       (되돌리려면 Ctrl+Z · 맞지 않는 칸은 표에서 붉게 표시되고 탭을 옮길 때 알려 준다) */
+    await applyImportedRows(rows,{dup,bad,badC});
   });
   /* 버튼에 그냥 걸면 클릭 이벤트가 첫 인자로 들어온다 — 진짜 파일일 때만 바로 읽는다 */
   (f instanceof Blob)?run(f):pickFile(run);
 }
 /* 표에 얹고 대시보드까지 반영 — 여기도 몇 초 걸리므로 진행 표시를 이어서 보여 준다 */
-async function applyImportedRows(rows){
-  progOpen('표에 반영하는 중');
+async function applyImportedRows(rows,note){
+  /* 이미 진행 표시가 떠 있으면 제목만 바꿔 이어 간다 (깜빡임 없이) */
+  if(typeof PROG!=='undefined'&&PROG)progTitle('표에 반영하는 중');
+  else progOpen('표에 반영하는 중');
   progSet(8,`${rows.length.toLocaleString()}행을 표에 옮기는 중…`);
   await uiTick();
   pushUndo();
@@ -9907,7 +9974,13 @@ async function applyImportedRows(rows){
   progSet(84,'그래프를 다시 그리는 중…');
   await uiTick();
   renderAll();
-  const e=$('saveState');if(e)e.textContent=`엑셀 ${rows.length}행 불러옴 · 저장 대기`;
+  /* 확인 팝업을 없앤 대신(v51), 결과 요약은 표 위 문구에 남긴다 */
+  const n=note||{};
+  const e=$('saveState');
+  if(e)e.textContent=`엑셀 ${rows.length.toLocaleString()}행 불러옴`
+    +(n.dup?` · 값까지 같은 행 ${n.dup}개 포함`:'')
+    +(n.bad?` · 예상 효율과 맞지 않는 칸 ${n.badC}개(${n.bad}행)는 붉게 표시`:'')
+    +` · 저장 대기`;
   progSet(100,'완료');
   await uiTick();
   progClose();
@@ -10318,7 +10391,12 @@ function cmtExec(cmd,val){
   try{document.execCommand(cmd,false,val);}catch(e){}
   cmtDirty();
 }
-function cmtDirty(){const e=$('cmtState');if(e)e.textContent='변경됨 · 저장 대기';}
+/* v51 — 코멘트는 따로 저장하지 않는다. 상단 저장(자동 저장 포함)에 같이 실려 간다.
+   `#cmtState` 문구는 `paintSaved()` 가 상단 표시와 똑같이 맞춰 준다. */
+function cmtDirty(){
+  const e=$('cmtState');if(e)e.textContent='변경됨 · 곧 저장';
+  try{if(typeof markDirty==='function')markDirty();}catch(x){}
+}
 const CMT_HL='#2f6fb0';                 /* 강조색 — 파랑 고정 */
 /* 텍스트 스타일 정의 — 글머리(목록) 여부까지 스타일에 포함한다 */
 const CMT_STYLES=[
@@ -10549,12 +10627,7 @@ function cmtRedo(){
       confirmModal('지금 내용을 지우고 새로 작성할까요?',
         '조회 기간 기준으로 매체·광고상품별 초안을 다시 만듭니다.',write,'새로 작성');
     else write();};
-  const sv=$('cmtSave');
-  if(sv)sv.onclick=()=>{
-    CMT_SAVED=b.innerHTML;
-    const t=new Date();
-    const e=$('cmtState');
-    if(e)e.textContent=`저장됨 ${dFull(t)} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;};
+  /* v51 — 코멘트 전용 저장 버튼은 없앴다. 상단 저장 버튼 하나로 함께 저장된다. */
   /* 광고주 모드에서는 읽기 전용 */
   const lock=()=>{b.contentEditable=isClient()?'false':'true';};
   lock();

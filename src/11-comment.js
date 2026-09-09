@@ -285,7 +285,12 @@ function cmtExec(cmd,val){
   try{document.execCommand(cmd,false,val);}catch(e){}
   cmtDirty();
 }
-function cmtDirty(){const e=$('cmtState');if(e)e.textContent='변경됨 · 저장 대기';}
+/* v51 — 코멘트는 따로 저장하지 않는다. 상단 저장(자동 저장 포함)에 같이 실려 간다.
+   `#cmtState` 문구는 `paintSaved()` 가 상단 표시와 똑같이 맞춰 준다. */
+function cmtDirty(){
+  const e=$('cmtState');if(e)e.textContent='변경됨 · 곧 저장';
+  try{if(typeof markDirty==='function')markDirty();}catch(x){}
+}
 const CMT_HL='#2f6fb0';                 /* 강조색 — 파랑 고정 */
 /* 텍스트 스타일 정의 — 글머리(목록) 여부까지 스타일에 포함한다 */
 const CMT_STYLES=[
@@ -516,12 +521,7 @@ function cmtRedo(){
       confirmModal('지금 내용을 지우고 새로 작성할까요?',
         '조회 기간 기준으로 매체·광고상품별 초안을 다시 만듭니다.',write,'새로 작성');
     else write();};
-  const sv=$('cmtSave');
-  if(sv)sv.onclick=()=>{
-    CMT_SAVED=b.innerHTML;
-    const t=new Date();
-    const e=$('cmtState');
-    if(e)e.textContent=`저장됨 ${dFull(t)} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;};
+  /* v51 — 코멘트 전용 저장 버튼은 없앴다. 상단 저장 버튼 하나로 함께 저장된다. */
   /* 광고주 모드에서는 읽기 전용 */
   const lock=()=>{b.contentEditable=isClient()?'false':'true';};
   lock();

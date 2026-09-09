@@ -19,6 +19,22 @@ function cloudReady(cb){
 }
 const LINE_KEY=l=>['segment','media','product','target','line'].map(k=>String(l[k]||'')).join('|');
 const cloudState=t=>{const e=$('cloudState');if(e)e.textContent=t;};
+/* 진행 중 문구("저장 중…")를 걷어 내고 평소 문구로 되돌린다 (v51).
+   예전에는 저장이 끝나도 상단에 "저장 중…" 이 그대로 남아 안 끝난 것처럼 보였다. */
+function cloudStateIdle(){
+  try{
+    if(!CLOUD.on){cloudState('데모 모드 · 클라우드 미설정');return;}
+    if(!CLOUD.user){cloudState('로그인하면 내 캠페인이 열립니다');return;}
+    if(!CLOUD.campaign){cloudState('캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요');return;}
+    const r=(typeof ROLE_LABEL!=='undefined'&&ROLE_LABEL[CLOUD.role])||CLOUD.role||'';
+    cloudState(`${CLOUD.campaign.name} · ${r} · 저장됨`);
+  }catch(e){}
+}
+/* 지금 상단 문구가 "…중…" 진행 표시면 평소 문구로 되돌린다 (오류 문구는 그대로 둔다) */
+function cloudStateDone(){
+  try{const e=$('cloudState');
+    if(!e||/중…/.test(e.textContent||''))cloudStateIdle();}catch(x){}
+}
 
 /* ---------- 직렬화 ----------
    캠페인 설정·소재·이슈·화면 구성은 JSON 문서 한 덩어리(campaigns.doc),
@@ -43,6 +59,9 @@ function serializeDoc(){
        **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
        화면 상태를 비우는 순간(clearWorkState) 문서 안의 시트까지 같이 지워진다. */
     sheet:(typeof SHEET!=='undefined'?SHEET.map(r=>({...r})):[]),
+    /* 운영 코멘트 본문 — v51 부터 문서에 같이 담는다.
+       예전에는 어디에도 저장되지 않아 새로고침하면 사라졌다. */
+    comment:(function(){try{const e=$('cmtBody');return e?e.innerHTML:'';}catch(x){return '';}})(),
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
@@ -60,6 +79,9 @@ function serializeDoc(){
            tmap:(typeof TMAP!=='undefined'?{metric:TMAP.metric,dims:(TMAP.dims||[]).slice()}:null),
            kpiGroup:(function(){try{const e=$('kpiGroupSel');return e?e.value:null;}catch(x){return null;}})(),
            heatDaily:(typeof HEAT_DAILY!=='undefined'?!!HEAT_DAILY:false),
+           /* 일자별 효율 비교의 두 토글 — 예상 효율선 · 남은 기간 예측 (v51) */
+           bench:(typeof SHOW_BENCH!=='undefined'?!!SHOW_BENCH:true),
+           forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
            sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
@@ -113,6 +135,12 @@ function applyDoc(d,keepToday){
   if(d.cols?.sheet)SHEET_COLS=mergeCols(d.cols.sheet,sheetColsDefault());
   /* 저장해 둔 입력 시트를 되살린다 (없으면 건드리지 않는다) */
   if(Array.isArray(d.sheet))SHEET=d.sheet.map(r=>({...r}));
+  /* 운영 코멘트 (v51) */
+  if(typeof d.comment==='string'){try{const e=$('cmtBody');
+    if(e){e.innerHTML=d.comment;
+      if(typeof CMT_SAVED!=='undefined')CMT_SAVED=d.comment;
+      if(typeof cmtSnap==='function')cmtSnap();
+      const cs=$('cmtState');if(cs)cs.textContent='';}}catch(x){}}
   const v=d.views||{};
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
@@ -139,6 +167,11 @@ function applyDoc(d,keepToday){
   if(v.kpiGroup){try{const g=$('kpiGroupSel');
     if(g&&[...g.options].some(o=>o.value===v.kpiGroup))g.value=v.kpiGroup;}catch(e){}}
   if(typeof v.heatDaily==='boolean'&&typeof HEAT_DAILY!=='undefined')HEAT_DAILY=v.heatDaily;
+  /* 예상 효율선 · 예측선 토글 (v51) — 화면 버튼 표시까지 함께 되돌린다 */
+  if(typeof v.bench==='boolean'&&typeof SHOW_BENCH!=='undefined')SHOW_BENCH=v.bench;
+  if(typeof v.forecast==='boolean'&&typeof SHOW_FORECAST!=='undefined')SHOW_FORECAST=v.forecast;
+  try{const bt=$('benchToggle');if(bt)bt.classList.toggle('on',SHOW_BENCH);
+      const ft=$('fcToggle');if(ft)ft.classList.toggle('on',SHOW_FORECAST);}catch(e){}
   if(Array.isArray(v.sectOrder)&&typeof SECT_ORDER!=='undefined')SECT_ORDER=v.sectOrder.slice();
   if(Array.isArray(v.hidden)&&typeof HIDDEN!=='undefined'){
     HIDDEN.clear();v.hidden.forEach(k=>HIDDEN.add(k));}
@@ -736,13 +769,15 @@ async function cloudSave(silent){
   CLOUD.dirty=false;
   paintSaved();
   /* 방금 저장했다는 표시를 바로 띄운다 (다음 주기까지 기다리지 않게) */
-  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';}
+  const c2=$('savedAgo');if(c2){c2.classList.add('on');c2.textContent='방금 저장';paintCmtState('방금 저장');}
+  cloudStateIdle();                       /* 상단 "저장 중…" 을 평소 문구로 (v51) */
   }catch(e){
     cloudState('저장 실패: '+String(e&&e.message||e));
   }finally{
     CLOUD.saving=false;
     /* 성공이든 실패든 "저장 중…" 표시는 반드시 걷어 낸다 */
     try{paintSaved();}catch(e){}
+    cloudStateDone();
     /* 저장하는 동안 또 바뀌었으면 한 번만 더 돌린다 */
     if(CLOUD.saveAgain){CLOUD.saveAgain=false;setTimeout(()=>cloudSave(true),400);}
   }
@@ -754,11 +789,15 @@ async function cloudSave(silent){
    · 마지막 저장 시각은 상단 ☁ 저장 버튼 왼쪽에 "n분 전 저장" 으로 계속 보인다 */
 const AUTO_SAVE_MS=60*1000;      /* 실제 저장 최소 간격 */
 const DIRTY_WAIT_MS=20*1000;     /* 마지막 변경 후 기다리는 시간 */
+/* 운영 코멘트 옆 문구는 상단 저장 표시를 그대로 비춘다 (v51 — 코멘트 전용 저장 없음) */
+const paintCmtState=t=>{try{const e=$('cmtState');if(e)e.textContent=t||'';}catch(x){}};
 function paintSaved(){
   const chip=$('savedAgo');
   if(!chip)return;
-  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign){chip.textContent='';chip.classList.remove('on');return;}
-  if(!CLOUD.savedAt){chip.textContent=CLOUD.dirty?'저장 대기 중':'';chip.classList.remove('on');return;}
+  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign){chip.textContent='';chip.classList.remove('on');
+    paintCmtState('');return;}
+  if(!CLOUD.savedAt){const t0=CLOUD.dirty?'저장 대기 중':'';
+    chip.textContent=t0;chip.classList.remove('on');paintCmtState(t0);return;}
   const m=Math.floor((Date.now()-CLOUD.savedAt.getTime())/60000);
   const t=CLOUD.savedAt;
   const hhmm=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
@@ -767,6 +806,7 @@ function paintSaved(){
     :m<1?'방금 저장':m<60?`${m}분 전 저장`
     :m<1440?`${Math.floor(m/60)}시간 전 저장`:`${hhmm} 저장`;
   chip.title=`마지막 자동 저장 ${dFull(t)} ${hhmm} · 저장 버튼을 누르지 않아도 자동으로 저장됩니다`;
+  paintCmtState(chip.textContent);
 }
 /* 화면에 바뀐 내용이 생기면 표시해 둔다 (자동 저장 대상) */
 let DIRTY_T=null;
@@ -798,6 +838,9 @@ function clearWorkState(){
   if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
   if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
   try{HIDDEN.clear();}catch(e){}
+  /* 다른 캠페인의 운영 코멘트가 남지 않게 (v51) */
+  try{const e=$('cmtBody');if(e)e.innerHTML='';
+      const cs=$('cmtState');if(cs)cs.textContent='';}catch(e){}
   try{DIRTY_AT=null;}catch(e){}
   try{LINE_DIRTY=null;}catch(e){}
 }

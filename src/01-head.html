@@ -581,9 +581,10 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 /* 막대가 짧으면 안쪽 여백·간격이 오히려 폭을 늘려 버린다 —
    달성률 2.2% 인데 막대가 12% 처럼 보이고 매체 구간이 똑같이 쪼개져 보이던 원인.
    좁을 때는 여백과 간격을 없애 비율 그대로 보이게 한다. */
+/* v51 — .tight 는 **간격만** 없앤다. 예전에는 여기서 매체 이름까지 통째로 숨겨서,
+   구간이 많은 캠페인에서는 넓은 구간에도 글자가 하나도 안 나왔다.
+   글자를 지울지는 아래 `fitPaceLabels()` 가 구간마다 따로 정한다(.nolb/.nopc/.nopad). */
 .pbar .mstack.tight{gap:0}
-.pbar .mstack.tight>i{padding:0}
-.pbar .mstack.tight>i>*{display:none}
 .pbar .mstack>i:first-child{border-radius:9px 0 0 9px}
 .pbar .mstack>i:last-child{border-radius:0 9px 9px 0}
 .pbar .mstack>i:only-child{border-radius:9px}
@@ -1006,11 +1007,11 @@ table.tbl td.lfz{position:sticky;z-index:4}
 table.tbl th.lfz{position:sticky;z-index:9}
 table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 /* 그 라인의 KPI 지표에 해당하는 단가 열 —
-   평소에는 **글자만 연한 붉은색**, 목표 단가보다 비싸면 칸 배경과 테두리까지 (소계 · TOTAL 제외) */
-table.tbl td.kpicol{font-weight:800;color:#a04a43}
+   v51: 평소에는 **굵게만** (붉은 글자는 부정적으로 읽혔다).
+   목표 단가보다 비쌀 때만 칸 배경 · 테두리 · 글자색까지 (소계 · TOTAL 제외) */
+table.tbl td.kpicol{font-weight:800}
 table.tbl td.kpicol.kpibad{background:rgba(190,110,100,.15)!important;color:#8f4038;
   box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.5)}
-[data-theme="dark"] table.tbl td.kpicol{color:#dd9a92}
 [data-theme="dark"] table.tbl td.kpicol.kpibad{background:rgba(200,130,120,.2)!important;color:#f0b3aa;
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.44)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
