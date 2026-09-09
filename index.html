@@ -297,24 +297,43 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs{background:var(--surface);padding:0 152px;display:flex;gap:4px;align-items:center;
   position:sticky;top:56px;z-index:59;border-bottom:1px solid var(--line)}
 @media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}.demobar{padding:9px 40px}}
-.tabs>button[data-tab]{border:0;background:transparent;padding:12px 14px 10px;cursor:pointer;color:var(--ink2);
-  font-weight:600;border-bottom:2px solid transparent;font-size:13.5px}
-.tabs>button[data-tab].on{color:var(--acc);border-bottom-color:var(--acc)}
+/* 상위 탭 — 크고 굵게, 밑줄로 현재 위치를 표시 (v52: 하위 탭과 확실히 구분되게) */
+.tabs>button[data-tab]{border:0;background:transparent;padding:13px 15px 11px;cursor:pointer;color:var(--ink2);
+  font-weight:600;border-bottom:2px solid transparent;font-size:14.5px;letter-spacing:-.3px}
+.tabs>button[data-tab]:hover{color:var(--ink)}
+.tabs>button[data-tab].on{color:var(--acc);border-bottom-color:var(--acc);font-weight:800}
 .tabs>.spacer{flex:1}
-/* 하위 탭 — 같은 줄, **대시보드 탭 바로 오른쪽**에 작은 알약으로 (v50).
-   대시보드에 딸린 메뉴임이 보이도록 양쪽에 옅은 구분선을 둔다. */
-.subbar{display:flex;gap:4px;align-items:center;margin:0 10px 0 4px;padding:0 12px;
-  border-left:1px solid var(--line);border-right:1px solid var(--line)}
-.subbar button{border:1px solid transparent;background:transparent;padding:5px 13px;border-radius:8px;
-  cursor:pointer;color:var(--ink2);font-weight:600;font-size:12.5px}
-.subbar button:hover{background:var(--acc-soft2);border-color:var(--line)}
-.subbar button.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
+/* 하위 탭 — **대시보드 탭 바로 오른쪽**에 붙는 작은 분절 컨트롤 (v50 → v52).
+   상위 탭(밑줄 · 큰 글씨)과 생김새를 아예 다르게 해서 한눈에 하위임을 알 수 있게 한다. */
+.subbar{display:flex;gap:2px;align-items:center;margin:0 14px 0 12px;padding:3px;position:relative;
+  background:var(--sub1);border:1px solid var(--line);border-radius:999px}
+/* 대시보드 탭에서 이어지는 짧은 연결선 */
+.subbar::before{content:'';position:absolute;left:-11px;top:50%;width:9px;height:1px;background:var(--gline)}
+.subbar button{border:0;background:transparent;padding:4px 13px;border-radius:999px;
+  cursor:pointer;color:var(--ink2);font-weight:600;font-size:12px;letter-spacing:-.2px}
+.subbar button:hover{color:var(--ink)}
+.subbar button.on{background:var(--surface);color:var(--acc);font-weight:700;
+  box-shadow:0 1px 2px rgba(20,30,45,.12)}
 .tabs .dlgrp{margin-left:8px}
 .tabs .pill.dl{height:27px;font-weight:700}
 .tabs #sectMngBtn{margin-left:6px}
-@media (max-width:1200px){.subbar button{padding:5px 9px;font-size:12px}
-  .tabs>button[data-tab]{padding:12px 9px 10px;font-size:13px}}
+@media (max-width:1200px){.subbar{margin:0 8px 0 8px}
+  .subbar button{padding:4px 9px;font-size:11.5px}
+  .subbar::before{display:none}
+  .tabs>button[data-tab]{padding:12px 9px 10px;font-size:13.5px}}
 /* 역할 표시 — 로그인 여부로 자동 결정 */
+/* 캠페인 관리 목록의 "관리자 계정" 칸 (v52) */
+.mchips{display:flex;flex-wrap:wrap;gap:4px;max-width:250px}
+.mchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  border-radius:999px;padding:2px 9px;white-space:nowrap;border:1px solid var(--line);
+  background:var(--sub3);color:var(--ink2)}
+.mchip>b{font-size:10px;font-weight:800;opacity:.72}
+.mchip.master{background:#fdf3dc;border-color:#e8d49a;color:#7a5a13}
+.mchip.editor{background:var(--acc-soft);border-color:var(--gline);color:var(--acc)}
+.mchip.viewer,.mchip.more{color:var(--muted)}
+.mchip.pend{background:#fff;border-style:dashed;color:var(--muted)}
+[data-theme="dark"] .mchip.master{background:#3a3320;border-color:#6b5c2c;color:#e8cf8e}
+[data-theme="dark"] .mchip.pend{background:transparent}
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
 .rolechip.agency{color:#38664f;background:#e9f1ec;border-color:#cfe0d6}
@@ -595,11 +614,14 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pbar .mstack>i.nopad{padding:0}
 .pbar .mstack>i+i{box-shadow:inset 1px 0 0 rgba(255,255,255,.34)}
 .pbar .mstack>i:hover{filter:brightness(1.2) saturate(1.05)}
-/* 매체 글자 — 있는 줄만 알 정도로 옅게 */
-.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;line-height:1.2}
-.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);
-  white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+/* 매체 글자 — 있는 줄만 알 정도로 옅게.
+   구간은 `<i>` 태그라 브라우저 기본값이 기울임이다 → **반드시 normal 로 되돌린다** (v52) */
+.pbar .mstack>i{font-style:normal}
+.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.1px;line-height:1.2;max-width:100%}
+.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;font-variant-numeric:tabular-nums;
+  line-height:1.2;max-width:100%}
 .pbar .mstack i.nolb .nm,.pbar .mstack i.nolb .pc{display:none}
 .pbar .mstack i.nopc .pc{display:none}
 /* 채워진 구간 위를 은은하게 흐르는 광택 */
@@ -2605,9 +2627,20 @@ function mountFloatHead(tbl){
   /* 열 너비는 띄우기 직전에 다시 잰다 (숨겨진 채로 그려졌으면 이 시점엔 0 이라서) */
   let sized='';
   const sizeCols=()=>{
+    /* ⚠ 열 너비는 **화면에 보이는 순서 그대로** 모아야 한다 (v52).
+       예전에는 `1행에서 rowspan>1 인 칸`을 모두 앞으로 몰고 그 뒤에 2행을 붙였는데,
+       행 머리 열뿐 아니라 **묶음 없이 혼자 있는 값 열(th.g.solo)** 도 rowspan=2 라서
+       그 열들이 통째로 맨 앞으로 끌려갔다. → 복사본 머리글의 칸이 오른쪽으로 밀려
+       "서머리 헤더가 깨져 보이는" 증상이 됐다.
+       이제는 1행을 왼쪽부터 훑으며 rowspan 칸은 자기 폭, 묶음 칸은 colspan 만큼 2행에서 가져온다. */
     const r0=[...tbl.tHead.rows[0].cells],r1=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
-    const leadTh=r0.filter(th=>th.rowSpan>1||!r1.length);
-    const ws=leadTh.concat(r1).map(th=>Math.round(th.getBoundingClientRect().width));
+    const order=[];let j=0;
+    r0.forEach(th=>{
+      if(th.rowSpan>1||!r1.length){order.push(th);return;}
+      const n=Math.max(th.colSpan,1);
+      for(let k=0;k<n&&j<r1.length;k++)order.push(r1[j++]);});
+    while(j<r1.length)order.push(r1[j++]);
+    const ws=order.map(th=>Math.round(th.getBoundingClientRect().width));
     if(!ws.length||ws.some(w=>!w))return false;
     const sig=ws.join(',');
     if(sig===sized)return true;
@@ -3304,17 +3337,20 @@ function fitPaceLabels(){
     const n=st.children.length||1;
     st.classList.toggle('tight',w/n<22);});
   /* 글자를 지울지는 **구간마다 따로** 정한다 — 좁은 구간이 많다고 넓은 구간의
-     매체 이름까지 같이 사라지면 안 된다 (v51). */
+     매체 이름까지 같이 사라지면 안 된다 (v51).
+     ⚠ 글자 수 × 상수로 어림잡지 말 것 (v52) — 글꼴(Pretendard)이 늦게 실리거나
+     한글·영문이 섞이면 어림값이 빗나가 이름이 "You…" 처럼 잘려 보인다.
+     **실제로 그려 보고 넘치면 지운다** (scrollWidth > clientWidth). */
   document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
-    const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
-    seg.classList.remove('nolb','nopc','nopad');
+    const pc=seg.querySelector('.pc');
+    const w=seg.getBoundingClientRect().width;
+    seg.classList.remove('nolb','nopc');
     /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 */
-    const nopad=w<40;
-    if(nopad)seg.classList.add('nopad');
-    const need=nm.textContent.length*7.4+(nopad?4:20);
-    if(w<need)seg.classList.add('nolb');
-    else if(w<need+14)seg.classList.add('nopc');});
+    seg.classList.toggle('nopad',w<40);
+    /* 이름이 한 글자라도 잘리면 이름·%를 통째로 지운다 (반쪽짜리 글자는 안 보이느니만 못하다) */
+    if(nm.scrollWidth>nm.clientWidth+1){seg.classList.add('nolb');return;}
+    if(pc&&pc.scrollWidth>pc.clientWidth+1)seg.classList.add('nopc');});
   wirePaceTip();
   startAmb();
 }
@@ -3402,6 +3438,13 @@ addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
     last=w;fitPaceLabels();});
   const arm=()=>{const box=$('paceBox');if(box){try{ro.observe(box);}catch(e){}}};
   addEventListener('load',arm);setTimeout(arm,0);setTimeout(arm,900);
+  /* 글꼴(Pretendard)이 늦게 실리면 글자 폭이 달라진다 — 실린 뒤에 한 번 더 잰다 (v52).
+     이걸 안 하면 "글꼴 없이 쟀을 때는 맞았는데 지금은 잘려 보이는" 상태로 굳는다. */
+  try{
+    if(document.fonts){
+      document.fonts.ready.then(()=>fitPaceLabels());
+      document.fonts.addEventListener('loadingdone',()=>fitPaceLabels());}
+  }catch(e){}
 })();
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
 function renderSpendDonut(box,pr){
@@ -7894,10 +7937,13 @@ function openPerm(){
     :`<td>${c}</td>`).join('')+'</tr>';});
   openModal('계정 · 권한',h+'</tbody></table>',
     '<button class="btn" data-close>닫기</button><button class="btn primary" data-close>+ 사용자 초대</button>',{w:900});}
-/* 클라우드 — 이 캠페인의 멤버 · 초대 관리 */
-async function openPermCloud(){
-  const d=await cloudMembers();if(!d)return;
-  const master=CLOUD.role==='master';
+/* 클라우드 — 그 캠페인의 멤버(관리자) · 초대 관리.
+   v52 — 캠페인 id 를 받아 **열지 않은 캠페인도** 관리할 수 있다. 이름도 함께 받는다. */
+async function openPermCloud(campId,campName){
+  const id=campId||(CLOUD.campaign&&CLOUD.campaign.id);
+  const nm=campName||(CLOUD.campaign&&CLOUD.campaign.name)||'';
+  const d=await cloudMembers(id);if(!d)return;
+  const master=isMasterOf(d);
   /* 캠페인 안에서 줄 수 있는 권한 — 운영진(수정 가능) · 광고주(조회 전용) */
   const opt=(cur)=>['editor','viewer'].map(r=>
     `<option value="${r}"${r===cur?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
@@ -7905,16 +7951,22 @@ async function openPermCloud(){
       <b>캠페인 단위 공유</b> — 이 캠페인에 초대되었거나 코드를 받은 사람만 볼 수 있습니다.<br>
       <b>운영진</b>은 이 캠페인 안에서 마스터와 동등하게 모든 데이터를 수정·추가할 수 있고,
       <b>광고주</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
-      ${master?'':'<b>지금은 초대·권한 변경 권한이 없습니다.</b>'}</div></div>
+      ${master?'마스터는 아래에서 <b>운영진 임명 · 해제</b>를 할 수 있습니다.'
+              :'<b>이 캠페인의 마스터만 초대·권한 변경을 할 수 있습니다.</b>'}</div></div>
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th>이름</th><th>소속</th><th>이메일</th><th style="width:120px">권한</th>
+      <th>이름</th><th>소속</th><th>계정(이메일)</th><th style="width:130px">권한</th>
       <th style="width:96px">상태</th><th style="width:70px"></th></tr></thead><tbody>`;
+  const mine=m=>m.user_id===CLOUD.user.id;
   d.members.forEach(m=>{
     const p=m.profiles||{};
-    h+=`<tr><td>${esc(p.name||'–')}</td><td>${esc(p.org||'–')}</td><td>${esc(p.email||'–')}</td>
-      <td>${master?`<select data-mrole="${m.user_id}">${opt(m.role)}</select>`:ROLE_LABEL[m.role]}</td>
+    /* 마스터 자리는 넘기지 않는다 — 목록에는 보이되 바꿀 수 있는 건 운영진 · 광고주뿐 */
+    const editable=master&&m.role!=='master';
+    h+=`<tr><td>${esc(p.name||'–')}${mine(m)?' <span class="cnt2">나</span>':''}</td>
+      <td>${esc(p.org||'–')}</td><td class="mono">${esc(p.email||'–')}</td>
+      <td>${editable?`<select data-mrole="${m.user_id}">${opt(m.role)}</select>`
+                    :`<b>${ROLE_LABEL[m.role]||m.role}</b>`}</td>
       <td><span class="tagchip on">활성</span></td>
-      <td>${master&&m.user_id!==CLOUD.user.id?`<button class="btn sm danger" data-mdel="${m.user_id}">해제</button>`:''}</td></tr>`;});
+      <td>${editable?`<button class="btn sm danger" data-mdel="${m.user_id}" title="이 캠페인에서 내보냅니다">해제</button>`:''}</td></tr>`;});
   d.invites.forEach(iv=>{
     h+=`<tr><td class="hint">(가입 전)</td><td>–</td><td>${esc(iv.email)}</td>
       <td>${ROLE_LABEL[iv.role]}</td><td><span class="tagchip">초대 대기</span></td><td></td></tr>`;});
@@ -7928,21 +7980,24 @@ async function openPermCloud(){
         <button class="btn primary" id="invAdd" ${master?'':'disabled'}>초대</button></div>
       <div id="invMsg" class="hint" style="margin-top:9px">초대한 이메일로 구글 로그인하면 이 캠페인이 자동으로 열립니다.</div>
     </div>`;
-  openModal(`계정 · 권한 — ${esc(CLOUD.campaign.name)}`,h,'<button class="btn" data-close>닫기</button>',{w:940});
+  openModal(`관리자 · 권한 — ${esc(nm)}`,h,'<button class="btn" data-close>닫기</button>',{w:960});
   const host=$('modalHost');
+  const again=()=>{closeModal();openPermCloud(id,nm);};
   host.querySelectorAll('[data-mrole]').forEach(s=>s.onchange=async e=>{
-    const err=await setMemberRole(e.target.dataset.mrole,e.target.value);
-    $('invMsg').textContent=err||'권한을 변경했습니다.';});
+    const err=await setMemberRole(e.target.dataset.mrole,e.target.value,id);
+    $('invMsg').textContent=err||'권한을 변경했습니다.';
+    if(!err&&typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];});
   host.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=async()=>{
-    const err=await removeMember(b.dataset.mdel);
-    if(err)$('invMsg').textContent=err;else{closeModal();openPermCloud();}});
+    const err=await removeMember(b.dataset.mdel,id);
+    if(err)$('invMsg').textContent=err;
+    else{if(typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];again();}});
   const add=$('invAdd');
   if(add)add.onclick=async()=>{
     const m=$('invMail').value.trim();
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$('invMsg').textContent='이메일 형식을 확인해 주세요.';return;}
-    const err=await inviteMember(m,$('invRole').value);
+    const err=await inviteMember(m,$('invRole').value,id);
     if(err)$('invMsg').textContent='초대 실패: '+err;
-    else{closeModal();openPermCloud();}};
+    else{if(typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];again();}};
 }
 function openCampHist(){
   let h='<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>'
@@ -9293,6 +9348,11 @@ async function openCampManage(inplace){
       ()=>signInGoogle(),'구글 로그인');return;}
   await loadCampaignList(true);
   const rows=CLOUD.list;
+  /* 캠페인마다 매핑된 관리자 계정을 함께 보여 준다 (v52).
+     한 번 읽어 두고 캐시 — 목록 창을 다시 그릴 때마다 서버를 두드리지 않게. */
+  if(!inplace)MEMBER_CACHE={};
+  const need=rows.map(c=>c.id).filter(id=>!MEMBER_CACHE[id]);
+  if(need.length)Object.assign(MEMBER_CACHE,await cloudMembersMany(need));
   let h=`<div class="hint" style="margin-bottom:10px">내가 <b>만들었거나 초대받은</b> 캠페인만 보입니다.
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
       캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
@@ -9304,6 +9364,7 @@ async function openCampManage(inplace){
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
       <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
+      <th style="width:250px">관리자 계정</th>
       <th style="width:190px">공유 코드</th>
       <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
@@ -9313,6 +9374,7 @@ async function openCampManage(inplace){
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
+        <td style="text-align:left">${memberChips(MEMBER_CACHE[c.id])}</td>
         <td style="text-align:left">
           <div class="codeline"><span class="ck staff">운영진</span>
             <span class="sharecode">${esc(c.staff_code||'–')}</span>
@@ -9325,7 +9387,8 @@ async function openCampManage(inplace){
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-            <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 운영진 초대</button>
+            <button class="btn sm" data-inv="${c.id}"
+              title="이 캠페인의 관리자 계정을 보고, 마스터라면 운영진을 임명·해제합니다">👥 관리자 관리</button>
           </div>
           <div class="ln">
             <button class="btn sm" data-ren="${c.id}">이름 변경</button>
@@ -9336,7 +9399,7 @@ async function openCampManage(inplace){
   const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
-  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1140});
+  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
   const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
   if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
@@ -9353,12 +9416,11 @@ async function openCampManage(inplace){
       b.textContent='✓';b.classList.add('ok');
       setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
     else prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);});
-  /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
+  /* 👥 관리자 관리 — 캠페인을 열지 않고 **이 목록 위에 겹쳐서** 연다 (v52).
+     닫으면 캠페인 관리 목록으로 돌아온다. */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
-    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeAllModals();await openCampaign(c.id);}
-    else closeAllModals();
-    if(typeof openPermCloud==='function')openPermCloud();});
+    if(typeof openPermCloud==='function')await openPermCloud(c.id,c.name);});
   /* 이름 변경 — 위에 작은 창을 하나 더 띄운다 (목록 창은 그대로) · 광고주는 드롭다운 */
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
@@ -9450,31 +9512,81 @@ async function openCampManage(inplace){
 }
 
 /* ---------- 권한 · 초대 (계정 · 권한 팝업) ---------- */
-async function cloudMembers(){
-  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign)return null;
+/* ---------- 캠페인 멤버(관리자) ----------
+   v52 — 캠페인을 열지 않고도 목록에서 바로 보고 바꿀 수 있도록 **캠페인 id 를 받는다.**
+   (인자를 안 주면 지금 열려 있는 캠페인) */
+const campIdOf=id=>id||(CLOUD.campaign&&CLOUD.campaign.id)||null;
+async function cloudMembers(campId){
+  const id=campIdOf(campId);
+  if(!CLOUD.on||!CLOUD.user||!id)return null;
   const {data}=await CLOUD.sb.from('campaign_members')
-    .select('role,user_id,profiles(name,email,org)').eq('campaign_id',CLOUD.campaign.id);
+    .select('role,user_id,profiles(name,email,org)').eq('campaign_id',id);
   const {data:inv}=await CLOUD.sb.from('campaign_invites')
-    .select('id,email,role,accepted_at').eq('campaign_id',CLOUD.campaign.id).is('accepted_at',null);
+    .select('id,email,role,accepted_at').eq('campaign_id',id).is('accepted_at',null);
   return {members:data||[],invites:inv||[]};
 }
-async function inviteMember(email,role){
-  if(!CLOUD.campaign)return '캠페인을 먼저 여세요.';
-  if(CLOUD.role!=='master')return '마스터 권한만 초대할 수 있습니다.';
+/* 여러 캠페인의 멤버를 한 번에 — 캠페인 관리 목록에 관리자 칩을 그리기 위해 */
+async function cloudMembersMany(ids){
+  const out={};
+  (ids||[]).forEach(id=>out[id]={members:[],invites:[]});
+  if(!CLOUD.on||!CLOUD.user||!ids||!ids.length)return out;
+  try{
+    const {data}=await withTimeout(CLOUD.sb.from('campaign_members')
+      .select('campaign_id,role,user_id,profiles(name,email,org)').in('campaign_id',ids),
+      15000,'관리자 목록');
+    (data||[]).forEach(m=>{(out[m.campaign_id]=out[m.campaign_id]||{members:[],invites:[]}).members.push(m);});
+    const {data:inv}=await withTimeout(CLOUD.sb.from('campaign_invites')
+      .select('campaign_id,email,role,accepted_at').in('campaign_id',ids).is('accepted_at',null),
+      15000,'초대 목록');
+    (inv||[]).forEach(v=>{(out[v.campaign_id]=out[v.campaign_id]||{members:[],invites:[]}).invites.push(v);});
+  }catch(e){}
+  return out;
+}
+/* 캠페인 관리 목록에서 쓰는 멤버 캐시 (창을 다시 그릴 때마다 서버를 두드리지 않게) */
+let MEMBER_CACHE={};
+/* 목록 한 칸에 들어갈 관리자 칩 — 마스터 먼저, 그다음 운영진, 광고주는 수만 */
+function memberChips(d){
+  if(!d)return '<span class="hint">–</span>';
+  const nameOf=m=>{const p=m.profiles||{};return p.name||p.email||'(이름 없음)';};
+  const ord={master:0,editor:1,viewer:2};
+  const ms=(d.members||[]).slice().sort((a,b)=>(ord[a.role]??9)-(ord[b.role]??9));
+  const show=ms.filter(m=>m.role!=='viewer');
+  const viewers=ms.length-show.length;
+  const pend=(d.invites||[]).length;
+  if(!ms.length&&!pend)return '<span class="hint">–</span>';
+  let h='<div class="mchips">';
+  h+=show.slice(0,4).map(m=>`<span class="mchip ${m.role}" title="${esc((m.profiles||{}).email||'')}">`
+    +`<b>${m.role==='master'?'마스터':'운영진'}</b>${esc(nameOf(m))}</span>`).join('');
+  if(show.length>4)h+=`<span class="mchip more">+${show.length-4}</span>`;
+  if(viewers)h+=`<span class="mchip viewer">광고주 ${viewers}</span>`;
+  if(pend)h+=`<span class="mchip pend">초대 대기 ${pend}</span>`;
+  return h+'</div>';
+}
+/* 그 캠페인에서 내가 마스터인가 — 목록에서 바로 판단해야 하므로 멤버 목록으로 본다 */
+function isMasterOf(d){
+  if(!CLOUD.user)return false;
+  if(CLOUD.appRole==='super')return true;
+  if(CLOUD.shareView)return false;
+  const me=(d&&d.members||[]).find(m=>m.user_id===CLOUD.user.id);
+  return !!me&&me.role==='master';
+}
+async function inviteMember(email,role,campId){
+  const id=campIdOf(campId);
+  if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_invites').insert({
-    campaign_id:CLOUD.campaign.id,email:email.trim().toLowerCase(),role,invited_by:CLOUD.user.id});
+    campaign_id:id,email:email.trim().toLowerCase(),role,invited_by:CLOUD.user.id});
   return error?error.message:null;
 }
-async function setMemberRole(userId,role){
-  if(CLOUD.role!=='master')return '마스터 권한만 변경할 수 있습니다.';
+async function setMemberRole(userId,role,campId){
+  const id=campIdOf(campId);if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_members')
-    .update({role}).eq('campaign_id',CLOUD.campaign.id).eq('user_id',userId);
+    .update({role}).eq('campaign_id',id).eq('user_id',userId);
   return error?error.message:null;
 }
-async function removeMember(userId){
-  if(CLOUD.role!=='master')return '마스터 권한만 삭제할 수 있습니다.';
+async function removeMember(userId,campId){
+  const id=campIdOf(campId);if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_members')
-    .delete().eq('campaign_id',CLOUD.campaign.id).eq('user_id',userId);
+    .delete().eq('campaign_id',id).eq('user_id',userId);
   return error?error.message:null;
 }
 

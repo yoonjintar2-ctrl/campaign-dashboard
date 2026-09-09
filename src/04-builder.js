@@ -121,9 +121,20 @@ function mountFloatHead(tbl){
   /* 열 너비는 띄우기 직전에 다시 잰다 (숨겨진 채로 그려졌으면 이 시점엔 0 이라서) */
   let sized='';
   const sizeCols=()=>{
+    /* ⚠ 열 너비는 **화면에 보이는 순서 그대로** 모아야 한다 (v52).
+       예전에는 `1행에서 rowspan>1 인 칸`을 모두 앞으로 몰고 그 뒤에 2행을 붙였는데,
+       행 머리 열뿐 아니라 **묶음 없이 혼자 있는 값 열(th.g.solo)** 도 rowspan=2 라서
+       그 열들이 통째로 맨 앞으로 끌려갔다. → 복사본 머리글의 칸이 오른쪽으로 밀려
+       "서머리 헤더가 깨져 보이는" 증상이 됐다.
+       이제는 1행을 왼쪽부터 훑으며 rowspan 칸은 자기 폭, 묶음 칸은 colspan 만큼 2행에서 가져온다. */
     const r0=[...tbl.tHead.rows[0].cells],r1=tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
-    const leadTh=r0.filter(th=>th.rowSpan>1||!r1.length);
-    const ws=leadTh.concat(r1).map(th=>Math.round(th.getBoundingClientRect().width));
+    const order=[];let j=0;
+    r0.forEach(th=>{
+      if(th.rowSpan>1||!r1.length){order.push(th);return;}
+      const n=Math.max(th.colSpan,1);
+      for(let k=0;k<n&&j<r1.length;k++)order.push(r1[j++]);});
+    while(j<r1.length)order.push(r1[j++]);
+    const ws=order.map(th=>Math.round(th.getBoundingClientRect().width));
     if(!ws.length||ws.some(w=>!w))return false;
     const sig=ws.join(',');
     if(sig===sized)return true;
@@ -820,17 +831,20 @@ function fitPaceLabels(){
     const n=st.children.length||1;
     st.classList.toggle('tight',w/n<22);});
   /* 글자를 지울지는 **구간마다 따로** 정한다 — 좁은 구간이 많다고 넓은 구간의
-     매체 이름까지 같이 사라지면 안 된다 (v51). */
+     매체 이름까지 같이 사라지면 안 된다 (v51).
+     ⚠ 글자 수 × 상수로 어림잡지 말 것 (v52) — 글꼴(Pretendard)이 늦게 실리거나
+     한글·영문이 섞이면 어림값이 빗나가 이름이 "You…" 처럼 잘려 보인다.
+     **실제로 그려 보고 넘치면 지운다** (scrollWidth > clientWidth). */
   document.querySelectorAll('#paceBox .mstack>i').forEach(seg=>{
-    const w=seg.getBoundingClientRect().width;
     const nm=seg.querySelector('.nm');if(!nm)return;
-    seg.classList.remove('nolb','nopc','nopad');
+    const pc=seg.querySelector('.pc');
+    const w=seg.getBoundingClientRect().width;
+    seg.classList.remove('nolb','nopc');
     /* 여백(9px×2)이 폭의 절반을 넘으면 여백부터 버린다 */
-    const nopad=w<40;
-    if(nopad)seg.classList.add('nopad');
-    const need=nm.textContent.length*7.4+(nopad?4:20);
-    if(w<need)seg.classList.add('nolb');
-    else if(w<need+14)seg.classList.add('nopc');});
+    seg.classList.toggle('nopad',w<40);
+    /* 이름이 한 글자라도 잘리면 이름·%를 통째로 지운다 (반쪽짜리 글자는 안 보이느니만 못하다) */
+    if(nm.scrollWidth>nm.clientWidth+1){seg.classList.add('nolb');return;}
+    if(pc&&pc.scrollWidth>pc.clientWidth+1)seg.classList.add('nopc');});
   wirePaceTip();
   startAmb();
 }
@@ -918,6 +932,13 @@ addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
     last=w;fitPaceLabels();});
   const arm=()=>{const box=$('paceBox');if(box){try{ro.observe(box);}catch(e){}}};
   addEventListener('load',arm);setTimeout(arm,0);setTimeout(arm,900);
+  /* 글꼴(Pretendard)이 늦게 실리면 글자 폭이 달라진다 — 실린 뒤에 한 번 더 잰다 (v52).
+     이걸 안 하면 "글꼴 없이 쟀을 때는 맞았는데 지금은 잘려 보이는" 상태로 굳는다. */
+  try{
+    if(document.fonts){
+      document.fonts.ready.then(()=>fitPaceLabels());
+      document.fonts.addEventListener('loadingdone',()=>fitPaceLabels());}
+  }catch(e){}
 })();
 /* 맨 앞 카드 — 전체 매체 기준 예산 소진율 */
 function renderSpendDonut(box,pr){

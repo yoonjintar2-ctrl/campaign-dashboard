@@ -895,6 +895,11 @@ async function openCampManage(inplace){
       ()=>signInGoogle(),'구글 로그인');return;}
   await loadCampaignList(true);
   const rows=CLOUD.list;
+  /* 캠페인마다 매핑된 관리자 계정을 함께 보여 준다 (v52).
+     한 번 읽어 두고 캐시 — 목록 창을 다시 그릴 때마다 서버를 두드리지 않게. */
+  if(!inplace)MEMBER_CACHE={};
+  const need=rows.map(c=>c.id).filter(id=>!MEMBER_CACHE[id]);
+  if(need.length)Object.assign(MEMBER_CACHE,await cloudMembersMany(need));
   let h=`<div class="hint" style="margin-bottom:10px">내가 <b>만들었거나 초대받은</b> 캠페인만 보입니다.
       이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
       캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
@@ -906,6 +911,7 @@ async function openCampManage(inplace){
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
       <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
+      <th style="width:250px">관리자 계정</th>
       <th style="width:190px">공유 코드</th>
       <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
@@ -915,6 +921,7 @@ async function openCampManage(inplace){
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
+        <td style="text-align:left">${memberChips(MEMBER_CACHE[c.id])}</td>
         <td style="text-align:left">
           <div class="codeline"><span class="ck staff">운영진</span>
             <span class="sharecode">${esc(c.staff_code||'–')}</span>
@@ -927,7 +934,8 @@ async function openCampManage(inplace){
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-            <button class="btn sm" data-inv="${c.id}" title="이 캠페인에 운영진 · 광고주를 초대합니다">👥 운영진 초대</button>
+            <button class="btn sm" data-inv="${c.id}"
+              title="이 캠페인의 관리자 계정을 보고, 마스터라면 운영진을 임명·해제합니다">👥 관리자 관리</button>
           </div>
           <div class="ln">
             <button class="btn sm" data-ren="${c.id}">이름 변경</button>
@@ -938,7 +946,7 @@ async function openCampManage(inplace){
   const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
-  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1140});
+  if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
   const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
   if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
@@ -955,12 +963,11 @@ async function openCampManage(inplace){
       b.textContent='✓';b.classList.add('ok');
       setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
     else prompt(kind==='staff'?'운영진에게 전달할 주소입니다.':'광고주에게 전달할 주소입니다.',url);});
-  /* 👥 초대 — 이 캠페인의 운영진 · 광고주 관리 */
+  /* 👥 관리자 관리 — 캠페인을 열지 않고 **이 목록 위에 겹쳐서** 연다 (v52).
+     닫으면 캠페인 관리 목록으로 돌아온다. */
   host.querySelectorAll('[data-inv]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.inv);if(!c)return;
-    if(!CLOUD.campaign||CLOUD.campaign.id!==c.id){closeAllModals();await openCampaign(c.id);}
-    else closeAllModals();
-    if(typeof openPermCloud==='function')openPermCloud();});
+    if(typeof openPermCloud==='function')await openPermCloud(c.id,c.name);});
   /* 이름 변경 — 위에 작은 창을 하나 더 띄운다 (목록 창은 그대로) · 광고주는 드롭다운 */
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;
@@ -1052,31 +1059,81 @@ async function openCampManage(inplace){
 }
 
 /* ---------- 권한 · 초대 (계정 · 권한 팝업) ---------- */
-async function cloudMembers(){
-  if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign)return null;
+/* ---------- 캠페인 멤버(관리자) ----------
+   v52 — 캠페인을 열지 않고도 목록에서 바로 보고 바꿀 수 있도록 **캠페인 id 를 받는다.**
+   (인자를 안 주면 지금 열려 있는 캠페인) */
+const campIdOf=id=>id||(CLOUD.campaign&&CLOUD.campaign.id)||null;
+async function cloudMembers(campId){
+  const id=campIdOf(campId);
+  if(!CLOUD.on||!CLOUD.user||!id)return null;
   const {data}=await CLOUD.sb.from('campaign_members')
-    .select('role,user_id,profiles(name,email,org)').eq('campaign_id',CLOUD.campaign.id);
+    .select('role,user_id,profiles(name,email,org)').eq('campaign_id',id);
   const {data:inv}=await CLOUD.sb.from('campaign_invites')
-    .select('id,email,role,accepted_at').eq('campaign_id',CLOUD.campaign.id).is('accepted_at',null);
+    .select('id,email,role,accepted_at').eq('campaign_id',id).is('accepted_at',null);
   return {members:data||[],invites:inv||[]};
 }
-async function inviteMember(email,role){
-  if(!CLOUD.campaign)return '캠페인을 먼저 여세요.';
-  if(CLOUD.role!=='master')return '마스터 권한만 초대할 수 있습니다.';
+/* 여러 캠페인의 멤버를 한 번에 — 캠페인 관리 목록에 관리자 칩을 그리기 위해 */
+async function cloudMembersMany(ids){
+  const out={};
+  (ids||[]).forEach(id=>out[id]={members:[],invites:[]});
+  if(!CLOUD.on||!CLOUD.user||!ids||!ids.length)return out;
+  try{
+    const {data}=await withTimeout(CLOUD.sb.from('campaign_members')
+      .select('campaign_id,role,user_id,profiles(name,email,org)').in('campaign_id',ids),
+      15000,'관리자 목록');
+    (data||[]).forEach(m=>{(out[m.campaign_id]=out[m.campaign_id]||{members:[],invites:[]}).members.push(m);});
+    const {data:inv}=await withTimeout(CLOUD.sb.from('campaign_invites')
+      .select('campaign_id,email,role,accepted_at').in('campaign_id',ids).is('accepted_at',null),
+      15000,'초대 목록');
+    (inv||[]).forEach(v=>{(out[v.campaign_id]=out[v.campaign_id]||{members:[],invites:[]}).invites.push(v);});
+  }catch(e){}
+  return out;
+}
+/* 캠페인 관리 목록에서 쓰는 멤버 캐시 (창을 다시 그릴 때마다 서버를 두드리지 않게) */
+let MEMBER_CACHE={};
+/* 목록 한 칸에 들어갈 관리자 칩 — 마스터 먼저, 그다음 운영진, 광고주는 수만 */
+function memberChips(d){
+  if(!d)return '<span class="hint">–</span>';
+  const nameOf=m=>{const p=m.profiles||{};return p.name||p.email||'(이름 없음)';};
+  const ord={master:0,editor:1,viewer:2};
+  const ms=(d.members||[]).slice().sort((a,b)=>(ord[a.role]??9)-(ord[b.role]??9));
+  const show=ms.filter(m=>m.role!=='viewer');
+  const viewers=ms.length-show.length;
+  const pend=(d.invites||[]).length;
+  if(!ms.length&&!pend)return '<span class="hint">–</span>';
+  let h='<div class="mchips">';
+  h+=show.slice(0,4).map(m=>`<span class="mchip ${m.role}" title="${esc((m.profiles||{}).email||'')}">`
+    +`<b>${m.role==='master'?'마스터':'운영진'}</b>${esc(nameOf(m))}</span>`).join('');
+  if(show.length>4)h+=`<span class="mchip more">+${show.length-4}</span>`;
+  if(viewers)h+=`<span class="mchip viewer">광고주 ${viewers}</span>`;
+  if(pend)h+=`<span class="mchip pend">초대 대기 ${pend}</span>`;
+  return h+'</div>';
+}
+/* 그 캠페인에서 내가 마스터인가 — 목록에서 바로 판단해야 하므로 멤버 목록으로 본다 */
+function isMasterOf(d){
+  if(!CLOUD.user)return false;
+  if(CLOUD.appRole==='super')return true;
+  if(CLOUD.shareView)return false;
+  const me=(d&&d.members||[]).find(m=>m.user_id===CLOUD.user.id);
+  return !!me&&me.role==='master';
+}
+async function inviteMember(email,role,campId){
+  const id=campIdOf(campId);
+  if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_invites').insert({
-    campaign_id:CLOUD.campaign.id,email:email.trim().toLowerCase(),role,invited_by:CLOUD.user.id});
+    campaign_id:id,email:email.trim().toLowerCase(),role,invited_by:CLOUD.user.id});
   return error?error.message:null;
 }
-async function setMemberRole(userId,role){
-  if(CLOUD.role!=='master')return '마스터 권한만 변경할 수 있습니다.';
+async function setMemberRole(userId,role,campId){
+  const id=campIdOf(campId);if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_members')
-    .update({role}).eq('campaign_id',CLOUD.campaign.id).eq('user_id',userId);
+    .update({role}).eq('campaign_id',id).eq('user_id',userId);
   return error?error.message:null;
 }
-async function removeMember(userId){
-  if(CLOUD.role!=='master')return '마스터 권한만 삭제할 수 있습니다.';
+async function removeMember(userId,campId){
+  const id=campIdOf(campId);if(!id)return '캠페인을 먼저 여세요.';
   const {error}=await CLOUD.sb.from('campaign_members')
-    .delete().eq('campaign_id',CLOUD.campaign.id).eq('user_id',userId);
+    .delete().eq('campaign_id',id).eq('user_id',userId);
   return error?error.message:null;
 }
 

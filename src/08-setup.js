@@ -752,10 +752,13 @@ function openPerm(){
     :`<td>${c}</td>`).join('')+'</tr>';});
   openModal('계정 · 권한',h+'</tbody></table>',
     '<button class="btn" data-close>닫기</button><button class="btn primary" data-close>+ 사용자 초대</button>',{w:900});}
-/* 클라우드 — 이 캠페인의 멤버 · 초대 관리 */
-async function openPermCloud(){
-  const d=await cloudMembers();if(!d)return;
-  const master=CLOUD.role==='master';
+/* 클라우드 — 그 캠페인의 멤버(관리자) · 초대 관리.
+   v52 — 캠페인 id 를 받아 **열지 않은 캠페인도** 관리할 수 있다. 이름도 함께 받는다. */
+async function openPermCloud(campId,campName){
+  const id=campId||(CLOUD.campaign&&CLOUD.campaign.id);
+  const nm=campName||(CLOUD.campaign&&CLOUD.campaign.name)||'';
+  const d=await cloudMembers(id);if(!d)return;
+  const master=isMasterOf(d);
   /* 캠페인 안에서 줄 수 있는 권한 — 운영진(수정 가능) · 광고주(조회 전용) */
   const opt=(cur)=>['editor','viewer'].map(r=>
     `<option value="${r}"${r===cur?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
@@ -763,16 +766,22 @@ async function openPermCloud(){
       <b>캠페인 단위 공유</b> — 이 캠페인에 초대되었거나 코드를 받은 사람만 볼 수 있습니다.<br>
       <b>운영진</b>은 이 캠페인 안에서 마스터와 동등하게 모든 데이터를 수정·추가할 수 있고,
       <b>광고주</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
-      ${master?'':'<b>지금은 초대·권한 변경 권한이 없습니다.</b>'}</div></div>
+      ${master?'마스터는 아래에서 <b>운영진 임명 · 해제</b>를 할 수 있습니다.'
+              :'<b>이 캠페인의 마스터만 초대·권한 변경을 할 수 있습니다.</b>'}</div></div>
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th>이름</th><th>소속</th><th>이메일</th><th style="width:120px">권한</th>
+      <th>이름</th><th>소속</th><th>계정(이메일)</th><th style="width:130px">권한</th>
       <th style="width:96px">상태</th><th style="width:70px"></th></tr></thead><tbody>`;
+  const mine=m=>m.user_id===CLOUD.user.id;
   d.members.forEach(m=>{
     const p=m.profiles||{};
-    h+=`<tr><td>${esc(p.name||'–')}</td><td>${esc(p.org||'–')}</td><td>${esc(p.email||'–')}</td>
-      <td>${master?`<select data-mrole="${m.user_id}">${opt(m.role)}</select>`:ROLE_LABEL[m.role]}</td>
+    /* 마스터 자리는 넘기지 않는다 — 목록에는 보이되 바꿀 수 있는 건 운영진 · 광고주뿐 */
+    const editable=master&&m.role!=='master';
+    h+=`<tr><td>${esc(p.name||'–')}${mine(m)?' <span class="cnt2">나</span>':''}</td>
+      <td>${esc(p.org||'–')}</td><td class="mono">${esc(p.email||'–')}</td>
+      <td>${editable?`<select data-mrole="${m.user_id}">${opt(m.role)}</select>`
+                    :`<b>${ROLE_LABEL[m.role]||m.role}</b>`}</td>
       <td><span class="tagchip on">활성</span></td>
-      <td>${master&&m.user_id!==CLOUD.user.id?`<button class="btn sm danger" data-mdel="${m.user_id}">해제</button>`:''}</td></tr>`;});
+      <td>${editable?`<button class="btn sm danger" data-mdel="${m.user_id}" title="이 캠페인에서 내보냅니다">해제</button>`:''}</td></tr>`;});
   d.invites.forEach(iv=>{
     h+=`<tr><td class="hint">(가입 전)</td><td>–</td><td>${esc(iv.email)}</td>
       <td>${ROLE_LABEL[iv.role]}</td><td><span class="tagchip">초대 대기</span></td><td></td></tr>`;});
@@ -786,21 +795,24 @@ async function openPermCloud(){
         <button class="btn primary" id="invAdd" ${master?'':'disabled'}>초대</button></div>
       <div id="invMsg" class="hint" style="margin-top:9px">초대한 이메일로 구글 로그인하면 이 캠페인이 자동으로 열립니다.</div>
     </div>`;
-  openModal(`계정 · 권한 — ${esc(CLOUD.campaign.name)}`,h,'<button class="btn" data-close>닫기</button>',{w:940});
+  openModal(`관리자 · 권한 — ${esc(nm)}`,h,'<button class="btn" data-close>닫기</button>',{w:960});
   const host=$('modalHost');
+  const again=()=>{closeModal();openPermCloud(id,nm);};
   host.querySelectorAll('[data-mrole]').forEach(s=>s.onchange=async e=>{
-    const err=await setMemberRole(e.target.dataset.mrole,e.target.value);
-    $('invMsg').textContent=err||'권한을 변경했습니다.';});
+    const err=await setMemberRole(e.target.dataset.mrole,e.target.value,id);
+    $('invMsg').textContent=err||'권한을 변경했습니다.';
+    if(!err&&typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];});
   host.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=async()=>{
-    const err=await removeMember(b.dataset.mdel);
-    if(err)$('invMsg').textContent=err;else{closeModal();openPermCloud();}});
+    const err=await removeMember(b.dataset.mdel,id);
+    if(err)$('invMsg').textContent=err;
+    else{if(typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];again();}});
   const add=$('invAdd');
   if(add)add.onclick=async()=>{
     const m=$('invMail').value.trim();
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$('invMsg').textContent='이메일 형식을 확인해 주세요.';return;}
-    const err=await inviteMember(m,$('invRole').value);
+    const err=await inviteMember(m,$('invRole').value,id);
     if(err)$('invMsg').textContent='초대 실패: '+err;
-    else{closeModal();openPermCloud();}};
+    else{if(typeof MEMBER_CACHE!=='undefined')delete MEMBER_CACHE[id];again();}};
 }
 function openCampHist(){
   let h='<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>'

@@ -297,24 +297,43 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs{background:var(--surface);padding:0 152px;display:flex;gap:4px;align-items:center;
   position:sticky;top:56px;z-index:59;border-bottom:1px solid var(--line)}
 @media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}.demobar{padding:9px 40px}}
-.tabs>button[data-tab]{border:0;background:transparent;padding:12px 14px 10px;cursor:pointer;color:var(--ink2);
-  font-weight:600;border-bottom:2px solid transparent;font-size:13.5px}
-.tabs>button[data-tab].on{color:var(--acc);border-bottom-color:var(--acc)}
+/* 상위 탭 — 크고 굵게, 밑줄로 현재 위치를 표시 (v52: 하위 탭과 확실히 구분되게) */
+.tabs>button[data-tab]{border:0;background:transparent;padding:13px 15px 11px;cursor:pointer;color:var(--ink2);
+  font-weight:600;border-bottom:2px solid transparent;font-size:14.5px;letter-spacing:-.3px}
+.tabs>button[data-tab]:hover{color:var(--ink)}
+.tabs>button[data-tab].on{color:var(--acc);border-bottom-color:var(--acc);font-weight:800}
 .tabs>.spacer{flex:1}
-/* 하위 탭 — 같은 줄, **대시보드 탭 바로 오른쪽**에 작은 알약으로 (v50).
-   대시보드에 딸린 메뉴임이 보이도록 양쪽에 옅은 구분선을 둔다. */
-.subbar{display:flex;gap:4px;align-items:center;margin:0 10px 0 4px;padding:0 12px;
-  border-left:1px solid var(--line);border-right:1px solid var(--line)}
-.subbar button{border:1px solid transparent;background:transparent;padding:5px 13px;border-radius:8px;
-  cursor:pointer;color:var(--ink2);font-weight:600;font-size:12.5px}
-.subbar button:hover{background:var(--acc-soft2);border-color:var(--line)}
-.subbar button.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
+/* 하위 탭 — **대시보드 탭 바로 오른쪽**에 붙는 작은 분절 컨트롤 (v50 → v52).
+   상위 탭(밑줄 · 큰 글씨)과 생김새를 아예 다르게 해서 한눈에 하위임을 알 수 있게 한다. */
+.subbar{display:flex;gap:2px;align-items:center;margin:0 14px 0 12px;padding:3px;position:relative;
+  background:var(--sub1);border:1px solid var(--line);border-radius:999px}
+/* 대시보드 탭에서 이어지는 짧은 연결선 */
+.subbar::before{content:'';position:absolute;left:-11px;top:50%;width:9px;height:1px;background:var(--gline)}
+.subbar button{border:0;background:transparent;padding:4px 13px;border-radius:999px;
+  cursor:pointer;color:var(--ink2);font-weight:600;font-size:12px;letter-spacing:-.2px}
+.subbar button:hover{color:var(--ink)}
+.subbar button.on{background:var(--surface);color:var(--acc);font-weight:700;
+  box-shadow:0 1px 2px rgba(20,30,45,.12)}
 .tabs .dlgrp{margin-left:8px}
 .tabs .pill.dl{height:27px;font-weight:700}
 .tabs #sectMngBtn{margin-left:6px}
-@media (max-width:1200px){.subbar button{padding:5px 9px;font-size:12px}
-  .tabs>button[data-tab]{padding:12px 9px 10px;font-size:13px}}
+@media (max-width:1200px){.subbar{margin:0 8px 0 8px}
+  .subbar button{padding:4px 9px;font-size:11.5px}
+  .subbar::before{display:none}
+  .tabs>button[data-tab]{padding:12px 9px 10px;font-size:13.5px}}
 /* 역할 표시 — 로그인 여부로 자동 결정 */
+/* 캠페인 관리 목록의 "관리자 계정" 칸 (v52) */
+.mchips{display:flex;flex-wrap:wrap;gap:4px;max-width:250px}
+.mchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  border-radius:999px;padding:2px 9px;white-space:nowrap;border:1px solid var(--line);
+  background:var(--sub3);color:var(--ink2)}
+.mchip>b{font-size:10px;font-weight:800;opacity:.72}
+.mchip.master{background:#fdf3dc;border-color:#e8d49a;color:#7a5a13}
+.mchip.editor{background:var(--acc-soft);border-color:var(--gline);color:var(--acc)}
+.mchip.viewer,.mchip.more{color:var(--muted)}
+.mchip.pend{background:#fff;border-style:dashed;color:var(--muted)}
+[data-theme="dark"] .mchip.master{background:#3a3320;border-color:#6b5c2c;color:#e8cf8e}
+[data-theme="dark"] .mchip.pend{background:transparent}
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
 .rolechip.agency{color:#38664f;background:#e9f1ec;border-color:#cfe0d6}
@@ -595,11 +614,14 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pbar .mstack>i.nopad{padding:0}
 .pbar .mstack>i+i{box-shadow:inset 1px 0 0 rgba(255,255,255,.34)}
 .pbar .mstack>i:hover{filter:brightness(1.2) saturate(1.05)}
-/* 매체 글자 — 있는 줄만 알 정도로 옅게 */
-.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;line-height:1.2}
-.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);
-  white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+/* 매체 글자 — 있는 줄만 알 정도로 옅게.
+   구간은 `<i>` 태그라 브라우저 기본값이 기울임이다 → **반드시 normal 로 되돌린다** (v52) */
+.pbar .mstack>i{font-style:normal}
+.pbar .mstack .nm{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.66);font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.1px;line-height:1.2;max-width:100%}
+.pbar .mstack .pc{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.46);font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;font-variant-numeric:tabular-nums;
+  line-height:1.2;max-width:100%}
 .pbar .mstack i.nolb .nm,.pbar .mstack i.nolb .pc{display:none}
 .pbar .mstack i.nopc .pc{display:none}
 /* 채워진 구간 위를 은은하게 흐르는 광택 */
