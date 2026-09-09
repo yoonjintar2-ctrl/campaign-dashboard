@@ -559,7 +559,7 @@ function renderSummaries(){
     const cfgBox=el('div','hidden',host);
     const card=el('div','card fit',host);
     /* 서머리는 세로 스크롤 없이 전체 높이를 그대로 노출한다 (가로 스크롤만) */
-    const tbl=el('table','tbl gln fit',el('div','tbl-wrap noy',card));
+    const tbl=el('table','tbl gln fit cmpt',el('div','tbl-wrap noy',card));
     const draw=()=>{tbl.classList.toggle('nogauge',!!s.noGauge);
       buildPivot(tbl,s,SUM_DEF,SUM_CELL,draw);};
     draw();

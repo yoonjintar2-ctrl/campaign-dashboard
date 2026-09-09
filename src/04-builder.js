@@ -85,7 +85,15 @@ function freezeLeadCols(tbl,leadN){
       td.classList.toggle('lfze',lv+Math.max(td.colSpan,1)>=leadN);
       td.style.left=Math.round(L[lv]||0)+'px';});});
   tbl.classList.add('hasfz');
+  try{syncR2Top(tbl);}catch(e){}
   return Math.round(acc);
+}
+/* 2행 머리글이 1행 아래에 붙는 높이(--r2top)를 **실제로 재서** 넣는다 (v50).
+   글자·여백 크기를 바꿀 때마다 상수를 고치다 보면 머리글이 어긋나므로 값을 굳히지 않는다. */
+function syncR2Top(tbl){
+  if(!tbl||!tbl.tHead||!tbl.tHead.rows[1])return;
+  const h=Math.round(tbl.tHead.rows[0].getBoundingClientRect().height);
+  if(h>0&&h!==tbl.__r2h){tbl.__r2h=h;tbl.style.setProperty('--r2top',h+'px');}
 }
 /* 표마다 하나씩 붙는 떠 있는 머리글 막대 */
 function mountFloatHead(tbl){
@@ -127,6 +135,7 @@ function mountFloatHead(tbl){
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
     if(!tbl.isConnected||!wrap.offsetParent){bar.classList.remove('on');return;}
+    syncR2Top(tbl);
     const r=wrap.getBoundingClientRect(),top=stick();
     const headH=tbl.tHead.getBoundingClientRect().height;
     const on=r.top<top&&r.bottom>top+headH+24&&sizeCols();
@@ -144,6 +153,7 @@ function mountFloatHead(tbl){
   wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
   if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
   tbl.__fhPlace=place;window.__fhList.push(place);
+  syncR2Top(tbl);
   setTimeout(place,0);setTimeout(place,320);
 }
 /* 값 열 너비 규칙 —
