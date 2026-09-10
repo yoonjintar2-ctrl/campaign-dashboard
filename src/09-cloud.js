@@ -330,6 +330,7 @@ function enterShareView(name,kind){
   CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
   if(name&&!CLOUD.campaign)CLOUD.campaign={id:null,name};
   hideGate();endBoot();
+  try{paintMockBadge();}catch(e){}       /* 뷰어 화면에는 더미 배지를 남기지 않는다 (v53) */
   if(typeof applyRole==='function')applyRole();
   /* 상단바 캠페인 이름·광고주 표시를 지금 열린 캠페인으로 맞춘다 */
   try{paintCampSel();renderBrand&&renderBrand();renderCampBar&&renderCampBar();}catch(e){}
@@ -344,7 +345,10 @@ function enterSample(){
   CLOUD.shareView=false;CLOUD.sample=true;CLOUD.campaign=null;CLOUD.role=null;
   /* 로그인·로그아웃을 거쳐 화면이 비어 있을 수 있으므로 예시 데이터를 되살린다 */
   restoreDemo();
+  /* 샘플은 언제나 무채색 화이트로 (v53) */
+  try{if(typeof applyTheme==='function')applyTheme('mono',true);}catch(e){}
   hideGate();
+  try{paintMockBadge();}catch(e){}
   if(typeof applyRole==='function')applyRole();
   cloudState('샘플 데이터 둘러보기 · 시행사 화면');
   endBoot();
@@ -671,9 +675,14 @@ const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
 function applyRoleLock(){
   if(typeof applyRole==='function')applyRole();
   if(typeof window.__cmtLock==='function')window.__cmtLock();
-  /* 로그인해 있으면 더미 배지를 감춘다 */
-  const mk=$('mockBadge');
-  if(mk)mk.classList.toggle('hidden',!!(CLOUD.on&&CLOUD.user));
+  paintMockBadge();
+}
+/* "디자인 시안 · 더미 데이터" 배지는 **데모 화면에서만** 보여 준다 (v53).
+   예전에는 로그인 여부만 봐서, 코드로 들어온 뷰어(광고주) 화면에도 그대로 남아 있었다. */
+function paintMockBadge(){
+  const mk=$('mockBadge');if(!mk)return;
+  const real=!!(CLOUD.shareView||CLOUD.campaign||(CLOUD.on&&CLOUD.user));
+  mk.classList.toggle('hidden',real);
 }
 
 /* ---------- 저장 ----------

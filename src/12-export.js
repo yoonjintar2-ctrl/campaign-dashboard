@@ -573,8 +573,10 @@ const THEMES=[
   {k:'mono',   l:'무채색 화이트', sw:['#4d5257','#979a9e','#f1f2f2']},
   {k:'dark',   l:'무채색 다크',   sw:['#b4b4b4','#727272','#191919']}
 ];
-/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 기본 남색으로 되돌아간다 */
-let THEME='';
+/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 남색으로 되돌아간다.
+   **처음 화면(샘플·데모)은 무채색 화이트로 시작한다** (v53) —
+   저장본을 열면 그 캠페인이 고른 테마(`doc.campaign.theme`)가 이 값을 덮어쓴다. */
+let THEME='mono';
 /* 그래프는 자바스크립트로 그리므로 테마가 바뀌면 색 값을 다시 읽어 온다.
    효율 히트맵(HM_GOOD/MID/BAD)만은 손대지 않는다 — 잘 됨·안 됨을 뜻하는 색이라서. */
 function syncThemeColors(){
@@ -809,7 +811,18 @@ function openAdvEditor(){
     const m=$('brandMark');if(m)DMD_MARK=m.getAttribute('src')||'';
     loadAdvBook();
     const tb=$('themeBtn');if(tb)tb.onclick=openThemePicker;
-    applyTheme(THEME,true);renderBrand();};
+    applyTheme(THEME,true);
+    /* ⚠ 첫 그림은 p8 끝에서 **이 시점 전에** 이미 그려졌다 (v53).
+       그래프 색은 자바스크립트 값(ACC · KPI_RING …)이라 CSS 변수만 바꿔서는 안 바뀐다 —
+       기본(남색)이 아닌 테마로 시작할 때는 색을 반영해 한 번 다시 그린다. */
+    if(THEME){try{
+      renderAll();
+      renderKpiTable&&renderKpiTable();
+      renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+      renderHeat&&renderHeat();renderBubble&&renderBubble();
+      setTimeout(()=>{try{equalizeDuo&&equalizeDuo();renderTreemap&&renderTreemap();}catch(e){}},0);
+    }catch(e){}}
+    renderBrand();};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();
 

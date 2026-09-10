@@ -362,10 +362,26 @@ const KPI_COSTCOL={
   lead:{c:'cpa',g:'g_cpa',b:'lead',m:1},
   eng:{c:'cpe',g:'g_cpe',b:'eng',m:1},
   install:{c:'cpi',g:'',b:'install',m:1}};
+/* 모든 비용 지표 ↔ 그 지표의 밑수 · 목표 열 (v53).
+   KPI 열은 진하게(kpicol/kpibad), **KPI 가 아닌 단가 열도 제안보다 비싸면 은은하게**(costbad). */
+const COSTCOL={
+  cpm:{b:'imp',m:1000,g:'g_cpm'}, cpc:{b:'click',m:1,g:'g_cpc'},
+  cpv:{b:'view',m:1,g:'g_cpv'},   cpa:{b:'conv',m:1,g:'g_cpa'},
+  cpe:{b:'eng',m:1,g:'g_cpe'},    cpi:{b:'install',m:1,g:'g_cpi'}};
+/* 목표 열(g_cpm 등) → 그 목표가 가리키는 단가 열 */
+const GOAL2COST={};Object.entries(COSTCOL).forEach(([c,d])=>{if(d.g)GOAL2COST[d.g]=c;});
 /* 화면에 보이는 값(원 단위)이 실제로 다를 때만 "저조" 로 본다 —
    1원 미만 차이는 같은 값으로 읽히므로 붉게 칠하지 않는다 */
 const kpiWorse=(act,goal)=>isFinite(act)&&isFinite(goal)&&goal>0
   &&Math.round(act)-Math.round(goal)>=1;
+/* 그 단가 열의 실집행 · 목표를 구한다 (KPI 여부와 무관) */
+function costPair(ck,src,ex){
+  const d=COSTCOL[ck];if(!d)return null;
+  /* CPA 는 전환이 없으면 리드로 본다 (라인마다 어느 쪽을 KPI 로 잡았는지가 달라서) */
+  const base=(ck==='cpa'&&!src[d.b]&&src.lead)?'lead':d.b;
+  const act=src[base]?src.cost/src[base]*d.m:NaN;
+  const goal=(ex&&ex.budget&&ex[base])?ex.budget/ex[base]*d.m:NaN;
+  return {act,goal};}
 /* 이 행에 걸린 라인들의 KPI 지표가 하나로 모이면 그 지표의 단가 열을 강조한다 */
 function rowKpi(ls,cols){
   if(!ls||!ls.length)return null;
@@ -417,15 +433,27 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
     /* 이 행의 KPI 지표 열은 눈에 띄게 — 목표 단가보다 비싸면(=효율이 나쁘면) 살짝 붉게.
        소계 · TOTAL 행은 KPI 가 섞이므로 표시하지 않는다(kpi 를 넘기지 않음) */
-    let kc='';
+    let kc='',tip='';
     if(kpi&&(k===kpi.c||k===kpi.g)){
       kc=' kpicol';
       const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
       const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
       /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
-      if(kpiWorse(act,goal))kc+=' kpibad';}
-    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${kc?` title="${esc(kpiTip(kpi,src,ex))}"`:''}>`
+      if(kpiWorse(act,goal))kc+=' kpibad';
+      tip=kpiTip(kpi,src,ex);
+    }else{
+      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53) */
+      const ck=COSTCOL[k]?k:GOAL2COST[k];
+      if(ck){
+        const pr=costPair(ck,src,ex);
+        if(pr&&kpiWorse(pr.act,pr.goal)){kc=' costbad';tip=costTip(ck,pr);}}}
+    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${tip?` title="${esc(tip)}"`:''}>`
       +`${g!==undefined?gauge(g):txt}</td>`;}).join('');
+  const costTip=(ck,pr)=>{
+    const nm=(METRICS[ck]||{l:ck}).l;
+    const d=Math.round(pr.act)-Math.round(pr.goal);
+    return `${nm} — 제안 ${won(pr.goal)} 대비 ${won(d)} 비쌈`
+      +` (${((pr.act/pr.goal-1)*100).toFixed(1)}% 저조)`;};
   const kpiTip=(kpi,src,ex)=>{
     const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
     const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
@@ -549,6 +577,8 @@ function renderSummaries(){
     /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
     tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
       +`<i></i>KPI 개선 고려</span>`
+      +`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
+      +`<i></i>제안 대비 저조</span>`
       +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"

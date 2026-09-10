@@ -613,9 +613,12 @@ function hsl2rgb([h,s,l]){
     return p;};
   return [f(h+1/3),f(h),f(h-1/3)].map(v=>Math.round(v*255));}
 const clamp01=v=>Math.min(1,Math.max(0,v));
-/* dl = 명도 증감, ds = 채도 증감 (밝게 할수록 채도를 조금 올려 색이 바래지 않게) */
+/* dl = 명도 증감, ds = 채도 증감 (밝게 할수록 채도를 조금 올려 색이 바래지 않게)
+   ⚠ 원래 색이 거의 무채색이면 채도를 올리지 않는다 (v53) —
+   무채색 화이트 테마에서 도넛 링만 푸른 기가 돌던 원인. */
 const adjust=(color,dl,ds)=>{const [h,s,l]=rgb2hsl(hex2rgb(color));
-  return 'rgb('+hsl2rgb([h,clamp01(s+(ds||0)),clamp01(l+dl)]).join(',')+')';};
+  const add=s<.10?0:(ds||0);
+  return 'rgb('+hsl2rgb([h,clamp01(s+add),clamp01(l+dl)]).join(',')+')';};
 
 /* 도넛 링용 그라데이션 — 시작(위)은 밝게, 끝(아래)은 진하게.
    호를 따라가는 그라데이션은 SVG 에 없으므로 대각선 linearGradient 로 농담 차이를 준다. */
@@ -992,6 +995,12 @@ function renderSpendDonut(box,pr){
       tp.setAttribute('href','#'+id2);tp.setAttribute('startOffset','10');
       tp.setAttribute('text-anchor','start');tp.textContent=label;t.appendChild(tp);}
   })();
+  /* 링 바깥에 목표 페이스 위치를 작은 점으로 — KPI 도넛과 똑같이 (v53).
+     예전에는 예산 소진율 카드에만 이 점이 없어 기준선이 안 보였다. */
+  if(pf>0.0005){
+    const a=(360*pf-90)*Math.PI/180, r2=rad+TH/2+4.5;
+    S('circle',{cx:(CC+Math.cos(a)*r2).toFixed(2),cy:(CC+Math.sin(a)*r2).toFixed(2),r:3.1,
+      fill:PACE,stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
   const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
     style:'pointer-events:stroke'},svg);
   hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
@@ -1209,7 +1218,7 @@ function renderDonuts(){
          (캠페인 진행 현황 막대의 점과 같은 뜻 · 크기는 훨씬 작게) */
       if(pf>0.0005){
         const [dx,dy]=pxy(360*pf,rad+TH/2+4.5);
-        S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:2.6,fill:PACE,
+        S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:3.1,fill:PACE,
           stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
       });
     /* 마우스를 올리면 그 KPI의 세부 데이터를 보여준다 (하단 목록 대신) */

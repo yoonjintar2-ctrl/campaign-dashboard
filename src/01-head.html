@@ -484,6 +484,12 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
   border-color:rgba(200,130,120,.38)}
 [data-theme="dark"] .kpilgd>i{background:rgba(200,130,120,.32);
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.6)}
+/* 한 단계 약한 범례 — KPI 가 아닌 단가 열 (v53) */
+.kpilgd.soft{color:#a8635b;background:transparent;border-color:var(--line);font-weight:600}
+.kpilgd.soft>i{background:rgba(190,110,100,.14);box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.28)}
+[data-theme="dark"] .kpilgd.soft{color:#d59a92;background:transparent;border-color:var(--line)}
+[data-theme="dark"] .kpilgd.soft>i{background:rgba(200,130,120,.14);
+  box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.3)}
 .subsec{font-size:15.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;margin:6px 0 9px}
 .subsec .cnt{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);border-radius:6px;padding:2px 8px}
 /* 섹션 제목 바로 아래 붙는 버튼 줄 */
@@ -1034,6 +1040,12 @@ table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 table.tbl td.kpicol{font-weight:800}
 table.tbl td.kpicol.kpibad{background:rgba(190,110,100,.15)!important;color:#8f4038;
   box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.5)}
+/* KPI 가 아닌 단가 열 — 제안보다 비싸면 **은은하게만** (v53).
+   KPI 열(테두리 + 진한 배경)보다 한 단계 약해야 우선순위가 읽힌다. */
+table.tbl td.costbad{color:#9c554c;background:rgba(190,110,100,.07)!important}
+table.tbl tr.total td.costbad{color:#f0b8b0;background:rgba(255,255,255,.08)!important}
+[data-theme="dark"] table.tbl td.costbad{color:#d59a92;background:rgba(200,130,120,.10)!important}
+[data-theme="dark"] table.tbl tr.total td.costbad{color:#eeb2aa}
 [data-theme="dark"] table.tbl td.kpicol.kpibad{background:rgba(200,130,120,.2)!important;color:#f0b3aa;
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.44)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
