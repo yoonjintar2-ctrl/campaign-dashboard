@@ -484,6 +484,12 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
   border-color:rgba(200,130,120,.38)}
 [data-theme="dark"] .kpilgd>i{background:rgba(200,130,120,.32);
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.6)}
+/* 한 단계 약한 범례 — KPI 가 아닌 단가 열 (v53) */
+.kpilgd.soft{color:#a8635b;background:transparent;border-color:var(--line);font-weight:600}
+.kpilgd.soft>i{background:rgba(190,110,100,.14);box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.28)}
+[data-theme="dark"] .kpilgd.soft{color:#d59a92;background:transparent;border-color:var(--line)}
+[data-theme="dark"] .kpilgd.soft>i{background:rgba(200,130,120,.14);
+  box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.3)}
 .subsec{font-size:15.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;margin:6px 0 9px}
 .subsec .cnt{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);border-radius:6px;padding:2px 8px}
 /* 섹션 제목 바로 아래 붙는 버튼 줄 */
@@ -1034,6 +1040,12 @@ table.tbl td.lfze,table.tbl th.lfze{border-right:2px solid var(--gline)}
 table.tbl td.kpicol{font-weight:800}
 table.tbl td.kpicol.kpibad{background:rgba(190,110,100,.15)!important;color:#8f4038;
   box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.5)}
+/* KPI 가 아닌 단가 열 — 제안보다 비싸면 **은은하게만** (v53).
+   KPI 열(테두리 + 진한 배경)보다 한 단계 약해야 우선순위가 읽힌다. */
+table.tbl td.costbad{color:#9c554c;background:rgba(190,110,100,.07)!important}
+table.tbl tr.total td.costbad{color:#f0b8b0;background:rgba(255,255,255,.08)!important}
+[data-theme="dark"] table.tbl td.costbad{color:#d59a92;background:rgba(200,130,120,.10)!important}
+[data-theme="dark"] table.tbl tr.total td.costbad{color:#eeb2aa}
 [data-theme="dark"] table.tbl td.kpicol.kpibad{background:rgba(200,130,120,.2)!important;color:#f0b3aa;
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.44)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
@@ -3119,9 +3131,12 @@ function hsl2rgb([h,s,l]){
     return p;};
   return [f(h+1/3),f(h),f(h-1/3)].map(v=>Math.round(v*255));}
 const clamp01=v=>Math.min(1,Math.max(0,v));
-/* dl = 명도 증감, ds = 채도 증감 (밝게 할수록 채도를 조금 올려 색이 바래지 않게) */
+/* dl = 명도 증감, ds = 채도 증감 (밝게 할수록 채도를 조금 올려 색이 바래지 않게)
+   ⚠ 원래 색이 거의 무채색이면 채도를 올리지 않는다 (v53) —
+   무채색 화이트 테마에서 도넛 링만 푸른 기가 돌던 원인. */
 const adjust=(color,dl,ds)=>{const [h,s,l]=rgb2hsl(hex2rgb(color));
-  return 'rgb('+hsl2rgb([h,clamp01(s+(ds||0)),clamp01(l+dl)]).join(',')+')';};
+  const add=s<.10?0:(ds||0);
+  return 'rgb('+hsl2rgb([h,clamp01(s+add),clamp01(l+dl)]).join(',')+')';};
 
 /* 도넛 링용 그라데이션 — 시작(위)은 밝게, 끝(아래)은 진하게.
    호를 따라가는 그라데이션은 SVG 에 없으므로 대각선 linearGradient 로 농담 차이를 준다. */
@@ -3498,6 +3513,12 @@ function renderSpendDonut(box,pr){
       tp.setAttribute('href','#'+id2);tp.setAttribute('startOffset','10');
       tp.setAttribute('text-anchor','start');tp.textContent=label;t.appendChild(tp);}
   })();
+  /* 링 바깥에 목표 페이스 위치를 작은 점으로 — KPI 도넛과 똑같이 (v53).
+     예전에는 예산 소진율 카드에만 이 점이 없어 기준선이 안 보였다. */
+  if(pf>0.0005){
+    const a=(360*pf-90)*Math.PI/180, r2=rad+TH/2+4.5;
+    S('circle',{cx:(CC+Math.cos(a)*r2).toFixed(2),cy:(CC+Math.sin(a)*r2).toFixed(2),r:3.1,
+      fill:PACE,stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
   const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,
     style:'pointer-events:stroke'},svg);
   hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
@@ -3715,7 +3736,7 @@ function renderDonuts(){
          (캠페인 진행 현황 막대의 점과 같은 뜻 · 크기는 훨씬 작게) */
       if(pf>0.0005){
         const [dx,dy]=pxy(360*pf,rad+TH/2+4.5);
-        S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:2.6,fill:PACE,
+        S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:3.1,fill:PACE,
           stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
       });
     /* 마우스를 올리면 그 KPI의 세부 데이터를 보여준다 (하단 목록 대신) */
@@ -4319,10 +4340,26 @@ const KPI_COSTCOL={
   lead:{c:'cpa',g:'g_cpa',b:'lead',m:1},
   eng:{c:'cpe',g:'g_cpe',b:'eng',m:1},
   install:{c:'cpi',g:'',b:'install',m:1}};
+/* 모든 비용 지표 ↔ 그 지표의 밑수 · 목표 열 (v53).
+   KPI 열은 진하게(kpicol/kpibad), **KPI 가 아닌 단가 열도 제안보다 비싸면 은은하게**(costbad). */
+const COSTCOL={
+  cpm:{b:'imp',m:1000,g:'g_cpm'}, cpc:{b:'click',m:1,g:'g_cpc'},
+  cpv:{b:'view',m:1,g:'g_cpv'},   cpa:{b:'conv',m:1,g:'g_cpa'},
+  cpe:{b:'eng',m:1,g:'g_cpe'},    cpi:{b:'install',m:1,g:'g_cpi'}};
+/* 목표 열(g_cpm 등) → 그 목표가 가리키는 단가 열 */
+const GOAL2COST={};Object.entries(COSTCOL).forEach(([c,d])=>{if(d.g)GOAL2COST[d.g]=c;});
 /* 화면에 보이는 값(원 단위)이 실제로 다를 때만 "저조" 로 본다 —
    1원 미만 차이는 같은 값으로 읽히므로 붉게 칠하지 않는다 */
 const kpiWorse=(act,goal)=>isFinite(act)&&isFinite(goal)&&goal>0
   &&Math.round(act)-Math.round(goal)>=1;
+/* 그 단가 열의 실집행 · 목표를 구한다 (KPI 여부와 무관) */
+function costPair(ck,src,ex){
+  const d=COSTCOL[ck];if(!d)return null;
+  /* CPA 는 전환이 없으면 리드로 본다 (라인마다 어느 쪽을 KPI 로 잡았는지가 달라서) */
+  const base=(ck==='cpa'&&!src[d.b]&&src.lead)?'lead':d.b;
+  const act=src[base]?src.cost/src[base]*d.m:NaN;
+  const goal=(ex&&ex.budget&&ex[base])?ex.budget/ex[base]*d.m:NaN;
+  return {act,goal};}
 /* 이 행에 걸린 라인들의 KPI 지표가 하나로 모이면 그 지표의 단가 열을 강조한다 */
 function rowKpi(ls,cols){
   if(!ls||!ls.length)return null;
@@ -4374,15 +4411,27 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
     const rs=(merge&&isExp&&merge.n>1)?` rowspan="${merge.n}"`:'';
     /* 이 행의 KPI 지표 열은 눈에 띄게 — 목표 단가보다 비싸면(=효율이 나쁘면) 살짝 붉게.
        소계 · TOTAL 행은 KPI 가 섞이므로 표시하지 않는다(kpi 를 넘기지 않음) */
-    let kc='';
+    let kc='',tip='';
     if(kpi&&(k===kpi.c||k===kpi.g)){
       kc=' kpicol';
       const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
       const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
       /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
-      if(kpiWorse(act,goal))kc+=' kpibad';}
-    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${kc?` title="${esc(kpiTip(kpi,src,ex))}"`:''}>`
+      if(kpiWorse(act,goal))kc+=' kpibad';
+      tip=kpiTip(kpi,src,ex);
+    }else{
+      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53) */
+      const ck=COSTCOL[k]?k:GOAL2COST[k];
+      if(ck){
+        const pr=costPair(ck,src,ex);
+        if(pr&&kpiWorse(pr.act,pr.goal)){kc=' costbad';tip=costTip(ck,pr);}}}
+    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${tip?` title="${esc(tip)}"`:''}>`
       +`${g!==undefined?gauge(g):txt}</td>`;}).join('');
+  const costTip=(ck,pr)=>{
+    const nm=(METRICS[ck]||{l:ck}).l;
+    const d=Math.round(pr.act)-Math.round(pr.goal);
+    return `${nm} — 제안 ${won(pr.goal)} 대비 ${won(d)} 비쌈`
+      +` (${((pr.act/pr.goal-1)*100).toFixed(1)}% 저조)`;};
   const kpiTip=(kpi,src,ex)=>{
     const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
     const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
@@ -4506,6 +4555,8 @@ function renderSummaries(){
     /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
     tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
       +`<i></i>KPI 개선 고려</span>`
+      +`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
+      +`<i></i>제안 대비 저조</span>`
       +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
@@ -8783,6 +8834,7 @@ function enterShareView(name,kind){
   CLOUD.shareView=true;CLOUD.shareRole=kind||'viewer';
   if(name&&!CLOUD.campaign)CLOUD.campaign={id:null,name};
   hideGate();endBoot();
+  try{paintMockBadge();}catch(e){}       /* 뷰어 화면에는 더미 배지를 남기지 않는다 (v53) */
   if(typeof applyRole==='function')applyRole();
   /* 상단바 캠페인 이름·광고주 표시를 지금 열린 캠페인으로 맞춘다 */
   try{paintCampSel();renderBrand&&renderBrand();renderCampBar&&renderCampBar();}catch(e){}
@@ -8797,7 +8849,10 @@ function enterSample(){
   CLOUD.shareView=false;CLOUD.sample=true;CLOUD.campaign=null;CLOUD.role=null;
   /* 로그인·로그아웃을 거쳐 화면이 비어 있을 수 있으므로 예시 데이터를 되살린다 */
   restoreDemo();
+  /* 샘플은 언제나 무채색 화이트로 (v53) */
+  try{if(typeof applyTheme==='function')applyTheme('mono',true);}catch(e){}
   hideGate();
+  try{paintMockBadge();}catch(e){}
   if(typeof applyRole==='function')applyRole();
   cloudState('샘플 데이터 둘러보기 · 시행사 화면');
   endBoot();
@@ -9124,9 +9179,14 @@ const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
 function applyRoleLock(){
   if(typeof applyRole==='function')applyRole();
   if(typeof window.__cmtLock==='function')window.__cmtLock();
-  /* 로그인해 있으면 더미 배지를 감춘다 */
-  const mk=$('mockBadge');
-  if(mk)mk.classList.toggle('hidden',!!(CLOUD.on&&CLOUD.user));
+  paintMockBadge();
+}
+/* "디자인 시안 · 더미 데이터" 배지는 **데모 화면에서만** 보여 준다 (v53).
+   예전에는 로그인 여부만 봐서, 코드로 들어온 뷰어(광고주) 화면에도 그대로 남아 있었다. */
+function paintMockBadge(){
+  const mk=$('mockBadge');if(!mk)return;
+  const real=!!(CLOUD.shareView||CLOUD.campaign||(CLOUD.on&&CLOUD.user));
+  mk.classList.toggle('hidden',real);
 }
 
 /* ---------- 저장 ----------
@@ -11322,8 +11382,10 @@ const THEMES=[
   {k:'mono',   l:'무채색 화이트', sw:['#4d5257','#979a9e','#f1f2f2']},
   {k:'dark',   l:'무채색 다크',   sw:['#b4b4b4','#727272','#191919']}
 ];
-/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 기본 남색으로 되돌아간다 */
-let THEME='';
+/* 목록에 없는 톤(예전에 고른 붉은/주황 등)은 applyTheme 에서 남색으로 되돌아간다.
+   **처음 화면(샘플·데모)은 무채색 화이트로 시작한다** (v53) —
+   저장본을 열면 그 캠페인이 고른 테마(`doc.campaign.theme`)가 이 값을 덮어쓴다. */
+let THEME='mono';
 /* 그래프는 자바스크립트로 그리므로 테마가 바뀌면 색 값을 다시 읽어 온다.
    효율 히트맵(HM_GOOD/MID/BAD)만은 손대지 않는다 — 잘 됨·안 됨을 뜻하는 색이라서. */
 function syncThemeColors(){
@@ -11558,7 +11620,18 @@ function openAdvEditor(){
     const m=$('brandMark');if(m)DMD_MARK=m.getAttribute('src')||'';
     loadAdvBook();
     const tb=$('themeBtn');if(tb)tb.onclick=openThemePicker;
-    applyTheme(THEME,true);renderBrand();};
+    applyTheme(THEME,true);
+    /* ⚠ 첫 그림은 p8 끝에서 **이 시점 전에** 이미 그려졌다 (v53).
+       그래프 색은 자바스크립트 값(ACC · KPI_RING …)이라 CSS 변수만 바꿔서는 안 바뀐다 —
+       기본(남색)이 아닌 테마로 시작할 때는 색을 반영해 한 번 다시 그린다. */
+    if(THEME){try{
+      renderAll();
+      renderKpiTable&&renderKpiTable();
+      renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+      renderHeat&&renderHeat();renderBubble&&renderBubble();
+      setTimeout(()=>{try{equalizeDuo&&equalizeDuo();renderTreemap&&renderTreemap();}catch(e){}},0);
+    }catch(e){}}
+    renderBrand();};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();
 
