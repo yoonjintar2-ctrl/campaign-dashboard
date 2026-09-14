@@ -1118,9 +1118,94 @@ const HUB_MAIN=[
 ];
 const HUB_SUB=[
   {id:'guideBtn',t:'사용 가이드'},
+  {id:'__cols',t:'열 사전'},
   {id:'holBtn',t:'공휴일 설정'},
   {id:'campHistBtn',t:'변경 히스토리'}
 ];
+/* ---------- 열 사전 (v55) ----------
+   "이 열이 뭐고 어떻게 계산되는지" 를 한 곳에서 본다.
+   계산식은 화면에서 실제로 쓰는 식을 그대로 적는다 — 여기와 코드가 어긋나면 안 된다. */
+const COL_FORMULA={
+  /* 단가 — 모두 Gross 소진금액 기준 */
+  cpm:'소진금액 ÷ 노출 × 1,000',cpc:'소진금액 ÷ 클릭',cpv:'소진금액 ÷ 조회',
+  cpa:'소진금액 ÷ 전환',cpe:'소진금액 ÷ 참여',cpi:'소진금액 ÷ 설치',
+  /* 목표 단가 — 예산(Gross) ÷ 목표 수치 */
+  g_cpm:'예산 ÷ 목표 노출 × 1,000',g_cpc:'예산 ÷ 목표 클릭',g_cpv:'예산 ÷ 목표 조회',
+  g_cpa:'예산 ÷ 목표 전환',g_cpe:'예산 ÷ 목표 참여',
+  /* 비율 */
+  ctr:'클릭 ÷ 노출',vtr:'조회 ÷ 노출',cvr:'전환 ÷ 클릭',etr:'참여 ÷ 노출',
+  roas:'매출 ÷ 소진금액',
+  imp_r:'노출 ÷ 목표 노출',click_r:'클릭 ÷ 목표 클릭',
+  view_r:'조회 ÷ 목표 조회',conv_r:'전환 ÷ 목표 전환',
+  spend_r:'소진금액 ÷ 예산',
+  progress:'오늘까지 지난 일수 ÷ 전체 집행 일수 (목표 페이스)',
+  bonusRate:'보너스 밸류 ÷ 예산',
+  /* 금액 */
+  budget:'단가 × 밸류 (= Gross 예산)',
+  net:'예산 × (1 − 대행사 수수료율 − 렙사 수수료율)',
+  cost:'입력한 Gross 소진비용의 합',
+  value:'예상 효율에 적은 판매 단위 수량',
+  period:'그 행에 걸린 라인들의 가장 이른 시작일 ~ 가장 늦은 종료일',
+  bid:'그 행에 걸린 라인들의 비드 타입 (여러 개면 함께 표시)'
+};
+const COL_NOTE={
+  cost:'Gross 기준입니다. Net 이 필요하면 수수료율로 역산합니다.',
+  budget:'모든 예산·소진 관련 값은 Gross 로 통일해 계산합니다.',
+  spend_r:'페이스 대비는 이 값에서 목표 페이스(진도율)를 뺀 %p 입니다.',
+  imp_r:'달성률은 기간 필터를 따릅니다 — 조회 기간의 실적 ÷ 그 기간의 목표.',
+  creative:'소재별 실적은 입력 시트에 적힌 소재 그대로 집계합니다. 시트에 소재를 적지 않은 날만 소재 비중으로 나눕니다.'
+};
+function openColDict(){
+  const KIND={in:'입력',calc:'계산'};
+  const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind}))
+    .concat([{k:'period',l:'기간',en:'period',cat:'기타',kind:'calc'},
+             {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}]);
+  const where=k=>{
+    const w=[];
+    const f=FLD[k];
+    if(!f){w.push('서머리');}
+    else{
+      if(f.dashOk)w.push('대시보드');
+      if(f.mixOk)w.push('미디어믹스');
+      if(f.kind==='in'&&f.dashOk&&!/^e_/.test(k)
+        &&!['date','start','end','startT','endT','budget','value','feeA','feeR','net'].includes(k))
+        w.push('데이터 입력');}
+    return w.join(' · ')||'–';};
+  const body=`<div class="hint" style="margin-bottom:10px">
+      화면에 쓸 수 있는 모든 열입니다. <b>계산</b> 열은 아래 식으로 그때그때 만들어지므로 따로 입력하지 않습니다.
+      단가·비율은 모두 <b>Gross 소진금액</b> 기준입니다.</div>
+    <div class="fld" style="margin-bottom:10px">
+      <input class="txt" id="cdQ" placeholder="이름 · 영문 · 계산식으로 검색" style="width:100%" autocomplete="off"></div>
+    <div class="tbl-wrap" style="max-height:52vh">
+      <table class="tbl lite" id="cdTbl"><thead><tr>
+        <th style="min-width:140px">열 이름</th><th style="min-width:110px">영문</th>
+        <th style="min-width:66px">구분</th><th style="min-width:74px">분류</th>
+        <th style="min-width:230px">계산식 · 설명</th><th style="min-width:150px">쓰이는 곳</th>
+      </tr></thead><tbody></tbody></table></div>`;
+  openModal('열 사전 — 전체 열과 계산식',body,
+    '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:940});
+  const tb=document.querySelector('#cdTbl tbody');
+  const draw=q=>{
+    const s=(q||'').trim().toLowerCase();
+    const hit=rows.filter(r=>!s||[r.l,r.en,r.k,r.cat,COL_FORMULA[r.k]||'',COL_NOTE[r.k]||'']
+      .join(' ').toLowerCase().includes(s));
+    tb.innerHTML=hit.map(r=>{
+      const fx=COL_FORMULA[r.k];
+      const nt=COL_NOTE[r.k];
+      const desc=fx?`<b class="mono" style="font-weight:700">${esc(fx)}</b>`
+        :(r.kind==='in'?'<span style="color:var(--ink2)">직접 입력하는 값</span>'
+                       :'<span style="color:var(--muted)">–</span>');
+      return `<tr><td style="text-align:left;font-weight:700">${esc(r.l)}</td>
+        <td style="text-align:left;color:var(--ink2)">${esc(r.en)}</td>
+        <td>${KIND[r.kind]||r.kind}</td><td>${esc(r.cat)}</td>
+        <td style="text-align:left;white-space:normal">${desc}
+          ${nt?`<div class="hint" style="margin-top:3px">${esc(nt)}</div>`:''}</td>
+        <td style="text-align:left;color:var(--ink2)">${esc(where(r.k))}</td></tr>`;}).join('')
+      ||'<tr><td colspan="6" class="hint" style="padding:16px">찾는 열이 없습니다</td></tr>';};
+  draw('');
+  const q=$('cdQ');
+  if(q){q.oninput=()=>draw(q.value);setTimeout(()=>q.focus(),40);}
+}
 /* 광고주·캠페인 관리는 **내 계정으로 로그인한 관리자**만.
    공유 링크(운영진 코드)로 들어온 화면에서는 열 수 없다. */
 function canManageAdv(){
@@ -1155,6 +1240,7 @@ function openSettingsHub(){
   box.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{
     const id=b.dataset.hub;
     if(id==='__adv'){if(typeof openAdvManage==='function')openAdvManage();return;}
+    if(id==='__cols'){openColDict();return;}
     const t=$(id);if(t&&t.onclick)t.onclick();});
 }
 (function initHub(){

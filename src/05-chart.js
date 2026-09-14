@@ -359,7 +359,8 @@ function renderDaily(){
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */
-const SUM_CATALOG=fieldCatalog('dash').concat([{g:'기타',cols:[{k:'period',l:'기간'}]}]);
+const SUM_CATALOG=fieldCatalog('dash').concat([{g:'기타',
+  cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]);
 const SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
 /* x: false = 정상 · 'ratio' = 예상값은 표시하되 비율은 의미가 없어 숨김 · 'all' = 예상값 전부 숨김 */
 const HA=x=>x==='all';
@@ -401,13 +402,20 @@ const SUM_CELL={};
   SUM_CELL.startT=()=>['–'];SUM_CELL.endT=()=>['–'];
   /* 기간 — 미디어믹스와 같은 M/D~M/D 표기 */
   SUM_CELL.period=(a,e,x)=>[HA(x)||!e.dstart?'–':`${mdy(e.dstart)}~${mdy(e.dend)}`];
+  /* 비드 타입 (v55) — 그 행의 라인들이 한 가지면 그대로, 여러 가지면 " · " 로 이어 붙인다.
+     소재·월처럼 라인보다 잘게 나뉜 행에서는 예상 효율과 같은 규칙으로 합쳐 보여 준다. */
+  SUM_CELL.bid=(a,e,x)=>{
+    const bs=(e&&e.bids)||[];
+    if(!bs.length)return ['<span class="na">–</span>'];
+    return [bs.length<=2?esc(bs.join(' · '))
+      :`<span title="${esc(bs.join(' · '))}">${esc(bs[0])} 외 ${bs.length-1}</span>`];};
   SUM_CELL.date=()=>['–'];
 })();
 /* 예상값이 들어가는 열 (소재 단위로 쪼개지면 위·아래 셀을 합쳐 표시) */
 SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
   ||/^g_cp/.test(f.k)
   ||['budget','net','value','bonus','bonusRate','feeA','feeR','spend_r','start','end','period'].includes(f.k))
-  .map(f=>f.k).concat(['period']));
+  .map(f=>f.k).concat(['period','bid']));
 /* 기본 표시 열 — 열설정북의 "대시보드/데이터입력 탭에 디펄트 표시" 기준 */
 /* 기본 열 구성 — 운영사항 / 노출 효율 / 클릭 효율 / 조회 효율 */
 const SUM_PRESET=()=>({

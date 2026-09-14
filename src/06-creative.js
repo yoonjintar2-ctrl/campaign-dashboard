@@ -65,6 +65,28 @@ function wireSegDrag(items,keys,dim,axis){
       clear();from=null;renderRaw();
       try{markDirty();saveLocal();}catch(x){}});});
 }
+/* 세로 세그먼트 순서를 한 칸씩 올리고 내리는 버튼 (v55).
+   끌어 놓기(wireSegDrag)만으로는 "순서를 바꿀 수 있다" 는 걸 알기 어려웠다. */
+function segMoveBy(dim,key,dir,keys){
+  const list=keys.slice();
+  const i=list.indexOf(key);if(i<0)return false;
+  const j=i+(dir==='up'?-1:1);
+  if(j<0||j>=list.length)return false;
+  list.splice(j,0,list.splice(i,1)[0]);
+  RAW_ORDER[dim]=list;
+  return true;
+}
+function wireSegMove(host,keys,dim){
+  if(!host)return;
+  host.querySelectorAll('[data-vmv]').forEach(b=>{
+    const k=b.dataset.k,i=keys.indexOf(k);
+    /* 맨 위·맨 아래에서는 더 갈 곳이 없으므로 흐리게 */
+    if((b.dataset.vmv==='up'&&i<=0)||(b.dataset.vmv==='dn'&&(i<0||i>=keys.length-1)))
+      b.disabled=true;
+    b.onclick=e=>{e.stopPropagation();
+      if(!segMoveBy(dim,k,b.dataset.vmv,keys))return;
+      renderRaw();try{markDirty();saveLocal();}catch(x){}};});
+}
 /* 화면에서 뺀 세그먼트 — 차원(매체/상품/…)마다 따로 기억한다 */
 let RAW_HIDE={};
 /* 그 차원에서 나올 수 있는 값 전부 — 예산 큰 순(+사용자 순서). all=false 면 숨긴 건 뺀다 */
@@ -104,11 +126,18 @@ function openSegPicker(){
       const cnt=host.querySelector(`[data-cnt="${CSS.escape(dim)}"]`);
       if(cnt)cnt.textContent=`${all.length-off.length} / ${all.length}`;
       if(!box)return;
-      box.innerHTML=all.map(v=>`<div class="dprow" draggable="true" data-k="${esc(v)}">
+      box.innerHTML=all.map((v,vi)=>`<div class="dprow" draggable="true" data-k="${esc(v)}">
           <span class="gr">⋮⋮</span>
           <label><input type="checkbox" ${off.indexOf(v)<0?'checked':''} data-ck="${esc(v)}"> ${esc(v)}</label>
+          <span class="segmv"><button class="mv" data-dmv="up" data-k="${esc(v)}"
+              ${vi===0?'disabled':''} title="위로 올리기">▲</button><button class="mv" data-dmv="dn"
+              data-k="${esc(v)}" ${vi===all.length-1?'disabled':''} title="아래로 내리기">▼</button></span>
           <span class="bd mono">${won(segWeight(dim,v,fs))}</span></div>`).join('')
         ||'<div class="hint" style="padding:10px">항목이 없습니다</div>';
+      /* 끌기 외에 버튼으로도 순서를 바꿀 수 있게 (v55) */
+      box.querySelectorAll('[data-dmv]').forEach(b=>b.onclick=e=>{e.stopPropagation();
+        if(!segMoveBy(dim,b.dataset.k,b.dataset.dmv,segValues(dim,true)))return;
+        renderRaw();draw();try{markDirty();saveLocal();}catch(x){}});
       box.querySelectorAll('[data-ck]').forEach(cb=>cb.onchange=()=>{
         const cur=new Set(RAW_HIDE[dim]||[]);
         if(cb.checked)cur.delete(cb.dataset.ck);else cur.add(cb.dataset.ck);
@@ -193,7 +222,13 @@ function renderRaw(){
       const t=el('div','subsec',wrapDiv);
       t.innerHTML=`<span>${esc(vb.all?'전체 합계':vb.val)}</span>`
         +`<span class="cnt">${days.length}일</span>`
-        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>':'');
+        +(vb.all?'<span class="hint">아래 세로 세그먼트들의 합계</span>'
+          /* 순서 바꾸기 — 끌어서도 되지만 눈에 보이는 버튼을 함께 둔다 (v55).
+             끌기만 있으면 순서를 바꿀 수 있다는 걸 알기 어렵다 */
+          :`<span class="segmv">`
+            +`<button class="mv" data-vmv="up" data-k="${esc(vb.val)}" title="위로 올리기">▲</button>`
+            +`<button class="mv" data-vmv="dn" data-k="${esc(vb.val)}" title="아래로 내리기">▼</button>`
+           +`</span>`);
       if(!vb.all)vDrag.push({el:t,key:vb.val});}
     /* 블록별 팩트 · 일자별 버킷 */
     const bf=blocks.map(bk=>bk.all?sub:sub.filter(f=>f[RAW_HSEG]===bk.val));
@@ -243,6 +278,7 @@ function renderRaw(){
   /* 가로 이동 버튼은 맨 위에 하나만 — 누르면 아래 블록들도 같이 움직인다 */
   if(hParts.length)mountHNav(hParts,blocks,hSegs,RAW_HSEG);
   wireSegDrag(vDrag,vSegs,RAW_SEG,'y');
+  wireSegMove(host,vSegs,RAW_SEG);
   const note=[`${totalRows}행`,`${cols.length}개 열`];
   if(vSegs.length)note.push(`세로 ${SEG_OPTS.find(s=>s.k===RAW_SEG).l} ${vSegs.length}개`);
   if(hSegs.length)note.push(`가로 ${SEG_OPTS.find(s=>s.k===RAW_HSEG).l} ${hSegs.length}개`);
@@ -625,10 +661,30 @@ function mergeCreatives(list,mode){
   out.forEach(o=>{if(o.medias.length>1)o.media=o.medias.join(' · ');});
   return out;
 }
+/* 효율 우수 소재 전용 매체 고르기 (v55) — 대시보드 공통 필터와 별개로,
+   "이 매체에서는 어떤 소재가 잘 돌았나" 를 바로 볼 수 있게 한다. 뷰어도 쓸 수 있다. */
+const crMediaPool=()=>[...new Set(CREATIVES
+  .filter(c=>['segment','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
+  .map(c=>c.media))].filter(Boolean).sort((a,b)=>mediaBudget(b)-mediaBudget(a));
+function renderCrMediaSel(){
+  const s=$('crMediaSel');if(!s)return;
+  const pool=crMediaPool();
+  /* 공통 필터로 매체가 이미 하나로 좁혀져 있으면 이 드롭다운은 의미가 없다 */
+  if(FILTER.media!=='all'){CR_FILTER.media='all';s.parentNode&&s.classList.add('hidden');}
+  else s.classList.remove('hidden');
+  const hint=s.previousElementSibling;
+  if(hint&&hint.classList.contains('hint'))hint.classList.toggle('hidden',FILTER.media!=='all');
+  if(CR_FILTER.media!=='all'&&!pool.includes(CR_FILTER.media))CR_FILTER.media='all';
+  s.innerHTML=`<option value="all">전체 매체</option>`
+    +pool.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  s.value=CR_FILTER.media||'all';
+}
 function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
+  const mSel=CR_FILTER.media&&CR_FILTER.media!=='all'?CR_FILTER.media:null;
   let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+    &&(!mSel||c.media===mSel)
     &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
@@ -741,9 +797,14 @@ function wireCrPlay(thumb,c){
 function renderCreatives(){
   const host=$('creatives');if(!host)return;
   host.innerHTML='';
+  renderCrMediaSel();
   const pool=filteredCreatives();
   if(!pool.length){
-    host.innerHTML='<div class="card"><div class="bd hint">조건에 맞는 소재가 없습니다.</div></div>';return;}
+    host.innerHTML='<div class="card"><div class="bd hint">'
+      +(CR_FILTER.media&&CR_FILTER.media!=='all'
+        ? `${esc(CR_FILTER.media)} 에서 집행된 소재가 없습니다.`
+        : '조건에 맞는 소재가 없습니다.')
+      +'</div></div>';return;}
   /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
   const live=crRanksLive();
@@ -1200,8 +1261,14 @@ const creativeBudget=c=>{
   const ids=Array.isArray(c.lids)?c.lids:[c.lid];
   return sum(ids.map(id=>{const l=LINES.find(x=>x.id===id);
     if(!l)return 0;
-    const n=CREATIVES.filter(x=>x.lid===l.id).length||1;
-    return lineGross(l)/n;}));};
+    const cs=CREATIVES.filter(x=>x.lid===l.id);
+    if(!cs.length)return 0;
+    /* 소재별 실적이 있으면 그 비중대로 나눈다 — 예전에는 늘 고르게 나눠서
+       실제로는 안 돈 소재도 예산을 가진 것처럼 정렬됐다 (v55) */
+    const tot=sum(cs.map(x=>+x.share||0));
+    const me=cs.find(x=>x.id===c.id)||cs.find(x=>dimKey(x.name)===dimKey(c.name));
+    if(tot>0&&me)return lineGross(l)*((+me.share||0)/tot);
+    return lineGross(l)/cs.length;}));};
 /* 차원별 정렬 키 (클수록 위) — 없으면 null 로 두고 이름순을 쓴다 */
 function ganttRank(dim,val,c){
   if(dim==='media')return mediaBudget(val);

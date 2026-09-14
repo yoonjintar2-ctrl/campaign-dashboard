@@ -194,6 +194,10 @@ body[data-mode="sample"] #cloudSave{display:none !important}
 .campselwrap>.cv{position:absolute;right:9px;top:50%;transform:translateY(-50%);
   font-size:10px;color:var(--muted);pointer-events:none;font-style:normal}
 .campselwrap>select#campSel:disabled+.cv{opacity:.3}
+/* 베타 표기 (v55) — 캠페인 드롭다운 바로 오른쪽에 작고 연하게 */
+.betatag{font-size:10.5px;font-weight:600;letter-spacing:-.2px;color:var(--muted);
+  opacity:.72;white-space:nowrap;margin-left:2px;align-self:center;cursor:default;
+  border:1px solid var(--line);border-radius:999px;padding:1px 7px 2px;background:transparent}
 /* ⚙ 통합 설정 */
 .gearbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
   background:var(--surface);color:var(--ink2);cursor:pointer;display:flex;align-items:center;
@@ -491,6 +495,13 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 [data-theme="dark"] .kpilgd.soft>i{background:rgba(200,130,120,.14);
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.3)}
 .subsec{font-size:15.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;margin:6px 0 9px}
+/* 세로 세그먼트 순서 바꾸기 버튼 (v55) — 끌어 놓기만으로는 알아채기 어려워 함께 둔다 */
+.segmv{display:inline-flex;gap:2px}
+.segmv>.mv{border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  width:22px;height:20px;line-height:1;border-radius:5px;cursor:pointer;font-size:9px;
+  padding:0;display:inline-flex;align-items:center;justify-content:center;font-family:inherit}
+.segmv>.mv:hover:not(:disabled){background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
+.segmv>.mv:disabled{opacity:.3;cursor:default}
 .subsec .cnt{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);border-radius:6px;padding:2px 8px}
 /* 섹션 제목 바로 아래 붙는 버튼 줄 */
 .secbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px}
@@ -1042,11 +1053,10 @@ table.tbl td.kpicol.kpibad{background:rgba(190,110,100,.15)!important;color:#8f4
   box-shadow:inset 0 0 0 1.5px rgba(190,110,100,.5)}
 /* KPI 가 아닌 단가 열 — 제안보다 비싸면 **은은하게만** (v53).
    KPI 열(테두리 + 진한 배경)보다 한 단계 약해야 우선순위가 읽힌다. */
-table.tbl td.costbad{color:#9c554c;background:rgba(190,110,100,.07)!important}
-table.tbl tr.total td.costbad{color:#f0b8b0;background:rgba(255,255,255,.08)!important}
-[data-theme="dark"] table.tbl td.costbad{color:#d59a92;background:rgba(200,130,120,.10)!important}
+table.tbl td.costbad{color:#9c554c}
+[data-theme="dark"] table.tbl td.costbad{color:#d59a92}
 [data-theme="dark"] table.tbl tr.total td.costbad{color:#eeb2aa}
-[data-theme="dark"] table.tbl td.kpicol.kpibad{background:rgba(200,130,120,.2)!important;color:#f0b3aa;
+[data-theme="dark"] table.tbl td.kpicol.kpibad{color:#f0b3aa;
   box-shadow:inset 0 0 0 1.5px rgba(200,130,120,.44)}
 /* 값이 아예 없는 칸 — 옅은 회색 바탕으로 "해당 없음"을 분명히 */
 /* 값이 없는 칸도 배경은 그 행의 색 그대로 — 열마다 배경이 달라 보이지 않게 한다(함정 2).
@@ -1064,6 +1074,16 @@ table.tbl tr.sub.sub-l0 td,table.tbl tbody tr.sub.sub-l0:hover td{background:var
 table.tbl tr.sub.sub-l1 td,table.tbl tbody tr.sub.sub-l1:hover td{background:var(--sub1) !important}
 table.tbl tr.sub.sub-l2 td,table.tbl tbody tr.sub.sub-l2:hover td{background:var(--sub2) !important}
 table.tbl tr.sub.sub-l3 td,table.tbl tbody tr.sub.sub-l3:hover td{background:var(--sub3) !important}
+/* ⚠ 강조 칸의 붉은 기가 들어간 자리는 background-color 가 아니라 background-image 다 (v55).
+   예전에는 rgba 배경을 그냥 올려서 그 칸만 행 색(var(--tot) · var(--sub*)) 을
+   통째로 덮어쌀다 — TOTAL · 소계 줄에 큰 칸이 뚫린 것처럼 보이던 원인.
+   background-image 는 행 배경 위에 쌓이므로 어느 줄에서든 색이 유지된다.
+   (행 규칙의 background 단축이 background-image 를 none 으로 되돌리므로 반드시 그 뒤에 둔다) */
+table.tbl td.costbad{background-image:linear-gradient(rgba(190,110,100,.10),rgba(190,110,100,.10))!important}
+table.tbl tr.total td.costbad{background-image:linear-gradient(rgba(255,255,255,.17),rgba(255,255,255,.17))!important}
+table.tbl td.kpicol.kpibad{background-image:linear-gradient(rgba(190,110,100,.17),rgba(190,110,100,.17))!important}
+[data-theme="dark"] table.tbl td.costbad{background-image:linear-gradient(rgba(200,130,120,.13),rgba(200,130,120,.13))!important}
+[data-theme="dark"] table.tbl td.kpicol.kpibad{background-image:linear-gradient(rgba(200,130,120,.22),rgba(200,130,120,.22))!important}
 /* 소계가 연달아 나오면 위 칸과 붙어 보이므로 단계가 바뀌는 지점에 선을 하나 넣는다 */
 table.tbl tr.sub.sub-l0>td{border-top:2px solid var(--gline)}
 table.tbl tr.drag td{cursor:grab}

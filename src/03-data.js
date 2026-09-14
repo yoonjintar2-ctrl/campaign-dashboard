@@ -223,6 +223,40 @@ function splitExact(total,ks){
     for(let j=0;rest<0&&j<order.length;j++,rest++)if(fl[order[j][1]]>0)fl[order[j][1]]--;}
   return fl.map(v=>neg?-v:v);
 }
+/* 이름 비교용 열쇠 — p7 의 dimKey 와 같은 규칙이지만 이 파일에서 먼저 쓰이므로 따로 둔다 */
+const CKEY=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' ');
+/* 그 날 소재별 배분에 쓸 "지표별 가중치" 를 낸다 (v55).
+   · 입력 시트에 소재까지 적혀 있으면(l.cdaily) 적힌 숫자를 지표마다 따로 쓴다
+     → 같은 라인 안이라도 소재마다 CTR · CPC 가 실제대로 갈린다
+   · 적혀 있지 않으면 예전처럼 소재 비중(share)으로 나눈다
+   예전에는 항상 share 하나로만 나눠서
+   ① 한 라인의 소재가 전부 같은 효율로 나왔고
+   ② 시트에 소재가 하나만 적혀 있어도 등록된 소재 수만큼 쪼개졌다
+      (크리테오 키비주얼 1개 → 3개로 보이던 문제) */
+function crWeights(l,cs,i){
+  const det=l&&l.cdaily;
+  if(det&&l.cdet&&l.cdet[i]){
+    const col=m=>cs.map(c=>{const s=det[CKEY(c.name)];
+      return s&&Array.isArray(s[m])?(+s[m][i]||0):0;});
+    const cand={};
+    AMET.forEach(m=>{const a=col(m);if(sum(a)>0)cand[m]=a;});
+    /* 어떤 지표에 소재별 숫자가 없으면 노출(없으면 있는 것 아무거나) 비중을 따른다 */
+    const base=cand.imp||cand.net||cand.click||cand.view||AMET.map(m=>cand[m]).find(Boolean);
+    if(base){
+      const w={};
+      AMET.forEach(m=>w[m]=cand[m]||base);
+      w.cost=cand.net||base;
+      return w;}}
+  let act=cs.filter(c=>Array.isArray(c.run)&&c.run.some(([a,b])=>i>=a&&i<=b));
+  /* 그 날 게재 중인 소재가 하나도 없으면 소재 기간이 잘못 잡힌 것이다.
+     실적을 0 으로 지우지 말고 그 라인의 모든 소재에 비중대로 나눠 담는다.
+     (소재 run 이 [[0,0]] 로 갇혀 이튿날부터 실적이 통째로 사라지던 문제) */
+  if(!act.length)act=cs;
+  const tot=sum(act.map(c=>c.share))||1;
+  const k0=cs.map(c=>act.includes(c)?(c.share/tot):0);
+  const w={};AMET.concat(['cost']).forEach(m=>w[m]=k0);
+  return w;
+}
 function buildFacts(){
   FACTS=[];
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
@@ -240,18 +274,14 @@ function buildFacts(){
         f.cost=toGross(f.net,feeOf(l));
         FACTS.push(f);
         continue;}
-      let act=cs.filter(c=>Array.isArray(c.run)&&c.run.some(([a,b])=>i>=a&&i<=b));
-      /* 그 날 게재 중인 소재가 하나도 없으면 소재 기간이 잘못 잡힌 것이다.
-         실적을 0 으로 지우지 말고 그 라인의 모든 소재에 비중대로 나눠 담는다.
-         (소재 run 이 [[0,0]] 로 갇혀 이튿날부터 실적이 통째로 사라지던 문제) */
-      if(!act.length)act=cs;
-      const tot=sum(act.map(c=>c.share))||1;
-      /* 소재별 비중 — 나눈 값의 합이 라인 값과 정확히 같도록 splitExact 로 배분한다 */
-      const ks=cs.map(c=>act.includes(c)?(c.share/tot):0);
+      const wt=crWeights(l,cs,i);
+      /* 가중치를 합 1 로 맞춘 뒤, 나눈 값의 합이 라인 값과 정확히 같도록 splitExact 로 배분한다.
+         → 소재별 숫자를 그대로 쓰면서도 "소재 합계 = 라인 합계" 는 항상 지켜진다 */
+      const norm=a=>{const t=sum(a)||1;return a.map(v=>(+v||0)/t);};
       const part={};
-      AMET.forEach(m=>{part[m]=splitExact((l.daily[m]&&l.daily[m][i])||0,ks);});
+      AMET.forEach(m=>{part[m]=splitExact((l.daily[m]&&l.daily[m][i])||0,norm(wt[m]));});
       /* 소진비용도 Gross 를 먼저 만든 뒤 나눈다 — 소재마다 따로 역산하면 합이 안 맞는다 */
-      part.cost=splitExact(toGross((l.daily.net&&l.daily.net[i])||0,feeOf(l)),ks);
+      part.cost=splitExact(toGross((l.daily.net&&l.daily.net[i])||0,feeOf(l)),norm(wt.cost));
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
@@ -412,7 +442,10 @@ const zeroB=()=>{const b={cost:0};AMET.forEach(m=>b[m]=0);return b;};
 const aggFacts=fs=>{const b=zeroB();fs.forEach(f=>{AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});return b;};
 const aggExp=ls=>{const b=zeroB();b.budget=0;b.value=0;b.netSum=0;b.bonusSum=0;
   b.dstart=null;b.dend=null;let wa=0,wr=0;
+  /* 비드 타입은 더할 수 없는 값이라 "그 행에 걸린 라인들의 비드 타입 모음" 으로 들고 간다 (v55) */
+  b.bids=[];
   ls.forEach(l=>{Object.keys(l.e).forEach(m=>b[m]=(b[m]||0)+l.e[m]);
+    if(l.bid&&b.bids.indexOf(l.bid)<0)b.bids.push(l.bid);
     const gr=lineGross(l);b.cost+=gr;b.budget+=gr;b.value+=lineValue(l);
     b.netSum+=lineNet(l);b.bonusSum+=(l.bonus||0);
     wa+=gr*(+l.feeA||0);wr+=gr*(+l.feeR||0);

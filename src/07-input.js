@@ -37,16 +37,23 @@ function mergeCols(saved,def){
 }
 const numKeys=()=>SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k);
 const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
-let SHEET=LINES.map(l=>{
-  const idx=ELAPSED-1,v=l.daily.view[idx];
+/* 샘플 시트 — 마지막 날짜를 소재별로 한 줄씩 넣는다.
+   실제 매체 리포트도 소재 단위로 내려오고, 이렇게 적어야 소재별 효율이
+   시트에 적힌 그대로 대시보드에 잡힌다 (v55 — 예전에는 라인당 한 줄이라
+   그 날의 실적이 첫 번째 소재 하나로 몰렸다). */
+let SHEET=LINES.flatMap(l=>{
+  const idx=ELAPSED-1,fee=feeOf(l);
   const cs=CREATIVES.filter(c=>c.lid===l.id);
-  return {date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,line:l.line,
-    creative:cs.length?cs[0].name:'',cost:Math.round(toGross(l.daily.net[idx],feeOf(l))),
-    imp:l.daily.imp[idx],click:l.daily.click[idx],view:v,eng:l.daily.eng[idx],conv:l.daily.conv[idx],
-    lead:l.daily.lead[idx],install:l.daily.install[idx],rev:l.daily.rev[idx],
-    like:l.daily.like[idx],share:l.daily.share[idx],
-    v3:l.daily.v3[idx],v15:l.daily.v15[idx],v30:l.daily.v30[idx],
-    v25:l.daily.v25[idx],v50:l.daily.v50[idx],v75:l.daily.v75[idx],v100:l.daily.v100[idx]};});
+  const base={date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,
+    slot:l.slot||'',target:l.target,line:l.line};
+  if(!cs.length){
+    const r={...base,creative:'',cost:Math.round(toGross(l.daily.net[idx]||0,fee))};
+    AMET.forEach(m=>{if(m!=='net')r[m]=l.daily[m][idx]||0;});
+    return [r];}
+  return cs.map(c=>{
+    const r={...base,creative:c.name,cost:Math.round(c.daily.cost[idx]||0)};
+    AMET.forEach(m=>{if(m!=='net')r[m]=c.daily[m][idx]||0;});
+    return r;});});
 const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
@@ -558,18 +565,40 @@ document.addEventListener('keydown',e=>{
    · 시트에 나오는 (라인 × 날짜) 칸만 덮어쓴다 — 적지 않은 날의 값은 건드리지 않는다 */
 function applySheet(){
   const bucket=new Map();
+  /* 라인 × 날짜 × 소재 — 소재별 실적을 적힌 그대로 담아 둔다 (v55) */
+  const cbucket=new Map();
+  const crName=new Map();                 /* 소재 열쇠 → 시트에 적힌 표기 */
+  const zeroV=()=>{const v={};AMET.forEach(m=>v[m]=0);return v;};
+  const addV=(v,r,fee,w)=>{AMET.forEach(m=>{
+    let x=+r[m]||0;
+    /* Gross 소진비용 → Net */
+    if(m==='net'&&!x&&r.cost)x=(+r.cost||0)*(1-fee);
+    if(x)v[m]+=x*w;});};
   SHEET.forEach(r=>{
     const l=rowLine(r);if(!l)return;
     const i=dIdx(r.date);if(!(i>=0&&i<TOTAL_DAYS))return;
+    const fee=feeOf(l);
     const k=l.id+'\u0001'+i;
     let b=bucket.get(k);
-    if(!b){b={l,i,v:{}};AMET.forEach(m=>b.v[m]=0);bucket.set(k,b);}
-    const fee=feeOf(l);
-    AMET.forEach(m=>{
-      let x=+r[m]||0;
-      /* Gross 소진비용 → Net */
-      if(m==='net'&&!x&&r.cost)x=(+r.cost||0)*(1-fee);
-      if(x)b.v[m]+=x;});});
+    if(!b){b={l,i,v:zeroV()};bucket.set(k,b);}
+    addV(b.v,r,fee,1);
+    /* 소재 칸이 비어 있는 행은 소재별 집계에서 뺀다 — 그 날 다른 행에 소재가 적혀 있으면
+       라인 합계를 소재 비율대로 다시 나눠 담으므로 숫자가 사라지지는 않는다 */
+    const cn=String(r.creative==null?'':r.creative).trim();
+    if(!cn)return;
+    /* 한 칸에 여러 소재를 몰아 적었으면(등록된 이름들의 조합) 고르게 나눈다 */
+    let names=[cn];
+    const reg=lineCreatives(l);
+    if(!reg.some(x=>dimKey(x)===dimKey(cn))){
+      const parts=parseMulti(cn);
+      if(parts.length>1&&parts.every(p=>reg.some(x=>dimKey(x)===dimKey(p))))names=parts;}
+    names.forEach(nm=>{
+      const ck=dimKey(nm);
+      if(!crName.has(ck))crName.set(ck,nm);
+      const k2=k+'\u0001'+ck;
+      let b2=cbucket.get(k2);
+      if(!b2){b2={l,i,ck,v:zeroV()};cbucket.set(k2,b2);}
+      addV(b2.v,r,fee,1/names.length);});});
   const touched=new Set();
   bucket.forEach(b=>{
     touched.add(b.l);
@@ -578,19 +607,39 @@ function applySheet(){
       while(b.l.daily[m].length<TOTAL_DAYS)b.l.daily[m].push(0);
       b.l.daily[m][b.i]=b.v[m];});});
   touched.forEach(l=>AMET.forEach(m=>{l.a[m]=sum(l.daily[m]||[]);}));
-  /* 한 라인을 소재별로 나눠 적었으면 그 비중을 소재 배분에 반영한다 */
+  /* ---- 소재별 실적 (v55) ----
+     예전에는 라인 합계만 담고 소재 비중(share) 하나로 나눠 추정했다. 그래서
+     ① 같은 라인 안의 소재가 전부 같은 CTR · CPC 로 나왔고
+     ② 시트에 소재가 하나만 적혀 있어도 등록된 소재 수만큼 쪼개졌다
+        (크리테오 키비주얼 1개가 3개로 보이던 문제)
+     이제는 적힌 숫자를 그대로 날짜별로 들고 있다가 buildFacts 에서 지표마다 따로 쓴다. */
+  LINES.forEach(l=>{l.cdaily=null;l.cdet=null;});
+  cbucket.forEach(b=>{
+    const l=b.l;
+    if(!l.cdaily){l.cdaily={};l.cdet=new Array(TOTAL_DAYS).fill(false);}
+    let st=l.cdaily[b.ck];
+    if(!st){st={};AMET.forEach(m=>st[m]=new Array(TOTAL_DAYS).fill(0));l.cdaily[b.ck]=st;}
+    AMET.forEach(m=>{st[m][b.i]+=b.v[m];});
+    l.cdet[b.i]=true;});
+  /* 시트에만 있고 예상 효율에는 없는 소재도 자리를 만들어 준다 —
+     안 그러면 그 소재의 실적이 다른 소재로 잘못 넘어간다 */
   touched.forEach(l=>{
-    const rows=SHEET.filter(r=>rowLine(r)===l);
-    const byCr=new Map();
-    rows.forEach(r=>{const n2=dimKey(r.creative);if(!n2)return;
-      byCr.set(n2,(byCr.get(n2)||0)+(+r[kpiOf(l)]||+r.imp||0));});
-    if(byCr.size>1){
-      const cs=CREATIVES.filter(c=>c.lid===l.id);
-      const tot=sum([...byCr.values()]);
-      if(tot>0&&cs.length){
-        cs.forEach(c=>{const v=byCr.get(dimKey(c.name));if(v!=null)c.share=v/tot;});
-        const s2=sum(cs.map(c=>+c.share||0));
-        if(s2>0)cs.forEach(c=>c.share=(+c.share||0)/s2);}}});
+    if(!l.cdaily)return;
+    Object.keys(l.cdaily).forEach(ck=>{
+      if(!AMET.some(m=>sum(l.cdaily[ck][m])>0))return;
+      ensureCreative(l,crName.get(ck)||ck);});});
+  /* 전체 비중(share) 도 소재별 실적에 맞춰 둔다 —
+     소재가 적히지 않은 날의 배분과 예산 정렬에 쓰인다 */
+  touched.forEach(l=>{
+    if(!l.cdaily)return;
+    const cs=CREATIVES.filter(c=>c.lid===l.id);
+    if(!cs.length)return;
+    const base=kpiOf(l);
+    const wOf=c=>{const st=l.cdaily[dimKey(c.name)];
+      if(!st)return 0;
+      return sum(st[base]||[])||sum(st.imp||[])||sum(st.net||[])||0;};
+    const ws=cs.map(wOf),tot=sum(ws);
+    if(tot>0)cs.forEach((c,i2)=>c.share=ws[i2]/tot);});
   buildFacts();
   return touched.size;
 }

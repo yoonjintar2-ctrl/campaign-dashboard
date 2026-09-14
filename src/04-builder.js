@@ -96,13 +96,30 @@ function syncR2Top(tbl){
   if(h>0&&h!==tbl.__r2h){tbl.__r2h=h;tbl.style.setProperty('--r2top',h+'px');}
 }
 /* 표마다 하나씩 붙는 떠 있는 머리글 막대 */
+/* 떨어져 나간 표의 떠 있는 머리글 막대를 걷어 낸다 (v55).
+   ⚠ 표를 다시 그리면 <table> 요소 자체가 새로 만들어진다. 예전에는 새 표에 __fhBar 가 없으니
+   막대를 새로 만들기만 하고 **이전 막대는 body 에 그대로 남겨 두었다.**
+   그래서 ① .ghfix 가 렌더할 때마다 두 개씩 쌓이고
+        ② 다시 그린 직후에는 이전 막대와 새 막대가 **함께 떠서** 열 너비가 다른 머리글이 겹쳐
+           서머리 왼쪽 위가 흰 칸처럼 깨져 보였다
+        ③ __fhList 에 쌓인 옛 place() 가 스크롤마다 전부 돌아 점점 느려졌다 */
+function fhPrune(){
+  if(!window.__fhList)window.__fhList=[];
+  document.querySelectorAll('.ghfix').forEach(bar=>{
+    const t=bar.__fhTbl;
+    if(t&&t.isConnected&&t.closest('.tbl-wrap'))return;
+    const pl=bar.__fhPlace;
+    if(pl){const i=window.__fhList.indexOf(pl);if(i>=0)window.__fhList.splice(i,1);}
+    bar.remove();});
+}
 function mountFloatHead(tbl){
   const wrap=tbl.closest('.tbl-wrap');if(!wrap||!tbl.tHead)return;
+  if(!window.__fhList){window.__fhList=[];
+    const run=()=>window.__fhList.forEach(f=>{try{f();}catch(e){}});
+    addEventListener('scroll',run,true);addEventListener('resize',run);}
+  fhPrune();
   let bar=tbl.__fhBar;
-  if(!bar){bar=el('div','ghfix',document.body);tbl.__fhBar=bar;
-    if(!window.__fhList){window.__fhList=[];
-      const run=()=>window.__fhList.forEach(f=>{try{f();}catch(e){}});
-      addEventListener('scroll',run,true);addEventListener('resize',run);}}
+  if(!bar){bar=el('div','ghfix',document.body);tbl.__fhBar=bar;bar.__fhTbl=tbl;}
   bar.innerHTML='';
   const inner=el('div','inner',bar);
   const clone=document.createElement('table');
@@ -163,7 +180,7 @@ function mountFloatHead(tbl){
     inner.scrollLeft=wrap.scrollLeft;};
   wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
   if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
-  tbl.__fhPlace=place;window.__fhList.push(place);
+  tbl.__fhPlace=place;bar.__fhPlace=place;window.__fhList.push(place);
   syncR2Top(tbl);
   setTimeout(place,0);setTimeout(place,320);
 }

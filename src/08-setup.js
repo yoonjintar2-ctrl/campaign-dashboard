@@ -105,6 +105,25 @@ function setLineCreatives(l,names){
   cs.forEach(c=>c.share=1/Math.max(cs.length,1));
   buildFacts();
 }
+/* 입력 시트에만 나오는 소재를 그 라인에 조용히 등록한다 (v55).
+   setLineCreatives 와 달리 기존 소재를 지우거나 비중을 초기화하지 않는다 —
+   불러오기 도중에 쓰이므로 이미 담아 둔 소재별 실적을 건드리면 안 된다. */
+function ensureCreative(l,name){
+  const nm=String(name==null?'':name).trim();
+  if(!l||!nm)return null;
+  const ck=dimKey(nm);
+  let c=CREATIVES.find(x=>x.lid===l.id&&dimKey(x.name)===ck);
+  if(c)return c;
+  c={id:uid(),lid:l.id,name:nm,
+     type:/9:16|story|reels|영상|video|vod/i.test(nm)?'video':'image',
+     ratio:'16:9',g:GRADS[CREATIVES.length%GRADS.length],
+     run:[[0,Math.max(TOTAL_DAYS-1,0)]],share:0};
+  try{if(typeof crAssetApply==='function')crAssetApply(c);}catch(e){}
+  CREATIVES.push(c);
+  if(Array.isArray(l.creatives)){
+    if(!l.creatives.some(n=>dimKey(n)===ck))l.creatives.push(nm);}
+  return c;
+}
 function setLineTargets(l,names){
   names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
   l.targets=names;
@@ -987,6 +1006,10 @@ function buildSelects(){
     am.onclick=()=>{CR_ALL_MEDIA=!CR_ALL_MEDIA;
       am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();
       try{markDirty();saveLocal();}catch(e){}};}
+  /* 효율 우수 소재 — 매체 고르기 (뷰어도 쓸 수 있게 agency-only 를 붙이지 않는다) */
+  const cm=$('crMediaSel');
+  if(cm)cm.onchange=e=>{CR_FILTER.media=e.target.value||'all';
+    renderCreatives();try{markDirty();saveLocal();}catch(x){}};
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
   const gs=$('ganttSort');
   if(gs){gs.value=GANTT_SORT;

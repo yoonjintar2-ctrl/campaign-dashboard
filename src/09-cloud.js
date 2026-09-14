@@ -49,7 +49,9 @@ function serializeDoc(){
       /* 배경 로고 — 'none'(앰비언트) · 'adv'(광고주) · 'agency'(대행사). 캠페인마다 따로 */
       bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
       agencyLogo:CAMPAIGN.agencyLogo||''},
-    lines:LINES.map(l=>{const o={...l};delete o.daily;return o;}),
+    /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
+       (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
+    lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;return o;}),
     creatives:CREATIVES.map(stripCr),
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
     crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
@@ -69,6 +71,8 @@ function serializeDoc(){
            donutHide:(typeof DONUT_HIDE!=='undefined'?DONUT_HIDE:{}),
            /* 효율 우수 소재 — 매체 구분 없이 비교 토글 · 표시 기준(CTR 등) */
            crAllMedia:(typeof CR_ALL_MEDIA!=='undefined'?!!CR_ALL_MEDIA:false),
+           /* 효율 우수 소재 — 매체 고르기 (v55) */
+           crMedia:(typeof CR_FILTER!=='undefined'?(CR_FILTER.media||'all'):'all'),
            crRankOn:(typeof CR_RANK_ON!=='undefined'?CR_RANK_ON:null),
            ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
@@ -153,6 +157,7 @@ function applyDoc(d,keepToday){
   if(v.rawHide&&typeof RAW_HIDE!=='undefined')RAW_HIDE=v.rawHide;
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
+  if(typeof v.crMedia==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.media=v.crMedia;
   if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
   if(v.ganttSort&&typeof GANTT_SORT!=='undefined')GANTT_SORT=v.ganttSort;
   /* 저장해 둔 토글·기준을 화면 컨트롤에도 되돌려 놓는다 */
