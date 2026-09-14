@@ -82,6 +82,8 @@ function serializeDoc(){
            /* 일자별 효율 비교의 두 토글 — 예상 효율선 · 남은 기간 예측 (v51) */
            bench:(typeof SHOW_BENCH!=='undefined'?!!SHOW_BENCH:true),
            forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
+           /* 일자별 효율 비교 그래프 전용 필터 (v54) */
+           dailyFilt:(typeof DAILY_FILT!=='undefined'?{...DAILY_FILT}:null),
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
            sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
@@ -172,6 +174,10 @@ function applyDoc(d,keepToday){
   if(typeof v.forecast==='boolean'&&typeof SHOW_FORECAST!=='undefined')SHOW_FORECAST=v.forecast;
   try{const bt=$('benchToggle');if(bt)bt.classList.toggle('on',SHOW_BENCH);
       const ft=$('fcToggle');if(ft)ft.classList.toggle('on',SHOW_FORECAST);}catch(e){}
+  /* 일자별 효율 비교 그래프 전용 필터 (v54) */
+  if(v.dailyFilt&&typeof DAILY_FILT!=='undefined'){
+    DAILY_FILT={segment:'',media:'',product:'',...v.dailyFilt};
+    try{paintDailyFiltBtn();}catch(e){}}
   if(Array.isArray(v.sectOrder)&&typeof SECT_ORDER!=='undefined')SECT_ORDER=v.sectOrder.slice();
   if(Array.isArray(v.hidden)&&typeof HIDDEN!=='undefined'){
     HIDDEN.clear();v.hidden.forEach(k=>HIDDEN.add(k));}
@@ -850,6 +856,9 @@ function clearWorkState(){
   /* 다른 캠페인의 운영 코멘트가 남지 않게 (v51) */
   try{const e=$('cmtBody');if(e)e.innerHTML='';
       const cs=$('cmtState');if(cs)cs.textContent='';}catch(e){}
+  /* 그래프 전용 필터도 캠페인마다 새로 (다른 캠페인에 없는 값이 걸려 있으면 빈 그래프가 된다) */
+  try{if(typeof DAILY_FILT!=='undefined'){DAILY_FILT={segment:'',media:'',product:''};
+      if(typeof paintDailyFiltBtn==='function')paintDailyFiltBtn();}}catch(e){}
   try{DIRTY_AT=null;}catch(e){}
   try{LINE_DIRTY=null;}catch(e){}
 }

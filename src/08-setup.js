@@ -1177,6 +1177,8 @@ $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.
   renderDaily();markDirty();};
 $('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);
   renderDaily();markDirty();};
+/* 그래프 전용 필터 (v54) — 이 그래프만 구분·매체·광고상품으로 좁혀 본다 */
+if($('dailyFiltBtn'))$('dailyFiltBtn').onclick=e=>{e.stopPropagation();openDailyFilt($('dailyFiltBtn'));};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};
 $('addIssue').onclick=()=>{
   ISSUES.push({s:YESTERDAY,e:YESTERDAY,scope:'전체',type:'기타',txt:''});

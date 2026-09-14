@@ -77,13 +77,83 @@ function wireDailyLegendDrag(lg,keys){
       clear();from=null;renderDaily();
       try{markDirty();saveLocal();}catch(x){}});});
 }
+/* ---------- 일자별 효율 비교 — 그래프 전용 필터 (v54) ----------
+   위쪽 조회 필터와 별개로, **이 그래프만** 특정 구분 · 매체 · 광고상품으로 좁혀 본다.
+   빈 문자열 = 전체. 문서(views.dailyFilt)에 저장된다. */
+const DAILY_FILT_DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'}];
+let DAILY_FILT={segment:'',media:'',product:''};
+const dailyFiltOn=()=>DAILY_FILT_DIMS.filter(d=>DAILY_FILT[d.k]).length;
+const dailyPass=o=>DAILY_FILT_DIMS.every(d=>!DAILY_FILT[d.k]||o[d.k]===DAILY_FILT[d.k]);
+/* 그래프에 쓰이는 라인도 같은 기준으로 좁힌다 — 예상값·예상 효율선이 따로 놀지 않게 */
+const dailyLines=()=>activeLines().filter(dailyPass);
+function paintDailyFiltBtn(){
+  const b=$('dailyFiltBtn');if(!b)return;
+  const n=dailyFiltOn();
+  b.classList.toggle('on',!!n);
+  b.textContent=n?'▼ 필터 '+n:'▼ 필터';
+  b.title=n
+    ? DAILY_FILT_DIMS.filter(d=>DAILY_FILT[d.k]).map(d=>`${d.l} ${DAILY_FILT[d.k]}`).join(' · ')
+      +' — 이 그래프에만 적용됩니다'
+    : '특정 구분 · 매체 · 광고상품만 그래프에 표시합니다';
+}
+/* 값 목록은 **지금 조회 기간에 실제로 있는 것**에서 뽑는다 (없는 값을 고르게 두지 않는다) */
+function dailyFiltVals(k){
+  const src=factFilter();
+  return [...new Set(src.map(f=>f[k]).filter(v=>v!==undefined&&v!==null&&v!==''))]
+    .sort((a,b)=>String(a).localeCompare(String(b),'ko',{numeric:true}));
+}
+function openDailyFilt(btn){
+  if(typeof closeTblMenu==='function')closeTblMenu();
+  document.querySelectorAll('.thpop').forEach(p=>p.remove());
+  const draft={...DAILY_FILT};
+  const pop=document.createElement('div');
+  pop.className='thpop dfiltpop';
+  pop.innerHTML=`<div class="thttl">이 그래프만 좁혀 보기</div>
+    <div class="hint" style="padding:0 6px 8px;line-height:1.45">위쪽 조회 기간·필터는 그대로 두고
+      <b>일자별 효율 비교</b> 그래프에만 적용됩니다.</div>`
+    +DAILY_FILT_DIMS.map(d=>{
+      const vals=dailyFiltVals(d.k);
+      return `<label class="dfrow"><span>${d.l}</span>
+        <select data-dk="${d.k}">
+          <option value="">전체</option>
+          ${vals.map(v=>`<option value="${esc(v)}"${draft[d.k]===v?' selected':''}>${esc(v)}</option>`).join('')}
+        </select></label>`;}).join('')
+    +`<div class="thfoot"><button type="button" class="btn sm" data-clear="1">전체 해제</button>
+      <div class="spacer"></div><button type="button" class="btn sm primary" data-ok="1">적용</button></div>`;
+  document.body.appendChild(pop);
+  const r=btn.getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(innerWidth-pop.offsetWidth-8,r.right-pop.offsetWidth))+'px';
+  pop.style.top=Math.min(innerHeight-pop.offsetHeight-8,r.bottom+6)+'px';
+  pop.querySelectorAll('[data-dk]').forEach(s=>s.onchange=()=>{draft[s.dataset.dk]=s.value;});
+  const apply=v=>{DAILY_FILT=v;pop.remove();paintDailyFiltBtn();renderDaily();
+    try{markDirty();saveLocal();}catch(e){}};
+  pop.querySelector('[data-clear]').onclick=()=>apply({segment:'',media:'',product:''});
+  pop.querySelector('[data-ok]').onclick=()=>apply(draft);
+  setTimeout(()=>{
+    const off=e=>{if(!pop.contains(e.target)&&e.target!==btn){pop.remove();
+      document.removeEventListener('mousedown',off);}};
+    document.addEventListener('mousedown',off);},0);
+}
 function renderDaily(){
   const host=$('chartDaily');host.innerHTML='';
+  paintDailyFiltBtn();
   const bk=$('barSel').value||'imp', lk=$('lineSel').value||'ctr';
-  const fs=factFilter();
+  /* 그래프 전용 필터(v54)를 여기서 한 번 걸어 두면 계열·예상값·범례가 모두 같이 좁혀진다 */
+  const fs=factFilter().filter(dailyPass);
   /* 계열 순서 — 예산(Gross)이 큰 것부터. 같으면 이름순 (사용자가 범례에서 바꿀 수 있다) */
-  const budOf=k=>sum(activeLines().filter(l=>SERIES_DIM==='creative'
+  const budOf=k=>sum(dailyLines().filter(l=>SERIES_DIM==='creative'
       ? CREATIVES.some(c=>c.lid===l.id&&c.name===k) : l[SERIES_DIM]===k).map(lineGross));
+  /* 필터를 걸었는데 남는 데이터가 없으면 빈 그래프 대신 이유를 알려 준다 (v54) */
+  if(dailyFiltOn()&&!fs.length){
+    const box=el('div','dfempty',host);
+    box.innerHTML=`<b>이 필터에 해당하는 데이터가 없습니다.</b>
+      <span>${DAILY_FILT_DIMS.filter(d=>DAILY_FILT[d.k])
+        .map(d=>`${d.l} <b>${esc(DAILY_FILT[d.k])}</b>`).join(' · ')}</span>`;
+    const b=el('button','btn sm',box);b.textContent='필터 해제';
+    b.onclick=()=>{DAILY_FILT={segment:'',media:'',product:''};
+      paintDailyFiltBtn();renderDaily();try{markDirty();saveLocal();}catch(e){}};
+    $('dailyLegend').innerHTML='';
+    return;}
   let seriesKeys=[...new Set(fs.map(f=>f[SERIES_DIM]))]
     .sort((a,b)=>(budOf(b)-budOf(a))||String(a).localeCompare(String(b),'ko'));
   if(Array.isArray(DAILY_ORDER[SERIES_DIM])&&DAILY_ORDER[SERIES_DIM].length){
@@ -107,7 +177,7 @@ function renderDaily(){
   const pal=pickRamp(seriesKeys.length);
   const remainDays=Math.max(ds.length-EL,0);
   const expOf=key=>{                                   /* 시리즈별 캠페인 예상 총량 */
-    const ls=activeLines().filter(l=>SERIES_DIM==='creative'
+    const ls=dailyLines().filter(l=>SERIES_DIM==='creative'
       ? CREATIVES.some(c=>c.lid===l.id&&c.name===key) : l[SERIES_DIM]===key);
     if(bk==='cost')return sum(ls.map(lineGross));
     return sum(ls.map(l=>l.e[bk]||0));};
@@ -179,7 +249,8 @@ function renderDaily(){
       fs.filter(f=>f.d===SC.i0+i).forEach(f=>{AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});
       return METRICS[lk].c(b);});
     const ok=lineVals.filter(isFinite);
-    const benchV=METRICS[lk].c(aggExp(activeLines()));
+    /* 예상 효율선도 그래프 필터를 따른다 (v54) — 안 그러면 좁혀 본 실적과 기준선이 따로 논다 */
+    const benchV=METRICS[lk].c(aggExp(dailyLines()));
     const useBench=SHOW_BENCH&&isFinite(benchV);
     const dom=useBench?ok.concat([benchV]):ok;
     const mn=Math.min(...dom),mx=Math.max(...dom);
