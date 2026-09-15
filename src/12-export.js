@@ -358,7 +358,7 @@ async function exportDashboard(){
     const chartSvg=document.querySelector('#chartDaily svg');
     const pic=chartSvg?await svgToPng(chartSvg,1.6):null;
     if(pic){
-      push(R,[T('일자별 효율 비교',3)]);
+      push(R,[T('일자별 캠페인 효율 비교',3)]);
       blank(R);blank(R);blank(R);
       const at=R.length;
       for(let i=0;i<Math.ceil(pic.h*0.62/18)+1;i++){const rr=[];rr.__h=13.5;push(R,rr);}

@@ -588,7 +588,7 @@ function mountHeatHead(tbl){
 })();
 
 /* ===== 8. 소재 운영 ===== */
-let CR_FILTER={media:'all',type:'all',sort:'imp'};
+let CR_FILTER={segment:'all',media:'all',type:'all',sort:'imp'};
 let CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
 let CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
 COLREB.push(()=>{CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
@@ -617,7 +617,7 @@ const crVal=(c,k)=>{
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
 /* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
-let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — 같은 매체 안에서만 적용 */
+let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — v59 부터 예산 큰 순으로 고정 */
 /* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
    집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
    byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
@@ -665,28 +665,39 @@ function mergeCreatives(list,mode){
 }
 /* 효율 우수 소재 전용 매체 고르기 (v55) — 대시보드 공통 필터와 별개로,
    "이 매체에서는 어떤 소재가 잘 돌았나" 를 바로 볼 수 있게 한다. 뷰어도 쓸 수 있다. */
+const crSegPool=()=>[...new Set(CREATIVES
+  .filter(c=>['media','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
+  .map(c=>c.segment))].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'ko'));
+/* 매체 목록은 **이 영역에서 고른 구분** 안에서만 뽑는다 (v59) */
 const crMediaPool=()=>[...new Set(CREATIVES
   .filter(c=>['segment','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
+  .filter(c=>CR_FILTER.segment==='all'||c.segment===CR_FILTER.segment)
   .map(c=>c.media))].filter(Boolean).sort((a,b)=>mediaBudget(b)-mediaBudget(a));
-function renderCrMediaSel(){
-  const s=$('crMediaSel');if(!s)return;
-  const pool=crMediaPool();
-  /* 공통 필터로 매체가 이미 하나로 좁혀져 있으면 이 드롭다운은 의미가 없다 */
-  if(FILTER.media!=='all'){CR_FILTER.media='all';s.parentNode&&s.classList.add('hidden');}
-  else s.classList.remove('hidden');
+/* 드롭다운 하나를 채우는 공통 처리 —
+   대시보드 공통 필터로 이미 하나로 좁혀져 있으면 그 드롭다운은 의미가 없으므로 숨긴다. */
+function crFillSel(id,key,label,pool){
+  const s=$(id);if(!s)return;
+  const locked=FILTER[key]!=='all';
+  if(locked)CR_FILTER[key]='all';
+  s.classList.toggle('hidden',locked);
   const hint=s.previousElementSibling;
-  if(hint&&hint.classList.contains('hint'))hint.classList.toggle('hidden',FILTER.media!=='all');
-  if(CR_FILTER.media!=='all'&&!pool.includes(CR_FILTER.media))CR_FILTER.media='all';
-  s.innerHTML=`<option value="all">전체 매체</option>`
+  if(hint&&hint.classList.contains('hint'))hint.classList.toggle('hidden',locked);
+  if(CR_FILTER[key]!=='all'&&!pool.includes(CR_FILTER[key]))CR_FILTER[key]='all';
+  s.innerHTML=`<option value="all">${label}</option>`
     +pool.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
-  s.value=CR_FILTER.media||'all';
+  s.value=CR_FILTER[key]||'all';
+}
+function renderCrMediaSel(){
+  crFillSel('crSegSel','segment','전체 구분',crSegPool());
+  crFillSel('crMediaSel','media','전체 매체',crMediaPool());
 }
 function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   const mSel=CR_FILTER.media&&CR_FILTER.media!=='all'?CR_FILTER.media:null;
+  const sSel=CR_FILTER.segment&&CR_FILTER.segment!=='all'?CR_FILTER.segment:null;
   let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&(!mSel||c.media===mSel)
+    &&(!mSel||c.media===mSel)&&(!sSel||c.segment===sSel)
     &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
@@ -802,10 +813,10 @@ function renderCreatives(){
   renderCrMediaSel();
   const pool=filteredCreatives();
   if(!pool.length){
+    const pick=[CR_FILTER.segment!=='all'?CR_FILTER.segment:'',
+                CR_FILTER.media!=='all'?CR_FILTER.media:''].filter(Boolean).join(' · ');
     host.innerHTML='<div class="card"><div class="bd hint">'
-      +(CR_FILTER.media&&CR_FILTER.media!=='all'
-        ? `${esc(CR_FILTER.media)} 에서 집행된 소재가 없습니다.`
-        : '조건에 맞는 소재가 없습니다.')
+      +(pick?`${esc(pick)} 에서 집행된 소재가 없습니다.`:'조건에 맞는 소재가 없습니다.')
       +'</div></div>';return;}
   /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
@@ -1257,7 +1268,7 @@ let GANTT_CATALOG=mkGanttCat();
 let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();
   GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));});
-let GANTT_RANGE='all';
+let GANTT_RANGE='all';   /* v59 부터 캠페인 전체로 고정 */
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
 /* 정렬 기준 — 예산(Gross)이 큰 매체가 위로, 그 안에서도 예산이 큰 소재가 위로 */
@@ -1429,7 +1440,11 @@ function renderGantt(){
     return 0;});
   if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
-  const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
+  /* 소계를 끼워 넣은 뒤의 행 목록과 병합 폭 — **서머리와 똑같은 계산기**를 쓴다 (v59).
+     예전에는 소계 줄만 colspan 한 칸으로 따로 그려서, 머리글 기준이 둘 이상이면
+     그 줄부터 열이 통째로 밀렸다. 이제 소계 줄도 자기 계층까지는 위 줄과 병합된다. */
+  const LAY=pivotLayout(rowsData.map(r=>r.vals),GANTT.rows);
+  const span=LAY.span;
   /* 기본은 캠페인 전체 일정, 설정에서 조회 기간으로 좁힐 수 있다 */
   const SC=GANTT_RANGE==='view'?viewScope():mkScope(campStart(),campEnd());
   GANTT_I0=SC.i0;
@@ -1456,7 +1471,9 @@ function renderGantt(){
      열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
   const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
-  dims.forEach((d,i)=>h+=`<th class="lead" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
+  /* 남는 가로 폭은 맨 오른쪽 머리 열이 가져간다 — 날짜 칸 폭이 흐트러지지 않게 (v59) */
+  const flexI=dims.length-1;
+  dims.forEach((d,i)=>h+=`<th class="lead${i===flexI?' flexlead':''}" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
@@ -1479,47 +1496,52 @@ function renderGantt(){
         +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
         +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
     return out;};
-  rowsData.forEach((rd,ri)=>{
-    const c=rd.c;
-    h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
-    rd.vals.forEach((v,ci)=>{const sp=span[ri][ci];if(sp===0)return;
-      const isCr=dims[ci]==='creative';
-      h+=`<td class="lead ${isCr?'nm':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
-        +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
-        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
-           <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
-    cols.forEach((k,i)=>{
-      const days=c.daily.imp.filter(v=>v>0).length;
-      const v=k==='days'?days+'일':crVal(c,k);
-      h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-    h+=dayCells(c);
-    h+='</tr>';
-    /* ---- 소계 (v58) ----
-       서머리와 같은 방식 — 헤더 편집에서 **기준마다** 소계를 켜고 끈다.
-       깊은 기준부터 닫히도록 뒤에서부터 훑는다 (구분 · 매체 둘 다 켰으면 매체 소계가 먼저). */
-    for(let di=dims.length-1;di>=0;di--){
-      if(!(GANTT.rows[di]&&GANTT.rows[di].sub))continue;
-      if(dims[di]==='creative')continue;            /* 소재 자신은 소계가 의미 없다 */
-      const pre=rd.vals.slice(0,di+1).join(SEP);
-      const nxt=rowsData[ri+1];
-      const ends=!nxt||nxt.vals.slice(0,di+1).join(SEP)!==pre;
-      if(!ends)continue;
-      const cs=rowsData.filter(x=>x.vals.slice(0,di+1).join(SEP)===pre).map(x=>x.c);
-      if(cs.length<2)continue;                      /* 한 줄짜리 묶음은 소계가 곧 그 줄이다 */
-      const nm=rd.vals.slice(0,di+1).filter(Boolean).join(' · ');
-      const tot=ganttGroupTotal(cs,nm+'|'+di);
-      tot.name=nm;
-      subs.push(tot);
-      h+=`<tr class="gsub gsub-l${Math.min(di,3)}">`
-        +`<td class="lead" colspan="${dims.length}" style="left:0;min-width:${acc}px">`
-        +`${esc(nm)} 소계 <i>${cs.length}개 소재</i></td>`;
-      cols.forEach((k,i)=>{
-        const days=tot.daily.imp.filter(v=>v>0).length;
-        const v=k==='days'?days+'일':crVal(tot,k);
-        h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-      /* 소계 줄의 색은 그 묶음이 속한 그룹 척도로 — 여러 그룹에 걸치면 표 전체 척도로 물러난다 */
-      const mk3=new Set(cs.map(x=>GK[x.id]));
-      h+=dayCells(tot,mk3.size===1?[...mk3][0]:' mix')+'</tr>';}
+  /* 소계 값은 그 묶음에 속한 소재들을 합쳐서 만든다 */
+  const groupRows=(vals,L)=>rowsData.filter(x=>
+    vals.slice(0,L+1).every((v,k)=>x.vals[k]===v));
+  LAY.out.forEach((r,i)=>{
+    if(r.kind==='data'){
+      const rd=rowsData[r.ri],c=rd.c;
+      h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
+      rd.vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
+        const isCr=dims[ci]==='creative';
+        h+=`<td class="lead ${isCr?'nm':''}${ci===flexI?' flexlead':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
+          +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
+          +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
+             <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
+      cols.forEach((k,ci)=>{
+        const days=c.daily.imp.filter(v=>v>0).length;
+        const v=k==='days'?days+'일':crVal(c,k);
+        h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(ci)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+      h+=dayCells(c)+'</tr>';
+      return;}
+    /* ---- 소계 (v59 · 서머리와 같은 방식) ----
+       기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않고,
+       「○○ 소계」 문구는 그 오른쪽 열부터 colspan 으로 채운다 → 열이 밀리지 않는다.
+       소재가 하나뿐인 묶음도 소계를 그린다 (예전에는 두 줄 미만이면 건너뛰었다). */
+    const L=r.level,vals=r.vals;
+    const grp=groupRows(vals,L);
+    const cs2=grp.map(x=>x.c);
+    const nm=vals.filter(Boolean).join(' · ');
+    const tot=ganttGroupTotal(cs2,nm+'|'+L);
+    tot.name=nm;
+    subs.push(tot);
+    h+=`<tr class="gsub gsub-l${Math.min(L,3)}">`;
+    for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
+      h+=`<td class="lead${ci===flexI?' flexlead':''}" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}`
+        +` style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">${esc(vals[ci])}</td>`;}
+    const nCol=Math.max(dims.length-(L+1),1);
+    const li=Math.min(L+1,dims.length-1);
+    const wSum=dims.slice(li,li+nCol).reduce((a,d)=>a+(leadW[d]||110),0);
+    h+=`<td class="lead sublab${li+nCol-1===flexI?' flexlead':''}" colspan="${nCol}" style="left:${lefts[li]}px;min-width:${wSum}px">`
+      +`${esc(dimDisp(dims[L],vals[L]))} 소계 <i>${cs2.length}개 소재</i></td>`;
+    cols.forEach((k,ci)=>{
+      const days=tot.daily.imp.filter(v=>v>0).length;
+      const v=k==='days'?days+'일':crVal(tot,k);
+      h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(ci)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+    /* 소계 줄의 색은 그 묶음이 속한 그룹 척도로 — 여러 그룹에 걸치면 표 전체 척도로 물러난다 */
+    const mk3=new Set(cs2.map(x=>GK[x.id]));
+    h+=dayCells(tot,mk3.size===1?[...mk3][0]:'\u0000mix')+'</tr>';
   });
   t.innerHTML=h+'</tbody>';
   markBlanks(t);

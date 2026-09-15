@@ -861,7 +861,7 @@ function openHolidays(){
           <b>${x[0].slice(5)}</b> ${x[1]}<span data-hdel="${HOLIDAYS.indexOf(x)}" style="cursor:pointer;opacity:.6">✕</span></span>`).join('')
       +'</div>';});
   h+=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <input type="date" id="hDate" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 10px">
+    <input type="date" id="hDate" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 28px 0 10px">
     <input id="hName" placeholder="공휴일 이름" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 11px">
     <button class="btn primary" id="hAdd">+ 추가</button></div>`;
   openModal('공휴일 설정 (2026 – 2028)',h,'<button class="btn" data-close>닫기</button>',{w:820});
@@ -989,13 +989,22 @@ function buildFilters(){
   /* 소재·간트·트리맵은 효율 탭 안으로 들어왔으므로 위의 공통 필터를 그대로 쓴다 */
 }
 function buildSelects(){
-  const fill=(id,arr,cur,lab)=>{const s=$(id);s.innerHTML=arr.map(k=>
-    `<option value="${k}" ${k===cur?'selected':''}>${lab(k)}</option>`).join('');};
-  fill('barSel',BAR_METRICS,'imp',k=>METRICS[k].l);
-  fill('lineSel',LINE_METRICS,'ctr',k=>k==='none'?'없음':METRICS[k].l);
-  fill('dimSel',SERIES_DIMS.map(d=>d.k),'media',k=>SERIES_DIMS.find(d=>d.k===k).l);
+  /* ⚠ 목록을 다시 채울 때 **지금 쓰고 있는 값**을 그대로 살려 둔다 (v59).
+     예전에는 'imp' 같은 첫 값을 박아 넣어서, 관리자가 CPC 로 저장해 둔 캠페인을 열면
+     표는 CPC 로 그려지는데 드롭다운만 「노출」로 보였다.
+     cur 를 넘기지 않으면(null) 화면에 이미 골라 둔 값을 지킨다. */
+  const fill=(id,arr,cur,lab)=>{const s=$(id);if(!s)return;
+    const prev=s.value;
+    const v=(cur!=null&&arr.includes(cur))?cur:(arr.includes(prev)?prev:arr[0]);
+    s.innerHTML=arr.map(k=>
+      `<option value="${k}" ${k===v?'selected':''}>${lab(k)}</option>`).join('');
+    s.value=v;};
+  fill('barSel',BAR_METRICS,null,k=>METRICS[k].l);
+  fill('lineSel',LINE_METRICS,null,k=>k==='none'?'없음':METRICS[k].l);
+  fill('dimSel',SERIES_DIMS.map(d=>d.k),SERIES_DIM,k=>SERIES_DIMS.find(d=>d.k===k).l);
   /* 단가(CPM · CPC · CPV)도 고를 수 있다 (v57) — 고르면 칸마다 그 날 단가가 작게 얹힌다 */
-  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],'imp',k=>METRICS[k].l);
+  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],
+    (GANTT&&GANTT.metric)||'imp',k=>METRICS[k].l);
   fill('tmapMetric',TMAP_METRICS,TMAP.metric,k=>METRICS[k].l);
   $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();
     try{markDirty();saveLocal();}catch(x){}};
@@ -1016,13 +1025,15 @@ function buildSelects(){
       am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();
       try{markDirty();saveLocal();}catch(e){}};}
   /* 효율 우수 소재 — 매체 고르기 (뷰어도 쓸 수 있게 agency-only 를 붙이지 않는다) */
+  const cs2=$('crSegSel');
+  if(cs2)cs2.onchange=e=>{CR_FILTER.segment=e.target.value||'all';
+    /* 구분을 바꾸면 그 안에 없는 매체는 고를 수 없으므로 매체 선택도 되짚는다 */
+    renderCreatives();try{markDirty();saveLocal();}catch(x){}};
   const cm=$('crMediaSel');
   if(cm)cm.onchange=e=>{CR_FILTER.media=e.target.value||'all';
     renderCreatives();try{markDirty();saveLocal();}catch(x){}};
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
-  const gs=$('ganttSort');
-  if(gs){gs.value=GANTT_SORT;
-    gs.onchange=e=>{GANTT_SORT=e.target.value;renderGantt();markDirty();saveLocal();};}
+  /* 게재 히스토리 정렬 선택은 v59 에서 뺐다 — 예산 큰 순으로 고정 */
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
@@ -1030,9 +1041,8 @@ function buildSelects(){
   $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
   $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
     try{markDirty();saveLocal();}catch(x){}};
-  /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식) */
-  const gr=$('ganttRange');
-  if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
+  /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식)
+     기간 선택도 v59 에서 뺐다 — 캠페인 전체로 고정 */
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};

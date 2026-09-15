@@ -79,6 +79,8 @@ function serializeDoc(){
            crAllMedia:(typeof CR_ALL_MEDIA!=='undefined'?!!CR_ALL_MEDIA:false),
            /* 효율 우수 소재 — 매체 고르기 (v55) */
            crMedia:(typeof CR_FILTER!=='undefined'?(CR_FILTER.media||'all'):'all'),
+           /* 효율 우수 소재 — 구분 고르기 (v59) */
+           crSeg:(typeof CR_FILTER!=='undefined'?(CR_FILTER.segment||'all'):'all'),
            crRankOn:(typeof CR_RANK_ON!=='undefined'?CR_RANK_ON:null),
            ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
@@ -174,11 +176,11 @@ function applyDoc(d,keepToday){
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(typeof v.crMedia==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.media=v.crMedia;
+  if(typeof v.crSeg==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.segment=v.crSeg;
   if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
   if(v.ganttSort&&typeof GANTT_SORT!=='undefined')GANTT_SORT=v.ganttSort;
   /* 저장해 둔 토글·기준을 화면 컨트롤에도 되돌려 놓는다 */
   try{const am=$('crAllMedia');if(am)am.classList.toggle('on',!!CR_ALL_MEDIA);
-      const gs=$('ganttSort');if(gs)gs.value=GANTT_SORT;
       if(typeof renderRankPick==='function')renderRankPick();}catch(e){}
   if(v.dailyOrder&&typeof DAILY_ORDER!=='undefined')DAILY_ORDER=v.dailyOrder;
   /* 노출 분포 기준 · KPI 묶음 기준도 되돌린다 (예전에는 새로고침하면 기본값으로 돌아갔다) */

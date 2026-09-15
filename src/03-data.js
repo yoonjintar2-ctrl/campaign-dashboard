@@ -257,8 +257,31 @@ function crWeights(l,cs,i){
   const w={};AMET.concat(['cost']).forEach(m=>w[m]=k0);
   return w;
 }
+/* 실적이 실제로 들어온 마지막 날 (v59).
+   예전에는 "어제" 를 조회 기간의 기본 종료일로 썼는데, 매체 리포트가 하루이틀 늦게 들어오는
+   현장에서는 끝에 빈 날이 붙어 달성률·페이스가 낮게 보였다. 이제 **넣어 둔 데이터의 마지막 날**로 맞춘다.
+   (라인의 일별 값을 그대로 훑으므로 시트로 넣었든 엑셀로 넣었든 클라우드에서 받았든 똑같이 잡힌다) */
+let LAST_DATA_I=-1;
+function calcLastDataIdx(){
+  let m=-1;
+  try{
+    const KEYS=['imp','click','view','conv','eng','install','lead','rev','cost','net'];
+    (LINES||[]).forEach(l=>{
+      const d=l&&l.daily;if(!d)return;
+      KEYS.forEach(k=>{
+        const a=d[k];if(!a||!a.length)return;
+        for(let i=a.length-1;i>m;i--)if((+a[i]||0)>0){m=i;break;}});});
+  }catch(e){}
+  return m;
+}
+/* 데이터가 하나도 없으면 예전처럼 어제를 쓴다 */
+const lastDataIso=()=>{
+  const i=LAST_DATA_I;
+  return (i>=0&&ALLDATES[i])?iso(ALLDATES[i]):YESTERDAY;};
 function buildFacts(){
   FACTS=[];
+  /* 조회 기간 기본 종료일에 쓸 "실적이 들어온 마지막 날" 을 다시 잡는다 (v59) */
+  LAST_DATA_I=calcLastDataIdx();
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
   LINES.forEach(l=>{
     const cs=CREATIVES.filter(c=>c.lid===l.id);
@@ -600,10 +623,11 @@ function campScope(){
                  ls.length?ls.map(l=>l.end).sort().slice(-1)[0]:campEnd());
 }
 /* 조회 스코프 — 집행 스코프에 달력으로 고른 시작·종료일을 적용한 "보고 있는 구간".
-   기본값은 캠페인 첫날 ~ 어제(데이터가 확정된 마지막 날). */
+   기본값은 캠페인 첫날 ~ 실적이 들어온 마지막 날. */
 function viewScope(){
   const p=campScope();
-  let s=p.startIso,e=p.endIso>YESTERDAY?(YESTERDAY>=s?YESTERDAY:s):p.endIso;
+  const last=lastDataIso();
+  let s=p.startIso,e=p.endIso>last?(last>=s?last:s):p.endIso;
   if(FILTER.from&&FILTER.from>s)s=FILTER.from;
   if(FILTER.to)e=FILTER.to<p.endIso?FILTER.to:p.endIso;
   if(e<s)e=s;

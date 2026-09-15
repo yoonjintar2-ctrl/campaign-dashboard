@@ -112,7 +112,7 @@
     </div>
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
 
-    <div class="sec gap" data-sect="daily">일자별 효율 비교
+    <div class="sec gap" data-sect="daily">일자별 캠페인 효율 비교
       <div class="tools">
         <span class="hint">데이터 선택</span><select class="ctl" id="dimSel"></select>
         <span class="hint">막대그래프 값</span><select class="ctl" id="barSel"></select>
@@ -150,22 +150,10 @@
     </div>
 
     <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
-      <span class="note">노출이 있었던 소재만 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준 · 정렬은 <b>같은 매체 안에서만</b> 적용됩니다</span>
+      <span class="note">노출이 있었던 소재만 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · <b>헤더 기준 안에서</b> 견줍니다 · 캠페인 전체 기간</span>
       <div class="tools">
         <span class="shlegend"><em>효율 우수</em><i class="ramp"></i><em>저조</em></span>
-        <span class="hint">정렬</span><select class="ctl" id="ganttSort" title="같은 매체 안에서 소재 순서를 정합니다">
-          <option value="budget">기본 (예산 큰 순)</option>
-          <option value="ctr">CTR 높은 순</option>
-          <option value="vtr">VTR 높은 순</option>
-          <option value="cpc">CPC 낮은 순</option>
-          <option value="cpv">CPV 낮은 순</option>
-          <option value="imp">노출 많은 순</option>
-          <option value="click">클릭 많은 순</option>
-          <option value="view">조회 많은 순</option>
-          <option value="name">소재 이름 가나다순</option>
-        </select>
-        <span class="hint">기간</span><select class="ctl" id="ganttRange">
-          <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
+        <!-- 정렬 · 기간 선택은 v59 에서 뺐다 — 순서는 예산 큰 순, 기간은 캠페인 전체로 고정 -->
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
         <button class="btn sm agency-only" id="ganttCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
@@ -176,6 +164,8 @@
     <div class="sec gap3" data-sect="creative">효율 우수 소재
       <span class="note">효율이 좋은 순서로 · 소재를 누르면 원본과 지표를 볼 수 있습니다</span>
       <div class="tools">
+        <span class="hint">구분</span><select class="ctl" id="crSegSel" title="고른 구분의 소재만 견줍니다">
+          <option value="all">전체 구분</option></select>
         <span class="hint">매체</span><select class="ctl" id="crMediaSel" title="고른 매체의 소재만 견줍니다">
           <option value="all">전체 매체</option></select>
         <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>

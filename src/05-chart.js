@@ -110,7 +110,7 @@ function openDailyFilt(btn){
   pop.className='thpop dfiltpop';
   pop.innerHTML=`<div class="thttl">이 그래프만 좁혀 보기</div>
     <div class="hint" style="padding:0 6px 8px;line-height:1.45">위쪽 조회 기간·필터는 그대로 두고
-      <b>일자별 효율 비교</b> 그래프에만 적용됩니다.</div>`
+      <b>일자별 캠페인 효율 비교</b> 그래프에만 적용됩니다.</div>`
     +DAILY_FILT_DIMS.map(d=>{
       const vals=dailyFiltVals(d.k);
       return `<label class="dfrow"><span>${d.l}</span>

@@ -3,7 +3,7 @@
 /* ---------- 대시보드 항목 숨기기 ----------
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
 const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
-  stat:'주요 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
+  stat:'주요 지표',daily:'일자별 캠페인 효율 비교',treemap:'분포(트리맵)',
   gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
   creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
   bubble:'효율 버블'};
