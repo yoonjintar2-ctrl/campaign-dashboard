@@ -1468,6 +1468,23 @@ function renderGantt(){
   const months=[];let cm=null;
   VD.forEach(d=>{const m=d.getMonth()+1;if(!cm||cm.m!==m){cm={m,n:0};months.push(cm);}cm.n++;});
   const leadW={segment:88,media:74,product:126,target:132,line:96,creative:196,month:80};
+  /* 소재 열은 글자 수에 맞춘다 (v60) — 예전에는 196px 로 못 박아 두어
+     이름이 짧은 캠페인에서도 열이 헛되이 넓었다.
+     썸네일(34) + 사이 여백(8) + 좌우 안쪽 여백(9+9) + 가장 긴 이름의 실제 글자 폭. */
+  leadW.creative=(()=>{
+    try{
+      const names=[...new Set(rowsData.map(r=>r.c&&r.c.name).filter(Boolean))];
+      if(!names.length)return 150;
+      const probe=t.querySelector('td.lead')||t;
+      const cs=getComputedStyle(probe);
+      const font=`${cs.fontWeight||400} ${cs.fontSize||'11.5px'} ${cs.fontFamily||'sans-serif'}`;
+      const cx=document.createElement('canvas').getContext('2d');
+      cx.font=font;
+      const w=Math.max(...names.map(n=>cx.measureText(String(n)).width));
+      /* 머리글 「소재」 글자도 들어가야 한다 */
+      const hd=cx.measureText('소재').width+26;
+      return Math.round(Math.max(104,hd,Math.min(240,w+34+8+18+6)));
+    }catch(e){return 196;}})();
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
@@ -1487,8 +1504,12 @@ function renderGantt(){
      열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
   const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
-  /* 남는 가로 폭은 맨 오른쪽 머리 열이 가져간다 — 날짜 칸 폭이 흐트러지지 않게 (v59) */
-  const flexI=dims.length-1;
+  /* 남는 가로 폭은 머리 열 하나가 가져간다 — 날짜 칸 폭이 흐트러지지 않게 (v59).
+     다만 **소재 열은 글자 수에 맞춰 두었으므로** 여기서 늘어나면 안 된다 (v60) —
+     소재가 아닌 마지막 기준 열이 슬랙을 받고, 기준이 소재뿐일 때만 소재가 받는다. */
+  const flexI=(()=>{
+    for(let i=dims.length-1;i>=0;i--)if(dims[i]!=='creative')return i;
+    return dims.length-1;})();
   dims.forEach((d,i)=>h+=`<th class="lead${i===flexI?' flexlead':''}" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
@@ -1504,20 +1525,18 @@ function renderGantt(){
   const dayCells=(c,opt)=>{
     const sub=!!(opt&&opt.sub);
     const g=GK[c.id];
-    let maxV=(g!==undefined&&grpMax[g])||1;
-    if(sub){                                             /* 소계 줄은 자기 줄 안에서만 견준다 */
-      let m2=0;
-      for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){const v=ganttDayVal(c,i,mk);if(v>m2)m2=v;}
-      maxV=m2||1;}
+    const maxV=(g!==undefined&&grpMax[g])||1;
     let out='';
     VD.forEach((d,i)=>{
       const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
       const v=gi<ELAPSED?ganttDayVal(c,gi,mk):0;
       const hol=!sub&&!!holName(d),we=!sub&&d.getDay()%6===0;
       /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
-      const bg=(!sub&&EFF.ok)?EFF.color(c,gi):shade(v/maxV);
+      /* 소계 줄은 **줄 전체가 같은 회색** — 농담(그라데이션)도 쓰지 않는다 (v60).
+         색은 CSS(--gsubbar)가 칠하므로 테마를 바꿔도 따라온다. */
+      const bg=sub?'':((EFF.ok)?EFF.color(c,gi):shade(v/maxV));
       out+=`<td class="day${sub?' plain':''}${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
-        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
+        +(v>0?(sub?'<span class="b"></span>':`<span class="b" style="background:${bg}"></span>`):'')
         +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
     return out;};
   /* 소계 값은 그 묶음에 속한 소재들을 합쳐서 만든다 */
