@@ -214,6 +214,10 @@ create trigger daily_stats_touch
 -- ---------------------------------------------------------------------
 -- 4. RLS — 초대받은 캠페인의 데이터만 보인다
 -- ---------------------------------------------------------------------
+-- v57: 계정에 붙는 사용자 설정 (내가 만든 열 등). 어느 캠페인·어느 기기에서도 그대로 따라온다.
+alter table public.profiles
+  add column if not exists prefs jsonb not null default '{}'::jsonb;
+
 alter table public.profiles          enable row level security;
 alter table public.campaigns         enable row level security;
 alter table public.campaign_members  enable row level security;
