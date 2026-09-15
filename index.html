@@ -1488,6 +1488,12 @@ table.sheet td input.dnative{background-image:none}
   padding:0 23px 0 2px!important}
 :root{--gsubbar:rgba(122,134,150,.50)}
 [data-theme="dark"]{--gsubbar:rgba(196,201,208,.40)}
+/* 일자별 캠페인 효율 비교 — 막대 뒤에 깔리는 일별 소진금액 영역 (v62).
+   위는 옅게 보이고 아래로 갈수록 사라진다 — 막대가 있는 자리를 흐리지 않기 위해서다.
+   다크 화면은 밝은 색이 더 튀므로 농도를 한참 낮춰 잡는다. */
+:root{--spend:#7a8696;--spend-o1:.20;--spend-o2:.015}
+[data-theme="mono"]{--spend:#6e6e6e;--spend-o1:.18;--spend-o2:.012}
+[data-theme="dark"]{--spend:#c4c9d0;--spend-o1:.075;--spend-o2:.008}
 :root{--calico:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6878' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E")}
 [data-theme="dark"]{--calico:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0d0d0' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E")}
 /* 스크롤바 — 궤도와 손잡이를 뚜렷하게 */
@@ -4404,7 +4410,9 @@ function drawSpark(host,pill,ser,k){
   card.addEventListener('mouseleave',leave);
 }
 /* ===== 5. 일자별 효율 콤보 차트 ===== */
-const BAR_METRICS=['imp','click','view','eng','conv','cost'];
+/* 막대그래프로 고를 수 있는 값. 소진금액은 v62 에서 뺐다 —
+   이제 막대 뒤에 깔리는 영역 그래프가 일별 소진금액을 대신 보여 준다. */
+const BAR_METRICS=['imp','click','view','eng','conv'];
 const LINE_METRICS=['ctr','vtr','cvr','cpv','cpc','cpa','roas','none'];
 const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',l:'상품'},
   {k:'target',l:'타겟팅'},{k:'line',l:'제품'},{k:'creative',l:'소재'}];
@@ -4600,6 +4608,46 @@ function renderDaily(){
   const barTop=(Math.max(...totals)||1)*1.87;
   const bt=niceTicks(0,barTop,3,true);
   const yMax=bt.hi;
+  const Y=v=>P.t+PH*(1-v/yMax);
+  /* ---------- 일별 소진금액 — 막대 뒤에 깔리는 영역 (v62) ----------
+     y축을 따로 두지 않는다. **가장 높은 막대 꼭대기**를 기준 삼은 "가상 축"이라
+     눈금 없이 흐름만 대충 읽는 용도다. 선은 그리지 않고 면만 채운다.
+     위쪽 운영 이슈 라벨 자리는 천장(SPEND_CEIL)으로 막아 둔다 —
+     이슈가 다섯 줄 꽉 차도(맨 아랫줄 y≈190) 영역이 그 위로 올라가지 않는다.
+     맨 앞에 그리므로 막대·꺾은선·이슈 라벨이 모두 이 위에 얹힌다. */
+  const SPEND_K=1.6;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
+  const SPEND_CEIL=P.t+PH*0.46;            /* 이 선 위로는 절대 올라가지 않는다 */
+  const spend=ds.map((_,i)=>i>=EL?NaN:sum(fs.filter(f=>f.d===SC.i0+i).map(f=>f.cost)));
+  let SPEND_ON=false;
+  (function drawSpend(){
+    if(EL<2)return;
+    const sMax=Math.max(0,...spend.filter(isFinite));
+    if(!(sMax>0))return;
+    SPEND_ON=true;
+    const base=P.t+PH;
+    const peakY=Math.max(SPEND_CEIL,base-(base-Y(Math.max(...totals)||0))*SPEND_K);
+    const SY=v=>base-(v/sMax)*(base-peakY);
+    const pts=spend.map((v,i)=>isFinite(v)?[cx(i),SY(v)]:null).filter(Boolean);
+    if(pts.length<2)return;
+    /* 양 끝은 칸 가장자리까지 늘려 잘린 느낌이 나지 않게 한다 */
+    const xL=X0,xR=X0+step*EL,sm=smoothPath(pts),ci=sm.indexOf(' C');
+    if(ci<0)return;
+    const d=`M${xL} ${pts[0][1]} L${pts[0][0]} ${pts[0][1]}`+sm.slice(ci)
+      +` L${xR} ${pts[pts.length-1][1]} L${xR} ${base} L${xL} ${base} Z`;
+    const gid='spGrad'+uid();
+    const lg=S('linearGradient',{id:gid,x1:'0',y1:'0',x2:'0',y2:'1'},svg);
+    S('stop',{offset:'0%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o1)'},lg);
+    S('stop',{offset:'100%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o2)'},lg);
+    const ar=S('path',{d,fill:`url(#${gid})`,stroke:'none','pointer-events':'none',class:'spendArea'},svg);
+    /* 부드러운 곡선은 꼭짓점 위로 살짝 부풀 수 있다 (스플라인 오버슛).
+       실제로 그려진 높이를 재서 천장에 정확히 맞춘다 — 바닥선을 축으로 세로만 줄인다. */
+    try{
+      const t=ar.getBBox().y;
+      if(t<SPEND_CEIL-0.5&&base>t)
+        ar.setAttribute('transform',
+          `translate(0 ${base}) scale(1 ${(base-SPEND_CEIL)/(base-t)}) translate(0 ${-base})`);
+    }catch(e){}
+  })();
   const txt=(x,y,s,anchor)=>{const t=S('text',{x,y,'text-anchor':anchor||'end','font-size':AXIS.size,
     fill:AXIS.fill,'font-weight':AXIS.weight},svg);t.textContent=s;return t;};
   const bigNum=v=>{
@@ -4625,7 +4673,7 @@ function renderDaily(){
     S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
     txt(P.l-9,y+3.5,bigNum(v));});
   /* 막대 사이 간격을 좁혀 그래프 폭을 줄인다 (남는 폭은 페이지 좌우 여백으로) */
-  const bw=Math.min(step-2,26),Y=v=>P.t+PH*(1-v/yMax);
+  const bw=Math.min(step-2,26);
   /* 미집행 구간 음영 */
   if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'var(--acc-soft2)'},svg);
   ds.forEach((d,i)=>{
@@ -4747,7 +4795,9 @@ function renderDaily(){
       `<div class="t">${dFull(d)} (${WD[d.getDay()]})${holName(d)?' · '+holName(d):''}</div>`+
       series.map((s,si)=>`<div class="r"><span class="l"><span style="width:8px;height:8px;border-radius:2px;background:${pal[si]};display:inline-block"></span>${esc(s.key)}</span><b>${METRICS[bk].f(s.vals[i])}</b></div>`).join('')+
       `<div class="r" style="border-top:1px solid rgba(255,255,255,.2);margin-top:6px;padding-top:5px"><span class="l">${METRICS[bk].l} 합계</span><b>${METRICS[bk].f(totals[i])}</b></div>`+
-      (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')));
+      (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')+
+      /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
+      (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it drag',lg);
@@ -4757,6 +4807,11 @@ function renderDaily(){
   wireDailyLegendDrag(lg,seriesKeys);
   if(lk!=='none'){const x=el('span','it',lg);
     x.innerHTML=`<span class="linekey"></span><span style="color:var(--acc2);font-weight:700">${METRICS[lk].l}</span> <span style="color:var(--muted)">(우측 축)</span>`;}
+  if(SPEND_ON){const x=el('span','it',lg);
+    x.title='막대 뒤에 옅게 깔린 회색 면입니다. 눈금 없이 하루하루 얼마를 썼는지 흐름만 보는 용도라,'
+      +' 높이는 막대에 맞춰 잡습니다. 정확한 금액은 날짜 위에 마우스를 올리면 나옵니다.';
+    x.innerHTML=`<span class="dot" style="background:var(--spend);opacity:.55"></span>`
+      +`<span style="color:var(--muted)">일별 소진금액 (배경 · 눈금 없음)</span>`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.18"></span>미집행 구간 예상값 (일할)`;}
 
