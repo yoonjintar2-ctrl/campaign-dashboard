@@ -198,24 +198,32 @@ function renderDaily(){
   const bt=niceTicks(0,barTop,3,true);
   const yMax=bt.hi;
   const Y=v=>P.t+PH*(1-v/yMax);
-  /* ---------- 일별 소진금액 — 막대 뒤에 깔리는 영역 (v62) ----------
+  /* ---------- 일별 소진금액 — 막대 뒤에 깔리는 영역 (v62 · v63 에서 크게) ----------
      y축을 따로 두지 않는다. **가장 높은 막대 꼭대기**를 기준 삼은 "가상 축"이라
-     눈금 없이 흐름만 대충 읽는 용도다. 선은 그리지 않고 면만 채운다.
-     위쪽 운영 이슈 라벨 자리는 천장(SPEND_CEIL)으로 막아 둔다 —
-     이슈가 다섯 줄 꽉 차도(맨 아랫줄 y≈190) 영역이 그 위로 올라가지 않는다.
-     맨 앞에 그리므로 막대·꺾은선·이슈 라벨이 모두 이 위에 얹힌다. */
-  const SPEND_K=1.6;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
-  const SPEND_CEIL=P.t+PH*0.46;            /* 이 선 위로는 절대 올라가지 않는다 */
+     눈금 없이 흐름만 읽는 용도다. 선은 그리지 않고 면만 채운다.
+     맨 앞에 그리므로 막대·꺾은선·이슈 라벨이 모두 이 위에 얹힌다 —
+     운영 이슈 말풍선 줄까지 올라가도 글자는 그 위에 그려져 그대로 읽힌다 (v63).
+
+     바닥값(lo) — 0 원부터 재면 가장 적게 쓴 날도 이미 봉우리의 3~4할 높이를 차지해
+     등락이 밋밋해진다. 그래서 바닥을 **최솟값보다 조금 아래**로 끌어올려
+     골짜기가 깊게 파이도록 했다 (v63). 대신 면적이 금액에 비례하지는 않으므로
+     범례에 "눈금 없음"이라고 적어 두고, 정확한 금액은 툴팁으로 읽게 한다. */
+  const SPEND_K=2.4;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
+  const SPEND_PAD=0.25;                    /* 바닥을 최솟값 아래 몇 만큼에 둘지 (등락 폭) */
+  const SPEND_CEIL=P.t+4;                  /* 플롯 밖으로는 나가지 않는다 */
   const spend=ds.map((_,i)=>i>=EL?NaN:sum(fs.filter(f=>f.d===SC.i0+i).map(f=>f.cost)));
   let SPEND_ON=false;
   (function drawSpend(){
     if(EL<2)return;
-    const sMax=Math.max(0,...spend.filter(isFinite));
+    const got=spend.filter(isFinite);
+    const sMax=Math.max(0,...got);
     if(!(sMax>0))return;
     SPEND_ON=true;
+    const sMin=Math.min(...got),span=sMax-sMin;
+    const lo=span>0?Math.max(0,sMin-span*SPEND_PAD):0;
     const base=P.t+PH;
     const peakY=Math.max(SPEND_CEIL,base-(base-Y(Math.max(...totals)||0))*SPEND_K);
-    const SY=v=>base-(v/sMax)*(base-peakY);
+    const SY=v=>Math.min(base,base-((v-lo)/(sMax-lo||1))*(base-peakY));
     const pts=spend.map((v,i)=>isFinite(v)?[cx(i),SY(v)]:null).filter(Boolean);
     if(pts.length<2)return;
     /* 양 끝은 칸 가장자리까지 늘려 잘린 느낌이 나지 않게 한다 */
