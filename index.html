@@ -128,6 +128,8 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
   animation:bootpulse 1.4s ease-in-out infinite alternate}
 @keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
 body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
+/* 부팅이 끝나면 맥박 애니메이션도 멈춘다 — 보이지 않는데 무한 반복하고 있었다 (v56) */
+body:not(.booting) .bootveil .bootlogo{animation:none}
 body.booting .topbar,body.booting .tabs,body.booting .subbar,
 body.booting .wrap,body.booting .demobar,body.booting #bgdots{visibility:hidden}
 /* ===== 접속 화면 (공유 코드 게이트) ===== */
@@ -1467,6 +1469,17 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   0%{transform:translate3d(6%,4%,0) rotate(-4deg)}
   50%{transform:translate3d(-2%,-5%,0) rotate(3deg)}
   100%{transform:translate3d(-6%,-5%,0) rotate(5deg)}}
+/* ⚠ 페이지 바탕의 body::before 는 고정형에서도 그대로 둔다 (v56).
+   멈춰 보았더니 오히려 느려졌다 — transform 애니메이션이 돌고 있을 때만
+   그 blur(30px) 층이 합성 레이어로 떨어져 나오기 때문이다.
+   멈추면 그 거대한 흐림이 본문 레이어로 돌아와 스타일 재계산마다 다시 그려진다.
+   (실측: 6초 기준 Task 1.9초 → 5.9초) 그래서 고정은 #bgdots 층에만 건다. */
+/* 고정형 배경 (v56) — 로고(또는 앰비언트)를 흘려보내지 않고 그 자리에 세워 둔다.
+   움직임만 멈추므로 색·크기·위치는 흘러다닐 때의 기준 상태와 같다.
+   will-change 도 함께 거둔다 — 움직이지 않는 층을 합성기가 따로 들고 있을 이유가 없다. */
+#bgdots.still .bgfloat,#bgdots.still .bgfloat>i,
+#bgdots.still .ambient,#bgdots.still .ambient::after{animation:none}
+#bgdots.still .bgfloat,#bgdots.still .bgfloat>i,#bgdots.still .ambient{will-change:auto}
 @media (prefers-reduced-motion: reduce){
   #bgdots .bgfloat,#bgdots .bgfloat>i,#bgdots .ambient,#bgdots .ambient::after{animation:none}}
 @media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
@@ -2637,6 +2650,35 @@ function enableColResize(tbl,cols,onDone,off){
       delete c.w;th.style.minWidth='';th.style.width='';if(onDone)onDone();});});
 }
 
+/* ---- 칸 단위 마우스 처리를 표 하나로 모은다 (v56) ----
+   예전에는 칸마다 mouseenter · mouseleave · mousemove 를 따로 달았다.
+   게재 히스토리 한 표만 3,000칸이 넘어서 이벤트 리스너가 1만 3천 개까지 늘었고,
+   · 그 수만큼 클로저(툴팁 문자열까지)를 메모리에 붙들고 있었고
+   · 표를 다시 그릴 때마다 그걸 전부 다시 다느라 렌더가 느렸다.
+   위임하면 표당 3개면 되고, 강조·툴팁 동작은 한 치도 달라지지 않는다.
+   (mouseenter/leave 는 버블하지 않으므로 mousemove 로 "지금 칸"을 추적해 직접 만들어 준다) */
+function delegateCellHover(root,sel,h){
+  if(!root)return ()=>{};
+  /* ⚠ 표를 다시 그려도 <table> 요소 자체는 그대로다 (innerHTML 만 갈린다).
+     그래서 부를 때마다 리스너를 새로 달면 렌더할 때마다 겹겹이 쌓여
+     마우스를 한 번 움직일 때 예전 핸들러까지 전부 돌아간다.
+     한 뿌리 · 한 선택자에는 리스너를 딱 한 벌만 두고, 다시 부르면 **내용만 갈아 끼운다**. */
+  const reg=root.__cellHov||(root.__cellHov={});
+  if(reg[sel]){reg[sel].h=h;return reg[sel].out;}
+  const st={h,cur:null};
+  const out=()=>{if(st.cur){const c=st.cur;st.cur=null;if(st.h.leave)st.h.leave(c);}};
+  st.out=out;reg[sel]=st;
+  root.addEventListener('mousemove',e=>{
+    const el=e.target&&e.target.closest?e.target.closest(sel):null;
+    if(!el||!root.contains(el)){out();return;}
+    if(el!==st.cur){out();st.cur=el;if(st.h.enter)st.h.enter(el);}
+    if(st.h.move)st.h.move(el,e);});
+  /* 표 밖으로 나가거나 누르면 강조를 반드시 걷는다 */
+  root.addEventListener('mouseleave',out);
+  root.addEventListener('mousedown',out);
+  return out;
+}
+
 /* ===== 서머리 · 미디어믹스 — 행 머리 열 고정 · 떠 있는 머리글 =====
    (1) 가로로 스크롤해도 구분 · 매체 · 광고상품 같은 행 머리 열은 왼쪽에 붙어 있어야 하고
    (2) 세로로 스크롤할 때는 머리글이 화면 위쪽에 붙어 있다가 표가 끝나면 사라져야 한다.
@@ -2869,18 +2911,30 @@ function wireGroupRename(tbl,cfg,rerender){
 /* 값이 0 인 칸은 – 로, 아예 비어 있는 칸은 옅은 회색으로 표시해 "해당 없음"을 분명히 한다.
    입력·칩·게이지가 들어 있는 칸은 건드리지 않는다. */
 const ZERO_RE=/^₩?-?0(\.0+)?%?$/;
+/* 칸을 "– (값 없음)" 으로 만든다.
+   ⚠ 렌더러가 이미 같은 내용을 넣어 둔 칸이 많다 — 일자별 상세 효율에서는 2만 칸 중 1만 칸이 그렇다.
+   그걸 그대로 다시 쓰면 innerHTML 파싱만 1만 번 도는 셈이라, 같은 모양이면 건드리지 않는다 (v56). */
+function naCell(td){
+  const f=td.firstChild;
+  if(f&&f.nodeType===1&&f.tagName==='SPAN'&&f.className==='na'&&!f.nextSibling)return;
+  td.innerHTML='<span class="na">–</span>';
+}
 function markBlanks(tbl){
   if(!tbl)return;
   tbl.querySelectorAll('tbody td, thead tr.total td').forEach(td=>{
     if(td.classList.contains('head'))return;
     /* 게재 히스토리의 날짜 칸은 글자가 아니라 색 농도로 값을 보여준다 — 건드리지 않는다 */
     if(td.classList.contains('day')||td.classList.contains('rm'))return;
-    if(td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
-    const t=(td.textContent||'').replace(/\s+/g,'').trim();
+    /* ⚠ 칸마다 querySelector 를 돌리면 표 하나에 2만 번이 넘는다 (일자별 상세 효율 렌더의 절반이
+       여기서 나갔다). 자식 요소가 아예 없는 칸이 대부분이고, 그런 칸은 어차피 걸릴 게 없으므로
+       요소가 하나라도 있을 때만 찾아본다 — 결과는 완전히 같다 (v56). */
+    if(td.firstElementChild
+      &&td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
+    const t=(td.textContent||'').replace(/\s+/g,'');
     /* 값이 아예 없는 칸(빈칸 또는 렌더러가 넣은 –)은 회색으로 꽉 채운다 */
-    if(t===''||t==='–'||t==='-'){td.classList.add('blank');td.innerHTML='<span class="na">–</span>';return;}
+    if(t===''||t==='–'||t==='-'){td.classList.add('blank');naCell(td);return;}
     /* 값이 0 인 칸은 – 로만 바꾸고 배경은 그대로 (데이터가 있는 칸이므로) */
-    if(ZERO_RE.test(t.replace(/,/g,'')))td.innerHTML='<span class="na">–</span>';});
+    if(ZERO_RE.test(t.replace(/,/g,'')))naCell(td);});
 }
 let DRAG=null;
 const clearIns=()=>document.querySelectorAll('.ins-l,.ins-r').forEach(e=>e.classList.remove('ins-l','ins-r'));
@@ -3512,18 +3566,42 @@ function startAmb(){
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){
     const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
   const P=13000;
+  let lt='',lp='';
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
+    /* 보이지 않는 동안에는 쉰다 (v56).
+       ⚠ 이 고리가 페이지에서 가장 비싼 상시 작업이었다 — 매 프레임 #paceBox 에
+       사용자 정의 속성 두 개를 써 넣으면 그 안의 구간 전부가 스타일 재계산 + 다시 칠하기 대상이 된다.
+       다른 탭을 보고 있거나 이 영역이 화면 밖으로 밀려 있어도 쉬지 않고 돌았다.
+       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다. */
+    if(!ambVisible(b)){AMB_RAF=requestAnimationFrame(step);return;}
     const t=(ts%P)/P;
-    b.style.setProperty('--ambt',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
+    const vt=((1-Math.cos(t*2*Math.PI))/2).toFixed(4);
     /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
        고정 색조의 세기도 같은 주기로 0 ↔ 1 을 오가게 해 기본 색과 번갈아 보이게 한다. */
     /* 고정 색조의 세기 — 0 에 더 오래 머물게 해서 기본 색이 보이는 시간을 늘린다 */
     const w=(1-Math.cos(t*2*Math.PI))/2;
-    b.style.setProperty('--ambp',Math.pow(w,2.1).toFixed(4));
+    const vp=Math.pow(w,2.1).toFixed(4);
+    /* 값이 그대로면 쓰지 않는다 — 쓰는 순간 그 아래가 전부 다시 계산된다 */
+    if(vt!==lt){lt=vt;b.style.setProperty('--ambt',vt);}
+    if(vp!==lp){lp=vp;b.style.setProperty('--ambp',vp);}
     AMB_RAF=requestAnimationFrame(step);};
   AMB_RAF=requestAnimationFrame(step);
+}
+/* 물결을 돌릴 만큼 #paceBox 가 실제로 보이는가 — 탭이 숨었거나 화면 밖이면 false.
+   IntersectionObserver 로 상태만 받아 두고, 못 쓰는 환경에서는 늘 보이는 것으로 본다. */
+let AMB_VIS=null,AMB_IO=null,AMB_EL=null;
+function ambVisible(b){
+  if(document.hidden)return false;
+  if(typeof IntersectionObserver!=='function')return true;
+  if(AMB_EL!==b){
+    AMB_EL=b;AMB_VIS=null;
+    if(AMB_IO)try{AMB_IO.disconnect();}catch(e){}
+    AMB_IO=new IntersectionObserver(es=>{AMB_VIS=es[es.length-1].isIntersecting;},{rootMargin:'120px'});
+    try{AMB_IO.observe(b);}catch(e){AMB_VIS=true;}}
+  /* 아직 첫 보고가 오기 전에는 보이는 것으로 본다 (첫 프레임을 건너뛰지 않도록) */
+  return AMB_VIS!==false;
 }
 addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
 /* 숨어 있던 영역이 다시 보이거나 폭이 바뀌면 그때 다시 잰다 (v51).
@@ -5263,8 +5341,9 @@ function renderHeat(){
 /* 칸에 마우스를 올리면 그 구간의 세부 실적을 보여준다 */
 function wireHeatTip(tbl){
   const MET=['imp','click','view','conv','cost'];
-  tbl.querySelectorAll('td.hm[data-ti]').forEach(td=>{
-    td.addEventListener('mousemove',e=>{
+  delegateCellHover(tbl,'td.hm[data-ti]',{
+    leave:()=>hideTip(),
+    move:(td,e)=>{
       const t=HEAT_TIP[+td.dataset.ti];if(!t)return;
       const rows=MET.filter(k=>t.b&&isFinite(t.b[k])&&t.b[k]>0)
         .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(t.b[k])}</b></div>`);
@@ -5275,8 +5354,7 @@ function wireHeatTip(tbl){
         +`<div class="r"><span class="l">${esc(t.cat)}</span><b>${esc(t.label)}</b></div>`
         +`<div class="r"><span class="l">${METRICS[t.c.unit].l} (KPI ${esc(KPI_LABEL[t.c.kpi]||t.c.kpi)})</span>`
         +`<b>${METRICS[t.c.unit].f(t.v)}</b></div>`
-        +rows.join('')+eff.join(''));});
-    td.addEventListener('mouseleave',hideTip);});
+        +rows.join('')+eff.join(''));}});
 }
 /* 세로 스크롤 없이 전부 보여주므로, 머리글은 화면에 떠 있는 복사본으로 고정한다
    (게재 히스토리와 같은 방식 — overflow-x:auto 안에서는 sticky 가 페이지에 붙지 않는다) */
@@ -5296,13 +5374,11 @@ function mountHeatHead(tbl){
   bar.innerHTML='';bar.appendChild(inner);
   /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
   bar.style.pointerEvents='none';
-  clone.querySelectorAll('th.dhd').forEach(th=>{
-    th.style.pointerEvents='auto';
-    const di=th.dataset.di;
-    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
-    th.addEventListener('mousemove',e=>{
-      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
-    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
+  clone.querySelectorAll('th.dhd').forEach(th=>{th.style.pointerEvents='auto';});
+  delegateCellHover(clone,'th.dhd',{
+    enter:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,true);},
+    leave:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,false);hideTip();},
+    move:(th,e)=>{if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+th.dataset.di)));}});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -6214,13 +6290,11 @@ function mountGanttHead(tbl){
   bar.innerHTML='';bar.appendChild(inner);
   /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
   bar.style.pointerEvents='none';
-  clone.querySelectorAll('th.dhd').forEach(th=>{
-    th.style.pointerEvents='auto';
-    const di=th.dataset.di;
-    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
-    th.addEventListener('mousemove',e=>{
-      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
-    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
+  clone.querySelectorAll('th.dhd').forEach(th=>{th.style.pointerEvents='auto';});
+  delegateCellHover(clone,'th.dhd',{
+    enter:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,true);},
+    leave:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,false);hideTip();},
+    move:(th,e)=>{if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+th.dataset.di)));}});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -6259,11 +6333,18 @@ function wireGanttHover(t,SC,list){
     const b={imp:g('imp'),click:g('click'),view:g('view'),conv:g('conv'),
       lead:g('lead'),eng:g('eng'),rev:g('rev'),net:g('net'),cost:g('cost')};
     return b;};
-  t.querySelectorAll('td.day').forEach(td=>{
-    const di=td.dataset.di,gi=+td.dataset.gi,cid=td.dataset.cid;
-    td.addEventListener('mouseenter',()=>{paint(di,true);td.closest('tr').classList.add('rowhi');});
-    td.addEventListener('mouseleave',()=>{paint(di,false);td.closest('tr').classList.remove('rowhi');hideTip();});
-    td.addEventListener('mousemove',e=>{
+  /* 칸마다 달지 않고 표 하나에 모아 받는다 (v56) — 동작은 그대로 */
+  const isHd=el=>el.tagName==='TH';
+  delegateCellHover(t,'td.day,th.dhd',{
+    enter:el=>{paint(el.dataset.di,true);
+      if(isHd(el))return;
+      const tr=el.closest('tr');if(tr)tr.classList.add('rowhi');},
+    leave:el=>{paint(el.dataset.di,false);hideTip();
+      if(isHd(el))return;
+      const tr=el.closest('tr');if(tr)tr.classList.remove('rowhi');},
+    move:(td,e)=>{
+      if(isHd(td)){showTip(e.clientX,e.clientY,dayHtml(SC.i0+(+td.dataset.di)));return;}
+      const gi=+td.dataset.gi,cid=td.dataset.cid;
       const c=byId[cid]||CREATIVES.find(x=>x.id===cid);if(!c)return;
       const d=ALLDATES[gi],hol=holName(d);
       if(gi>=ELAPSED){showTip(e.clientX,e.clientY,
@@ -6282,7 +6363,7 @@ function wireGanttHover(t,SC,list){
         +(()=>{const a=dayAll(gi);
           return `<div class="tsec">이 날 전체 (${fmt(a.live)}/${fmt(a.total)}개 소재)</div>`
             +row('노출 · 클릭',`${fmt(a.imp)} · ${fmt(a.click)}`)
-            +row('광고비',won(a.cost));})());});});
+            +row('광고비',won(a.cost));})());}});
   /* 그 날짜에 표에 올라온 소재 전체의 합 */
   const shown=(list||[]).filter(Boolean);
   const byId={};shown.forEach(c=>{byId[c.id]=c;});
@@ -6306,11 +6387,7 @@ function wireGanttHover(t,SC,list){
       +rowT('CPM · CPC',`${won(b.cost/b.imp*1000)} · ${won(b.cost/b.click)}`)
       +rowT('광고비',won(b.cost));};
   /* 날짜 칸(머리글)에 올리면 그 날 전체 실적을 보여 준다 */
-  t.querySelectorAll('th.dhd').forEach(th=>{
-    const di=th.dataset.di,gi=SC.i0+(+di);
-    th.addEventListener('mouseenter',()=>paint(di,true));
-    th.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,dayHtml(gi)));
-    th.addEventListener('mouseleave',()=>{paint(di,false);hideTip();});});
+  /* 날짜 머리글은 위의 '칸' 위임에 함께 실었다 — 마우스 한 번에 closest 를 두 번 돌지 않도록 */
   /* 떠 있는 머리글(복사본)에서도 같은 팝업이 뜨도록 밖에서 부를 수 있게 남겨 둔다 */
   t.__dayHtml=dayHtml;t.__paintCol=paint;
 }
@@ -8858,6 +8935,8 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:''),
       /* 배경 로고 — 'none'(앰비언트) · 'adv'(광고주) · 'agency'(대행사). 캠페인마다 따로 */
       bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
+      /* 배경 로고가 흘러다닐지 고정될지 (v56) */
+      bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
       agencyLogo:CAMPAIGN.agencyLogo||''},
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
@@ -8931,6 +9010,9 @@ function applyDoc(d,keepToday){
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
+  /* 배경 움직임 (v56) — 없던 저장본은 지금까지의 동작(흘러다니기)으로 본다 */
+  CAMPAIGN.bgMotion=d.campaign?.bgMotion==='still'?'still':'float';
+  try{if(typeof applyBgMotion==='function')applyBgMotion();}catch(e){}
   delete CAMPAIGN.bgLogo;
   CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
   /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
@@ -11755,6 +11837,16 @@ function openThemePicker(){
         .map(o=>`<button class="thcard${bgModeNow()===o.k?' on':''}" data-bg="${o.k}">
             <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
      </div>
+     <div class="sec gap" style="margin:20px 0 8px;font-size:14px">배경 움직임</div>
+     <div class="hint" style="margin-bottom:10px">배경 로고를 천천히 <b>흘려보낼지</b>, 그 자리에 <b>세워 둘지</b> 고릅니다.
+       색·크기·위치는 같고 움직임만 달라집니다.
+       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div></div>
+     <div class="thgrid bgpick">
+       ${[{k:'float',l:'흘러다니기',d:'천천히 떠다니는 기본값'},
+          {k:'still',l:'고정',        d:'움직이지 않음 · 더 가벼움'}]
+        .map(o=>`<button class="thcard${bgMotionNow()===o.k?' on':''}" data-bgm="${o.k}">
+            <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+     </div>
      <div class="form-row" id="bgAgencyRow" style="margin-top:12px${bgModeNow()==='agency'?'':';display:none'}">
        <div class="fld" style="flex:0 0 100%"><label>대행사 로고
          <span class="hint">(1:1 ~ 3:1 · 3MB 이하 · 한 번 올리면 다른 캠페인에서도 쓸 수 있습니다)</span></label>
@@ -11777,6 +11869,11 @@ function openThemePicker(){
     const row=$('bgAgencyRow');if(row)row.style.display=CAMPAIGN.bgMode==='agency'?'':'none';
     try{refreshBgDots();}catch(e){}
     try{markDirty();saveLocal();}catch(e){}});
+  host2.querySelectorAll('[data-bgm]').forEach(b2=>b2.onclick=()=>{
+    CAMPAIGN.bgMotion=b2.dataset.bgm;
+    host2.querySelectorAll('[data-bgm]').forEach(x=>x.classList.toggle('on',x.dataset.bgm===CAMPAIGN.bgMotion));
+    try{applyBgMotion();}catch(e){}
+    try{markDirty();saveLocal();}catch(e){}});
   {const pk=$('agyPick');
    if(pk)pk.onclick=()=>pickLogo(u=>{setAgencyLogo(u);paintAgy();
      try{refreshBgDots();markDirty();saveLocal();}catch(e){}});}
@@ -11789,6 +11886,14 @@ function openThemePicker(){
 function bgModeNow(){
   if(CAMPAIGN.bgMode)return CAMPAIGN.bgMode;
   return CAMPAIGN.bgLogo===false?'none':'adv';
+}
+/* 배경 움직임 (v56) — 'float' 흘러다니기(기본) · 'still' 고정.
+   캐페인마다 따로 정해지고, 예전 저장본에는 없으므로 지금까지의 동작인 float 이 기본이다. */
+function bgMotionNow(){return CAMPAIGN.bgMotion==='still'?'still':'float';}
+function applyBgMotion(){
+  const still=bgMotionNow()==='still';
+  const host=$('bgdots');
+  if(host)host.classList.toggle('still',still);
 }
 /* 대행사 로고는 캠페인이 아니라 **회사** 것이라 브라우저에도 남긴다.
    (광고주에게 보이는 화면을 위해 캠페인 문서에도 함께 담는다) */
@@ -12034,6 +12139,7 @@ function paintBgDots(svg){
 function refreshBgDots(){
   const host=$('bgdots');
   const mode=bgModeNow();
+  applyBgMotion();
   /* 없음 → 테마색 앰비언트 그라데이션 */
   if(host)host.classList.toggle('amb',mode==='none');
   if(mode==='none'){BGDOT.url='';BGDOT.svg='';paintBgDots('');if(host)host.classList.add('on');return;}
