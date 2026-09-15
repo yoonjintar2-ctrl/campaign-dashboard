@@ -122,6 +122,8 @@ function jumpToBadRow(){
   if(!idx.length)return;
   BAD_CURSOR=(BAD_CURSOR+1)%idx.length;
   const ri=idx[BAD_CURSOR];
+  /* 그 행이 다른 쪽(500행 단위)에 있으면 먼저 그 쪽으로 넘긴다 (v58) */
+  try{if(typeof sheetShowRow==='function')sheetShowRow(ri);}catch(e){}
   const tr=document.querySelector(`#sheet tbody tr[data-ri="${ri}"]`);
   if(!tr)return;
   const wrap=tr.closest('.sheet-wrap');
@@ -196,7 +198,9 @@ const tblMenuBtn=(id,k)=>`<button type="button" class="thmenu${tblHasFilter(id,k
   +` title="정렬 · 필터">${(TBL_SORT[id]&&TBL_SORT[id].k===k)?(TBL_SORT[id].dir>0?'▲':'▼'):(tblHasFilter(id,k)?'▼':'⋮')}</button>`;
 function closeTblMenu(){document.querySelectorAll('.thpop').forEach(x=>x.remove());}
 document.addEventListener('mousedown',e=>{
-  if(!e.target.closest('.thpop')&&!e.target.closest('.thmenu'))closeTblMenu();});
+  const t=e.target;
+  if(!t||typeof t.closest!=='function'){closeTblMenu();return;}
+  if(!t.closest('.thpop')&&!t.closest('.thmenu')&&!t.closest('th.thsf'))closeTblMenu();});
 function openTblMenu(btn,id,k,label,arr,getVal,rerender){
   closeTblMenu();
   const vals=[...new Set(arr.map(x=>tblStr(getVal(x,k))))]
@@ -246,6 +250,46 @@ function openTblMenu(btn,id,k,label,arr,getVal,rerender){
     else TBL_FILTER[id][k]=[...cur];
     closeTblMenu();rerender();};
 }
+/* ===== 500행씩 나눠 보기 (v58) =====
+   행이 수천 개가 되면 한 번에 다 그리느라 몇 초씩 멈췄다.
+   정렬·필터는 **모든 행**을 대상으로 먼저 계산하고(tblViewIdx),
+   그 결과에서 지금 페이지 몫만 잘라 그린다 — 합계·저장·붙여넣기는 전부 원본 기준 그대로. */
+const SHEET_PAGE_SIZE=500;
+let SHEET_PAGE=0;
+let SHEET_VIEW=[];   /* 정렬·필터를 거친 전체 행 번호 (페이지 계산용) */
+const sheetPageCount=()=>Math.max(1,Math.ceil(SHEET_VIEW.length/SHEET_PAGE_SIZE));
+const sheetPageOf=ri=>{const p=SHEET_VIEW.indexOf(ri);return p<0?-1:Math.floor(p/SHEET_PAGE_SIZE);};
+/* 그 행이 다른 페이지에 있으면 페이지를 옮겨 그린다 */
+function sheetShowRow(ri){
+  const p=sheetPageOf(ri);
+  if(p<0||p===SHEET_PAGE)return false;
+  SHEET_PAGE=p;renderSheet();return true;}
+function sheetGoPage(p){
+  const n=sheetPageCount();
+  p=Math.max(0,Math.min(p,n-1));
+  if(p===SHEET_PAGE)return;
+  SHEET_PAGE=p;renderSheet();
+  const w=document.querySelector('#tab-input .sheet-wrap');if(w)w.scrollTop=0;}
+function renderSheetPager(){
+  const box=$('sheetPager');if(!box)return;
+  const n=sheetPageCount();
+  box.classList.toggle('hidden',n<2);
+  if(n<2){box.innerHTML='';return;}
+  const cur=SHEET_PAGE;
+  /* 1 … 앞뒤 2쪽 … 마지막 */
+  const want=new Set([0,n-1,cur,cur-1,cur-2,cur+1,cur+2]);
+  const list=[...want].filter(i=>i>=0&&i<n).sort((a,b)=>a-b);
+  const from=cur*SHEET_PAGE_SIZE+1,to=Math.min(SHEET_VIEW.length,(cur+1)*SHEET_PAGE_SIZE);
+  let h=`<span class="pinfo">${fmt(SHEET_VIEW.length)}행 중 ${fmt(from)}–${fmt(to)}</span>`
+    +`<button type="button" data-pg="${cur-1}" ${cur===0?'disabled':''} title="이전 500행">‹</button>`;
+  let prev=-1;
+  list.forEach(i=>{
+    if(prev>=0&&i-prev>1)h+='<span class="pgap">…</span>';
+    h+=`<button type="button" data-pg="${i}" class="${i===cur?'on':''}">${i+1}</button>`;
+    prev=i;});
+  h+=`<button type="button" data-pg="${cur+1}" ${cur>=n-1?'disabled':''} title="다음 500행">›</button>`;
+  box.innerHTML=h;
+  box.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>sheetGoPage(+b.dataset.pg));}
 function renderSheet(){
   const t=$('sheet'),cols=sheetCols();
   /* 예전에는 행마다 <datalist> 를 5개씩 만들었다 — 1,400행이면 7,000개 · 40,000 옵션.
@@ -269,7 +313,7 @@ function renderSheet(){
     return h2;};
   let h='<thead><tr><th style="width:34px" class="rm">'
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
-    +cols.map(c=>`<th style="min-width:${c.w||110}px" class="thsf">`
+    +cols.map(c=>`<th style="min-width:${c.w||110}px" class="thsf" title="누르면 정렬 · 필터 · 끌면 열 순서 이동">`
       +`<span class="thl">${c.l}${c.type==='calc'?' ƒ':''}</span>`
       +tblMenuBtn('sheet',c.k)+`</th>`).join('')+'</tr></thead><tbody>';
   /* 정렬·필터가 걸려 있으면 그 순서·범위로만 그린다 (원본 배열은 그대로) */
@@ -277,7 +321,13 @@ function renderSheet(){
     k=>{const c=SHEET_COLS.find(x=>x.k===k);return !!c&&(c.type==='num'||c.type==='calc');},
     (r,k)=>{const c=SHEET_COLS.find(x=>x.k===k);
       return c&&c.type==='calc'?evalFormula(c.rule,r):r[k];});
-  view.forEach(ri=>{
+  /* 정렬·필터는 위에서 모든 행을 대상으로 끝났다 — 여기서부터는 "보는 몫"만 자른다 */
+  SHEET_VIEW=view;
+  const nPage=sheetPageCount();
+  if(SHEET_PAGE>=nPage)SHEET_PAGE=nPage-1;
+  if(SHEET_PAGE<0)SHEET_PAGE=0;
+  const page=view.slice(SHEET_PAGE*SHEET_PAGE_SIZE,(SHEET_PAGE+1)*SHEET_PAGE_SIZE);
+  page.forEach(ri=>{
     const r=SHEET[ri];
     /* 매칭 실패는 행 전체가 아니라 "문제가 된 칸" 만 표시한다 */
     const cIss=rowCellIssues(r),badSet=new Set(cIss.cells);
@@ -347,7 +397,8 @@ function renderSheet(){
   {const jb=$('sheetBadJump');
    if(jb)jb.onclick=()=>jumpToBadRow();
    const fo=$('sheetFilterOff');
-   if(fo)fo.onclick=()=>{delete TBL_FILTER.sheet;delete TBL_SORT.sheet;renderSheet();};}
+   if(fo)fo.onclick=()=>{delete TBL_FILTER.sheet;delete TBL_SORT.sheet;SHEET_PAGE=0;renderSheet();};}
+  renderSheetPager();
   const gross=sum(SHEET.map(r=>+r.cost||0));
   $('sheetSum').innerHTML=`합계 — 노출 <b class="mono">${fmt(sum(SHEET.map(r=>+r.imp||0)))}</b> ·
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
@@ -359,14 +410,22 @@ function renderSheet(){
   /* 머리글을 끌어 열 순서 바꾸기 */
   if(typeof enableColDrag==='function')enableColDrag(t,cols,v2=>{
     SHEET_COLS=applyColOrder(SHEET_COLS,v2);renderSheet();markDirty();saveLocal();},1);
-  /* 머리글의 ⋮ — 정렬 · 필터 */
-  t.querySelectorAll('th [data-thm]').forEach(b=>b.onclick=e=>{
-    e.preventDefault();e.stopPropagation();
-    const k=b.dataset.thm,c=SHEET_COLS.find(x=>x.k===k)||{l:k};
-    openTblMenu(b,'sheet',k,c.l||k,SHEET,
+  /* 머리글 — 정렬 · 필터.
+     v58: ⋮ 만이 아니라 **머리글 어디를 눌러도** 같은 메뉴가 열린다.
+     (너비 손잡이 colgrip 만 예외 — 거기는 끌어서 폭을 조절하는 자리다)
+     정렬·필터를 새로 걸면 보는 위치가 흐트러지므로 1쪽으로 돌려 준다. */
+  const openSheetMenu=(anchor,k)=>{
+    const c=SHEET_COLS.find(x=>x.k===k)||{l:k};
+    openTblMenu(anchor,'sheet',k,c.l||k,SHEET,
       (r,kk)=>{const cc=SHEET_COLS.find(x=>x.k===kk);
         return cc&&cc.type==='calc'?evalFormula(cc.rule,r):r[kk];},
-      ()=>renderSheet());});
+      ()=>{SHEET_PAGE=0;renderSheet();});};
+  t.querySelectorAll('th.thsf').forEach((th,i)=>{
+    const c=cols[i];if(!c)return;
+    th.onclick=e=>{
+      if(e.target.closest('.colgrip'))return;
+      e.preventDefault();e.stopPropagation();
+      openSheetMenu(th.querySelector('[data-thm]')||th,c.k);};});
   /* 셀마다 리스너를 붙이면 1,400행 × 10칸 = 28,000개가 된다 — 표 하나에만 걸고 위임한다 */
   if(!t.__wired){
     t.__wired=1;
@@ -402,11 +461,16 @@ function renderSheet(){
       const del=e.target.closest('[data-del]');
       if(del){pushUndo();SHEET.splice(+del.dataset.del,1);renderSheet();syncSheet();}});
   }
-  /* 헤더의 ✕ = 모두 지우기 (확인 후 실행) */
+  /* 헤더의 ✕ · 우측 위 「데이터 모두 삭제」 = 모두 지우기 (확인 후 실행) */
+  const wipeAll=()=>confirmModal('입력한 일별 실적을 모두 지울까요?',
+    `${fmt(SHEET.length)}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
+    ()=>{pushUndo();SHEET.length=0;SHEET_PAGE=0;
+      delete TBL_FILTER.sheet;delete TBL_SORT.sheet;
+      renderSheet();buildFacts();renderAll();
+      try{markDirty();saveLocal();}catch(e){}},'모두 지우기');
   const ca=$('sheetClearAll');
-  if(ca)ca.onclick=()=>confirmModal('입력한 일별 실적을 모두 지울까요?',
-    `${SHEET.length}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
-    ()=>{pushUndo();SHEET.length=0;renderSheet();buildFacts();renderAll();},'모두 지우기');
+  if(ca)ca.onclick=wipeAll;
+  {const wb=$('sheetWipe');if(wb)wb.onclick=wipeAll;}
 }
 /* 선택 표시는 "지금 칠해진 칸"만 지우고 새로 칠한다 — 매번 2만 칸을 훑지 않게 */
 let SEL_PAINTED=[];
@@ -453,8 +517,21 @@ function setCell(i,k,raw){
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
 const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
-const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());renderSheet();syncSheet();};
+const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());
+  renderSheet();
+  /* 새로 넣은 행이 마지막 쪽에 있으면 그 쪽으로 넘겨 준다 (v58) */
+  try{sheetShowRow(SHEET.length-1);}catch(e){}
+  syncSheet();};
 const sheetActive=()=>!$('tab-input').classList.contains('hidden')&&document.querySelector('#sheet td.sel');
+/* ⚠ 붙여넣기·복사는 문서 전체에서 받는다. 그런데 같은 탭에는 **운영 이슈** 입력 칸도 있어서,
+   거기에 붙여넣어도 시트에 마지막으로 골라 둔 칸(보통 A1)이 덮어써지고 있었다 (v58).
+   시트 밖의 입력 칸에서 일어난 일이면 손대지 않는다. */
+const pasteIntoSheet=e=>{
+  if(!sheetActive())return false;
+  const t=e.target;
+  const fld=t&&t.closest?t.closest('input,textarea,select,[contenteditable="true"]'):null;
+  if(fld&&!fld.closest('#sheet'))return false;
+  return true;};
 
 /* ===== 실행 취소 / 다시 실행 (Ctrl+Z · Ctrl+Y) ===== */
 const UNDO=[],REDO=[],UNDO_MAX=60;
@@ -487,7 +564,7 @@ const hhmm=d=>`${dFull(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.ge
 /* 입력 히스토리 — 실제로 저장·반영할 때만 쌓인다 (예시 값 없음) */
 let SHEET_HIST=[];
 document.addEventListener('paste',e=>{
-  if(!sheetActive())return;
+  if(!pasteIntoSheet(e))return;
   const txt=(e.clipboardData||window.clipboardData).getData('text');if(!txt)return;
   e.preventDefault();pushUndo();
   const cols=sheetCols();
@@ -506,7 +583,7 @@ document.addEventListener('paste',e=>{
     SEL={r1:r0,c1:c0,r2:r0+grid.length-1,c2:c0+grid[0].length-1};}
   renderSheet();syncSheet();});
 document.addEventListener('copy',e=>{
-  if(!sheetActive())return;
+  if(!pasteIntoSheet(e))return;
   const cols=sheetCols();
   const r0=Math.min(SEL.r1,SEL.r2),r1=Math.max(SEL.r1,SEL.r2);
   const c0=Math.min(SEL.c1,SEL.c2),c1=Math.max(SEL.c1,SEL.c2);
@@ -552,6 +629,8 @@ document.addEventListener('keydown',e=>{
   const cl=(v,mx)=>Math.max(0,Math.min(v,mx));
   if(e.shiftKey){SEL.r2=cl(SEL.r2+dr,maxR);SEL.c2=cl(SEL.c2+dc,maxC);}
   else{const r=cl(SEL.r1+dr,maxR),c=cl(SEL.c1+dc,maxC);SEL={r1:r,c1:c,r2:r,c2:c};}
+  /* 방향키로 500행 경계를 넘으면 쪽도 같이 넘긴다 (v58) */
+  sheetShowRow(SEL.r2);
   paintSel();
   const cell=document.querySelector(`#sheet td[data-r="${SEL.r2}"][data-c="${SEL.c2}"]`);
   if(cell){cell.scrollIntoView({block:'nearest',inline:'nearest'});
@@ -653,9 +732,26 @@ function syncSheet(){
 function saveRows(){applySheet();renderAll();switchTab('dash');}
 /* 운영 이슈 — 시작일·종료일은 달력에서 고르고, 대상·유형 없이 내용만 적는다.
    행마다 저장 버튼을 두어 적은 내용이 바로 반영된 것을 눈으로 확인할 수 있게 했다. */
+/* 운영 이슈 — 저장된 줄과 고친 줄을 눈으로 가른다 (v58).
+   예전에는 이미 저장된 줄에도 '저장' 버튼이 그대로 있어서 안 누른 것처럼 보였다. */
+const issueSig=is=>JSON.stringify([is.s||'',is.e||'',is.txt||'']);
+const issueDirty=is=>is.__sig!==issueSig(is);
+function markIssuesSaved(){try{ISSUES.forEach(is=>{is.__sig=issueSig(is);});}catch(e){}}
+markIssuesSaved();   /* 처음 들어 있는 이슈도 '저장된 상태'로 시작한다 */
+function paintIssueBtn(i){
+  const t=$('tblIssue');if(!t)return;
+  const b=t.querySelector(`[data-issave="${i}"]`);if(!b)return;
+  const is=ISSUES[i];if(!is)return;
+  const dirty=issueDirty(is);
+  b.disabled=!dirty;
+  b.classList.toggle('primary',dirty);
+  b.classList.toggle('done',!dirty);
+  b.textContent=dirty?'저장':'✓ 저장 완료';
+  b.title=dirty?'이 줄의 바뀐 내용을 저장합니다':'저장되어 있습니다 — 고치면 다시 저장할 수 있습니다';
+}
 function renderIssues(){
   let h=`<thead><tr><th style="width:150px">시작일</th><th style="width:150px">종료일</th>
-    <th>이슈 내용</th><th style="width:104px"></th></tr></thead><tbody>`;
+    <th>이슈 내용</th><th style="width:118px"></th></tr></thead><tbody>`;
   ISSUES.forEach((is,i)=>{
     h+=`<tr><td><input type="date" value="${esc(is.s||'')}" data-is="${i}" data-k="s"
           min="${campStart()}" max="${campEnd()}"></td>
@@ -664,25 +760,32 @@ function renderIssues(){
       <td><input class="txt" value="${esc(is.txt)}" data-is="${i}" data-k="txt"
           placeholder="예: 소재 교체로 초기 학습 구간"></td>
       <td style="white-space:nowrap">
-        <button class="btn sm" data-issave="${i}" title="이 줄을 저장합니다">저장</button>
+        <button class="btn sm" data-issave="${i}">저장</button>
         <button class="btn sm danger" data-isdel="${i}" title="이 줄을 삭제합니다" style="margin-left:4px">✕</button>
       </td></tr>`;});
   const t=$('tblIssue');t.innerHTML=h+'</tbody>';
   const c=$('issueCount');if(c)c.textContent=`${ISSUES.length}건 등록됨`;
-  t.querySelectorAll('[data-is]').forEach(inp=>inp.onchange=e=>{
-    ISSUES[+e.target.dataset.is][e.target.dataset.k]=e.target.value;
-    renderDaily();try{markDirty();}catch(x){}});
+  /* 값이 바뀌는 즉시 그 줄의 버튼만 다시 칠한다 (input 은 타이핑 중에도 온다) */
+  const touch=e=>{
+    const i=+e.target.dataset.is;
+    ISSUES[i][e.target.dataset.k]=e.target.value;
+    paintIssueBtn(i);};
+  t.querySelectorAll('[data-is]').forEach(inp=>{
+    inp.oninput=touch;
+    inp.onchange=e=>{touch(e);renderDaily();try{markDirty();}catch(x){}};});
   t.querySelectorAll('[data-issave]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.issave;
     const tr=b.closest('tr');
     tr.querySelectorAll('[data-is]').forEach(inp=>{
       ISSUES[+inp.dataset.is][inp.dataset.k]=inp.value;});
+    ISSUES[i].__sig=issueSig(ISSUES[i]);
     renderDaily();renderIssueAlert&&renderIssueAlert();
     try{markDirty();saveLocal();}catch(x){}
-    b.textContent='✓ 저장됨';b.classList.add('primary');
-    setTimeout(()=>{b.textContent='저장';b.classList.remove('primary');},1300);});
+    paintIssueBtn(i);});
   t.querySelectorAll('[data-isdel]').forEach(b=>b.onclick=()=>{
     ISSUES.splice(+b.dataset.isdel,1);renderIssues();renderDaily();
     try{markDirty();saveLocal();}catch(x){}});
+  ISSUES.forEach((_,i)=>paintIssueBtn(i));
   applyIssueFold();
 }
 /* 5건까지는 펼쳐 두고, 그보다 많으면 접어 둔다 */

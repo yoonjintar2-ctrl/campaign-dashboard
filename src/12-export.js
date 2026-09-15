@@ -648,7 +648,9 @@ function toggleDarkView(){
 }
 (function wireDark(){
   const go=()=>{const b=$('darkToggle');
-    if(b){b.onclick=toggleDarkView;paintDarkBtn();}};
+    if(b){b.onclick=toggleDarkView;paintDarkBtn();
+      /* 처음에는 대시보드 탭이 열려 있다 */
+      try{b.classList.toggle('hidden',!!$('tab-dash').classList.contains('hidden'));}catch(e){}}};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();
 function openThemePicker(){

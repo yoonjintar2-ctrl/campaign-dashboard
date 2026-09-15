@@ -57,7 +57,9 @@ function serializeDoc(){
     creatives:CREATIVES.map(stripCr),
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
     crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
-    issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
+    /* __sig 는 저장 상태 표시용 임시 값이라 문서에는 담지 않는다 (v58) */
+    issues:ISSUES.map(x=>{const o={...x};delete o.__sig;return o;}),
+    holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
     /* 이 캠페인이 쓰는 사용자 열 — 공유받은 사람(광고주 · 다른 계정)도 같은 열로 보도록 (v57) */
     userCols:(typeof USER_COLS!=='undefined'?USER_COLS.map(x=>({...x})):[]),
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
@@ -146,7 +148,8 @@ function applyDoc(d,keepToday){
     try{const merged=ucMerge(USER_COLS,d.userCols);
       if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){saveUserCols(merged);regUserCols(merged);}
     }catch(e){}}
-  if(d.issues)ISSUES=d.issues;
+  /* 문서에서 온 이슈는 '저장된 상태'로 표시한다 */
+  if(d.issues){ISSUES=d.issues;try{markIssuesSaved();}catch(e){}}
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
   if(isFinite(d.verdictBand))VERDICT_BAND=d.verdictBand;

@@ -1030,11 +1030,7 @@ function buildSelects(){
   $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
   $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
     try{markDirty();saveLocal();}catch(x){}};
-  /* 소계 켜고 끄기 (v57) — 머리글에 소재 말고 다른 기준이 있어야 의미가 있다 */
-  const gs2=$('ganttSubBtn');
-  if(gs2){gs2.classList.toggle('on',!!GANTT.sub);
-    gs2.onclick=()=>{GANTT.sub=!GANTT.sub;gs2.classList.toggle('on',GANTT.sub);
-      renderGantt();try{markDirty();saveLocal();}catch(x){}};}
+  /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식) */
   const gr=$('ganttRange');
   if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
@@ -1060,6 +1056,8 @@ function switchTab(name){
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
   ['dash','input','setup'].forEach(n=>$('tab-'+n).classList.toggle('hidden',n!==name));
   $('subbar').classList.toggle('hidden',name!=='dash');
+  /* 다크 보기는 대시보드에서만 쓰는 기능이라 그 탭에서만 보인다 (v58) */
+  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',name!=='dash');}
   /* 일자별 상세 효율로 돌아왔으면 보던 자리로, 그 밖에는 맨 위로 */
   const backRaw=name==='dash'&&$('sub-table')&&!$('sub-table').classList.contains('hidden');
   if(backRaw&&typeof renderRaw==='function'){renderRaw();}
@@ -1105,12 +1103,12 @@ function roleName(){
   if(C.user){
     if(C.appRole==='super')return '슈퍼마스터';
     if(C.campaign&&C.role==='editor')return '운영진';
-    if(C.campaign&&C.role==='viewer')return '광고주';
+    if(C.campaign&&C.role==='viewer')return '조회모드';
     if(C.appRole==='master')return '마스터';
     return '게스트';}
   if(C.sample)return '샘플 (시행사 화면)';
-  if(C.shareView)return C.shareRole==='staff'?'운영진':'광고주';
-  return currentRole()==='client'?'광고주':'시행사';
+  if(C.shareView)return C.shareRole==='staff'?'운영진':'조회모드';
+  return currentRole()==='client'?'조회모드':'시행사';
 }
 let __lastRole=null;
 function applyRole(){
@@ -1152,7 +1150,7 @@ function applyRole(){
 setTimeout(applyRole,0);
 $('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});
 $('rawCfgBtn').onclick=()=>openBuilder($('rawCfgBox'),RAW_CFG,{useRows:false,catalog:RAW_CATALOG,onApply:renderRaw});
-$('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,useSub:false,catalog:GANTT_CATALOG,onApply:renderGantt});
+$('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,useSub:true,catalog:GANTT_CATALOG,onApply:renderGantt});
 /* 소재 카드의 표시 항목은 소재 팝업 안에서 설정한다 (별도 "표시 항목" 버튼 없음) */
 $('mixCfgBtn').onclick=()=>openBuilder($('mixCfgBox'),MIX_CFG,
   {rowFields:DIMS.filter(d=>d.k!=='month'),catalog:MIX_CATALOG,onApply:renderMix});

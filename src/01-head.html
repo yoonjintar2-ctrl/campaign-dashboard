@@ -958,6 +958,12 @@ svg.chart{display:block;width:100%;height:auto;overflow:visible}
 #tip .tsec{margin:8px 0 4px;padding-top:6px;border-top:1px solid rgba(255,255,255,.16);
   font-size:10.5px;font-weight:800;letter-spacing:.03em;opacity:.72}
 #tip .r.me{background:rgba(255,255,255,.12);border-radius:5px;padding:1px 5px;margin-left:-5px;margin-right:-5px}
+/* 지금 보고 있는 기준(CPC · 노출 등)을 팝업 안에서 눈에 띄게 (v58) */
+#tip .r.hi{background:rgba(255,255,255,.17);border-radius:6px;padding:3px 6px;
+  margin:5px -6px 3px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+#tip .r.hi .l{opacity:1;font-weight:700}
+#tip .r.hi .l::before{content:'▸';opacity:.7;font-size:9px}
+#tip .r.hi b{font-weight:800}
 #tip .r b .sm{font-weight:600;opacity:.66;font-size:10.5px;margin-left:3px}
 
 /* 표 폭 맞춤 — 값이 적으면 내용 너비만큼만 (왼쪽 정렬) */
@@ -1373,8 +1379,11 @@ table.gantt td.day .b{display:block;width:100%;height:100%;border-radius:2px}
 table.gantt td.day{position:relative}
 table.gantt td.day .vnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-style:normal;text-decoration:none;font-size:7.5px;font-weight:700;letter-spacing:-.4px;
-  color:rgba(20,30,45,.34);pointer-events:none;overflow:hidden;line-height:1;white-space:nowrap}
-[data-theme="dark"] table.gantt td.day .vnum{color:rgba(255,255,255,.40)}
+  color:rgba(20,30,45,.22);pointer-events:none;overflow:hidden;line-height:1;white-space:nowrap}
+/* v58: 더 옅게 — 정확한 값은 마우스를 올려 보면 되니 그래프 색을 가리지 않는 정도로만 */
+[data-theme="dark"] table.gantt td.day .vnum{color:rgba(255,255,255,.28)}
+table.gantt td.day:hover .vnum{color:rgba(20,30,45,.55)}
+[data-theme="dark"] table.gantt td.day:hover .vnum{color:rgba(255,255,255,.62)}
 table.gantt td.day .vnum.nofit{display:none}
 /* 단가를 고른 동안만 날짜 칸을 숫자가 들어갈 만큼만 넓힌다 (v57).
    노출·클릭처럼 세는 값으로 돌아가면 곧바로 원래의 촘촘한 폭으로 돌아온다. */
@@ -1432,8 +1441,15 @@ input[type=date]{color-scheme:light}
 [data-theme="dark"] input[type=date]{color-scheme:dark}
 /* 브라우저 기본 달력 아이콘은 색을 마음대로 못 바꾼다 —
    투명하게 덮어 두고 그 자리에 직접 그린 아이콘을 배경으로 깐다 (다크에서도 또렷하다) */
+/* ⚠ 투명하게 덮어 둔 기본 달력 버튼은 **내용 상자 오른쪽 끝**에 놓인다.
+   그런데 우리는 padding-right:28px 을 줘서 그 안쪽에 아이콘을 그렸으므로,
+   눌리는 자리가 그림보다 28px 왼쪽에 있었다 — 그림을 눌러도 달력이 안 열리던 원인 (v58).
+   칸 오른쪽 끝에 딱 붙여 그림과 겹쳐 둔다. */
 input[type=date]::-webkit-calendar-picker-indicator{
-  opacity:0;cursor:pointer;width:20px;height:20px;margin:0;position:relative;z-index:2}
+  opacity:0;cursor:pointer;margin:0;padding:0;z-index:2;
+  position:absolute;right:0;top:0;bottom:0;width:30px;height:auto}
+.daterange input[type=date],table.sheet td input[type=date],.tbl input[type=date],
+#tblIssue input[type=date]{position:relative}
 .datewrap,.daterange input[type=date],table.sheet td input[type=date],.tbl input[type=date]{
   background-repeat:no-repeat;background-position:right 7px center;background-size:15px 15px;
   padding-right:28px}
@@ -1677,6 +1693,20 @@ th.thsf .thl{display:inline-block}
   border-radius:5px;font-family:inherit}
 .thmenu:hover{opacity:1;background:rgba(125,140,158,.22)}
 .thmenu.on,.thmenu.sorted{opacity:1;background:rgba(125,140,158,.26)}
+/* 머리글 아무 곳이나 눌러도 같은 메뉴가 열린다 (v58) — 누를 수 있다는 걸 손 모양으로 알린다 */
+table.sheet th.thsf{cursor:pointer}
+table.sheet th.thsf:hover .thmenu{opacity:1;background:rgba(125,140,158,.22)}
+table.sheet th.thsf .colgrip{cursor:col-resize}
+/* 500행씩 나눠 보기 (v58) */
+.pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:11px;flex-wrap:wrap}
+.pager .pinfo{font-size:11.5px;color:var(--muted);margin-right:4px}
+.pager button{border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  border-radius:7px;min-width:29px;height:27px;padding:0 8px;cursor:pointer;
+  font-family:inherit;font-size:11.5px;font-weight:700}
+.pager button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.pager button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.pager button:disabled{opacity:.38;cursor:default}
+.pager .pgap{color:var(--muted);font-size:11.5px;padding:0 2px}
 .thpop{position:fixed;z-index:520;width:250px;background:var(--surface);border:1px solid var(--line);
   border-radius:11px;box-shadow:0 18px 44px rgba(20,30,45,.22);padding:8px;font-size:12px}
 .thpop .thttl{font-weight:800;color:var(--ink);padding:3px 6px 7px;font-size:12.5px}
@@ -1708,6 +1738,10 @@ th.thsf .thl{display:inline-block}
 .btn.sm.dfilt.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
 /* 켜짐 상태가 있는 작은 버튼 공통 (v57 — 게재 히스토리 소계 등) */
 .btn.sm.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
+/* 이미 저장된 줄의 버튼 — 눌 수 없고, 저장돼 있다는 것만 알려 준다 (v58) */
+.btn.sm.done,.btn.sm.done:hover{background:transparent;border-color:transparent;
+  color:var(--muted);font-weight:600;cursor:default;box-shadow:none}
+.btn.sm:disabled{cursor:default}
 table.sheet td.rm button{border:0;background:transparent;color:var(--muted);cursor:pointer;height:32px;width:100%}
 table.sheet td.rm button:hover{color:var(--neg)}
 table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:center;height:32px;line-height:32px}
