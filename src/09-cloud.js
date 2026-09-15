@@ -323,7 +323,10 @@ function loadLocal(){
     rebuildPeriod();resetDateFilter();
     unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
     if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
-    buildFacts();renderEverything();
+    /* ⚠ 조회 기간은 **데이터가 다 올라온 뒤에** 다시 잡는다 (v60).
+     예전에는 applyDoc 직후(시트·일별 실적이 붙기 전)에 한 번만 잡아서
+     종료일이 옛 값(어제)에 눌러앉았다. 사람이 직접 고른 적이 있으면 resetDateFilter 가 알아서 비켜 준다. */
+  buildFacts();resetDateFilter();renderEverything();
     return true;
   }catch(e){return false;}
 }
@@ -337,7 +340,10 @@ function restoreDemo(){
   rebuildPeriod();resetDateFilter(true);
   const by={};(DEMO_SNAP.__daily||[]).forEach(x=>by[x.k]=x.daily);
   LINES.forEach(l=>{const d=by[LINE_KEY(l)];if(d)l.daily=JSON.parse(JSON.stringify(d));});
-  buildFacts();renderEverything();
+  /* ⚠ 조회 기간은 **데이터가 다 올라온 뒤에** 다시 잡는다 (v60).
+     예전에는 applyDoc 직후(시트·일별 실적이 붙기 전)에 한 번만 잡아서
+     종료일이 옛 값(어제)에 눌러앉았다. 사람이 직접 고른 적이 있으면 resetDateFilter 가 알아서 비켜 준다. */
+  buildFacts();resetDateFilter();renderEverything();
   clearLocal();
   return true;
 }
@@ -694,7 +700,10 @@ async function openCampaign(id){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();renderEverything();
+  /* ⚠ 조회 기간은 **데이터가 다 올라온 뒤에** 다시 잡는다 (v60).
+     예전에는 applyDoc 직후(시트·일별 실적이 붙기 전)에 한 번만 잡아서
+     종료일이 옛 값(어제)에 눌러앉았다. 사람이 직접 고른 적이 있으면 resetDateFilter 가 알아서 비켜 준다. */
+  buildFacts();resetDateFilter();renderEverything();
   paintCampSel();
   applyRoleLock();
   CLOUD.busy=false;
@@ -893,7 +902,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
   clearWorkState();
-  rebuildPeriod();buildFacts();renderEverything();
+  rebuildPeriod();buildFacts();resetDateFilter(true);renderEverything();
 }
 async function createCampaign(after){
   if(!CLOUD.on||!CLOUD.user){signInGoogle();return;}
