@@ -340,6 +340,15 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .mchip.pend{background:#fff;border-style:dashed;color:var(--muted)}
 [data-theme="dark"] .mchip.master{background:#3a3320;border-color:#6b5c2c;color:#e8cf8e}
 [data-theme="dark"] .mchip.pend{background:transparent}
+/* 다크 보기 토글 (v57) — 광고주도 쓸 수 있게 상단바에 둔다.
+   이 화면에서만 잠깐 바꾸는 것이라 저장하지 않는다 (새로고침하면 캠페인 테마로 돌아온다). */
+.darkbtn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;
+  font-family:inherit;font-size:11.5px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+.darkbtn:hover{border-color:var(--gline);color:var(--ink)}
+.darkbtn[aria-pressed="true"]{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
+.darkbtn svg{flex:none;display:block}
+@media (max-width:1180px){.darkbtn .lb{display:none}.darkbtn{padding:0 8px}}
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
 .rolechip.agency{color:#38664f;background:#e9f1ec;border-color:#cfe0d6}
@@ -1301,7 +1310,10 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
   box-shadow:0 24px 70px rgba(0,0,0,.3);max-height:88vh;display:flex;flex-direction:column}
 .modal .mhd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
 .modal .mhd b{font-size:14.5px}
-.modal .mbd{padding:16px 18px;overflow:auto;background:var(--plane2)}
+/* ⚠ flex 자식은 min-height 가 auto 라 내용만큼 부풀어 max-height 를 넘어선다.
+   그러면 overflow:auto 가 아예 동작하지 않고 밑의 닫기 줄까지 창 밖으로 밀려난다
+   (디자인 팝업에 섹션이 하나 늘어나면서 생긴 증상) — min-height:0 으로 줄어들 수 있게 한다 (v57) */
+.modal .mbd{padding:16px 18px;overflow:auto;background:var(--plane2);flex:1 1 auto;min-height:0}
 .modal .mft{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line)}
 .modal .x{border:0;background:var(--plane);width:30px;height:30px;border-radius:9px;cursor:pointer;color:var(--ink2)}
 .modal iframe{border:0;width:100%;aspect-ratio:16/9;border-radius:10px;max-width:840px}
@@ -1355,6 +1367,25 @@ table.gantt td.lead.nm{text-align:left}
 table.gantt td.hl{color:var(--acc);font-weight:800}
 table.gantt td.day{min-width:13px;height:34px;vertical-align:middle;padding:3px 1px}
 table.gantt td.day .b{display:block;width:100%;height:100%;border-radius:2px}
+/* 칸 위에 얹는 아주 작은 단가 (v57) — 열 폭은 건드리지 않는다.
+   칸 자체를 기준으로 절대 배치해 두어 글자가 길어도 표가 벌어지지 않고 잘리기만 한다.
+   novnum 은 칸이 좁아 글자가 지저분해질 때 통째로 끄는 스위치다. */
+table.gantt td.day{position:relative}
+table.gantt td.day .vnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-style:normal;text-decoration:none;font-size:7.5px;font-weight:700;letter-spacing:-.4px;
+  color:rgba(20,30,45,.34);pointer-events:none;overflow:hidden;line-height:1;white-space:nowrap}
+[data-theme="dark"] table.gantt td.day .vnum{color:rgba(255,255,255,.40)}
+table.gantt td.day .vnum.nofit{display:none}
+/* 단가를 고른 동안만 날짜 칸을 숫자가 들어갈 만큼만 넓힌다 (v57).
+   노출·클릭처럼 세는 값으로 돌아가면 곧바로 원래의 촘촘한 폭으로 돌아온다. */
+table.gantt.wnum td.day,table.gantt.wnum th.dhd{min-width:22px}
+/* 그룹 소계 줄 (v57) — 소재 줄과 헷갈리지 않게 한 톤 진하게 */
+table.gantt tr.gsub>td{background:var(--sub1);font-weight:800}
+table.gantt tr.gsub>td.lead{background:var(--sub0);text-align:left;color:var(--ink);
+  font-size:11.5px;letter-spacing:-.2px}
+table.gantt tr.gsub>td.lead i{font-style:normal;font-weight:600;color:var(--muted);margin-left:5px;font-size:10.5px}
+table.gantt tr.gsub>td.day .b{border-radius:1px;opacity:.95}
+table.gantt tr.gsub>td{border-top:1px solid var(--gline);border-bottom:1px solid var(--gline)}
 table.gantt td.day.we{background:var(--acc-soft2)}
 table.gantt td.day.hol{background:var(--acc-soft)}
 table.gantt tbody tr:hover td.lead{background:var(--acc-soft2)}
@@ -1533,7 +1564,9 @@ table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
 [data-theme="dark"] .bublgd .bl{background:var(--plane2);border-color:var(--gline)}
 [data-theme="dark"] .bublgd{background:var(--surface)}
 /* 디자인 — 테마 고르기 */
-.thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+/* auto-fill 은 칸이 모자라도 빈 트랙을 남겨 두어서
+   카드가 2개인 줄(배경 움직임)만 좁게 보였다 → auto-fit 으로 고르게 채운다 (v57) */
+.thgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .thcard{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:11px 12px;
   border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
 .thcard:hover{border-color:var(--acc-lt);background:var(--acc-soft2)}
@@ -1542,6 +1575,11 @@ table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
 .thcard .sws i{width:22px;height:22px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.06)}
 .thcard .thl{font-size:12.5px;font-weight:700;color:var(--ink)}
 /* 광고주 로고 고르기 */
+.ucpick{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-height:132px;overflow:auto;
+  padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ucpick>button{border:1px solid var(--line);background:var(--plane);color:var(--ink2);
+  border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.ucpick>button:hover{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
 .logopick{display:flex;align-items:center;gap:10px}
 .logopick .prev{display:inline-flex;align-items:center;justify-content:center;height:34px;min-width:60px;
   max-width:120px;padding:0 8px;border:1px dashed var(--line);border-radius:9px;background:var(--plane2)}
@@ -1668,6 +1706,8 @@ th.thsf .thl{display:inline-block}
 .dfempty>span{color:var(--muted);font-size:12px}
 .btn.sm.dfilt{font-variant-numeric:tabular-nums}
 .btn.sm.dfilt.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
+/* 켜짐 상태가 있는 작은 버튼 공통 (v57 — 게재 히스토리 소계 등) */
+.btn.sm.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
 table.sheet td.rm button{border:0;background:transparent;color:var(--muted);cursor:pointer;height:32px;width:100%}
 table.sheet td.rm button:hover{color:var(--neg)}
 table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:center;height:32px;line-height:32px}
@@ -1723,6 +1763,11 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <span class="betatag" id="betaTag" title="아직 다듬는 중인 베타 버전입니다 — 이상한 점은 알려 주세요">베타 버전</span>
   <button class="btn sm primary hidden" id="reqBtn" title="캠페인을 만들 수 있는 마스터 권한을 요청합니다">🔑 권한 요청하기</button>
   <div class="spacer"></div>
+  <button class="darkbtn" id="darkToggle" type="button" aria-pressed="false"
+    title="이 화면에서만 어둡게 봅니다 · 새로고침하면 원래 테마로 돌아갑니다">
+    <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path fill="currentColor"
+      d="M15.3 12.6A6.2 6.2 0 0 1 7.4 4.7a.6.6 0 0 0-.8-.8 7.4 7.4 0 1 0 9.5 9.5.6.6 0 0 0-.8-.8z"/></svg>
+    <span class="lb">다크</span></button>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
   <span class="hint" id="cloudState">데모 모드</span>
   <span class="savedago" id="savedAgo" title="자동 저장 시각"></span>
@@ -1859,7 +1904,8 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
-        <button class="btn sm agency-only" id="ganttCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm" id="ganttSubBtn" title="머리글 기준(매체 · 구분 등)마다 소계 줄을 넣습니다">Σ 소계</button>
+        <button class="btn sm agency-only" id="ganttCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
     </div>
     <div id="ganttCfgBox" class="hidden" data-sect="gantt"></div>
@@ -1937,7 +1983,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
         <span class="hint">세로 세그먼트</span><select class="ctl" id="rawSeg"></select>
         <span class="hint">가로 세그먼트</span><select class="ctl" id="rawHSeg"></select>
         <button class="btn sm" id="rawPickBtn" title="표시할 세그먼트를 고르고 순서를 바꿉니다">⚙ 표시 항목</button>
-        <button class="btn sm agency-only" id="rawCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm agency-only" id="rawCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
     </div>
     <div id="rawCfgBox" class="hidden" data-sect="raw"></div>
@@ -2360,7 +2406,8 @@ let CAMP_HIST=[];
    [키, 국문명, 영문명, 카테고리, 유형(in=수동입력 / calc=계산),
     미디어믹스·예상효율 기본표시, 미디어믹스·예상효율 사용가능,
     대시보드·데이터입력 기본표시, 대시보드·데이터입력 사용가능]                       */
-const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타'];
+/* 맨 끝 '사용자' 는 설정 › 열 사전에서 직접 만든 열들의 자리다 (v57) */
+const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타','사용자'];
 const FIELDS=[
   ['date','일자','date','운영','in',0,0,1,1],
   ['start','시작일','start date','운영','in',1,1,0,1],
@@ -2451,6 +2498,109 @@ function fieldCatalog(scope,extra){
   return out;
 }
 const fieldDefaults=scope=>FIELDS.filter(f=>scope==='mix'?f.mixDef:f.dashDef).map(f=>f.k);
+
+/* ===== 사용자가 만든 열 (v57) =====
+   설정 › 열 사전에서 열을 직접 추가한다.
+   · '입력'  — 일자별 실적에 숫자를 직접 적는 열 (목표 열도 함께 생긴다)
+   · '수식'  — 다른 열로 계산하는 열 (예: click/imp, imp+click)
+   저장 위치는 HTML 이 아니라 **사용자 쪽**이다 —
+   브라우저(localStorage) + 로그인 계정(profiles.prefs.cols) + 캠페인 문서.
+   그래서 대시보드 HTML 을 새 버전으로 갈아도 내가 만든 열은 그대로 남는다. */
+const UC_KEY='dmd:usercols';
+let USER_COLS=[];
+const UC_FMT={num:{l:'숫자 (#,###)'},pct0:{l:'% (소수점 없음)'},
+  pct1:{l:'% (소수점 1자리)'},pct2:{l:'% (소수점 2자리)'}};
+/* 수식 — 허용한 글자만 통과시킨 뒤 직접 훑어 계산한다 (new Function 을 쓰지 않는다) */
+function ucTokens(expr){
+  const src=String(expr||'').trim();
+  if(!src)return null;
+  const toks=src.match(/[A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?|[+\-*/()]/g)||[];
+  if(!toks.length)return null;
+  /* 토큰을 다시 이어 붙여 원문과 같아야 한다 — 이상한 글자가 끼어 있으면 여기서 걸린다 */
+  if(toks.join('')!==src.replace(/\s+/g,''))return null;
+  return toks;
+}
+function ucCalc(toks,b){
+  let i=0;
+  const at=()=>toks[i];
+  const unit=()=>{
+    const t=toks[i++];
+    if(t==='('){const v=sum2();if(toks[i]===')')i++;return v;}
+    if(t==='-')return -unit();
+    if(t==='+')return unit();
+    if(/^[A-Za-z_]/.test(t))return +b[t]||0;
+    return +t||0;};
+  const mul=()=>{let v=unit();
+    while(at()==='*'||at()==='/'){const o=toks[i++],r=unit();
+      v=o==='*'?v*r:(r?v/r:NaN);}
+    return v;};
+  const sum2=()=>{let v=mul();
+    while(at()==='+'||at()==='-'){const o=toks[i++],r=mul();
+      v=o==='+'?v+r:v-r;}
+    return v;};
+  const out=sum2();
+  return isFinite(out)?out:NaN;
+}
+/* 수식에 쓸 수 있는 열인지 (자기 자신과 다른 사용자 수식 열은 순환을 막으려고 뺀다) */
+const ucBaseKeys=()=>FIELDS.filter(f=>!/^u_/.test(f.k)||FLD[f.k].__uc==='in').map(f=>f.k);
+function ucValidate(c,list){
+  const nm=String(c.l||'').trim();
+  if(!nm)return '이름을 적어 주세요.';
+  if((list||USER_COLS).some(x=>x.k!==c.k&&String(x.l).trim()===nm))return '같은 이름의 열이 이미 있습니다.';
+  if(FIELDS.some(f=>f.l===nm&&f.k!==c.k))return '기본 열과 이름이 같습니다. 다른 이름을 써 주세요.';
+  if(c.kind!=='calc')return '';
+  const toks=ucTokens(c.expr);
+  if(!toks)return '수식을 읽을 수 없습니다. 숫자 · 열 이름 · + - * / ( ) 만 쓸 수 있습니다.';
+  const ok=new Set(ucBaseKeys());
+  const bad=toks.filter(t=>/^[A-Za-z_]/.test(t)&&!ok.has(t));
+  if(bad.length)return '모르는 열입니다: '+[...new Set(bad)].join(', ');
+  if(!toks.some(t=>/^[A-Za-z_]/.test(t)))return '열을 하나 이상 넣어 주세요.';
+  return '';
+}
+const ucFmtFn=f=>f==='pct0'?(v=>pct(v,0)):f==='pct1'?(v=>pct(v,1))
+  :f==='pct2'?(v=>pct(v,2)):(v=>fmt(v));
+/* 만든 열을 항목 사전(FIELDS)과 계산표(METRICS)에 꽂는다 */
+function regUserCols(list){
+  USER_COLS=(Array.isArray(list)?list:[]).filter(c=>c&&c.k&&c.l);
+  /* 예전에 꽂아 둔 사용자 열은 모두 걷어 낸다 */
+  for(let i=FIELDS.length-1;i>=0;i--)if(FIELDS[i].__uc){delete FLD[FIELDS[i].k];FIELDS.splice(i,1);}
+  Object.keys(METRICS).forEach(k=>{if(METRICS[k].__uc)delete METRICS[k];});
+  for(let i=AMET.length-1;i>=0;i--)if(/^u_/.test(AMET[i]))AMET.splice(i,1);
+  USER_COLS.forEach(c=>{
+    const F=v=>ucFmtFn(c.fmt)(v);
+    if(c.kind==='in'){
+      AMET.push(c.k);
+      const f1={k:c.k,l:c.l,en:c.l,cat:'사용자',kind:'in',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'in'};
+      const f2={k:'e_'+c.k,l:'목표 '+c.l,en:'est.'+c.l,cat:'사용자',kind:'in',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'e'};
+      FIELDS.push(f1,f2);FLD[f1.k]=f1;FLD[f2.k]=f2;
+      METRICS[c.k]={l:c.l,f:F,kind:'abs',__uc:1};
+    }else{
+      const toks=ucTokens(c.expr);
+      const f1={k:c.k,l:c.l,en:c.l,cat:'사용자',kind:'calc',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'calc'};
+      FIELDS.push(f1);FLD[f1.k]=f1;
+      METRICS[c.k]={l:c.l,f:F,kind:'rate',__uc:1,
+        c:b=>toks?ucCalc(toks,b||{}):NaN};
+    }});
+  /* 새로 생긴 입력 열의 자리를 라인마다 마련해 둔다 */
+  try{LINES.forEach(l=>{USER_COLS.forEach(c=>{if(c.kind!=='in')return;
+    if(!Array.isArray(l.daily[c.k]))l.daily[c.k]=new Array(TOTAL_DAYS).fill(0);
+    if(l.a&&l.a[c.k]==null)l.a[c.k]=0;});});}catch(e){}
+  /* 열 목록을 쓰는 화면들을 다시 만든다 */
+  COLREB.forEach(f=>{try{f();}catch(e){}});
+}
+/* 열 목록에서 만들어 두는 것들 — 사용자 열이 바뀌면 여기 등록된 함수를 다시 돌린다 */
+const COLREB=[];
+function loadUserCols(){
+  try{const raw=localStorage.getItem(UC_KEY);
+    if(raw)return JSON.parse(raw)||[];}catch(e){}
+  return [];
+}
+function saveUserCols(list){
+  try{localStorage.setItem(UC_KEY,JSON.stringify(list||[]));}catch(e){}
+}
 
 const METRICS={
   imp:{l:'노출',f:fmt,kind:'abs'},click:{l:'클릭',f:fmt,kind:'abs'},view:{l:'조회',f:fmt,kind:'abs'},
@@ -2598,6 +2748,13 @@ const isClient=()=>document.body.dataset.role==='client';
 /* 집행 실적 합계 — 달력으로 고른 구간만 더한다 */
 const paceSum=arr=>{const s=viewScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
 const kpiAch=l=>{const k=kpiOf(l);return paceSum(l.daily[k])/goalIn(l,k);};
+
+/* 이 브라우저에 저장해 둔 사용자 열을 먼저 꽂아 둔다 (v57).
+   ⚠ 아래 파일들이 열 목록(FIELDS · METRICS)으로 화면 카탈로그를 만들기 때문에
+   반드시 그 전에, 즉 이 파일 맨 끝에서 해야 한다.
+   로그인 계정·캠페인 문서에서 온 목록은 나중에 regUserCols 로 다시 꽂는다. */
+try{regUserCols(loadUserCols());}catch(e){}
+
 /* ===== 3. 공용 구성 빌더 (그룹형) ===== */
 const cfgCols=cfg=>cfg.groups.flatMap(g=>g.cols);
 function groupHeaderHTML(cfg,cdef,leadCols){
@@ -3978,7 +4135,8 @@ function verdictOf(ach,pace){
   if(p<-VERDICT_BAND)return {cls:'bad',label:'저조',gap};
   return {cls:'ok',label:'양호',gap};
 }
-const STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+COLREB.push(()=>{STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);});
 /* 주요 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
 const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
@@ -4501,13 +4659,14 @@ function renderDaily(){
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */
-const SUM_CATALOG=fieldCatalog('dash').concat([{g:'기타',
+const mkSumCat=()=>fieldCatalog('dash').concat([{g:'기타',
   cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]);
-const SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
+let SUM_CATALOG=mkSumCat();
+let SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
 /* x: false = 정상 · 'ratio' = 예상값은 표시하되 비율은 의미가 없어 숨김 · 'all' = 예상값 전부 숨김 */
 const HA=x=>x==='all';
 const SUM_CELL={};
-(function buildSumCell(){
+function buildSumCell(){
   const abs=k=>a=>[fmt(a[k])];
   const money=k=>a=>[won(a[k])];
   const est=k=>(a,e,x)=>[HA(x)||!e[k]?'–':fmt(e[k])];
@@ -4552,7 +4711,15 @@ const SUM_CELL={};
     return [bs.length<=2?esc(bs.join(' · '))
       :`<span title="${esc(bs.join(' · '))}">${esc(bs[0])} 외 ${bs.length-1}</span>`];};
   SUM_CELL.date=()=>['–'];
-})();
+}
+buildSumCell();
+/* 사용자 열이 바뀜다면 서머리 카탈로그와 칸 그리는 법을 다시 만든다 (v57) */
+COLREB.push(()=>{
+  SUM_CATALOG=mkSumCat();
+  SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
+  Object.keys(SUM_CELL).forEach(k=>{if(/^u_|^e_u_/.test(k))delete SUM_CELL[k];});
+  buildSumCell();
+});
 /* 예상값이 들어가는 열 (소재 단위로 쪼개지면 위·아래 셀을 합쳐 표시) */
 SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
   ||/^g_cp/.test(f.k)
@@ -4829,8 +4996,10 @@ function renderSummaries(){
 }
 /* ===== 7. 표 (로우 데이터) ===== */
 /* 표 탭 열 — 항목 사전 중 팩트에서 바로 계산 가능한 항목만 */
-const RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
-const RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));
+let RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));
+COLREB.push(()=>{RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+  RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));});
 /* 기본 열에서 빼는 항목 — 매출은 켜고 싶을 때 열 구성에서 켠다 */
 const RAW_DEF_OUT=['rev'];
 let RAW_CFG={rows:[],groups:(function(){
@@ -5416,8 +5585,10 @@ function mountHeatHead(tbl){
 
 /* ===== 8. 소재 운영 ===== */
 let CR_FILTER={media:'all',type:'all',sort:'imp'};
-const CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
-const CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
+let CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
+COLREB.push(()=>{CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+  CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));});
 let CR_CFG={video:{rows:[],groups:[{id:uid(),name:'영상 소재',cols:['imp','view','vtr','cpv']}]},
             image:{rows:[],groups:[{id:uid(),name:'이미지 소재',cols:['imp','click','ctr','cpc']}]}};
 const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
@@ -6075,10 +6246,13 @@ function openLightbox(c){
 const GANTT_GOAL_COLS=[
   {k:'g_cpm',l:'목표 CPM'},{k:'g_cpc',l:'목표 CPC'},{k:'g_cpv',l:'목표 CPV'},
   {k:'g_cpa',l:'목표 CPA'},{k:'g_cpe',l:'목표 CPE'},{k:'g_cpi',l:'목표 CPI'}];
-const GANTT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k])
+const mkGanttCat=()=>fieldCatalog('dash',f=>!!METRICS[f.k])
   .concat([{g:'목표 단가',cols:GANTT_GOAL_COLS},
            {g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
-const GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
+let GANTT_CATALOG=mkGanttCat();
+let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
+COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();
+  GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));});
 let GANTT_RANGE='all';
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
@@ -6120,7 +6294,7 @@ function shade(t){
    행 안에서의 추이가 보여야 한다.
    다만 그 소재에 비교할 날이 두 개도 없으면 색이 아예 안 나오므로, 그럴 때만 표 전체 스케일로 물러선다.
    기준은 그 소재의 KPI 단가(낮을수록 좋음), 금액이 없으면 반응률(높을수록 좋음). */
-function ganttEff(list,SC){
+function ganttEff(list,SC,keyOf){
   const val={};let mode='cost';
   const unitOf=c=>{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));
     return KPI_UNIT[kpiOf(l)]||'cpm';};
@@ -6145,20 +6319,61 @@ function ganttEff(list,SC){
       if(!(num>0&&den>0))return null;
       return -(num/den);});}          /* 반응률은 높을수록 좋으므로 부호를 뒤집는다 */
   if(!vals.length)return {ok:false};
-  /* 행(소재)별 최소·중앙·최대 — 그 행 안에서의 추이를 색으로 본다 */
-  const byRow={};
+  /* 색의 기준 폭은 **지금 세워 둔 머리글 기준(keyOf)** 안에서 잡는다 (v57).
+     예전에는 행(소재) 하나 안에서만 잡아서, 같은 매체의 소재끼리 누가 더 좋은지
+     색으로는 알 수 없었다 — 소재마다 자기 최댓값이 제일 진했기 때문이다.
+     이제 매체별로 보고 있으면 그 매체 안의 모든 소재·모든 날이 한 척도를 쓴다.
+     머리글이 구분이면 구분 안에서, 제품이면 제품 안에서 — 세워 둔 기준을 그대로 따른다. */
+  const key=typeof keyOf==='function'?keyOf:()=>'';
+  const byGrp={};
   list.forEach(c=>{
-    const a=[];
-    for(let i=SC.i0;i<=SC.i1;i++){const v=val[c.id+'|'+i];if(v!==undefined)a.push(v);}
-    if(a.length>=2)byRow[c.id]={mn:Math.min(...a),mx:Math.max(...a),md:median(a)};});
+    const g=key(c);
+    for(let i=SC.i0;i<=SC.i1;i++){const v=val[c.id+'|'+i];
+      if(v!==undefined)(byGrp[g]||(byGrp[g]=[])).push(v);}});
+  const band={};
+  Object.keys(byGrp).forEach(g=>{const a=byGrp[g];
+    if(a.length>=2)band[g]={mn:Math.min(...a),mx:Math.max(...a),md:median(a)};});
   const gmn=Math.min(...vals),gmx=Math.max(...vals),gmd=median(vals);
   const EMPTY=cssVar('--acc-soft')||'#dfe4ea';
   return {ok:true,mode,
     color:(c,i)=>{
       const v=val[c.id+'|'+i];
       if(v===undefined)return EMPTY;
-      const r=byRow[c.id];
+      /* 그룹 안에 견줄 값이 둘도 없으면 표 전체 기준으로 물러난다 */
+      const r=band[key(c)];
       return (r?hmFill(v,r.mn,r.md,r.mx):hmFill(v,gmn,gmd,gmx))||EMPTY;}};
+}
+/* 하루치 값 — 노출·클릭처럼 더하는 값은 그대로, CPM·CPC·CPV 는 그 날 숫자로 만든다 (v57) */
+function ganttDayVal(c,gi,k){
+  const g=m=>(c.daily[m]&&c.daily[m][gi])||0;
+  const M=METRICS[k];
+  if(!M)return 0;
+  if(M.kind!=='rate')return g(k);
+  const b={cost:g('cost'),imp:g('imp'),click:g('click'),view:g('view'),
+    conv:g('conv'),eng:g('eng'),install:g('install'),rev:g('rev')};
+  const v=M.c(b);
+  return isFinite(v)&&v>0?v:0;
+}
+/* 칸 안에 겹쳐 쓰는 아주 작은 숫자 — 열 폭을 넓히지 않도록 짧게 줄인다 */
+function ganttTiny(v){
+  if(!isFinite(v)||v<=0)return '';
+  if(v>=1e8)return Math.round(v/1e8)+'억';
+  if(v>=1e4)return (v/1e4).toFixed(v>=1e5?0:1).replace(/\.0$/,'')+'만';
+  if(v>=1000)return (v/1000).toFixed(v>=1e4?0:1).replace(/\.0$/,'')+'천';
+  return String(Math.round(v));
+}
+/* 그룹 소계용 가짜 소재 — 그 그룹 소재들의 일별 값을 더해 하나로 만든다 (v57) */
+function ganttGroupTotal(cs,name){
+  const KEYS=AMET.concat(['cost']);
+  const o={id:'gsum|'+name,name,__sub:true,
+    lids:[...new Set(cs.map(c=>c.lid))],daily:{}};
+  ['segment','media','product','target','line','slot'].forEach(f=>{o[f]=cs[0]?cs[0][f]:'';});
+  KEYS.forEach(k=>{
+    const a=[];
+    cs.forEach(c=>{const s2=c.daily[k]||[];
+      for(let i=0;i<s2.length;i++)a[i]=(a[i]||0)+(+s2[i]||0);});
+    o.daily[k]=a;});
+  return o;
 }
 /* 게재 히스토리 정렬 값 — 같은 매체 안에서만 견준다 */
 function ganttSortVal(c){
@@ -6208,11 +6423,22 @@ function renderGantt(){
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
-  /* 색 기준은 표 전체를 한 번에 잡는다 */
-  const EFF=ganttEff(rowsData.map(r=>r.c),SC);
-  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 그 행의 최댓값 기준 */
-  const rowMax=c=>{const a=c.daily[mk]||[];
-    let m=0;for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++)if((a[i]||0)>m)m=a[i];return m||1;};
+  /* ---- 머리글 기준 그룹 (소재를 뺀 나머지 차원) ---- */
+  const gIdx=dims.map((d,i)=>d==='creative'?-1:i).filter(i=>i>=0);
+  const grpKey=vals=>gIdx.map(i=>vals[i]).join(SEP);
+  const GK={};rowsData.forEach(r=>{GK[r.c.id]=grpKey(r.vals);});
+  /* 색 기준은 지금 세워 둔 머리글 그룹 안에서 잡는다 (v57) */
+  const EFF=ganttEff(rowsData.map(r=>r.c),SC,c=>GK[c.id]!==undefined?GK[c.id]:'');
+  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 같은 그룹의 최댓값 기준 */
+  const grpMax={};
+  rowsData.forEach(r=>{const g=GK[r.c.id],a=r.c.daily[mk]||[];
+    let m=grpMax[g]||0;
+    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){const v=ganttDayVal(r.c,i,mk);if(v>m)m=v;}
+    grpMax[g]=m;});
+  const rowMax=c=>{const g=GK[c.id];return (g!==undefined&&grpMax[g])||1;};
+  /* 단가(CPM·CPC·CPV)를 고르면 칸마다 아주 작게 숫자도 얹는다 (v57).
+     열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
+  const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
   dims.forEach((d,i)=>h+=`<th class="lead" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
@@ -6220,6 +6446,21 @@ function renderGantt(){
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
   VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'rgba(255,255,255,.42)':'rgba(255,255,255,.86)'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
   h+='</tr></thead><tbody>';
+  const subs=[];
+  /* 한 행의 날짜 칸들 — 소재 행과 소계 행이 똑같은 규칙을 쓰도록 하나로 묶어 둔다 */
+  const dayCells=c=>{
+    const maxV=rowMax(c);
+    let out='';
+    VD.forEach((d,i)=>{
+      const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
+      const v=gi<ELAPSED?ganttDayVal(c,gi,mk):0;
+      const hol=!!holName(d),we=d.getDay()%6===0;
+      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
+      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
+      out+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
+        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
+        +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
+    return out;};
   rowsData.forEach((rd,ri)=>{
     const c=rd.c;
     h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
@@ -6233,22 +6474,51 @@ function renderGantt(){
       const days=c.daily.imp.filter(v=>v>0).length;
       const v=k==='days'?days+'일':crVal(c,k);
       h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-    const maxV=rowMax(c);                                /* 이 행(소재)의 최댓값 */
-    VD.forEach((d,i)=>{
-      const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
-      const arr=c.daily[mk]||[],v=gi<ELAPSED?(arr[gi]||0):0;
-      const hol=!!holName(d),we=d.getDay()%6===0;
-      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
-      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
-      h+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
-        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')+'</td>';});
-    h+='</tr>';});
+    h+=dayCells(c);
+    h+='</tr>';
+    /* ---- 그룹 소계 (v57) ---- */
+    if(GANTT.sub&&gIdx.length){
+      const gk=GK[c.id];
+      const last=ri===rowsData.length-1||GK[rowsData[ri+1].c.id]!==gk;
+      if(last){
+        const cs=rowsData.filter(x=>GK[x.c.id]===gk).map(x=>x.c);
+        if(cs.length>1){
+          const nm=gIdx.map(i=>rd.vals[i]).filter(Boolean).join(' · ');
+          const tot=ganttGroupTotal(cs,nm);
+          subs.push(tot);
+          h+=`<tr class="gsub">`
+            +`<td class="lead" colspan="${dims.length}" style="left:0;min-width:${acc}px">`
+            +`${esc(nm)} 소계 <i>${cs.length}개 소재</i></td>`;
+          cols.forEach((k,i)=>{
+            const days=tot.daily.imp.filter(v=>v>0).length;
+            const v=k==='days'?days+'일':crVal(tot,k);
+            h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+          h+=dayCells(tot)+'</tr>';}}}
+  });
   t.innerHTML=h+'</tbody>';
   markBlanks(t);
-  t.style.minWidth=(leadTotal+VD.length*13)+'px';
+  t.classList.toggle('wnum',!!RATEM);
+  t.style.minWidth=(leadTotal+VD.length*(RATEM?22:13))+'px';
   enableRowDrag(t,GANTT,renderGantt);
-  wireGanttHover(t,SC,rowsData.map(r=>r.c));
+  wireGanttHover(t,SC,rowsData.map(r=>r.c),subs);
   mountGanttHead(t);
+  /* 칸에 얹은 작은 숫자는 **그 칸에 실제로 들어가는 것만** 남긴다 (v57).
+     열 폭을 넓히지 않는 게 원칙이라, 안 들어가는 값은 잘라 보여 주지 않고 아예 뺀다.
+     폭은 한 번만 재고 그 뒤로는 쓰기만 한다 (칸마다 재면 700번씩 레이아웃이 다시 돈다). */
+  if(RATEM)requestAnimationFrame(()=>{try{
+    const one=t.querySelector('tbody td.day');if(!one)return;
+    const w=one.getBoundingClientRect().width-0.5;
+    /* 글자 폭은 캔버스로 실제로 잰다 — 눈대중으로 잡으면 세 자리 숫자가 억울하게 빠진다.
+       같은 문자열은 한 번만 재고 기억해 둔다 (칸은 수백 개라도 값의 종류는 몇십 개뿐) */
+    const cx=document.createElement('canvas').getContext('2d');
+    const ff=getComputedStyle(one).fontFamily||'sans-serif';
+    cx.font='700 7.5px '+ff;
+    const memo=Object.create(null);
+    const wOf=v=>memo[v]!==undefined?memo[v]
+      :(memo[v]=cx.measureText(v).width-Math.max(v.length-1,0)*0.4);
+    t.querySelectorAll('td.day .vnum').forEach(u=>{
+      u.classList.toggle('nofit',wOf(u.textContent)>w);});
+  }catch(e){}});
 }
 /* ---- 떠 있는 머리글 막대 ----
    게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서
@@ -6325,7 +6595,7 @@ function mountGanttHead(tbl){
 }
 /* 날짜 칸·날짜 헤더에 마우스를 올리면 해당 행·열을 살짝 강조하고,
    칸 위에서는 그 날짜·그 소재의 광고 효율을 툴팁으로 보여준다 */
-function wireGanttHover(t,SC,list){
+function wireGanttHover(t,SC,list,subs){
   const paint=(di,on)=>{
     t.querySelectorAll(`[data-di="${di}"]`).forEach(e=>e.classList.toggle('colhi',on));};
   const dayEff=(c,gi)=>{
@@ -6366,7 +6636,9 @@ function wireGanttHover(t,SC,list){
             +row('광고비',won(a.cost));})());}});
   /* 그 날짜에 표에 올라온 소재 전체의 합 */
   const shown=(list||[]).filter(Boolean);
-  const byId={};shown.forEach(c=>{byId[c.id]=c;});
+  /* 소계 행도 마우스를 올리면 툴팁이 떠야 한다 — 다만 "이 날 전체" 합계에는 넣지 않는다
+     (소계는 이미 그 소재들의 합이라 두 번 더해진다) */
+  const byId={};shown.concat((subs||[]).filter(Boolean)).forEach(c=>{byId[c.id]=c;});
   const dayAll=gi=>{
     const b={imp:0,click:0,view:0,conv:0,cost:0};
     let live=0;
@@ -6380,7 +6652,13 @@ function wireGanttHover(t,SC,list){
     const head=`<div class="t">${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}</div>`;
     if(gi>=ELAPSED)return head+rowT('집행','미집행');
     const b=dayAll(gi);
-    return head
+    /* 맨 윗줄은 **지금 고른 그래프 값** 을 보여 준다 (v57) —
+       CPC 로 보고 있는데 팝업 첫 줄이 소재 수였던 것이 헷갈렸다 */
+    const mk2=GANTT.metric,M=METRICS[mk2];
+    const mv=M?(M.kind==='rate'?M.c(b):b[mk2]):null;
+    const top=(M&&isFinite(mv)&&mv>0)
+      ? `<div class="r hi"><span class="l">${M.l}</span><b>${M.f(mv)}</b></div>`:'';
+    return head+top
       +rowT('집행 소재',`${fmt(b.live)} / ${fmt(b.total)}개`)
       +rowT('노출',fmt(b.imp))+rowT('클릭',fmt(b.click))+rowT('조회',fmt(b.view))
       +rowT('CTR · VTR',`${pct(b.click/b.imp)} · ${pct(b.view/b.imp)}`)
@@ -8196,11 +8474,19 @@ function openLineColCfg(){
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
 }
-const MIX_CATALOG=fieldCatalog('mix').concat([
+const mkMixCat=()=>fieldCatalog('mix').concat([
   {g:'KPI',cols:[{k:'kpi',l:'KPI 지표'},{k:'kpiGoal',l:'KPI 목표 수'}]},
   {g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
   {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
-const MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+let MIX_CATALOG=mkMixCat();
+let MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+COLREB.push(()=>{MIX_CATALOG=mkMixCat();
+  MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+  /* 새 열은 기본 목록에만 더하고 사용자가 정해 둔 on/off 는 그대로 둔다 */
+  try{LINE_COLS=mergeCols(LINE_COLS,lineColsDefault());}catch(e){}
+  try{SHEET_COLS=mergeCols(SHEET_COLS,sheetColsDefault());}catch(e){}
+});
+
 let MIX_CFG={rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false},{k:'target',sub:false}],
   order:null,
   groups:[
@@ -8580,7 +8866,8 @@ function buildSelects(){
   fill('barSel',BAR_METRICS,'imp',k=>METRICS[k].l);
   fill('lineSel',LINE_METRICS,'ctr',k=>k==='none'?'없음':METRICS[k].l);
   fill('dimSel',SERIES_DIMS.map(d=>d.k),'media',k=>SERIES_DIMS.find(d=>d.k===k).l);
-  fill('ganttMetric',['imp','click','view','cost'],'imp',k=>METRICS[k].l);
+  /* 단가(CPM · CPC · CPV)도 고를 수 있다 (v57) — 고르면 칸마다 그 날 단가가 작게 얹힌다 */
+  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],'imp',k=>METRICS[k].l);
   fill('tmapMetric',TMAP_METRICS,TMAP.metric,k=>METRICS[k].l);
   $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();
     try{markDirty();saveLocal();}catch(x){}};
@@ -8613,7 +8900,13 @@ function buildSelects(){
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
   $('barSel').onchange=renderDaily;$('lineSel').onchange=renderDaily;
   $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
-  $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();};
+  $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
+    try{markDirty();saveLocal();}catch(x){}};
+  /* 소계 켜고 끄기 (v57) — 머리글에 소재 말고 다른 기준이 있어야 의미가 있다 */
+  const gs2=$('ganttSubBtn');
+  if(gs2){gs2.classList.toggle('on',!!GANTT.sub);
+    gs2.onclick=()=>{GANTT.sub=!GANTT.sub;gs2.classList.toggle('on',GANTT.sub);
+      renderGantt();try{markDirty();saveLocal();}catch(x){}};}
   const gr=$('ganttRange');
   if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
@@ -8945,6 +9238,8 @@ function serializeDoc(){
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
     crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
     issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
+    /* 이 캠페인이 쓰는 사용자 열 — 공유받은 사람(광고주 · 다른 계정)도 같은 열로 보도록 (v57) */
+    userCols:(typeof USER_COLS!=='undefined'?USER_COLS.map(x=>({...x})):[]),
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
     /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
        **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
@@ -9025,6 +9320,12 @@ function applyDoc(d,keepToday){
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
   /* 지금 등록된 소재에 자료함을 다시 붙인다 (이름이 같으면 이미지가 되살아난다) */
   try{if(typeof crAssetRelink==='function'){CREATIVES.forEach(c=>crAssetSave(c));crAssetRelink();}}catch(e){}
+  /* 문서에 담겨 온 사용자 열을 내 것과 합친다 (v57) —
+     내가 만든 열은 그대로 두고, 이 캠페인에만 있던 열을 더한다 */
+  if(Array.isArray(d.userCols)&&typeof regUserCols==='function'){
+    try{const merged=ucMerge(USER_COLS,d.userCols);
+      if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){saveUserCols(merged);regUserCols(merged);}
+    }catch(e){}}
   if(d.issues)ISSUES=d.issues;
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
@@ -9392,6 +9693,9 @@ async function afterSignIn(){
   /* 계정 등급 (슈퍼마스터 / 마스터 / 게스트) */
   try{const {data}=await CLOUD.sb.from('profiles').select('app_role').eq('id',u.id).maybeSingle();
     CLOUD.appRole=data?.app_role||'guest';}catch(err){CLOUD.appRole='guest';}
+  /* 내가 만든 열 — 계정에 붙어 있어 어느 캠페인에서도 · 어느 기기에서도 그대로 (v57).
+     profiles.prefs 열이 아직 없는 서버에서도 깨지지 않도록 조용히 넘어간다. */
+  await pullUserCols();
   paintAuth();
   applyRoleLock();
   await loadCampaignList();
@@ -10031,6 +10335,39 @@ function isMasterOf(d){
   if(CLOUD.shareView)return false;
   const me=(d&&d.members||[]).find(m=>m.user_id===CLOUD.user.id);
   return !!me&&me.role==='master';
+}
+/* ---- 내가 만든 열 — 계정 저장소 (v57) ----
+   로컬(localStorage)은 바로 쓰기 위한 사본이고, 계정(profiles.prefs.cols)이 원본이다.
+   둘을 합칠 때는 **이름이 같으면 나중에 고친 쪽**을 남긴다(at 타임스탬프). */
+function ucMerge(a,b){
+  const m=new Map();
+  (a||[]).concat(b||[]).forEach(c=>{
+    if(!c||!c.k||!c.l)return;
+    const p=m.get(c.k);
+    if(!p||(+c.at||0)>=(+p.at||0))m.set(c.k,c);});
+  return [...m.values()];
+}
+async function pullUserCols(){
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data,error}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    if(error)return;                               /* prefs 열이 없는 서버 — 로컬만 쓴다 */
+    const cloud=(data&&data.prefs&&Array.isArray(data.prefs.cols))?data.prefs.cols:[];
+    const merged=ucMerge(loadUserCols(),cloud);
+    if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){
+      saveUserCols(merged);regUserCols(merged);
+      try{renderAll();renderKpiTable&&renderKpiTable();}catch(e){}}
+    /* 로컬에만 있던 열은 계정에도 올려 둔다 */
+    if(JSON.stringify(merged)!==JSON.stringify(cloud))await pushUserCols(merged);
+  }catch(e){}
+}
+async function pushUserCols(list){
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    const prefs=Object.assign({},(data&&data.prefs)||{},{cols:list||USER_COLS});
+    await CLOUD.sb.from('profiles').update({prefs}).eq('id',CLOUD.user.id);
+  }catch(e){}
 }
 async function inviteMember(email,role,campId){
   const id=campIdOf(campId);
@@ -10787,7 +11124,10 @@ function openSectManage(){
 function renderHiddenBar(){
   const bar=$('hiddenBar');if(!bar)return;
   const keys=[...HIDDEN];
-  if(!keys.length){bar.classList.add('hidden');bar.innerHTML='';return;}
+  /* 광고주(뷰어) 화면에서는 줄 자체를 내지 않는다 (v57) —
+     되돌릴 권한이 없는 사람에게는 "뭐가 숨겨졌다"는 정보만 남아 혼란스러웠다 */
+  let cli=false;try{cli=typeof isClient==='function'&&isClient();}catch(e){}
+  if(cli||!keys.length){bar.classList.add('hidden');bar.innerHTML='';return;}
   bar.classList.remove('hidden');
   const nameOf=k=>k.indexOf('sum:')===0
     ? ((SUMMARIES.find(s=>'sum:'+s.id===k)||{name:'서머리'}).name)
@@ -11808,16 +12148,60 @@ function syncThemeColors(){
   if(typeof LINE_TONE!=='undefined')LINE_TONE=v('--acc2')||LINE_TONE;
   /* 운영 코멘트 강조색 · 히트맵 배경은 CSS 변수로 처리한다 */
 }
+/* 다크 보기 — 화면에서만 잠시 어둡게 (v57). 저장하지 않는다. */
+let DARK_VIEW=false;
 function applyTheme(k,quiet){
   THEME=THEMES.some(t=>t.k===k)?k:'';
-  if(THEME)document.documentElement.setAttribute('data-theme',THEME);
+  /* 다크 보기가 켜져 있으면 테마를 바꿔도 화면은 다크로 유지한다 */
+  const show=DARK_VIEW?'dark':THEME;
+  if(show)document.documentElement.setAttribute('data-theme',show);
   else document.documentElement.removeAttribute('data-theme');
   syncThemeColors();
   try{refreshBgDots();}catch(e){}
+  try{paintDarkBtn();}catch(e){}
   if(quiet)return;
   try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
 }
+/* ---- 다크 보기 토글 (v57) ----
+   광고주(뷰어)도 자기 화면만 어둡게 볼 수 있어야 한다.
+   ⚠ 캠페인 테마를 바꾸는 게 아니다 — 저장하지 않고, 새로고침하면 관리자가 정한 테마로 돌아간다.
+   그래서 THEME 변수는 건드리지 않고 data-theme 속성만 잠깐 갈아 끼운다. */
+function paintDarkBtn(){
+  const b=$('darkToggle');if(!b)return;
+  b.setAttribute('aria-pressed',DARK_VIEW?'true':'false');
+  b.title=DARK_VIEW
+    ? '원래 테마로 되돌립니다 (새로고침해도 원래 테마입니다)'
+    : '이 화면에서만 어둡게 봅니다 · 새로고침하면 원래 테마로 돌아갑니다';
+}
+function applyDarkView(){
+  const dark=DARK_VIEW||THEME==='dark';
+  if(dark)document.documentElement.setAttribute('data-theme','dark');
+  else if(THEME)document.documentElement.setAttribute('data-theme',THEME);
+  else document.documentElement.removeAttribute('data-theme');
+  syncThemeColors();
+  try{refreshBgDots();}catch(e){}
+  /* 그래프 색은 자바스크립트 값이라 다시 그려야 바뀐다 (v53 에서 겪은 것과 같은 이유) */
+  try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+      renderKpiTable&&renderKpiTable();}catch(e){}
+  paintDarkBtn();
+}
+function toggleDarkView(){
+  /* 캠페인 테마가 이미 다크면 토글은 "밝게 보기" 로 동작한다 */
+  DARK_VIEW=!(DARK_VIEW||THEME==='dark');
+  if(THEME==='dark'&&!DARK_VIEW){
+    document.documentElement.setAttribute('data-theme','mono');
+    syncThemeColors();try{refreshBgDots();}catch(e){}
+    try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+        renderKpiTable&&renderKpiTable();}catch(e){}
+    paintDarkBtn();return;}
+  applyDarkView();
+}
+(function wireDark(){
+  const go=()=>{const b=$('darkToggle');
+    if(b){b.onclick=toggleDarkView;paintDarkBtn();}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();
 function openThemePicker(){
   const card=t=>`<button class="thcard${t.k===THEME?' on':''}" data-th="${t.k}">
       <span class="sws">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
@@ -11840,7 +12224,7 @@ function openThemePicker(){
      <div class="sec gap" style="margin:20px 0 8px;font-size:14px">배경 움직임</div>
      <div class="hint" style="margin-bottom:10px">배경 로고를 천천히 <b>흘려보낼지</b>, 그 자리에 <b>세워 둘지</b> 고릅니다.
        색·크기·위치는 같고 움직임만 달라집니다.
-       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div></div>
+       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div>
      <div class="thgrid bgpick">
        ${[{k:'float',l:'흘러다니기',d:'천천히 떠다니는 기본값'},
           {k:'still',l:'고정',        d:'움직이지 않음 · 더 가벼움'}]
@@ -12390,9 +12774,81 @@ const COL_NOTE={
   imp_r:'달성률은 기간 필터를 따릅니다 — 조회 기간의 실적 ÷ 그 기간의 목표.',
   creative:'소재별 실적은 입력 시트에 적힌 소재 그대로 집계합니다. 시트에 소재를 적지 않은 날만 소재 비중으로 나눕니다.'
 };
+/* 사용자 열을 적용하고 어디에나 반영한다 (v57) */
+function applyUserCols(list){
+  const arr=(list||[]).map(c=>({...c}));
+  saveUserCols(arr);
+  regUserCols(arr);
+  try{if(typeof pushUserCols==='function')pushUserCols(arr);}catch(e){}
+  try{buildFacts();}catch(e){}
+  try{renderAll();renderKpiTable&&renderKpiTable();}catch(e){}
+  try{if(typeof renderSheet==='function')renderSheet();}catch(e){}
+  try{markDirty();saveLocal();}catch(e){}
+}
+/* 열 하나 만들기 · 고치기 */
+function openUserColEdit(col){
+  const isNew=!col;
+  const c=col?{...col}:{k:'u_'+Math.random().toString(36).slice(2,8),l:'',kind:'calc',expr:'',fmt:'num'};
+  /* 수식에 넣을 수 있는 열 목록 — 이름을 눌러 넣는다 */
+  const pick=FIELDS.filter(f=>ucBaseKeys().indexOf(f.k)>=0&&METRICS[f.k])
+    .map(f=>({k:f.k,l:f.l}));
+  openModal(isNew?'열 추가':'열 수정',
+    `<div class="fld"><label>열 이름</label>
+       <input class="txt" id="ucName" value="${esc(c.l)}" placeholder="예: 노출클릭효율" style="width:100%"></div>
+     <div class="fld" style="margin-top:12px"><label>종류</label>
+       <div class="thgrid" style="margin-top:6px">
+         ${[{k:'calc',l:'수식으로 계산',d:'다른 열로 계산합니다 (예: 클릭 ÷ 노출)'},
+            {k:'in', l:'숫자 직접 입력',d:'리포트 데이터 입력에 칸이 생깁니다'}]
+           .map(o=>`<button type="button" class="thcard${c.kind===o.k?' on':''}" data-uk="${o.k}">
+              <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+       </div></div>
+     <div id="ucExprBox" style="margin-top:12px${c.kind==='calc'?'':';display:none'}">
+       <div class="fld"><label>수식
+         <span class="hint">숫자와 + − × ÷ ( ) 를 쓸 수 있습니다. 아래에서 열 이름을 눌러 넣으세요.</span></label>
+         <input class="txt" id="ucExpr" value="${esc(c.expr||'')}" placeholder="예: click/imp" style="width:100%"
+           spellcheck="false" autocomplete="off"></div>
+       <div class="ucpick" id="ucPick">${pick.map(x=>
+         `<button type="button" data-ins="${esc(x.k)}" title="${esc(x.k)}">${esc(x.l)}</button>`).join('')}</div>
+     </div>
+     <div class="fld" style="margin-top:12px"><label>표시 형식</label>
+       <div class="thgrid" style="margin-top:6px">
+         ${Object.keys(UC_FMT).map(k=>`<button type="button" class="thcard${c.fmt===k?' on':''}" data-uf="${k}">
+             <span class="thl">${UC_FMT[k].l}</span></button>`).join('')}
+       </div></div>
+     <div class="hint" id="ucMsg" style="margin-top:12px;min-height:18px"></div>`,
+    `<button class="btn" data-close>취소</button><button class="btn primary" id="ucSave">저장</button>`,
+    {w:620});
+  const host=$('modalHost');
+  const pane=host.querySelector('.modal#mdl')||host;
+  const setKind=k=>{c.kind=k;
+    pane.querySelectorAll('[data-uk]').forEach(b=>b.classList.toggle('on',b.dataset.uk===k));
+    const bx=$('ucExprBox');if(bx)bx.style.display=k==='calc'?'':'none';};
+  pane.querySelectorAll('[data-uk]').forEach(b=>b.onclick=()=>setKind(b.dataset.uk));
+  pane.querySelectorAll('[data-uf]').forEach(b=>b.onclick=()=>{c.fmt=b.dataset.uf;
+    pane.querySelectorAll('[data-uf]').forEach(x=>x.classList.toggle('on',x.dataset.uf===c.fmt));});
+  pane.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{
+    const i=$('ucExpr');if(!i)return;
+    const p0=i.selectionStart==null?i.value.length:i.selectionStart;
+    const p1=i.selectionEnd==null?p0:i.selectionEnd;
+    i.value=i.value.slice(0,p0)+b.dataset.ins+i.value.slice(p1);
+    i.focus();const np=p0+b.dataset.ins.length;i.setSelectionRange(np,np);});
+  $('ucSave').onclick=()=>{
+    c.l=($('ucName').value||'').trim();
+    const ex=$('ucExpr');c.expr=ex?(ex.value||'').trim():'';
+    const err=ucValidate(c,USER_COLS.filter(x=>x.k!==c.k));
+    const msg=$('ucMsg');
+    if(err){if(msg){msg.textContent='⚠ '+err;msg.style.color='var(--neg)';}return;}
+    c.at=Date.now();
+    const next=USER_COLS.filter(x=>x.k!==c.k).concat([c]);
+    applyUserCols(next);
+    closeModal();
+    /* 열 사전을 새로 그려 방금 만든 열을 보여 준다 */
+    closeModal();openColDict();};
+  setTimeout(()=>{const i=$('ucName');if(i){i.focus();i.select();}},40);
+}
 function openColDict(){
   const KIND={in:'입력',calc:'계산'};
-  const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind}))
+  const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind,uc:f.__uc}))
     .concat([{k:'period',l:'기간',en:'period',cat:'기타',kind:'calc'},
              {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}]);
   const where=k=>{
@@ -12415,10 +12871,13 @@ function openColDict(){
       <table class="tbl lite" id="cdTbl"><thead><tr>
         <th style="min-width:140px">열 이름</th><th style="min-width:110px">영문</th>
         <th style="min-width:66px">구분</th><th style="min-width:74px">분류</th>
-        <th style="min-width:230px">계산식 · 설명</th><th style="min-width:150px">쓰이는 곳</th>
+        <th style="min-width:230px">계산식 · 설명</th><th style="min-width:130px">쓰이는 곳</th>
+        <th style="min-width:76px"></th>
       </tr></thead><tbody></tbody></table></div>`;
   openModal('열 사전 — 전체 열과 계산식',body,
-    '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:940});
+    '<button class="btn primary" id="cdAdd">＋ 열 추가</button><div class="spacer"></div>'
+    +'<button class="btn" data-close>닫기</button>',{w:940});
+  {const ab=$('cdAdd');if(ab)ab.onclick=()=>openUserColEdit(null);}
   const tb=document.querySelector('#cdTbl tbody');
   const draw=q=>{
     const s=(q||'').trim().toLowerCase();
@@ -12435,8 +12894,19 @@ function openColDict(){
         <td>${KIND[r.kind]||r.kind}</td><td>${esc(r.cat)}</td>
         <td style="text-align:left;white-space:normal">${desc}
           ${nt?`<div class="hint" style="margin-top:3px">${esc(nt)}</div>`:''}</td>
-        <td style="text-align:left;color:var(--ink2)">${esc(where(r.k))}</td></tr>`;}).join('')
-      ||'<tr><td colspan="6" class="hint" style="padding:16px">찾는 열이 없습니다</td></tr>';};
+        <td style="text-align:left;color:var(--ink2)">${esc(where(r.k))}</td>
+        <td style="white-space:nowrap">${r.uc&&r.uc!=='e'
+          ? `<button class="btn sm" data-uce="${esc(r.k)}">수정</button>`
+           +`<button class="btn sm danger" data-ucd="${esc(r.k)}" style="margin-left:4px">✕</button>`
+          : (r.uc==='e'?'<span class="hint">자동</span>':'')}</td></tr>`;}).join('')
+      ||'<tr><td colspan="7" class="hint" style="padding:16px">찾는 열이 없습니다</td></tr>';
+    tb.querySelectorAll('[data-uce]').forEach(b2=>b2.onclick=()=>
+      openUserColEdit(USER_COLS.find(x=>x.k===b2.dataset.uce)||null));
+    tb.querySelectorAll('[data-ucd]').forEach(b2=>b2.onclick=()=>{
+      const c2=USER_COLS.find(x=>x.k===b2.dataset.ucd);if(!c2)return;
+      confirmModal(`'${c2.l}' 열을 지울까요?`,
+        '이 열을 켜 둔 표에서 함께 사라집니다. 입력해 둔 숫자는 그대로 남아 있어, 다시 만들면 되살아납니다.',
+        ()=>{applyUserCols(USER_COLS.filter(x=>x.k!==c2.k));closeModal();openColDict();},'지우기');});};
   draw('');
   const q=$('cdQ');
   if(q){q.oninput=()=>draw(q.value);setTimeout(()=>q.focus(),40);}
