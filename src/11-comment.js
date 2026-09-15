@@ -107,7 +107,10 @@ function openSectManage(){
 function renderHiddenBar(){
   const bar=$('hiddenBar');if(!bar)return;
   const keys=[...HIDDEN];
-  if(!keys.length){bar.classList.add('hidden');bar.innerHTML='';return;}
+  /* 광고주(뷰어) 화면에서는 줄 자체를 내지 않는다 (v57) —
+     되돌릴 권한이 없는 사람에게는 "뭐가 숨겨졌다"는 정보만 남아 혼란스러웠다 */
+  let cli=false;try{cli=typeof isClient==='function'&&isClient();}catch(e){}
+  if(cli||!keys.length){bar.classList.add('hidden');bar.innerHTML='';return;}
   bar.classList.remove('hidden');
   const nameOf=k=>k.indexOf('sum:')===0
     ? ((SUMMARIES.find(s=>'sum:'+s.id===k)||{name:'서머리'}).name)

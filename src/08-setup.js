@@ -602,11 +602,19 @@ function openLineColCfg(){
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
 }
-const MIX_CATALOG=fieldCatalog('mix').concat([
+const mkMixCat=()=>fieldCatalog('mix').concat([
   {g:'KPI',cols:[{k:'kpi',l:'KPI 지표'},{k:'kpiGoal',l:'KPI 목표 수'}]},
   {g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
   {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
-const MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+let MIX_CATALOG=mkMixCat();
+let MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+COLREB.push(()=>{MIX_CATALOG=mkMixCat();
+  MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
+  /* 새 열은 기본 목록에만 더하고 사용자가 정해 둔 on/off 는 그대로 둔다 */
+  try{LINE_COLS=mergeCols(LINE_COLS,lineColsDefault());}catch(e){}
+  try{SHEET_COLS=mergeCols(SHEET_COLS,sheetColsDefault());}catch(e){}
+});
+
 let MIX_CFG={rows:[{k:'segment',sub:true},{k:'media',sub:true},{k:'product',sub:false},{k:'target',sub:false}],
   order:null,
   groups:[
@@ -986,7 +994,8 @@ function buildSelects(){
   fill('barSel',BAR_METRICS,'imp',k=>METRICS[k].l);
   fill('lineSel',LINE_METRICS,'ctr',k=>k==='none'?'없음':METRICS[k].l);
   fill('dimSel',SERIES_DIMS.map(d=>d.k),'media',k=>SERIES_DIMS.find(d=>d.k===k).l);
-  fill('ganttMetric',['imp','click','view','cost'],'imp',k=>METRICS[k].l);
+  /* 단가(CPM · CPC · CPV)도 고를 수 있다 (v57) — 고르면 칸마다 그 날 단가가 작게 얹힌다 */
+  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],'imp',k=>METRICS[k].l);
   fill('tmapMetric',TMAP_METRICS,TMAP.metric,k=>METRICS[k].l);
   $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();
     try{markDirty();saveLocal();}catch(x){}};
@@ -1019,7 +1028,13 @@ function buildSelects(){
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
   $('barSel').onchange=renderDaily;$('lineSel').onchange=renderDaily;
   $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
-  $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();};
+  $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
+    try{markDirty();saveLocal();}catch(x){}};
+  /* 소계 켜고 끄기 (v57) — 머리글에 소재 말고 다른 기준이 있어야 의미가 있다 */
+  const gs2=$('ganttSubBtn');
+  if(gs2){gs2.classList.toggle('on',!!GANTT.sub);
+    gs2.onclick=()=>{GANTT.sub=!GANTT.sub;gs2.classList.toggle('on',GANTT.sub);
+      renderGantt();try{markDirty();saveLocal();}catch(x){}};}
   const gr=$('ganttRange');
   if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}

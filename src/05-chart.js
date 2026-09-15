@@ -359,13 +359,14 @@ function renderDaily(){
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */
-const SUM_CATALOG=fieldCatalog('dash').concat([{g:'기타',
+const mkSumCat=()=>fieldCatalog('dash').concat([{g:'기타',
   cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]);
-const SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
+let SUM_CATALOG=mkSumCat();
+let SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
 /* x: false = 정상 · 'ratio' = 예상값은 표시하되 비율은 의미가 없어 숨김 · 'all' = 예상값 전부 숨김 */
 const HA=x=>x==='all';
 const SUM_CELL={};
-(function buildSumCell(){
+function buildSumCell(){
   const abs=k=>a=>[fmt(a[k])];
   const money=k=>a=>[won(a[k])];
   const est=k=>(a,e,x)=>[HA(x)||!e[k]?'–':fmt(e[k])];
@@ -410,7 +411,15 @@ const SUM_CELL={};
     return [bs.length<=2?esc(bs.join(' · '))
       :`<span title="${esc(bs.join(' · '))}">${esc(bs[0])} 외 ${bs.length-1}</span>`];};
   SUM_CELL.date=()=>['–'];
-})();
+}
+buildSumCell();
+/* 사용자 열이 바뀜다면 서머리 카탈로그와 칸 그리는 법을 다시 만든다 (v57) */
+COLREB.push(()=>{
+  SUM_CATALOG=mkSumCat();
+  SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
+  Object.keys(SUM_CELL).forEach(k=>{if(/^u_|^e_u_/.test(k))delete SUM_CELL[k];});
+  buildSumCell();
+});
 /* 예상값이 들어가는 열 (소재 단위로 쪼개지면 위·아래 셀을 합쳐 표시) */
 SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
   ||/^g_cp/.test(f.k)

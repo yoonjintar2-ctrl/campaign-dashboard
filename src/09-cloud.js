@@ -58,6 +58,8 @@ function serializeDoc(){
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
     crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),
     issues:ISSUES.map(x=>({...x})),holidays:HOLIDAYS,bidTypes:BID_TYPES,verdictBand:VERDICT_BAND,
+    /* 이 캠페인이 쓰는 사용자 열 — 공유받은 사람(광고주 · 다른 계정)도 같은 열로 보도록 (v57) */
+    userCols:(typeof USER_COLS!=='undefined'?USER_COLS.map(x=>({...x})):[]),
     cols:{line:LINE_COLS,sheet:SHEET_COLS},
     /* 입력 시트를 그대로 담는다 — 일별 실적의 원본이라 이게 있어야 다시 열어도 남는다.
        **반드시 복사본으로** 넘긴다 — 원본 배열을 그대로 넘기면 문서를 적용하기 전에
@@ -138,6 +140,12 @@ function applyDoc(d,keepToday){
   CREATIVES=(d.creatives||[]).map(c=>({...c,daily:{}}));
   /* 지금 등록된 소재에 자료함을 다시 붙인다 (이름이 같으면 이미지가 되살아난다) */
   try{if(typeof crAssetRelink==='function'){CREATIVES.forEach(c=>crAssetSave(c));crAssetRelink();}}catch(e){}
+  /* 문서에 담겨 온 사용자 열을 내 것과 합친다 (v57) —
+     내가 만든 열은 그대로 두고, 이 캠페인에만 있던 열을 더한다 */
+  if(Array.isArray(d.userCols)&&typeof regUserCols==='function'){
+    try{const merged=ucMerge(USER_COLS,d.userCols);
+      if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){saveUserCols(merged);regUserCols(merged);}
+    }catch(e){}}
   if(d.issues)ISSUES=d.issues;
   if(d.holidays)HOLIDAYS=d.holidays;
   if(d.bidTypes)BID_TYPES=d.bidTypes;
@@ -505,6 +513,9 @@ async function afterSignIn(){
   /* 계정 등급 (슈퍼마스터 / 마스터 / 게스트) */
   try{const {data}=await CLOUD.sb.from('profiles').select('app_role').eq('id',u.id).maybeSingle();
     CLOUD.appRole=data?.app_role||'guest';}catch(err){CLOUD.appRole='guest';}
+  /* 내가 만든 열 — 계정에 붙어 있어 어느 캠페인에서도 · 어느 기기에서도 그대로 (v57).
+     profiles.prefs 열이 아직 없는 서버에서도 깨지지 않도록 조용히 넘어간다. */
+  await pullUserCols();
   paintAuth();
   applyRoleLock();
   await loadCampaignList();
@@ -1144,6 +1155,39 @@ function isMasterOf(d){
   if(CLOUD.shareView)return false;
   const me=(d&&d.members||[]).find(m=>m.user_id===CLOUD.user.id);
   return !!me&&me.role==='master';
+}
+/* ---- 내가 만든 열 — 계정 저장소 (v57) ----
+   로컬(localStorage)은 바로 쓰기 위한 사본이고, 계정(profiles.prefs.cols)이 원본이다.
+   둘을 합칠 때는 **이름이 같으면 나중에 고친 쪽**을 남긴다(at 타임스탬프). */
+function ucMerge(a,b){
+  const m=new Map();
+  (a||[]).concat(b||[]).forEach(c=>{
+    if(!c||!c.k||!c.l)return;
+    const p=m.get(c.k);
+    if(!p||(+c.at||0)>=(+p.at||0))m.set(c.k,c);});
+  return [...m.values()];
+}
+async function pullUserCols(){
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data,error}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    if(error)return;                               /* prefs 열이 없는 서버 — 로컬만 쓴다 */
+    const cloud=(data&&data.prefs&&Array.isArray(data.prefs.cols))?data.prefs.cols:[];
+    const merged=ucMerge(loadUserCols(),cloud);
+    if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){
+      saveUserCols(merged);regUserCols(merged);
+      try{renderAll();renderKpiTable&&renderKpiTable();}catch(e){}}
+    /* 로컬에만 있던 열은 계정에도 올려 둔다 */
+    if(JSON.stringify(merged)!==JSON.stringify(cloud))await pushUserCols(merged);
+  }catch(e){}
+}
+async function pushUserCols(list){
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    const prefs=Object.assign({},(data&&data.prefs)||{},{cols:list||USER_COLS});
+    await CLOUD.sb.from('profiles').update({prefs}).eq('id',CLOUD.user.id);
+  }catch(e){}
 }
 async function inviteMember(email,role,campId){
   const id=campIdOf(campId);

@@ -340,6 +340,15 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .mchip.pend{background:#fff;border-style:dashed;color:var(--muted)}
 [data-theme="dark"] .mchip.master{background:#3a3320;border-color:#6b5c2c;color:#e8cf8e}
 [data-theme="dark"] .mchip.pend{background:transparent}
+/* 다크 보기 토글 (v57) — 광고주도 쓸 수 있게 상단바에 둔다.
+   이 화면에서만 잠깐 바꾸는 것이라 저장하지 않는다 (새로고침하면 캠페인 테마로 돌아온다). */
+.darkbtn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;
+  font-family:inherit;font-size:11.5px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+.darkbtn:hover{border-color:var(--gline);color:var(--ink)}
+.darkbtn[aria-pressed="true"]{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
+.darkbtn svg{flex:none;display:block}
+@media (max-width:1180px){.darkbtn .lb{display:none}.darkbtn{padding:0 8px}}
 .rolechip{font-size:11.5px;font-weight:700;color:var(--acc);background:var(--acc-soft);
   border:1px solid var(--line);border-radius:999px;padding:3px 11px;white-space:nowrap}
 .rolechip.agency{color:#38664f;background:#e9f1ec;border-color:#cfe0d6}
@@ -1301,7 +1310,10 @@ textarea.note{width:100%;min-height:42px;border:1px solid var(--line);border-rad
   box-shadow:0 24px 70px rgba(0,0,0,.3);max-height:88vh;display:flex;flex-direction:column}
 .modal .mhd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
 .modal .mhd b{font-size:14.5px}
-.modal .mbd{padding:16px 18px;overflow:auto;background:var(--plane2)}
+/* ⚠ flex 자식은 min-height 가 auto 라 내용만큼 부풀어 max-height 를 넘어선다.
+   그러면 overflow:auto 가 아예 동작하지 않고 밑의 닫기 줄까지 창 밖으로 밀려난다
+   (디자인 팝업에 섹션이 하나 늘어나면서 생긴 증상) — min-height:0 으로 줄어들 수 있게 한다 (v57) */
+.modal .mbd{padding:16px 18px;overflow:auto;background:var(--plane2);flex:1 1 auto;min-height:0}
 .modal .mft{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line)}
 .modal .x{border:0;background:var(--plane);width:30px;height:30px;border-radius:9px;cursor:pointer;color:var(--ink2)}
 .modal iframe{border:0;width:100%;aspect-ratio:16/9;border-radius:10px;max-width:840px}
@@ -1355,6 +1367,25 @@ table.gantt td.lead.nm{text-align:left}
 table.gantt td.hl{color:var(--acc);font-weight:800}
 table.gantt td.day{min-width:13px;height:34px;vertical-align:middle;padding:3px 1px}
 table.gantt td.day .b{display:block;width:100%;height:100%;border-radius:2px}
+/* 칸 위에 얹는 아주 작은 단가 (v57) — 열 폭은 건드리지 않는다.
+   칸 자체를 기준으로 절대 배치해 두어 글자가 길어도 표가 벌어지지 않고 잘리기만 한다.
+   novnum 은 칸이 좁아 글자가 지저분해질 때 통째로 끄는 스위치다. */
+table.gantt td.day{position:relative}
+table.gantt td.day .vnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-style:normal;text-decoration:none;font-size:7.5px;font-weight:700;letter-spacing:-.4px;
+  color:rgba(20,30,45,.34);pointer-events:none;overflow:hidden;line-height:1;white-space:nowrap}
+[data-theme="dark"] table.gantt td.day .vnum{color:rgba(255,255,255,.40)}
+table.gantt td.day .vnum.nofit{display:none}
+/* 단가를 고른 동안만 날짜 칸을 숫자가 들어갈 만큼만 넓힌다 (v57).
+   노출·클릭처럼 세는 값으로 돌아가면 곧바로 원래의 촘촘한 폭으로 돌아온다. */
+table.gantt.wnum td.day,table.gantt.wnum th.dhd{min-width:22px}
+/* 그룹 소계 줄 (v57) — 소재 줄과 헷갈리지 않게 한 톤 진하게 */
+table.gantt tr.gsub>td{background:var(--sub1);font-weight:800}
+table.gantt tr.gsub>td.lead{background:var(--sub0);text-align:left;color:var(--ink);
+  font-size:11.5px;letter-spacing:-.2px}
+table.gantt tr.gsub>td.lead i{font-style:normal;font-weight:600;color:var(--muted);margin-left:5px;font-size:10.5px}
+table.gantt tr.gsub>td.day .b{border-radius:1px;opacity:.95}
+table.gantt tr.gsub>td{border-top:1px solid var(--gline);border-bottom:1px solid var(--gline)}
 table.gantt td.day.we{background:var(--acc-soft2)}
 table.gantt td.day.hol{background:var(--acc-soft)}
 table.gantt tbody tr:hover td.lead{background:var(--acc-soft2)}
@@ -1533,7 +1564,9 @@ table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
 [data-theme="dark"] .bublgd .bl{background:var(--plane2);border-color:var(--gline)}
 [data-theme="dark"] .bublgd{background:var(--surface)}
 /* 디자인 — 테마 고르기 */
-.thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+/* auto-fill 은 칸이 모자라도 빈 트랙을 남겨 두어서
+   카드가 2개인 줄(배경 움직임)만 좁게 보였다 → auto-fit 으로 고르게 채운다 (v57) */
+.thgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .thcard{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:11px 12px;
   border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
 .thcard:hover{border-color:var(--acc-lt);background:var(--acc-soft2)}
@@ -1542,6 +1575,11 @@ table.tbl thead th{white-space:normal;word-break:keep-all;line-height:1.3}
 .thcard .sws i{width:22px;height:22px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.06)}
 .thcard .thl{font-size:12.5px;font-weight:700;color:var(--ink)}
 /* 광고주 로고 고르기 */
+.ucpick{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-height:132px;overflow:auto;
+  padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ucpick>button{border:1px solid var(--line);background:var(--plane);color:var(--ink2);
+  border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.ucpick>button:hover{background:var(--acc-soft);color:var(--acc);border-color:var(--gline)}
 .logopick{display:flex;align-items:center;gap:10px}
 .logopick .prev{display:inline-flex;align-items:center;justify-content:center;height:34px;min-width:60px;
   max-width:120px;padding:0 8px;border:1px dashed var(--line);border-radius:9px;background:var(--plane2)}
@@ -1668,6 +1706,8 @@ th.thsf .thl{display:inline-block}
 .dfempty>span{color:var(--muted);font-size:12px}
 .btn.sm.dfilt{font-variant-numeric:tabular-nums}
 .btn.sm.dfilt.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
+/* 켜짐 상태가 있는 작은 버튼 공통 (v57 — 게재 히스토리 소계 등) */
+.btn.sm.on{background:var(--acc-soft);color:var(--acc);border-color:var(--gline);font-weight:800}
 table.sheet td.rm button{border:0;background:transparent;color:var(--muted);cursor:pointer;height:32px;width:100%}
 table.sheet td.rm button:hover{color:var(--neg)}
 table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:center;height:32px;line-height:32px}

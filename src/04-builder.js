@@ -1378,7 +1378,8 @@ function verdictOf(ach,pace){
   if(p<-VERDICT_BAND)return {cls:'bad',label:'저조',gap};
   return {cls:'ok',label:'양호',gap};
 }
-const STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+COLREB.push(()=>{STAT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);});
 /* 주요 지표 기본 열 — 사전의 기본값에서 매출은 빼고 전환을 넣는다 */
 const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',

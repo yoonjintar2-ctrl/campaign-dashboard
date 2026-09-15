@@ -322,7 +322,8 @@ let CAMP_HIST=[];
    [키, 국문명, 영문명, 카테고리, 유형(in=수동입력 / calc=계산),
     미디어믹스·예상효율 기본표시, 미디어믹스·예상효율 사용가능,
     대시보드·데이터입력 기본표시, 대시보드·데이터입력 사용가능]                       */
-const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타'];
+/* 맨 끝 '사용자' 는 설정 › 열 사전에서 직접 만든 열들의 자리다 (v57) */
+const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타','사용자'];
 const FIELDS=[
   ['date','일자','date','운영','in',0,0,1,1],
   ['start','시작일','start date','운영','in',1,1,0,1],
@@ -413,6 +414,109 @@ function fieldCatalog(scope,extra){
   return out;
 }
 const fieldDefaults=scope=>FIELDS.filter(f=>scope==='mix'?f.mixDef:f.dashDef).map(f=>f.k);
+
+/* ===== 사용자가 만든 열 (v57) =====
+   설정 › 열 사전에서 열을 직접 추가한다.
+   · '입력'  — 일자별 실적에 숫자를 직접 적는 열 (목표 열도 함께 생긴다)
+   · '수식'  — 다른 열로 계산하는 열 (예: click/imp, imp+click)
+   저장 위치는 HTML 이 아니라 **사용자 쪽**이다 —
+   브라우저(localStorage) + 로그인 계정(profiles.prefs.cols) + 캠페인 문서.
+   그래서 대시보드 HTML 을 새 버전으로 갈아도 내가 만든 열은 그대로 남는다. */
+const UC_KEY='dmd:usercols';
+let USER_COLS=[];
+const UC_FMT={num:{l:'숫자 (#,###)'},pct0:{l:'% (소수점 없음)'},
+  pct1:{l:'% (소수점 1자리)'},pct2:{l:'% (소수점 2자리)'}};
+/* 수식 — 허용한 글자만 통과시킨 뒤 직접 훑어 계산한다 (new Function 을 쓰지 않는다) */
+function ucTokens(expr){
+  const src=String(expr||'').trim();
+  if(!src)return null;
+  const toks=src.match(/[A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?|[+\-*/()]/g)||[];
+  if(!toks.length)return null;
+  /* 토큰을 다시 이어 붙여 원문과 같아야 한다 — 이상한 글자가 끼어 있으면 여기서 걸린다 */
+  if(toks.join('')!==src.replace(/\s+/g,''))return null;
+  return toks;
+}
+function ucCalc(toks,b){
+  let i=0;
+  const at=()=>toks[i];
+  const unit=()=>{
+    const t=toks[i++];
+    if(t==='('){const v=sum2();if(toks[i]===')')i++;return v;}
+    if(t==='-')return -unit();
+    if(t==='+')return unit();
+    if(/^[A-Za-z_]/.test(t))return +b[t]||0;
+    return +t||0;};
+  const mul=()=>{let v=unit();
+    while(at()==='*'||at()==='/'){const o=toks[i++],r=unit();
+      v=o==='*'?v*r:(r?v/r:NaN);}
+    return v;};
+  const sum2=()=>{let v=mul();
+    while(at()==='+'||at()==='-'){const o=toks[i++],r=mul();
+      v=o==='+'?v+r:v-r;}
+    return v;};
+  const out=sum2();
+  return isFinite(out)?out:NaN;
+}
+/* 수식에 쓸 수 있는 열인지 (자기 자신과 다른 사용자 수식 열은 순환을 막으려고 뺀다) */
+const ucBaseKeys=()=>FIELDS.filter(f=>!/^u_/.test(f.k)||FLD[f.k].__uc==='in').map(f=>f.k);
+function ucValidate(c,list){
+  const nm=String(c.l||'').trim();
+  if(!nm)return '이름을 적어 주세요.';
+  if((list||USER_COLS).some(x=>x.k!==c.k&&String(x.l).trim()===nm))return '같은 이름의 열이 이미 있습니다.';
+  if(FIELDS.some(f=>f.l===nm&&f.k!==c.k))return '기본 열과 이름이 같습니다. 다른 이름을 써 주세요.';
+  if(c.kind!=='calc')return '';
+  const toks=ucTokens(c.expr);
+  if(!toks)return '수식을 읽을 수 없습니다. 숫자 · 열 이름 · + - * / ( ) 만 쓸 수 있습니다.';
+  const ok=new Set(ucBaseKeys());
+  const bad=toks.filter(t=>/^[A-Za-z_]/.test(t)&&!ok.has(t));
+  if(bad.length)return '모르는 열입니다: '+[...new Set(bad)].join(', ');
+  if(!toks.some(t=>/^[A-Za-z_]/.test(t)))return '열을 하나 이상 넣어 주세요.';
+  return '';
+}
+const ucFmtFn=f=>f==='pct0'?(v=>pct(v,0)):f==='pct1'?(v=>pct(v,1))
+  :f==='pct2'?(v=>pct(v,2)):(v=>fmt(v));
+/* 만든 열을 항목 사전(FIELDS)과 계산표(METRICS)에 꽂는다 */
+function regUserCols(list){
+  USER_COLS=(Array.isArray(list)?list:[]).filter(c=>c&&c.k&&c.l);
+  /* 예전에 꽂아 둔 사용자 열은 모두 걷어 낸다 */
+  for(let i=FIELDS.length-1;i>=0;i--)if(FIELDS[i].__uc){delete FLD[FIELDS[i].k];FIELDS.splice(i,1);}
+  Object.keys(METRICS).forEach(k=>{if(METRICS[k].__uc)delete METRICS[k];});
+  for(let i=AMET.length-1;i>=0;i--)if(/^u_/.test(AMET[i]))AMET.splice(i,1);
+  USER_COLS.forEach(c=>{
+    const F=v=>ucFmtFn(c.fmt)(v);
+    if(c.kind==='in'){
+      AMET.push(c.k);
+      const f1={k:c.k,l:c.l,en:c.l,cat:'사용자',kind:'in',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'in'};
+      const f2={k:'e_'+c.k,l:'목표 '+c.l,en:'est.'+c.l,cat:'사용자',kind:'in',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'e'};
+      FIELDS.push(f1,f2);FLD[f1.k]=f1;FLD[f2.k]=f2;
+      METRICS[c.k]={l:c.l,f:F,kind:'abs',__uc:1};
+    }else{
+      const toks=ucTokens(c.expr);
+      const f1={k:c.k,l:c.l,en:c.l,cat:'사용자',kind:'calc',
+        mixDef:false,mixOk:true,dashDef:false,dashOk:true,__uc:'calc'};
+      FIELDS.push(f1);FLD[f1.k]=f1;
+      METRICS[c.k]={l:c.l,f:F,kind:'rate',__uc:1,
+        c:b=>toks?ucCalc(toks,b||{}):NaN};
+    }});
+  /* 새로 생긴 입력 열의 자리를 라인마다 마련해 둔다 */
+  try{LINES.forEach(l=>{USER_COLS.forEach(c=>{if(c.kind!=='in')return;
+    if(!Array.isArray(l.daily[c.k]))l.daily[c.k]=new Array(TOTAL_DAYS).fill(0);
+    if(l.a&&l.a[c.k]==null)l.a[c.k]=0;});});}catch(e){}
+  /* 열 목록을 쓰는 화면들을 다시 만든다 */
+  COLREB.forEach(f=>{try{f();}catch(e){}});
+}
+/* 열 목록에서 만들어 두는 것들 — 사용자 열이 바뀌면 여기 등록된 함수를 다시 돌린다 */
+const COLREB=[];
+function loadUserCols(){
+  try{const raw=localStorage.getItem(UC_KEY);
+    if(raw)return JSON.parse(raw)||[];}catch(e){}
+  return [];
+}
+function saveUserCols(list){
+  try{localStorage.setItem(UC_KEY,JSON.stringify(list||[]));}catch(e){}
+}
 
 const METRICS={
   imp:{l:'노출',f:fmt,kind:'abs'},click:{l:'클릭',f:fmt,kind:'abs'},view:{l:'조회',f:fmt,kind:'abs'},
@@ -560,3 +664,10 @@ const isClient=()=>document.body.dataset.role==='client';
 /* 집행 실적 합계 — 달력으로 고른 구간만 더한다 */
 const paceSum=arr=>{const s=viewScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
 const kpiAch=l=>{const k=kpiOf(l);return paceSum(l.daily[k])/goalIn(l,k);};
+
+/* 이 브라우저에 저장해 둔 사용자 열을 먼저 꽂아 둔다 (v57).
+   ⚠ 아래 파일들이 열 목록(FIELDS · METRICS)으로 화면 카탈로그를 만들기 때문에
+   반드시 그 전에, 즉 이 파일 맨 끝에서 해야 한다.
+   로그인 계정·캠페인 문서에서 온 목록은 나중에 regUserCols 로 다시 꽂는다. */
+try{regUserCols(loadUserCols());}catch(e){}
+

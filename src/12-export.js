@@ -597,16 +597,60 @@ function syncThemeColors(){
   if(typeof LINE_TONE!=='undefined')LINE_TONE=v('--acc2')||LINE_TONE;
   /* 운영 코멘트 강조색 · 히트맵 배경은 CSS 변수로 처리한다 */
 }
+/* 다크 보기 — 화면에서만 잠시 어둡게 (v57). 저장하지 않는다. */
+let DARK_VIEW=false;
 function applyTheme(k,quiet){
   THEME=THEMES.some(t=>t.k===k)?k:'';
-  if(THEME)document.documentElement.setAttribute('data-theme',THEME);
+  /* 다크 보기가 켜져 있으면 테마를 바꿔도 화면은 다크로 유지한다 */
+  const show=DARK_VIEW?'dark':THEME;
+  if(show)document.documentElement.setAttribute('data-theme',show);
   else document.documentElement.removeAttribute('data-theme');
   syncThemeColors();
   try{refreshBgDots();}catch(e){}
+  try{paintDarkBtn();}catch(e){}
   if(quiet)return;
   try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
 }
+/* ---- 다크 보기 토글 (v57) ----
+   광고주(뷰어)도 자기 화면만 어둡게 볼 수 있어야 한다.
+   ⚠ 캠페인 테마를 바꾸는 게 아니다 — 저장하지 않고, 새로고침하면 관리자가 정한 테마로 돌아간다.
+   그래서 THEME 변수는 건드리지 않고 data-theme 속성만 잠깐 갈아 끼운다. */
+function paintDarkBtn(){
+  const b=$('darkToggle');if(!b)return;
+  b.setAttribute('aria-pressed',DARK_VIEW?'true':'false');
+  b.title=DARK_VIEW
+    ? '원래 테마로 되돌립니다 (새로고침해도 원래 테마입니다)'
+    : '이 화면에서만 어둡게 봅니다 · 새로고침하면 원래 테마로 돌아갑니다';
+}
+function applyDarkView(){
+  const dark=DARK_VIEW||THEME==='dark';
+  if(dark)document.documentElement.setAttribute('data-theme','dark');
+  else if(THEME)document.documentElement.setAttribute('data-theme',THEME);
+  else document.documentElement.removeAttribute('data-theme');
+  syncThemeColors();
+  try{refreshBgDots();}catch(e){}
+  /* 그래프 색은 자바스크립트 값이라 다시 그려야 바뀐다 (v53 에서 겪은 것과 같은 이유) */
+  try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+      renderKpiTable&&renderKpiTable();}catch(e){}
+  paintDarkBtn();
+}
+function toggleDarkView(){
+  /* 캠페인 테마가 이미 다크면 토글은 "밝게 보기" 로 동작한다 */
+  DARK_VIEW=!(DARK_VIEW||THEME==='dark');
+  if(THEME==='dark'&&!DARK_VIEW){
+    document.documentElement.setAttribute('data-theme','mono');
+    syncThemeColors();try{refreshBgDots();}catch(e){}
+    try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+        renderKpiTable&&renderKpiTable();}catch(e){}
+    paintDarkBtn();return;}
+  applyDarkView();
+}
+(function wireDark(){
+  const go=()=>{const b=$('darkToggle');
+    if(b){b.onclick=toggleDarkView;paintDarkBtn();}};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
+})();
 function openThemePicker(){
   const card=t=>`<button class="thcard${t.k===THEME?' on':''}" data-th="${t.k}">
       <span class="sws">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
@@ -629,7 +673,7 @@ function openThemePicker(){
      <div class="sec gap" style="margin:20px 0 8px;font-size:14px">배경 움직임</div>
      <div class="hint" style="margin-bottom:10px">배경 로고를 천천히 <b>흘려보낼지</b>, 그 자리에 <b>세워 둘지</b> 고릅니다.
        색·크기·위치는 같고 움직임만 달라집니다.
-       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div></div>
+       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div>
      <div class="thgrid bgpick">
        ${[{k:'float',l:'흘러다니기',d:'천천히 떠다니는 기본값'},
           {k:'still',l:'고정',        d:'움직이지 않음 · 더 가벼움'}]
@@ -1179,9 +1223,81 @@ const COL_NOTE={
   imp_r:'달성률은 기간 필터를 따릅니다 — 조회 기간의 실적 ÷ 그 기간의 목표.',
   creative:'소재별 실적은 입력 시트에 적힌 소재 그대로 집계합니다. 시트에 소재를 적지 않은 날만 소재 비중으로 나눕니다.'
 };
+/* 사용자 열을 적용하고 어디에나 반영한다 (v57) */
+function applyUserCols(list){
+  const arr=(list||[]).map(c=>({...c}));
+  saveUserCols(arr);
+  regUserCols(arr);
+  try{if(typeof pushUserCols==='function')pushUserCols(arr);}catch(e){}
+  try{buildFacts();}catch(e){}
+  try{renderAll();renderKpiTable&&renderKpiTable();}catch(e){}
+  try{if(typeof renderSheet==='function')renderSheet();}catch(e){}
+  try{markDirty();saveLocal();}catch(e){}
+}
+/* 열 하나 만들기 · 고치기 */
+function openUserColEdit(col){
+  const isNew=!col;
+  const c=col?{...col}:{k:'u_'+Math.random().toString(36).slice(2,8),l:'',kind:'calc',expr:'',fmt:'num'};
+  /* 수식에 넣을 수 있는 열 목록 — 이름을 눌러 넣는다 */
+  const pick=FIELDS.filter(f=>ucBaseKeys().indexOf(f.k)>=0&&METRICS[f.k])
+    .map(f=>({k:f.k,l:f.l}));
+  openModal(isNew?'열 추가':'열 수정',
+    `<div class="fld"><label>열 이름</label>
+       <input class="txt" id="ucName" value="${esc(c.l)}" placeholder="예: 노출클릭효율" style="width:100%"></div>
+     <div class="fld" style="margin-top:12px"><label>종류</label>
+       <div class="thgrid" style="margin-top:6px">
+         ${[{k:'calc',l:'수식으로 계산',d:'다른 열로 계산합니다 (예: 클릭 ÷ 노출)'},
+            {k:'in', l:'숫자 직접 입력',d:'리포트 데이터 입력에 칸이 생깁니다'}]
+           .map(o=>`<button type="button" class="thcard${c.kind===o.k?' on':''}" data-uk="${o.k}">
+              <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+       </div></div>
+     <div id="ucExprBox" style="margin-top:12px${c.kind==='calc'?'':';display:none'}">
+       <div class="fld"><label>수식
+         <span class="hint">숫자와 + − × ÷ ( ) 를 쓸 수 있습니다. 아래에서 열 이름을 눌러 넣으세요.</span></label>
+         <input class="txt" id="ucExpr" value="${esc(c.expr||'')}" placeholder="예: click/imp" style="width:100%"
+           spellcheck="false" autocomplete="off"></div>
+       <div class="ucpick" id="ucPick">${pick.map(x=>
+         `<button type="button" data-ins="${esc(x.k)}" title="${esc(x.k)}">${esc(x.l)}</button>`).join('')}</div>
+     </div>
+     <div class="fld" style="margin-top:12px"><label>표시 형식</label>
+       <div class="thgrid" style="margin-top:6px">
+         ${Object.keys(UC_FMT).map(k=>`<button type="button" class="thcard${c.fmt===k?' on':''}" data-uf="${k}">
+             <span class="thl">${UC_FMT[k].l}</span></button>`).join('')}
+       </div></div>
+     <div class="hint" id="ucMsg" style="margin-top:12px;min-height:18px"></div>`,
+    `<button class="btn" data-close>취소</button><button class="btn primary" id="ucSave">저장</button>`,
+    {w:620});
+  const host=$('modalHost');
+  const pane=host.querySelector('.modal#mdl')||host;
+  const setKind=k=>{c.kind=k;
+    pane.querySelectorAll('[data-uk]').forEach(b=>b.classList.toggle('on',b.dataset.uk===k));
+    const bx=$('ucExprBox');if(bx)bx.style.display=k==='calc'?'':'none';};
+  pane.querySelectorAll('[data-uk]').forEach(b=>b.onclick=()=>setKind(b.dataset.uk));
+  pane.querySelectorAll('[data-uf]').forEach(b=>b.onclick=()=>{c.fmt=b.dataset.uf;
+    pane.querySelectorAll('[data-uf]').forEach(x=>x.classList.toggle('on',x.dataset.uf===c.fmt));});
+  pane.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{
+    const i=$('ucExpr');if(!i)return;
+    const p0=i.selectionStart==null?i.value.length:i.selectionStart;
+    const p1=i.selectionEnd==null?p0:i.selectionEnd;
+    i.value=i.value.slice(0,p0)+b.dataset.ins+i.value.slice(p1);
+    i.focus();const np=p0+b.dataset.ins.length;i.setSelectionRange(np,np);});
+  $('ucSave').onclick=()=>{
+    c.l=($('ucName').value||'').trim();
+    const ex=$('ucExpr');c.expr=ex?(ex.value||'').trim():'';
+    const err=ucValidate(c,USER_COLS.filter(x=>x.k!==c.k));
+    const msg=$('ucMsg');
+    if(err){if(msg){msg.textContent='⚠ '+err;msg.style.color='var(--neg)';}return;}
+    c.at=Date.now();
+    const next=USER_COLS.filter(x=>x.k!==c.k).concat([c]);
+    applyUserCols(next);
+    closeModal();
+    /* 열 사전을 새로 그려 방금 만든 열을 보여 준다 */
+    closeModal();openColDict();};
+  setTimeout(()=>{const i=$('ucName');if(i){i.focus();i.select();}},40);
+}
 function openColDict(){
   const KIND={in:'입력',calc:'계산'};
-  const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind}))
+  const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind,uc:f.__uc}))
     .concat([{k:'period',l:'기간',en:'period',cat:'기타',kind:'calc'},
              {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}]);
   const where=k=>{
@@ -1204,10 +1320,13 @@ function openColDict(){
       <table class="tbl lite" id="cdTbl"><thead><tr>
         <th style="min-width:140px">열 이름</th><th style="min-width:110px">영문</th>
         <th style="min-width:66px">구분</th><th style="min-width:74px">분류</th>
-        <th style="min-width:230px">계산식 · 설명</th><th style="min-width:150px">쓰이는 곳</th>
+        <th style="min-width:230px">계산식 · 설명</th><th style="min-width:130px">쓰이는 곳</th>
+        <th style="min-width:76px"></th>
       </tr></thead><tbody></tbody></table></div>`;
   openModal('열 사전 — 전체 열과 계산식',body,
-    '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:940});
+    '<button class="btn primary" id="cdAdd">＋ 열 추가</button><div class="spacer"></div>'
+    +'<button class="btn" data-close>닫기</button>',{w:940});
+  {const ab=$('cdAdd');if(ab)ab.onclick=()=>openUserColEdit(null);}
   const tb=document.querySelector('#cdTbl tbody');
   const draw=q=>{
     const s=(q||'').trim().toLowerCase();
@@ -1224,8 +1343,19 @@ function openColDict(){
         <td>${KIND[r.kind]||r.kind}</td><td>${esc(r.cat)}</td>
         <td style="text-align:left;white-space:normal">${desc}
           ${nt?`<div class="hint" style="margin-top:3px">${esc(nt)}</div>`:''}</td>
-        <td style="text-align:left;color:var(--ink2)">${esc(where(r.k))}</td></tr>`;}).join('')
-      ||'<tr><td colspan="6" class="hint" style="padding:16px">찾는 열이 없습니다</td></tr>';};
+        <td style="text-align:left;color:var(--ink2)">${esc(where(r.k))}</td>
+        <td style="white-space:nowrap">${r.uc&&r.uc!=='e'
+          ? `<button class="btn sm" data-uce="${esc(r.k)}">수정</button>`
+           +`<button class="btn sm danger" data-ucd="${esc(r.k)}" style="margin-left:4px">✕</button>`
+          : (r.uc==='e'?'<span class="hint">자동</span>':'')}</td></tr>`;}).join('')
+      ||'<tr><td colspan="7" class="hint" style="padding:16px">찾는 열이 없습니다</td></tr>';
+    tb.querySelectorAll('[data-uce]').forEach(b2=>b2.onclick=()=>
+      openUserColEdit(USER_COLS.find(x=>x.k===b2.dataset.uce)||null));
+    tb.querySelectorAll('[data-ucd]').forEach(b2=>b2.onclick=()=>{
+      const c2=USER_COLS.find(x=>x.k===b2.dataset.ucd);if(!c2)return;
+      confirmModal(`'${c2.l}' 열을 지울까요?`,
+        '이 열을 켜 둔 표에서 함께 사라집니다. 입력해 둔 숫자는 그대로 남아 있어, 다시 만들면 되살아납니다.',
+        ()=>{applyUserCols(USER_COLS.filter(x=>x.k!==c2.k));closeModal();openColDict();},'지우기');});};
   draw('');
   const q=$('cdQ');
   if(q){q.oninput=()=>draw(q.value);setTimeout(()=>q.focus(),40);}

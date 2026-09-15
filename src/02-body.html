@@ -25,6 +25,11 @@
   <span class="betatag" id="betaTag" title="아직 다듬는 중인 베타 버전입니다 — 이상한 점은 알려 주세요">베타 버전</span>
   <button class="btn sm primary hidden" id="reqBtn" title="캠페인을 만들 수 있는 마스터 권한을 요청합니다">🔑 권한 요청하기</button>
   <div class="spacer"></div>
+  <button class="darkbtn" id="darkToggle" type="button" aria-pressed="false"
+    title="이 화면에서만 어둡게 봅니다 · 새로고침하면 원래 테마로 돌아갑니다">
+    <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path fill="currentColor"
+      d="M15.3 12.6A6.2 6.2 0 0 1 7.4 4.7a.6.6 0 0 0-.8-.8 7.4 7.4 0 1 0 9.5 9.5.6.6 0 0 0-.8-.8z"/></svg>
+    <span class="lb">다크</span></button>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
   <span class="hint" id="cloudState">데모 모드</span>
   <span class="savedago" id="savedAgo" title="자동 저장 시각"></span>
@@ -161,7 +166,8 @@
         <span class="hint">기간</span><select class="ctl" id="ganttRange">
           <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
-        <button class="btn sm agency-only" id="ganttCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm" id="ganttSubBtn" title="머리글 기준(매체 · 구분 등)마다 소계 줄을 넣습니다">Σ 소계</button>
+        <button class="btn sm agency-only" id="ganttCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
     </div>
     <div id="ganttCfgBox" class="hidden" data-sect="gantt"></div>
@@ -239,7 +245,7 @@
         <span class="hint">세로 세그먼트</span><select class="ctl" id="rawSeg"></select>
         <span class="hint">가로 세그먼트</span><select class="ctl" id="rawHSeg"></select>
         <button class="btn sm" id="rawPickBtn" title="표시할 세그먼트를 고르고 순서를 바꿉니다">⚙ 표시 항목</button>
-        <button class="btn sm agency-only" id="rawCfgBtn">⚙ 열 구성</button>
+        <button class="btn sm agency-only" id="rawCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
     </div>
     <div id="rawCfgBox" class="hidden" data-sect="raw"></div>

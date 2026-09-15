@@ -1,7 +1,9 @@
 /* ===== 7. 표 (로우 데이터) ===== */
 /* 표 탭 열 — 항목 사전 중 팩트에서 바로 계산 가능한 항목만 */
-const RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
-const RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));
+let RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));
+COLREB.push(()=>{RAW_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+  RAW_DEF={};RAW_CATALOG.forEach(g=>g.cols.forEach(c=>RAW_DEF[c.k]=c));});
 /* 기본 열에서 빼는 항목 — 매출은 켜고 싶을 때 열 구성에서 켠다 */
 const RAW_DEF_OUT=['rev'];
 let RAW_CFG={rows:[],groups:(function(){
@@ -587,8 +589,10 @@ function mountHeatHead(tbl){
 
 /* ===== 8. 소재 운영 ===== */
 let CR_FILTER={media:'all',type:'all',sort:'imp'};
-const CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
-const CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
+let CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+let CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
+COLREB.push(()=>{CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
+  CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));});
 let CR_CFG={video:{rows:[],groups:[{id:uid(),name:'영상 소재',cols:['imp','view','vtr','cpv']}]},
             image:{rows:[],groups:[{id:uid(),name:'이미지 소재',cols:['imp','click','ctr','cpc']}]}};
 const crAgg=c=>{const s=viewScope(),a=s.i0,b2=Math.min(s.i1+1,ELAPSED);
@@ -1246,10 +1250,13 @@ function openLightbox(c){
 const GANTT_GOAL_COLS=[
   {k:'g_cpm',l:'목표 CPM'},{k:'g_cpc',l:'목표 CPC'},{k:'g_cpv',l:'목표 CPV'},
   {k:'g_cpa',l:'목표 CPA'},{k:'g_cpe',l:'목표 CPE'},{k:'g_cpi',l:'목표 CPI'}];
-const GANTT_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k])
+const mkGanttCat=()=>fieldCatalog('dash',f=>!!METRICS[f.k])
   .concat([{g:'목표 단가',cols:GANTT_GOAL_COLS},
            {g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
-const GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
+let GANTT_CATALOG=mkGanttCat();
+let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
+COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();
+  GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));});
 let GANTT_RANGE='all';
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
@@ -1291,7 +1298,7 @@ function shade(t){
    행 안에서의 추이가 보여야 한다.
    다만 그 소재에 비교할 날이 두 개도 없으면 색이 아예 안 나오므로, 그럴 때만 표 전체 스케일로 물러선다.
    기준은 그 소재의 KPI 단가(낮을수록 좋음), 금액이 없으면 반응률(높을수록 좋음). */
-function ganttEff(list,SC){
+function ganttEff(list,SC,keyOf){
   const val={};let mode='cost';
   const unitOf=c=>{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));
     return KPI_UNIT[kpiOf(l)]||'cpm';};
@@ -1316,20 +1323,61 @@ function ganttEff(list,SC){
       if(!(num>0&&den>0))return null;
       return -(num/den);});}          /* 반응률은 높을수록 좋으므로 부호를 뒤집는다 */
   if(!vals.length)return {ok:false};
-  /* 행(소재)별 최소·중앙·최대 — 그 행 안에서의 추이를 색으로 본다 */
-  const byRow={};
+  /* 색의 기준 폭은 **지금 세워 둔 머리글 기준(keyOf)** 안에서 잡는다 (v57).
+     예전에는 행(소재) 하나 안에서만 잡아서, 같은 매체의 소재끼리 누가 더 좋은지
+     색으로는 알 수 없었다 — 소재마다 자기 최댓값이 제일 진했기 때문이다.
+     이제 매체별로 보고 있으면 그 매체 안의 모든 소재·모든 날이 한 척도를 쓴다.
+     머리글이 구분이면 구분 안에서, 제품이면 제품 안에서 — 세워 둔 기준을 그대로 따른다. */
+  const key=typeof keyOf==='function'?keyOf:()=>'';
+  const byGrp={};
   list.forEach(c=>{
-    const a=[];
-    for(let i=SC.i0;i<=SC.i1;i++){const v=val[c.id+'|'+i];if(v!==undefined)a.push(v);}
-    if(a.length>=2)byRow[c.id]={mn:Math.min(...a),mx:Math.max(...a),md:median(a)};});
+    const g=key(c);
+    for(let i=SC.i0;i<=SC.i1;i++){const v=val[c.id+'|'+i];
+      if(v!==undefined)(byGrp[g]||(byGrp[g]=[])).push(v);}});
+  const band={};
+  Object.keys(byGrp).forEach(g=>{const a=byGrp[g];
+    if(a.length>=2)band[g]={mn:Math.min(...a),mx:Math.max(...a),md:median(a)};});
   const gmn=Math.min(...vals),gmx=Math.max(...vals),gmd=median(vals);
   const EMPTY=cssVar('--acc-soft')||'#dfe4ea';
   return {ok:true,mode,
     color:(c,i)=>{
       const v=val[c.id+'|'+i];
       if(v===undefined)return EMPTY;
-      const r=byRow[c.id];
+      /* 그룹 안에 견줄 값이 둘도 없으면 표 전체 기준으로 물러난다 */
+      const r=band[key(c)];
       return (r?hmFill(v,r.mn,r.md,r.mx):hmFill(v,gmn,gmd,gmx))||EMPTY;}};
+}
+/* 하루치 값 — 노출·클릭처럼 더하는 값은 그대로, CPM·CPC·CPV 는 그 날 숫자로 만든다 (v57) */
+function ganttDayVal(c,gi,k){
+  const g=m=>(c.daily[m]&&c.daily[m][gi])||0;
+  const M=METRICS[k];
+  if(!M)return 0;
+  if(M.kind!=='rate')return g(k);
+  const b={cost:g('cost'),imp:g('imp'),click:g('click'),view:g('view'),
+    conv:g('conv'),eng:g('eng'),install:g('install'),rev:g('rev')};
+  const v=M.c(b);
+  return isFinite(v)&&v>0?v:0;
+}
+/* 칸 안에 겹쳐 쓰는 아주 작은 숫자 — 열 폭을 넓히지 않도록 짧게 줄인다 */
+function ganttTiny(v){
+  if(!isFinite(v)||v<=0)return '';
+  if(v>=1e8)return Math.round(v/1e8)+'억';
+  if(v>=1e4)return (v/1e4).toFixed(v>=1e5?0:1).replace(/\.0$/,'')+'만';
+  if(v>=1000)return (v/1000).toFixed(v>=1e4?0:1).replace(/\.0$/,'')+'천';
+  return String(Math.round(v));
+}
+/* 그룹 소계용 가짜 소재 — 그 그룹 소재들의 일별 값을 더해 하나로 만든다 (v57) */
+function ganttGroupTotal(cs,name){
+  const KEYS=AMET.concat(['cost']);
+  const o={id:'gsum|'+name,name,__sub:true,
+    lids:[...new Set(cs.map(c=>c.lid))],daily:{}};
+  ['segment','media','product','target','line','slot'].forEach(f=>{o[f]=cs[0]?cs[0][f]:'';});
+  KEYS.forEach(k=>{
+    const a=[];
+    cs.forEach(c=>{const s2=c.daily[k]||[];
+      for(let i=0;i<s2.length;i++)a[i]=(a[i]||0)+(+s2[i]||0);});
+    o.daily[k]=a;});
+  return o;
 }
 /* 게재 히스토리 정렬 값 — 같은 매체 안에서만 견준다 */
 function ganttSortVal(c){
@@ -1379,11 +1427,22 @@ function renderGantt(){
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
-  /* 색 기준은 표 전체를 한 번에 잡는다 */
-  const EFF=ganttEff(rowsData.map(r=>r.c),SC);
-  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 그 행의 최댓값 기준 */
-  const rowMax=c=>{const a=c.daily[mk]||[];
-    let m=0;for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++)if((a[i]||0)>m)m=a[i];return m||1;};
+  /* ---- 머리글 기준 그룹 (소재를 뺀 나머지 차원) ---- */
+  const gIdx=dims.map((d,i)=>d==='creative'?-1:i).filter(i=>i>=0);
+  const grpKey=vals=>gIdx.map(i=>vals[i]).join(SEP);
+  const GK={};rowsData.forEach(r=>{GK[r.c.id]=grpKey(r.vals);});
+  /* 색 기준은 지금 세워 둔 머리글 그룹 안에서 잡는다 (v57) */
+  const EFF=ganttEff(rowsData.map(r=>r.c),SC,c=>GK[c.id]!==undefined?GK[c.id]:'');
+  /* 효율을 못 구하는 경우에만 쓰는 예비 농도 — 같은 그룹의 최댓값 기준 */
+  const grpMax={};
+  rowsData.forEach(r=>{const g=GK[r.c.id],a=r.c.daily[mk]||[];
+    let m=grpMax[g]||0;
+    for(let i=SC.i0;i<=SC.i1&&i<ELAPSED;i++){const v=ganttDayVal(r.c,i,mk);if(v>m)m=v;}
+    grpMax[g]=m;});
+  const rowMax=c=>{const g=GK[c.id];return (g!==undefined&&grpMax[g])||1;};
+  /* 단가(CPM·CPC·CPV)를 고르면 칸마다 아주 작게 숫자도 얹는다 (v57).
+     열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
+  const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
   dims.forEach((d,i)=>h+=`<th class="lead" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
@@ -1391,6 +1450,21 @@ function renderGantt(){
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
   VD.forEach((d,i)=>h+=`<th data-di="${i}" style="position:static;min-width:13px;font-size:9px;padding:0;color:${isRest(d)?'rgba(255,255,255,.42)':'rgba(255,255,255,.86)'}" class="dhd ${i===0?'gsep':''}">${d.getDate()}</th>`);
   h+='</tr></thead><tbody>';
+  const subs=[];
+  /* 한 행의 날짜 칸들 — 소재 행과 소계 행이 똑같은 규칙을 쓰도록 하나로 묶어 둔다 */
+  const dayCells=c=>{
+    const maxV=rowMax(c);
+    let out='';
+    VD.forEach((d,i)=>{
+      const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
+      const v=gi<ELAPSED?ganttDayVal(c,gi,mk):0;
+      const hol=!!holName(d),we=d.getDay()%6===0;
+      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
+      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
+      out+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
+        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
+        +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
+    return out;};
   rowsData.forEach((rd,ri)=>{
     const c=rd.c;
     h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
@@ -1404,22 +1478,51 @@ function renderGantt(){
       const days=c.daily.imp.filter(v=>v>0).length;
       const v=k==='days'?days+'일':crVal(c,k);
       h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-    const maxV=rowMax(c);                                /* 이 행(소재)의 최댓값 */
-    VD.forEach((d,i)=>{
-      const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
-      const arr=c.daily[mk]||[],v=gi<ELAPSED?(arr[gi]||0):0;
-      const hol=!!holName(d),we=d.getDay()%6===0;
-      /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
-      const bg=EFF.ok?EFF.color(c,gi):shade(v/maxV);
-      h+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
-        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')+'</td>';});
-    h+='</tr>';});
+    h+=dayCells(c);
+    h+='</tr>';
+    /* ---- 그룹 소계 (v57) ---- */
+    if(GANTT.sub&&gIdx.length){
+      const gk=GK[c.id];
+      const last=ri===rowsData.length-1||GK[rowsData[ri+1].c.id]!==gk;
+      if(last){
+        const cs=rowsData.filter(x=>GK[x.c.id]===gk).map(x=>x.c);
+        if(cs.length>1){
+          const nm=gIdx.map(i=>rd.vals[i]).filter(Boolean).join(' · ');
+          const tot=ganttGroupTotal(cs,nm);
+          subs.push(tot);
+          h+=`<tr class="gsub">`
+            +`<td class="lead" colspan="${dims.length}" style="left:0;min-width:${acc}px">`
+            +`${esc(nm)} 소계 <i>${cs.length}개 소재</i></td>`;
+          cols.forEach((k,i)=>{
+            const days=tot.daily.imp.filter(v=>v>0).length;
+            const v=k==='days'?days+'일':crVal(tot,k);
+            h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+          h+=dayCells(tot)+'</tr>';}}}
+  });
   t.innerHTML=h+'</tbody>';
   markBlanks(t);
-  t.style.minWidth=(leadTotal+VD.length*13)+'px';
+  t.classList.toggle('wnum',!!RATEM);
+  t.style.minWidth=(leadTotal+VD.length*(RATEM?22:13))+'px';
   enableRowDrag(t,GANTT,renderGantt);
-  wireGanttHover(t,SC,rowsData.map(r=>r.c));
+  wireGanttHover(t,SC,rowsData.map(r=>r.c),subs);
   mountGanttHead(t);
+  /* 칸에 얹은 작은 숫자는 **그 칸에 실제로 들어가는 것만** 남긴다 (v57).
+     열 폭을 넓히지 않는 게 원칙이라, 안 들어가는 값은 잘라 보여 주지 않고 아예 뺀다.
+     폭은 한 번만 재고 그 뒤로는 쓰기만 한다 (칸마다 재면 700번씩 레이아웃이 다시 돈다). */
+  if(RATEM)requestAnimationFrame(()=>{try{
+    const one=t.querySelector('tbody td.day');if(!one)return;
+    const w=one.getBoundingClientRect().width-0.5;
+    /* 글자 폭은 캔버스로 실제로 잰다 — 눈대중으로 잡으면 세 자리 숫자가 억울하게 빠진다.
+       같은 문자열은 한 번만 재고 기억해 둔다 (칸은 수백 개라도 값의 종류는 몇십 개뿐) */
+    const cx=document.createElement('canvas').getContext('2d');
+    const ff=getComputedStyle(one).fontFamily||'sans-serif';
+    cx.font='700 7.5px '+ff;
+    const memo=Object.create(null);
+    const wOf=v=>memo[v]!==undefined?memo[v]
+      :(memo[v]=cx.measureText(v).width-Math.max(v.length-1,0)*0.4);
+    t.querySelectorAll('td.day .vnum').forEach(u=>{
+      u.classList.toggle('nofit',wOf(u.textContent)>w);});
+  }catch(e){}});
 }
 /* ---- 떠 있는 머리글 막대 ----
    게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서
@@ -1496,7 +1599,7 @@ function mountGanttHead(tbl){
 }
 /* 날짜 칸·날짜 헤더에 마우스를 올리면 해당 행·열을 살짝 강조하고,
    칸 위에서는 그 날짜·그 소재의 광고 효율을 툴팁으로 보여준다 */
-function wireGanttHover(t,SC,list){
+function wireGanttHover(t,SC,list,subs){
   const paint=(di,on)=>{
     t.querySelectorAll(`[data-di="${di}"]`).forEach(e=>e.classList.toggle('colhi',on));};
   const dayEff=(c,gi)=>{
@@ -1537,7 +1640,9 @@ function wireGanttHover(t,SC,list){
             +row('광고비',won(a.cost));})());}});
   /* 그 날짜에 표에 올라온 소재 전체의 합 */
   const shown=(list||[]).filter(Boolean);
-  const byId={};shown.forEach(c=>{byId[c.id]=c;});
+  /* 소계 행도 마우스를 올리면 툴팁이 떠야 한다 — 다만 "이 날 전체" 합계에는 넣지 않는다
+     (소계는 이미 그 소재들의 합이라 두 번 더해진다) */
+  const byId={};shown.concat((subs||[]).filter(Boolean)).forEach(c=>{byId[c.id]=c;});
   const dayAll=gi=>{
     const b={imp:0,click:0,view:0,conv:0,cost:0};
     let live=0;
@@ -1551,7 +1656,13 @@ function wireGanttHover(t,SC,list){
     const head=`<div class="t">${dFull(d)} (${WD[d.getDay()]})${hol?' · '+hol:''}</div>`;
     if(gi>=ELAPSED)return head+rowT('집행','미집행');
     const b=dayAll(gi);
-    return head
+    /* 맨 윗줄은 **지금 고른 그래프 값** 을 보여 준다 (v57) —
+       CPC 로 보고 있는데 팝업 첫 줄이 소재 수였던 것이 헷갈렸다 */
+    const mk2=GANTT.metric,M=METRICS[mk2];
+    const mv=M?(M.kind==='rate'?M.c(b):b[mk2]):null;
+    const top=(M&&isFinite(mv)&&mv>0)
+      ? `<div class="r hi"><span class="l">${M.l}</span><b>${M.f(mv)}</b></div>`:'';
+    return head+top
       +rowT('집행 소재',`${fmt(b.live)} / ${fmt(b.total)}개`)
       +rowT('노출',fmt(b.imp))+rowT('클릭',fmt(b.click))+rowT('조회',fmt(b.view))
       +rowT('CTR · VTR',`${pct(b.click/b.imp)} · ${pct(b.view/b.imp)}`)
