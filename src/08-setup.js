@@ -956,7 +956,7 @@ const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id=
 const rangeSel=p=>{const sc=viewScope();
   /* 날짜를 직접 고르면 그 값이 기본값을 덮는다 — 되돌릴 방법이 없으면
      「실적 마지막 날까지」 라는 기본값이 영영 안 살아난다. 그래서 초기화 단추를 둔다 (v59). */
-  const on=!!(FILTER.from||FILTER.to);
+  const on=!rangeIsDefault();
   return `<span class="daterange">
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
@@ -984,7 +984,7 @@ function buildFilters(){
     [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
       e2.onchange=apply;e2.oninput=apply;});
     const rb=$(p+'Reset');
-    if(rb)rb.onclick=()=>{FILTER.from='';FILTER.to='';FILTER_TOUCHED=false;
+    if(rb)rb.onclick=()=>{FILTER_TOUCHED=false;resetDateFilter0();
       buildFilters();renderAll();try{markDirty();saveLocal();}catch(e){}};};
   $('perfFilters').innerHTML=rangeSel('p')
     +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';

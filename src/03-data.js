@@ -263,9 +263,22 @@ function crWeights(l,cs,i){
    (라인의 일별 값을 그대로 훑으므로 시트로 넣었든 엑셀로 넣었든 클라우드에서 받았든 똑같이 잡힌다) */
 let LAST_DATA_I=-1;
 function calcLastDataIdx(){
+  const KEYS=['imp','click','view','conv','eng','install','lead','rev','cost','net'];
+  /* ① 리포트 데이터 입력 시트가 기준이다 — 라인에 안 붙은(매칭 안 되는) 행도 "등록된 데이터"로 본다.
+     시트를 지우면 종료일도 같이 내려와야 하므로, 시트에 값이 있으면 **시트만** 본다. */
   let m=-1;
   try{
-    const KEYS=['imp','click','view','conv','eng','install','lead','rev','cost','net'];
+    const rows=(typeof SHEET!=='undefined'&&Array.isArray(SHEET))?SHEET:[];
+    rows.forEach(r=>{
+      if(!r||!r.date)return;
+      if(!KEYS.some(k=>(+r[k]||0)>0))return;
+      const i=dIdx(r.date);
+      if(isFinite(i)&&i>m&&i<TOTAL_DAYS)m=i;});
+  }catch(e){}
+  if(m>=0)return m;
+  /* ② 시트가 비어 있을 때만 라인에 담긴 일별 값으로 물러선다
+     (시연용 더미처럼 시트 없이 값만 있는 경우 · 예전 저장본) */
+  try{
     (LINES||[]).forEach(l=>{
       const d=l&&l.daily;if(!d)return;
       KEYS.forEach(k=>{
@@ -591,18 +604,26 @@ const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광�
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
-/* 기간 기본값 — 시작일은 캠페인 첫날, 종료일은 어제(데이터가 확정된 마지막 날) */
+/* 기간 기본값 — 시작일은 캠페인 첫날, 종료일은 **실적이 들어온 마지막 날** (v59).
+   ⚠ 예전에는 여기서 YESTERDAY 를 박아 넣어서, viewScope 를 고쳐도 화면에는 늘 어제가 찍혔다.
+   기본값을 만드는 자리는 여기 하나뿐이어야 한다. */
+let FILTER_TOUCHED=false;
+function defaultRange(){
+  const p=campScope(),last=lastDataIso();
+  return {from:p.startIso,
+          to:p.endIso>last?(last>=p.startIso?last:p.startIso):p.endIso};
+}
 /* 사람이 조회 기간을 직접 고른 적이 있으면, 페이지를 떠나거나 새로고침하기 전까지는
    그 날짜를 그대로 둔다. (캠페인을 바꿔 열 때만 force 로 초기화) */
-let FILTER_TOUCHED=false;
 function resetDateFilter(force){
   if(!force&&FILTER_TOUCHED&&FILTER.from&&FILTER.to)return;
   return resetDateFilter0();}
 function resetDateFilter0(){
-  const p=campScope();
-  FILTER.from=p.startIso;
-  FILTER.to=p.endIso>YESTERDAY?(YESTERDAY>=p.startIso?YESTERDAY:p.startIso):p.endIso;
+  const d=defaultRange();FILTER.from=d.from;FILTER.to=d.to;
 }
+/* 지금 기간이 기본값 그대로인가 (초기화 단추를 켤지 판단) */
+const rangeIsDefault=()=>{const d=defaultRange();
+  return (!FILTER.from||FILTER.from===d.from)&&(!FILTER.to||FILTER.to===d.to);};
 const activeLines=()=>LINES.filter(l=>['segment','media','line'].every(k=>FILTER[k]==='all'||l[k]===FILTER[k]));
 
 /* ===== 조회 기간(스코프) =====
