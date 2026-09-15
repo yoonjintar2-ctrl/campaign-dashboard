@@ -1157,6 +1157,8 @@ td.expcell .gchk input{width:12px;height:12px;flex:none}   /* 게런티 체크�
 /* 예상효율 표 — 열 폭을 좁게, 값은 모두 가운데 정렬 */
 #tblKpi th,#tblKpi td{padding-left:5px;padding-right:5px}
 #tblKpi input,#tblKpi select{min-width:0;padding:0 4px}
+/* 좁은 표라도 날짜 칸만은 달력 그림 자리를 비워 둔다 (v59) */
+#tblKpi input[type=date]{padding:0 22px 0 4px;background-position:right 4px center}
 #tblKpi input.num,#tblKpi input.txt,#tblKpi input[type=date],#tblKpi input[type=time]{text-align:center}
 #tblKpi td.mono,#tblKpi td{text-align:center}
 #tblKpi .chipfield{padding:3px 22px 3px 4px;justify-content:center}
@@ -1371,6 +1373,13 @@ table.gantt th.mcol,table.gantt td.mcol{width:1%}
 table.gantt th.lead{background:var(--hdr);z-index:7}
 table.gantt td.lead.nm{text-align:left}
 table.gantt td.hl{color:var(--acc);font-weight:800}
+/* 날짜 칸은 **정확히 같은 폭**이어야 한다 (v59).
+   예전에는 min-width 만 주고 표를 width:100% 로 늘려서, 남는 폭이 날짜 칸마다
+   0.5px 씩 제각각 붙었다 — 칸 크기가 미세하게 달라 보이던 원인.
+   이제 날짜 칸은 폭을 못 박고, 남는 폭은 아래 flexlead(맨 오른쪽 머리 열)가 가져간다. */
+table.gantt td.day,table.gantt th.dhd{width:13px;min-width:13px;max-width:13px}
+table.gantt.wnum td.day,table.gantt.wnum th.dhd{width:22px;min-width:22px;max-width:22px}
+table.gantt th.lead.flexlead,table.gantt td.lead.flexlead{width:auto}
 table.gantt td.day{min-width:13px;height:34px;vertical-align:middle;padding:3px 1px}
 table.gantt td.day .b{display:block;width:100%;height:100%;border-radius:2px}
 /* 칸 위에 얹는 아주 작은 단가 (v57) — 열 폭은 건드리지 않는다.
@@ -1387,7 +1396,7 @@ table.gantt td.day:hover .vnum{color:rgba(20,30,45,.55)}
 table.gantt td.day .vnum.nofit{display:none}
 /* 단가를 고른 동안만 날짜 칸을 숫자가 들어갈 만큼만 넓힌다 (v57).
    노출·클릭처럼 세는 값으로 돌아가면 곧바로 원래의 촘촘한 폭으로 돌아온다. */
-table.gantt.wnum td.day,table.gantt.wnum th.dhd{min-width:22px}
+/* (폭 고정은 위에서 함께 처리한다) */
 /* 그룹 소계 줄 (v57) — 소재 줄과 헷갈리지 않게 한 톤 진하게 */
 table.gantt tr.gsub>td{background:var(--sub1);font-weight:800}
 table.gantt tr.gsub>td.lead{background:var(--sub0);text-align:left;color:var(--ink);
@@ -1445,16 +1454,24 @@ input[type=date]{color-scheme:light}
    그런데 우리는 padding-right:28px 을 줘서 그 안쪽에 아이콘을 그렸으므로,
    눌리는 자리가 그림보다 28px 왼쪽에 있었다 — 그림을 눌러도 달력이 안 열리던 원인 (v58).
    칸 오른쪽 끝에 딱 붙여 그림과 겹쳐 둔다. */
+/* ⚠ v59 — 규칙을 **모든 날짜 칸**에 한 번에 건다.
+   예전에는 칸마다 선택자를 따로 나열해서, 목록에 빠진 칸(공휴일 설정 등)은
+   기본 아이콘만 투명해지고 우리 아이콘은 안 깔려 **달력 그림이 아예 없었다**.
+   그리고 기본 버튼을 흐름에서 빼내면(position:absolute) 글자가 놓일 자리가 그만큼 넓어져
+   아이콘 밑으로 글자가 파고든다 — 그래서 오른쪽 여백을 반드시 같이 준다 (조회 기간 겹침의 원인). */
 input[type=date]::-webkit-calendar-picker-indicator{
   opacity:0;cursor:pointer;margin:0;padding:0;z-index:2;
   position:absolute;right:0;top:0;bottom:0;width:30px;height:auto}
-.daterange input[type=date],table.sheet td input[type=date],.tbl input[type=date],
-#tblIssue input[type=date]{position:relative}
-.datewrap,.daterange input[type=date],table.sheet td input[type=date],.tbl input[type=date]{
-  background-repeat:no-repeat;background-position:right 7px center;background-size:15px 15px;
+input[type=date]:not(.dnative){
+  position:relative;
+  background-image:var(--calico);
+  background-repeat:no-repeat;background-position:right 8px center;background-size:15px 15px;
   padding-right:28px}
-.daterange input[type=date],table.sheet td input[type=date],.tbl input[type=date],
-#tblIssue input[type=date]{background-image:var(--calico)!important}
+/* 시트의 일자 칸은 직접 만든 달력 단추(.dpick)를 쓰므로 기본 아이콘 자리를 비운다 */
+table.sheet td input.dnative{background-image:none}
+/* 조회 기간은 칸이 좁은 알약이라 여백·아이콘을 한 단계 당겨 쓴다 */
+.daterange input[type=date]{background-position:right 5px center;
+  padding:0 23px 0 2px!important}
 :root{--calico:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6878' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E")}
 [data-theme="dark"]{--calico:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0d0d0' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E")}
 /* 스크롤바 — 궤도와 손잡이를 뚜렷하게 */
@@ -1884,7 +1901,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     </div>
     <div class="grid donuts" id="donuts" data-sect="kpi"></div>
 
-    <div class="sec gap" data-sect="daily">일자별 효율 비교
+    <div class="sec gap" data-sect="daily">일자별 캠페인 효율 비교
       <div class="tools">
         <span class="hint">데이터 선택</span><select class="ctl" id="dimSel"></select>
         <span class="hint">막대그래프 값</span><select class="ctl" id="barSel"></select>
@@ -1922,22 +1939,10 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     </div>
 
     <div class="sec gap3" data-sect="gantt">소재 × 일자 게재 히스토리
-      <span class="note">노출이 있었던 소재만 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · 표 전체 공통 기준 · 정렬은 <b>같은 매체 안에서만</b> 적용됩니다</span>
+      <span class="note">노출이 있었던 소재만 · 칸 색은 그 날의 <b>소재 효율(단가)</b> · <b>헤더 기준 안에서</b> 견줍니다 · 캠페인 전체 기간</span>
       <div class="tools">
         <span class="shlegend"><em>효율 우수</em><i class="ramp"></i><em>저조</em></span>
-        <span class="hint">정렬</span><select class="ctl" id="ganttSort" title="같은 매체 안에서 소재 순서를 정합니다">
-          <option value="budget">기본 (예산 큰 순)</option>
-          <option value="ctr">CTR 높은 순</option>
-          <option value="vtr">VTR 높은 순</option>
-          <option value="cpc">CPC 낮은 순</option>
-          <option value="cpv">CPV 낮은 순</option>
-          <option value="imp">노출 많은 순</option>
-          <option value="click">클릭 많은 순</option>
-          <option value="view">조회 많은 순</option>
-          <option value="name">소재 이름 가나다순</option>
-        </select>
-        <span class="hint">기간</span><select class="ctl" id="ganttRange">
-          <option value="all">캠페인 전체</option><option value="view">조회 기간</option></select>
+        <!-- 정렬 · 기간 선택은 v59 에서 뺐다 — 순서는 예산 큰 순, 기간은 캠페인 전체로 고정 -->
         <span class="hint">그래프 값</span><select class="ctl" id="ganttMetric"></select>
         <button class="btn sm agency-only" id="ganttCfgBtn" title="표 머리글의 기준 항목과 값 열을 정합니다">⚙ 헤더 편집</button>
       </div>
@@ -1948,6 +1953,8 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
     <div class="sec gap3" data-sect="creative">효율 우수 소재
       <span class="note">효율이 좋은 순서로 · 소재를 누르면 원본과 지표를 볼 수 있습니다</span>
       <div class="tools">
+        <span class="hint">구분</span><select class="ctl" id="crSegSel" title="고른 구분의 소재만 견줍니다">
+          <option value="all">전체 구분</option></select>
         <span class="hint">매체</span><select class="ctl" id="crMediaSel" title="고른 매체의 소재만 견줍니다">
           <option value="all">전체 매체</option></select>
         <span class="hint">표시 기준</span><span id="crRankPick" class="rankpick"></span>
@@ -2377,8 +2384,31 @@ function crWeights(l,cs,i){
   const w={};AMET.concat(['cost']).forEach(m=>w[m]=k0);
   return w;
 }
+/* 실적이 실제로 들어온 마지막 날 (v59).
+   예전에는 "어제" 를 조회 기간의 기본 종료일로 썼는데, 매체 리포트가 하루이틀 늦게 들어오는
+   현장에서는 끝에 빈 날이 붙어 달성률·페이스가 낮게 보였다. 이제 **넣어 둔 데이터의 마지막 날**로 맞춘다.
+   (라인의 일별 값을 그대로 훑으므로 시트로 넣었든 엑셀로 넣었든 클라우드에서 받았든 똑같이 잡힌다) */
+let LAST_DATA_I=-1;
+function calcLastDataIdx(){
+  let m=-1;
+  try{
+    const KEYS=['imp','click','view','conv','eng','install','lead','rev','cost','net'];
+    (LINES||[]).forEach(l=>{
+      const d=l&&l.daily;if(!d)return;
+      KEYS.forEach(k=>{
+        const a=d[k];if(!a||!a.length)return;
+        for(let i=a.length-1;i>m;i--)if((+a[i]||0)>0){m=i;break;}});});
+  }catch(e){}
+  return m;
+}
+/* 데이터가 하나도 없으면 예전처럼 어제를 쓴다 */
+const lastDataIso=()=>{
+  const i=LAST_DATA_I;
+  return (i>=0&&ALLDATES[i])?iso(ALLDATES[i]):YESTERDAY;};
 function buildFacts(){
   FACTS=[];
+  /* 조회 기간 기본 종료일에 쓸 "실적이 들어온 마지막 날" 을 다시 잡는다 (v59) */
+  LAST_DATA_I=calcLastDataIdx();
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
   LINES.forEach(l=>{
     const cs=CREATIVES.filter(c=>c.lid===l.id);
@@ -2720,10 +2750,11 @@ function campScope(){
                  ls.length?ls.map(l=>l.end).sort().slice(-1)[0]:campEnd());
 }
 /* 조회 스코프 — 집행 스코프에 달력으로 고른 시작·종료일을 적용한 "보고 있는 구간".
-   기본값은 캠페인 첫날 ~ 어제(데이터가 확정된 마지막 날). */
+   기본값은 캠페인 첫날 ~ 실적이 들어온 마지막 날. */
 function viewScope(){
   const p=campScope();
-  let s=p.startIso,e=p.endIso>YESTERDAY?(YESTERDAY>=s?YESTERDAY:s):p.endIso;
+  const last=lastDataIso();
+  let s=p.startIso,e=p.endIso>last?(last>=s?last:s):p.endIso;
   if(FILTER.from&&FILTER.from>s)s=FILTER.from;
   if(FILTER.to)e=FILTER.to<p.endIso?FILTER.to:p.endIso;
   if(e<s)e=s;
@@ -4446,7 +4477,7 @@ function openDailyFilt(btn){
   pop.className='thpop dfiltpop';
   pop.innerHTML=`<div class="thttl">이 그래프만 좁혀 보기</div>
     <div class="hint" style="padding:0 6px 8px;line-height:1.45">위쪽 조회 기간·필터는 그대로 두고
-      <b>일자별 효율 비교</b> 그래프에만 적용됩니다.</div>`
+      <b>일자별 캠페인 효율 비교</b> 그래프에만 적용됩니다.</div>`
     +DAILY_FILT_DIMS.map(d=>{
       const vals=dailyFiltVals(d.k);
       return `<label class="dfrow"><span>${d.l}</span>
@@ -5620,7 +5651,7 @@ function mountHeatHead(tbl){
 })();
 
 /* ===== 8. 소재 운영 ===== */
-let CR_FILTER={media:'all',type:'all',sort:'imp'};
+let CR_FILTER={segment:'all',media:'all',type:'all',sort:'imp'};
 let CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
 let CR_DEF={};CR_CATALOG.forEach(g=>g.cols.forEach(c=>CR_DEF[c.k]=c));
 COLREB.push(()=>{CR_CATALOG=fieldCatalog('dash',f=>!!METRICS[f.k]);
@@ -5649,7 +5680,7 @@ const crVal=(c,k)=>{
   return METRICS[k].kind==='abs'?METRICS[k].f(b[k]):METRICS[k].f(METRICS[k].c(b));};
 /* 켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐서 견준다 */
 let CR_ALL_MEDIA=false;
-let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — 같은 매체 안에서만 적용 */
+let GANTT_SORT='budget';   /* 게재 히스토리 정렬 — v59 부터 예산 큰 순으로 고정 */
 /* 소재 레코드는 라인마다 따로 만들어지기 때문에 같은 매체·같은 소재가 표에 두 번 나올 수 있다.
    집계 차원이 같은 것끼리 일별 실적을 더해 한 줄로 합친다.
    byName=true 면 매체까지 무시하고 이름만으로 합친다(매체 구분 없이 비교). */
@@ -5697,28 +5728,39 @@ function mergeCreatives(list,mode){
 }
 /* 효율 우수 소재 전용 매체 고르기 (v55) — 대시보드 공통 필터와 별개로,
    "이 매체에서는 어떤 소재가 잘 돌았나" 를 바로 볼 수 있게 한다. 뷰어도 쓸 수 있다. */
+const crSegPool=()=>[...new Set(CREATIVES
+  .filter(c=>['media','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
+  .map(c=>c.segment))].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'ko'));
+/* 매체 목록은 **이 영역에서 고른 구분** 안에서만 뽑는다 (v59) */
 const crMediaPool=()=>[...new Set(CREATIVES
   .filter(c=>['segment','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
+  .filter(c=>CR_FILTER.segment==='all'||c.segment===CR_FILTER.segment)
   .map(c=>c.media))].filter(Boolean).sort((a,b)=>mediaBudget(b)-mediaBudget(a));
-function renderCrMediaSel(){
-  const s=$('crMediaSel');if(!s)return;
-  const pool=crMediaPool();
-  /* 공통 필터로 매체가 이미 하나로 좁혀져 있으면 이 드롭다운은 의미가 없다 */
-  if(FILTER.media!=='all'){CR_FILTER.media='all';s.parentNode&&s.classList.add('hidden');}
-  else s.classList.remove('hidden');
+/* 드롭다운 하나를 채우는 공통 처리 —
+   대시보드 공통 필터로 이미 하나로 좁혀져 있으면 그 드롭다운은 의미가 없으므로 숨긴다. */
+function crFillSel(id,key,label,pool){
+  const s=$(id);if(!s)return;
+  const locked=FILTER[key]!=='all';
+  if(locked)CR_FILTER[key]='all';
+  s.classList.toggle('hidden',locked);
   const hint=s.previousElementSibling;
-  if(hint&&hint.classList.contains('hint'))hint.classList.toggle('hidden',FILTER.media!=='all');
-  if(CR_FILTER.media!=='all'&&!pool.includes(CR_FILTER.media))CR_FILTER.media='all';
-  s.innerHTML=`<option value="all">전체 매체</option>`
+  if(hint&&hint.classList.contains('hint'))hint.classList.toggle('hidden',locked);
+  if(CR_FILTER[key]!=='all'&&!pool.includes(CR_FILTER[key]))CR_FILTER[key]='all';
+  s.innerHTML=`<option value="all">${label}</option>`
     +pool.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
-  s.value=CR_FILTER.media||'all';
+  s.value=CR_FILTER[key]||'all';
+}
+function renderCrMediaSel(){
+  crFillSel('crSegSel','segment','전체 구분',crSegPool());
+  crFillSel('crMediaSel','media','전체 매체',crMediaPool());
 }
 function filteredCreatives(){
   /* 매체·구분·제품은 대시보드 공통 필터를 따른다 (매체는 토글로 풀 수 있다) */
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   const mSel=CR_FILTER.media&&CR_FILTER.media!=='all'?CR_FILTER.media:null;
+  const sSel=CR_FILTER.segment&&CR_FILTER.segment!=='all'?CR_FILTER.segment:null;
   let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
-    &&(!mSel||c.media===mSel)
+    &&(!mSel||c.media===mSel)&&(!sSel||c.segment===sSel)
     &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
@@ -5834,10 +5876,10 @@ function renderCreatives(){
   renderCrMediaSel();
   const pool=filteredCreatives();
   if(!pool.length){
+    const pick=[CR_FILTER.segment!=='all'?CR_FILTER.segment:'',
+                CR_FILTER.media!=='all'?CR_FILTER.media:''].filter(Boolean).join(' · ');
     host.innerHTML='<div class="card"><div class="bd hint">'
-      +(CR_FILTER.media&&CR_FILTER.media!=='all'
-        ? `${esc(CR_FILTER.media)} 에서 집행된 소재가 없습니다.`
-        : '조건에 맞는 소재가 없습니다.')
+      +(pick?`${esc(pick)} 에서 집행된 소재가 없습니다.`:'조건에 맞는 소재가 없습니다.')
       +'</div></div>';return;}
   /* 기준마다 한 칸 — 1위는 왼쪽에 크게, 2위부터는 오른쪽에 한 줄로 작게 */
   const cols=el('div','crcols',host);
@@ -6289,7 +6331,7 @@ let GANTT_CATALOG=mkGanttCat();
 let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();
   GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));});
-let GANTT_RANGE='all';
+let GANTT_RANGE='all';   /* v59 부터 캠페인 전체로 고정 */
 let GANTT={rows:[{k:'media',sub:false},{k:'creative',sub:false}],order:null,
   groups:[{id:uid(),name:'소재 효율',cols:['imp','click','ctr','cpc','view','vtr','cpv']}],metric:'imp'};
 /* 정렬 기준 — 예산(Gross)이 큰 매체가 위로, 그 안에서도 예산이 큰 소재가 위로 */
@@ -6461,7 +6503,11 @@ function renderGantt(){
     return 0;});
   if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
-  const span=mergeSpans(rowsData.map(r=>r.vals),dims.length);
+  /* 소계를 끼워 넣은 뒤의 행 목록과 병합 폭 — **서머리와 똑같은 계산기**를 쓴다 (v59).
+     예전에는 소계 줄만 colspan 한 칸으로 따로 그려서, 머리글 기준이 둘 이상이면
+     그 줄부터 열이 통째로 밀렸다. 이제 소계 줄도 자기 계층까지는 위 줄과 병합된다. */
+  const LAY=pivotLayout(rowsData.map(r=>r.vals),GANTT.rows);
+  const span=LAY.span;
   /* 기본은 캠페인 전체 일정, 설정에서 조회 기간으로 좁힐 수 있다 */
   const SC=GANTT_RANGE==='view'?viewScope():mkScope(campStart(),campEnd());
   GANTT_I0=SC.i0;
@@ -6488,7 +6534,9 @@ function renderGantt(){
      열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
   const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
-  dims.forEach((d,i)=>h+=`<th class="lead" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
+  /* 남는 가로 폭은 맨 오른쪽 머리 열이 가져간다 — 날짜 칸 폭이 흐트러지지 않게 (v59) */
+  const flexI=dims.length-1;
+  dims.forEach((d,i)=>h+=`<th class="lead${i===flexI?' flexlead':''}" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
@@ -6511,47 +6559,52 @@ function renderGantt(){
         +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
         +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
     return out;};
-  rowsData.forEach((rd,ri)=>{
-    const c=rd.c;
-    h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
-    rd.vals.forEach((v,ci)=>{const sp=span[ri][ci];if(sp===0)return;
-      const isCr=dims[ci]==='creative';
-      h+=`<td class="lead ${isCr?'nm':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
-        +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
-        +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
-           <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
-    cols.forEach((k,i)=>{
-      const days=c.daily.imp.filter(v=>v>0).length;
-      const v=k==='days'?days+'일':crVal(c,k);
-      h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-    h+=dayCells(c);
-    h+='</tr>';
-    /* ---- 소계 (v58) ----
-       서머리와 같은 방식 — 헤더 편집에서 **기준마다** 소계를 켜고 끈다.
-       깊은 기준부터 닫히도록 뒤에서부터 훑는다 (구분 · 매체 둘 다 켰으면 매체 소계가 먼저). */
-    for(let di=dims.length-1;di>=0;di--){
-      if(!(GANTT.rows[di]&&GANTT.rows[di].sub))continue;
-      if(dims[di]==='creative')continue;            /* 소재 자신은 소계가 의미 없다 */
-      const pre=rd.vals.slice(0,di+1).join(SEP);
-      const nxt=rowsData[ri+1];
-      const ends=!nxt||nxt.vals.slice(0,di+1).join(SEP)!==pre;
-      if(!ends)continue;
-      const cs=rowsData.filter(x=>x.vals.slice(0,di+1).join(SEP)===pre).map(x=>x.c);
-      if(cs.length<2)continue;                      /* 한 줄짜리 묶음은 소계가 곧 그 줄이다 */
-      const nm=rd.vals.slice(0,di+1).filter(Boolean).join(' · ');
-      const tot=ganttGroupTotal(cs,nm+'|'+di);
-      tot.name=nm;
-      subs.push(tot);
-      h+=`<tr class="gsub gsub-l${Math.min(di,3)}">`
-        +`<td class="lead" colspan="${dims.length}" style="left:0;min-width:${acc}px">`
-        +`${esc(nm)} 소계 <i>${cs.length}개 소재</i></td>`;
-      cols.forEach((k,i)=>{
-        const days=tot.daily.imp.filter(v=>v>0).length;
-        const v=k==='days'?days+'일':crVal(tot,k);
-        h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(i)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
-      /* 소계 줄의 색은 그 묶음이 속한 그룹 척도로 — 여러 그룹에 걸치면 표 전체 척도로 물러난다 */
-      const mk3=new Set(cs.map(x=>GK[x.id]));
-      h+=dayCells(tot,mk3.size===1?[...mk3][0]:' mix')+'</tr>';}
+  /* 소계 값은 그 묶음에 속한 소재들을 합쳐서 만든다 */
+  const groupRows=(vals,L)=>rowsData.filter(x=>
+    vals.slice(0,L+1).every((v,k)=>x.vals[k]===v));
+  LAY.out.forEach((r,i)=>{
+    if(r.kind==='data'){
+      const rd=rowsData[r.ri],c=rd.c;
+      h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
+      rd.vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
+        const isCr=dims[ci]==='creative';
+        h+=`<td class="lead ${isCr?'nm':''}${ci===flexI?' flexlead':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
+          +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
+          +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
+             <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
+      cols.forEach((k,ci)=>{
+        const days=c.daily.imp.filter(v=>v>0).length;
+        const v=k==='days'?days+'일':crVal(c,k);
+        h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(ci)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+      h+=dayCells(c)+'</tr>';
+      return;}
+    /* ---- 소계 (v59 · 서머리와 같은 방식) ----
+       기준 열까지는 위 데이터 행과 병합돼 있으므로(span 0) 그 칸은 그리지 않고,
+       「○○ 소계」 문구는 그 오른쪽 열부터 colspan 으로 채운다 → 열이 밀리지 않는다.
+       소재가 하나뿐인 묶음도 소계를 그린다 (예전에는 두 줄 미만이면 건너뛰었다). */
+    const L=r.level,vals=r.vals;
+    const grp=groupRows(vals,L);
+    const cs2=grp.map(x=>x.c);
+    const nm=vals.filter(Boolean).join(' · ');
+    const tot=ganttGroupTotal(cs2,nm+'|'+L);
+    tot.name=nm;
+    subs.push(tot);
+    h+=`<tr class="gsub gsub-l${Math.min(L,3)}">`;
+    for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
+      h+=`<td class="lead${ci===flexI?' flexlead':''}" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}`
+        +` style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">${esc(vals[ci])}</td>`;}
+    const nCol=Math.max(dims.length-(L+1),1);
+    const li=Math.min(L+1,dims.length-1);
+    const wSum=dims.slice(li,li+nCol).reduce((a,d)=>a+(leadW[d]||110),0);
+    h+=`<td class="lead sublab${li+nCol-1===flexI?' flexlead':''}" colspan="${nCol}" style="left:${lefts[li]}px;min-width:${wSum}px">`
+      +`${esc(dimDisp(dims[L],vals[L]))} 소계 <i>${cs2.length}개 소재</i></td>`;
+    cols.forEach((k,ci)=>{
+      const days=tot.daily.imp.filter(v=>v>0).length;
+      const v=k==='days'?days+'일':crVal(tot,k);
+      h+=`<td class="mono mcol${k===mk?' hl':''}${seps.has(ci)?' gsep':''}" style="padding:0 9px;min-width:${metricW}px">${v}</td>`;});
+    /* 소계 줄의 색은 그 묶음이 속한 그룹 척도로 — 여러 그룹에 걸치면 표 전체 척도로 물러난다 */
+    const mk3=new Set(cs2.map(x=>GK[x.id]));
+    h+=dayCells(tot,mk3.size===1?[...mk3][0]:'\u0000mix')+'</tr>';
   });
   t.innerHTML=h+'</tbody>';
   markBlanks(t);
@@ -8898,7 +8951,7 @@ function openHolidays(){
           <b>${x[0].slice(5)}</b> ${x[1]}<span data-hdel="${HOLIDAYS.indexOf(x)}" style="cursor:pointer;opacity:.6">✕</span></span>`).join('')
       +'</div>';});
   h+=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <input type="date" id="hDate" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 10px">
+    <input type="date" id="hDate" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 28px 0 10px">
     <input id="hName" placeholder="공휴일 이름" style="height:32px;border:1px solid var(--line);border-radius:9px;padding:0 11px">
     <button class="btn primary" id="hAdd">+ 추가</button></div>`;
   openModal('공휴일 설정 (2026 – 2028)',h,'<button class="btn" data-close>닫기</button>',{w:820});
@@ -9026,13 +9079,22 @@ function buildFilters(){
   /* 소재·간트·트리맵은 효율 탭 안으로 들어왔으므로 위의 공통 필터를 그대로 쓴다 */
 }
 function buildSelects(){
-  const fill=(id,arr,cur,lab)=>{const s=$(id);s.innerHTML=arr.map(k=>
-    `<option value="${k}" ${k===cur?'selected':''}>${lab(k)}</option>`).join('');};
-  fill('barSel',BAR_METRICS,'imp',k=>METRICS[k].l);
-  fill('lineSel',LINE_METRICS,'ctr',k=>k==='none'?'없음':METRICS[k].l);
-  fill('dimSel',SERIES_DIMS.map(d=>d.k),'media',k=>SERIES_DIMS.find(d=>d.k===k).l);
+  /* ⚠ 목록을 다시 채울 때 **지금 쓰고 있는 값**을 그대로 살려 둔다 (v59).
+     예전에는 'imp' 같은 첫 값을 박아 넣어서, 관리자가 CPC 로 저장해 둔 캠페인을 열면
+     표는 CPC 로 그려지는데 드롭다운만 「노출」로 보였다.
+     cur 를 넘기지 않으면(null) 화면에 이미 골라 둔 값을 지킨다. */
+  const fill=(id,arr,cur,lab)=>{const s=$(id);if(!s)return;
+    const prev=s.value;
+    const v=(cur!=null&&arr.includes(cur))?cur:(arr.includes(prev)?prev:arr[0]);
+    s.innerHTML=arr.map(k=>
+      `<option value="${k}" ${k===v?'selected':''}>${lab(k)}</option>`).join('');
+    s.value=v;};
+  fill('barSel',BAR_METRICS,null,k=>METRICS[k].l);
+  fill('lineSel',LINE_METRICS,null,k=>k==='none'?'없음':METRICS[k].l);
+  fill('dimSel',SERIES_DIMS.map(d=>d.k),SERIES_DIM,k=>SERIES_DIMS.find(d=>d.k===k).l);
   /* 단가(CPM · CPC · CPV)도 고를 수 있다 (v57) — 고르면 칸마다 그 날 단가가 작게 얹힌다 */
-  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],'imp',k=>METRICS[k].l);
+  fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],
+    (GANTT&&GANTT.metric)||'imp',k=>METRICS[k].l);
   fill('tmapMetric',TMAP_METRICS,TMAP.metric,k=>METRICS[k].l);
   $('tmapMetric').onchange=e=>{TMAP.metric=e.target.value;renderTreemap();
     try{markDirty();saveLocal();}catch(x){}};
@@ -9053,13 +9115,15 @@ function buildSelects(){
       am.classList.toggle('on',CR_ALL_MEDIA);renderCreatives();
       try{markDirty();saveLocal();}catch(e){}};}
   /* 효율 우수 소재 — 매체 고르기 (뷰어도 쓸 수 있게 agency-only 를 붙이지 않는다) */
+  const cs2=$('crSegSel');
+  if(cs2)cs2.onchange=e=>{CR_FILTER.segment=e.target.value||'all';
+    /* 구분을 바꾸면 그 안에 없는 매체는 고를 수 없으므로 매체 선택도 되짚는다 */
+    renderCreatives();try{markDirty();saveLocal();}catch(x){}};
   const cm=$('crMediaSel');
   if(cm)cm.onchange=e=>{CR_FILTER.media=e.target.value||'all';
     renderCreatives();try{markDirty();saveLocal();}catch(x){}};
   const ab=$('crAllBtn');if(ab)ab.onclick=openCrAll;
-  const gs=$('ganttSort');
-  if(gs){gs.value=GANTT_SORT;
-    gs.onchange=e=>{GANTT_SORT=e.target.value;renderGantt();markDirty();saveLocal();};}
+  /* 게재 히스토리 정렬 선택은 v59 에서 뺐다 — 예산 큰 순으로 고정 */
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
@@ -9067,9 +9131,8 @@ function buildSelects(){
   $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
   $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
     try{markDirty();saveLocal();}catch(x){}};
-  /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식) */
-  const gr=$('ganttRange');
-  if(gr){gr.value=GANTT_RANGE;gr.onchange=e=>{GANTT_RANGE=e.target.value;renderGantt();};}
+  /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식)
+     기간 선택도 v59 에서 뺐다 — 캠페인 전체로 고정 */
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}
   $('rawSeg').onchange=e=>{RAW_SEG=e.target.value;renderRaw();};
   $('rawHSeg').onchange=e=>{RAW_HSEG=e.target.value;renderRaw();};
@@ -9422,6 +9485,8 @@ function serializeDoc(){
            crAllMedia:(typeof CR_ALL_MEDIA!=='undefined'?!!CR_ALL_MEDIA:false),
            /* 효율 우수 소재 — 매체 고르기 (v55) */
            crMedia:(typeof CR_FILTER!=='undefined'?(CR_FILTER.media||'all'):'all'),
+           /* 효율 우수 소재 — 구분 고르기 (v59) */
+           crSeg:(typeof CR_FILTER!=='undefined'?(CR_FILTER.segment||'all'):'all'),
            crRankOn:(typeof CR_RANK_ON!=='undefined'?CR_RANK_ON:null),
            ganttSort:(typeof GANTT_SORT!=='undefined'?GANTT_SORT:'budget'),
            /* 끌어서 바꾼 순서 — 일자별 비교 계열 · 일자별 상세 효율 세그먼트 */
@@ -9517,11 +9582,11 @@ function applyDoc(d,keepToday){
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(typeof v.crMedia==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.media=v.crMedia;
+  if(typeof v.crSeg==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.segment=v.crSeg;
   if(Array.isArray(v.crRankOn)&&v.crRankOn.length&&typeof CR_RANK_ON!=='undefined')CR_RANK_ON=v.crRankOn;
   if(v.ganttSort&&typeof GANTT_SORT!=='undefined')GANTT_SORT=v.ganttSort;
   /* 저장해 둔 토글·기준을 화면 컨트롤에도 되돌려 놓는다 */
   try{const am=$('crAllMedia');if(am)am.classList.toggle('on',!!CR_ALL_MEDIA);
-      const gs=$('ganttSort');if(gs)gs.value=GANTT_SORT;
       if(typeof renderRankPick==='function')renderRankPick();}catch(e){}
   if(v.dailyOrder&&typeof DAILY_ORDER!=='undefined')DAILY_ORDER=v.dailyOrder;
   /* 노출 분포 기준 · KPI 묶음 기준도 되돌린다 (예전에는 새로고침하면 기본값으로 돌아갔다) */
@@ -11186,7 +11251,7 @@ function enableFileDrop(host,label,onFile){
 /* ---------- 대시보드 항목 숨기기 ----------
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
 const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
-  stat:'주요 지표',daily:'일자별 효율 비교',treemap:'분포(트리맵)',
+  stat:'주요 지표',daily:'일자별 캠페인 효율 비교',treemap:'분포(트리맵)',
   gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
   creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
   bubble:'효율 버블'};
@@ -12075,7 +12140,7 @@ async function exportDashboard(){
     const chartSvg=document.querySelector('#chartDaily svg');
     const pic=chartSvg?await svgToPng(chartSvg,1.6):null;
     if(pic){
-      push(R,[T('일자별 효율 비교',3)]);
+      push(R,[T('일자별 캠페인 효율 비교',3)]);
       blank(R);blank(R);blank(R);
       const at=R.length;
       for(let i=0;i<Math.ceil(pic.h*0.62/18)+1;i++){const rr=[];rr.__h=13.5;push(R,rr);}
