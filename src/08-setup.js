@@ -954,10 +954,15 @@ const selHTML=(id,label,opts,cur)=>`<span class="lbl">${label}</span><select id=
   +opts.map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('')+'</select>';
 /* 기간 필터 — 달력에서 시작·종료일을 직접 고른다 (비우면 자동 = 선택한 항목의 집행 구간) */
 const rangeSel=p=>{const sc=viewScope();
+  /* 날짜를 직접 고르면 그 값이 기본값을 덮는다 — 되돌릴 방법이 없으면
+     「실적 마지막 날까지」 라는 기본값이 영영 안 살아난다. 그래서 초기화 단추를 둔다 (v59). */
+  const on=!!(FILTER.from||FILTER.to);
   return `<span class="daterange">
     <input type="date" id="${p}From" value="${FILTER.from||sc.startIso}" min="${campStart()}" max="${campEnd()}">
     <span class="tilde">~</span>
     <input type="date" id="${p}To" value="${FILTER.to||sc.endIso}" min="${campStart()}" max="${campEnd()}">
+    <button class="btn sm" id="${p}Reset"${on?'':' disabled'}
+      title="직접 고른 기간을 지우고 기본값(캠페인 첫날 ~ 실적이 들어온 마지막 날)으로 돌아갑니다">↺</button>
   </span>`;};
 function buildFilters(){
   /* 대시보드 상단 필터는 **기간 하나만** — 구분·매체·제품은 각 표의 행 구성으로 본다.
@@ -977,7 +982,10 @@ function buildFilters(){
       FILTER.from=f;FILTER.to=t;FILTER_TOUCHED=true;
       buildFilters();renderAll();};
     [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
-      e2.onchange=apply;e2.oninput=apply;});};
+      e2.onchange=apply;e2.oninput=apply;});
+    const rb=$(p+'Reset');
+    if(rb)rb.onclick=()=>{FILTER.from='';FILTER.to='';FILTER_TOUCHED=false;
+      buildFilters();renderAll();try{markDirty();saveLocal();}catch(e){}};};
   $('perfFilters').innerHTML=rangeSel('p')
     +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';
   wire('p');
