@@ -48,6 +48,8 @@ function serializeDoc(){
       advLogo:CAMPAIGN.advLogo||'',theme:(typeof THEME!=='undefined'?THEME:''),
       /* 배경 로고 — 'none'(앰비언트) · 'adv'(광고주) · 'agency'(대행사). 캠페인마다 따로 */
       bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
+      /* 배경 로고가 흘러다닐지 고정될지 (v56) */
+      bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
       agencyLogo:CAMPAIGN.agencyLogo||''},
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
@@ -121,6 +123,9 @@ function applyDoc(d,keepToday){
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
+  /* 배경 움직임 (v56) — 없던 저장본은 지금까지의 동작(흘러다니기)으로 본다 */
+  CAMPAIGN.bgMotion=d.campaign?.bgMotion==='still'?'still':'float';
+  try{if(typeof applyBgMotion==='function')applyBgMotion();}catch(e){}
   delete CAMPAIGN.bgLogo;
   CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
   /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */

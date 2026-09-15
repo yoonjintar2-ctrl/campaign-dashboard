@@ -50,6 +50,35 @@ function enableColResize(tbl,cols,onDone,off){
       delete c.w;th.style.minWidth='';th.style.width='';if(onDone)onDone();});});
 }
 
+/* ---- 칸 단위 마우스 처리를 표 하나로 모은다 (v56) ----
+   예전에는 칸마다 mouseenter · mouseleave · mousemove 를 따로 달았다.
+   게재 히스토리 한 표만 3,000칸이 넘어서 이벤트 리스너가 1만 3천 개까지 늘었고,
+   · 그 수만큼 클로저(툴팁 문자열까지)를 메모리에 붙들고 있었고
+   · 표를 다시 그릴 때마다 그걸 전부 다시 다느라 렌더가 느렸다.
+   위임하면 표당 3개면 되고, 강조·툴팁 동작은 한 치도 달라지지 않는다.
+   (mouseenter/leave 는 버블하지 않으므로 mousemove 로 "지금 칸"을 추적해 직접 만들어 준다) */
+function delegateCellHover(root,sel,h){
+  if(!root)return ()=>{};
+  /* ⚠ 표를 다시 그려도 <table> 요소 자체는 그대로다 (innerHTML 만 갈린다).
+     그래서 부를 때마다 리스너를 새로 달면 렌더할 때마다 겹겹이 쌓여
+     마우스를 한 번 움직일 때 예전 핸들러까지 전부 돌아간다.
+     한 뿌리 · 한 선택자에는 리스너를 딱 한 벌만 두고, 다시 부르면 **내용만 갈아 끼운다**. */
+  const reg=root.__cellHov||(root.__cellHov={});
+  if(reg[sel]){reg[sel].h=h;return reg[sel].out;}
+  const st={h,cur:null};
+  const out=()=>{if(st.cur){const c=st.cur;st.cur=null;if(st.h.leave)st.h.leave(c);}};
+  st.out=out;reg[sel]=st;
+  root.addEventListener('mousemove',e=>{
+    const el=e.target&&e.target.closest?e.target.closest(sel):null;
+    if(!el||!root.contains(el)){out();return;}
+    if(el!==st.cur){out();st.cur=el;if(st.h.enter)st.h.enter(el);}
+    if(st.h.move)st.h.move(el,e);});
+  /* 표 밖으로 나가거나 누르면 강조를 반드시 걷는다 */
+  root.addEventListener('mouseleave',out);
+  root.addEventListener('mousedown',out);
+  return out;
+}
+
 /* ===== 서머리 · 미디어믹스 — 행 머리 열 고정 · 떠 있는 머리글 =====
    (1) 가로로 스크롤해도 구분 · 매체 · 광고상품 같은 행 머리 열은 왼쪽에 붙어 있어야 하고
    (2) 세로로 스크롤할 때는 머리글이 화면 위쪽에 붙어 있다가 표가 끝나면 사라져야 한다.
@@ -282,18 +311,30 @@ function wireGroupRename(tbl,cfg,rerender){
 /* 값이 0 인 칸은 – 로, 아예 비어 있는 칸은 옅은 회색으로 표시해 "해당 없음"을 분명히 한다.
    입력·칩·게이지가 들어 있는 칸은 건드리지 않는다. */
 const ZERO_RE=/^₩?-?0(\.0+)?%?$/;
+/* 칸을 "– (값 없음)" 으로 만든다.
+   ⚠ 렌더러가 이미 같은 내용을 넣어 둔 칸이 많다 — 일자별 상세 효율에서는 2만 칸 중 1만 칸이 그렇다.
+   그걸 그대로 다시 쓰면 innerHTML 파싱만 1만 번 도는 셈이라, 같은 모양이면 건드리지 않는다 (v56). */
+function naCell(td){
+  const f=td.firstChild;
+  if(f&&f.nodeType===1&&f.tagName==='SPAN'&&f.className==='na'&&!f.nextSibling)return;
+  td.innerHTML='<span class="na">–</span>';
+}
 function markBlanks(tbl){
   if(!tbl)return;
   tbl.querySelectorAll('tbody td, thead tr.total td').forEach(td=>{
     if(td.classList.contains('head'))return;
     /* 게재 히스토리의 날짜 칸은 글자가 아니라 색 농도로 값을 보여준다 — 건드리지 않는다 */
     if(td.classList.contains('day')||td.classList.contains('rm'))return;
-    if(td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
-    const t=(td.textContent||'').replace(/\s+/g,'').trim();
+    /* ⚠ 칸마다 querySelector 를 돌리면 표 하나에 2만 번이 넘는다 (일자별 상세 효율 렌더의 절반이
+       여기서 나갔다). 자식 요소가 아예 없는 칸이 대부분이고, 그런 칸은 어차피 걸릴 게 없으므로
+       요소가 하나라도 있을 때만 찾아본다 — 결과는 완전히 같다 (v56). */
+    if(td.firstElementChild
+      &&td.querySelector('input,select,textarea,button,.chip,.gauge,.crthumb-sm,.b,svg'))return;
+    const t=(td.textContent||'').replace(/\s+/g,'');
     /* 값이 아예 없는 칸(빈칸 또는 렌더러가 넣은 –)은 회색으로 꽉 채운다 */
-    if(t===''||t==='–'||t==='-'){td.classList.add('blank');td.innerHTML='<span class="na">–</span>';return;}
+    if(t===''||t==='–'||t==='-'){td.classList.add('blank');naCell(td);return;}
     /* 값이 0 인 칸은 – 로만 바꾸고 배경은 그대로 (데이터가 있는 칸이므로) */
-    if(ZERO_RE.test(t.replace(/,/g,'')))td.innerHTML='<span class="na">–</span>';});
+    if(ZERO_RE.test(t.replace(/,/g,'')))naCell(td);});
 }
 let DRAG=null;
 const clearIns=()=>document.querySelectorAll('.ins-l,.ins-r').forEach(e=>e.classList.remove('ins-l','ins-r'));
@@ -925,18 +966,42 @@ function startAmb(){
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){
     const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
   const P=13000;
+  let lt='',lp='';
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
+    /* 보이지 않는 동안에는 쉰다 (v56).
+       ⚠ 이 고리가 페이지에서 가장 비싼 상시 작업이었다 — 매 프레임 #paceBox 에
+       사용자 정의 속성 두 개를 써 넣으면 그 안의 구간 전부가 스타일 재계산 + 다시 칠하기 대상이 된다.
+       다른 탭을 보고 있거나 이 영역이 화면 밖으로 밀려 있어도 쉬지 않고 돌았다.
+       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다. */
+    if(!ambVisible(b)){AMB_RAF=requestAnimationFrame(step);return;}
     const t=(ts%P)/P;
-    b.style.setProperty('--ambt',((1-Math.cos(t*2*Math.PI))/2).toFixed(4));
+    const vt=((1-Math.cos(t*2*Math.PI))/2).toFixed(4);
     /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
        고정 색조의 세기도 같은 주기로 0 ↔ 1 을 오가게 해 기본 색과 번갈아 보이게 한다. */
     /* 고정 색조의 세기 — 0 에 더 오래 머물게 해서 기본 색이 보이는 시간을 늘린다 */
     const w=(1-Math.cos(t*2*Math.PI))/2;
-    b.style.setProperty('--ambp',Math.pow(w,2.1).toFixed(4));
+    const vp=Math.pow(w,2.1).toFixed(4);
+    /* 값이 그대로면 쓰지 않는다 — 쓰는 순간 그 아래가 전부 다시 계산된다 */
+    if(vt!==lt){lt=vt;b.style.setProperty('--ambt',vt);}
+    if(vp!==lp){lp=vp;b.style.setProperty('--ambp',vp);}
     AMB_RAF=requestAnimationFrame(step);};
   AMB_RAF=requestAnimationFrame(step);
+}
+/* 물결을 돌릴 만큼 #paceBox 가 실제로 보이는가 — 탭이 숨었거나 화면 밖이면 false.
+   IntersectionObserver 로 상태만 받아 두고, 못 쓰는 환경에서는 늘 보이는 것으로 본다. */
+let AMB_VIS=null,AMB_IO=null,AMB_EL=null;
+function ambVisible(b){
+  if(document.hidden)return false;
+  if(typeof IntersectionObserver!=='function')return true;
+  if(AMB_EL!==b){
+    AMB_EL=b;AMB_VIS=null;
+    if(AMB_IO)try{AMB_IO.disconnect();}catch(e){}
+    AMB_IO=new IntersectionObserver(es=>{AMB_VIS=es[es.length-1].isIntersecting;},{rootMargin:'120px'});
+    try{AMB_IO.observe(b);}catch(e){AMB_VIS=true;}}
+  /* 아직 첫 보고가 오기 전에는 보이는 것으로 본다 (첫 프레임을 건너뛰지 않도록) */
+  return AMB_VIS!==false;
 }
 addEventListener('resize',()=>{if($('paceBox'))fitPaceLabels();});
 /* 숨어 있던 영역이 다시 보이거나 폭이 바뀌면 그때 다시 잰다 (v51).

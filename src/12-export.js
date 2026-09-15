@@ -626,6 +626,16 @@ function openThemePicker(){
         .map(o=>`<button class="thcard${bgModeNow()===o.k?' on':''}" data-bg="${o.k}">
             <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
      </div>
+     <div class="sec gap" style="margin:20px 0 8px;font-size:14px">배경 움직임</div>
+     <div class="hint" style="margin-bottom:10px">배경 로고를 천천히 <b>흘려보낼지</b>, 그 자리에 <b>세워 둘지</b> 고릅니다.
+       색·크기·위치는 같고 움직임만 달라집니다.
+       고정으로 두면 그만큼 그리는 일이 줄어듭니다.</div></div>
+     <div class="thgrid bgpick">
+       ${[{k:'float',l:'흘러다니기',d:'천천히 떠다니는 기본값'},
+          {k:'still',l:'고정',        d:'움직이지 않음 · 더 가벼움'}]
+        .map(o=>`<button class="thcard${bgMotionNow()===o.k?' on':''}" data-bgm="${o.k}">
+            <span class="thl">${o.l}</span><span class="hint">${o.d}</span></button>`).join('')}
+     </div>
      <div class="form-row" id="bgAgencyRow" style="margin-top:12px${bgModeNow()==='agency'?'':';display:none'}">
        <div class="fld" style="flex:0 0 100%"><label>대행사 로고
          <span class="hint">(1:1 ~ 3:1 · 3MB 이하 · 한 번 올리면 다른 캠페인에서도 쓸 수 있습니다)</span></label>
@@ -648,6 +658,11 @@ function openThemePicker(){
     const row=$('bgAgencyRow');if(row)row.style.display=CAMPAIGN.bgMode==='agency'?'':'none';
     try{refreshBgDots();}catch(e){}
     try{markDirty();saveLocal();}catch(e){}});
+  host2.querySelectorAll('[data-bgm]').forEach(b2=>b2.onclick=()=>{
+    CAMPAIGN.bgMotion=b2.dataset.bgm;
+    host2.querySelectorAll('[data-bgm]').forEach(x=>x.classList.toggle('on',x.dataset.bgm===CAMPAIGN.bgMotion));
+    try{applyBgMotion();}catch(e){}
+    try{markDirty();saveLocal();}catch(e){}});
   {const pk=$('agyPick');
    if(pk)pk.onclick=()=>pickLogo(u=>{setAgencyLogo(u);paintAgy();
      try{refreshBgDots();markDirty();saveLocal();}catch(e){}});}
@@ -660,6 +675,14 @@ function openThemePicker(){
 function bgModeNow(){
   if(CAMPAIGN.bgMode)return CAMPAIGN.bgMode;
   return CAMPAIGN.bgLogo===false?'none':'adv';
+}
+/* 배경 움직임 (v56) — 'float' 흘러다니기(기본) · 'still' 고정.
+   캐페인마다 따로 정해지고, 예전 저장본에는 없으므로 지금까지의 동작인 float 이 기본이다. */
+function bgMotionNow(){return CAMPAIGN.bgMotion==='still'?'still':'float';}
+function applyBgMotion(){
+  const still=bgMotionNow()==='still';
+  const host=$('bgdots');
+  if(host)host.classList.toggle('still',still);
 }
 /* 대행사 로고는 캠페인이 아니라 **회사** 것이라 브라우저에도 남긴다.
    (광고주에게 보이는 화면을 위해 캠페인 문서에도 함께 담는다) */
@@ -905,6 +928,7 @@ function paintBgDots(svg){
 function refreshBgDots(){
   const host=$('bgdots');
   const mode=bgModeNow();
+  applyBgMotion();
   /* 없음 → 테마색 앰비언트 그라데이션 */
   if(host)host.classList.toggle('amb',mode==='none');
   if(mode==='none'){BGDOT.url='';BGDOT.svg='';paintBgDots('');if(host)host.classList.add('on');return;}

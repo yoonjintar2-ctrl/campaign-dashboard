@@ -512,8 +512,9 @@ function renderHeat(){
 /* 칸에 마우스를 올리면 그 구간의 세부 실적을 보여준다 */
 function wireHeatTip(tbl){
   const MET=['imp','click','view','conv','cost'];
-  tbl.querySelectorAll('td.hm[data-ti]').forEach(td=>{
-    td.addEventListener('mousemove',e=>{
+  delegateCellHover(tbl,'td.hm[data-ti]',{
+    leave:()=>hideTip(),
+    move:(td,e)=>{
       const t=HEAT_TIP[+td.dataset.ti];if(!t)return;
       const rows=MET.filter(k=>t.b&&isFinite(t.b[k])&&t.b[k]>0)
         .map(k=>`<div class="r"><span class="l">${METRICS[k].l}</span><b>${METRICS[k].f(t.b[k])}</b></div>`);
@@ -524,8 +525,7 @@ function wireHeatTip(tbl){
         +`<div class="r"><span class="l">${esc(t.cat)}</span><b>${esc(t.label)}</b></div>`
         +`<div class="r"><span class="l">${METRICS[t.c.unit].l} (KPI ${esc(KPI_LABEL[t.c.kpi]||t.c.kpi)})</span>`
         +`<b>${METRICS[t.c.unit].f(t.v)}</b></div>`
-        +rows.join('')+eff.join(''));});
-    td.addEventListener('mouseleave',hideTip);});
+        +rows.join('')+eff.join(''));}});
 }
 /* 세로 스크롤 없이 전부 보여주므로, 머리글은 화면에 떠 있는 복사본으로 고정한다
    (게재 히스토리와 같은 방식 — overflow-x:auto 안에서는 sticky 가 페이지에 붙지 않는다) */
@@ -545,13 +545,11 @@ function mountHeatHead(tbl){
   bar.innerHTML='';bar.appendChild(inner);
   /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
   bar.style.pointerEvents='none';
-  clone.querySelectorAll('th.dhd').forEach(th=>{
-    th.style.pointerEvents='auto';
-    const di=th.dataset.di;
-    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
-    th.addEventListener('mousemove',e=>{
-      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
-    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
+  clone.querySelectorAll('th.dhd').forEach(th=>{th.style.pointerEvents='auto';});
+  delegateCellHover(clone,'th.dhd',{
+    enter:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,true);},
+    leave:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,false);hideTip();},
+    move:(th,e)=>{if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+th.dataset.di)));}});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -1463,13 +1461,11 @@ function mountGanttHead(tbl){
   bar.innerHTML='';bar.appendChild(inner);
   /* 떠 있는 머리글의 날짜 칸에서도 그 날 실적이 뜨도록 */
   bar.style.pointerEvents='none';
-  clone.querySelectorAll('th.dhd').forEach(th=>{
-    th.style.pointerEvents='auto';
-    const di=th.dataset.di;
-    th.addEventListener('mouseenter',()=>{if(tbl.__paintCol)tbl.__paintCol(di,true);});
-    th.addEventListener('mousemove',e=>{
-      if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+di)));});
-    th.addEventListener('mouseleave',()=>{if(tbl.__paintCol)tbl.__paintCol(di,false);hideTip();});});
+  clone.querySelectorAll('th.dhd').forEach(th=>{th.style.pointerEvents='auto';});
+  delegateCellHover(clone,'th.dhd',{
+    enter:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,true);},
+    leave:th=>{if(tbl.__paintCol)tbl.__paintCol(th.dataset.di,false);hideTip();},
+    move:(th,e)=>{if(tbl.__dayHtml)showTip(e.clientX,e.clientY,tbl.__dayHtml(GANTT_I0+(+th.dataset.di)));}});
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
   const place=()=>{
@@ -1508,11 +1504,18 @@ function wireGanttHover(t,SC,list){
     const b={imp:g('imp'),click:g('click'),view:g('view'),conv:g('conv'),
       lead:g('lead'),eng:g('eng'),rev:g('rev'),net:g('net'),cost:g('cost')};
     return b;};
-  t.querySelectorAll('td.day').forEach(td=>{
-    const di=td.dataset.di,gi=+td.dataset.gi,cid=td.dataset.cid;
-    td.addEventListener('mouseenter',()=>{paint(di,true);td.closest('tr').classList.add('rowhi');});
-    td.addEventListener('mouseleave',()=>{paint(di,false);td.closest('tr').classList.remove('rowhi');hideTip();});
-    td.addEventListener('mousemove',e=>{
+  /* 칸마다 달지 않고 표 하나에 모아 받는다 (v56) — 동작은 그대로 */
+  const isHd=el=>el.tagName==='TH';
+  delegateCellHover(t,'td.day,th.dhd',{
+    enter:el=>{paint(el.dataset.di,true);
+      if(isHd(el))return;
+      const tr=el.closest('tr');if(tr)tr.classList.add('rowhi');},
+    leave:el=>{paint(el.dataset.di,false);hideTip();
+      if(isHd(el))return;
+      const tr=el.closest('tr');if(tr)tr.classList.remove('rowhi');},
+    move:(td,e)=>{
+      if(isHd(td)){showTip(e.clientX,e.clientY,dayHtml(SC.i0+(+td.dataset.di)));return;}
+      const gi=+td.dataset.gi,cid=td.dataset.cid;
       const c=byId[cid]||CREATIVES.find(x=>x.id===cid);if(!c)return;
       const d=ALLDATES[gi],hol=holName(d);
       if(gi>=ELAPSED){showTip(e.clientX,e.clientY,
@@ -1531,7 +1534,7 @@ function wireGanttHover(t,SC,list){
         +(()=>{const a=dayAll(gi);
           return `<div class="tsec">이 날 전체 (${fmt(a.live)}/${fmt(a.total)}개 소재)</div>`
             +row('노출 · 클릭',`${fmt(a.imp)} · ${fmt(a.click)}`)
-            +row('광고비',won(a.cost));})());});});
+            +row('광고비',won(a.cost));})());}});
   /* 그 날짜에 표에 올라온 소재 전체의 합 */
   const shown=(list||[]).filter(Boolean);
   const byId={};shown.forEach(c=>{byId[c.id]=c;});
@@ -1555,11 +1558,7 @@ function wireGanttHover(t,SC,list){
       +rowT('CPM · CPC',`${won(b.cost/b.imp*1000)} · ${won(b.cost/b.click)}`)
       +rowT('광고비',won(b.cost));};
   /* 날짜 칸(머리글)에 올리면 그 날 전체 실적을 보여 준다 */
-  t.querySelectorAll('th.dhd').forEach(th=>{
-    const di=th.dataset.di,gi=SC.i0+(+di);
-    th.addEventListener('mouseenter',()=>paint(di,true));
-    th.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,dayHtml(gi)));
-    th.addEventListener('mouseleave',()=>{paint(di,false);hideTip();});});
+  /* 날짜 머리글은 위의 '칸' 위임에 함께 실었다 — 마우스 한 번에 closest 를 두 번 돌지 않도록 */
   /* 떠 있는 머리글(복사본)에서도 같은 팝업이 뜨도록 밖에서 부를 수 있게 남겨 둔다 */
   t.__dayHtml=dayHtml;t.__paintCol=paint;
 }

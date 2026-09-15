@@ -128,6 +128,8 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
   animation:bootpulse 1.4s ease-in-out infinite alternate}
 @keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
 body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
+/* 부팅이 끝나면 맥박 애니메이션도 멈춘다 — 보이지 않는데 무한 반복하고 있었다 (v56) */
+body:not(.booting) .bootveil .bootlogo{animation:none}
 body.booting .topbar,body.booting .tabs,body.booting .subbar,
 body.booting .wrap,body.booting .demobar,body.booting #bgdots{visibility:hidden}
 /* ===== 접속 화면 (공유 코드 게이트) ===== */
@@ -1467,6 +1469,17 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   0%{transform:translate3d(6%,4%,0) rotate(-4deg)}
   50%{transform:translate3d(-2%,-5%,0) rotate(3deg)}
   100%{transform:translate3d(-6%,-5%,0) rotate(5deg)}}
+/* ⚠ 페이지 바탕의 body::before 는 고정형에서도 그대로 둔다 (v56).
+   멈춰 보았더니 오히려 느려졌다 — transform 애니메이션이 돌고 있을 때만
+   그 blur(30px) 층이 합성 레이어로 떨어져 나오기 때문이다.
+   멈추면 그 거대한 흐림이 본문 레이어로 돌아와 스타일 재계산마다 다시 그려진다.
+   (실측: 6초 기준 Task 1.9초 → 5.9초) 그래서 고정은 #bgdots 층에만 건다. */
+/* 고정형 배경 (v56) — 로고(또는 앰비언트)를 흘려보내지 않고 그 자리에 세워 둔다.
+   움직임만 멈추므로 색·크기·위치는 흘러다닐 때의 기준 상태와 같다.
+   will-change 도 함께 거둔다 — 움직이지 않는 층을 합성기가 따로 들고 있을 이유가 없다. */
+#bgdots.still .bgfloat,#bgdots.still .bgfloat>i,
+#bgdots.still .ambient,#bgdots.still .ambient::after{animation:none}
+#bgdots.still .bgfloat,#bgdots.still .bgfloat>i,#bgdots.still .ambient{will-change:auto}
 @media (prefers-reduced-motion: reduce){
   #bgdots .bgfloat,#bgdots .bgfloat>i,#bgdots .ambient,#bgdots .ambient::after{animation:none}}
 @media (prefers-reduced-motion: reduce){#bgdots{animation:none}}
