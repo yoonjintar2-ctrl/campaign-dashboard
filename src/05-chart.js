@@ -210,7 +210,9 @@ function renderDaily(){
      범례에 "눈금 없음"이라고 적어 두고, 정확한 금액은 툴팁으로 읽게 한다. */
   const SPEND_K=2.4;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
   const SPEND_PAD=0.25;                    /* 바닥을 최솟값 아래 몇 만큼에 둘지 (등락 폭) */
-  const SPEND_CEIL=P.t+4;                  /* 플롯 밖으로는 나가지 않는다 */
+  /* 윗선 — 막대가 높아 2.4 배가 플롯을 넘어서는 캠페인에서는 여기서 멈춘다.
+     플롯 맨 위에 딱 붙이면 꼭대기가 잘린 것처럼 보여서 위쪽에 숨 쉴 틈을 남긴다 (v63). */
+  const SPEND_CEIL=P.t+PH*0.06;
   const spend=ds.map((_,i)=>i>=EL?NaN:sum(fs.filter(f=>f.d===SC.i0+i).map(f=>f.cost)));
   let SPEND_ON=false;
   (function drawSpend(){
@@ -236,13 +238,15 @@ function renderDaily(){
     S('stop',{offset:'0%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o1)'},lg);
     S('stop',{offset:'100%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o2)'},lg);
     const ar=S('path',{d,fill:`url(#${gid})`,stroke:'none','pointer-events':'none',class:'spendArea'},svg);
-    /* 부드러운 곡선은 꼭짓점 위로 살짝 부풀 수 있다 (스플라인 오버슛).
-       실제로 그려진 높이를 재서 천장에 정확히 맞춘다 — 바닥선을 축으로 세로만 줄인다. */
+    /* 부드러운 곡선은 꼭짓점 **위로** 부푼다 (스플라인 오버슛) — 가장 많이 쓴 날보다
+       면이 더 높이 올라가서, 윗선에 닿았을 때 잘린 것처럼 보인다.
+       그래서 천장을 넘을 때만이 아니라 **늘** 실제로 그려진 높이를 재서 윗선에 맞춘다.
+       바닥선을 축으로 세로만 줄이므로 가로 위치·바닥은 그대로다. (v63) */
     try{
       const t=ar.getBBox().y;
-      if(t<SPEND_CEIL-0.5&&base>t)
+      if(t<peakY-0.5&&base>t)
         ar.setAttribute('transform',
-          `translate(0 ${base}) scale(1 ${(base-SPEND_CEIL)/(base-t)}) translate(0 ${-base})`);
+          `translate(0 ${base}) scale(1 ${(base-peakY)/(base-t)}) translate(0 ${-base})`);
     }catch(e){}
   })();
   const txt=(x,y,s,anchor)=>{const t=S('text',{x,y,'text-anchor':anchor||'end','font-size':AXIS.size,
