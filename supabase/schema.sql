@@ -592,7 +592,7 @@ grant execute on function public.delete_campaign(uuid) to authenticated;
 --  실행 전에 Storage 에서 버킷을 하나 만들어 주세요.
 --    Supabase 대시보드 > Storage > New bucket
 --      이름: trend      /  Public bucket: 켬
---      File size limit: 5 MB   (게시판이 5MB 로 막지만 서버에서도 한 번 더 막습니다)
+--      File size limit: 10 MB  (게시판이 10MB 로 막지만 서버에서도 한 번 더 막습니다)
 -- =====================================================================
 
 create table if not exists public.trend_posts(
