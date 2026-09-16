@@ -442,6 +442,8 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tfix:hover{background:var(--acc);color:#fff}
 .tfchk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink2);cursor:pointer}
 .tflist{display:flex;flex-direction:column;gap:5px;padding-left:96px}
+.tfsum{font-size:11px;color:var(--muted);padding-left:96px;font-variant-numeric:tabular-nums}
+.tfsum.over{color:#c0483f;font-weight:700}
 .tfitem{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);
   border:1px solid var(--line2);border-radius:7px;padding:5px 8px}
 .tfitem.new{border-color:var(--acc);background:var(--acc-soft)}
@@ -2301,7 +2303,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 <!-- ===== 트렌드 리포트 — 모든 캠페인이 함께 쓰는 자료 게시판 (v66) ===== -->
 <div class="wrap hidden" id="tab-trend">
   <div class="sec gap" data-sect="trend">트렌드 리포트
-    <span class="note">모든 캠페인이 함께 쓰는 자료 게시판입니다 · 파일 한 개당 5MB 까지</span>
+    <span class="note">모든 캠페인이 함께 쓰는 자료 게시판입니다 · 파일 한 개당 10MB 까지</span>
     <div class="tools agency-only">
       <span class="hint">광고주에게 노출</span>
       <span class="switch on" id="trendViewerTgl"
@@ -13596,10 +13598,13 @@ function openSettingsHub(){
 /* ===== 13. 트렌드 리포트 — 모든 캠페인이 함께 쓰는 자료 게시판 (v66) =====
    · 캠페인마다 "뷰어에게 보일지"를 켜고 끌 수 있다 (기본 켜짐).
    · 로그인하면 바로 올리고, 로그인하지 않으면 수정·삭제용 ID/PW 를 정해서 올린다.
-   · 파일은 한 개당 5MB 까지. 클라우드가 붙어 있으면 Supabase Storage,
+   · 파일은 한 개당 10MB 까지. 클라우드가 붙어 있으면 Supabase Storage,
      붙어 있지 않으면(데모) 이 브라우저 안에서만 도는 임시 보관소를 쓴다. */
 
-const TREND_MAX_MB=5;                       /* 파일 한 개 최대 용량 */
+const TREND_MAX_MB=10;                      /* 파일 한 개 최대 용량 — Supabase 버킷 설정과 같게 */
+/* 한 자료에 파일을 무한정 붙이면 글 하나가 저장 공간을 크게 먹는다.
+   한 개 한도만으로는 막히지 않아 **자료 하나의 합계**도 함께 막아 둔다 (v67). */
+const TREND_MAX_TOTAL_MB=50;
 const TREND_BUCKET='trend';
 const TREND_CATS_DEFAULT=['디지털','옥외광고','TV','PPL','OTT','분석 리포트'];
 const TREND_ETC='기타';
@@ -13787,7 +13792,7 @@ async function trendLoad(force){
     TREND.err=/trend_posts|schema cache|does not exist|relation/i.test(m)
       ? '게시판 저장소가 아직 만들어지지 않았습니다. Supabase > SQL Editor 에서 '
         +'supabase/schema.sql 의 "v66 — 트렌드 리포트 게시판" 블록을 실행하고, '
-        +'Storage 에 trend 버킷(Public, 5MB)을 만들어 주세요.'
+        +`Storage 에 trend 버킷(Public, ${TREND_MAX_MB}MB)을 만들어 주세요.`
       : m;
     TREND.posts=TREND.posts||[];
   }
@@ -13899,7 +13904,8 @@ function renderTrend(){
       ${admin?`<div class="tusage" title="게시판에 올라온 파일 용량의 합계입니다">
         <div class="tuh"><span>저장 공간</span><b>${trendMB(used)}</b></div>
         <div class="tubar"><i style="width:${Math.min(100,used/TREND_QUOTA*100).toFixed(2)}%"></i></div>
-        <div class="tun">무료 한도 1GB · 파일 한 개 ${TREND_MAX_MB}MB 까지</div>
+        <div class="tun">무료 한도 1GB · 파일 한 개 ${TREND_MAX_MB}MB 까지
+          <br>남은 공간으로 ${TREND_MAX_MB}MB 자료 약 ${Math.max(0,Math.floor((TREND_QUOTA-used)/(TREND_MAX_MB*1048576)))}건</div>
       </div>`:''}
     </aside>
     <section class="tmain">
@@ -14129,8 +14135,10 @@ function openTrendForm(post){
       <label class="tfrow"><span>파일</span>
         <input id="tfFiles" type="file" multiple
           accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.doc,.docx,.ppt,.pptx,.mp4,.mov,.webm"></label>
-      <div class="tfnote">파일 한 개당 ${TREND_MAX_MB}MB 까지 · PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</div>
+      <div class="tfnote">파일 한 개당 ${TREND_MAX_MB}MB · 한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 까지
+        · PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</div>
       <div class="tflist" id="tfList"></div>
+      <div class="tfsum" id="tfSum"></div>
       <label class="tfrow"><span>링크</span>
         <input id="tfLink" value="${esc(p.link)}" placeholder="https:// (선택)"></label>
       <label class="tfrow"><span>썸네일</span>
@@ -14188,15 +14196,28 @@ function openTrendForm(post){
     q('#tfList').querySelectorAll('[data-old]').forEach(b=>b.onclick=()=>{
       p.files.splice(+b.dataset.old,1);drawFiles();});
     q('#tfList').querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{
-      picked.splice(+b.dataset.new,1);drawFiles();});};
+      picked.splice(+b.dataset.new,1);drawFiles();});
+    /* 첨부 합계를 늘 보여 준다 — 10MB 짜리를 여럿 붙이면 금방 커진다 */
+    const tot=totalBytes();
+    const sum=q('#tfSum');
+    if(sum){
+      const over=tot>TREND_MAX_TOTAL_MB*1048576;
+      sum.className='tfsum'+(over?' over':'');
+      sum.textContent=(tot?`첨부 합계 ${trendMB(tot)} / ${TREND_MAX_TOTAL_MB}MB`:'')
+        +(over?' — 합계를 넘어 올릴 수 없습니다':'');}};
+  const totalBytes=()=>(p.files||[]).reduce((a,f)=>a+(+f.size||0),0)
+    +picked.reduce((a,f)=>a+f.size,0);
   drawFiles();
   q('#tfFiles').onchange=e=>{
-    const over=[];
+    const over=[],full=[];
     [...e.target.files].forEach(f=>{
       if(f.size>TREND_MAX_MB*1048576){over.push(`${f.name} (${trendMB(f.size)})`);return;}
+      if(totalBytes()+f.size>TREND_MAX_TOTAL_MB*1048576){full.push(f.name);return;}
       picked.push(f);});
     e.target.value='';
-    err(over.length?`${TREND_MAX_MB}MB 를 넘어 뺐습니다 — ${over.join(', ')}`:'');
+    err([over.length?`${TREND_MAX_MB}MB 를 넘어 뺐습니다 — ${over.join(', ')}`:'',
+         full.length?`한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 를 넘어 뺐습니다 — ${full.join(', ')}`:'']
+        .filter(Boolean).join(' / '));
     drawFiles();};
   q('#tfThumb').onchange=e=>{
     const f=e.target.files[0];
@@ -14216,14 +14237,19 @@ function openTrendForm(post){
       const gpw=q('#tfGpw').value;
       if(!gid||!gpw){err('ID 와 비밀번호를 넣어 주세요.');return;}
       ghash=await trendHash(gid,gpw);}
-    q('#tfOk').disabled=true;q('#tfState').textContent='올리는 중…';
+    if(totalBytes()>TREND_MAX_TOTAL_MB*1048576){
+      err(`첨부 합계가 ${TREND_MAX_TOTAL_MB}MB 를 넘습니다. 파일을 덜어 주세요.`);return;}
+    q('#tfOk').disabled=true;
+    /* 10MB 짜리는 올라가는 데 시간이 걸린다 — 몇 번째를 올리고 있는지 보여 준다 */
+    const say=m=>{const e2=q('#tfState');if(e2)e2.textContent=m;};
+    say('올리는 중…');
     try{
       const rec={...p,title,body:q('#tfBody').value.trim(),
         category:q('#tfCat').value,
         medium:needMedia(q('#tfCat').value)?q('#tfMedium').value.trim():'',
         tags,secret:q('#tfSecret').checked,link,
         guest_id:gid||p.guest_id||'',guest_hash:ghash};
-      await trendPut(rec,picked,thumbFile,edit);
+      await trendPut(rec,picked,thumbFile,edit,say);
       ov.remove();
     }catch(e){
       err((e&&e.message)||String(e));
@@ -14233,7 +14259,8 @@ function openTrendForm(post){
 }
 
 /* ---------- 저장 ---------- */
-async function trendPut(rec,picked,thumbFile,edit){
+async function trendPut(rec,picked,thumbFile,edit,say){
+  say=say||(()=>{});
   /* 썸네일 — 직접 올린 그림 > 첨부한 이미지 > 제목으로 만든 표지 */
   let thumb=rec.thumb||'';
   if(thumbFile)thumb=await trendShrink(thumbFile);
@@ -14243,12 +14270,15 @@ async function trendPut(rec,picked,thumbFile,edit){
       picked.length?trendFileKind(picked[0].name):(rec.link?'link':'file'));}
   const newFiles=[];
   if(trendOn()){
+    let i=0;
     for(const f of picked){
+      i++;say(`파일 올리는 중… ${i}/${picked.length} · ${f.name} (${trendMB(f.size)})`);
       const path=`${rec.id}/${Date.now()}_${f.name.replace(/[^\w.\-가-힣]/g,'_')}`;
       const {error}=await CLOUD.sb.storage.from(TREND_BUCKET)
         .upload(path,f,{upsert:false,contentType:f.type||undefined});
-      if(error)throw new Error('파일 올리기 실패 — '+error.message);
+      if(error)throw new Error(trendUploadMsg(error,f));
       newFiles.push({name:f.name,size:f.size,kind:trendFileKind(f.name),path});}
+    say('저장하는 중…');
   }else{
     /* 데모 — 파일은 이 세션 안에서만 볼 수 있다 */
     picked.forEach(f=>{
@@ -14303,6 +14333,20 @@ async function trendSaveMeta(){
     await CLOUD.sb.from('trend_meta').upsert([
       {k:'categories',v:TREND.cats},{k:'media',v:TREND.media}]);
   }catch(e){}
+}
+
+/* 저장소가 돌려준 영문 오류를 무엇을 하면 되는지로 바꿔 준다 (v67) */
+function trendUploadMsg(error,f){
+  const m=(error&&error.message)||String(error);
+  if(/exceeded the maximum allowed size|payload too large|413/i.test(m))
+    return `${f.name} (${trendMB(f.size)}) 이(가) 저장소 한도를 넘었습니다. `
+      +`Supabase > Storage > trend 버킷의 File size limit 이 ${TREND_MAX_MB}MB 이상인지 확인해 주세요.`;
+  if(/Bucket not found|does not exist/i.test(m))
+    return `저장소(trend 버킷)를 찾지 못했습니다. Supabase > Storage 에서 `
+      +`trend 버킷(Public, ${TREND_MAX_MB}MB)을 만들어 주세요.`;
+  if(/row-level security|violates|not authorized|permission/i.test(m))
+    return '저장소에 올릴 권한이 없습니다. schema.sql 의 storage 정책이 실행됐는지 확인해 주세요.';
+  return '파일 올리기 실패 — '+m;
 }
 
 /* ---------- 카테고리 편집 (관리자) ---------- */
