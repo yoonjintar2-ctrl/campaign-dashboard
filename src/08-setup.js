@@ -1007,8 +1007,10 @@ function buildSelects(){
     s.innerHTML=arr.map(k=>
       `<option value="${k}" ${k===v?'selected':''}>${lab(k)}</option>`).join('');
     s.value=v;};
-  fill('barSel',BAR_METRICS,null,k=>METRICS[k].l);
-  fill('lineSel',LINE_METRICS,null,k=>k==='none'?'없음':METRICS[k].l);
+  /* 저장해 둔 값이 있으면 그걸 먼저 쓴다 (v65) — 예전에는 null 을 넘겨
+     화면에 남아 있던 값만 이어받아서, 새로고침하면 늘 첫 항목으로 돌아갔다 */
+  fill('barSel',BAR_METRICS,BAR_METRIC,k=>METRICS[k].l);
+  fill('lineSel',LINE_METRICS,LINE_METRIC,k=>k==='none'?'없음':METRICS[k].l);
   fill('dimSel',SERIES_DIMS.map(d=>d.k),SERIES_DIM,k=>SERIES_DIMS.find(d=>d.k===k).l);
   /* 단가(CPM · CPC · CPV)도 고를 수 있다 (v57) — 고르면 칸마다 그 날 단가가 작게 얹힌다 */
   fill('ganttMetric',['imp','click','view','cost','cpm','cpc','cpv'],
@@ -1045,10 +1047,14 @@ function buildSelects(){
   renderRankPick();
   $('rawSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_SEG?'selected':''}>${s.l}</option>`).join('');
   $('rawHSeg').innerHTML=SEG_OPTS.map(s=>`<option value="${s.k}" ${s.k===RAW_HSEG?'selected':''}>${s.l}</option>`).join('');
-  $('barSel').onchange=renderDaily;$('lineSel').onchange=renderDaily;
-  $('dimSel').onchange=e=>{SERIES_DIM=e.target.value;renderDaily();};
-  $('ganttMetric').onchange=e=>{GANTT.metric=e.target.value;renderGantt();
-    try{markDirty();saveLocal();}catch(x){}};
+  /* 세 가지 모두 **저장에 실린다** (v65) — 고르고 저장한 뒤 새로고침해도 그대로다 */
+  /* 값은 **그 select 자체**에서 읽는다 — 이벤트 객체에 기대면
+     코드에서 onchange() 를 그냥 부를 때 터진다 */
+  const keepDaily=()=>{try{markDirty();saveLocal();}catch(x){}};
+  $('barSel').onchange=()=>{BAR_METRIC=$('barSel').value;renderDaily();keepDaily();};
+  $('lineSel').onchange=()=>{LINE_METRIC=$('lineSel').value;renderDaily();keepDaily();};
+  $('dimSel').onchange=()=>{SERIES_DIM=$('dimSel').value;renderDaily();keepDaily();};
+  $('ganttMetric').onchange=()=>{GANTT.metric=$('ganttMetric').value;renderGantt();keepDaily();};
   /* 소계는 v58부터 헤더 편집 안에서 기준별로 체크한다 (서머리와 같은 방식)
      기간 선택도 v59 에서 뺐다 — 캠페인 전체로 고정 */
   {const b=$('rawPickBtn');if(b)b.onclick=openSegPicker;}

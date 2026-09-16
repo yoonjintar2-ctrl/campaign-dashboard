@@ -1467,24 +1467,48 @@ function renderGantt(){
   const VD=ALLDATES.slice(SC.i0,SC.i1+1);
   const months=[];let cm=null;
   VD.forEach(d=>{const m=d.getMonth()+1;if(!cm||cm.m!==m){cm={m,n:0};months.push(cm);}cm.n++;});
-  const leadW={segment:88,media:74,product:126,target:132,line:96,creative:196,month:80};
-  /* 소재 열은 글자 수에 맞춘다 (v60) — 예전에는 196px 로 못 박아 두어
-     이름이 짧은 캠페인에서도 열이 헛되이 넓었다.
-     썸네일(34) + 사이 여백(8) + 좌우 안쪽 여백(9+9) + 가장 긴 이름의 실제 글자 폭. */
-  leadW.creative=(()=>{
+  /* ---- 머리 열 너비 — 열마다 **그 열에 실제로 들어가는 글자**에 맞춘다 (v65) ----
+     예전에는 폭을 못 박아 두고 남는 가로 폭을 머리 열 하나가 통째로 가져갔다(flexlead).
+     그래서 소재 열을 글자 수에 맞추자 이번엔 매체 열이 부풀어 올랐다 — 풍선효과.
+     이제 모든 머리 열을 글자 폭으로 재고, 남는 폭은 **날짜 칸**이 고르게 나눠 갖는다. */
+  const leadW=(()=>{
+    const MIN={segment:66,media:66,product:82,target:82,line:74,creative:104,month:62};
+    const MAX=240;
+    let cx=null;
     try{
-      const names=[...new Set(rowsData.map(r=>r.c&&r.c.name).filter(Boolean))];
-      if(!names.length)return 150;
       const probe=t.querySelector('td.lead')||t;
       const cs=getComputedStyle(probe);
-      const font=`${cs.fontWeight||400} ${cs.fontSize||'11.5px'} ${cs.fontFamily||'sans-serif'}`;
-      const cx=document.createElement('canvas').getContext('2d');
-      cx.font=font;
-      const w=Math.max(...names.map(n=>cx.measureText(String(n)).width));
-      /* 머리글 「소재」 글자도 들어가야 한다 */
-      const hd=cx.measureText('소재').width+26;
-      return Math.round(Math.max(104,hd,Math.min(240,w+34+8+18+6)));
-    }catch(e){return 196;}})();
+      cx=document.createElement('canvas').getContext('2d');
+      cx.font=`${cs.fontWeight||400} ${cs.fontSize||'11.5px'} ${cs.fontFamily||'sans-serif'}`;
+    }catch(e){}
+    const wOf=s=>{const v=String(s==null?'':s);
+      if(!cx)return v.length*7.4;
+      try{return cx.measureText(v).width;}catch(e){return v.length*7.4;}};
+    /* 소계 문구가 **한 열에만** 들어가는 경우 그 열도 문구를 담을 만해야 한다.
+       두 열 이상에 걸쳐 있으면 합이 넉넉하므로 따지지 않는다. */
+    const subText={};
+    try{
+      LAY.out.forEach(r=>{
+        if(r.kind==='data')return;
+        const L=r.level, li=Math.min(L+1,dims.length-1);
+        const nCol=Math.max(dims.length-(L+1),1);
+        if(nCol!==1)return;
+        const s=`${dimDisp(dims[L],r.vals[L])} 소계`;
+        subText[dims[li]]=Math.max(subText[dims[li]]||0,wOf(s)*1.06);});
+    }catch(e){}
+    const out={};
+    dims.forEach((d,i)=>{
+      const hd=(DIMS.find(x=>x.k===d)||{l:d}).l;
+      let w=wOf(hd)*1.14;                      /* 머리글은 굵은 글씨라 조금 넉넉히 */
+      rowsData.forEach(r=>{const v=r.vals[i];
+        if(v!=null&&v!=='')w=Math.max(w,wOf(v));});
+      /* 안쪽 여백 9+9 와 여유 6 · 소재 열은 썸네일(34)과 사이 여백(8)까지 */
+      const padBase=24, thumb=(d==='creative')?42:0;
+      let need=w+padBase+thumb;
+      /* 소계 문구에는 썸네일이 없다 — 썸네일 몫까지 더하면 열이 헛되이 넓어진다 */
+      if(subText[d])need=Math.max(need,subText[d]+padBase);
+      out[d]=Math.round(Math.max(MIN[d]||70,Math.min(MAX,need)));});
+    return out;})();
   let lefts=[],acc=0;dims.forEach(d=>{lefts.push(acc);acc+=leadW[d]||110;});
   const metricW=76,leadTotal=acc+cols.length*metricW;
   const mk=GANTT.metric;
@@ -1504,13 +1528,8 @@ function renderGantt(){
      열 폭은 그대로 두고 넘치는 글자는 잘라 낸다 — 좁은 캠페인에서는 아래에서 통째로 끈다. */
   const RATEM=METRICS[mk]&&METRICS[mk].kind==='rate';
   let h='<thead><tr>';
-  /* 남는 가로 폭은 머리 열 하나가 가져간다 — 날짜 칸 폭이 흐트러지지 않게 (v59).
-     다만 **소재 열은 글자 수에 맞춰 두었으므로** 여기서 늘어나면 안 된다 (v60) —
-     소재가 아닌 마지막 기준 열이 슬랙을 받고, 기준이 소재뿐일 때만 소재가 받는다. */
-  const flexI=(()=>{
-    for(let i=dims.length-1;i>=0;i--)if(dims[i]!=='creative')return i;
-    return dims.length-1;})();
-  dims.forEach((d,i)=>h+=`<th class="lead${i===flexI?' flexlead':''}" rowspan="2" style="left:${lefts[i]}px;min-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
+  /* 머리 열은 전부 글자 폭으로 고정한다 — 어느 한 열이 남는 폭을 가져가지 않는다 (v65) */
+  dims.forEach((d,i)=>h+=`<th class="lead" rowspan="2" style="left:${lefts[i]}px;width:${leadW[d]||110}px;min-width:${leadW[d]||110}px;max-width:${leadW[d]||110}px">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   h+=GANTT.groups.filter(g=>g.cols.length).map((g,gi)=>`<th class="g${gi>0?' gsep':''}" colspan="${g.cols.length}" style="position:static">${esc(g.name)}</th>`).join('');
   h+=months.map(m=>`<th class="mo gsep" colspan="${m.n}" style="position:static">${m.m}월</th>`).join('')+'</tr><tr>';
   cols.forEach((k,i)=>h+=`<th class="mcol ${seps.has(i)?'gsep':''}" style="position:static;min-width:${metricW}px">${GANTT_DEF[k].l}</th>`);
@@ -1518,10 +1537,9 @@ function renderGantt(){
   h+='</tr></thead><tbody>';
   const subs=[];
   /* 한 행의 날짜 칸들 — 소재 행과 소계 행이 똑같은 규칙을 쓰도록 하나로 묶어 둔다 */
-  /* sub 를 켜면 소계 줄 — v60 부터 소계 줄은
-     ① 공휴일 · 주말 음영을 깔지 않고 (묶음의 합이라 요일 의미가 없다)
-     ② 효율 그라데이션(초록↔붉은색)도 쓰지 않는다 (소재끼리 견주는 줄이 아니다).
-     대신 그 줄 안에서의 많고 적음만 한 가지 톤의 농담으로 보여 준다. */
+  /* sub 를 켜면 소계 줄 — v65 부터 소계 줄의 날짜 칸은 **완전히 비운다**.
+     그라데이션도, 집행 일자 막대도, 칸 위 숫자도 없이 옆의 효율 열과 같은 배경색만 남는다.
+     (소계는 묶음의 합이라 날짜별 막대가 견줄 대상이 없다 — 숫자는 왼쪽 효율 열에 이미 있다) */
   const dayCells=(c,opt)=>{
     const sub=!!(opt&&opt.sub);
     const g=GK[c.id];
@@ -1529,14 +1547,13 @@ function renderGantt(){
     let out='';
     VD.forEach((d,i)=>{
       const gi=SC.i0+i;                                  /* 캠페인 전체 기준 인덱스 */
+      if(sub){out+=`<td class="day plain${i===0?' gsep':''}" data-di="${i}"></td>`;return;}
       const v=gi<ELAPSED?ganttDayVal(c,gi,mk):0;
-      const hol=!sub&&!!holName(d),we=!sub&&d.getDay()%6===0;
+      const hol=!!holName(d),we=d.getDay()%6===0;
       /* 색은 그 날의 효율 — 좋을수록 초록, 나쁠수록 붉은색 (히트맵과 같은 기준) */
-      /* 소계 줄은 **줄 전체가 같은 회색** — 농담(그라데이션)도 쓰지 않는다 (v60).
-         색은 CSS(--gsubbar)가 칠하므로 테마를 바꿔도 따라온다. */
-      const bg=sub?'':((EFF.ok)?EFF.color(c,gi):shade(v/maxV));
-      out+=`<td class="day${sub?' plain':''}${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
-        +(v>0?(sub?'<span class="b"></span>':`<span class="b" style="background:${bg}"></span>`):'')
+      const bg=(EFF.ok)?EFF.color(c,gi):shade(v/maxV);
+      out+=`<td class="day${hol?' hol':we?' we':''}${i===0?' gsep':''}" data-di="${i}" data-gi="${gi}" data-cid="${c.id}">`
+        +(v>0?`<span class="b" style="background:${bg}"></span>`:'')
         +(RATEM&&v>0?`<u class="vnum">${esc(ganttTiny(v))}</u>`:'')+'</td>';});
     return out;};
   /* 소계 값은 그 묶음에 속한 소재들을 합쳐서 만든다 */
@@ -1548,8 +1565,8 @@ function renderGantt(){
       h+=`<tr data-key="${esc(rd.key)}" data-pre="${esc(rd.vals.slice(0,-1).join(SEP))}">`;
       rd.vals.forEach((v,ci)=>{const sp=span[i][ci];if(!sp)return;
         const isCr=dims[ci]==='creative';
-        h+=`<td class="lead ${isCr?'nm':''}${ci===flexI?' flexlead':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
-          +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">`
+        h+=`<td class="lead ${isCr?'nm':''}" data-lvl="${ci}" data-pk="${esc(rd.vals.slice(0,ci+1).join(SEP))}"`
+          +` data-pp="${esc(rd.vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''} style="left:${lefts[ci]}px;width:${leadW[dims[ci]]||110}px;min-width:${leadW[dims[ci]]||110}px;max-width:${leadW[dims[ci]]||110}px">`
           +(isCr?`<span style="display:flex;align-items:center;gap:8px"><span class="crthumb-sm" style="background-image:${crBg(c)}"></span>
              <span style="overflow:hidden;text-overflow:ellipsis">${esc(v)}</span></span>`:esc(v))+'</td>';});
       cols.forEach((k,ci)=>{
@@ -1571,12 +1588,12 @@ function renderGantt(){
     subs.push(tot);
     h+=`<tr class="gsub gsub-l${Math.min(L,3)}">`;
     for(let ci=0;ci<=L;ci++){const sp=span[i][ci];if(!sp)continue;
-      h+=`<td class="lead${ci===flexI?' flexlead':''}" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}`
-        +` style="left:${lefts[ci]}px;min-width:${leadW[dims[ci]]||110}px">${esc(vals[ci])}</td>`;}
+      h+=`<td class="lead" data-lvl="${ci}"${sp>1?` rowspan="${sp}"`:''}`
+        +` style="left:${lefts[ci]}px;width:${leadW[dims[ci]]||110}px;min-width:${leadW[dims[ci]]||110}px;max-width:${leadW[dims[ci]]||110}px">${esc(vals[ci])}</td>`;}
     const nCol=Math.max(dims.length-(L+1),1);
     const li=Math.min(L+1,dims.length-1);
     const wSum=dims.slice(li,li+nCol).reduce((a,d)=>a+(leadW[d]||110),0);
-    h+=`<td class="lead sublab${li+nCol-1===flexI?' flexlead':''}" colspan="${nCol}" style="left:${lefts[li]}px;min-width:${wSum}px">`
+    h+=`<td class="lead sublab" colspan="${nCol}" style="left:${lefts[li]}px;width:${wSum}px;min-width:${wSum}px;max-width:${wSum}px">`
       +`${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
     cols.forEach((k,ci)=>{
       const days=tot.daily.imp.filter(v=>v>0).length;
@@ -1587,7 +1604,23 @@ function renderGantt(){
   t.innerHTML=h+'</tbody>';
   markBlanks(t);
   t.classList.toggle('wnum',!!RATEM);
-  t.style.minWidth=(leadTotal+VD.length*(RATEM?22:13))+'px';
+  /* 남는 가로 폭은 **날짜 칸이 고르게** 나눠 갖는다 (v65).
+     머리 열 하나가 통째로 가져가던 방식(flexlead)을 버렸으므로,
+     짧은 캠페인에서 표가 카드보다 좁아 허전해지지 않게 여기서 칸 폭을 키운다.
+     모든 날짜 칸에 같은 값을 주므로 폭이 들쭉날쭉해지지 않는다. */
+  const dayBase=RATEM?22:13, dayCap=80;
+  (function fitDays(){
+    let w=dayBase;
+    try{
+      const wrap=t.closest('.gantt-wrap');
+      const avail=wrap?wrap.clientWidth:0;
+      if(avail>0&&VD.length){
+        const room=Math.floor((avail-leadTotal-2)/VD.length);
+        if(room>dayBase)w=Math.min(dayCap,room);}
+    }catch(e){}
+    t.style.setProperty('--gday',w+'px');
+    t.style.minWidth=(leadTotal+VD.length*w)+'px';
+  })();
   enableRowDrag(t,GANTT,renderGantt);
   wireGanttHover(t,SC,rowsData.map(r=>r.c),subs);
   mountGanttHead(t);

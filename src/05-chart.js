@@ -6,6 +6,9 @@ const LINE_METRICS=['ctr','vtr','cvr','cpv','cpc','cpa','roas','none'];
 const SERIES_DIMS=[{k:'media',l:'매체'},{k:'segment',l:'구분'},{k:'product',l:'상품'},
   {k:'target',l:'타겟팅'},{k:'line',l:'제품'},{k:'creative',l:'소재'}];
 let SERIES_DIM='media';
+/* 막대·꺾은선으로 고른 값. 화면의 select 가 아니라 여기가 기준이다 —
+   그래야 저장본에 실려 새로고침 뒤에도 그대로 돌아온다 (v65). */
+let BAR_METRIC='imp', LINE_METRIC='ctr';
 let ISSUE_OVERFLOW=0;
 /* 일자별 효율 비교의 계열 순서 — 기본은 예산 큰 순, 범례를 끌어서 바꿀 수 있다 */
 let DAILY_ORDER={};
@@ -139,7 +142,7 @@ function openDailyFilt(btn){
 function renderDaily(){
   const host=$('chartDaily');host.innerHTML='';
   paintDailyFiltBtn();
-  const bk=$('barSel').value||'imp', lk=$('lineSel').value||'ctr';
+  const bk=$('barSel').value||BAR_METRIC||'imp', lk=$('lineSel').value||LINE_METRIC||'ctr';
   /* 그래프 전용 필터(v54)를 여기서 한 번 걸어 두면 계열·예상값·범례가 모두 같이 좁혀진다 */
   const fs=factFilter().filter(dailyPass);
   /* 계열 순서 — 예산(Gross)이 큰 것부터. 같으면 이름순 (사용자가 범례에서 바꿀 수 있다) */
@@ -209,7 +212,7 @@ function renderDaily(){
      골짜기가 깊게 파이도록 했다 (v63). 대신 면적이 금액에 비례하지는 않으므로
      범례에 "눈금 없음"이라고 적어 두고, 정확한 금액은 툴팁으로 읽게 한다. */
   const SPEND_K=2.4;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
-  const SPEND_PAD=0.25;                    /* 바닥을 최솟값 아래 몇 만큼에 둘지 (등락 폭) */
+  const SPEND_PAD=0.45;                    /* 바닥을 최솟값 아래 몇 만큼에 둘지 (등락 폭) */
   /* 윗선 — 막대가 높아 2.4 배가 플롯을 넘어서는 캠페인에서는 여기서 멈춘다.
      플롯 맨 위에 딱 붙이면 꼭대기가 잘린 것처럼 보여서 위쪽에 숨 쉴 틈을 남긴다 (v63). */
   const SPEND_CEIL=P.t+PH*0.06;
@@ -228,11 +231,13 @@ function renderDaily(){
     const SY=v=>Math.min(base,base-((v-lo)/(sMax-lo||1))*(base-peakY));
     const pts=spend.map((v,i)=>isFinite(v)?[cx(i),SY(v)]:null).filter(Boolean);
     if(pts.length<2)return;
-    /* 양 끝은 칸 가장자리까지 늘려 잘린 느낌이 나지 않게 한다 */
+    /* 양 끝은 **바닥에서 비스듬히 올라오고 비스듬히 내려간다** (v65).
+       예전에는 첫 점의 높이 그대로 왼쪽 가장자리까지 수평으로 뻗었는데,
+       첫날이 가장 많이 쓴 날이면 그 수평선이 윗선에 딱 붙어
+       "천장을 뚫고 잘린 것"처럼 보였다. 이제 평평한 윗면 자체가 생기지 않는다. */
     const xL=X0,xR=X0+step*EL,sm=smoothPath(pts),ci=sm.indexOf(' C');
     if(ci<0)return;
-    const d=`M${xL} ${pts[0][1]} L${pts[0][0]} ${pts[0][1]}`+sm.slice(ci)
-      +` L${xR} ${pts[pts.length-1][1]} L${xR} ${base} L${xL} ${base} Z`;
+    const d=`M${xL} ${base} L${pts[0][0]} ${pts[0][1]}`+sm.slice(ci)+` L${xR} ${base} Z`;
     const gid='spGrad'+uid();
     const lg=S('linearGradient',{id:gid,x1:'0',y1:'0',x2:'0',y2:'1'},svg);
     S('stop',{offset:'0%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o1)'},lg);

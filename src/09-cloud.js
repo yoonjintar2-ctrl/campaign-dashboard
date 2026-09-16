@@ -96,6 +96,11 @@ function serializeDoc(){
            forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
            /* 일자별 효율 비교 그래프 전용 필터 (v54) */
            dailyFilt:(typeof DAILY_FILT!=='undefined'?{...DAILY_FILT}:null),
+           /* 일자별 캠페인 효율 비교 — 데이터 선택 · 막대 값 · 꺾은선 값 (v65).
+              예전에는 저장에 안 실려서 새로고침하면 매체 · 노출 · CTR 로 돌아갔다 */
+           seriesDim:(typeof SERIES_DIM!=='undefined'?SERIES_DIM:null),
+           barMetric:(typeof BAR_METRIC!=='undefined'?BAR_METRIC:null),
+           lineMetric:(typeof LINE_METRIC!=='undefined'?LINE_METRIC:null),
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
            sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
@@ -201,6 +206,16 @@ function applyDoc(d,keepToday){
   if(v.dailyFilt&&typeof DAILY_FILT!=='undefined'){
     DAILY_FILT={segment:'',media:'',product:'',...v.dailyFilt};
     try{paintDailyFiltBtn();}catch(e){}}
+  /* 데이터 선택 · 막대 값 · 꺾은선 값 (v65) — 지금 고를 수 있는 값일 때만 되돌린다.
+     buildSelects 가 이 값들을 보고 드롭다운을 맞추므로 여기서 먼저 넣어 둔다. */
+  try{
+    if(v.seriesDim&&typeof SERIES_DIM!=='undefined'
+      &&SERIES_DIMS.some(d=>d.k===v.seriesDim))SERIES_DIM=v.seriesDim;
+    if(v.barMetric&&typeof BAR_METRIC!=='undefined'
+      &&BAR_METRICS.includes(v.barMetric))BAR_METRIC=v.barMetric;
+    if(v.lineMetric&&typeof LINE_METRIC!=='undefined'
+      &&LINE_METRICS.includes(v.lineMetric))LINE_METRIC=v.lineMetric;
+  }catch(e){}
   if(Array.isArray(v.sectOrder)&&typeof SECT_ORDER!=='undefined')SECT_ORDER=v.sectOrder.slice();
   if(Array.isArray(v.hidden)&&typeof HIDDEN!=='undefined'){
     HIDDEN.clear();v.hidden.forEach(k=>HIDDEN.add(k));}
