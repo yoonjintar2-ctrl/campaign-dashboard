@@ -96,6 +96,8 @@ function serializeDoc(){
            forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
            /* 일자별 효율 비교 그래프 전용 필터 (v54) */
            dailyFilt:(typeof DAILY_FILT!=='undefined'?{...DAILY_FILT}:null),
+           /* 트렌드 리포트를 광고주에게 보일지 (v66) */
+           trendViewer:(typeof TREND_VIEWER!=='undefined'?!!TREND_VIEWER:true),
            /* 일자별 캠페인 효율 비교 — 데이터 선택 · 막대 값 · 꺾은선 값 (v65).
               예전에는 저장에 안 실려서 새로고침하면 매체 · 노출 · CTR 로 돌아갔다 */
            seriesDim:(typeof SERIES_DIM!=='undefined'?SERIES_DIM:null),
@@ -206,6 +208,8 @@ function applyDoc(d,keepToday){
   if(v.dailyFilt&&typeof DAILY_FILT!=='undefined'){
     DAILY_FILT={segment:'',media:'',product:'',...v.dailyFilt};
     try{paintDailyFiltBtn();}catch(e){}}
+  if(typeof v.trendViewer==='boolean'&&typeof TREND_VIEWER!=='undefined'){
+    TREND_VIEWER=v.trendViewer;try{paintTrendToggle();}catch(e){}}
   /* 데이터 선택 · 막대 값 · 꺾은선 값 (v65) — 지금 고를 수 있는 값일 때만 되돌린다.
      buildSelects 가 이 값들을 보고 드롭다운을 맞추므로 여기서 먼저 넣어 둔다. */
   try{

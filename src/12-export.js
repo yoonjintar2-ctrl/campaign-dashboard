@@ -756,20 +756,20 @@ function advNames(){
   return [...s].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 }
 const advLogo=n=>(ADV_BOOK[n]&&ADV_BOOK[n].logo)||'';
-/* 좌상단 — [광고주 로고] 광고주명 · Digital Media Dashboard */
+/* 좌상단 — [광고주 로고] 광고주명 · Media Dashboard */
 function renderBrand(){
   const mark=$('brandMark'),nm=$('brandAdv');
   if(!mark||!nm)return;
   const adv=CAMPAIGN.advertiser||'';
   const logo=CAMPAIGN.advLogo||advLogo(adv);
-  const isDMD=!adv||/^digital media dashboard$/i.test(adv);
+  const isDMD=!adv||/^(digital )?media dashboard$/i.test(adv);
   if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;}
   else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
   nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
   try{refreshBgDots();tuneTopbarForLogo();}catch(e){}
   try{setFavicon(logo||DMD_MARK);}catch(e){}
   try{document.title=(adv&&!isDMD?adv+' — ':'')
-    +(CAMPAIGN.name?CAMPAIGN.name+' · ':'')+'Digital Media Dashboard';}catch(e){}
+    +(CAMPAIGN.name?CAMPAIGN.name+' · ':'')+'Media Dashboard';}catch(e){}
 }
 /* 브라우저 탭 아이콘 — 광고주 로고가 있으면 그 로고를 쓴다.
    로고는 가로로 긴 경우가 많아 정사각 캔버스 가운데에 얹어 잘리지 않게 만든다. */
@@ -863,7 +863,7 @@ function openAdvEditor(){
   const st={logo:CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||''};
   openModal('광고주 · 로고',
     `<div class="hint" style="margin-bottom:10px">로고를 등록하면 이 캠페인 대시보드 왼쪽 위에
-       <b>로고 · 광고주명 · Digital Media Dashboard</b> 순서로 함께 보입니다.</div>
+       <b>로고 · 광고주명 · Media Dashboard</b> 순서로 함께 보입니다.</div>
      <div class="form-row">${advPickerHTML(CAMPAIGN.advertiser,st.logo)}</div>`,
     '<button class="btn" data-close>취소</button><button class="btn primary" id="advGo">적용</button>',{w:620});
   const read=wireAdvPicker(st);
@@ -1082,7 +1082,7 @@ function openAdvManage(after){
     const names=advNames();
     let h=`<div class="hint" style="margin-bottom:12px">
         광고주마다 로고를 한 번 등록해 두면, 그 광고주의 캠페인을 열 때
-        왼쪽 위에 <b>로고 · 광고주명 · Digital Media Dashboard</b> 순서로 함께 보입니다.<br>
+        왼쪽 위에 <b>로고 · 광고주명 · Media Dashboard</b> 순서로 함께 보입니다.<br>
         로고는 가로세로 <b>1:1 ~ 3:1</b>, <b>3MB</b> 이하 이미지를 올려 주세요.
         내가 등록한 광고주만 지울 수 있습니다.</div>`;
     if(!names.length)h+='<div class="card" style="padding:22px;text-align:center">아직 등록된 광고주가 없습니다. 아래 <b>＋ 광고주 추가</b>로 시작하세요.</div>';

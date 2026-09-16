@@ -1078,7 +1078,9 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup'].forEach(n=>$('tab-'+n).classList.toggle('hidden',n!==name));
+  ['dash','input','setup','trend'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
+  if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   $('subbar').classList.toggle('hidden',name!=='dash');
   /* 다크 보기는 대시보드에서만 쓰는 기능이라 그 탭에서만 보인다 (v58) */
   {const db=$('darkToggle');if(db)db.classList.toggle('hidden',name!=='dash');}
@@ -1158,10 +1160,24 @@ function applyRole(){
   const rb=$('reqBtn');if(rb)rb.classList.toggle('hidden',!needReq);
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
+  const tt=document.querySelector('#tabs [data-tab="trend"]');
   if(st)st.classList.toggle('hidden',c);
   if(it)it.classList.toggle('hidden',c);
+  /* 트렌드 리포트 — 캠페인마다 광고주에게 보일지 정한다 (v66) */
+  let tv=true;try{tv=trendVisibleToViewer();}catch(e){}
+  if(tt)tt.classList.toggle('hidden',c&&!tv);
+  /* 광고주에게 **보이지 않는** 메뉴는 시행사 화면에서 글씨를 옅게 해 둔다 (v66) —
+     "이건 내 화면에만 있는 메뉴" 라는 걸 한눈에 알 수 있게. */
+  if(!c){
+    if(st)st.classList.add('vhide');
+    if(it)it.classList.add('vhide');
+    if(tt)tt.classList.toggle('vhide',!tv);
+  }else{
+    [st,it,tt].forEach(e=>{if(e)e.classList.remove('vhide');});}
+  try{paintTrendToggle();}catch(e){}
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
   if(c&&document.querySelector('#tabs [data-tab="dash"]')&&!$('tab-dash').classList.contains('hidden')===false)switchTab('dash');
+  if(c&&!tv&&!$('tab-trend').classList.contains('hidden'))switchTab('dash');
   if(c)switchTab('dash');
   /* 권한이 바뀌면 화면 구성 버튼이 붙어 있는 영역을 다시 그린다
      (서머리·소재 카드는 그릴 때 isClient() 로 버튼 유무를 정하기 때문) */
@@ -1218,7 +1234,7 @@ if($('guideBtn'))$('guideBtn').onclick=async()=>{
     const r=await fetch(GUIDE_PDF,{method:'HEAD'});
     if(!r.ok)throw new Error('없음');
     const a=document.createElement('a');
-    a.href=GUIDE_PDF;a.download='Digital Media Dashboard 사용 가이드.pdf';
+    a.href=GUIDE_PDF;a.download='Media Dashboard 사용 가이드.pdf';
     document.body.appendChild(a);a.click();a.remove();
   }catch(e){
     confirmModal('가이드 파일을 찾지 못했습니다.',
@@ -1237,6 +1253,8 @@ $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.
   renderDaily();markDirty();};
 $('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);
   renderDaily();markDirty();};
+/* 트렌드 리포트를 광고주에게 보일지 (v66) — 캠페인마다 정하고 저장에 실린다 */
+if($('trendViewerTgl'))$('trendViewerTgl').onclick=()=>{try{toggleTrendViewer();}catch(e){}};
 /* 그래프 전용 필터 (v54) — 이 그래프만 구분·매체·광고상품으로 좁혀 본다 */
 if($('dailyFiltBtn'))$('dailyFiltBtn').onclick=e=>{e.stopPropagation();openDailyFilt($('dailyFiltBtn'));};
 $('issueToggle').onclick=()=>{SHOW_ISSUES=!SHOW_ISSUES;$('issueToggle').classList.toggle('on',SHOW_ISSUES);renderDaily();};

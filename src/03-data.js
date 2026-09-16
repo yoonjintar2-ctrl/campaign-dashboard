@@ -32,7 +32,7 @@ const cssRgb=h=>{h=String(h||'').trim();
    캐시를 지우고 새 브라우저로 열어도 기간 필터 종료일이 늘 9/24 로 잡히는 문제가 있었다. */
 const TODAY_ISO=(()=>{const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
-const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Digital Media Dashboard',today:TODAY_ISO};
+const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Media Dashboard',today:TODAY_ISO};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};

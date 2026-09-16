@@ -199,14 +199,14 @@ function downloadDailyTemplate(){
   const cols=tplDailyCols();
   saveFile(buildXlsx([
       {name:'일자별 실적',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
-      {name:'작성 요령',rows:tplGuideRows('Digital Media Dashboard — 일자별 실적 입력 템플릿',TPL_DAILY_GUIDE),widths:[120]}]),
+      {name:'작성 요령',rows:tplGuideRows('Media Dashboard — 일자별 실적 입력 템플릿',TPL_DAILY_GUIDE),widths:[120]}]),
     `일자별_실적_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
 }
 function downloadLineTemplate(){
   const cols=tplLineCols();
   saveFile(buildXlsx([
       {name:'예상 효율',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
-      {name:'작성 요령',rows:tplGuideRows('Digital Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE),widths:[120]}]),
+      {name:'작성 요령',rows:tplGuideRows('Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE),widths:[120]}]),
     `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
 }
 
