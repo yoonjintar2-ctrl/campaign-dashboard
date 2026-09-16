@@ -187,7 +187,13 @@ async function trendLoad(force){
     }
     TREND.ready=true;
   }catch(e){
-    TREND.err=(e&&e.message)||String(e);
+    const m=(e&&e.message)||String(e);
+    /* 아직 스키마를 안 올렸을 때가 가장 흔하다 — 그때는 무엇을 하면 되는지 알려 준다 */
+    TREND.err=/trend_posts|schema cache|does not exist|relation/i.test(m)
+      ? '게시판 저장소가 아직 만들어지지 않았습니다. Supabase > SQL Editor 에서 '
+        +'supabase/schema.sql 의 "v66 — 트렌드 리포트 게시판" 블록을 실행하고, '
+        +'Storage 에 trend 버킷(Public, 5MB)을 만들어 주세요.'
+      : m;
     TREND.posts=TREND.posts||[];
   }
   TREND.loading=false;
