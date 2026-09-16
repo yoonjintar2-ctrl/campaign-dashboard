@@ -584,3 +584,168 @@ $$;
 -- 이 함수 안에서만 시간 제한을 넉넉히 준다 (기본값은 몇 초라 큰 캠페인에서 취소된다)
 alter function public.delete_campaign(uuid) set statement_timeout = '300s';
 grant execute on function public.delete_campaign(uuid) to authenticated;
+
+-- =====================================================================
+--  v66 — 트렌드 리포트 게시판
+--  모든 캠페인이 함께 쓰는 자료 게시판입니다. 이 블록만 따로 실행해도 됩니다.
+--
+--  실행 전에 Storage 에서 버킷을 하나 만들어 주세요.
+--    Supabase 대시보드 > Storage > New bucket
+--      이름: trend      /  Public bucket: 켬
+--      File size limit: 5 MB   (게시판이 5MB 로 막지만 서버에서도 한 번 더 막습니다)
+-- =====================================================================
+
+create table if not exists public.trend_posts(
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  body        text not null default '',
+  category    text not null default '기타',
+  medium      text not null default '',          -- 세부 매체명 (선택)
+  tags        jsonb not null default '[]'::jsonb,-- 해시태그 최대 5개
+  secret      boolean not null default false,    -- 대외비 표시
+  files       jsonb not null default '[]'::jsonb,-- [{name,size,kind,path}]
+  link        text not null default '',
+  thumb       text not null default '',          -- 카드 썸네일 (data URL)
+  bytes       bigint not null default 0,         -- 이 글이 쓰는 용량
+  author_id   uuid references auth.users(id) on delete set null,
+  author_name text not null default '',
+  guest_id    text not null default '',          -- 비로그인 표시 이름
+  guest_hash  text,                              -- 비로그인 수정·삭제용 (원문 아님)
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists trend_posts_created_idx on public.trend_posts(created_at desc);
+create index if not exists trend_posts_cat_idx     on public.trend_posts(category);
+
+-- 카테고리 목록·순서, 매체명 사전
+create table if not exists public.trend_meta(
+  k          text primary key,
+  v          jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- 목록용 뷰 — guest_hash 는 절대 내려보내지 않는다 (있는지 여부만)
+-- ---------------------------------------------------------------------
+create or replace view public.trend_posts_pub
+with (security_invoker = off) as
+select id,title,body,category,medium,tags,secret,files,link,thumb,bytes,
+       author_id,author_name,guest_id,
+       (guest_hash is not null and guest_hash <> '') as has_pw,
+       created_at,updated_at
+from public.trend_posts;
+
+-- ---------------------------------------------------------------------
+-- 이 게시판을 관리할 수 있는 사람인가 — 마스터 · 슈퍼마스터 · 운영진
+-- ---------------------------------------------------------------------
+create or replace function public.trend_is_admin()
+returns boolean language sql stable security definer set search_path=public as $$
+  select coalesce((
+    select true from public.profiles p
+     where p.id = auth.uid()
+       and coalesce(p.org,'') <> ''      -- 가입한 사람
+       and exists (select 1 from public.campaign_members m
+                    where m.user_id = p.id and m.role in ('master','editor'))
+  ), false);
+$$;
+
+-- ---------------------------------------------------------------------
+-- 수정·삭제 — 관리자이거나, 글쓴이이거나, 비밀번호 흔적이 맞을 때만
+-- ---------------------------------------------------------------------
+create or replace function public.trend_check(p_id uuid, p_hash text)
+returns boolean language sql stable security definer set search_path=public as $$
+  select exists(select 1 from public.trend_posts t
+                 where t.id = p_id and t.guest_hash is not null
+                   and t.guest_hash = p_hash);
+$$;
+
+create or replace function public.trend_edit(p_row jsonb, p_hash text)
+returns void language plpgsql security definer set search_path=public as $$
+declare v_id uuid := (p_row->>'id')::uuid; v_ok boolean := false;
+begin
+  select (public.trend_is_admin())
+      or (t.author_id is not null and t.author_id = auth.uid())
+      or (t.guest_hash is not null and t.guest_hash = p_hash)
+    into v_ok
+    from public.trend_posts t where t.id = v_id;
+  if not coalesce(v_ok,false) then
+    raise exception '수정 권한이 없습니다';
+  end if;
+  update public.trend_posts set
+    title=coalesce(p_row->>'title',title),
+    body=coalesce(p_row->>'body',body),
+    category=coalesce(p_row->>'category',category),
+    medium=coalesce(p_row->>'medium',medium),
+    tags=coalesce(p_row->'tags',tags),
+    secret=coalesce((p_row->>'secret')::boolean,secret),
+    files=coalesce(p_row->'files',files),
+    link=coalesce(p_row->>'link',link),
+    thumb=coalesce(p_row->>'thumb',thumb),
+    bytes=coalesce((p_row->>'bytes')::bigint,bytes),
+    updated_at=now()
+  where id=v_id;
+end; $$;
+
+create or replace function public.trend_remove(p_id uuid, p_hash text)
+returns void language plpgsql security definer set search_path=public as $$
+declare v_ok boolean := false;
+begin
+  select (public.trend_is_admin())
+      or (t.author_id is not null and t.author_id = auth.uid())
+      or (t.guest_hash is not null and t.guest_hash = p_hash)
+    into v_ok
+    from public.trend_posts t where t.id = p_id;
+  if not coalesce(v_ok,false) then
+    raise exception '삭제 권한이 없습니다';
+  end if;
+  delete from public.trend_posts where id = p_id;
+end; $$;
+
+-- 카테고리를 없앴을 때 그 글들을 기타로 옮긴다 (관리자만)
+create or replace function public.trend_recat(p_ids uuid[], p_cat text)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if not public.trend_is_admin() then raise exception '권한이 없습니다'; end if;
+  update public.trend_posts set category=p_cat, updated_at=now() where id = any(p_ids);
+end; $$;
+
+-- ---------------------------------------------------------------------
+-- 권한 (RLS)
+--   · 목록은 뷰로만 본다 (표 자체는 직접 못 읽는다 = guest_hash 가 새지 않는다)
+--   · 올리기는 누구나 (로그인하지 않아도 됨)
+--   · 고치기 · 지우기는 위의 함수로만
+-- ---------------------------------------------------------------------
+alter table public.trend_posts enable row level security;
+alter table public.trend_meta  enable row level security;
+
+drop policy if exists trend_posts_insert on public.trend_posts;
+create policy trend_posts_insert on public.trend_posts
+  for insert to anon, authenticated with check (true);
+
+drop policy if exists trend_meta_read on public.trend_meta;
+create policy trend_meta_read on public.trend_meta
+  for select to anon, authenticated using (true);
+drop policy if exists trend_meta_write on public.trend_meta;
+create policy trend_meta_write on public.trend_meta
+  for all to anon, authenticated using (true) with check (true);
+
+grant select on public.trend_posts_pub to anon, authenticated;
+grant insert on public.trend_posts     to anon, authenticated;
+grant select, insert, update on public.trend_meta to anon, authenticated;
+grant execute on function public.trend_check(uuid,text)  to anon, authenticated;
+grant execute on function public.trend_edit(jsonb,text)   to anon, authenticated;
+grant execute on function public.trend_remove(uuid,text)  to anon, authenticated;
+grant execute on function public.trend_recat(uuid[],text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- Storage — 버킷 trend (위에서 손으로 만든 뒤 아래 권한을 겁니다)
+-- ---------------------------------------------------------------------
+drop policy if exists trend_files_read   on storage.objects;
+create policy trend_files_read on storage.objects
+  for select to anon, authenticated using (bucket_id = 'trend');
+drop policy if exists trend_files_write  on storage.objects;
+create policy trend_files_write on storage.objects
+  for insert to anon, authenticated with check (bucket_id = 'trend');
+drop policy if exists trend_files_delete on storage.objects;
+create policy trend_files_delete on storage.objects
+  for delete to anon, authenticated using (bucket_id = 'trend');
