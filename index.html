@@ -13635,7 +13635,20 @@ let TREND_VIEWER=true;
 const trendVisibleToViewer=()=>TREND_VIEWER!==false;
 
 /* ---------- 작은 도구들 ---------- */
-const trendUid=()=>'tp'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+/* 글 id 는 DB 의 uuid 칼럼에 그대로 들어간다 — 반드시 진짜 UUID 여야 한다 (v67).
+   예전에는 'tp' + 36진수였고, 클라우드에 올릴 때 uuid 형식 오류로 저장이 막혔다. */
+function trendUid(){
+  try{if(crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}
+  try{
+    const b=new Uint8Array(16);crypto.getRandomValues(b);
+    b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+    const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+  }catch(e){}
+  const r=()=>Math.floor(Math.random()*16).toString(16);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
+    c=>c==='x'?r():((Math.floor(Math.random()*4)+8).toString(16)));
+}
 const trendNow=()=>new Date().toISOString();
 function trendDays(iso){
   const t=Date.parse(iso);if(!isFinite(t))return 999;
@@ -13728,25 +13741,158 @@ function trendMakeThumb(title,kind){
     return c.toDataURL('image/jpeg',0.72);
   }catch(e){return '';}
 }
-/* 올린 이미지를 카드 크기로 줄여 썸네일로 쓴다 (원본을 그대로 쓰면 목록이 무거워진다) */
+/* 올린 이미지를 카드 크기로 줄여 썸네일로 쓴다 (원본을 그대로 쓰면 목록이 무거워진다).
+   자르는 규칙은 trendFitCard 와 같다 — 세로로 긴 그림은 윗부분이 남는다. */
 function trendShrink(file){
   return new Promise(res=>{
     try{
       const fr=new FileReader();
       fr.onload=()=>{
         const im=new Image();
-        im.onload=()=>{
-          try{
-            const W=480,H=Math.round(W*im.height/im.width)||270;
-            const c=document.createElement('canvas');c.width=W;c.height=H;
-            c.getContext('2d').drawImage(im,0,0,W,H);
-            res(c.toDataURL('image/jpeg',0.72));
-          }catch(e){res('');}};
+        im.onload=()=>{try{res(trendFitCard(im,im.naturalWidth||im.width,im.naturalHeight||im.height));}
+          catch(e){res('');}};
         im.onerror=()=>res('');
         im.src=fr.result;};
       fr.onerror=()=>res('');
       fr.readAsDataURL(file);
     }catch(e){res('');}});
+}
+
+/* ---------- 파일 내용으로 썸네일 만들기 (v67) ----------
+   PDF 는 첫 장, 영상은 첫 프레임, PPT·워드·엑셀은 파일 안에 들어 있는 미리보기 그림을 쓴다.
+   어느 것도 안 되면 그때만 제목으로 표지를 그린다. */
+let PDFJS_P=null;
+/* CDN 두 곳을 차례로 시도한다 — 사내망에서 한쪽이 막혀 있어도 다른 쪽으로 붙는다.
+   둘 다 안 되면 조용히 포기하고 제목 표지로 돌아간다. */
+const PDFJS_CDN=[
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/|pdf.min.js|pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/|pdf.min.js|pdf.worker.min.js'];
+function loadPdfJs(){
+  if(PDFJS_P)return PDFJS_P;
+  PDFJS_P=(async()=>{
+    if(window.pdfjsLib)return window.pdfjsLib;
+    let last=null;
+    for(const row of PDFJS_CDN){
+      const [base,lib,wk]=row.split('|');
+      try{
+        await new Promise((res,rej)=>{
+          const sc=document.createElement('script');
+          sc.src=base+lib;
+          const to=setTimeout(()=>{sc.onerror=sc.onload=null;rej(new Error('시간 초과'));},15000);
+          sc.onload=()=>{clearTimeout(to);res();};
+          sc.onerror=()=>{clearTimeout(to);rej(new Error('불러오기 실패'));};
+          document.head.appendChild(sc);});
+        if(!window.pdfjsLib)throw new Error('pdfjsLib 없음');
+        try{window.pdfjsLib.GlobalWorkerOptions.workerSrc=base+wk;}catch(e){}
+        return window.pdfjsLib;
+      }catch(e){last=e;}
+    }
+    throw new Error('pdf.js 를 못 불러왔습니다 — '+((last&&last.message)||''));
+  })();
+  PDFJS_P.catch(()=>{});          /* 실패해도 콘솔을 더럽히지 않는다 */
+  return PDFJS_P;
+}
+/* 그린 그림을 카드 비율(16:9)에 맞춘다 — 세로로 긴 문서는 **윗부분**을 보여 준다
+   (제목이 맨 위에 있기 때문). 가로로 긴 그림은 높이를 채우고 가운데를 보여 준다.
+   카드가 object-fit:cover 라서, 여기서 미리 잘라 두어야 보이는 그대로가 저장된다. */
+const TREND_TH_W=480,TREND_TH_H=270,TREND_TH_Q=0.72;
+function trendFitCard(src,sw,sh){
+  const W=TREND_TH_W,H=TREND_TH_H;
+  if(!(sw>0&&sh>0))return '';
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  if(sh/sw>H/W){                       /* 세로가 길다 — 폭을 맞추고 윗부분만 */
+    x.drawImage(src,0,0,sw,Math.round(sw*H/W),0,0,W,H);
+  }else{                               /* 가로가 길다 — 높이를 맞추고 가운데 */
+    const cw=Math.round(sh*W/H);
+    x.drawImage(src,Math.round((sw-cw)/2),0,cw,sh,0,0,W,H);
+  }
+  return c.toDataURL('image/jpeg',TREND_TH_Q);
+}
+async function trendPdfThumb(file){
+  const lib=await loadPdfJs();
+  const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;
+  const pg=await doc.getPage(1);
+  const v1=pg.getViewport({scale:1});
+  const vp=pg.getViewport({scale:Math.min(3,960/v1.width)});
+  const c=document.createElement('canvas');
+  c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  return trendFitCard(c,c.width,c.height);
+}
+function trendVideoThumb(file){
+  return new Promise(res=>{
+    let url='';
+    const done=r=>{try{URL.revokeObjectURL(url);}catch(e){}res(r||'');};
+    try{
+      url=URL.createObjectURL(file);
+      const v=document.createElement('video');
+      v.muted=true;v.playsInline=true;v.preload='auto';
+      v.onloadeddata=()=>{try{v.currentTime=Math.min(1,(v.duration||2)/4);}catch(e){grab();}};
+      const grab=()=>{try{
+        if(!v.videoWidth){done('');return;}
+        done(trendFitCard(v,v.videoWidth,v.videoHeight));
+      }catch(e){done('');}};
+      v.onseeked=grab;
+      v.onerror=()=>done('');
+      setTimeout(()=>done(''),8000);
+      v.src=url;
+    }catch(e){done('');}});
+}
+/* PPTX · DOCX · XLSX 는 zip 이다 — 안에 docProps/thumbnail.* 이 있으면 그걸 쓴다 */
+async function trendZipThumb(file){
+  try{
+    const buf=new Uint8Array(await file.arrayBuffer());
+    const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
+    let eo=-1;
+    for(let i=buf.length-22;i>=Math.max(0,buf.length-66000);i--)
+      if(dv.getUint32(i,true)===0x06054b50){eo=i;break;}
+    if(eo<0)return '';
+    const n=dv.getUint16(eo+10,true);let p2=dv.getUint32(eo+16,true);
+    const dec=new TextDecoder();
+    for(let k=0;k<n;k++){
+      if(dv.getUint32(p2,true)!==0x02014b50)break;
+      const method=dv.getUint16(p2+10,true);
+      const csize=dv.getUint32(p2+20,true);
+      const nl=dv.getUint16(p2+28,true),el=dv.getUint16(p2+30,true),cl=dv.getUint16(p2+32,true);
+      const lho=dv.getUint32(p2+42,true);
+      const name=dec.decode(buf.subarray(p2+46,p2+46+nl));
+      if(/^docProps\/thumbnail\.(jpe?g|png)$/i.test(name)){
+        const lnl=dv.getUint16(lho+26,true),lel=dv.getUint16(lho+28,true);
+        const st=lho+30+lnl+lel;
+        let data=buf.subarray(st,st+csize);
+        if(method===8){
+          const ds=new DecompressionStream('deflate-raw');
+          data=new Uint8Array(await new Response(
+            new Blob([data]).stream().pipeThrough(ds)).arrayBuffer());
+        }else if(method!==0)return '';
+        const type=/\.png$/i.test(name)?'image/png':'image/jpeg';
+        return await trendShrink(new File([data],'t',{type}));
+      }
+      p2+=46+nl+el+cl;
+    }
+  }catch(e){}
+  return '';
+}
+/* 붙인 파일들을 앞에서부터 훑어 처음 성공한 것을 쓴다 */
+async function trendAutoThumb(files,say){
+  for(const f of (files||[])){
+    const kind=trendFileKind(f.name);
+    try{
+      if(kind==='image'){const t=await trendShrink(f);if(t)return t;}
+      else if(kind==='pdf'){
+        say&&say('PDF 첫 장으로 썸네일 만드는 중…');
+        const t=await trendPdfThumb(f);if(t)return t;}
+      else if(kind==='video'){
+        say&&say('영상 첫 장면으로 썸네일 만드는 중…');
+        const t=await trendVideoThumb(f);if(t)return t;}
+      else if(['ppt','word','excel'].includes(kind)){
+        say&&say('파일 안의 미리보기를 찾는 중…');
+        const t=await trendZipThumb(f);if(t)return t;}
+    }catch(e){}
+  }
+  return '';
 }
 
 /* ---------- 보관소 — 클라우드가 있으면 Supabase, 없으면 이 브라우저 ---------- */
@@ -14143,7 +14289,8 @@ function openTrendForm(post){
         <input id="tfLink" value="${esc(p.link)}" placeholder="https:// (선택)"></label>
       <label class="tfrow"><span>썸네일</span>
         <input id="tfThumb" type="file" accept="image/*"></label>
-      <div class="tfnote">비워 두면 제목으로 표지를 만들어 줍니다.</div>
+      <div class="tfnote">비워 두면 <b>파일 내용으로</b> 만들어 줍니다 — PDF 는 첫 장,
+        영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.</div>
       <label class="tfchk"><input id="tfSecret" type="checkbox"${p.secret?' checked':''}>
         <span>대외비 — 카드에 <b>대외비</b> 표시가 붙습니다</span></label>
       ${(!logged&&!edit)?`<div class="tguest">
@@ -14264,9 +14411,10 @@ async function trendPut(rec,picked,thumbFile,edit,say){
   /* 썸네일 — 직접 올린 그림 > 첨부한 이미지 > 제목으로 만든 표지 */
   let thumb=rec.thumb||'';
   if(thumbFile)thumb=await trendShrink(thumbFile);
-  else if(!thumb){
-    const im=picked.find(f=>trendFileKind(f.name)==='image');
-    thumb=im?await trendShrink(im):trendMakeThumb(rec.title,
+  else if(!thumb||picked.length){
+    /* 파일 내용으로 만들어 본다 — 새 파일을 붙였으면 다시 만든다 */
+    const auto=await trendAutoThumb(picked,say);
+    thumb=auto||thumb||trendMakeThumb(rec.title,
       picked.length?trendFileKind(picked[0].name):(rec.link?'link':'file'));}
   const newFiles=[];
   if(trendOn()){
