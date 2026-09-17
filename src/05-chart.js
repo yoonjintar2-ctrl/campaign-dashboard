@@ -595,8 +595,9 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
       if(kpiWorse(act,goal))kc+=' kpibad';
       tip=kpiTip(kpi,src,ex);
-    }else{
-      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53) */
+    }else if(!cfg.noCostBad){
+      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53).
+         KPI 가 아닌 지표까지 강조할 필요가 없으면 서머리마다 끌 수 있다 (v68) */
       const ck=COSTCOL[k]?k:GOAL2COST[k];
       if(ck){
         const pr=costPair(ck,src,ex);
@@ -731,12 +732,15 @@ function renderSummaries(){
     /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
     tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
       +`<i></i>KPI 개선 고려</span>`
-      +`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
-      +`<i></i>제안 대비 저조</span>`
+      +(s.noCostBad?''
+      :`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
+        +`<i></i>제안 대비 저조</span>`)
       +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
+      <button class="btn sm${s.noCostBad?'':' on'}" data-costbad="${i}"
+          title="KPI 가 아닌 단가 열의 &quot;제안 대비 저조&quot; 붉은 표시를 끄거나 켭니다. KPI 지표 표시는 그대로 남습니다.">${s.noCostBad?'저조 표시':'저조 표시 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
     if(typeof attachInfo==='function')attachInfo(tools,SUM_INFO(),s.name);
@@ -752,7 +756,11 @@ function renderSummaries(){
     const cb=tools.querySelector('[data-cfg]');
     if(cb)cb.onclick=()=>openBuilder(cfgBox,s,{rowFields:DIMS,catalog:SUM_CATALOG,onApply:draw});
     const gb=tools.querySelector('[data-gauge]');
-    if(gb)gb.onclick=()=>{s.noGauge=!s.noGauge;renderSummaries();};
+    if(gb)gb.onclick=()=>{s.noGauge=!s.noGauge;renderSummaries();
+      try{markDirty();saveLocal();}catch(e){}};
+    const cb2=tools.querySelector('[data-costbad]');
+    if(cb2)cb2.onclick=()=>{s.noCostBad=!s.noCostBad;renderSummaries();
+      try{markDirty();saveLocal();}catch(e){}};
     const hb=tools.querySelector('[data-hide]');
     if(hb)hb.onclick=()=>{HIDDEN.add('sum:'+s.id);renderSummaries();renderHiddenBar();};
     const db=tools.querySelector('[data-del]');

@@ -843,7 +843,7 @@ function renderPace(){
     <div class="pacescroll"><div class="pacebody">
       <div class="phead">집행 ${elapsedAll}일차 <span class="sep">/</span> 총 ${den}일
         <span class="el">${Math.round(elapsedAll/Math.max(den,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">조회 기간 ${sc.days}일 (${sc.startIso.slice(5).replace('-','/')}~${sc.endIso.slice(5).replace('-','/')})</span>`:''}</div>
+        ${narrow?`<span class="vw" title="지금 보고 있는 기간입니다 (${sc.days}일)">조회기간 : ${mdy(sc.startIso)}~${mdy(sc.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>

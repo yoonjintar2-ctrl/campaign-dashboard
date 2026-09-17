@@ -441,8 +441,18 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px}
 .tfix:hover{background:var(--acc);color:#fff}
 .tfchk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink2);cursor:pointer}
-.tflist{display:flex;flex-direction:column;gap:5px;padding-left:96px}
-.tfsum{font-size:11px;color:var(--muted);padding-left:96px;font-variant-numeric:tabular-nums}
+/* 파일 끌어다 놓는 자리 — 등록 창 맨 위 */
+.tdrop{border:1.5px dashed var(--gline);border-radius:12px;background:var(--plane2);
+  padding:20px 16px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:4px;
+  transition:border-color .12s,background .12s}
+.tdrop:hover,.tdrop:focus-visible{border-color:var(--acc);background:var(--acc-soft);outline:0}
+.tdrop.over{border-color:var(--acc);border-style:solid;background:var(--acc-soft)}
+.tdrop b{font-size:13.5px;color:var(--ink);font-weight:800;pointer-events:none}
+.tdrop span{font-size:11.5px;color:var(--muted);pointer-events:none}
+.tdrop span.lim{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+.tdrop.over *{pointer-events:none}
+.tflist{display:flex;flex-direction:column;gap:5px}
+.tfsum{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tfsum.over{color:#c0483f;font-weight:700}
 .tfitem{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);
   border:1px solid var(--line2);border-radius:7px;padding:5px 8px}

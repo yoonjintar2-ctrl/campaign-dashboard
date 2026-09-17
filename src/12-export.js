@@ -17,7 +17,7 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <numFmt numFmtId="166" formatCode="0.0%"/>
 <numFmt numFmtId="167" formatCode="0.00%"/>
 </numFmts>
-<fonts count="9">
+<fonts count="10">
 <font><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><b/><sz val="15"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><sz val="9.5"/><color rgb="FF5A6878"/><name val="맑은 고딕"/></font>
@@ -27,8 +27,9 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <font><b/><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><sz val="10.5"/><color rgb="FF5A6878"/><name val="맑은 고딕"/></font>
 <font><sz val="10.5"/><color rgb="FFB8665F"/><name val="맑은 고딕"/></font>
+<font><b/><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 </fonts>
-<fills count="9">
+<fills count="12">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FF3C4957"/><bgColor indexed="64"/></patternFill></fill>
@@ -38,25 +39,28 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <fill><patternFill patternType="solid"><fgColor rgb="FFFBFCFE"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFF2F4F7"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFE2E7EE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFCCD6E2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDDE4EC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF1F4F8"/><bgColor indexed="64"/></patternFill></fill>
 </fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8DEE6"/></left><right style="thin"><color rgb="FFD8DEE6"/></right><top style="thin"><color rgb="FFD8DEE6"/></top><bottom style="thin"><color rgb="FFD8DEE6"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="35">
+<cellXfs count="53">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="167" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="167" fontId="4" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
@@ -69,8 +73,8 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="165" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="166" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="167" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
-<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
+<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1" wrapText="1"/></xf>
 <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
 <xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
 <xf numFmtId="164" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
@@ -78,6 +82,24 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="166" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="7" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="9" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="11" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="7" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="7" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="7" fillId="11" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 </cellXfs></styleSheet>`;
 const EMU=9525;   /* 1px = 9525 EMU */
 /* sheets: [{name, rows, widths, merges:[{r1,c1,r2,c2}], images:[{png:Uint8Array,w,h,row,col}]}] */
@@ -204,6 +226,13 @@ const XS={hdr:4,ghdr:5,rowhdr:6,sub:7,total:8,num:10,won:11,pct:12,txt:13,left:1
   blank:33,sblank:34};
 /* 휴일(주말·공휴일) 행 — 같은 서식의 붉은 글씨 짝 */
 const XL_HOL={10:XS.hnum,11:XS.hwon,12:XS.hpct,13:XS.htxt,15:XS.hpct2,14:XS.htxt,6:XS.htxt};
+/* 소계 행은 단계마다 배경을 달리한다 — 화면(--sub0~3)과 같은 색 (v68).
+   기본(7·30·31·32·17·34)은 2단계 색이고, 0·1·3단계만 바꿔치기한다. */
+const XL_SUB_L={
+  0:{7:35,30:36,31:37,32:38,17:39,34:50},
+  1:{7:40,30:41,31:42,32:43,17:44,34:51},
+  3:{7:45,30:46,31:47,32:48,17:49,34:52}};
+const xlSubStyle=(sty,lvl)=>{const m=XL_SUB_L[lvl];return (m&&m[sty])||sty;};
 /* 셀 텍스트를 숫자/통화/퍼센트로 되돌린다 */
 function xlCell(txt,role){
   const t=String(txt==null?'':txt).trim();
@@ -236,6 +265,8 @@ function tableToRows(tbl,startRow){
       const cls=cell.className||'';
       const trCls=tr.className||'';
       const role=trCls.indexOf('total')>=0?'total':trCls.indexOf('sub')>=0?'sub':'';
+      /* 소계 단계 — sub-l0(가장 바깥) ~ sub-l3 */
+      const subL=role==='sub'?(+((/(?:^|\s)sub-l(\d)/.exec(trCls)||[])[1])||0):-1;
       let sty;
       if(isHead)sty=cls.indexOf(' g')>=0||cls.indexOf('g ')===0||cell.classList.contains('g')?XS.ghdr:XS.hdr;
       else if(role==='total')sty=XS.total;
@@ -251,6 +282,8 @@ function tableToRows(tbl,startRow){
       /* 값이 없는 칸은 화면과 같이 연한 회색으로 채운다 */
       if(!isHead&&cell.classList.contains('blank')&&role!=='total')
         c={v:'',s:role==='sub'?XS.sblank:XS.blank};
+      /* 소계는 단계별 배경으로 바꿔 준다 (v68) */
+      if(role==='sub'&&subL>=0&&c.s)c={...c,s:xlSubStyle(c.s,subL)};
       grid[ri][ci]=c;
       if(rs>1||csn>1)merges.push({r1:startRow+ri,c1:ci,r2:startRow+ri+rs-1,c2:ci+csn-1});
       for(let a=0;a<rs;a++)for(let b=0;b<csn;b++){
@@ -275,7 +308,9 @@ function offsetSheet(sh){
 const xlWidth=t=>{let n=0;const s2=String(t==null?'':t);
   for(let i=0;i<s2.length;i++)n+=s2.charCodeAt(i)>127?2:1;return n;};
 function autoWidths(sh,opt){
-  const mn=(opt&&opt.min)||9,mx=(opt&&opt.max)||34;
+  /* 최대 폭 — 타겟팅 그룹처럼 이름이 긴 열이 잘리지 않도록 v68 에서 34 → 44 로 넓혔다.
+     그보다 더 길면 글자 칸에 걸어 둔 줄바꿈이 받아 준다. */
+  const mn=(opt&&opt.min)||9,mx=(opt&&opt.max)||44;
   const merged=new Set();
   (sh.merges||[]).forEach(m=>{if(m.c2>m.c1)for(let r=m.r1;r<=m.r2;r++)merged.add(r+':'+m.c1);});
   const w=[];
@@ -284,11 +319,34 @@ function autoWidths(sh,opt){
     if(c.s===1||c.s===2||c.s===3)return;              /* 제목·안내줄은 길이에서 뺀다 */
     if(merged.has(ri+':'+ci))return;                   /* 가로 병합된 칸도 제외 */
     const t=c.n?fmt(Math.round(c.v))+(String(c.s).match(/^(11|21|31|28|23)$/)?'₩':''):c.v;
-    w[ci]=Math.max(w[ci]||0,xlWidth(t));}));
+    /* 여러 줄짜리 칸은 가장 긴 줄만 보면 된다 */
+    const len=Math.max(...String(t).split('\n').map(xlWidth));
+    w[ci]=Math.max(w[ci]||0,len);}));
   sh.widths=w.map((x,i)=>i===0?2.5:Math.min(mx,Math.max(mn,(x||6)+3.2)));
   if(!sh.widths.length)sh.widths=[2.5];
   sh.widths[0]=2.5;
+  fitRowHeights(sh,merged);
   return sh;
+}
+/* 줄바꿈이 걸린 글자 칸 — 엑셀의 자동 행 높이에 맡기지 않고 우리가 직접 재서 넣는다.
+   (뷰어에 따라 자동 맞춤이 안 돌아 글자가 잘리는 일이 있었다 · v68) */
+const XL_WRAP=new Set([XS.hdr,XS.ghdr,XS.rowhdr,XS.sub,XS.total,XS.txt,XS.left,
+  XS.label,XS.val,35,40,45,50,51,52]);
+const XL_LINE_H=14.6;
+function fitRowHeights(sh,merged){
+  (sh.rows||[]).forEach((r,ri)=>{
+    if(!r||r.__h)return;                       /* 차트 자리처럼 이미 정해진 행은 그대로 */
+    let lines=1;
+    r.forEach((c,ci)=>{
+      if(!c||c.n||!c.s||!XL_WRAP.has(c.s))return;
+      const t=String(c.v==null?'':c.v);
+      if(!t)return;
+      if(merged&&merged.has(ri+':'+ci))return;  /* 가로로 합친 칸은 옆으로 흘러간다 */
+      const wd=(sh.widths&&sh.widths[ci])||9;
+      const room=Math.max(4,wd-2.2);
+      const n=t.split('\n').reduce((a,seg)=>a+Math.max(1,Math.ceil(xlWidth(seg)/room)),0);
+      if(n>lines)lines=n;});
+    if(lines>1)r.__h=Math.round(lines*XL_LINE_H*10)/10;});
 }
 /* 노출이 있었던 날을 이어붙여 M/D~M/D 구간 문자열로 (쉰 구간이 있으면 쉼표로 나눈다) */
 function onAirRanges(c){
@@ -302,10 +360,11 @@ function onAirRanges(c){
   return out;
 }
 const md2=d=>`${d.getMonth()+1}/${d.getDate()}`;
+/* 쉰 구간이 있으면 줄을 나눠 적는다 — 한 줄로 이어 붙이면 칸을 넘어가 읽기 어렵다 (v68) */
 const onAirText=c=>{
   const r=onAirRanges(c);
   if(!r.length)return '–';
-  return r.map(([a,b])=>`${md2(ALLDATES[a])}~${md2(ALLDATES[b])}`).join(', ');
+  return r.map(([a,b])=>`${md2(ALLDATES[a])}~${md2(ALLDATES[b])}`).join('\n');
 };
 async function exportDashboard(){
   const btn=$('reportBtn');
@@ -352,7 +411,33 @@ async function exportDashboard(){
       s1.merges.push({r1:r0,c1:1,r2:r0,c2:3});});
     blank(R);
 
-    /* KPI 달성 현황은 리포트에 넣지 않는다 (화면에서만 본다) */
+    /* ---- 주요 지표 달성 현황 — 화면 위쪽 카드와 같은 지표·같은 계산 (v68) ----
+       지표 / 목표 / 실적 / 달성률 네 열로 컴팩트하게. 단가(CPM·CPC…)는 낮을수록 좋으므로
+       달성률을 목표÷실적으로 뒤집어 읽는다 (화면 카드와 같은 규칙). */
+    (function statTable(){
+      const cols=(typeof cfgCols==='function'&&typeof STAT_CFG!=='undefined')?cfgCols(STAT_CFG):[];
+      if(!cols.length)return;
+      const ag=aggFacts(paceFacts()),ex=aggExp(activeLines());
+      const LOW=['cpm','cpc','cpv','cpa','cpi','cpe'];
+      const body=[];
+      cols.forEach(k=>{
+        const M=METRICS[k];if(!M)return;
+        const av=mval(k,ag),ev=mval(k,ex);
+        if(!isFinite(av)&&!isFinite(ev))return;
+        const isAbs=M.kind==='abs';
+        const rate=isAbs?(ev?av/ev:NaN):(LOW.includes(k)?(av?ev/av:NaN):(ev?av/ev:NaN));
+        body.push([{v:M.l,s:XS.rowhdr},
+          xlCell(isFinite(ev)?M.f(ev):'–',''),
+          xlCell(isFinite(av)?M.f(av):'–',''),
+          isFinite(rate)?{v:rate,n:1,s:XS.pct}:{v:'–',s:XS.txt}]);});
+      if(!body.length)return;
+      push(R,[T('주요 지표 달성 현황',3)]);
+      push(R,[T('목표는 캠페인 전체 기준(예상 효율·예산), 실적은 조회 기간의 집행값입니다. '
+        +'CPM·CPC 처럼 낮을수록 좋은 지표는 목표 ÷ 실적으로 읽습니다.',2)]);
+      push(R,[T('지표',XS.hdr),T('목표',XS.hdr),T('실적',XS.hdr),T('달성률',XS.hdr)]);
+      body.forEach(r=>push(R,r));
+      blank(R);
+    })();
 
     /* ---- 일자별 효율 비교 — 차트 그림 ---- */
     const chartSvg=document.querySelector('#chartDaily svg');
@@ -370,7 +455,9 @@ async function exportDashboard(){
       const card=sec.nextElementSibling&&sec.nextElementSibling.nextElementSibling;
       const tbl=card?card.querySelector('table.tbl'):null;
       if(!tbl)return;
-      push(R,[T(sec.textContent.replace(/숨기기|⚙ 헤더 편집|서머리 삭제/g,'').trim(),3)]);
+      /* 제목만 — 옆에 붙은 범례·버튼·ⓘ 안내 글은 넣지 않는다 (v68) */
+      const nmEl=sec.querySelector('[data-nm]');
+      push(R,[T(((nmEl?nmEl.textContent:sec.textContent)||'').replace(/\s+/g,' ').trim(),3)]);
       const g=tableToRows(tbl,R.length);
       g.rows.forEach(r=>R.push(r));
       s1.merges.push(...g.merges);
@@ -380,7 +467,7 @@ async function exportDashboard(){
     const crs=filteredCreatives(),mrg=s1.merges;
     if(crs.length){
       push(R,[T('소재별 효율',3)]);
-      push(R,[T('온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 쉼표로 나눠 적습니다.',2)]);
+      push(R,[T('온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 줄을 나눠 적습니다.',2)]);
       const dims=GANTT.rows.map(r=>r.k);
       const mcols=cfgCols(GANTT);
       push(R,dims.map(k=>T((DIMS.find(d=>d.k===k)||{l:k}).l,XS.hdr))

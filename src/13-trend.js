@@ -82,7 +82,7 @@ const trendFileKind=n=>{
   if(['mp4','mov','webm','avi','mkv'].includes(e))return 'video';
   return 'file';};
 const TREND_KIND_LABEL={image:'이미지',pdf:'PDF',excel:'엑셀',word:'워드',ppt:'PPT',
-  video:'영상',link:'링크',file:'파일'};
+  video:'영상',file:'파일'};
 
 /* ---------- 매체명이 갈라지지 않게 (v66) ----------
    "NAVER GFA" 와 "네이버 GFA" 는 사람 눈에는 같은 매체지만 글자로는 남남이다.
@@ -487,7 +487,7 @@ function renderTrend(){
   {const b=$('trendCatEdit');if(b)b.onclick=openTrendCats;}
 }
 function trendCardHTML(p){
-  const kind=(p.files&&p.files[0]&&p.files[0].kind)||(p.link?'link':'file');
+  const kind=(p.files&&p.files[0]&&p.files[0].kind)||'file';
   const th=p.thumb||'';
   return `<article class="tcard" data-id="${esc(p.id)}" tabindex="0">
     <div class="tthumb">${th?`<img src="${esc(th)}" alt="">`
@@ -537,9 +537,6 @@ function openTrendPost(id){
               <span class="tfk">${esc(TREND_KIND_LABEL[f.kind]||'파일')}</span>
               <span class="tfn">${esc(f.name)}</span>
               <span class="tfs">${trendMB(f.size||0)}</span><span class="tfd">내려받기</span></button>`).join('')}
-           ${p.link?`<a class="tfile" href="${esc(p.link)}" target="_blank" rel="noopener">
-              <span class="tfk">링크</span><span class="tfn">${esc(p.link)}</span>
-              <span class="tfd">열기</span></a>`:''}
          </div>
          <div class="tdact">
            ${trendCanEdit(p)?`<button class="btn sm" id="tdEdit">수정</button>
@@ -582,15 +579,11 @@ function openTrendPost(id){
 }
 function trendItems(p){
   const out=(p.files||[]).map((f,i)=>({f,i}));
-  if(p.link)out.push({link:p.link});
   if(!out.length&&p.thumb)out.push({thumbOnly:true});
   return out;
 }
 function trendStageHTML(it,p){
   if(!it)return `<div class="tnofile">미리 볼 자료가 없습니다.</div>`;
-  if(it.link)return `<div class="tnofile"><b>링크 자료</b>
-    <span>${esc(it.link)}</span>
-    <a class="btn sm" href="${esc(it.link)}" target="_blank" rel="noopener">새 창에서 열기</a></div>`;
   const f=it.f;
   const url=trendFileURL(p,it.i);
   if(f.kind==='image'&&url)return `<img class="tstageimg" src="${esc(url)}" alt="${esc(f.name)}">`;
@@ -666,8 +659,19 @@ function openTrendForm(post){
   ov.querySelector('.tdbody').innerHTML=
    `<div class="tform">
       <h3>${edit?'자료 수정':'자료 등록'}</h3>
+      <div class="tdrop" id="tfDrop" tabindex="0" role="button">
+        <b>여기로 파일을 끌어다 놓으세요</b>
+        <span>또는 눌러서 고르기 — PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</span>
+        <span class="lim">파일 한 개당 ${TREND_MAX_MB}MB · 한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 까지</span>
+        <input id="tfFiles" type="file" multiple hidden
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.doc,.docx,.ppt,.pptx,.mp4,.mov,.webm">
+      </div>
+      <div class="tflist" id="tfList"></div>
+      <div class="tfsum" id="tfSum"></div>
       <label class="tfrow"><span>제목 <b class="req">*</b></span>
-        <input id="tfTitle" maxlength="120" value="${esc(p.title)}" placeholder="자료 이름"></label>
+        <input id="tfTitle" maxlength="120" value="${esc(p.title)}" placeholder="파일을 붙이면 파일 이름으로 채워집니다"></label>
+      <div class="tfnote">카드 그림은 <b>파일 내용으로</b> 만들어 줍니다 — PDF 는 첫 장,
+        영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.</div>
       <label class="tfrow top"><span>본문</span>
         <textarea id="tfBody" rows="4" maxlength="2000"
           placeholder="자료 설명 — 카드에는 첫 줄만 보입니다">${esc(p.body)}</textarea></label>
@@ -681,19 +685,6 @@ function openTrendForm(post){
       <label class="tfrow"><span>해시태그</span>
         <input id="tfTags" value="${esc((p.tags||[]).join(', '))}"
           placeholder="쉼표로 구분 · 최대 5개"></label>
-      <label class="tfrow"><span>파일</span>
-        <input id="tfFiles" type="file" multiple
-          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.doc,.docx,.ppt,.pptx,.mp4,.mov,.webm"></label>
-      <div class="tfnote">파일 한 개당 ${TREND_MAX_MB}MB · 한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 까지
-        · PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</div>
-      <div class="tflist" id="tfList"></div>
-      <div class="tfsum" id="tfSum"></div>
-      <label class="tfrow"><span>링크</span>
-        <input id="tfLink" value="${esc(p.link)}" placeholder="https:// (선택)"></label>
-      <label class="tfrow"><span>썸네일</span>
-        <input id="tfThumb" type="file" accept="image/*"></label>
-      <div class="tfnote">비워 두면 <b>파일 내용으로</b> 만들어 줍니다 — PDF 는 첫 장,
-        영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.</div>
       <label class="tfchk"><input id="tfSecret" type="checkbox"${p.secret?' checked':''}>
         <span>대외비 — 카드에 <b>대외비</b> 표시가 붙습니다</span></label>
       ${(!logged&&!edit)?`<div class="tguest">
@@ -744,9 +735,9 @@ function openTrendForm(post){
       <button class="tfx" data-new="${i}" title="빼기">✕</button></div>`).join('');
     q('#tfList').innerHTML=keep+add;
     q('#tfList').querySelectorAll('[data-old]').forEach(b=>b.onclick=()=>{
-      p.files.splice(+b.dataset.old,1);drawFiles();});
+      p.files.splice(+b.dataset.old,1);drawFiles();syncTitle();});
     q('#tfList').querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{
-      picked.splice(+b.dataset.new,1);drawFiles();});
+      picked.splice(+b.dataset.new,1);drawFiles();syncTitle();});
     /* 첨부 합계를 늘 보여 준다 — 10MB 짜리를 여럿 붙이면 금방 커진다 */
     const tot=totalBytes();
     const sum=q('#tfSum');
@@ -757,30 +748,53 @@ function openTrendForm(post){
         +(over?' — 합계를 넘어 올릴 수 없습니다':'');}};
   const totalBytes=()=>(p.files||[]).reduce((a,f)=>a+(+f.size||0),0)
     +picked.reduce((a,f)=>a+f.size,0);
+  /* 제목은 붙인 파일 이름으로 채워 준다 — 사람이 한 글자라도 고치면 더 건드리지 않는다 */
+  let titleTouched=!!p.title;
+  const fileTitle=n=>String(n||'').replace(/\.[A-Za-z0-9]{1,5}$/,'').replace(/[_]+/g,' ').trim();
+  const syncTitle=()=>{
+    if(titleTouched)return;
+    const first=picked[0]||(p.files||[])[0];
+    const t=first?fileTitle(first.name):'';
+    const e2=q('#tfTitle');
+    if(e2&&e2.value!==t)e2.value=t.slice(0,120);};
+  q('#tfTitle').oninput=()=>{titleTouched=true;};
   drawFiles();
-  q('#tfFiles').onchange=e=>{
+  /* 파일 고르기 — 버튼으로도, 끌어다 놓기로도 */
+  const addFiles=list=>{
     const over=[],full=[];
-    [...e.target.files].forEach(f=>{
+    [...list].forEach(f=>{
       if(f.size>TREND_MAX_MB*1048576){over.push(`${f.name} (${trendMB(f.size)})`);return;}
       if(totalBytes()+f.size>TREND_MAX_TOTAL_MB*1048576){full.push(f.name);return;}
       picked.push(f);});
-    e.target.value='';
     err([over.length?`${TREND_MAX_MB}MB 를 넘어 뺐습니다 — ${over.join(', ')}`:'',
          full.length?`한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 를 넘어 뺐습니다 — ${full.join(', ')}`:'']
         .filter(Boolean).join(' / '));
-    drawFiles();};
-  q('#tfThumb').onchange=e=>{
-    const f=e.target.files[0];
-    if(f&&f.size>TREND_MAX_MB*1048576){err(`썸네일도 ${TREND_MAX_MB}MB 까지입니다.`);e.target.value='';return;}
-    thumbFile=f||null;};
+    drawFiles();syncTitle();};
+  q('#tfFiles').onchange=e=>{addFiles(e.target.files);e.target.value='';};
+  const drop=q('#tfDrop');
+  drop.onclick=()=>q('#tfFiles').click();
+  drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();q('#tfFiles').click();}};
+  /* 브라우저 기본 동작(파일을 새 탭에서 열기)을 막아야 놓을 수 있다 */
+  let dragN=0;
+  const stop=e=>{e.preventDefault();e.stopPropagation();};
+  drop.addEventListener('dragenter',e=>{stop(e);dragN++;drop.classList.add('over');});
+  drop.addEventListener('dragover',e=>{stop(e);try{e.dataTransfer.dropEffect='copy';}catch(x){}});
+  drop.addEventListener('dragleave',e=>{stop(e);if(--dragN<=0){dragN=0;drop.classList.remove('over');}});
+  drop.addEventListener('drop',e=>{
+    stop(e);dragN=0;drop.classList.remove('over');
+    const dt=e.dataTransfer;if(!dt)return;
+    const fs=dt.files&&dt.files.length?dt.files
+      :[...(dt.items||[])].map(i=>i.kind==='file'?i.getAsFile():null).filter(Boolean);
+    if(fs&&fs.length)addFiles(fs);});
+  /* 창 어디에 떨어뜨려도 파일이 새 탭에서 열리지 않게 */
+  ['dragover','drop'].forEach(t=>ov.addEventListener(t,e=>{
+    if(!drop.contains(e.target))stop(e);}));
   q('#tfCancel').onclick=()=>ov.remove();
   q('#tfOk').onclick=async()=>{
     const title=q('#tfTitle').value.trim();
     if(!title){err('제목을 넣어 주세요.');return;}
     const tags=q('#tfTags').value.split(',').map(s=>s.trim().replace(/^#/,''))
       .filter(Boolean).slice(0,5);
-    const link=q('#tfLink').value.trim();
-    if(link&&!/^https?:\/\//i.test(link)){err('링크는 http:// 또는 https:// 로 시작해야 합니다.');return;}
     let gid='',ghash=p.guest_hash||'';
     if(!logged&&!edit){
       gid=q('#tfGid').value.trim();
@@ -797,7 +811,7 @@ function openTrendForm(post){
       const rec={...p,title,body:q('#tfBody').value.trim(),
         category:q('#tfCat').value,
         medium:needMedia(q('#tfCat').value)?q('#tfMedium').value.trim():'',
-        tags,secret:q('#tfSecret').checked,link,
+        tags,secret:q('#tfSecret').checked,link:'',
         guest_id:gid||p.guest_id||'',guest_hash:ghash};
       await trendPut(rec,picked,thumbFile,edit,say);
       ov.remove();
@@ -818,7 +832,7 @@ async function trendPut(rec,picked,thumbFile,edit,say){
     /* 파일 내용으로 만들어 본다 — 새 파일을 붙였으면 다시 만든다 */
     const auto=await trendAutoThumb(picked,say);
     thumb=auto||thumb||trendMakeThumb(rec.title,
-      picked.length?trendFileKind(picked[0].name):(rec.link?'link':'file'));}
+      picked.length?trendFileKind(picked[0].name):'file');}
   const newFiles=[];
   if(trendOn()){
     let i=0;
