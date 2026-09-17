@@ -13754,6 +13754,24 @@ function trendUid(){
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
     c=>c==='x'?r():((Math.floor(Math.random()*4)+8).toString(16)));
 }
+/* 저장소에 쓸 파일 경로 (v69).
+   Supabase Storage 의 키는 **아스키만** 받는다 — 한글이 섞이면 업로드가
+   "Invalid key" 로 막힌다. 그래서 경로는 영문·숫자로만 만들고,
+   사람에게 보이는 이름(files[].name)은 원래 그대로 둔다.
+   내려받을 때는 그 이름을 Supabase 에 따로 알려 준다 (trendFileURL 참고). */
+function trendKey(id,name){
+  const s=String(name||'');
+  const m=/\.([A-Za-z0-9]{1,8})$/.exec(s);
+  const ext=m?('.'+m[1].toLowerCase()):'';
+  let base=(m?s.slice(0,-m[0].length):s)
+    .replace(/[^A-Za-z0-9._-]+/g,'_')      /* 한글·공백·괄호 등은 모두 _ 로 */
+    .replace(/_{2,}/g,'_')
+    .replace(/^[._-]+|[._-]+$/g,'')
+    .slice(0,60);
+  if(!base)base='file';                    /* 이름이 전부 한글이면 */
+  const rnd=Math.random().toString(36).slice(2,7);
+  return `${id}/${Date.now()}${rnd}_${base}${ext}`;
+}
 const trendNow=()=>new Date().toISOString();
 function trendDays(iso){
   const t=Date.parse(iso);if(!isFinite(t))return 999;
@@ -14296,18 +14314,23 @@ function trendStageHTML(it,p){
     <b>${esc(TREND_KIND_LABEL[f.kind]||'파일')} — ${esc(f.name)}</b>
     <span>브라우저에서 바로 볼 수 없는 형식입니다. 오른쪽에서 내려받아 확인해 주세요.</span></div>`;
 }
-function trendFileURL(p,i){
+/* dl=true 면 "내려받기용" 주소 — 저장소 경로는 아스키로 바꿔 두므로(trendKey)
+   원래 파일 이름으로 받게 하려면 Supabase 에 download 이름을 따로 알려 줘야 한다 (v69). */
+function trendFileURL(p,i,dl){
   const f=(p.files||[])[i];if(!f)return '';
   if(TREND_BLOBS[p.id+'|'+i])return TREND_BLOBS[p.id+'|'+i];
   if(f.url)return f.url;
   if(f.path&&trendOn()){
-    try{const {data}=CLOUD.sb.storage.from(TREND_BUCKET).getPublicUrl(f.path);
-      return (data&&data.publicUrl)||'';}catch(e){return '';}}
+    try{const {data}=CLOUD.sb.storage.from(TREND_BUCKET)
+        .getPublicUrl(f.path,dl&&f.name?{download:f.name}:undefined);
+      return (data&&data.publicUrl)||'';}catch(e){
+      try{const {data}=CLOUD.sb.storage.from(TREND_BUCKET).getPublicUrl(f.path);
+        return (data&&data.publicUrl)||'';}catch(e2){return '';}}}
   return '';
 }
 function trendDownload(p,i){
   const f=(p.files||[])[i];if(!f)return;
-  const url=trendFileURL(p,i);
+  const url=trendFileURL(p,i,true);
   if(!url){alert('이 자료는 데모 화면에서 만든 것이라 내려받을 파일이 없습니다.');return;}
   const a=document.createElement('a');a.href=url;a.download=f.name||'자료';
   a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
@@ -14540,7 +14563,7 @@ async function trendPut(rec,picked,thumbFile,edit,say){
     let i=0;
     for(const f of picked){
       i++;say(`파일 올리는 중… ${i}/${picked.length} · ${f.name} (${trendMB(f.size)})`);
-      const path=`${rec.id}/${Date.now()}_${f.name.replace(/[^\w.\-가-힣]/g,'_')}`;
+      const path=trendKey(rec.id,f.name);
       const {error}=await CLOUD.sb.storage.from(TREND_BUCKET)
         .upload(path,f,{upsert:false,contentType:f.type||undefined});
       if(error)throw new Error(trendUploadMsg(error,f));
@@ -14613,6 +14636,12 @@ function trendUploadMsg(error,f){
       +`trend 버킷(Public, ${TREND_MAX_MB}MB)을 만들어 주세요.`;
   if(/row-level security|violates|not authorized|permission/i.test(m))
     return '저장소에 올릴 권한이 없습니다. schema.sql 의 storage 정책이 실행됐는지 확인해 주세요.';
+  /* 저장소 경로에 아스키가 아닌 글자가 섞였을 때 — 평소에는 trendKey 가 미리 걸러 준다 */
+  if(/Invalid key/i.test(m))
+    return `${f.name} 의 이름을 저장소가 받지 못했습니다. `
+      +'파일 이름을 영문·숫자로 바꿔 다시 올려 보시고, 계속 같으면 알려 주세요.';
+  if(/already exists|Duplicate/i.test(m))
+    return `${f.name} 과(와) 같은 경로가 이미 있습니다. 잠시 뒤 다시 올려 주세요.`;
   return '파일 올리기 실패 — '+m;
 }
 
