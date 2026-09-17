@@ -441,8 +441,18 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px}
 .tfix:hover{background:var(--acc);color:#fff}
 .tfchk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink2);cursor:pointer}
-.tflist{display:flex;flex-direction:column;gap:5px;padding-left:96px}
-.tfsum{font-size:11px;color:var(--muted);padding-left:96px;font-variant-numeric:tabular-nums}
+/* 파일 끌어다 놓는 자리 — 등록 창 맨 위 */
+.tdrop{border:1.5px dashed var(--gline);border-radius:12px;background:var(--plane2);
+  padding:20px 16px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:4px;
+  transition:border-color .12s,background .12s}
+.tdrop:hover,.tdrop:focus-visible{border-color:var(--acc);background:var(--acc-soft);outline:0}
+.tdrop.over{border-color:var(--acc);border-style:solid;background:var(--acc-soft)}
+.tdrop b{font-size:13.5px;color:var(--ink);font-weight:800;pointer-events:none}
+.tdrop span{font-size:11.5px;color:var(--muted);pointer-events:none}
+.tdrop span.lim{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+.tdrop.over *{pointer-events:none}
+.tflist{display:flex;flex-direction:column;gap:5px}
+.tfsum{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tfsum.over{color:#c0483f;font-weight:700}
 .tfitem{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);
   border:1px solid var(--line2);border-radius:7px;padding:5px 8px}
@@ -3877,7 +3887,7 @@ function renderPace(){
     <div class="pacescroll"><div class="pacebody">
       <div class="phead">집행 ${elapsedAll}일차 <span class="sep">/</span> 총 ${den}일
         <span class="el">${Math.round(elapsedAll/Math.max(den,1)*100)}% 경과</span>
-        ${narrow?`<span class="vw">조회 기간 ${sc.days}일 (${sc.startIso.slice(5).replace('-','/')}~${sc.endIso.slice(5).replace('-','/')})</span>`:''}</div>
+        ${narrow?`<span class="vw" title="지금 보고 있는 기간입니다 (${sc.days}일)">조회기간 : ${mdy(sc.startIso)}~${mdy(sc.endIso)}</span>`:''}</div>
       <div class="pline days">
         <div class="pside"><div class="nm1">시작일</div><div class="sub1">${dFull(cs.start)}(${WD[cs.start.getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -5172,8 +5182,9 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
       if(kpiWorse(act,goal))kc+=' kpibad';
       tip=kpiTip(kpi,src,ex);
-    }else{
-      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53) */
+    }else if(!cfg.noCostBad){
+      /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53).
+         KPI 가 아닌 지표까지 강조할 필요가 없으면 서머리마다 끌 수 있다 (v68) */
       const ck=COSTCOL[k]?k:GOAL2COST[k];
       if(ck){
         const pr=costPair(ck,src,ex);
@@ -5308,12 +5319,15 @@ function renderSummaries(){
     /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
     tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
       +`<i></i>KPI 개선 고려</span>`
-      +`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
-      +`<i></i>제안 대비 저조</span>`
+      +(s.noCostBad?''
+      :`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
+        +`<i></i>제안 대비 저조</span>`)
       +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
+      <button class="btn sm${s.noCostBad?'':' on'}" data-costbad="${i}"
+          title="KPI 가 아닌 단가 열의 &quot;제안 대비 저조&quot; 붉은 표시를 끄거나 켭니다. KPI 지표 표시는 그대로 남습니다.">${s.noCostBad?'저조 표시':'저조 표시 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
     if(typeof attachInfo==='function')attachInfo(tools,SUM_INFO(),s.name);
@@ -5329,7 +5343,11 @@ function renderSummaries(){
     const cb=tools.querySelector('[data-cfg]');
     if(cb)cb.onclick=()=>openBuilder(cfgBox,s,{rowFields:DIMS,catalog:SUM_CATALOG,onApply:draw});
     const gb=tools.querySelector('[data-gauge]');
-    if(gb)gb.onclick=()=>{s.noGauge=!s.noGauge;renderSummaries();};
+    if(gb)gb.onclick=()=>{s.noGauge=!s.noGauge;renderSummaries();
+      try{markDirty();saveLocal();}catch(e){}};
+    const cb2=tools.querySelector('[data-costbad]');
+    if(cb2)cb2.onclick=()=>{s.noCostBad=!s.noCostBad;renderSummaries();
+      try{markDirty();saveLocal();}catch(e){}};
     const hb=tools.querySelector('[data-hide]');
     if(hb)hb.onclick=()=>{HIDDEN.add('sum:'+s.id);renderSummaries();renderHiddenBar();};
     const db=tools.querySelector('[data-del]');
@@ -12209,7 +12227,7 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <numFmt numFmtId="166" formatCode="0.0%"/>
 <numFmt numFmtId="167" formatCode="0.00%"/>
 </numFmts>
-<fonts count="9">
+<fonts count="10">
 <font><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><b/><sz val="15"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><sz val="9.5"/><color rgb="FF5A6878"/><name val="맑은 고딕"/></font>
@@ -12219,8 +12237,9 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <font><b/><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 <font><sz val="10.5"/><color rgb="FF5A6878"/><name val="맑은 고딕"/></font>
 <font><sz val="10.5"/><color rgb="FFB8665F"/><name val="맑은 고딕"/></font>
+<font><b/><sz val="10.5"/><color rgb="FF1E2A38"/><name val="맑은 고딕"/></font>
 </fonts>
-<fills count="9">
+<fills count="12">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FF3C4957"/><bgColor indexed="64"/></patternFill></fill>
@@ -12230,25 +12249,28 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <fill><patternFill patternType="solid"><fgColor rgb="FFFBFCFE"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFF2F4F7"/><bgColor indexed="64"/></patternFill></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFE2E7EE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFCCD6E2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDDE4EC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF1F4F8"/><bgColor indexed="64"/></patternFill></fill>
 </fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8DEE6"/></left><right style="thin"><color rgb="FFD8DEE6"/></right><top style="thin"><color rgb="FFD8DEE6"/></top><bottom style="thin"><color rgb="FFD8DEE6"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="35">
+<cellXfs count="53">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="167" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="167" fontId="4" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
@@ -12261,8 +12283,8 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="165" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="166" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="167" fontId="8" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
-<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
+<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1" wrapText="1"/></xf>
 <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
 <xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" indent="1"/></xf>
 <xf numFmtId="164" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
@@ -12270,6 +12292,24 @@ const XL_STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="166" fontId="5" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="7" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="9" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="9" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="5" fillId="10" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="11" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="166" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="167" fontId="5" fillId="11" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="7" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="7" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="7" fillId="11" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 </cellXfs></styleSheet>`;
 const EMU=9525;   /* 1px = 9525 EMU */
 /* sheets: [{name, rows, widths, merges:[{r1,c1,r2,c2}], images:[{png:Uint8Array,w,h,row,col}]}] */
@@ -12396,6 +12436,13 @@ const XS={hdr:4,ghdr:5,rowhdr:6,sub:7,total:8,num:10,won:11,pct:12,txt:13,left:1
   blank:33,sblank:34};
 /* 휴일(주말·공휴일) 행 — 같은 서식의 붉은 글씨 짝 */
 const XL_HOL={10:XS.hnum,11:XS.hwon,12:XS.hpct,13:XS.htxt,15:XS.hpct2,14:XS.htxt,6:XS.htxt};
+/* 소계 행은 단계마다 배경을 달리한다 — 화면(--sub0~3)과 같은 색 (v68).
+   기본(7·30·31·32·17·34)은 2단계 색이고, 0·1·3단계만 바꿔치기한다. */
+const XL_SUB_L={
+  0:{7:35,30:36,31:37,32:38,17:39,34:50},
+  1:{7:40,30:41,31:42,32:43,17:44,34:51},
+  3:{7:45,30:46,31:47,32:48,17:49,34:52}};
+const xlSubStyle=(sty,lvl)=>{const m=XL_SUB_L[lvl];return (m&&m[sty])||sty;};
 /* 셀 텍스트를 숫자/통화/퍼센트로 되돌린다 */
 function xlCell(txt,role){
   const t=String(txt==null?'':txt).trim();
@@ -12428,6 +12475,8 @@ function tableToRows(tbl,startRow){
       const cls=cell.className||'';
       const trCls=tr.className||'';
       const role=trCls.indexOf('total')>=0?'total':trCls.indexOf('sub')>=0?'sub':'';
+      /* 소계 단계 — sub-l0(가장 바깥) ~ sub-l3 */
+      const subL=role==='sub'?(+((/(?:^|\s)sub-l(\d)/.exec(trCls)||[])[1])||0):-1;
       let sty;
       if(isHead)sty=cls.indexOf(' g')>=0||cls.indexOf('g ')===0||cell.classList.contains('g')?XS.ghdr:XS.hdr;
       else if(role==='total')sty=XS.total;
@@ -12443,6 +12492,8 @@ function tableToRows(tbl,startRow){
       /* 값이 없는 칸은 화면과 같이 연한 회색으로 채운다 */
       if(!isHead&&cell.classList.contains('blank')&&role!=='total')
         c={v:'',s:role==='sub'?XS.sblank:XS.blank};
+      /* 소계는 단계별 배경으로 바꿔 준다 (v68) */
+      if(role==='sub'&&subL>=0&&c.s)c={...c,s:xlSubStyle(c.s,subL)};
       grid[ri][ci]=c;
       if(rs>1||csn>1)merges.push({r1:startRow+ri,c1:ci,r2:startRow+ri+rs-1,c2:ci+csn-1});
       for(let a=0;a<rs;a++)for(let b=0;b<csn;b++){
@@ -12467,7 +12518,9 @@ function offsetSheet(sh){
 const xlWidth=t=>{let n=0;const s2=String(t==null?'':t);
   for(let i=0;i<s2.length;i++)n+=s2.charCodeAt(i)>127?2:1;return n;};
 function autoWidths(sh,opt){
-  const mn=(opt&&opt.min)||9,mx=(opt&&opt.max)||34;
+  /* 최대 폭 — 타겟팅 그룹처럼 이름이 긴 열이 잘리지 않도록 v68 에서 34 → 44 로 넓혔다.
+     그보다 더 길면 글자 칸에 걸어 둔 줄바꿈이 받아 준다. */
+  const mn=(opt&&opt.min)||9,mx=(opt&&opt.max)||44;
   const merged=new Set();
   (sh.merges||[]).forEach(m=>{if(m.c2>m.c1)for(let r=m.r1;r<=m.r2;r++)merged.add(r+':'+m.c1);});
   const w=[];
@@ -12476,11 +12529,34 @@ function autoWidths(sh,opt){
     if(c.s===1||c.s===2||c.s===3)return;              /* 제목·안내줄은 길이에서 뺀다 */
     if(merged.has(ri+':'+ci))return;                   /* 가로 병합된 칸도 제외 */
     const t=c.n?fmt(Math.round(c.v))+(String(c.s).match(/^(11|21|31|28|23)$/)?'₩':''):c.v;
-    w[ci]=Math.max(w[ci]||0,xlWidth(t));}));
+    /* 여러 줄짜리 칸은 가장 긴 줄만 보면 된다 */
+    const len=Math.max(...String(t).split('\n').map(xlWidth));
+    w[ci]=Math.max(w[ci]||0,len);}));
   sh.widths=w.map((x,i)=>i===0?2.5:Math.min(mx,Math.max(mn,(x||6)+3.2)));
   if(!sh.widths.length)sh.widths=[2.5];
   sh.widths[0]=2.5;
+  fitRowHeights(sh,merged);
   return sh;
+}
+/* 줄바꿈이 걸린 글자 칸 — 엑셀의 자동 행 높이에 맡기지 않고 우리가 직접 재서 넣는다.
+   (뷰어에 따라 자동 맞춤이 안 돌아 글자가 잘리는 일이 있었다 · v68) */
+const XL_WRAP=new Set([XS.hdr,XS.ghdr,XS.rowhdr,XS.sub,XS.total,XS.txt,XS.left,
+  XS.label,XS.val,35,40,45,50,51,52]);
+const XL_LINE_H=14.6;
+function fitRowHeights(sh,merged){
+  (sh.rows||[]).forEach((r,ri)=>{
+    if(!r||r.__h)return;                       /* 차트 자리처럼 이미 정해진 행은 그대로 */
+    let lines=1;
+    r.forEach((c,ci)=>{
+      if(!c||c.n||!c.s||!XL_WRAP.has(c.s))return;
+      const t=String(c.v==null?'':c.v);
+      if(!t)return;
+      if(merged&&merged.has(ri+':'+ci))return;  /* 가로로 합친 칸은 옆으로 흘러간다 */
+      const wd=(sh.widths&&sh.widths[ci])||9;
+      const room=Math.max(4,wd-2.2);
+      const n=t.split('\n').reduce((a,seg)=>a+Math.max(1,Math.ceil(xlWidth(seg)/room)),0);
+      if(n>lines)lines=n;});
+    if(lines>1)r.__h=Math.round(lines*XL_LINE_H*10)/10;});
 }
 /* 노출이 있었던 날을 이어붙여 M/D~M/D 구간 문자열로 (쉰 구간이 있으면 쉼표로 나눈다) */
 function onAirRanges(c){
@@ -12494,10 +12570,11 @@ function onAirRanges(c){
   return out;
 }
 const md2=d=>`${d.getMonth()+1}/${d.getDate()}`;
+/* 쉰 구간이 있으면 줄을 나눠 적는다 — 한 줄로 이어 붙이면 칸을 넘어가 읽기 어렵다 (v68) */
 const onAirText=c=>{
   const r=onAirRanges(c);
   if(!r.length)return '–';
-  return r.map(([a,b])=>`${md2(ALLDATES[a])}~${md2(ALLDATES[b])}`).join(', ');
+  return r.map(([a,b])=>`${md2(ALLDATES[a])}~${md2(ALLDATES[b])}`).join('\n');
 };
 async function exportDashboard(){
   const btn=$('reportBtn');
@@ -12544,7 +12621,33 @@ async function exportDashboard(){
       s1.merges.push({r1:r0,c1:1,r2:r0,c2:3});});
     blank(R);
 
-    /* KPI 달성 현황은 리포트에 넣지 않는다 (화면에서만 본다) */
+    /* ---- 주요 지표 달성 현황 — 화면 위쪽 카드와 같은 지표·같은 계산 (v68) ----
+       지표 / 목표 / 실적 / 달성률 네 열로 컴팩트하게. 단가(CPM·CPC…)는 낮을수록 좋으므로
+       달성률을 목표÷실적으로 뒤집어 읽는다 (화면 카드와 같은 규칙). */
+    (function statTable(){
+      const cols=(typeof cfgCols==='function'&&typeof STAT_CFG!=='undefined')?cfgCols(STAT_CFG):[];
+      if(!cols.length)return;
+      const ag=aggFacts(paceFacts()),ex=aggExp(activeLines());
+      const LOW=['cpm','cpc','cpv','cpa','cpi','cpe'];
+      const body=[];
+      cols.forEach(k=>{
+        const M=METRICS[k];if(!M)return;
+        const av=mval(k,ag),ev=mval(k,ex);
+        if(!isFinite(av)&&!isFinite(ev))return;
+        const isAbs=M.kind==='abs';
+        const rate=isAbs?(ev?av/ev:NaN):(LOW.includes(k)?(av?ev/av:NaN):(ev?av/ev:NaN));
+        body.push([{v:M.l,s:XS.rowhdr},
+          xlCell(isFinite(ev)?M.f(ev):'–',''),
+          xlCell(isFinite(av)?M.f(av):'–',''),
+          isFinite(rate)?{v:rate,n:1,s:XS.pct}:{v:'–',s:XS.txt}]);});
+      if(!body.length)return;
+      push(R,[T('주요 지표 달성 현황',3)]);
+      push(R,[T('목표는 캠페인 전체 기준(예상 효율·예산), 실적은 조회 기간의 집행값입니다. '
+        +'CPM·CPC 처럼 낮을수록 좋은 지표는 목표 ÷ 실적으로 읽습니다.',2)]);
+      push(R,[T('지표',XS.hdr),T('목표',XS.hdr),T('실적',XS.hdr),T('달성률',XS.hdr)]);
+      body.forEach(r=>push(R,r));
+      blank(R);
+    })();
 
     /* ---- 일자별 효율 비교 — 차트 그림 ---- */
     const chartSvg=document.querySelector('#chartDaily svg');
@@ -12562,7 +12665,9 @@ async function exportDashboard(){
       const card=sec.nextElementSibling&&sec.nextElementSibling.nextElementSibling;
       const tbl=card?card.querySelector('table.tbl'):null;
       if(!tbl)return;
-      push(R,[T(sec.textContent.replace(/숨기기|⚙ 헤더 편집|서머리 삭제/g,'').trim(),3)]);
+      /* 제목만 — 옆에 붙은 범례·버튼·ⓘ 안내 글은 넣지 않는다 (v68) */
+      const nmEl=sec.querySelector('[data-nm]');
+      push(R,[T(((nmEl?nmEl.textContent:sec.textContent)||'').replace(/\s+/g,' ').trim(),3)]);
       const g=tableToRows(tbl,R.length);
       g.rows.forEach(r=>R.push(r));
       s1.merges.push(...g.merges);
@@ -12572,7 +12677,7 @@ async function exportDashboard(){
     const crs=filteredCreatives(),mrg=s1.merges;
     if(crs.length){
       push(R,[T('소재별 효율',3)]);
-      push(R,[T('온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 쉼표로 나눠 적습니다.',2)]);
+      push(R,[T('온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 줄을 나눠 적습니다.',2)]);
       const dims=GANTT.rows.map(r=>r.k);
       const mcols=cfgCols(GANTT);
       push(R,dims.map(k=>T((DIMS.find(d=>d.k===k)||{l:k}).l,XS.hdr))
@@ -13679,7 +13784,7 @@ const trendFileKind=n=>{
   if(['mp4','mov','webm','avi','mkv'].includes(e))return 'video';
   return 'file';};
 const TREND_KIND_LABEL={image:'이미지',pdf:'PDF',excel:'엑셀',word:'워드',ppt:'PPT',
-  video:'영상',link:'링크',file:'파일'};
+  video:'영상',file:'파일'};
 
 /* ---------- 매체명이 갈라지지 않게 (v66) ----------
    "NAVER GFA" 와 "네이버 GFA" 는 사람 눈에는 같은 매체지만 글자로는 남남이다.
@@ -14084,7 +14189,7 @@ function renderTrend(){
   {const b=$('trendCatEdit');if(b)b.onclick=openTrendCats;}
 }
 function trendCardHTML(p){
-  const kind=(p.files&&p.files[0]&&p.files[0].kind)||(p.link?'link':'file');
+  const kind=(p.files&&p.files[0]&&p.files[0].kind)||'file';
   const th=p.thumb||'';
   return `<article class="tcard" data-id="${esc(p.id)}" tabindex="0">
     <div class="tthumb">${th?`<img src="${esc(th)}" alt="">`
@@ -14134,9 +14239,6 @@ function openTrendPost(id){
               <span class="tfk">${esc(TREND_KIND_LABEL[f.kind]||'파일')}</span>
               <span class="tfn">${esc(f.name)}</span>
               <span class="tfs">${trendMB(f.size||0)}</span><span class="tfd">내려받기</span></button>`).join('')}
-           ${p.link?`<a class="tfile" href="${esc(p.link)}" target="_blank" rel="noopener">
-              <span class="tfk">링크</span><span class="tfn">${esc(p.link)}</span>
-              <span class="tfd">열기</span></a>`:''}
          </div>
          <div class="tdact">
            ${trendCanEdit(p)?`<button class="btn sm" id="tdEdit">수정</button>
@@ -14179,15 +14281,11 @@ function openTrendPost(id){
 }
 function trendItems(p){
   const out=(p.files||[]).map((f,i)=>({f,i}));
-  if(p.link)out.push({link:p.link});
   if(!out.length&&p.thumb)out.push({thumbOnly:true});
   return out;
 }
 function trendStageHTML(it,p){
   if(!it)return `<div class="tnofile">미리 볼 자료가 없습니다.</div>`;
-  if(it.link)return `<div class="tnofile"><b>링크 자료</b>
-    <span>${esc(it.link)}</span>
-    <a class="btn sm" href="${esc(it.link)}" target="_blank" rel="noopener">새 창에서 열기</a></div>`;
   const f=it.f;
   const url=trendFileURL(p,it.i);
   if(f.kind==='image'&&url)return `<img class="tstageimg" src="${esc(url)}" alt="${esc(f.name)}">`;
@@ -14263,8 +14361,19 @@ function openTrendForm(post){
   ov.querySelector('.tdbody').innerHTML=
    `<div class="tform">
       <h3>${edit?'자료 수정':'자료 등록'}</h3>
+      <div class="tdrop" id="tfDrop" tabindex="0" role="button">
+        <b>여기로 파일을 끌어다 놓으세요</b>
+        <span>또는 눌러서 고르기 — PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</span>
+        <span class="lim">파일 한 개당 ${TREND_MAX_MB}MB · 한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 까지</span>
+        <input id="tfFiles" type="file" multiple hidden
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.doc,.docx,.ppt,.pptx,.mp4,.mov,.webm">
+      </div>
+      <div class="tflist" id="tfList"></div>
+      <div class="tfsum" id="tfSum"></div>
       <label class="tfrow"><span>제목 <b class="req">*</b></span>
-        <input id="tfTitle" maxlength="120" value="${esc(p.title)}" placeholder="자료 이름"></label>
+        <input id="tfTitle" maxlength="120" value="${esc(p.title)}" placeholder="파일을 붙이면 파일 이름으로 채워집니다"></label>
+      <div class="tfnote">카드 그림은 <b>파일 내용으로</b> 만들어 줍니다 — PDF 는 첫 장,
+        영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.</div>
       <label class="tfrow top"><span>본문</span>
         <textarea id="tfBody" rows="4" maxlength="2000"
           placeholder="자료 설명 — 카드에는 첫 줄만 보입니다">${esc(p.body)}</textarea></label>
@@ -14278,19 +14387,6 @@ function openTrendForm(post){
       <label class="tfrow"><span>해시태그</span>
         <input id="tfTags" value="${esc((p.tags||[]).join(', '))}"
           placeholder="쉼표로 구분 · 최대 5개"></label>
-      <label class="tfrow"><span>파일</span>
-        <input id="tfFiles" type="file" multiple
-          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.doc,.docx,.ppt,.pptx,.mp4,.mov,.webm"></label>
-      <div class="tfnote">파일 한 개당 ${TREND_MAX_MB}MB · 한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 까지
-        · PDF · 이미지 · 엑셀 · 워드 · PPT · 영상</div>
-      <div class="tflist" id="tfList"></div>
-      <div class="tfsum" id="tfSum"></div>
-      <label class="tfrow"><span>링크</span>
-        <input id="tfLink" value="${esc(p.link)}" placeholder="https:// (선택)"></label>
-      <label class="tfrow"><span>썸네일</span>
-        <input id="tfThumb" type="file" accept="image/*"></label>
-      <div class="tfnote">비워 두면 <b>파일 내용으로</b> 만들어 줍니다 — PDF 는 첫 장,
-        영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.</div>
       <label class="tfchk"><input id="tfSecret" type="checkbox"${p.secret?' checked':''}>
         <span>대외비 — 카드에 <b>대외비</b> 표시가 붙습니다</span></label>
       ${(!logged&&!edit)?`<div class="tguest">
@@ -14341,9 +14437,9 @@ function openTrendForm(post){
       <button class="tfx" data-new="${i}" title="빼기">✕</button></div>`).join('');
     q('#tfList').innerHTML=keep+add;
     q('#tfList').querySelectorAll('[data-old]').forEach(b=>b.onclick=()=>{
-      p.files.splice(+b.dataset.old,1);drawFiles();});
+      p.files.splice(+b.dataset.old,1);drawFiles();syncTitle();});
     q('#tfList').querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>{
-      picked.splice(+b.dataset.new,1);drawFiles();});
+      picked.splice(+b.dataset.new,1);drawFiles();syncTitle();});
     /* 첨부 합계를 늘 보여 준다 — 10MB 짜리를 여럿 붙이면 금방 커진다 */
     const tot=totalBytes();
     const sum=q('#tfSum');
@@ -14354,30 +14450,53 @@ function openTrendForm(post){
         +(over?' — 합계를 넘어 올릴 수 없습니다':'');}};
   const totalBytes=()=>(p.files||[]).reduce((a,f)=>a+(+f.size||0),0)
     +picked.reduce((a,f)=>a+f.size,0);
+  /* 제목은 붙인 파일 이름으로 채워 준다 — 사람이 한 글자라도 고치면 더 건드리지 않는다 */
+  let titleTouched=!!p.title;
+  const fileTitle=n=>String(n||'').replace(/\.[A-Za-z0-9]{1,5}$/,'').replace(/[_]+/g,' ').trim();
+  const syncTitle=()=>{
+    if(titleTouched)return;
+    const first=picked[0]||(p.files||[])[0];
+    const t=first?fileTitle(first.name):'';
+    const e2=q('#tfTitle');
+    if(e2&&e2.value!==t)e2.value=t.slice(0,120);};
+  q('#tfTitle').oninput=()=>{titleTouched=true;};
   drawFiles();
-  q('#tfFiles').onchange=e=>{
+  /* 파일 고르기 — 버튼으로도, 끌어다 놓기로도 */
+  const addFiles=list=>{
     const over=[],full=[];
-    [...e.target.files].forEach(f=>{
+    [...list].forEach(f=>{
       if(f.size>TREND_MAX_MB*1048576){over.push(`${f.name} (${trendMB(f.size)})`);return;}
       if(totalBytes()+f.size>TREND_MAX_TOTAL_MB*1048576){full.push(f.name);return;}
       picked.push(f);});
-    e.target.value='';
     err([over.length?`${TREND_MAX_MB}MB 를 넘어 뺐습니다 — ${over.join(', ')}`:'',
          full.length?`한 자료 합계 ${TREND_MAX_TOTAL_MB}MB 를 넘어 뺐습니다 — ${full.join(', ')}`:'']
         .filter(Boolean).join(' / '));
-    drawFiles();};
-  q('#tfThumb').onchange=e=>{
-    const f=e.target.files[0];
-    if(f&&f.size>TREND_MAX_MB*1048576){err(`썸네일도 ${TREND_MAX_MB}MB 까지입니다.`);e.target.value='';return;}
-    thumbFile=f||null;};
+    drawFiles();syncTitle();};
+  q('#tfFiles').onchange=e=>{addFiles(e.target.files);e.target.value='';};
+  const drop=q('#tfDrop');
+  drop.onclick=()=>q('#tfFiles').click();
+  drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();q('#tfFiles').click();}};
+  /* 브라우저 기본 동작(파일을 새 탭에서 열기)을 막아야 놓을 수 있다 */
+  let dragN=0;
+  const stop=e=>{e.preventDefault();e.stopPropagation();};
+  drop.addEventListener('dragenter',e=>{stop(e);dragN++;drop.classList.add('over');});
+  drop.addEventListener('dragover',e=>{stop(e);try{e.dataTransfer.dropEffect='copy';}catch(x){}});
+  drop.addEventListener('dragleave',e=>{stop(e);if(--dragN<=0){dragN=0;drop.classList.remove('over');}});
+  drop.addEventListener('drop',e=>{
+    stop(e);dragN=0;drop.classList.remove('over');
+    const dt=e.dataTransfer;if(!dt)return;
+    const fs=dt.files&&dt.files.length?dt.files
+      :[...(dt.items||[])].map(i=>i.kind==='file'?i.getAsFile():null).filter(Boolean);
+    if(fs&&fs.length)addFiles(fs);});
+  /* 창 어디에 떨어뜨려도 파일이 새 탭에서 열리지 않게 */
+  ['dragover','drop'].forEach(t=>ov.addEventListener(t,e=>{
+    if(!drop.contains(e.target))stop(e);}));
   q('#tfCancel').onclick=()=>ov.remove();
   q('#tfOk').onclick=async()=>{
     const title=q('#tfTitle').value.trim();
     if(!title){err('제목을 넣어 주세요.');return;}
     const tags=q('#tfTags').value.split(',').map(s=>s.trim().replace(/^#/,''))
       .filter(Boolean).slice(0,5);
-    const link=q('#tfLink').value.trim();
-    if(link&&!/^https?:\/\//i.test(link)){err('링크는 http:// 또는 https:// 로 시작해야 합니다.');return;}
     let gid='',ghash=p.guest_hash||'';
     if(!logged&&!edit){
       gid=q('#tfGid').value.trim();
@@ -14394,7 +14513,7 @@ function openTrendForm(post){
       const rec={...p,title,body:q('#tfBody').value.trim(),
         category:q('#tfCat').value,
         medium:needMedia(q('#tfCat').value)?q('#tfMedium').value.trim():'',
-        tags,secret:q('#tfSecret').checked,link,
+        tags,secret:q('#tfSecret').checked,link:'',
         guest_id:gid||p.guest_id||'',guest_hash:ghash};
       await trendPut(rec,picked,thumbFile,edit,say);
       ov.remove();
@@ -14415,7 +14534,7 @@ async function trendPut(rec,picked,thumbFile,edit,say){
     /* 파일 내용으로 만들어 본다 — 새 파일을 붙였으면 다시 만든다 */
     const auto=await trendAutoThumb(picked,say);
     thumb=auto||thumb||trendMakeThumb(rec.title,
-      picked.length?trendFileKind(picked[0].name):(rec.link?'link':'file'));}
+      picked.length?trendFileKind(picked[0].name):'file');}
   const newFiles=[];
   if(trendOn()){
     let i=0;
