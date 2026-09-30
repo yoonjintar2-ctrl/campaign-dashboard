@@ -551,9 +551,12 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const map=new Map();
   facts.forEach(f=>{const key=dims.map(d=>f[d]).join(SEP);
     if(!map.has(key))map.set(key,[]);map.get(key).push(f);});
+  /* 라인의 차원 값 — 팩트와 같은 규칙으로 비교한다. 팩트는 slot 을 `l.slot||''` 로 담으므로
+     지면을 안 적은 라인(slot 없음)도 '' 로 맞춰야 예산 · 목표 · 달성률이 붙는다 (v78) */
+  const lv=(l,d)=>l[d]==null?'':l[d];
   /* 기본 정렬 — 예산(Gross)이 큰 순서. 같으면 이름순. (사용자가 끌어서 바꾼 순서가 있으면 그게 우선) */
   const budgetOf=vals=>sum(LINES.filter(l=>vals.every((v,i)=>
-      NO_EXP_DIMS.includes(dims[i])||l[dims[i]]===v)).map(lineGross));
+      NO_EXP_DIMS.includes(dims[i])||lv(l,dims[i])===v)).map(lineGross));
   let entries=[...map.entries()].sort((a,b)=>{
     const av=a[0].split(SEP),bv=b[0].split(SEP);
     for(let i=0;i<dims.length;i++){
@@ -569,7 +572,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const expIdx=dims.map((d,i)=>NO_EXP_DIMS.includes(d)?-1:i).filter(i=>i>=0);
   const finer=expIdx.length<dims.length;                 /* 라인보다 잘게 나뉘었는가 */
   const expKey=vals=>expIdx.map(i=>vals[i]).join(SEP);
-  const expFor=vals=>aggExp(LINES.filter(l=>expIdx.every(i=>i>=vals.length||l[dims[i]]===vals[i])));
+  const expFor=vals=>aggExp(LINES.filter(l=>expIdx.every(i=>i>=vals.length||lv(l,dims[i])===vals[i])));
   /* 머리글 정렬 (v72) — 화면에서만. 같은 부모 안에서 그 열 값으로 형제끼리 줄 세운다 */
   const hpKey='piv:'+(cfg.id||'mix');
   const srt=HP_SORT[hpKey];
@@ -644,7 +647,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
         /* 상위 계층 셀을 잡고 끌면 그 그룹 전체가 같은 부모 안에서 이동한다 */
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
           +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
-      const rls=LINES.filter(l=>expIdx.every(i2=>i2>=vals.length||l[dims[i2]]===vals[i2]));
+      const rls=LINES.filter(l=>expIdx.every(i2=>i2>=vals.length||lv(l,dims[i2])===vals[i2]));
       h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols))+'</tr>';
     }else{
       const L=r.level,vals=r.vals;

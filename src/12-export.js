@@ -373,7 +373,7 @@ async function exportDashboard(){
   const label=lb?lb.textContent:'';
   if(btn){btn.disabled=true;if(lb)lb.textContent='만드는 중…';}
   try{
-    const sc=viewScope(),pr=paceRatio(),ps=paceScope();
+    const sc=viewScope(),pr=paceRatio();
     const T=(v,s)=>({v,s:s||0});
     const push=(rows,arr)=>rows.push(arr);
     const blank=rows=>rows.push([]);
@@ -387,24 +387,30 @@ async function exportDashboard(){
 
     /* ---- 캠페인 집행 현황 (라벨 · 값 카드형) ---- */
     const b=aggFacts(paceFacts()),budget=sum(activeLines().map(lineGross));
-    /* 화면의 캠페인 진행 현황과 같은 기준 — 각 라인이 자기 KPI 로 쌓은 실적 합 ÷ 목표 합 */
-    const kr=paceKpiRows();
-    const kAct=sum(kr.map(x=>x.act)),kGoal=sum(kr.map(x=>x.goal));
-    const allAch=kGoal?kAct/kGoal:0;
+    /* 종합 KPI 달성률 — KPI 도넛 가운데 숫자와 같은 규칙 (v78).
+       라인을 자기 KPI 지표별로 묶어 집행 ÷ 목표를 구하고, KPI 가 여러 개면 예산으로 가중 평균한다.
+       예전에는 노출 + 클릭 + 조회 … 를 그냥 더해 나눠서 노출 수가 결과를 좌우했다
+       (같은 이유로 "목표 달성 수치 · 종합 목표" 합계 줄도 뺐다 — 단위가 다른 수의 합이다). */
+    const kr=kpiAchRows(activeLines());
+    const allAch=kpiAchMix(kr);
+    /* 집행 경과는 화면(캠페인 진행 현황)과 같이 **캠페인 전체** 기준 —
+       조회 기간을 좁혀도 "총 N일" 이 줄지 않는다. 조회 기간은 따로 적는다 (v78) */
+    const cs=campScope();
+    const elapsedAll=Math.min(cs.days,Math.max(0,dIdx(sc.endIso)-cs.i0+1));
     push(R,[T('캠페인 집행 현황',3)]);
     const info=[
       ['캠페인명',{v:CAMPAIGN.name,s:XS.val}],
       ['광고주',{v:CAMPAIGN.advertiser||'–',s:XS.val}],
-      ['집행 기간',{v:`${campStart()} ~ ${campEnd()}  (${ps.days}일)`,s:XS.val}],
-      ['조회 기간',{v:`${sc.startIso} ~ ${sc.endIso}`,s:XS.val}],
-      ['집행 경과',{v:`${ps.elapsed}일차 / ${ps.days}일`,s:XS.val}],
+      ['집행 기간',{v:`${cs.startIso} ~ ${cs.endIso}  (${cs.days}일)`,s:XS.val}],
+      ['조회 기간',{v:`${sc.startIso} ~ ${sc.endIso}  (${sc.days}일)`,s:XS.val}],
+      ['집행 경과',{v:`${elapsedAll}일차 / 총 ${cs.days}일`,s:XS.val}],
       ['총 광고비',{v:budget,n:1,s:XS.valWon}],
       ['소진 광고비',{v:b.cost,n:1,s:XS.valWon}],
-      ['목표 달성 수치',{v:kAct,n:1,s:XS.val}],
-      ['종합 목표',{v:kGoal,n:1,s:XS.val}],
-      ['종합 KPI 달성률',{v:allAch,n:1,s:XS.valPct}],
-      ['목표 페이스',{v:pr,n:1,s:XS.valPct}]
+      ['종합 KPI 달성률',{v:allAch,n:1,s:XS.valPct}]
     ];
+    /* KPI 가 여럿이면 지표별 달성률도 적는다 (예산이 큰 KPI 부터) */
+    if(kr.length>1)kr.forEach(x=>info.push([`KPI 달성률 · ${KPI_LABEL[x.k]||x.k}`,{v:x.ach,n:1,s:XS.valPct}]));
+    info.push(['목표 페이스',{v:pr,n:1,s:XS.valPct}]);
     info.forEach(([k,v])=>{
       const r0=R.length;
       push(R,[T(k,XS.label),v,{v:'',s:v.s},{v:'',s:v.s}]);
@@ -498,11 +504,16 @@ async function exportDashboard(){
     /* ---- 시트 2 · 일자별 상세 효율 ---- */
     const s2={name:'일자별 효율',rows:[],merges:[]};
     push(s2.rows,[T(`${CAMPAIGN.name} — 일자별 효율`,1)]);
-    push(s2.rows,[T(`캠페인 전 기간 ${campStart()} ~ ${campEnd()}   ·   주말·공휴일은 붉은 글씨, `
+    /* 조회 기간을 좁혔으면 **그 구간의 모든 날**, 아니면 캠페인 시작일 ~ 종료일 전체를 행으로 (v78).
+       예전에는 좁혀도 "캠페인 전 기간" 이라 적고 조회 기간 밖의 날을 빈 칸으로 채워 실적이 없는 것처럼 보였다.
+       (합계 행과 다른 시트가 모두 조회 기간 기준이라 행도 그 구간에 맞춘다) */
+    const rawNarrow=!rangeIsDefault();
+    push(s2.rows,[T(rawNarrow
+      ?`조회 기간 ${sc.startIso} ~ ${sc.endIso}   ·   주말·공휴일은 붉은 글씨, 실적이 없는 날은 빈 칸입니다.`
+      :`캠페인 전 기간 ${campStart()} ~ ${campEnd()}   ·   주말·공휴일은 붉은 글씨, `
       +`아직 도래하지 않았거나 실적이 없는 날은 빈 칸입니다.`,2)]);
     blank(s2.rows);
-    /* 캠페인 시작일 ~ 종료일 전체를 행으로 (도래하지 않은 날짜는 빈 칸) */
-    RAW_ALLDAYS=true;renderRaw();
+    RAW_ALLDAYS=rawNarrow?{i0:sc.i0,i1:sc.i1}:true;renderRaw();
     document.querySelectorAll('#rawHost .rawblock').forEach(blk=>{
       const ttl=blk.querySelector('.subsec');
       if(ttl)push(s2.rows,[T(ttl.textContent.replace(/\s+/g,' ').trim(),3)]);
