@@ -11521,19 +11521,25 @@ async function tryCode(raw){
   if(!CLOUD.on){
     gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
   gateMsg('확인 중…',true);
+  const seq=++OPEN_SEQ;                  /* 캠페인 열기 순번 (v80) — openCampaign 과 같은 규칙 */
   const {data,error}=await CLOUD.sb.rpc('open_by_code',{p_code:code});
   const c=Array.isArray(data)?data[0]:data;
+  if(seq!==OPEN_SEQ)return false;
   if(error||!c){gateMsg('그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.');return false;}
   const kind=c.code_kind==='staff'?'staff':'viewer';
+  /* 일별 실적까지 받아 둔 뒤 한 번에 갈아 끼운다 (v80) */
+  const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
+  if(seq!==OPEN_SEQ)return false;
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
+  CLOUD.dirty=false;
   /* 이 브라우저에 남아 있던 다른 캠페인의 입력 시트·소재·이슈를 먼저 비운다.
      (예전에는 이걸 빼먹어서 운영진 코드로 들어가면 데이터 입력 탭에
       전에 보던 캠페인의 시트가 그대로 남아 있었다) */
   clearWorkState();
   applyDoc(c.doc);
+  DOC_CID=c.id;
   rebuildPeriod();resetDateFilter(true);
-  const {data:rows}=await CLOUD.sb.rpc('stats_by_code',{p_code:code});
   if(rows&&rows.length)applyDaily(rows);
   /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
   try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
@@ -11616,8 +11622,10 @@ async function cloudInit(){
   CLOUD.sb.auth.onAuthStateChange((_e,session)=>{
     const u=session?.user||null;
     if(u&&(!CLOUD.user||CLOUD.user.id!==u.id)){CLOUD.user=u;afterSignIn();}
-    else if(!u&&CLOUD.user){CLOUD.user=null;paintAuth();cloudState('로그아웃됨 · 데모 모드');}});
+    else if(!u&&CLOUD.user){CLOUD.user=null;CLOUD.signedFor=null;paintAuth();cloudState('로그아웃됨 · 데모 모드');}});
   const {data}=await CLOUD.sb.auth.getSession();
+  /* afterSignIn 은 같은 계정에 한 번만 돈다 (v80) — 로그인 이벤트와 세션 확인이 둘 다 부르면
+     캠페인 목록 · 열기가 두 번 겹쳐 돌았다 */
   if(data?.session?.user){CLOUD.user=data.session.user;hideGate();await afterSignIn();}
   else{paintAuth();cloudState('로그인하면 내 캠페인이 열립니다');gateReady();endBoot();}
 }
@@ -11632,7 +11640,7 @@ async function signInGoogle(){
 async function signOutCloud(){
   if(!CLOUD.on)return;
   await CLOUD.sb.auth.signOut();
-  CLOUD.user=null;CLOUD.campaign=null;CLOUD.role=null;CLOUD.list=[];
+  CLOUD.user=null;CLOUD.campaign=null;CLOUD.role=null;CLOUD.list=[];CLOUD.signedFor=null;DOC_CID=null;
   CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='guest';
   paintAuth();paintCampSel();cloudState('로그아웃됨');
   const g=gateEl();if(g)g.classList.remove('hidden');
@@ -11641,6 +11649,14 @@ async function signOutCloud(){
   try{syncUrl();}catch(e){}
 }
 async function afterSignIn(){
+  const u=CLOUD.user;
+  if(!u)return;
+  if(CLOUD.signedFor===u.id)return CLOUD.signInP;
+  CLOUD.signedFor=u.id;
+  CLOUD.signInP=afterSignIn0();
+  return CLOUD.signInP;
+}
+async function afterSignIn0(){
   const u=CLOUD.user;
   CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;hideGate();
   /* 프로필 upsert — 트리거가 없어도 이름/이메일이 채워지도록 */
@@ -11821,23 +11837,39 @@ function paintCampSel(){
     ||'<option value="">캠페인 없음</option>')
     +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가 및 관리</option>';
 }
+/* 지금 화면에 올라와 있는 문서가 **어느 캠페인 것인지** (v80).
+   저장할 때 CLOUD.campaign 과 다르면 멈춘다 — 캠페인 열기가 겹쳐 화면(한 캠페인)과 저장 대상(다른 캠페인)이
+   어긋났을 때 다른 캠페인을 덮어쓰지 않게 하는 마지막 안전장치 */
+var DOC_CID=null;
+/* 캠페인 열기 순번 (v80) — 열기가 겹치면 **마지막에 시작한 것만** 화면에 반영한다.
+   예전에는 주소의 캠페인과 목록 첫 캠페인을 동시에 열면서 서로 섞였다
+   (상단은 BMW 이노베이션인데 데이터는 한화 — 5월 실적이 보인 원인) */
+var OPEN_SEQ=0;
 async function openCampaign(id){
   if(!CLOUD.on||!id)return;
+  const seq=++OPEN_SEQ;
   /* 불러오는 동안 화면을 가린다 — 예전 캠페인이나 예시 데이터가 잠깐 비치지 않게 */
   startBoot();
   CLOUD.busy=true;cloudState('불러오는 중…');
+  /* ① 필요한 것을 **먼저 다 받아 온 뒤** ② 한 번에 갈아 끼운다 — 중간에 다른 열기가 끼어들 틈을 없앤다 */
   const {data:c,error}=await CLOUD.sb.from('campaigns').select('*').eq('id',id).single();
+  if(seq!==OPEN_SEQ)return;                /* 그 사이 다른 캠페인 열기가 시작됐다 — 그쪽이 마무리한다 */
   if(error){CLOUD.busy=false;endBoot();cloudState('열지 못했습니다: '+error.message);return;}
-  CLOUD.campaign=c;
   const {data:mem}=await CLOUD.sb.from('campaign_members')
     .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
-  CLOUD.role=mem?.role||'viewer';
-  clearWorkState();
-  applyDoc(c.doc);
-  rebuildPeriod();resetDateFilter(true);
+  if(seq!==OPEN_SEQ)return;
   const {data:rows}=await CLOUD.sb.from('daily_stats')
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
+  if(seq!==OPEN_SEQ)return;
+  /* ---- 여기서부터는 기다림 없이 한 번에: 저장 대상과 화면 데이터가 늘 같은 캠페인 ---- */
+  CLOUD.campaign=c;
+  CLOUD.role=mem?.role||'viewer';
+  CLOUD.dirty=false;
+  clearWorkState();
+  applyDoc(c.doc);
+  DOC_CID=c.id;
+  rebuildPeriod();resetDateFilter(true);
   applyDaily(rows);
   /* 저장해 둔 입력 시트가 있으면 그걸로 일별 실적을 다시 채운다 (시트가 원본) */
   try{if(Array.isArray(c.doc&&c.doc.sheet)&&c.doc.sheet.length&&typeof applySheet==='function')applySheet();}catch(e){}
@@ -11922,6 +11954,10 @@ async function cloudSave(silent){
     return;}
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
+  /* ⚠ 화면의 문서가 저장 대상 캠페인 것이 아니면 멈춘다 (v80 — 다른 캠페인을 덮어쓰지 않게) */
+  if(DOC_CID!==CLOUD.campaign.id){
+    cloudState('저장하지 않았습니다 — 화면의 데이터가 이 캠페인 것이 아닙니다. 새로고침해 주세요');
+    CLOUD.dirty=false;return;}
   CLOUD.saving=true;CLOUD.saveAgain=false;
   try{
   cloudState('저장 중…');
@@ -12034,6 +12070,8 @@ function clearWorkState(){
   if(typeof SHEET!=='undefined')SHEET.length=0;
   /* 다른 캠페인의 "시트가 채운 칸" · 일별 배열 기준일을 들고 가지 않게 (v78) */
   SHEET_COVER=null;DAILY_D0=null;
+  /* 화면이 비었으니 어느 캠페인 문서도 아니다 — 여는 쪽(openCampaign · tryCode)이 다시 적는다 (v80) */
+  DOC_CID=null;
   if(typeof SHEET_HIST!=='undefined')SHEET_HIST.length=0;
   if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
   if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
