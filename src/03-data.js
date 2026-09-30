@@ -349,6 +349,12 @@ function buildFacts(){
   CREATIVES.forEach(c=>{c.daily={};AMET.forEach(m=>c.daily[m]=[]);c.daily.cost=[];});
   LINES.forEach(l=>{
     const cs=CREATIVES.filter(c=>c.lid===l.id);
+    /* 원 단위 맞추기 (v79) — 날마다 따로 반올림하면 소수점이 있는 소진비용(123,333.33원/일 등)의
+       합이 엑셀과 몇 원씩 어긋났다(−3.88원). 누적값을 반올림한 차이로 날마다 나눠 담아
+       **라인 합계 = 원본 합계의 반올림** 이 되게 한다 */
+    const RD={};
+    AMET.forEach(m=>{const a=(l.daily&&l.daily[m])||[];let acc=0,prev=0;RD[m]=[];
+      for(let i=0;i<ELAPSED;i++){acc+=(+a[i]||0);const c=Math.round(acc);RD[m].push(c-prev);prev=c;}});
     for(let i=0;i<ELAPSED;i++){
       const d0i=ALLDATES[i];
       /* 소재가 하나도 등록되지 않은 라인 — 실적을 버리지 않고 "(소재 미등록)" 한 줄로 담는다.
@@ -357,7 +363,7 @@ function buildFacts(){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
           target:l.target,line:l.line,creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
-        AMET.forEach(m=>f[m]=Math.round((l.daily[m]&&l.daily[m][i])||0));
+        AMET.forEach(m=>f[m]=RD[m][i]);
         f.cost=toGross(f.net,feeOf(l));
         FACTS.push(f);
         continue;}
@@ -366,9 +372,9 @@ function buildFacts(){
          → 소재별 숫자를 그대로 쓰면서도 "소재 합계 = 라인 합계" 는 항상 지켜진다 */
       const norm=a=>{const t=sum(a)||1;return a.map(v=>(+v||0)/t);};
       const part={};
-      AMET.forEach(m=>{part[m]=splitExact((l.daily[m]&&l.daily[m][i])||0,norm(wt[m]));});
+      AMET.forEach(m=>{part[m]=splitExact(RD[m][i],norm(wt[m]));});
       /* 소진비용도 Gross 를 먼저 만든 뒤 나눈다 — 소재마다 따로 역산하면 합이 안 맞는다 */
-      part.cost=splitExact(toGross((l.daily.net&&l.daily.net[i])||0,feeOf(l)),norm(wt.cost));
+      part.cost=splitExact(toGross(RD.net[i],feeOf(l)),norm(wt.cost));
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
@@ -640,6 +646,8 @@ const aggExp=ls=>{const b=zeroB();b.budget=0;b.value=0;b.netSum=0;b.bonusSum=0;
     if(!b.dstart||l.start<b.dstart)b.dstart=l.start;
     if(!b.dend||l.end>b.dend)b.dend=l.end;});
   b.feeA=b.budget?wa/b.budget:0;b.feeR=b.budget?wr/b.budget:0;
+  /* 이 묶음의 라인들 — 행마다 진도율을 따로 계산할 때 쓴다 (v79) */
+  Object.defineProperty(b,'lines',{value:ls,enumerable:false});
   return b;};
 /* 날짜를 M/D 로 (앞자리 0 없이). 연도가 올해와 다르면 YY/M/D */
 const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
@@ -704,6 +712,17 @@ function resetDateFilter0(auto){
     FILTER.from=f;FILTER.to=t;return;}
   FILTER.from=d.from;FILTER.to=d.to;
 }
+/* 기본 기간 따라가기 (v79) — 사람이 기간을 직접 고르지 않았으면(FILTER_TOUCHED 아님)
+   라인 · 실적이 바뀔 때마다 기본 구간(또는 저장된 조회 기간)으로 다시 맞춘다.
+   예전에는 빈 캠페인을 만들 때 잡힌 "오늘 ~ 오늘" 이 그대로 남아 엑셀을 불러와도 대시보드가 0 이었고,
+   매일 실적을 더 불러와도 새 날짜가 기간 밖에 남았다(새로고침해야 보였다).
+   바뀌었으면 true — 부르는 쪽이 날짜 칸을 다시 그린다 */
+function followDefaultRange(){
+  if(FILTER_TOUCHED)return false;
+  const before=FILTER.from+'|'+FILTER.to;
+  resetDateFilter0();
+  return before!==FILTER.from+'|'+FILTER.to;
+}
 /* 문서에 담을 조회 기간 — 이번에 직접 고른 값 > 문서에서 받은 값 > 없음(기본 구간) */
 function rangeForDoc(){
   if(FILTER_TOUCHED&&ISO_RE.test(FILTER.from||'')&&ISO_RE.test(FILTER.to||''))
@@ -719,7 +738,9 @@ const activeLines=()=>LINES.filter(l=>['segment','media','line'].every(k=>FILTER
    구분·매체·제품을 고르면 그 라인들이 실제로 집행되는 가장 빠른 날 ~ 가장 늦은 날로 좁힌다.
    대시보드의 효율/표/소재 운영 탭이 모두 이 스코프를 공유한다. */
 const mkScope=(s,e)=>{
-  let i0=Math.max(dIdx(s),0),i1=Math.min(dIdx(e),TOTAL_DAYS-1);
+  /* 캠페인 기간 밖의 날짜가 들어와도 기간 안으로 (v79 — 빈 캠페인에서 잡힌 "오늘" 이
+     새로 불러온 라인의 종료일보다 뒤면 ALLDATES 밖을 읽어 화면이 멈췄다) */
+  let i0=Math.min(Math.max(dIdx(s),0),Math.max(TOTAL_DAYS-1,0)),i1=Math.min(dIdx(e),TOTAL_DAYS-1);
   if(i1<i0)i1=i0;
   const days=i1-i0+1;
   return {i0,i1,days,elapsed:Math.max(0,Math.min(ELAPSED-i0,days)),

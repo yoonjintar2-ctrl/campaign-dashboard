@@ -316,7 +316,8 @@ function renderDaily(){
     if(!dom.length){lineVals=null;}else{
     const mn=Math.min(...dom),mx=Math.max(...dom);
     const rg=(mx-mn)||mx*.2||1;
-    const lt=niceTicks(mn-rg*.12,mx+rg*.12,3,false);
+    /* 비율 · 단가는 음수가 될 수 없다 — 여백 때문에 축이 −1.00% 까지 내려가지 않게 (v79) */
+    const lt=niceTicks(mn>=0?Math.max(0,mn-rg*.12):mn-rg*.12,mx+rg*.12,3,false);
     const lo=lt.lo,hi=lt.hi;
     const lTop=P.t+PH*0.34,lBot=P.t+PH*0.66;
     const LY=v=>lBot-(num(v)-lo)/(hi-lo)*(lBot-lTop);
@@ -325,7 +326,12 @@ function renderDaily(){
     lt.ticks.forEach(v=>{const y=LY(v);
       S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
       tickLabels.push({y,el:txt(W-P.r+9,y+3.5,lfmt(v),'start')});});
-    const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v)]:null).filter(Boolean);
+    const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v),i]:null).filter(Boolean);
+    /* 값이 없는 날(집행 공백)에서 선을 끊는다 (v79).
+       예전에는 빈 날을 건너뛰어 한 줄로 이었더니, 1차(6월)와 2차(9월) 사이 3개월을
+       대각선으로 가로지르고 곡선 보정이 튀어 9/1 근처에 고리가 생겼다 */
+    const runs=[];pts.forEach(p=>{const r=runs[runs.length-1];
+      if(r&&p[2]===r[r.length-1][2]+1)r.push(p);else runs.push([p]);});
     if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
     else{
     /* 꺾은선 — 굵게, 왼쪽에서 오른쪽으로 갈수록 진해지는 한 계열의 그라데이션 */
@@ -340,12 +346,19 @@ function renderDaily(){
     if(!rm)S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
       repeatCount:'indefinite',calcMode:'spline',
       keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid2);
-    S('path',{d:smoothPath(pts),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
-      'stroke-linecap':'round','stroke-linejoin':'round'},svg);
+    /* 그라데이션은 그래프 전체 폭 기준 — 끊긴 조각마다 색이 다시 시작하지 않게 */
+    lg2.setAttribute('gradientUnits','userSpaceOnUse');
+    lg2.setAttribute('x1',X0);lg2.setAttribute('x2',W-P.r);lg2.setAttribute('y1',0);lg2.setAttribute('y2',0);
+    runs.forEach(r=>{
+      /* 하루짜리 조각은 곡선을 만들 수 없으니 점 하나로 */
+      if(r.length<2){S('circle',{cx:r[0][0],cy:r[0][1],r:2.6,fill:`url(#${gid2})`},svg);return;}
+      S('path',{d:smoothPath(r),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
+        'stroke-linecap':'round','stroke-linejoin':'round'},svg);});
     /* 선 위의 점은 그리지 않는다 — 값은 끝의 레이블과 툴팁으로 읽는다 */
     const li=pts.length-1;
     const lb=S('text',{x:pts[li][0]+9,y:pts[li][1]-11,'text-anchor':'start','font-size':12,'font-weight':700,fill:LINE_TONE},svg);
-    lb.textContent=METRICS[lk].f(lineVals[EL-1]);
+    /* 레이블은 선이 끝난 자리의 값 — 마지막 날이 비어 있으면 '–' 가 찍히던 것 (v79) */
+    lb.textContent=METRICS[lk].f(lineVals[pts[li][2]]);
     /* 예상 효율 기준선 — 데이터 레이블은 우측 보조축 자리에 (눈금과 겹치면 그 눈금은 숨김) */
     if(useBench){
       const ev=benchV,y=LY(ev);
@@ -455,7 +468,9 @@ function buildSumCell(){
   SUM_CELL.bonusRate=(a,e,x)=>[HA(x)?'–':pct(e.bonusSum/e.budget,1)];
   SUM_CELL.cost=a=>[won(a.cost)];
   SUM_CELL.spend_r=(a,e,x)=>[null,x?NaN:a.cost/e.budget];
-  SUM_CELL.progress=()=>[pct(paceRatio(),1)];
+  /* 진도율 — 그 행의 라인들만으로 (v79). 예전에는 모든 행에 캠페인 전체 진도율이 찍혀
+     이미 끝난 1차 행도 96.9% 로 보였다 */
+  SUM_CELL.progress=(a,e)=>[pct(e&&e.lines&&e.lines.length?paceRatioOf(e.lines):paceRatio(),1)];
   /* 목표 단가 — 예산(Gross) ÷ 목표 수치. 실적 단가(CPM·CPC…)와 같은 방식이라 나란히 비교된다 */
   const goalCost=(k,mult)=>(a,e,x)=>[HA(x)||!e[k]||!e.budget?'–':won(e.budget/e[k]*(mult||1))];
   SUM_CELL.g_cpm=goalCost('imp',1000);

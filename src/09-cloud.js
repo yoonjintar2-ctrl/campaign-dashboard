@@ -291,7 +291,7 @@ function sheetToRows(){
       by.set(key,row);}
     DAILY_COLS.forEach(k=>{if(k!=='net')row[k]+=+r[k]||0;});
     /* 시트는 Gross 소진비용을 받고, 저장은 Net 기준(DB 열이 net)이다 */
-    row.net+=Math.round((+r.cost||0)*(1-feeOf(l)))||0;
+    row.net+=((+r.cost||0)*(1-feeOf(l)))||0;
     if(+r.net&&!+r.cost)row.net+=+r.net||0;
     AMET.forEach(m=>{if(!DAILY_COLS.includes(m))row.extra[m]=(+row.extra[m]||0)+(+r[m]||0);});
     /* 사용자가 열 설정에서 새로 만든 열도 함께 보관 */
@@ -301,7 +301,13 @@ function sheetToRows(){
   /* ⚠ DB 의 실적 열은 정수(bigint)다 (v78). 엑셀 서식만 정수이고 실제 값에 소수점이 있으면(1234.6)
      저장이 실패하는데, 그 전에 옛 일별 실적을 지워 버려 서버가 빈 채로 남았다 → 여기서 정수로 맞춘다 */
   const rows=[...by.values()];
-  rows.forEach(row=>DAILY_COLS.forEach(k=>{row[k]=Math.round(+row[k]||0);}));
+  /* 원 단위 맞추기 (v79) — 라인마다 날짜순으로 누적값을 반올림한 차이를 담는다.
+     행마다 따로 반올림하면 소수점 있는 소진비용의 합이 엑셀과 몇 원씩 어긋났다 */
+  const byLine=new Map();
+  rows.forEach(row=>{const a=byLine.get(row.line_key)||[];a.push(row);byLine.set(row.line_key,a);});
+  byLine.forEach(list=>{list.sort((x,y)=>x.stat_date<y.stat_date?-1:x.stat_date>y.stat_date?1:0);
+    DAILY_COLS.forEach(k=>{let acc=0,prev=0;
+      list.forEach(row=>{acc+=(+row[k]||0);const c=Math.round(acc);row[k]=c-prev;prev=c;});});});
   return rows;
 }
 
@@ -1014,13 +1020,28 @@ async function createCampaign(after){
     closeModal();                       /* 위에 얹힌 "새 캠페인" 창만 닫는다 */
     if(typeof after==='function')closeAllModals();
     cloudState('만드는 중…');
+    /* ⚠ 지금 열려 있던 캠페인에서 떼어 놓고 비운다 (v79).
+       예전에는 화면을 비운 뒤에도 CLOUD.campaign 이 앞 캠페인을 가리키고 있어서,
+       서버 생성이 실패하면(또는 그 사이 자동 저장이 돌면) **빈 화면이 앞 캠페인에 저장될 수** 있었다.
+       앞 캠페인에 저장 안 된 변경이 있으면 먼저 저장한다 */
+    const prevId=CLOUD.campaign&&CLOUD.campaign.id;
+    try{if(prevId&&CLOUD.dirty&&CLOUD.role!=='viewer')await cloudSave(true);}catch(e){}
+    CLOUD.campaign=null;CLOUD.dirty=false;CLOUD.busy=true;
     resetToBlank(name,adv);
     CAMPAIGN.advLogo=av.logo||'';renderBrand();
-    const {data,error}=await CLOUD.sb.from('campaigns').insert({
+    let data=null,error=null;
+    try{({data,error}=await withTimeout(CLOUD.sb.from('campaigns').insert({
       name,advertiser:adv,start_date:campStart(),end_date:campEnd(),
       doc:serializeDoc(),created_by:CLOUD.user.id,updated_by:CLOUD.user.id
-    }).select().single();
-    if(error){cloudState('생성 실패: '+error.message);return;}
+    }).select().single(),20000,'캠페인 만들기'));}catch(e){error={message:String(e&&e.message||e)};}
+    CLOUD.busy=false;
+    if(error||!data){
+      cloudState('생성 실패: '+(error?error.message:'응답 없음'));
+      /* 앞 캠페인으로 되돌아간다 — 빈 화면으로 남겨 두지 않는다 */
+      if(prevId){try{await openCampaign(prevId);}catch(e){}}
+      confirmModal('캠페인을 만들지 못했습니다.',(error?error.message:'서버 응답이 없습니다.')
+        +(prevId?' 앞에 열려 있던 캠페인으로 돌아갔습니다.':''),()=>{},'확인');
+      return;}
     /* 만든 사람을 마스터로 넣는 일은 DB 트리거(campaigns_add_owner)가 처리한다 */
     await loadCampaignList();
     await openCampaign(data.id);};

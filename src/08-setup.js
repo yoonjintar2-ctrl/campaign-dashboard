@@ -60,9 +60,22 @@ const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
    라인에는 배열(products/slots/targets/creatives)로 두고,
    집계용 차원 값(l.product 등)은 " · " 로 이어 붙인 한 덩어리로 유지한다. */
 const MULTI_DIMS=['product','slot','target','creative'];
-/* 콤마 · 가운뎃점 · 앰퍼샌드 어느 쪽으로 적어도 나눠 읽는다 */
-const MULTI_SPLIT=/[,\u00b7\u2022&]/;
-const parseMulti=v=>String(v==null?'':v).split(MULTI_SPLIT).map(x=>x.trim()).filter(Boolean);
+/* 콤마 · 가운뎃점으로 나눠 읽는다. **괄호 안의 콤마는 나누지 않는다** (v79) —
+   "VVC 2.0 (인스트림, 인피드)" 가 "VVC 2.0 (인스트림" · "인피드)" 두 개로 쪼개졌다.
+   & 는 이름에 흔히 들어가서("자녀 연령 & 학부모 호칭", P&G) 새로 나눌 때는 쓰지 않는다.
+   다만 예전에 & 로 나눠 등록한 조합을 실적 행에서 & 로 적어도 붙도록 매칭(dimMatch)에서는 & 도 본다 */
+const MULTI_SPLIT=/[,\u00b7\u2022]/;
+function splitOutsideParens(v,re){
+  const s=String(v==null?'':v),out=[];let depth=0,cur='';
+  for(const ch of s){
+    if('([{（［'.includes(ch))depth++;
+    else if(')]}）］'.includes(ch))depth=Math.max(0,depth-1);
+    if(!depth&&re.test(ch)){out.push(cur);cur='';continue;}
+    cur+=ch;}
+  out.push(cur);
+  return out.map(x=>x.trim()).filter(Boolean);}
+const parseMulti=v=>splitOutsideParens(v,MULTI_SPLIT);
+const parseMultiLoose=v=>splitOutsideParens(v,/[,\u00b7\u2022&]/);
 const joinMulti=a=>a.join(' · ');
 const lineCreatives=l=>Array.isArray(l.creatives)?l.creatives
   :CREATIVES.filter(c=>c.lid===l.id).map(c=>c.name);
@@ -574,7 +587,8 @@ function pushLineUndo(){LUNDO.push(snapLines());if(LUNDO.length>LUNDO_MAX)LUNDO.
   LREDO.length=0;markLineDirty();}
 function applyLineSnap(s){
   LINES=JSON.parse(s).map(l=>({...l,daily:{}}));
-  rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();}
+  rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
+  try{if(typeof CLOUD!=='undefined'&&CLOUD.campaign)markDirty();}catch(e){}}
 function undoLines(){if(!LUNDO.length)return;LREDO.push(snapLines());applyLineSnap(LUNDO.pop());}
 function redoLines(){if(!LREDO.length)return;LUNDO.push(snapLines());applyLineSnap(LREDO.pop());}
 /* --- 저장 상태 · 히스토리 --- */
@@ -582,12 +596,17 @@ let LINE_DIRTY=null,lineAutoTimer=null,LINE_HIST=[];
 function markLineDirty(){
   LINE_DIRTY=Date.now();clearTimeout(lineAutoTimer);
   /* 시안에서는 10분 대신 12초 뒤 자동 저장되는 것으로 시연한다 */
-  lineAutoTimer=setTimeout(()=>commitLineSnap('자동 저장'),12000);
+  /* 안내 문구와 같은 규칙 — 마지막 수정 후 AUTOSAVE_MIN 분 동안 더 고치지 않으면 히스토리에 남긴다 (v79 — 시안의 12초 제거) */
+  lineAutoTimer=setTimeout(()=>commitLineSnap('자동 저장'),(typeof AUTOSAVE_MIN!=='undefined'?AUTOSAVE_MIN:10)*60000);
+  /* 예상 효율이 바뀌면 클라우드 자동 저장 대상이 된다 (v79 — 엑셀로 라인만 불러오면 저장 대기로 안 잡혔다) */
+  try{if(typeof markDirty==='function'&&typeof CLOUD!=='undefined'&&CLOUD.campaign)markDirty();}catch(e){}
   const e=$('lineSaveState');if(e)e.textContent='변경됨 · 저장 대기';}
 function commitLineSnap(kind){
   if(kind==='자동 저장'&&!LINE_DIRTY)return;
   const now=new Date();
-  LINE_HIST.unshift({t:now,who:'윤석진',org:'미디어웍스',kind,snap:snapLines()});
+  /* 입력자 = 지금 로그인한 사람 (v79 — 시안용 이름 '윤석진 · 미디어웍스' 가 박혀 있었다) */
+  const u=histWho();
+  LINE_HIST.unshift({t:now,who:u.who,org:u.org,kind,snap:snapLines()});
   if(LINE_HIST.length>40)LINE_HIST.pop();
   LINE_DIRTY=null;
   const e=$('lineSaveState');if(e)e.textContent=`${kind} ${hhmm(now)}`;}
@@ -1139,7 +1158,11 @@ function progSet(pct,label){
 function progTitle(t){if(PROG)PROG.t.textContent=t;}
 function progClose(){if(PROG&&PROG.w.parentNode)PROG.w.remove();PROG=null;resetZ();}
 /* 화면이 실제로 다시 그려질 때까지 한 번 쉬어 준다 */
-const uiTick=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+/* 화면이 한 번 그려질 틈을 준다. **탭이 뒤에 가 있으면 requestAnimationFrame 이 멈추므로**
+   (브라우저 규칙) 기다리지 않고 바로 넘어간다 — 예전에는 다른 탭을 보는 동안 불러오기가 멈춰 있었다 (v79).
+   기다리는 도중에 탭이 뒤로 가도 250ms 뒤에는 넘어간다 */
+const uiTick=()=>document.hidden?Promise.resolve():new Promise(r=>{let d=0;
+  const go=()=>{if(!d){d=1;setTimeout(r,0);}};requestAnimationFrame(go);setTimeout(go,250);});
 function closeAllModals(){const h=$('modalHost');if(h)h.innerHTML='';resetZ();}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
@@ -1526,6 +1549,11 @@ function dashEmpty(){
    바로 뒤에서 같은 그래프를 또 그리지 않도록 부르는 쪽이 본다 (v78) */
 function renderAll(){
   renderCampBar();
+  /* 캠페인 기본 정보는 대시보드가 비어 있어도 그린다 (v79) — 예전에는 새 캠페인(라인 0개)으로
+     바꾸면 여기서 바로 빠져나가, 예상효율 입력 탭에 **앞 캠페인의 이름 · 광고주 · 예산**이 남았다 */
+  try{renderCampForm();}catch(e){}
+  /* 기간을 직접 고르지 않았으면 실적 · 라인이 바뀔 때 기본 기간(첫날 ~ 실적 마지막 날)을 다시 따른다 (v79) */
+  try{if(followDefaultRange())buildFilters();}catch(e){}
   if(dashEmpty())return false;
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();

@@ -21,6 +21,22 @@ Object.assign(I18N_EN,{
   "{}일차 / 총 {}일":"Day {} / {} days total",
   "조회 기간 {} ~ {} · 주말·공휴일은 붉은 글씨, 실적이 없는 날은 빈 칸입니다.":"Period {} ~ {} · Weekends·holidays in red; days without results are blank.",
   "KPI 달성률":"KPI achievement"});
+/* 사전 보충 (v79 · 엑셀 불러오기 개선 · 캠페인 만들기) */
+Object.assign(I18N_EN,{
+  "합계 · 소계 줄 {}개는 라인이 아니라서 건너뛰었습니다.":"Skipped {} total/subtotal rows — they are not lines.",
+  "매체 · 광고상품이 비어 있는 줄 {}개는 건너뛰었습니다.":"Skipped {} rows with no media or ad product.",
+  "예산 열을 찾지 못했습니다":"Couldn't find the budget column",
+  "— 예산이 모두 비어 있습니다. 머리글을 \"예산\" 으로 적어 주세요.":"— all budgets are empty. Name the header \"예산\" (budget).",
+  "읽지 않은 열 {}개 —":"{} columns not read —",
+  "머리글을 알아보지 못해":"Headers weren't recognized, so the file was read in",
+  "템플릿 열 순서":"template column order",
+  "머리글이 달라 템플릿 열 순서대로 읽음":"headers not recognized — read in template column order",
+  "합계 줄 {}개 건너뜀":"{} total rows skipped",
+  "재생 비율 {}행을 건수로 바꿈":"{} rows of play-through rates converted to counts",
+  "캠페인을 만들지 못했습니다.":"Couldn't create the campaign.",
+  "앞에 열려 있던 캠페인으로 돌아갔습니다.":"Returned to the campaign that was open before.",
+  "시트 {}개 중 일자 · 매체명 같은 머리글이 있는 시트를 찾지 못했습니다. 템플릿을 내려받아 다시 시도해 주세요.":"None of the {} sheets has headers such as Date · Media. Download the template and try again.",
+  "시트 {}개 중 매체 · 광고상품 같은 머리글이 있는 시트를 찾지 못했습니다.":"None of the {} sheets has headers such as Media · Ad product."});
 
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고

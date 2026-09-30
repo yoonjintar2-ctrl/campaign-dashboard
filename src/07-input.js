@@ -26,6 +26,12 @@ const sheetColsDefault=()=>
       w:SHEET_W[f.k]||92,type:'num',rule:SHEET_RULE[f.k]||'숫자 입력',
       lock:1,on:SHEET_DEF_ON.includes(f.k)})));
 let SHEET_COLS=sheetColsDefault();
+/* 예산 · 소진비용 열 이름에서 "Gross" 를 뗀다 (v79) — 수수료 · Net 개념을 뺀 뒤(v72)로는
+   금액 기준이 하나뿐이라 "Gross 예산" · "소진비용 (Gross)" 가 헷갈리기만 한다. 이름은 "예산" · "소진비용" 으로 통일.
+   예전 저장본 · 계정 설정에 남아 있는 옛 이름도 여기서 바꿔 읽는다 */
+function fixColLabel(k,l,def){
+  if((k==='budget'||k==='cost')&&/gross|그로스/i.test(String(l||'')))return def;
+  return l||def;}
 /* 예전 저장본(net 기준·소재 열 없음)을 지금 열 구성에 맞춰 얹는다 */
 function mergeCols(saved,def){
   if(!Array.isArray(saved)||!saved.length)return def;
@@ -33,7 +39,7 @@ function mergeCols(saved,def){
   saved=saved.filter(c=>c&&!DROP_COLS.has(c.k));
   const by={};saved.forEach(c=>by[c.k]=c);
   const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
-    .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:c.l,w:c.w,on:c.on}:c;});
+    .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:fixColLabel(c.k,c.l,d.l),w:c.w,on:c.on}:c;});
   def.forEach(d=>{if(!by[d.k])kept.push(d);});
   return kept;
 }
@@ -48,7 +54,9 @@ var SHEET_COVER=null;
 let SHEET=LINES.flatMap(l=>{
   const idx=ELAPSED-1,fee=feeOf(l);
   const cs=CREATIVES.filter(c=>c.lid===l.id);
-  const base={date:CAMPAIGN.today,segment:l.segment,media:l.media,product:l.product,
+  /* 날짜는 "오늘" 이 아니라 **실적이 있는 마지막 날** (v79) — 샘플 캠페인이 끝난 뒤(10/1~)에는
+     오늘 날짜가 집행 기간 밖이라 샘플의 13행이 전부 붉게 표시되고 탭을 옮길 때마다 경고가 떴다 */
+  const base={date:(ALLDATES[idx]?iso(ALLDATES[idx]):CAMPAIGN.today),segment:l.segment,media:l.media,product:l.product,
     slot:l.slot||'',target:l.target,line:l.line};
   if(!cs.length){
     const r={...base,creative:'',cost:Math.round(toGross(l.daily.net[idx]||0,fee))};
@@ -69,8 +77,14 @@ const dimMatch=(l,k,v)=>{
   if(!v)return true;
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
-  const set=new Set(lineMulti(l,k).map(dimKey)),want=parseMulti(v);
-  return want.length>0&&want.every(x=>set.has(dimKey(x)));};
+  const set=new Set(lineMulti(l,k).map(dimKey));
+  /* 적힌 이름 통째로 등록된 항목 하나와 같으면 — 이름 안에 & · 괄호 속 콤마가 있어도 붙는다 (v79) */
+  if(set.has(dimKey(v)))return true;
+  const want=parseMulti(v);
+  if(want.length>0&&want.every(x=>set.has(dimKey(x))))return true;
+  /* 예전 방식(& 도 구분자)으로 적힌 조합 */
+  const loose=parseMultiLoose(v);
+  return loose.length>1&&loose.every(x=>set.has(dimKey(x)));};
 const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
   const ls=LINES.filter(l=>DIM_CHAIN.slice(0,i).every(p=>dimMatch(l,p,row[p])));
   /* 조합 전체와 그 안의 개별 항목을 함께 고를 수 있게 둘 다 내려 준다 */
@@ -624,17 +638,20 @@ function sheetDirty(){
   /* 상태 문구(#saveState)는 건드리지 않는다 — 엑셀 불러오기 결과 안내를 덮어쓰면 안 된다 */
   try{if(typeof saveLocal==='function')saveLocal();}catch(e){}
 }
+/* 입력자 = 지금 로그인한 사람 (예전에는 시안용 이름이 박혀 있었다) — 입력 · 예상 효율 히스토리 공용 */
+function histWho(){
+  let who='게스트',org='';
+  try{const u=CLOUD&&CLOUD.user;
+    if(u)who=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||who;
+    org=CLOUD&&CLOUD.shareView?(CLOUD.shareRole==='staff'?'운영진 코드':'뷰어 코드'):(u?'시행사':'데모');}catch(e){}
+  return {who,org};}
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;
   const now=new Date();
   const rows=JSON.parse(JSON.stringify(SHEET));
   /* 표가 바뀌지 않았으면(설정만 바뀐 경우) 같은 시점을 또 쌓지 않는다 */
   if(SHEET_HIST[0]&&JSON.stringify(SHEET_HIST[0].rows)===JSON.stringify(rows)){DIRTY_AT=null;return;}
-  /* 입력자 = 지금 로그인한 사람 (예전에는 시안용 이름이 박혀 있었다) */
-  let who='게스트',org='';
-  try{const u=CLOUD&&CLOUD.user;
-    if(u)who=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||who;
-    org=CLOUD&&CLOUD.shareView?(CLOUD.shareRole==='staff'?'운영진 코드':'뷰어 코드'):(u?'시행사':'데모');}catch(e){}
+  const {who,org}=histWho();
   SHEET_HIST.unshift({t:now,who,org,kind,rows});
   if(SHEET_HIST.length>40)SHEET_HIST.pop();
   DIRTY_AT=null;

@@ -274,27 +274,129 @@ function trimGrid(g){
     if(r&&r.some(v=>String(v==null?'':v).trim()!=='')){last=i;break;}}
   return last<0?[]:g.slice(0,last+1);
 }
-/* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 낸다
-   ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹") */
-const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'');
-function findHeader(grid,cols){
-  const labels=new Set(cols.map(c=>normHdr(c.l)));
+/* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 내고 영문은 소문자로
+   ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹", "Published\nAmount" → "publishedamount") */
+const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'').toLowerCase();
+/* ---------- 머리글 별칭 (v79) ----------
+   템플릿 이름이 아니어도 실무 엑셀 · 매체 리포트에서 흔히 쓰는 이름이면 알아본다.
+   (미디어믹스의 "상품 · 타겟팅 가이드 · 최종 예산 · 예상 노출수", 매체 RAW 의 "일 · 광고그룹 · 노출수 · 비용" 등)
+   period 는 "5/29~6/1" 처럼 시작 · 종료를 한 칸에 적은 열 — 불러올 때 둘로 나눈다 */
+const HDR_ALIAS={
+  line:{
+    segment:['구분','차수','플라이트','flight'],
+    media:['매체','매체명','media','채널'],
+    product:['광고상품','광고 상품','상품','상품명','광고상품명','광고 유형','product'],
+    slot:['광고 지면','지면','노출 지면','placement'],
+    target:['타겟팅 그룹','타겟팅','타겟','타깃','타깃팅','타겟팅 가이드','타겟팅 그룹명','광고그룹','광고 그룹','target','targeting'],
+    creative:['소재','소재명','광고 소재','creative'],
+    line:['제품','제품명'],
+    device:['디바이스','기기','device'],
+    sec:['소재 초수','초수','소재 길이'],
+    bid:['비드 타입','과금 방식','과금 기준','구매 방식','bid type'],
+    price:['판매 단가','판매단가','단가','예상 단가','고정 단가','unit price'],
+    start:['시작일','시작','시작 일자','집행 시작일','start','start date'],
+    end:['종료일','종료','종료 일자','집행 종료일','end','end date'],
+    period:['기간','상세 기간','집행 기간','캠페인 기간','period'],
+    kpi:['kpi','kpi 지표','목표 지표'],
+    e_imp:['예상 노출','예상 노출수','목표 노출','제안 노출','보장 노출'],
+    e_click:['예상 클릭','예상 클릭수','목표 클릭','제안 클릭'],
+    e_view:['예상 조회','예상 조회수','목표 조회','제안 조회'],
+    budget:['예산','최종 예산','집행 예산','광고 예산','광고예산','총 예산','gross 예산','budget'],
+    value:['밸류','value','published amount','총 밸류'],
+    bonus:['보너스 밸류','보너스','서비스 금액','bonus'],
+    note:['비고','메모','note','remark']},
+  daily:{
+    date:['일자','일','날짜','일시','기준일','보고 일자','date','day'],
+    segment:['구분'],
+    media:['매체명','매체','채널','media'],
+    product:['광고상품명','광고상품','상품','상품명','광고 유형'],
+    slot:['광고 지면','지면','노출 지면','placement'],
+    target:['타겟팅 그룹명','타겟팅 그룹','타겟팅','타겟','타깃','광고그룹','광고 그룹','광고그룹 이름','광고 그룹 이름',
+      '광고 세트','광고세트','광고 세트 이름','ad group','ad set'],
+    line:['제품'],
+    creative:['소재','소재명','광고 이름','광고명','광고 소재','ad name','creative'],
+    imp:['노출','노출수','impressions','impression','imps','impr.'],
+    click:['클릭','클릭수','clicks','click'],
+    view:['조회','조회수','views','view','동영상 조회','동영상 조회수'],
+    v25:['25% 조회','동영상 25% 재생','25% 재생','video played to 25%'],
+    v50:['50% 조회','동영상 50% 재생','50% 재생','video played to 50%'],
+    v75:['75% 조회','동영상 75% 재생','75% 재생','video played to 75%'],
+    v100:['100% 조회','동영상 100% 재생','100% 재생','video played to 100%'],
+    v3:['3초 조회','3초 재생','3초 동영상 재생'],
+    conv:['전환','전환수','conversions'],
+    install:['설치','설치수','installs'],
+    eng:['참여','참여수','engagements'],
+    rev:['매출','revenue'],
+    cost:['소진비용','소진 비용','소진금액','소진 금액','비용','광고비','지출','지출 금액','집행 금액','집행금액',
+      'cost','spend','amount spent']}};
+/* 머리글 → 항목 열쇠 사전. 지금 열 이름(사용자가 바꾼 이름 포함) > 기본 이름 > 별칭 순으로 채운다 */
+function hdrDict(cols,kind){
+  const m=new Map();
+  const put=(l,k)=>{const n=normHdr(l);if(n&&!m.has(n))m.set(n,k);};
+  cols.forEach(c=>put(c.l,c.k));
+  try{const def=kind==='line'?lineColsDefault():sheetColsDefault();def.forEach(c=>put(c.l,c.k));}catch(e){}
+  Object.entries(HDR_ALIAS[kind]||{}).forEach(([k,ls])=>ls.forEach(l=>put(l,k)));
+  return m;
+}
+/* 한 줄이 머리글로서 몇 개의 항목을 알아보는가. need 중 하나는 꼭 있어야 한다 (일자별 = 일자, 예상 효율 = 매체·상품) */
+function hdrScore(row,dict,need){
+  const ks=new Set();
+  (row||[]).forEach(v=>{const k=dict.get(normHdr(v));if(k)ks.add(k);});
+  if(need&&!need.some(k=>ks.has(k)))return 0;
+  return ks.size>=2?ks.size:0;
+}
+/* 위쪽 40줄 중 **가장 많이 알아보는 줄**을 머리글로 (예전에는 2개만 맞으면 첫 줄로 정했다) */
+function findHeader(grid,dict,need){
+  let bi=-1,bs=0;
   for(let i=0;i<Math.min(grid.length,40);i++){
-    const hit=(grid[i]||[]).filter(c=>labels.has(normHdr(c))).length;
-    if(hit>=2)return i;}
-  return -1;
+    const sc=hdrScore(grid[i],dict,need);
+    if(sc>bs){bs=sc;bi=i;}}
+  return {i:bi,score:bs};
 }
-/* 머리글 → 항목 열쇠. **같은 이름의 열이 두 개면 첫 번째만 쓴다.**
-   (실무 엑셀에는 "소진비용 (Gross)" 옆에 같은 이름의 비고 열이 붙어 있는 경우가 있는데,
-    예전에는 뒤쪽 열이 앞 열을 덮어써서 그 행의 금액이 비고 속 숫자로 바뀌었다) */
-function mapHeader(headRow,cols){
-  const byLabel={};cols.forEach(c=>byLabel[normHdr(c.l)]=c.k);
-  const used=new Set();
-  return (headRow||[]).map(h=>{
-    const k=byLabel[normHdr(h)]||null;
-    if(!k||used.has(k))return null;
-    used.add(k);return k;});
+/* 같은 항목으로 읽히는 열이 여럿이면 금액 기준으로 고른다 —
+   VAT 포함 > Gross > 표시 없음 > Net · VAT 제외 (미디어믹스 예산이 VAT 포함 Gross 기준이라 소진도 같은 기준으로).
+   순위가 같으면 **첫 번째 열**. (실무 엑셀에는 "소진비용 (Gross)" 옆에 같은 이름의 비고 열이
+   붙어 있는 경우가 있는데, 예전에는 뒤쪽 열이 앞 열을 덮어써서 그 행의 금액이 비고 속 숫자로 바뀌었다) */
+function basisRank(h){
+  const t=String(h==null?'':h);
+  if(/vat\s*포함|vat\s*incl|부가세\s*포함/i.test(t))return 3;
+  if(/(^|[^a-z])net\b|넷|vat\s*제외|vat\s*excl|부가세\s*제외/i.test(t))return 0;
+  if(/gross|그로스/i.test(t))return 2;
+  return 1;}
+function mapHeader(headRow,dict){
+  const best={};
+  (headRow||[]).forEach((h,ci)=>{
+    const k=dict.get(normHdr(h));if(!k)return;
+    const r=basisRank(h);
+    if(!best[k]||r>best[k].r)best[k]={ci,r};});
+  const keys=(headRow||[]).map(()=>null);
+  Object.entries(best).forEach(([k,b])=>{keys[b.ci]=k;});
+  return keys;
 }
+/* 합계 · 소계 줄 — 불러오지 않는다 (미디어믹스 · 서머리 표에 끼어 있는 "SUB TOTAL", "Youtube Total", "합계") */
+const TOTAL_RE=/^(grand\s*|sub\s*)?total$|\s(sub\s*)?total$|^(합계|소계|총계|총합|누계|전체\s*합계)$|\s(합계|소계|총계)$/i;
+function isTotalRow(r,skip){
+  return (r||[]).some((v,ci)=>ci!==skip&&typeof v==='string'&&TOTAL_RE.test(v.trim()));}
+/* 표 중간에 다시 나오는 머리글 줄 (한 시트에 표가 둘 이상일 때) */
+const isHeaderRow=(r,dict)=>{let n=0;(r||[]).forEach(v=>{if(typeof v==='string'&&dict.get(normHdr(v)))n++;});return n>=2;};
+/* 머리글을 못 찾은 한 장짜리 시트 — **템플릿 열 순서대로** 읽는다 (v79).
+   제목 · 머리글 같은 윗부분은 숫자가 하나도 없는 줄이라 건너뛰고, 숫자가 처음 나오는 줄부터 데이터로 본다 */
+function positionalStart(grid,keys){
+  const di=keys.indexOf('date');
+  for(let i=0;i<grid.length;i++){
+    const r=grid[i]||[];
+    if(di>=0&&!normDate(String(r[di]==null?'':r[di])))continue;
+    if(r.some(v=>{const n=cleanNum(v);return n!==null&&isFinite(n);}))return i;}
+  return grid.length;
+}
+/* 머리글을 거의 못 알아봤는가 — 이름이 적힌 칸 중 알아본 칸이 40% 미만 (예: DAY · MEDIA · A · B …).
+   한 장짜리 시트에서 이러면 머리글은 무시하고 템플릿 열 순서로 읽는다 */
+function hdrWeak(row,dict){
+  const named=(row||[]).filter(v=>String(v==null?'':v).trim()!=='');
+  const hit=named.filter(v=>dict.get(normHdr(v))).length;
+  return !named.length||hit/named.length<0.4;}
+/* 여러 줄 · 여러 칸 공백을 한 칸으로 (셀 안 줄바꿈 "M2544 + 육아 관심사\n*부모 타겟팅") */
+const oneLine=v=>String(v==null?'':v).replace(/\s*[\r\n]+\s*/g,' ').replace(/\s{2,}/g,' ').trim();
 /* 비드 타입 정규화 — "경매형CPC", "Bid CPC", "CPC(자동입찰)" 같은 표기도 CPC 로 */
 function normBid(v){
   const t=String(v==null?'':v).toUpperCase();
@@ -342,6 +444,16 @@ function tightenRef(ws){
       e:{r:Math.min(r0.e.r,maxR),c:Math.min(r0.e.c,maxC)}});
   }catch(e){}
 }
+/* 시트의 첫 n 줄만 — 어느 시트를 읽을지 고를 때 머리글만 본다 (시트 전체를 다 풀지 않게) */
+function sheetHead(ws,n){
+  try{
+    if(!ws||!ws['!ref'])return [];
+    tightenRef(ws);
+    const r=XLSX.utils.decode_range(ws['!ref']);
+    return XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,
+      range:{s:r.s,e:{r:Math.min(r.e.r,r.s.r+n-1),c:r.e.c}}});
+  }catch(e){return [];}
+}
 /* 시트 하나 → 2차원 배열.
    덧붙이는 정보 (배열의 속성) — __pct: % 서식 숫자 칸("행,열") · __cut: 행 한도에 닿아 뒤를 못 읽었는가 */
 function sheetGrid(ws){
@@ -365,6 +477,21 @@ function sheetGrid(ws){
     return v;})));
   g.__pct=pct;
   const ref=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):null;
+  /* 병합된 칸 (v79) — 엑셀은 병합 범위의 **첫 칸에만** 값을 둔다. 미디어믹스처럼 매체 · 기간을
+     여러 줄에 병합해 둔 표는 둘째 줄부터 매체가 빈칸으로 읽혀 라인이 깨졌다.
+     글자(이름 · 날짜)만 나머지 칸에 채운다 — 숫자(예산 등)를 채우면 금액이 두 번 잡히므로 첫 칸에만 둔다 */
+  try{
+    (ws['!merges']||[]).forEach(m=>{
+      if(!ref)return;
+      const r0=m.s.r-ref.s.r,c0=m.s.c-ref.s.c;
+      const v=g[r0]&&g[r0][c0];
+      if(typeof v!=='string'||!v.trim())return;
+      const n=cleanNum(v);if(n!==null&&isFinite(n))return;
+      for(let r=m.s.r;r<=m.e.r;r++)for(let c=m.s.c;c<=m.e.c;c++){
+        const ri=r-ref.s.r,ci=c-ref.s.c;
+        if(ri<0||ci<0||!g[ri])continue;
+        if(g[ri][ci]===''||g[ri][ci]==null)g[ri][ci]=v;}});
+  }catch(e){}
   /* 한도의 마지막 줄까지 값이 차 있고 파일 범위가 그 뒤로 더 있으면 → 잘렸다 */
   g.__cut=!!(full&&ref&&ref.e.r>=XLS_MAX_ROWS-1&&full.e.r>ref.e.r);
   return g;
@@ -404,14 +531,18 @@ function readGrid(file,pick){
         const wb=XLSX.read(new Uint8Array(r.result),
           {type:'array',cellDates:true,sheetRows:XLS_MAX_ROWS});
         const names=wb.SheetNames||[];
-        let first=null,hit=null;
-        for(const nm of names){
-          const g=sheetGrid(wb.Sheets[nm]);g.__sheet=nm;
-          if(!first)first=g;
-          if(!pick||pick(g)){hit=g;break;}}
-        const out=hit||first||[];
+        /* 시트 고르기 (v79)
+           · 한 장뿐이면 그 시트를 그대로 읽는다 (머리글이 안 맞아도 — 템플릿 열 순서로 읽는다)
+           · 여러 장이면 머리글을 **가장 많이 알아보는** 시트. 예전에는 조건(2개)만 맞으면 첫 시트를 골라
+             리포트 파일을 통째로 넣으면 서머리 표를 라인으로 읽었다 (SUB TOTAL 까지 23개 · 예산 6억)
+           pick(첫 40줄) 은 점수(숫자) 또는 참/거짓을 돌려준다 */
+        let nm=names[0],best=0;
+        if(names.length>1&&pick){
+          names.forEach(n=>{const sc=+pick(sheetHead(wb.Sheets[n],40))||0;if(sc>best){best=sc;nm=n;}});}
+        const out=nm?sheetGrid(wb.Sheets[nm]):[];
+        out.__sheet=nm;
         out.__sheets=names.length;
-        out.__sheetIdx=Math.max(0,names.indexOf(out.__sheet));
+        out.__sheetIdx=Math.max(0,names.indexOf(nm));
         res(out);
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
@@ -426,7 +557,8 @@ function readGrid(file,pick){
 function gridNotes(g){
   const out=[];
   if(!g)return out;
-  if(g.__sheetIdx>0&&g.__sheet)out.push(`시트 ${g.__sheets}개 중 '${g.__sheet}' 시트를 읽었습니다.`);
+  /* 여러 장이면 어느 시트를 읽었는지 늘 알린다 (v79 — 첫 시트를 읽었을 때는 말이 없었다) */
+  if(g.__sheets>1&&g.__sheet)out.push(`시트 ${g.__sheets}개 중 '${g.__sheet}' 시트를 읽었습니다.`);
   if(g.__cut)out.push(`행 한도(${XLS_MAX_ROWS.toLocaleString()}행)에 닿아 그 뒤의 행은 읽지 않았습니다. 파일을 나눠서 올려 주세요.`);
   return out;
 }
@@ -442,27 +574,33 @@ function importDaily(f){
     progOpen('일자별 실적을 불러오는 중');
     progSet(null,`${file.name||'파일'} 읽는 중…`);
     await uiTick();
-    const cols=dailyColsOf(true);
-    try{grid=await readGrid(file,g=>findHeader(g,cols)>=0);}catch(e){
+    const cols=dailyColsOf(true),dict=hdrDict(cols,'daily'),NEED=['date'];
+    try{grid=await readGrid(file,g=>findHeader(g,dict,NEED).score);}catch(e){
       progClose();confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
     progSet(26,`${grid.length.toLocaleString()}줄 · 머리글 찾는 중…`);
     await uiTick();
-    const hi=findHeader(grid,cols);
-    if(hi<0){progClose();confirmModal('머리글 줄을 찾지 못했습니다.',
-      '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
-    const keys=mapHeader(grid[hi],cols);
+    let hi=findHeader(grid,dict,NEED).i,keys,first,byPos=false;
+    /* 시트가 한 장이면 머리글을 거의 못 알아봐도 멈추지 않고 **템플릿 열 순서대로** 읽는다 (v79) */
+    if(hi>=0&&!((grid.__sheets||1)<=1&&hdrWeak(grid[hi],dict))){keys=mapHeader(grid[hi],dict);first=hi+1;}
+    else if((grid.__sheets||1)<=1){
+      keys=tplDailyCols().map(c=>c.k);first=positionalStart(grid,keys);byPos=true;}
+    else{progClose();confirmModal('머리글 줄을 찾지 못했습니다.',
+      `시트 ${grid.__sheets}개 중 일자 · 매체명 같은 머리글이 있는 시트를 찾지 못했습니다. 템플릿을 내려받아 다시 시도해 주세요.`,()=>{},'확인');return;}
     const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
-    let rows=[];
-    const NROW=Math.max(1,grid.length-hi-1);
+    let rows=[],skipTot=0;
+    const NROW=Math.max(1,grid.length-first);
     let tick=performance.now();
-    for(let i=hi+1;i<grid.length;i++){
+    for(let i=first;i<grid.length;i++){
       /* 0.1초에 한 번만 화면에 숨 쉴 틈을 준다 (줄 수로 세면 빈 줄이 많을 때 오히려 느려진다) */
       if(performance.now()-tick>100){
-        progSet(26+((i-hi)/NROW)*30,
+        progSet(26+((i-first)/NROW)*30,
           `${rows.length.toLocaleString()} / ${NROW.toLocaleString()}행 정리 중…`);
         await uiTick();tick=performance.now();}
       const r=grid[i]||[];
-      if(!r.some(v=>String(v||'').trim()!==''))continue;
+      if(!r.some(v=>String(v==null?'':v).trim()!==''))continue;
+      /* 합계 · 소계 줄, 표 중간에 다시 나온 머리글 줄은 건너뛴다 (v79) */
+      if(isTotalRow(r)){skipTot++;continue;}
+      if(isHeaderRow(r,dict))continue;
       const o={date:'',segment:'',media:'',product:'',target:'',line:''};
       /* 원본 줄 전체를 기억해 둔다 — 대시보드가 쓰지 않는 열(광고그룹명 등)만 다른 행을
          "똑같은 행" 으로 잘못 지우지 않기 위해서 */
@@ -477,8 +615,15 @@ function importDaily(f){
         else if(numK.has(k)){const n=cleanNum(raw);
           /* 숫자로 읽을 수 없는 값은 0 으로 삼키지 않고 글자 그대로 둔다 — 표에서 그 칸이 붉게 표시된다 */
           if(n!==null){o[k]=isNaN(n)?raw:n;filled=true;}}
-        else {o[k]=raw;filled=true;}});
+        else {o[k]=oneLine(raw);filled=true;}});
+      /* 재생 구간(25~100%) 값이 비율(0~1 사이 소수)로 적혀 있으면 노출 × 비율로 건수로 바꾼다 (v79)
+         — 구글 애즈 리포트는 "동영상 25% 재생" 을 노출 대비 비율로 내려 준다. 건수는 소수가 될 수 없으므로 구분된다 */
+      ['v25','v50','v75','v100'].forEach(k=>{const v=o[k];
+        if(typeof v==='number'&&v>0&&v<1&&+o.imp>0){o[k]=Math.round(v*o.imp);o.__ratio=1;}});
+      /* 날짜도 없고 숫자도 전부 0 · 빈칸인 줄 — 수식만 남은 빈 줄이다 (매체 RAW 끝의 0 줄) */
+      if(!o.date&&!SHEET_COLS.some(c=>c.type==='num'&&typeof o[c.k]==='number'&&o[c.k]!==0))continue;
       if(filled||o.date)rows.push(o);}
+    const ratioN=rows.filter(r=>r.__ratio).length;rows.forEach(r=>{delete r.__ratio;});
     /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
        "A, B" 든 "B · A" 든 같은 조합이면 화면에는 등록된 표기 하나로 보이게 */
     progSet(58,'예상 효율과 맞춰 보는 중…');await uiTick();
@@ -508,7 +653,8 @@ function importDaily(f){
     progSet(100,'');
     /* v51 — 확인 팝업 없이 바로 반영한다. 파일을 넣는 것 자체가 "불러오기" 의사표시다.
        (되돌리려면 Ctrl+Z · 맞지 않는 칸은 표에서 붉게 표시되고 탭을 옮길 때 알려 준다) */
-    await applyImportedRows(rows,{dup,bad,badC,numC,sheet:grid.__sheetIdx>0?grid.__sheet:''});
+    await applyImportedRows(rows,{dup,bad,badC,numC,sheet:(grid.__sheets||1)>1?grid.__sheet:'',
+      byPos,skipTot,ratioN});
     /* 행 한도에 닿아 뒤쪽을 못 읽었으면 — 데이터가 빠진 것이라 팝업으로 알린다 */
     if(grid.__cut)confirmModal('파일 뒷부분을 읽지 못했습니다.',gridNotes(grid).map(esc).join('<br>'),()=>{},'확인',true);
   });
@@ -538,6 +684,9 @@ async function applyImportedRows(rows,note){
   const misC=(n.badC||0)-(n.numC||0);
   if(e)e.textContent=`엑셀 ${rows.length.toLocaleString()}행 불러옴`
     +(n.sheet?` · '${n.sheet}' 시트`:'')
+    +(n.byPos?' · 머리글이 달라 템플릿 열 순서대로 읽음':'')
+    +(n.skipTot?` · 합계 줄 ${n.skipTot}개 건너뜀`:'')
+    +(n.ratioN?` · 재생 비율 ${n.ratioN}행을 건수로 바꿈`:'')
     +(n.dup?` · 값까지 같은 행 ${n.dup}개 포함`:'')
     +(misC>0?` · 예상 효율과 맞지 않는 칸 ${misC}개(${n.bad}행)는 붉게 표시`:'')
     +(n.numC?` · 숫자로 읽을 수 없는 칸 ${n.numC}개는 붉게 표시`:'')
@@ -547,31 +696,64 @@ async function applyImportedRows(rows,note){
   progClose();
   try{markDirty();saveLocal();}catch(err){}
 }
+/* 머리글 안내 문구에서 괄호 설명을 뗀 이름 */
+const normHdrLabel=l=>String(l||'').replace(/\s*\([^()]*\)\s*$/,'').trim();
+/* "5/29~6/1" · "2026.05.29 - 2026.06.01" → [시작, 종료]. 종료가 시작보다 앞이면 해를 넘긴 것으로 본다 */
+function splitPeriod(raw,baseY){
+  const p=String(raw||'').split(/\s*[~∼〜]\s*|\s+[-–]\s+/).map(x=>x.trim()).filter(Boolean);
+  if(p.length<2)return null;
+  const a=normDate(p[0]),b0=normDate(p[1]);
+  if(!a||!b0)return null;
+  let b=b0;
+  /* "6/1" 처럼 연도가 없으면 시작일의 연도를 따른다 */
+  if(!/\d{4}/.test(p[1])&&/\d{4}/.test(p[0]))b=a.slice(0,4)+b0.slice(4);
+  if(b<a)b=String(+b.slice(0,4)+1)+b.slice(4);
+  return [a,b];}
+/* 디바이스 표기 정리 — "ALL (PC, MO, 태블릿, TV)" · "MO(APP)" → PC · MO · CTV */
+function normDevices(raw){
+  const t=String(raw||'').toUpperCase(),out=new Set();
+  if(/\bALL\b|전체/.test(t))DEVICES.forEach(d=>out.add(d));
+  if(/\bPC\b|데스크/.test(t))out.add('PC');
+  if(/\bMO\b|MOBILE|모바일|\bAPP\b|앱|태블릿|TABLET/.test(t))out.add('MO');
+  if(/CTV|\bTV\b|커넥티드/.test(t))out.add('CTV');
+  if(!out.size)return String(raw||'').split(/[+,\s]+/).filter(Boolean);
+  return DEVICES.filter(d=>out.has(d));}
 function importLines(f){
   const run=(async file=>{
     let grid;
-    const cols=lineColsOf(true);
-    try{grid=await readGrid(file,g=>findHeader(g,cols)>=0);}catch(e){
+    const cols=lineColsOf(true),dict=hdrDict(cols,'line'),NEED=['media','product'];
+    try{grid=await readGrid(file,g=>findHeader(g,dict,NEED).score);}catch(e){
       confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
-    const hi=findHeader(grid,cols);
-    if(hi<0){confirmModal('머리글 줄을 찾지 못했습니다.',
-      '템플릿의 머리글(구분 · 매체 · 광고상품 …) 줄이 그대로 있어야 합니다.',()=>{},'확인');return;}
-    const keys=mapHeader(grid[hi],cols);
+    let hi=findHeader(grid,dict,NEED).i,keys,first,byPos=false;
+    /* 시트가 한 장이면 머리글을 거의 못 알아봐도 멈추지 않고 **템플릿 열 순서대로** 읽는다 (v79) */
+    if(hi>=0&&!((grid.__sheets||1)<=1&&hdrWeak(grid[hi],dict))){keys=mapHeader(grid[hi],dict);first=hi+1;}
+    else if((grid.__sheets||1)<=1){
+      keys=tplLineCols().map(c=>c.k);first=positionalStart(grid,keys);byPos=true;}
+    else{confirmModal('머리글 줄을 찾지 못했습니다.',
+      `시트 ${grid.__sheets}개 중 매체 · 광고상품 같은 머리글이 있는 시트를 찾지 못했습니다.`,()=>{},'확인');return;}
     const typeOf={};LINE_COLS.forEach(c=>typeOf[c.k]=c.type);
     const kpiByLabel={};Object.entries(KPI_LABEL).forEach(([k,v])=>kpiByLabel[v]=k);
     const out=[];
     /* 숫자로 읽을 수 없는 칸 — 0 으로 채우지 않고 비워 둔 뒤 확인 창에 알린다 */
     const badNum=[];
     const hdrOf={};cols.forEach(c=>{hdrOf[c.k]=c.l;});
-    for(let i=hi+1;i<grid.length;i++){
+    const noteCi=keys.indexOf('note');
+    let skipTot=0,skipNoKey=0;
+    const baseY=+String(CAMPAIGN.today||todaySeoul()).slice(0,4);
+    for(let i=first;i<grid.length;i++){
       const r=grid[i]||[];
-      if(!r.some(v=>String(v||'').trim()!==''))continue;
+      if(!r.some(v=>String(v==null?'':v).trim()!==''))continue;
+      /* 합계 · 소계 줄, 표 중간에 다시 나온 머리글 줄은 라인이 아니다 (v79) */
+      if(isTotalRow(r,noteCi)){skipTot++;continue;}
+      if(isHeaderRow(r,dict))continue;
       const n=blankLine();
-      let filled=false,creatives=[],targets=[],products=[],slots=[];
+      let filled=false,creatives=[],targets=[],products=[],slots=[],period='',hasBonus=false;
       keys.forEach((k,ci)=>{
         if(!k)return;
-        const raw=String(r[ci]==null?'':r[ci]).trim();
-        if(raw==='')return;
+        const raw0=String(r[ci]==null?'':r[ci]).trim();
+        if(raw0==='')return;
+        /* 셀 안 줄바꿈은 한 칸 띄우기로 (비고는 그대로) */
+        const raw=k==='note'?raw0:oneLine(raw0);
         filled=true;
         const t=typeOf[k];
         const numOf=s=>{const v=cleanNum(s);
@@ -582,6 +764,7 @@ function importLines(f){
         else if(k==='target'){targets=parseMulti(raw);}
         else if(k==='product'){products=parseMulti(raw);}
         else if(k==='slot'){slots=parseMulti(raw);}
+        else if(k==='period'){period=raw;}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
         else if(t==='pct'){const v=numOf(raw);if(v!==null)n[k]=v>1?v/100:v;}
@@ -589,10 +772,20 @@ function importLines(f){
         else if(k==='bid'){n.bid=normBid(raw);}
         else if(GUAR_KEY[k]){n.g=n.g||{};n.g[GUAR_KEY[k]]=isYes(raw);}
         else if(t==='gross'){const v=numOf(raw);if(v!==null)n.gross=v;}
+        /* 밸류 — 숫자로 담는다 (v79: 글자로 담겨 보너스가 계산되지 않았다) */
+        else if(t==='val'||k==='value'){const v=numOf(raw);if(v!==null)n.value=v;}
+        else if(k==='bonus'){const v=numOf(raw);if(v!==null){n.bonus=v;hasBonus=true;}}
         else if(t==='num'){const v=numOf(raw);if(v!==null)n[k]=v;}
-        else if(t==='dev'){n.device=raw.split(/[+,\s]+/).filter(Boolean);}
+        else if(t==='dev'){n.device=normDevices(raw);}
         else n[k]=raw;});
       if(!filled)continue;
+      /* 매체도 광고상품도 없는 줄은 라인이 아니다 (표 아래 안내 문구 등) */
+      if(!n.media&&!products.length){skipNoKey++;continue;}
+      /* "5/29~6/1" 처럼 한 칸에 적은 기간 — 시작 · 종료 칸이 비어 있을 때만 쓴다 */
+      if(period){const pr=splitPeriod(period,baseY);
+        if(pr){if(!n.start)n.start=pr[0];if(!n.end)n.end=pr[1];}}
+      /* 밸류만 적었으면 보너스 = 밸류 − 예산 (안내 문구 약속대로 보너스율이 자동으로 잡힌다) */
+      if(n.value!=null&&n.value!==''&&!hasBonus)n.bonus=Math.max(0,(+n.value||0)-(+n.gross||0));
       if(!n.bid&&BID_TYPES.length)n.bid='CPM';
       if(BID_KPI[n.bid]&&KPI_KEYS.includes(BID_KPI[n.bid])&&!keys.includes('kpi'))n.kpi=BID_KPI[n.bid];
       n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
@@ -600,6 +793,13 @@ function importLines(f){
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     /* 덧붙임 — 읽은 시트 · 행 한도 · 숫자로 읽을 수 없어 비워 둔 칸 (값은 사용자 데이터라 번역하지 않는다) */
     const extra=gridNotes(grid).map(esc);
+    if(byPos)extra.push('머리글을 알아보지 못해 <b>템플릿 열 순서</b>('+tplLineCols().slice(0,4).map(c=>esc(normHdrLabel(c.l))).join(' · ')+' …)대로 읽었습니다.');
+    if(skipTot)extra.push(`합계 · 소계 줄 ${skipTot}개는 라인이 아니라서 건너뛰었습니다.`);
+    if(skipNoKey)extra.push(`매체 · 광고상품이 비어 있는 줄 ${skipNoKey}개는 건너뛰었습니다.`);
+    /* 예산 열이 없으면 알린다 (v79) — 머리글 이름이 달라 예산이 통째로 0 이 되어도 아무 말이 없었다 */
+    if(!byPos&&!keys.includes('budget'))extra.push('<b>예산 열을 찾지 못했습니다</b> — 예산이 모두 비어 있습니다. 머리글을 "예산" 으로 적어 주세요.');
+    if(!byPos){const miss=(grid[hi]||[]).map((h,ci)=>keys[ci]?'':String(h==null?'':h).replace(/\s+/g,' ').trim()).filter(Boolean);
+      if(miss.length)extra.push(`읽지 않은 열 ${miss.length}개 — <span data-noi18n>${esc(miss.slice(0,8).join(' · '))}${miss.length>8?' …':''}</span>`);}
     if(badNum.length)extra.push(`숫자로 읽을 수 없는 칸 ${badNum.length}개는 비워 두었습니다.`
       +`<br><span data-noi18n>${badNum.slice(0,5).map(x=>esc(`${x.row}행 ${x.col}: "${x.raw}"`)).join('<br>')}`
       +`${badNum.length>5?'<br>…':''}</span>`);
@@ -620,6 +820,8 @@ function importLines(f){
           if(src.__tg.length)setLineTargets(l,src.__tg);
           if(src.__cr.length)setLineCreatives(l,src.__cr);});
         rebuildPeriod();buildFacts();
+        /* 조회 기간을 새 라인 기간에 맞춘다 (v79) */
+        try{followDefaultRange();}catch(e){}
         buildFilters();buildSelects();
         renderKpiTable();renderCampForm();renderMix();renderAll();renderSheet();
         const e=$('lineSaveState');if(e)e.textContent=`엑셀 ${LINES.length}개 라인 불러옴 · 저장 대기`;
