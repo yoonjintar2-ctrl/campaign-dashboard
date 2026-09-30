@@ -518,28 +518,55 @@ const TV_HDR={
   price:['단가','price'],rating:['시청률','시청률(%)','예상시청률','예상시청률(%)','rating'],
   note:['비고','메모','note']};
 const tvKey=s=>String(s==null?'':s).replace(/\s+/g,'').toLowerCase();
+/* 머리글 줄 찾기 — 앞쪽 30줄 안에서 아는 이름이 두 개 이상 있는 줄. 없으면 null */
+function tvFindHeader(grid,want){
+  for(let i=0;i<Math.min(grid.length,30);i++){
+    const row=grid[i]||[],m={};
+    want.forEach(c=>{const names=(TV_HDR[c.k]||[c.l]).concat([c.l]).map(tvKey);
+      const j=row.findIndex(v=>names.includes(tvKey(v)));if(j>=0&&!Object.values(m).includes(j))m[c.k]=j;});
+    if(Object.keys(m).length>=2)return {hi:i,map:m};}
+  return null;}
+/* 같은 행인지 가르는 열쇠 — 직접 입력하는 칸 전부(계산 열 제외)를 정리한 값으로 비교한다 */
+function tvRowKey(key,r){
+  return TV_TBL[key].cols.filter(c=>c.type!=='calc').map(c=>{
+    const v=r[c.k];
+    if(v===''||v==null)return '';
+    if(c.type==='num')return String(tvNum(v));
+    if(c.type==='pct')return String(tvR(tvNum(v),3));
+    if(c.type==='date')return tvDate(v);
+    return String(v).trim();}).join('\u0001');}
 function tvImport(key,file){
-  const run=f=>readGrid(f).then(grid=>{
-    const T=TV_TBL[key],want=T.cols.filter(c=>c.type!=='calc');
-    let hi=-1,map=null;
-    for(let i=0;i<Math.min(grid.length,30)&&hi<0;i++){
-      const row=grid[i]||[],m={};
-      want.forEach(c=>{const names=(TV_HDR[c.k]||[c.l]).concat([c.l]).map(tvKey);
-        const j=row.findIndex(v=>names.includes(tvKey(v)));if(j>=0&&!Object.values(m).includes(j))m[c.k]=j;});
-      if(Object.keys(m).length>=2){hi=i;map=m;}}
-    if(hi<0){confirmModal('머리글을 찾지 못했습니다.',
+  const T=TV_TBL[key],want=T.cols.filter(c=>c.type!=='calc');
+  /* 시트가 여러 장이면 머리글이 맞는 첫 시트를 읽는다 */
+  const run=f=>readGrid(f,g=>!!tvFindHeader(g,want)).then(grid=>{
+    const h=tvFindHeader(grid,want);
+    if(!h){confirmModal('머리글을 찾지 못했습니다.',
       `첫 시트에서 ${want.map(c=>c.l).join(' · ')} 같은 머리글 줄을 찾지 못했습니다.`,()=>{},'확인');return;}
+    const {hi,map}=h,pct=grid.__pct||new Set();
     const out=[];
-    grid.slice(hi+1).forEach(row=>{
+    grid.slice(hi+1).forEach((row,di)=>{
       if(!row||!row.some(v=>String(v==null?'':v).trim()!==''))return;
       const r=T.blank();
-      want.forEach(c=>{if(map[c.k]==null)return;let v=row[map[c.k]];v=v==null?'':String(v).trim();
+      want.forEach(c=>{if(map[c.k]==null)return;let v=row[map[c.k]];
+        /* 엑셀에서 % 서식인 시청률 칸은 0.052 로 들어온다 — 직접 적은 5.2 와 같은 %p 로 맞춘다 (v78) */
+        if(c.type==='pct'&&typeof v==='number'&&pct.has((hi+1+di)+','+map[c.k]))v=v*100;
+        v=v==null?'':String(v).trim();
         r[c.k]=c.type==='num'?(v===''?'':tvNum(v)):c.type==='pct'?(v===''?'':tvR(tvNum(v),3))
           :c.type==='date'?tvDate(v):v;});
       out.push(r);});
-    T.rows().push(...out);renderTvTable(key);tvChanged();
-    confirmModal(`${fmt(out.length)}행을 불러왔습니다.`,
-      `맞춘 열: ${want.filter(c=>map[c.k]!=null).map(c=>c.l).join(' · ')}`,()=>{},'확인');
+    /* 표에 이미 있는 행과 모든 칸이 같은 행은 건너뛴다 — 같은 파일을 다시 불러와도 광고비가 두 배가 되지 않게 (v78).
+       파일 안에서 서로 같은 행은 그대로 둔다 (같은 스팟이 실제로 두 번 나갈 수 있다) */
+    const have=new Map();
+    T.rows().forEach(r=>{const k=tvRowKey(key,r);have.set(k,(have.get(k)||0)+1);});
+    let dup=0;
+    const add=out.filter(r=>{const k=tvRowKey(key,r),n=have.get(k)||0;
+      if(n>0){have.set(k,n-1);dup++;return false;}
+      return true;});
+    if(add.length){T.rows().push(...add);renderTvTable(key);tvChanged();}
+    const notes=[`맞춘 열: ${want.filter(c=>map[c.k]!=null).map(c=>c.l).join(' · ')}`];
+    if(dup)notes.push(`중복 ${fmt(dup)}행은 건너뛰었습니다. 표에 이미 있는 행과 모든 칸이 같습니다.`);
+    confirmModal(add.length?`${fmt(add.length)}행을 불러왔습니다.`:'새로 불러올 행이 없습니다.',
+      notes.concat(gridNotes(grid)).map(esc).join('<br>'),()=>{},'확인',true);
   }).catch(err=>confirmModal('파일을 읽지 못했습니다.',esc(String(err&&err.message||err)),()=>{},'확인'));
   (file instanceof Blob)?run(file):pickFile(run);}
 

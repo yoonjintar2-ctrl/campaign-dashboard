@@ -219,8 +219,11 @@ function renderRaw(){
     if(!sub.length)return;
     /* 화면·엑셀 모두 예전 날짜가 위 (오름차순) */
     const ord=(a2,b2)=>a2-b2;
+    /* RAW_ALLDAYS — true: 캠페인 전 기간 · {i0,i1}: 그 구간의 모든 날 (리포트용 · 실적 없는 날도 빈 칸으로 남긴다) */
     const days=RAW_ALLDAYS
-      ? [...Array(TOTAL_DAYS)].map((_,i)=>i).sort(ord)
+      ? (RAW_ALLDAYS.i1!=null
+        ? [...Array(Math.max(0,RAW_ALLDAYS.i1-RAW_ALLDAYS.i0+1))].map((_,i)=>RAW_ALLDAYS.i0+i)
+        : [...Array(TOTAL_DAYS)].map((_,i)=>i)).sort(ord)
       : [...new Set(sub.map(f=>f.d))].sort(ord);
     totalRows+=days.length;
     const wrapDiv=el('div','rawblock'+(vi>0?' vsep':''),host);

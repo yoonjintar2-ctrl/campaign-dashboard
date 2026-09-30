@@ -249,8 +249,22 @@ const parseCSV=txt=>{
   row.push(cur);rows.push(row);
   return rows;
 };
-const cleanNum=v=>{const s=String(v==null?'':v).replace(/[^0-9.\-]/g,'');
-  return s===''||s==='-'?null:+s;};
+/* 숫자 칸 읽기 (v78) — ₩ · 원 · 콤마 · 공백 · % 는 떼고 읽는다.
+   (1,000) → −1000 (회계 서식) · 1.2E+03 → 1200 (지수 표기).
+   비어 있거나 '-' 면 null, **숫자로 읽을 수 없으면 NaN** — 예전처럼 숫자만 긁어 모으면
+   "12-34" 가 엉뚱한 값이 되거나 글자가 조용히 0 이 됐다. NaN 이면 부르는 쪽이 그 칸을 알린다.
+   (CP949 로 읽은 CSV 에서는 ₩ 가 \ 로 보인다) */
+function cleanNum(v){
+  if(typeof v==='number')return isFinite(v)?v:NaN;
+  let s=String(v==null?'':v).trim();
+  let neg=false;
+  const m=/^\((.*)\)$/.exec(s);
+  if(m){neg=true;s=m[1];}
+  s=s.replace(/[\s\u00a0,₩￦원$%\\]/g,'').replace(/^[\u2212\u2013]/,'-');
+  if(s===''||/^[-\u2014]$/.test(s))return null;
+  if(!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s))return NaN;
+  const n=+s;
+  return neg?-n:n;}
 /* 엑셀 시트의 "쓴 범위" 는 종종 1,048,576행(최대치)으로 잡혀 있다.
    뒤쪽 빈 줄을 잘라 내지 않으면 백만 줄을 헛돌게 된다. */
 function trimGrid(g){
@@ -294,11 +308,20 @@ const isYes=v=>/^(o|y|yes|예|보장|true|1|✓|v)$/i.test(String(v==null?'':v).
    한국(UTC+9)에서는 9월 1일이 8월 31일 14:59Z 로 나온다 — 그대로 읽으면 날짜가 하루 당겨진다.
    가장 가까운 UTC 자정으로 반올림한 뒤 UTC 기준으로 읽으면 어느 시간대에서나 같은 날짜가 된다. */
 function xlsDay(d){
-  /* SheetJS 가 뺀 만큼(그 날짜의 시간대 오프셋) 도로 더한 뒤, 가장 가까운 UTC 자정으로 맞춘다 */
-  const t=Math.round((d.getTime()-d.getTimezoneOffset()*60000)/864e5)*864e5, x=new Date(t);
+  /* SheetJS 가 뺀 만큼(그 날짜의 시간대 오프셋) 도로 더해 "엑셀에 적힌 벽시계" 로 돌린다 */
+  const off=d.getTimezoneOffset(),w=d.getTime()-off*60000;
+  /* 날짜만 있는 칸은 벽시계가 자정 언저리로 나온다 — 옛 지방시(LMT) 초 단위 오차로 23:59:08 처럼
+     조금 모자라거나, 서머타임이 자정에 바뀌는 날은 ±1시간까지 어긋난다 → 가장 가까운 자정으로.
+     **시각이 있는 칸**(2026-09-02 18:00)은 반올림하면 12시 이후가 다음 날로 넘어가므로 그 날짜를 그대로 쓴다 (v78) */
+  const tod=((w%864e5)+864e5)%864e5;
+  const nearDst=new Date(d.getTime()-2*36e5).getTimezoneOffset()!==off
+    ||new Date(d.getTime()+2*36e5).getTimezoneOffset()!==off;
+  const tol=nearDst?3700e3:90e3;
+  const t=(tod<tol||tod>864e5-tol?Math.round(w/864e5):Math.floor(w/864e5))*864e5, x=new Date(t);
   return `${x.getUTCFullYear()}-${String(x.getUTCMonth()+1).padStart(2,'0')}-${String(x.getUTCDate()).padStart(2,'0')}`;
 }
-const XLS_MAX_ROWS=300000;
+/* var — 시험할 때 한도를 낮춰 볼 수 있게 */
+var XLS_MAX_ROWS=300000;
 /* 시트의 "쓴 범위(!ref)" 가 A1:L1048576 처럼 최대치로 잡혀 있는 파일이 많다.
    그대로 읽으면 1,200만 칸을 두 번 훑느라 30초씩 걸린다 —
    실제로 값이 들어 있는 마지막 행·열까지로 줄여 두고 읽는다. */
@@ -319,8 +342,54 @@ function tightenRef(ws){
       e:{r:Math.min(r0.e.r,maxR),c:Math.min(r0.e.c,maxC)}});
   }catch(e){}
 }
-/* 파일 → 2차원 배열. .xlsx 는 SheetJS 가 있을 때만 (배포본에서는 자동 로드) */
-function readGrid(file){
+/* 시트 하나 → 2차원 배열.
+   덧붙이는 정보 (배열의 속성) — __pct: % 서식 숫자 칸("행,열") · __cut: 행 한도에 닿아 뒤를 못 읽었는가 */
+function sheetGrid(ws){
+  if(!ws)return [];
+  /* sheetRows 로 잘렸으면 SheetJS 가 원래 범위를 !fullref 에 남긴다 */
+  const full=ws['!fullref']?XLSX.utils.decode_range(ws['!fullref']):null;
+  tightenRef(ws);
+  const OPT={header:1,defval:''};
+  const shown=XLSX.utils.sheet_to_json(ws,{...OPT,raw:false});  /* 보이는 대로 (글자·날짜) */
+  const val=XLSX.utils.sheet_to_json(ws,{...OPT,raw:true});     /* 원래 값 (숫자) */
+  const pct=new Set();
+  /* 숫자는 **서식에 반올림된 글자 대신 원래 값**을 쓴다 —
+     셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
+  const g=trimGrid(shown.map((row,ri)=>row.map((v,ci)=>{
+    const rv=val[ri]?val[ri][ci]:undefined;
+    if(rv instanceof Date&&!isNaN(rv))return xlsDay(rv);
+    if(typeof rv==='number'&&isFinite(rv)){
+      /* % 서식 칸(5.2% 로 보이는 0.052)은 따로 적어 둔다 — 시청률처럼 %p 로 받는 곳이 쓴다 */
+      if(typeof v==='string'&&v.indexOf('%')>=0&&/%\s*$/.test(v))pct.add(ri+','+ci);
+      return rv;}
+    return v;})));
+  g.__pct=pct;
+  const ref=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):null;
+  /* 한도의 마지막 줄까지 값이 차 있고 파일 범위가 그 뒤로 더 있으면 → 잘렸다 */
+  g.__cut=!!(full&&ref&&ref.e.r>=XLS_MAX_ROWS-1&&full.e.r>ref.e.r);
+  return g;
+}
+/* CSV · TSV 글자 → 2차원 배열.
+   한국어 엑셀의 기본 CSV 는 CP949(EUC-KR) 다 — UTF-8 로 읽어 글자가 깨지거나(U+FFFD) 머리글이 안 보이면
+   EUC-KR 로 다시 읽는다. "유니코드 텍스트"(UTF-16) 로 저장한 파일은 BOM 으로 알아본다. */
+function csvGrid(bytes,pick){
+  const dec=enc=>{try{return new TextDecoder(enc).decode(bytes);}catch(e){return null;}};
+  const broken=t=>t.indexOf('\uFFFD')>=0;
+  const enc=(bytes[0]===0xFF&&bytes[1]===0xFE)?'utf-16le':(bytes[0]===0xFE&&bytes[1]===0xFF)?'utf-16be':'utf-8';
+  const t1=dec(enc)||'';
+  let g=parseCSV(t1);
+  const ok1=pick?pick(g):!broken(t1);
+  if(enc==='utf-8'&&(!ok1||broken(t1))){
+    const t2=dec('euc-kr');
+    if(t2!=null){
+      const g2=parseCSV(t2),ok2=pick?pick(g2):!broken(t2);
+      if((ok2&&!ok1)||(!ok1&&!ok2&&broken(t1)&&!broken(t2))){g=g2;g.__enc='euc-kr';}}}
+  return g;
+}
+/* 파일 → 2차원 배열. .xlsx 는 SheetJS 가 있을 때만 (배포본에서는 자동 로드)
+   pick(grid) — 이 시트에 머리글이 있는가. 시트가 여러 장이면 **머리글이 맞는 첫 시트**를 읽는다
+   (없으면 첫 시트). 읽은 시트 이름은 __sheet, 몇 번째인지는 __sheetIdx, 시트 수는 __sheets 에 남긴다. */
+function readGrid(file,pick){
   return new Promise((res,rej)=>{
     const isX=/\.xlsx?$/i.test(file.name);
     if(isX){
@@ -330,28 +399,36 @@ function readGrid(file){
       r.onload=()=>{try{
         /* cellDates — 날짜 칸을 진짜 날짜로 읽는다 ("09월 01일" 처럼 연도가 안 보이는 서식 대비) */
         /* sheetRows — "쓴 범위" 가 백만 행으로 잡힌 파일에서 XML 을 끝까지 훑지 않게 한다.
-           (16MB 짜리 실무 파일에서 12초 → 5초) 실제 리포트가 30만 행을 넘을 일은 없다. */
+           (16MB 짜리 실무 파일에서 12초 → 5초) 실제 리포트가 30만 행을 넘을 일은 없다.
+           넘으면 __cut 으로 알린다. */
         const wb=XLSX.read(new Uint8Array(r.result),
           {type:'array',cellDates:true,sheetRows:XLS_MAX_ROWS});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        tightenRef(ws);
-        const OPT={header:1,defval:''};
-        const shown=XLSX.utils.sheet_to_json(ws,{...OPT,raw:false});  /* 보이는 대로 (글자·날짜) */
-        const val=XLSX.utils.sheet_to_json(ws,{...OPT,raw:true});     /* 원래 값 (숫자) */
-        /* 숫자는 **서식에 반올림된 글자 대신 원래 값**을 쓴다 —
-           셀 서식이 #,##0 이면 소수점이 잘려 합계가 원본과 어긋난다. */
-        res(trimGrid(shown.map((row,ri)=>row.map((v,ci)=>{
-          const rv=val[ri]?val[ri][ci]:undefined;
-          if(rv instanceof Date&&!isNaN(rv))return xlsDay(rv);
-          return (typeof rv==='number'&&isFinite(rv))?rv:v;}))));
+        const names=wb.SheetNames||[];
+        let first=null,hit=null;
+        for(const nm of names){
+          const g=sheetGrid(wb.Sheets[nm]);g.__sheet=nm;
+          if(!first)first=g;
+          if(!pick||pick(g)){hit=g;break;}}
+        const out=hit||first||[];
+        out.__sheets=names.length;
+        out.__sheetIdx=Math.max(0,names.indexOf(out.__sheet));
+        res(out);
       }catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
       r.readAsArrayBuffer(file);
     }else{
       const r=new FileReader();
-      r.onload=()=>res(parseCSV(String(r.result)));
+      r.onload=()=>{try{res(csvGrid(new Uint8Array(r.result),pick));}catch(e){rej(e);}};
       r.onerror=()=>rej(new Error('파일을 읽지 못했습니다.'));
-      r.readAsText(file,'utf-8');}});
+      r.readAsArrayBuffer(file);}});
+}
+/* 불러오기 결과에 덧붙일 안내 — 첫 시트가 아닌 시트를 읽었나 · 행 한도에 닿았나 */
+function gridNotes(g){
+  const out=[];
+  if(!g)return out;
+  if(g.__sheetIdx>0&&g.__sheet)out.push(`시트 ${g.__sheets}개 중 '${g.__sheet}' 시트를 읽었습니다.`);
+  if(g.__cut)out.push(`행 한도(${XLS_MAX_ROWS.toLocaleString()}행)에 닿아 그 뒤의 행은 읽지 않았습니다. 파일을 나눠서 올려 주세요.`);
+  return out;
 }
 function pickFile(cb){
   const inp=$('fileIn');if(!inp)return;
@@ -365,11 +442,11 @@ function importDaily(f){
     progOpen('일자별 실적을 불러오는 중');
     progSet(null,`${file.name||'파일'} 읽는 중…`);
     await uiTick();
-    try{grid=await readGrid(file);}catch(e){
+    const cols=dailyColsOf(true);
+    try{grid=await readGrid(file,g=>findHeader(g,cols)>=0);}catch(e){
       progClose();confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
     progSet(26,`${grid.length.toLocaleString()}줄 · 머리글 찾는 중…`);
     await uiTick();
-    const cols=dailyColsOf(true);
     const hi=findHeader(grid,cols);
     if(hi<0){progClose();confirmModal('머리글 줄을 찾지 못했습니다.',
       '템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.',()=>{},'확인');return;}
@@ -397,7 +474,9 @@ function importDaily(f){
         const raw=String(r[ci]==null?'':r[ci]).trim();
         if(raw==='')return;
         if(k==='date')o.date=normDate(raw)||raw;
-        else if(numK.has(k)){const n=cleanNum(raw);if(n!==null){o[k]=n;filled=true;}}
+        else if(numK.has(k)){const n=cleanNum(raw);
+          /* 숫자로 읽을 수 없는 값은 0 으로 삼키지 않고 글자 그대로 둔다 — 표에서 그 칸이 붉게 표시된다 */
+          if(n!==null){o[k]=isNaN(n)?raw:n;filled=true;}}
         else {o[k]=raw;filled=true;}});
       if(filled||o.date)rows.push(o);}
     /* 조합으로 적은 칸은 등록된 순서로 맞춰 준다 —
@@ -422,12 +501,16 @@ function importDaily(f){
     if(!rows.length){progClose();
       confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     progSet(94,'매칭 결과 확인 중…');await uiTick();
-    const bad=rows.filter(rowBad).length;
+    /* 예상 효율과 맞지 않는 행 (이름 · 기간) — 숫자만 문제인 행('num')은 따로 센다 */
+    const bad=rows.filter(r=>{const k=rowIssue(r);return !!k&&k!=='num';}).length;
     const badC=rows.reduce((n,r)=>n+rowCellIssues(r).cells.length,0);
+    const numC=rows.reduce((n,r)=>n+rowNumBad(r).length,0);
     progSet(100,'');
     /* v51 — 확인 팝업 없이 바로 반영한다. 파일을 넣는 것 자체가 "불러오기" 의사표시다.
        (되돌리려면 Ctrl+Z · 맞지 않는 칸은 표에서 붉게 표시되고 탭을 옮길 때 알려 준다) */
-    await applyImportedRows(rows,{dup,bad,badC});
+    await applyImportedRows(rows,{dup,bad,badC,numC,sheet:grid.__sheetIdx>0?grid.__sheet:''});
+    /* 행 한도에 닿아 뒤쪽을 못 읽었으면 — 데이터가 빠진 것이라 팝업으로 알린다 */
+    if(grid.__cut)confirmModal('파일 뒷부분을 읽지 못했습니다.',gridNotes(grid).map(esc).join('<br>'),()=>{},'확인',true);
   });
   /* 버튼에 그냥 걸면 클릭 이벤트가 첫 인자로 들어온다 — 진짜 파일일 때만 바로 읽는다 */
   (f instanceof Blob)?run(f):pickFile(run);
@@ -451,9 +534,13 @@ async function applyImportedRows(rows,note){
   /* 확인 팝업을 없앤 대신(v51), 결과 요약은 표 위 문구에 남긴다 */
   const n=note||{};
   const e=$('saveState');
+  /* 숫자로 읽을 수 없는 칸(numC)은 "예상 효율과 맞지 않는 칸" 과 따로 센다 */
+  const misC=(n.badC||0)-(n.numC||0);
   if(e)e.textContent=`엑셀 ${rows.length.toLocaleString()}행 불러옴`
+    +(n.sheet?` · '${n.sheet}' 시트`:'')
     +(n.dup?` · 값까지 같은 행 ${n.dup}개 포함`:'')
-    +(n.bad?` · 예상 효율과 맞지 않는 칸 ${n.badC}개(${n.bad}행)는 붉게 표시`:'')
+    +(misC>0?` · 예상 효율과 맞지 않는 칸 ${misC}개(${n.bad}행)는 붉게 표시`:'')
+    +(n.numC?` · 숫자로 읽을 수 없는 칸 ${n.numC}개는 붉게 표시`:'')
     +` · 저장 대기`;
   progSet(100,'완료');
   await uiTick();
@@ -463,9 +550,9 @@ async function applyImportedRows(rows,note){
 function importLines(f){
   const run=(async file=>{
     let grid;
-    try{grid=await readGrid(file);}catch(e){
-      confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
     const cols=lineColsOf(true);
+    try{grid=await readGrid(file,g=>findHeader(g,cols)>=0);}catch(e){
+      confirmModal('불러오지 못했습니다.',e.message,()=>{},'확인');return;}
     const hi=findHeader(grid,cols);
     if(hi<0){confirmModal('머리글 줄을 찾지 못했습니다.',
       '템플릿의 머리글(구분 · 매체 · 광고상품 …) 줄이 그대로 있어야 합니다.',()=>{},'확인');return;}
@@ -473,6 +560,9 @@ function importLines(f){
     const typeOf={};LINE_COLS.forEach(c=>typeOf[c.k]=c.type);
     const kpiByLabel={};Object.entries(KPI_LABEL).forEach(([k,v])=>kpiByLabel[v]=k);
     const out=[];
+    /* 숫자로 읽을 수 없는 칸 — 0 으로 채우지 않고 비워 둔 뒤 확인 창에 알린다 */
+    const badNum=[];
+    const hdrOf={};cols.forEach(c=>{hdrOf[c.k]=c.l;});
     for(let i=hi+1;i<grid.length;i++){
       const r=grid[i]||[];
       if(!r.some(v=>String(v||'').trim()!==''))continue;
@@ -484,6 +574,9 @@ function importLines(f){
         if(raw==='')return;
         filled=true;
         const t=typeOf[k];
+        const numOf=s=>{const v=cleanNum(s);
+          if(v!==null&&isNaN(v)){badNum.push({row:i+1,col:hdrOf[k]||k,raw});return null;}
+          return v;};
         /* 동일 예산 안에서 여러 개를 함께 돌리는 항목은 콤마로 이어 적는다 */
         if(k==='creative'){creatives=parseMulti(raw);}
         else if(k==='target'){targets=parseMulti(raw);}
@@ -491,12 +584,12 @@ function importLines(f){
         else if(k==='slot'){slots=parseMulti(raw);}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
-        else if(t==='pct'){const v=cleanNum(raw);if(v!==null)n[k]=v>1?v/100:v;}
-        else if(t==='exp'){const v=cleanNum(raw);if(v!==null)n.e[k.slice(2)]=v;}
+        else if(t==='pct'){const v=numOf(raw);if(v!==null)n[k]=v>1?v/100:v;}
+        else if(t==='exp'){const v=numOf(raw);if(v!==null)n.e[k.slice(2)]=v;}
         else if(k==='bid'){n.bid=normBid(raw);}
         else if(GUAR_KEY[k]){n.g=n.g||{};n.g[GUAR_KEY[k]]=isYes(raw);}
-        else if(t==='gross'){const v=cleanNum(raw);if(v!==null)n.gross=v;}
-        else if(t==='num'){const v=cleanNum(raw);if(v!==null)n[k]=v;}
+        else if(t==='gross'){const v=numOf(raw);if(v!==null)n.gross=v;}
+        else if(t==='num'){const v=numOf(raw);if(v!==null)n[k]=v;}
         else if(t==='dev'){n.device=raw.split(/[+,\s]+/).filter(Boolean);}
         else n[k]=raw;});
       if(!filled)continue;
@@ -505,8 +598,14 @@ function importLines(f){
       n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
       out.push(n);}
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
+    /* 덧붙임 — 읽은 시트 · 행 한도 · 숫자로 읽을 수 없어 비워 둔 칸 (값은 사용자 데이터라 번역하지 않는다) */
+    const extra=gridNotes(grid).map(esc);
+    if(badNum.length)extra.push(`숫자로 읽을 수 없는 칸 ${badNum.length}개는 비워 두었습니다.`
+      +`<br><span data-noi18n>${badNum.slice(0,5).map(x=>esc(`${x.row}행 ${x.col}: "${x.raw}"`)).join('<br>')}`
+      +`${badNum.length>5?'<br>…':''}</span>`);
     confirmModal(`${out.length}개 라인을 불러옵니다.`,
-      '지금의 예상 효율 표를 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.',
+      '지금의 예상 효율 표를 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.'
+        +extra.map(x=>'<br><br>'+x).join(''),
       ()=>{
         pushLineUndo();
         LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
@@ -524,7 +623,7 @@ function importLines(f){
         buildFilters();buildSelects();
         renderKpiTable();renderCampForm();renderMix();renderAll();renderSheet();
         const e=$('lineSaveState');if(e)e.textContent=`엑셀 ${LINES.length}개 라인 불러옴 · 저장 대기`;
-      },'불러오기');
+      },'불러오기',true);
   });
   (f instanceof Blob)?run(f):pickFile(run);
 }

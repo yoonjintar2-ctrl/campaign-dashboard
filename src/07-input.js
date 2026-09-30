@@ -92,21 +92,34 @@ function rowLine(r){
    앞 차원부터 차례로 후보 라인을 좁혀 가다가, 어떤 칸에서 후보가 0이 되면
    그 칸을 범인으로 적어 두고 그 칸은 조건에서 빼고 계속 좁힌다.
    → 행 전체가 아니라 문제가 된 칸만 남는다. */
+/* 숫자 칸에 숫자로 읽을 수 없는 값(글자 등)이 들어 있는가 (v78).
+   불러오기가 그런 값을 0 으로 삼키지 않고 글자 그대로 남기므로, 집계(+값||0)에서 0 이 되는 칸을 여기서 짚는다 */
+function numBad(v){
+  if(v==null||v==='')return false;
+  if(typeof v==='number')return !isFinite(v);
+  return String(v).trim()!==''&&!isFinite(+v);}
+/* 한 행에서 숫자로 읽을 수 없는 칸 (화면에 켜 둔 숫자 열만) */
+function rowNumBad(r){
+  const out=[];
+  for(const c of SHEET_COLS)if(c.type==='num'&&c.on!==false&&numBad(r[c.k]))out.push(c.k);
+  return out;}
 function rowCellIssues(r){
+  const nb=rowNumBad(r);
   const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
-  if(!keys.length)return {kind:'',cells:[]};
+  if(!keys.length)return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};
   let pool=LINES,bad=[];
   DIM_CHAIN.forEach(k=>{
     if(!keys.includes(k))return;
     const next=pool.filter(l=>dimMatch(l,k,r[k]));
     if(next.length)pool=next;else bad.push(k);});
-  if(bad.length)return {kind:'line',cells:bad};
+  if(bad.length)return {kind:'line',cells:bad.concat(nb)};
   const l=rowLine(r)||pool[0];
-  if(l&&!(r.date>=l.start&&r.date<=l.end))return {kind:'date',cells:['date']};
-  return {kind:'',cells:[]};}
+  if(l&&!(r.date>=l.start&&r.date<=l.end))return {kind:'date',cells:['date'].concat(nb)};
+  return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};}
 function rowIssue(r){return rowCellIssues(r).kind;}
 const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
-  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+  date:'그 라인의 집행 기간 밖의 날짜입니다',
+  num:'숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다'};
 const CELL_ISSUE_LABEL={
   segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
   product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
@@ -346,13 +359,13 @@ function renderSheet(){
       +`<td class="rm">${RGRIP}<button data-del="${ri}" title="행 삭제">✕</button></td>`;
     cols.forEach((c,ci)=>{
       if(c.type==='calc'){h+=`<td class="calc mono">${fmt(evalFormula(c.rule,r))}</td>`;return;}
-      /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 */
-      const v=c.type==='num'?(+r[c.k]?fmt(r[c.k]):''):(r[c.k]||'');
+      /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 · 숫자로 읽을 수 없는 값은 글자 그대로 보여 준다 */
+      const v=c.type==='num'?(numBad(r[c.k])?String(r[c.k]):(+r[c.k]?fmt(r[c.k]):'')):(r[c.k]||'');
       const isBad=badSet.has(c.k);
       const cls=[c.type==='dim'?'dd':'',c.k==='date'?'dt':'',inSel(ri,ci)?'sel':'',
         isBad?'badcell':'',
         (ri===SEL.r1&&ci===SEL.c1)?'anchor':''].filter(Boolean).join(' ');
-      const bt=isBad?` title="${esc(CELL_ISSUE_LABEL[c.k]||ROW_ISSUE_LABEL[cIss.kind]||'')}"`:'';
+      const bt=isBad?` title="${esc((c.type==='num'?ROW_ISSUE_LABEL.num:CELL_ISSUE_LABEL[c.k])||ROW_ISSUE_LABEL[cIss.kind]||'')}"`:'';
       if(c.type==='dim'){
         /* 클릭하면 곧바로 선택 목록이 열리도록 select 사용 */
         const opts=optsFor(c.k,r);
@@ -397,7 +410,9 @@ function renderSheet(){
   const nCell=badCellCount();
   const hid=SHEET.length-view.length;
   const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
-  const nDate=badIdx.length-nLine;
+  /* 숫자만 문제인 행은 "기간 밖" 으로 세지 않는다 (v78) */
+  const nNum=badIdx.filter(i=>rowIssue(SHEET[i])==='num').length;
+  const nDate=badIdx.length-nLine-nNum;
   $('sheetNote').innerHTML=`${SHEET.length}행`
     +(hid?` · <button type="button" class="badjump" id="sheetFilterOff" title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`
       /* 정렬만 걸려 있어도 알려 준다 — 정렬 중에는 행을 끌어 옮길 수 없다 (v71) */
@@ -406,7 +421,8 @@ function renderSheet(){
     +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
         title="누를 때마다 다음 행으로 이동합니다&#10;`
         +`${nLine?`· 이름이 맞지 않는 칸 ${nLine}행`:''}${nLine&&nDate?'&#10;':''}`
-        +`${nDate?`· 집행 기간 밖 ${nDate}행`:''}">매칭 안 되는 셀 ${nCell}개 ▸</button>`:'');
+        +`${nDate?`· 집행 기간 밖 ${nDate}행`:''}${(nLine||nDate)&&nNum?'&#10;':''}`
+        +`${nNum?`· 숫자로 읽을 수 없는 값 ${nNum}행`:''}">매칭 안 되는 셀 ${nCell}개 ▸</button>`:'');
   {const jb=$('sheetBadJump');
    if(jb)jb.onclick=()=>jumpToBadRow();
    const fo=$('sheetFilterOff');
@@ -537,7 +553,9 @@ function normDate(raw,fallback){
 function setCell(i,k,raw){
   const r=SHEET[i];if(!r)return;
   const col=SHEET_COLS.find(c=>c.k===k);if(!col||col.type==='calc')return;
-  if(col.type==='num'){const n=String(raw).replace(/[^0-9.\-]/g,'');r[k]=n===''?0:+n;}
+  /* 숫자 — 불러오기와 같은 규칙(cleanNum): (1,000) → −1000 · 1.2E+03 → 1200.
+     읽을 수 없는 글자는 0 으로 바꾸지 않고 그대로 두어 그 칸을 붉게 표시한다 (v78) */
+  if(col.type==='num'){const n=cleanNum(raw);r[k]=n===null?0:isNaN(n)?String(raw).trim():n;}
   else if(col.type==='dim'){const v=String(raw).trim();
     r[k]=dimOpts(k,r).includes(v)?v:'';}
   else if(k==='date')r[k]=normDate(raw,r.date);

@@ -966,6 +966,26 @@ function paceKpiRows(){
       .filter(y=>y.v>0).sort((a,b)=>b.v-a.v)}))
     .sort((a,b)=>b.goal-a.goal);
 }
+/* KPI 달성률 — 라인을 **자기 KPI 지표**별로 묶어 집행 ÷ 목표 (KPI 도넛의 고리와 같은 계산).
+   서로 다른 지표(노출 · 클릭 · 조회 …)를 그냥 더하면 노출 수가 전부를 덮어 버리므로 더하지 않는다. */
+function kpiAchRows(ls){
+  const safe=v=>isFinite(v)?v:0;
+  return [...new Set((ls||[]).map(kpiOf))].map(k=>{
+    const it=ls.filter(l=>kpiOf(l)===k);
+    const goal=safe(sum(it.map(l=>goalIn(l,k)))),act=safe(sum(it.map(l=>paceSum(l.daily&&l.daily[k]))));
+    return {k,act,goal,w:sum(it.map(lineGross)),ach:goal?act/goal:0};})
+    .sort((a,b)=>b.w-a.w);
+}
+/* 여러 KPI 를 한 숫자로 — KPI 가 하나면 그 값, 여러 개면 예산으로 가중 평균.
+   예산이 아직 없으면(무상·미입력) 단순 평균으로 — 0 으로 떨어지지 않게 (v70). 도넛 가운데 숫자 · 엑셀 리포트 공용 */
+function kpiAchMix(rows){
+  const safe=v=>isFinite(v)?v:0;
+  const totW=sum(rows.map(r=>safe(r.w)));
+  return rows.length===0?0
+    :rows.length===1?safe(rows[0].ach)
+    :totW?sum(rows.map(r=>safe(r.ach)*safe(r.w)))/totW
+    :sum(rows.map(r=>safe(r.ach)))/rows.length;
+}
 function renderPace(){
   const sc=paceScope();          /* 기간 필터 구간 — 집행 수치와 머리글 */
   const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
@@ -1532,11 +1552,7 @@ function renderDonuts(){
     /* 가운데 — 달성률만. KPI 가 하나면 그 고리와 같은 값, 여러 개면 예산으로 가중 평균한다.
        예산이 아직 없으면(무상·미입력) 고리들의 단순 평균으로 — 0 으로 떨어지지 않게 (v70) */
     const allRows=rings.concat(restRows);
-    const totW=sum(allRows.map(r=>safe(r.w)));
-    const total=allRows.length===0?0
-      :allRows.length===1?safe(allRows[0].ach)
-      :totW?sum(allRows.map(r=>safe(r.ach)*safe(r.w)))/totW
-      :sum(allRows.map(r=>safe(r.ach)))/allRows.length;
+    const total=kpiAchMix(allRows);
     const ctr=el('div','ctr',ring);
     const lg=el('div','dlgd',c);
     /* 범례는 "무슨 색이 무엇인지" 만 알려 준다 — 수치는 도넛 안(달성률)과 툴팁에서 본다 */

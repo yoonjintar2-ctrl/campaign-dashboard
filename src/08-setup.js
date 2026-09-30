@@ -1254,10 +1254,15 @@ let pendingLeave=false;
 function switchTab(name){
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
     const n=SHEET.filter(rowBad).length,nc=badCellCount();
-    confirmModal(`예상 효율과 매칭되지 않는 셀이 ${nc}개 있습니다. (${n}행)`,
-      '붉게 표시된 <b>칸</b>의 이름이 예상 효율과 같은지, '
+    /* 숫자로 읽을 수 없는 칸은 따로 센다 — 그 행은 집계되지만 그 칸만 0 이 된다 (v78) */
+    const nNum=SHEET.reduce((a,r)=>a+rowNumBad(r).length,0);
+    const nMis=nc-nNum,nMisR=SHEET.filter(r=>{const k=rowIssue(r);return !!k&&k!=='num';}).length;
+    confirmModal(nMis?`예상 효율과 매칭되지 않는 셀이 ${nMis}개 있습니다. (${nMisR}행)`
+        :`숫자로 읽을 수 없는 셀이 ${nNum}개 있습니다. (${n}행)`,
+      (nMis?'붉게 표시된 <b>칸</b>의 이름이 예상 효율과 같은지, '
       +'<b>일자</b>가 그 라인의 집행 기간 안인지 확인해 주세요.<br>'
-      +'그대로 이동하면 해당 행은 집계되지 않습니다. '
+      +'그대로 이동하면 해당 행은 집계되지 않습니다. ':'')
+      +(nNum?`<span>숫자로 읽을 수 없는 칸 ${nNum}개는 0 으로 집계됩니다.</span><br>`:'')
       +'(리포트 데이터 입력 탭의 <b>“매칭 안 되는 셀 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
       ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동',true);
     return;}
