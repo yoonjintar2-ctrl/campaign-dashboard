@@ -183,7 +183,11 @@ function rawRestore(){
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
-  const host=$('rawHost');host.innerHTML='';
+  const host=$('rawHost');
+  /* 지난번 표의 "가로 막대 감춤" 여백(enableHPager keepY 가 잰 값)을 새 표에도 미리 넣는다 (v78) —
+     같으면 hpPaint 가 다시 쓰지 않아서, 그리자마자 표 전체를 한 번 더 배치하는 일이 없다. 다르면 hpPaint 가 고친다 */
+  const prevMB=(()=>{const w=host.querySelector('.tbl-wrap.hpy');return w?w.style.marginBottom:'';})();
+  host.innerHTML='';
   /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) · 숨긴 항목은 뺀다 */
   const vSegs=segValues(RAW_SEG);
   const hSegs=segValues(RAW_HSEG);
@@ -245,10 +249,16 @@ function renderRaw(){
         if(bm&&METRICS[k]){const vOf=di=>{const g=bm.get(di);return g?mval(k,aggFacts(g)):NaN;};
           const vm=new Map(days.map(di=>[di,vOf(di)]));
           days.sort((a2,b2)=>hpCmp(vm.get(a2),vm.get(b2),rs.dir)||(a2-b2));}}}
-    const card=el('div','card fit',wrapDiv);
-    const wrap=el('div','tbl-wrap',card);
-    const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
     const many=blocks.length>1;
+    /* 고정 열(hfrozen) · 좌우 넘김(hp*) 클래스는 처음부터 달아 둔다 —
+       첫 배치 뒤에 달면 4만 칸 표를 한 번 더 계산한다 (v78 · mountHNav · enableHPager 도 똑같이 단다) */
+    const card=el('div','card fit'+(many?' hpcard hpclip':''),wrapDiv);
+    const wrap=el('div','tbl-wrap'+(many?' hfrozen hpwrap hpy':''),card);
+    /* 둘째 열의 고정 위치(--fz1)도 지난번에 잰 값으로 미리 넣어 둔다 — 재 보니 같으면 다시 쓰지 않는다 (mountHNav) */
+    const fzv=many&&window.__rawFz1?window.__rawFz1:'';
+    if(fzv)wrap.__fz1=fzv;
+    if(many&&prevMB)wrap.style.marginBottom=prevMB;
+    const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
     let h='<thead>';
     if(many){
       /* 가로 세그먼트 — 첫 블록(합계)은 진한 헤더, 하위 블록은 연한 헤더 */
@@ -275,7 +285,7 @@ function renderRaw(){
       const label=(showY?String(y).slice(2)+'/':'')+`${d.getMonth()+1}/${d.getDate()}`;
       const cls=rest?' hol':'';
       h+=`<tr><td class="head mono${cls}" style="min-width:72px" title="${dFull(d)}${hol?' · '+hol:''}">${label}</td>`
-        +`<td class="head${cls}" style="min-width:40px">${WD[wd]}</td>`
+        +`<td class="head${cls}" style="min-width:40px${fzv?';--fz1:'+fzv:''}">${WD[wd]}</td>`
         +blocks.map((bk,bi)=>{const g=bDay[bi].get(di);
           const b2=g?aggFacts(g):null;
           return cols.map((k,i)=>`<td class="mono${bi>0&&i===0?' hsep':seps.has(i)?' gsep':''}${cls}">`
@@ -312,33 +322,72 @@ function renderRaw(){
 /* 세로 블록끼리 열 폭을 똑같이 맞춘다 —
    글자 수로 어림한 최소 폭만으로는 실제 픽셀이 블록마다 조금씩 달라져
    위쪽 버튼으로 가로로 옮길 때 아래 블록이 미묘하게 어긋났다. 그려진 뒤 실측해서 맞춘다. */
+/* ⚡ v78 — **모두 먼저 재고, 그다음에 한꺼번에 쓴다.**
+   예전에는 재기(getBoundingClientRect)와 쓰기(min-width · --fz1)를 번갈아 해서
+   2만 8천 칸짜리 표 전체의 레이아웃을 열 번 넘게 새로 계산했다 (열 때마다 1~3초).
+   이제는 재는 레이아웃 한 번 + (폭을 고쳤을 때만) 그리기 직전 한 번뿐이다.
+   값 열의 결과 폭은 예전과 똑같다 (border-box 라 min-width = 잰 폭의 올림값이 곧 열 폭).
+   일자 · 요일 두 열은 블록끼리 이미 같으면 그대로 둔다 (예전 결과와 1px 안쪽 차이, 두 열 합은 같다).
+   돌려주는 값 = 블록마다 --fz1(첫 열 폭) · null 이면 나중에 잰다. */
 function equalizeRawCols(parts){
-  if(!parts||parts.length<2)return;
+  if(!parts||!parts.length)return [];
+  /* ── 읽기 ── */
+  const firstRow=pt=>pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
+  const lead=parts.map(pt=>{const tr=firstRow(pt);
+    return tr&&tr.cells.length>=2?[tr.cells[0].getBoundingClientRect().width,tr.cells[1].getBoundingClientRect().width]:null;});
+  const fz=lead.map(L=>L?L[0]:null);             /* 맞추지 않을 때는 잰 폭 그대로 */
+  if(parts.length<2)return fz;
   const hrs=parts.map(pt=>{const r=pt.tbl.tHead.rows;return r[1]||r[0];}).filter(Boolean);
-  if(hrs.length!==parts.length)return;
+  if(hrs.length!==parts.length)return fz;
   const n=Math.min(...hrs.map(r=>r.cells.length));
-  const mx=[];
-  for(let i=0;i<n;i++)mx[i]=Math.max(...hrs.map(r=>r.cells[i].getBoundingClientRect().width));
-  hrs.forEach(r=>{for(let i=0;i<n;i++)r.cells[i].style.minWidth=Math.ceil(mx[i])+'px';});
-  /* 왼쪽에 고정되는 일자 · 요일 두 열도 */
-  const lead=parts.map(pt=>{const tr=pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
-    return tr?[...tr.cells].slice(0,2):null;}).filter(Boolean);
-  if(lead.length===parts.length)[0,1].forEach(i=>{
-    const w=Math.ceil(Math.max(...lead.map(L=>L[i].getBoundingClientRect().width)));
-    lead.forEach(L=>{L[i].style.minWidth=w+'px';});
-    parts.forEach(pt=>{[...pt.tbl.tBodies[0].rows].forEach(tr=>{
-      if(tr.cells[i])tr.cells[i].style.minWidth=w+'px';});});});
+  const ws=hrs.map(r=>{const a=[];for(let i=0;i<n;i++)a.push(r.cells[i].getBoundingClientRect().width);return a;});
+  /* ── 쓰기 ──
+     열마다 가장 넓은 값(올림)으로 맞춘다 (예전과 같은 규칙 · 같은 결과 폭).
+     이미 모든 블록이 그 폭이면 쓰지 않는다 — 한 칸이라도 폭을 쓰면 4만 칸 표 전체를 다시 배치한다 */
+  const same=col=>col.every(w=>w===col[0]);
+  for(let i=0;i<n;i++){const col=ws.map(a=>a[i]);
+    const t=Math.ceil(Math.max(...col));if(col.every(w=>w===t))continue;
+    hrs.forEach(r=>{r.cells[i].style.minWidth=t+'px';});}
+  /* 왼쪽에 고정되는 일자 · 요일 두 열 — 블록끼리 이미 같으면 그대로 둔다
+     (예전에는 여기서도 올림 폭을 한 열씩 재고 써서 레이아웃을 두 번 더 돌렸다) */
+  if(!lead.every(Boolean))return fz;
+  if(same(lead.map(L=>L[0]))&&same(lead.map(L=>L[1])))return fz;
+  const lw=[0,1].map(i=>Math.ceil(Math.max(...lead.map(L=>L[i]))));
+  parts.forEach(pt=>{[...pt.tbl.tBodies[0].rows].forEach(tr=>{
+    if(tr.cells[0])tr.cells[0].style.minWidth=lw[0]+'px';
+    if(tr.cells[1])tr.cells[1].style.minWidth=lw[1]+'px';});});
+  /* 첫 열 폭 = 방금 맞춘 값. 두 열 합이 '일자' 머리글(두 칸 합친 칸)의 최소 폭보다 좁으면
+     표가 남는 폭을 나눠 늘리므로 그때는 null — 그리기 직전에 다시 잰다 (mountHNav) */
+  const span=parseFloat(parts[0].tbl.tHead.rows[0].cells[0].style.minWidth)||0;
+  return parts.map(()=>lw[0]+lw[1]>=span?lw[0]:null);
 }
+/* 일자별 효율 미니맵의 창 크기 변경 처리 — 공용 목록 (v78).
+   다시 그리면 옛 미니맵(nav)은 화면에서 떨어져 나가므로, 넣을 때 · 돌 때 스스로 빠진다.
+   ⚠ 부팅 중에 불리므로 최상위 let/const 대신 window 에 둔다 */
+function hnavOnResize(nav,fn){
+  if(!window.__hnavList){window.__hnavList=[];
+    let raf=0;
+    addEventListener('resize',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
+      window.__hnavList=window.__hnavList.filter(x=>x.nav.isConnected);
+      window.__hnavList.forEach(x=>{try{x.fn();}catch(e){}});});});}
+  window.__hnavList=window.__hnavList.filter(x=>x.nav.isConnected);
+  window.__hnavList.push({nav,fn});}
 function mountHNav(parts,blocks,hKeys,hDim){
-  equalizeRawCols(parts);
+  const fz0=equalizeRawCols(parts);
   const first=parts[0];
   const {card,tbl}=first;
   const wrap=first.wrap;
-  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 (모든 블록) */
-  const setFz=()=>parts.forEach(pt=>{const r=pt.tbl.querySelector('tbody tr');
-    if(r&&r.children[0])pt.wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');});
+  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 (모든 블록).
+     --fz1 은 위에서 잰 값으로 바로 쓴다 — 다시 재면 레이아웃을 또 강제한다.
+     값은 둘째 열 칸에만 쓴다 — 표 상자(.tbl-wrap)에 쓰면 그 아래 4만 칸이 전부 스타일 재계산된다 (v78) */
+  const putFz=ws=>parts.forEach((pt,i)=>{const w=ws[i];if(!(w>0))return;   /* 숨어 있어 0 으로 잰 값은 쓰지 않는다 */
+    const v=w+'px';window.__rawFz1=v;if(pt.wrap.__fz1===v)return;pt.wrap.__fz1=v;
+    const tb=pt.tbl.tBodies[0];if(tb)[...tb.rows].forEach(tr=>{const c=tr.cells[1];if(c)c.style.setProperty('--fz1',v);});});
+  /* 나중에(글꼴 · 창 크기) 폭이 바뀌었을 때 — 전부 재고 나서 바뀐 것만 쓴다 */
+  const setFz=()=>putFz(parts.map(pt=>{const r=pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
+    return r&&r.cells[0]?r.cells[0].getBoundingClientRect().width:null;}));
   parts.forEach(pt=>pt.wrap.classList.add('hfrozen'));
-  setFz();setTimeout(setFz,0);addEventListener('resize',setFz);
+  putFz(fz0);requestAnimationFrame(setFz);setTimeout(setFz,0);
   /* 어느 블록을 밀든 나머지도 같은 위치로 따라온다.
      ⚠ 버튼으로 부드럽게 옮기는 동안에는 서로 따라가기를 잠시 멈춘다 —
         안 그러면 첫 블록이 움직이자마자 그 위치를 나머지에 복사해 버려서
@@ -409,8 +458,10 @@ function mountHNav(parts,blocks,hKeys,hDim){
   chips.forEach((c,i)=>c.onclick=()=>goTo(i));
   nav.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>goTo(cur()+ +b.dataset.step));
   wrap.addEventListener('scroll',paint,{passive:true});
-  addEventListener('resize',paint);
-  paint();setTimeout(paint,0);
+  /* 창 크기 변경 — 창 리스너는 공용 하나만 (v78). 예전에는 그릴 때마다 두 개씩 쌓였다 */
+  hnavOnResize(nav,()=>{setFz();paint();});
+  /* 첫 칠하기는 그리기 직전에 — 여기서 바로 재면 방금 쓴 폭 때문에 레이아웃을 한 번 더 강제한다 */
+  requestAnimationFrame(paint);setTimeout(paint,0);
   /* 표마다 좌우 넘김 단추 (v77) — 누르면 위 세그먼트 칩과 같이 **블록 단위로** 모든 표가 함께 넘어간다.
      세로 스크롤이 있는 표라 가로 스크롤바만 감춘다(keepY) */
   parts.forEach(pt=>{try{const c=pt.wrap.closest('.card');

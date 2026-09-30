@@ -1471,7 +1471,9 @@ $('addLine').onclick=()=>{
 
 $('lineHistBtn').onclick=openLineHistory;
 $('lineColCfgBtn').onclick=openLineColCfg;
-addEventListener('resize',()=>renderDaily());
+/* 창 크기를 끄는 동안 매번 다시 그리지 않고, 멈춘 뒤 한 번만 (v78) */
+addEventListener('resize',()=>{clearTimeout(window.__dailyRzT);
+  window.__dailyRzT=setTimeout(()=>renderDaily(),150);});
 function renderIssueAlert(){
   const box=$('issueAlert');if(!box)return;
   if(ISSUE_OVERFLOW>0){box.classList.remove('hidden');
@@ -1507,33 +1509,47 @@ function dashEmpty(){
 
   return on;
 }
+/* 돌려주는 값 — 효율 탭(간트 · 히트맵 · 소재 · 버블 · 트리맵)을 여기서 이미 그렸으면 true.
+   바로 뒤에서 같은 그래프를 또 그리지 않도록 부르는 쪽이 본다 (v78) */
 function renderAll(){
   renderCampBar();
-  if(dashEmpty())return;
+  if(dashEmpty())return false;
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
+  let drew=false;
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
-    equalizeDuo();renderTreemap();}
+    equalizeDuo();renderTreemap();drew=true;}
   else PERF_STALE=true;                     /* 숨어 있는 동안 바뀐 건 다시 열 때 그린다 */
-  if(!$('sub-table').classList.contains('hidden'))renderRaw();}
+  if(rawShown())renderRaw();
+  return drew;}
+/* 일자별 상세 효율이 지금 화면에 있는가 — 숨어 있으면 그리지 않는다 (v78).
+   (하위 메뉴로 열 때 · 대시보드로 돌아올 때 switchTab 이 다시 그린다. 엑셀 리포트는 스스로 그린다) */
+function rawShown(){
+  const t=$('sub-table'),d=$('tab-dash');
+  return !!t&&!t.classList.contains('hidden')&&!(d&&d.classList.contains('hidden'));}
 /* 효율 탭이 숨어 있는 사이에 데이터가 바뀌었는지 */
 let PERF_STALE=false;
 /* 데이터가 바뀌면 어느 경로로 들어와도 빠지는 영역 없이 전부 다시 그린다.
    (히트맵·버블·트리맵이 갱신되지 않아 "일자별 토글을 눌러야 바뀌던" 문제) */
 function renderEverything(){
   try{buildFilters();buildSelects();}catch(e){}
-  renderAll();
+  const drew=renderAll();
   try{renderSheet();}catch(e){}
   try{renderIssues();renderIssueAlert();}catch(e){}
   try{renderKpiTable();}catch(e){}
-  try{renderRaw();}catch(e){}
-  try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
-  try{equalizeDuo();renderTreemap();}catch(e){}
+  /* 일자별 상세 효율은 renderAll 이 보일 때만 그린다 — 숨은 표(4만 칸)를 매번 다시 그리지 않는다 (v78) */
+  /* 효율 탭은 renderAll 이 이미 그렸으면 건너뛴다. 숨어 있을 때는 예전처럼 그린다 (인쇄가 숨은 효율 탭도 옮긴다) */
+  if(!drew){
+    try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
+    try{equalizeDuo();renderTreemap();}catch(e){}}
   /* TV 메뉴 · 운영 매체에 따른 탭 (v71) */
   try{if(typeof renderTV==='function')renderTV();}catch(e){}
   try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   PERF_STALE=false;
 }
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
+/* 첫 그림 — renderAll 이 (보이는) 효율 탭 · 일자별 효율을 이미 그렸으면 다시 그리지 않는다 (v78) */
+(function firstPaint(){
+  buildFilters();buildSelects();const drew=renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
+  if(!drew){renderCreatives();renderGantt();renderHeat();renderBubble();}})();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */
