@@ -10,7 +10,7 @@ function renderCampForm(){
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
     <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
     <div class="fld" style="width:160px"><label>Net 예산 (자동 역산)</label><div class="ro">${won(net)}</div></div>
-    <div class="fld" style="width:210px"><label>Value (합계)</label>
+    <div class="fld" style="min-width:210px"><label>Value (합계)</label>
       <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>
     <div class="fld" style="width:120px"><label>평균 수수료율</label><div class="ro">${((1-net/gross)*100).toFixed(2)}%</div></div>`;
 }
@@ -20,7 +20,7 @@ function renderCampForm(){
 /* 필수 표시는 매체 · 광고상품 둘뿐 — 나머지는 열 설정에서 자유롭게 켜고 끈다 */
 const LINE_REQ=['media','product'];
 const LINE_FIXED=[
-  {k:'segment',l:'구분',w:88,type:'auto',on:false},
+  {k:'segment',l:'구분',w:88,type:'text',on:false},   /* v70 — 목록에서 고르지 않고 그냥 적는다 */
   {k:'media',l:'매체',w:92,type:'auto',on:true,lock:1},
   {k:'product',l:'광고상품',w:150,type:'chips',on:true,lock:1},
   {k:'slot',l:'광고 지면',w:150,type:'chips',on:false},
@@ -254,7 +254,7 @@ function renderKpiTable(){
     return `<th class="${sep?'gsep ':''}thsf" style="min-width:${c.w}px">`
       +`<span class="thl">${c.l}</span>${tblMenuBtn('line',c.k)}</th>`;}).join('');
   /* 행 조작(복제 · 삭제)은 맨 앞 열로 — 표가 가로로 길어 오른쪽 끝까지 가기 번거로웠다 */
-  let h=`<thead><tr><th class="rm" rowspan="1" style="width:74px">`
+  let h=`<thead><tr><th class="rm" rowspan="1" style="width:90px">`
     +`<button class="btn sm danger" id="lineClearAll" title="예상 효율 값을 모두 지웁니다"`
     +` style="padding:0 6px">✕</button></th>${head}</tr></thead><tbody>`;
   /* 정렬·필터는 보이는 순서만 바꾼다 (LINES 배열 자체는 그대로) */
@@ -276,7 +276,8 @@ function renderKpiTable(){
   lview.forEach(i=>{
     const l=LINES[i];
     prevG=null;
-    h+=`<tr><td class="rm" style="white-space:nowrap;padding-left:3px;padding-right:3px">`
+    h+=`<tr data-rd="${i}"><td class="rm" style="white-space:nowrap;padding-left:2px;padding-right:3px">`
+      +RGRIP
       +`<button class="btn sm" data-ldup="${i}" title="이 행을 같은 값으로 복제" style="padding:0 6px">⧉</button>`
       +`<button class="btn sm danger" data-ldel="${i}" title="행 삭제" style="padding:0 6px;margin-left:3px">✕</button></td>`
       +cols.map(c=>{
@@ -330,11 +331,21 @@ function renderKpiTable(){
   t.querySelectorAll('th [data-thm]').forEach(b=>b.onclick=e=>{
     e.preventDefault();e.stopPropagation();
     const k=b.dataset.thm,c=LINE_COLS.find(x=>x.k===k)||{l:k};
-    openTblMenu(b,'line',k,c.l||k,LINES,lineVal,()=>renderKpiTable());});
+    openTblMenu(b,'line',k,c.l||k,LINES,lineVal,()=>renderKpiTable(),
+      /* 머리글에서 바로 열 숨기기 — 값은 그대로 두고 화면에서만 감춘다 (v70) */
+      kk=>{const cc=LINE_COLS.find(x=>x.k===kk);
+        if(!cc)return;
+        if(LINE_REQ.includes(kk)){
+          confirmModal('이 열은 감출 수 없습니다.',
+            `${cc.l} 은(는) 라인을 이루는 필수 열입니다.`,()=>{},'확인');return;}
+        cc.on=false;renderKpiTable();
+        try{markDirty();saveLocal();}catch(x){}});});
   {const st=$('lineSaveState');
    const hid=LINES.length-lview.length;
    if(st&&hid>0)st.innerHTML=`<button type="button" class="badjump" id="lineFilterOff"`
      +` title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`;
+   else if(st&&TBL_SORT.line)st.innerHTML=`<button type="button" class="badjump" id="lineFilterOff"`
+     +` title="정렬을 없애고 입력한 순서로 되돌립니다">정렬 켜짐 · 해제 ✕</button>`;
    const fo=$('lineFilterOff');
    if(fo)fo.onclick=()=>{delete TBL_FILTER.line;delete TBL_SORT.line;renderKpiTable();};}
   /* 머리글 끝을 끌어 열 너비 조정 — 값 열이 맨 앞부터라 off=0 */
@@ -348,7 +359,9 @@ function renderKpiTable(){
     const n=()=>+String(v).replace(/[^0-9.]/g,'')||0;
     if(k==='feeA'||k==='feeR'){const f=parseFloat(v.replace(/[^0-9.]/g,''));
       if(isFinite(f))l[k]=Math.min(Math.max(f/100,0),.9);}
-    else if(k==='gross')l.gross=n();
+    /* Gross 예산 열의 열쇠는 budget 이다 — 'gross' 만 보고 있어서 입력한 금액이
+       l.budget 에 문자열로 들어가고 화면은 옛 값으로 되돌아갔다 (v70) */
+    else if(k==='gross'||k==='budget'){l.gross=n();delete l.budget;}
     /* 밸류는 직접 입력 — 보너스는 Gross 와의 차액으로 맞춘다 (거꾸로도 성립) */
     else if(k==='value'){l.value=n();l.bonus=Math.max(0,l.value-lineGross(l));}
     else if(k==='bonus'){l.bonus=n();l.value=lineGross(l)+l.bonus;}
@@ -397,29 +410,68 @@ function renderKpiTable(){
     setLineTargets(n,lineTargets(src));setLineCreatives(n,lineCreatives(src));
     setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));
     rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();});
-  /* 셀 선택 — 클릭한 칸이 선택 상태가 된다 */
+  /* 셀 선택 — 클릭한 칸이 선택, 끌면 범위 선택 (v70).
+     리스너는 표 하나에만 걸고 위임한다 (라인이 많아도 가볍게) */
   [...(t.tBodies[0]?t.tBodies[0].rows:[])].forEach((tr,ri)=>{
     if(tr.classList.contains('total'))return;
+    tr.dataset.ri=ri;
     [...tr.cells].forEach((td,cx)=>{
       const ci=cx-1;                       /* 맨 앞은 행 조작(복제·삭제) 열 */
       if(ci<0||ci>=cols.length)return;
-      td.dataset.r=ri;td.dataset.c=ci;
-      /* 엑셀처럼 — 한 번 누르면 "셀 선택", Enter 또는 더블클릭이면 "입력 시작".
-         드롭다운·날짜·체크박스·칩은 기존처럼 바로 눌러서 쓴다. */
-      /* 클릭 한 번에 바로 입력 상태로 — 예전에는 한 번은 선택, 두 번째에 입력이었다 */
-      td.addEventListener('mousedown',()=>{LSEL={r:ri,c:ci};paintLSel();});
-      td.addEventListener('dblclick',()=>{LSEL={r:ri,c:ci};paintLSel();editLineCell();});});});
+      td.dataset.r=ri;td.dataset.c=ci;});});
+  if(!t.__lwired){
+    t.__lwired=1;
+    t.addEventListener('mousedown',e=>{
+      const td=e.target.closest('td[data-r]');if(!td)return;
+      const r=+td.dataset.r,c=+td.dataset.c;
+      if(e.shiftKey&&LSEL){LSEL.r2=r;LSEL.c2=c;}
+      else LSEL={r1:r,c1:c,r2:r,c2:c};
+      lSelecting=true;paintLSel();});
+    t.addEventListener('mouseover',e=>{
+      if(!lSelecting||!LSEL)return;
+      const td=e.target.closest('td[data-r]');if(!td)return;
+      const r=+td.dataset.r,c=+td.dataset.c;
+      if(LSEL.r2===r&&LSEL.c2===c)return;
+      LSEL.r2=r;LSEL.c2=c;
+      /* 두 칸 이상으로 번지면 글자 커서를 거둔다 — 그래야 Delete·복사가 범위로 동작한다 */
+      if(lMulti()){const ae=document.activeElement;
+        if(ae&&ae.blur&&$('tblKpi').contains(ae))ae.blur();}
+      paintLSel();});
+    t.addEventListener('dblclick',e=>{
+      const td=e.target.closest('td[data-r]');if(!td)return;
+      LSEL={r1:+td.dataset.r,c1:+td.dataset.c,r2:+td.dataset.r,c2:+td.dataset.c};
+      paintLSel();editLineCell();});}
   paintLSel();
+  /* 맨 왼쪽 칸(점 손잡이)을 끌어 라인 순서 바꾸기 (v71) — 정렬 중에는 막는다 */
+  enableRowMove(t,()=>({
+    why:()=>TBL_SORT.line?'머리글 정렬이 켜져 있어 보이는 순서와 실제 순서가 다릅니다. 표 위의 「정렬 켜짐 · 해제 ✕」를 누른 뒤 옮겨 주세요.':'',
+    apply:(from,to)=>{pushLineUndo();moveItem(LINES,from,to);
+      LSEL=null;rebuildPeriod();buildFacts();
+      renderKpiTable();renderCampForm();renderMix();renderAll();
+      try{markDirty();}catch(e){}}}));
 }
 /* ===== 예상 효율 — 키보드 편집 · 실행 취소 · 히스토리 · 중복 병합 ===== */
-let LSEL=null;                                  /* 선택 셀 {r,c} */
+/* 선택 범위 {r1,c1,r2,c2} — 한 칸만 골랐으면 네 값이 같다. r1·c1 이 기준 칸(앵커) (v70) */
+let LSEL=null, lSelecting=false;
 const LCOLS=()=>LINE_COLS.filter(c=>c.on);
-const lineTblCell=()=>{const t=$('tblKpi');
-  return (t&&LSEL)?t.querySelector(`td[data-r="${LSEL.r}"][data-c="${LSEL.c}"]`):null;};
+const lMulti=()=>!!(LSEL&&(LSEL.r1!==LSEL.r2||LSEL.c1!==LSEL.c2));
+const lRect=()=>LSEL?{r0:Math.min(LSEL.r1,LSEL.r2),rN:Math.max(LSEL.r1,LSEL.r2),
+                      c0:Math.min(LSEL.c1,LSEL.c2),cN:Math.max(LSEL.c1,LSEL.c2)}:null;
+const lineTblCell=(r,c)=>{const t=$('tblKpi');if(!t||!LSEL)return null;
+  return t.querySelector(`td[data-r="${r===undefined?LSEL.r1:r}"][data-c="${c===undefined?LSEL.c1:c}"]`);};
+let LSEL_PAINTED=[];
 function paintLSel(){
   const t=$('tblKpi');if(!t)return;
-  t.querySelectorAll('td.lsel').forEach(td=>td.classList.remove('lsel'));
-  const td=lineTblCell();if(td)td.classList.add('lsel');
+  LSEL_PAINTED.forEach(td=>td.classList.remove('lsel','lselr'));
+  LSEL_PAINTED=[];
+  const q=lRect();if(!q)return;
+  const tb=t.tBodies[0];if(!tb)return;
+  for(let r=q.r0;r<=q.rN;r++){
+    const tr=tb.querySelector(`tr[data-ri="${r}"]`);if(!tr)continue;
+    for(let c=q.c0;c<=q.cN;c++){
+      const td=tr.querySelector(`td[data-c="${c}"]`);if(!td)continue;
+      td.classList.add(r===LSEL.r1&&c===LSEL.c1?'lsel':'lselr');
+      LSEL_PAINTED.push(td);}}
 }
 function editLineCell(){
   const td=lineTblCell();if(!td)return;
@@ -427,12 +479,97 @@ function editLineCell(){
   if(f){f.focus();if(f.select)try{f.select();}catch(err){}return;}
   const p=td.querySelector('.cfpick');if(p)p.click();
 }
-function moveLSel(dr,dc){
+function moveLSel(dr,dc,ext,jump){
   const maxR=Math.max(LINES.length-1,0),maxC=Math.max(LCOLS().length-1,0);
   const cl=(v,m)=>Math.max(0,Math.min(v,m));
-  LSEL={r:cl((LSEL?LSEL.r:0)+dr,maxR),c:cl((LSEL?LSEL.c:0)+dc,maxC)};
+  if(!LSEL)LSEL={r1:0,c1:0,r2:0,c2:0};
+  /* Ctrl+방향키 — 그 방향 끝까지 한 번에 */
+  const nr=jump?(dr<0?0:dr>0?maxR:(ext?LSEL.r2:LSEL.r1)):cl((ext?LSEL.r2:LSEL.r1)+dr,maxR);
+  const nc=jump?(dc<0?0:dc>0?maxC:(ext?LSEL.c2:LSEL.c1)):cl((ext?LSEL.c2:LSEL.c1)+dc,maxC);
+  if(ext){LSEL.r2=nr;LSEL.c2=nc;}
+  else LSEL={r1:nr,c1:nc,r2:nr,c2:nc};
   paintLSel();
-  const td=lineTblCell();if(td)td.scrollIntoView({block:'nearest',inline:'nearest'});
+  const td=lineTblCell(LSEL.r2,LSEL.c2);
+  if(td)td.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+/* ---------- 셀 값 읽기·쓰기 (복사·붙여넣기·일괄 삭제용) ---------- */
+function lineCellText(l,c){
+  if(!l||!c)return '';
+  switch(c.type){
+    case 'exp':{const m=c.k.slice(2);return (l.e&&+l.e[m])?String(+l.e[m]):'';}
+    case 'gross':return lineGross(l)?String(lineGross(l)):'';
+    case 'val':return lineValue(l)?String(lineValue(l)):'';
+    case 'ro':case 'ro2':return '';                  /* 자동 계산 열 */
+    case 'chips':return ((CHIP_KIND[c.k]||CHIP_KIND.target).get(l)||[]).join(', ');
+    case 'kpi':return l.kpi?(KPI_LABEL[l.kpi]||l.kpi):'';
+    case 'pct':return l[c.k]?String(Math.round(l[c.k]*1000)/10):'';
+    case 'dev':return (l.device||[]).join('+');
+    case 'subm':return l.sub?(RATE_LABEL[l.sub]||l.sub):'';
+    default:return l[c.k]==null?'':String(l[c.k]);}
+}
+function setLineCell(i,c,raw){
+  const l=LINES[i];if(!l||!c)return;
+  const s2=String(raw==null?'':raw).trim();
+  const n=()=>+s2.replace(/[^0-9.]/g,'')||0;
+  switch(c.type){
+    case 'ro':case 'ro2':return;                      /* 자동 계산 — 손대지 않는다 */
+    case 'exp':{l.e=l.e||{};l.e[c.k.slice(2)]=+s2.replace(/[^0-9]/g,'')||0;return;}
+    case 'gross':l.gross=n();return;
+    case 'val':l.value=n();l.bonus=Math.max(0,l.value-lineGross(l));return;
+    case 'pct':{const f=parseFloat(s2.replace(/[^0-9.]/g,''));
+      l[c.k]=isFinite(f)?Math.min(Math.max(f/100,0),.9):0;return;}
+    case 'num':l[c.k]=n();return;
+    case 'date':l[c.k]=s2?((typeof normDate==='function'&&normDate(s2))||s2):'';return;
+    case 'bid':l.bid=s2?((typeof normBid==='function')?normBid(s2):s2):'';return;
+    case 'kpi':{const k=Object.keys(KPI_LABEL).find(x=>KPI_LABEL[x]===s2||x===s2);l.kpi=k||'';return;}
+    case 'subm':{const k=Object.keys(RATE_LABEL).find(x=>RATE_LABEL[x]===s2||x===s2);l.sub=k||'';return;}
+    case 'dev':l.device=s2?s2.split(/[+,·\s]+/).filter(Boolean):[];return;
+    case 'chips':{const arr=s2?s2.split(/\s*[,·]\s*/).filter(Boolean):[];
+      const set={product:typeof setLineProducts==='function'&&setLineProducts,
+                 target:typeof setLineTargets==='function'&&setLineTargets,
+                 creative:typeof setLineCreatives==='function'&&setLineCreatives,
+                 slot:typeof setLineSlots==='function'&&setLineSlots}[c.k];
+      if(set)set(l,arr);return;}
+    default:l[c.k]=s2;return;}
+}
+/* 선택한 범위를 표 글자로 (엑셀에 그대로 붙는 TSV) */
+function lineSelText(){
+  const q=lRect();if(!q)return '';
+  const cols=LCOLS(),out=[];
+  for(let r=q.r0;r<=q.rN;r++){
+    const row=[];
+    for(let c=q.c0;c<=q.cN;c++)row.push(lineCellText(LINES[r],cols[c]));
+    out.push(row.join('\t'));}
+  return out.join('\n');
+}
+function lineSelClear(){
+  const q=lRect();if(!q)return false;
+  const cols=LCOLS();let hit=false;
+  pushLineUndo();
+  for(let r=q.r0;r<=q.rN;r++)for(let c=q.c0;c<=q.cN;c++){
+    const col=cols[c];if(!col||col.type==='ro'||col.type==='ro2')continue;
+    setLineCell(r,col,'');hit=true;}
+  if(hit){rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();}
+  return hit;
+}
+function linePaste(txt){
+  const q=lRect();if(!q||!txt)return false;
+  const cols=LCOLS();
+  const grid=String(txt).replace(/\r/g,'').replace(/\n+$/,'').split('\n').map(x=>x.split('\t'));
+  pushLineUndo();
+  if(grid.length===1&&grid[0].length===1){
+    /* 한 칸을 복사했으면 선택한 범위 전체에 같은 값을 넣는다 */
+    for(let r=q.r0;r<=q.rN;r++)for(let c=q.c0;c<=q.cN;c++)setLineCell(r,cols[c],grid[0][0]);
+  }else{
+    grid.forEach((line,dr)=>line.forEach((cell,dc)=>{
+      const ri=q.r0+dr,ci=q.c0+dc;
+      if(ri>=LINES.length||!cols[ci])return;
+      setLineCell(ri,cols[ci],cell);}));
+    LSEL={r1:q.r0,c1:q.c0,
+      r2:Math.min(q.r0+grid.length-1,LINES.length-1),
+      c2:Math.min(q.c0+grid[0].length-1,cols.length-1)};}
+  rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
+  return true;
 }
 /* --- 실행 취소 / 다시 실행 --- */
 const LUNDO=[],LREDO=[],LUNDO_MAX=60;
@@ -544,13 +681,58 @@ document.addEventListener('keydown',e=>{
     else editLineCell();                                      /* 입력 시작 */
     return;}
   if(e.key==='Escape'&&typing){e.preventDefault();ae.blur();paintLSel();return;}
+  /* 고른 칸(들) 비우기 (v70).
+     여러 칸을 골랐으면 언제나 범위를 비우고, 한 칸일 때는 글자를 치는 중이 아닐 때만. */
+  if((e.key==='Delete'||e.key==='Backspace')&&LSEL&&(lMulti()||!typing)){
+    e.preventDefault();lineSelClear();paintLSel();return;}
+  /* Home · End — 맨 왼쪽 / 맨 오른쪽 칸으로 (Ctrl 과 함께면 첫 줄 · 마지막 줄까지) (v70) */
+  if((e.key==='Home'||e.key==='End')&&!typing&&LSEL){
+    e.preventDefault();
+    const maxR=Math.max(LINES.length-1,0),maxC=Math.max(LCOLS().length-1,0);
+    const c=e.key==='Home'?0:maxC;
+    const r=mod?(e.key==='Home'?0:maxR):(e.shiftKey?LSEL.r2:LSEL.r1);
+    if(e.shiftKey){LSEL.r2=r;LSEL.c2=c;}else LSEL={r1:r,c1:c,r2:r,c2:c};
+    paintLSel();
+    const td=lineTblCell(LSEL.r2,LSEL.c2);
+    if(td)td.scrollIntoView({block:'nearest',inline:'nearest'});
+    return;}
   const ARROW={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
-  if(!ARROW[e.key]||mod)return;
+  if(!ARROW[e.key])return;
   /* 글자를 치는 중에는 좌우 방향키를 커서 이동에 양보한다 */
-  if(typing&&(ae.tagName==='SELECT'||((e.key==='ArrowLeft'||e.key==='ArrowRight')&&ae.tagName!=='SELECT')))return;
+  if(typing&&!mod&&!e.shiftKey
+     &&(ae.tagName==='SELECT'||((e.key==='ArrowLeft'||e.key==='ArrowRight')&&ae.tagName!=='SELECT')))return;
   e.preventDefault();
   if(typing)ae.blur();
-  moveLSel(...ARROW[e.key]);});
+  /* Ctrl+방향키 = 그 방향 끝으로 · Shift+방향키 = 범위 넓히기 */
+  moveLSel(ARROW[e.key][0],ARROW[e.key][1],e.shiftKey,mod);});
+/* --- 예상 효율 — 복사 · 붙여넣기 (표 전체 범위) (v70) --- */
+const inLineTbl=()=>{
+  const tab=$('tab-setup');
+  if(!tab||tab.classList.contains('hidden'))return false;
+  if($('modalHost')&&$('modalHost').innerHTML)return false;
+  const ae=document.activeElement;
+  /* 표 밖의 글자 칸(캠페인 정보 등)에서는 브라우저 기본 동작을 그대로 둔다 */
+  if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)&&!$('tblKpi').contains(ae))return false;
+  return !!LSEL;};
+document.addEventListener('copy',e=>{
+  if(!inLineTbl())return;
+  const ae=document.activeElement;
+  /* 한 칸만 골랐고 그 칸 안에서 일부만 긁어 복사하는 중이면 그대로 둔다 */
+  if(!lMulti()&&ae&&ae.selectionStart!=null&&ae.selectionStart!==ae.selectionEnd)return;
+  const txt=lineSelText();if(txt==null)return;
+  e.clipboardData.setData('text/plain',txt);e.preventDefault();});
+document.addEventListener('paste',e=>{
+  if(!inLineTbl())return;
+  const ae=document.activeElement;
+  const txt=(e.clipboardData||window.clipboardData).getData('text');
+  if(!txt)return;
+  /* 한 칸만 골랐고 그 칸을 편집 중이면 평소처럼 그 칸에만 붙는다
+     (여러 칸이거나 표 모양으로 복사한 것이면 범위로 붙인다) */
+  if(!lMulti()&&!/[\t\n]/.test(txt)
+     &&ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&$('tblKpi').contains(ae))return;
+  e.preventDefault();
+  linePaste(txt);paintLSel();});
+document.addEventListener('mouseup',()=>{lSelecting=false;});
 /* 기간을 다시 잡는다 — 날짜 배열만 새로 만들고 **입력된 일별 실적은 그대로 둔다**.
    예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
@@ -980,11 +1162,13 @@ function buildFilters(){
       if(f&&t&&t<f){const x=f;f=t;t=x;}
       if(f===FILTER.from&&t===FILTER.to)return;
       FILTER.from=f;FILTER.to=t;FILTER_TOUCHED=true;
-      buildFilters();renderAll();};
+      buildFilters();renderAll();
+      /* 조회 기간도 문서에 실린다 (v71) — 편집할 수 있는 사람만 저장 대기로 표시 */
+      try{if(canSaveView())markDirty();}catch(e){}};
     [p+'From',p+'To'].forEach(id=>{const e2=$(id);if(!e2)return;
       e2.onchange=apply;e2.oninput=apply;});
     const rb=$(p+'Reset');
-    if(rb)rb.onclick=()=>{FILTER_TOUCHED=false;resetDateFilter0();
+    if(rb)rb.onclick=()=>{FILTER_TOUCHED=false;DOC_RANGE=null;resetDateFilter0(true);
       buildFilters();renderAll();try{markDirty();saveLocal();}catch(e){}};};
   $('perfFilters').innerHTML=rangeSel('p')
     +'<div class="spacer"></div><span class="hint" id="perfUpdated"></span>';
@@ -1078,7 +1262,11 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvinput','tvplan'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  /* TV 메뉴는 들어갈 때 그린다 (v71) */
+  if(name==='tvdash'){try{renderTvDash();}catch(e){}}
+  if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
+  if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
   /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   $('subbar').classList.toggle('hidden',name!=='dash');
@@ -1161,6 +1349,9 @@ function applyRole(){
   const st=document.querySelector('#tabs [data-tab="setup"]');
   const it=document.querySelector('#tabs [data-tab="input"]');
   const tt=document.querySelector('#tabs [data-tab="trend"]');
+  /* TV 입력 메뉴 (v71) — 디지털 입력 메뉴와 같은 규칙 */
+  const tvIns=['tvinput','tvplan'].map(k=>document.querySelector(`#tabs [data-tab="${k}"]`)).filter(Boolean);
+  tvIns.forEach(e=>{e.classList.toggle('hidden',c);e.classList.toggle('vhide',!c);});
   if(st)st.classList.toggle('hidden',c);
   if(it)it.classList.toggle('hidden',c);
   /* 트렌드 리포트 — 캠페인마다 광고주에게 보일지 정한다 (v66) */
@@ -1176,9 +1367,11 @@ function applyRole(){
     [st,it,tt].forEach(e=>{if(e)e.classList.remove('vhide');});}
   try{paintTrendToggle();}catch(e){}
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
-  if(c&&document.querySelector('#tabs [data-tab="dash"]')&&!$('tab-dash').classList.contains('hidden')===false)switchTab('dash');
-  if(c&&!tv&&!$('tab-trend').classList.contains('hidden'))switchTab('dash');
-  if(c)switchTab('dash');
+  /* 광고주는 대시보드로 — 디지털을 운영하지 않은 캠페인이면 TV 대시보드로 (v71) */
+  const home=(typeof firstDashTab==='function')?firstDashTab():'dash';
+  if(c&&!tv&&!$('tab-trend').classList.contains('hidden'))switchTab(home);
+  if(c)switchTab(home);
+  try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   /* 권한이 바뀌면 화면 구성 버튼이 붙어 있는 영역을 다시 그린다
      (서머리·소재 카드는 그릴 때 isClient() 로 버튼 유무를 정하기 때문) */
   if(__lastRole!==null&&__lastRole!==role){
@@ -1279,7 +1472,7 @@ function blankLine(){
 $('addLine').onclick=()=>{
   pushLineUndo();LINES.push(blankLine());
   rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();
-  LSEL={r:LINES.length-1,c:0};paintLSel();};
+  LSEL={r1:LINES.length-1,c1:0,r2:LINES.length-1,c2:0};paintLSel();};
 
 $('lineHistBtn').onclick=openLineHistory;
 $('lineColCfgBtn').onclick=openLineColCfg;
@@ -1303,10 +1496,10 @@ function dashEmpty(){
   box.innerHTML=`<div class="ttl">아직 표시할 데이터가 없습니다</div>`
     +`<div class="txt">${client
       ? '시행사에서 실적을 입력하면 이 화면에 대시보드가 나타납니다.'
-      : '<b>캠페인 설정</b>에서 예상 효율(라인)을 먼저 넣고, <b>데이터 입력</b>에서 일자별 실적을 채워 주세요.'}</div>`
+      : '<b>예상효율 입력</b>에서 라인(예상 효율)을 먼저 넣고, <b>리포트 데이터 입력</b>에서 일자별 실적을 채워 주세요.'}</div>`
     +(client?'':`<div class="acts">
-        <button class="btn primary" data-go="setup">캠페인 설정으로</button>
-        <button class="btn" data-go="input">데이터 입력으로</button></div>`);
+        <button class="btn primary" data-go="setup">예상효율 입력으로</button>
+        <button class="btn" data-go="input">리포트 데이터 입력으로</button></div>`);
   box.classList.toggle('hidden',!on);
   box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchTab(b.dataset.go));
   /* 데이터가 없으면 대시보드 본문은 감춘다 */
@@ -1341,6 +1534,9 @@ function renderEverything(){
   try{renderRaw();}catch(e){}
   try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
   try{equalizeDuo();renderTreemap();}catch(e){}
+  /* TV 메뉴 · 운영 매체에 따른 탭 (v71) */
+  try{if(typeof renderTV==='function')renderTV();}catch(e){}
+  try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   PERF_STALE=false;
 }
 buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();

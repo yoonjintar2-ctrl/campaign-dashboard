@@ -33,7 +33,8 @@ function cloudStateIdle(){
 /* 지금 상단 문구가 "…중…" 진행 표시면 평소 문구로 되돌린다 (오류 문구는 그대로 둔다) */
 function cloudStateDone(){
   try{const e=$('cloudState');
-    if(!e||/중…/.test(e.textContent||''))cloudStateIdle();}catch(x){}
+    /* 진행 문구는 한국어 「…중…」, 영어 「Saving…」 처럼 말줄임표로 끝난다 (v71) */
+    if(!e||/(중…|…)\s*$/.test(e.textContent||''))cloudStateIdle();}catch(x){}
 }
 
 /* ---------- 직렬화 ----------
@@ -50,7 +51,11 @@ function serializeDoc(){
       bgMode:(typeof bgModeNow==='function'?bgModeNow():'adv'),
       /* 배경 로고가 흘러다닐지 고정될지 (v56) */
       bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
-      agencyLogo:CAMPAIGN.agencyLogo||''},
+      agencyLogo:CAMPAIGN.agencyLogo||'',
+      /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
+      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false})},
+    /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
+    tv:(typeof tvForDoc==='function'?tvForDoc():{plan:[],spots:[]}),
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
     lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;return o;}),
@@ -105,7 +110,9 @@ function serializeDoc(){
            lineMetric:(typeof LINE_METRIC!=='undefined'?LINE_METRIC:null),
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
-           sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[])}
+           sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[]),
+           /* 조회 기간 (v71) — 마스터가 고른 기간을 광고주도 그대로 보도록. null 이면 기본 구간 */
+           range:(typeof rangeForDoc==='function'?rangeForDoc():null)}
   };
 }
 /* keepToday=true 는 예시(샘플) 복원 전용 — 샘플은 만들어 둔 날짜 그대로 보여 준다.
@@ -141,6 +148,10 @@ function applyDoc(d,keepToday){
   try{if(typeof applyBgMotion==='function')applyBgMotion();}catch(e){}
   delete CAMPAIGN.bgLogo;
   CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
+  /* 운영 매체 · TV 데이터 (v71) — 예전 저장본은 디지털만 */
+  {const m=d.campaign&&d.campaign.media;
+   CAMPAIGN.media=(m&&(m.digital||m.tv))?{digital:!!m.digital,tv:!!m.tv}:{digital:true,tv:false};}
+  try{if(typeof tvFromDoc==='function')tvFromDoc(d);}catch(e){}
   /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
   try{if(!CAMPAIGN.agencyLogo&&typeof agencyLogo==='function')CAMPAIGN.agencyLogo=agencyLogo();}catch(e){}
   if(typeof applyTheme==='function')applyTheme(d.campaign?.theme||'',true);
@@ -173,6 +184,10 @@ function applyDoc(d,keepToday){
       if(typeof cmtSnap==='function')cmtSnap();
       const cs=$('cmtState');if(cs)cs.textContent='';}}catch(x){}}
   const v=d.views||{};
+  /* 조회 기간 (v71) — 실제 적용은 데이터가 다 붙은 뒤 resetDateFilter 가 한다 */
+  try{DOC_RANGE=(v.range&&ISO_RE.test(v.range.from||'')&&ISO_RE.test(v.range.to||''))
+      ?{from:v.range.from,to:v.range.to}:null;
+    FILTER_TOUCHED=false;}catch(e){}
   if(v.summaries)SUMMARIES=v.summaries;
   if(v.mix)MIX_CFG=v.mix;
   if(v.raw)RAW_CFG=v.raw;
@@ -437,7 +452,10 @@ async function tryCode(raw){
   CREATIVES.forEach(c2=>{const cs=CREATIVES.filter(x=>x.lid===c2.lid);
     if(!c2.run)c2.run=[[0,Math.max(TOTAL_DAYS-1,0)]];
     if(!isFinite(c2.share))c2.share=1/Math.max(cs.length,1);});
-  buildFacts();
+  /* ⚠ 공유 코드 경로에만 v60 의 "데이터가 다 붙은 뒤 조회 기간 다시 잡기" 가 빠져 있었다 (v71).
+     일별 실적이 붙기 전에 잡은 종료일(=실적 없음 → 시작일)이 그대로 남아
+     광고주 화면이 엉뚱한 기간으로 열릴 수 있었다. 저장된 조회 기간(DOC_RANGE)도 여기서 적용된다. */
+  buildFacts();resetDateFilter();
   renderEverything();
   try{renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
@@ -691,8 +709,11 @@ function paintCampSel(){
   if(!CLOUD.user){
     s.innerHTML=`<option>${esc(CAMPAIGN.name)}${CLOUD.sample?' (샘플)':' (데모)'}</option>`;return;}
   /* 목록 맨 아래 — 고르면 설정의 "캠페인 관리" 화면이 그대로 열린다 */
+  /* 광고주 - 캠페인명 순으로 (v70) — 같은 광고주 캠페인이 여러 개면 목록에서 바로 갈린다 */
+  const campLabel=c=>{const a=(c.advertiser||(c.doc&&c.doc.campaign&&c.doc.campaign.advertiser)||'').trim();
+    return a&&!String(c.name||'').startsWith(a)?`${a} - ${c.name}`:String(c.name||'');};
   s.innerHTML=(CLOUD.list.map(c=>
-    `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')
+    `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(campLabel(c))}</option>`).join('')
     ||'<option value="">캠페인 없음</option>')
     +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가 및 관리</option>';
 }
@@ -915,11 +936,16 @@ function clearWorkState(){
       if(typeof paintDailyFiltBtn==='function')paintDailyFiltBtn();}}catch(e){}
   try{DIRTY_AT=null;}catch(e){}
   try{LINE_DIRTY=null;}catch(e){}
+  /* 다른 캠페인의 조회 기간이 따라오지 않게 (v71) */
+  try{DOC_RANGE=null;FILTER_TOUCHED=false;}catch(e){}
 }
 function resetToBlank(name,advertiser){
   CAMPAIGN.name=name||'새 캠페인';
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
+  /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
+  CAMPAIGN.media={digital:true,tv:false};
+  try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   clearWorkState();
   rebuildPeriod();buildFacts();resetDateFilter(true);renderEverything();
 }

@@ -456,7 +456,7 @@ function renderHeat(){
     return isFinite(v)&&v>0?v:NaN;};
   /* ---- 카테고리 (scale = 색 비교 묶음) ---- */
   const cats=[];
-  cats.push({name:'요일별',scale:'wd',rows:WD.map((w,i)=>({label:w+'요일',rest:i===0||i===6,
+  cats.push({name:'요일별',scale:'wd',rows:WD.map((w,i)=>({label:w+L('요일',''),rest:i===0||i===6,
     pick:list=>list.filter(f=>ALLDATES[f.d].getDay()===i)}))});
   cats.push({name:'휴일 · 평일',scale:'wd',rows:[
     {label:'휴일 (주말 · 공휴일)',rest:true,pick:list=>list.filter(f=>isRest(ALLDATES[f.d]))},

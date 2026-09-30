@@ -1,4 +1,31 @@
 /* ===== 0. 유틸 ===== */
+/* ---------- 화면 언어 (v71) ----------
+   ① 주소의 ?lang=ko|en  ② 이 브라우저에서 고른 언어(오른쪽 위 드롭다운)  ③ 지역 —
+   한국 시간대(Asia/Seoul)이거나 브라우저 언어가 한국어(ko…, …-KR)면 한국어, 그 밖의 지역은 영어.
+   file:// 로 여는 시안 파일은 사내에서만 쓰므로 한국어가 기본이다(드롭다운으로 바꿀 수 있다).
+   ⚠ 부트스트랩 중에도 쓰이므로 맨 앞에 둔다 (p15 의 번역기보다 먼저). */
+const LANG_KEY='dmd:lang';
+/* env 를 넘기면 그 조건으로 판단한다 (검사용) — 안 넘기면 지금 브라우저 */
+function langEnv(){
+  const e={search:'',stored:'',protocol:'',tz:'',langs:[]};
+  try{e.search=location.search||'';e.protocol=location.protocol||'';}catch(x){}
+  try{e.stored=localStorage.getItem(LANG_KEY)||'';}catch(x){}
+  try{e.tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(x){}
+  try{e.langs=[].concat(navigator.languages||[],navigator.language||[]).map(x=>String(x||''));}catch(x){}
+  return e;}
+function detectLang(env){
+  const e=env||langEnv();
+  const q=/[?&]lang=(ko|en)\b/.exec(e.search||'');if(q)return q[1];
+  if(e.stored==='ko'||e.stored==='en')return e.stored;
+  if(e.protocol==='file:')return 'ko';
+  const ls=e.langs||[];
+  if(e.tz==='Asia/Seoul')return 'ko';                 /* 한국 지역 */
+  if(ls.length&&/^ko\b/i.test(ls[0]))return 'ko';     /* 브라우저 첫 언어가 한국어 */
+  if(ls.some(x=>/-KR$/i.test(x)))return 'ko';         /* 지역 코드가 한국 */
+  return 'en';}
+let LANG=detectLang();
+/* 새로 쓰는 문장은 L('한국어','English') 로 — 번역 사전을 거치지 않는다 */
+const L=(ko,en)=>LANG==='en'?en:ko;
 const NS='http://www.w3.org/2000/svg';
 const S=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
 const el=(t,c,p)=>{const e=document.createElement(t);if(c)e.className=c;if(p)p.appendChild(e);return e;};
@@ -137,7 +164,9 @@ let dT=new Date(CAMPAIGN.today+'T00:00:00');
 let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.round((dT-d0)/DAY)+1;
 let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
 let dates=ALLDATES.slice(0,ELAPSED);
-const WD=['일','월','화','수','목','금','토'];
+/* 요일 이름 — 언어를 바꾸면 setLang 이 갈아 끼운다 */
+const WD_KO=['일','월','화','수','목','금','토'],WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let WD=LANG==='en'?WD_EN.slice():WD_KO.slice();
 const dFull=d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 let YESTERDAY=iso(new Date(dT.getTime()-DAY));
@@ -618,9 +647,30 @@ function defaultRange(){
 function resetDateFilter(force){
   if(!force&&FILTER_TOUCHED&&FILTER.from&&FILTER.to)return;
   return resetDateFilter0();}
-function resetDateFilter0(){
-  const d=defaultRange();FILTER.from=d.from;FILTER.to=d.to;
+/* 마스터·운영진이 **저장해 둔 조회 기간** (v71).
+   예전에는 조회 기간이 문서에 실리지 않아 광고주(뷰어)는 늘 기본 구간(첫날~실적 마지막 날)으로 봤다 —
+   마스터가 고른 기간과 기본 구간이 우연히 같을 때만 같아 보여 "가끔 다르게 보인다" 로 나타났다.
+   문서를 열 때 applyDoc 이 채우고, 기간을 기본으로 되돌리면 비운다. */
+let DOC_RANGE=null;
+const ISO_RE=/^\d{4}-\d{2}-\d{2}$/;
+function resetDateFilter0(auto){
+  const d=defaultRange();
+  if(!auto&&DOC_RANGE&&ISO_RE.test(DOC_RANGE.from)&&ISO_RE.test(DOC_RANGE.to)){
+    /* 캠페인 일정이 바뀌었을 수 있으니 집행 구간 안으로만 맞춘다 */
+    const p=campScope();
+    let f=DOC_RANGE.from<p.startIso?p.startIso:DOC_RANGE.from;
+    if(f>p.endIso)f=p.endIso;
+    let t=DOC_RANGE.to>p.endIso?p.endIso:DOC_RANGE.to;
+    if(t<f)t=f;
+    FILTER.from=f;FILTER.to=t;return;}
+  FILTER.from=d.from;FILTER.to=d.to;
 }
+/* 문서에 담을 조회 기간 — 이번에 직접 고른 값 > 문서에서 받은 값 > 없음(기본 구간) */
+function rangeForDoc(){
+  if(FILTER_TOUCHED&&ISO_RE.test(FILTER.from||'')&&ISO_RE.test(FILTER.to||''))
+    return {from:FILTER.from,to:FILTER.to};
+  if(DOC_RANGE)return {from:DOC_RANGE.from,to:DOC_RANGE.to};
+  return null;}
 /* 지금 기간이 기본값 그대로인가 (초기화 단추를 켤지 판단) */
 const rangeIsDefault=()=>{const d=defaultRange();
   return (!FILTER.from||FILTER.from===d.from)&&(!FILTER.to||FILTER.to===d.to);};
@@ -706,6 +756,12 @@ function paceFacts(){
     &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k]));
 }
 const isClient=()=>document.body.dataset.role==='client';
+/* 이 화면에서 바꾼 보기 설정을 문서에 저장할 수 있는가 (v71) —
+   광고주 · 조회 권한 · 공유 코드로 들어온 화면은 저장하지 않으므로 "저장 대기" 도 띄우지 않는다 */
+function canSaveView(){
+  if(isClient())return false;
+  try{if(CLOUD.on&&(CLOUD.shareView||CLOUD.role==='viewer'))return false;}catch(e){}
+  return true;}
 /* 집행 실적 합계 — 달력으로 고른 구간만 더한다 */
 const paceSum=arr=>{const s=viewScope();return sum((arr||[]).slice(s.i0,Math.min(s.i1+1,ELAPSED)));};
 const kpiAch=l=>{const k=kpiOf(l);return paceSum(l.daily[k])/goalIn(l,k);};

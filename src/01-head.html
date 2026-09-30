@@ -28,6 +28,7 @@
   --acc2:#486a75; --acc2rgb:72 106 117; --acc2-lt:#89a3ab;
   --hdr:#3c4957; --hdr2:#4b5966; --tot:#28313b;   /* 합계 행 — 헤더와 다른 톤 */
   --hdr-sub:#7d8a98; --hdr-sub2:#8f9ba8;             /* 하위 세그먼트 헤더 (합계보다 연하게) */
+  --tot-sub:#5a6673;                                  /* 하위 세그먼트의 합계 행 — 전체 합계보다 연하게 (v70) */
   --gray:#9aa4b0;
   --pace:#b06a63; --pace-lt:#d9aca7; --pacergb:176 106 99;   /* 목표 페이스 — 붉은 계열 */
   --hol:#b8665f;                                         /* 휴일 텍스트 */
@@ -50,7 +51,7 @@
   --line:#e5e6e8; --line2:#f0f1f2; --gline:#c6c9cc; --cell:#e2e4e6;
   --acc:#4d5257; --accrgb:77 82 87; --acc-d:#383c40; --acc-lt:#979a9e; --acc-soft:#e9eaeb; --acc-soft2:#f4f4f5;
   --acc2:#5c6165; --acc2rgb:92 97 101; --acc2-lt:#a3a6aa;
-  --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f;
+  --hdr:#43474b; --hdr2:#53575b; --tot:#2b2e31; --hdr-sub:#878b8f; --hdr-sub2:#989b9f; --tot-sub:#5d6165;
   --gray:#9a9da1; --pace:#96635e; --pace-lt:#c2a5a2; --hol:#96635e;
   --b1:#c3c6c9; --b2:#a4a8ac; --b3:#7c8085; --b4:#4d5257; --b5:#383c40; --neg:#a78b8b;
   --bg1:170,173,176; --bg2:154,157,160; --bg3:198,200,202;
@@ -65,7 +66,7 @@
   --cell-d:rgba(255,255,255,.16);
   --acc:#b4b4b4; --accrgb:180 180 180; --acc-d:#cfcfcf; --acc-lt:#727272; --acc-soft:#303030; --acc-soft2:#282828;
   --acc2:#9c9c9c; --acc2rgb:156 156 156; --acc2-lt:#6a6a6a;
-  --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363;
+  --hdr:#333333; --hdr2:#3e3e3e; --tot:#1f1f1f; --hdr-sub:#525252; --hdr-sub2:#636363; --tot-sub:#3b3b3b;
   --gray:#7d7d7d; --pace:#c39a95; --pace-lt:#846764; --hol:#c39a95;
   --b1:#3c3c3c; --b2:#4f4f4f; --b3:#646464; --b4:#7a7a7a; --b5:#909090; --neg:#c39a95;
   --shadow:0 1px 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.34);
@@ -206,6 +207,7 @@ body[data-mode="sample"] #cloudSave{display:none !important}
   justify-content:center;transition:color .18s,border-color .18s,transform .35s;flex:0 0 auto}
 .gearbtn:hover{color:var(--acc);border-color:var(--acc);transform:rotate(60deg)}
 .hubgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hubgrid.two{grid-template-columns:repeat(2,1fr)}   /* 2개 · 4개일 때는 두 칸씩 (4개가 3+1 로 갈리지 않게) */
 .hubcard{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;
   border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:15px 14px 14px;
   cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s,transform .15s}
@@ -292,7 +294,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-right:26px;max-width:340px;
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 14px) 14px,calc(100% - 9px) 14px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
-#signIn{gap:7px;font-weight:700}
+#signIn{gap:7px;font-weight:700;white-space:nowrap}
 #signIn svg{flex:none}
 .demobar{display:flex;align-items:center;gap:10px;background:#fff6e8;border-bottom:1px solid #f0dfc4;
   color:#7a5a22;padding:8px 152px;font-size:12px}
@@ -314,6 +316,81 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs>button[data-tab].vhide{color:var(--muted);opacity:.72}
 .tabs>button[data-tab].vhide:hover{color:var(--ink2);opacity:1}
 .tabs>button[data-tab].vhide.on{color:var(--acc);opacity:1}
+
+/* ===== 언어 선택 (v71) ===== */
+.langsel{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 4px 0 9px;border:1px solid var(--line);
+  border-radius:999px;background:var(--surface);color:var(--ink2);cursor:pointer;flex:none}
+.langsel:hover{border-color:var(--acc);color:var(--acc)}
+.langsel select{border:0;background:transparent;color:inherit;font:inherit;font-size:12px;font-weight:700;
+  padding:0 6px 0 0;cursor:pointer;outline:none}
+[data-theme="dark"] .langsel select option{background:var(--surface);color:var(--ink)}
+.glang{display:flex;justify-content:center;margin-top:14px}
+/* 머리줄이 좁을 때 — 상태 글씨가 먼저 줄어들고(…), 그래도 모자라면 언어 칩을 KO/EN 으로 줄인다 */
+#cloudState{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.topbar>:not(.spacer):not(#cloudState){flex-shrink:0}
+.topbar.tcompact .langsel{padding:0 2px 0 7px;gap:3px}
+.topbar.tcompact2{padding-left:20px;padding-right:20px;gap:10px}
+.topbar.tcompact2 .brandtx .prod{display:none}
+.topbar.tcompact3 #betaTag{display:none}
+.glang select{border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink2);
+  font:inherit;font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer}
+/* ===== 운영 매체 · TV 메뉴 (v71) ===== */
+/* 운영하지 않는 매체의 메뉴는 감춘다 (hidden 과 따로 두어 권한 규칙과 섞이지 않게) */
+.tabs .medoff{display:none!important}
+/* 디지털 묶음과 TV 묶음 사이의 가는 구분선 */
+.tabs>.tabsep{width:1px;height:18px;background:var(--line);margin:0 6px;flex:none}
+/* 한 줄에 안 들어가면 글자·여백을 줄이고, 그래도 넘치면 두 줄로 (fitTabs) */
+/* 탭 글자는 줄바꿈하지 않는다 — 줄어들며 두 줄로 접히면 넘침을 알아챌 수 없다 */
+.tabs>button[data-tab]{white-space:nowrap;flex:none}
+.tabs .subbar{flex:none}
+.tabs .subbar button{white-space:nowrap}
+.tabs.dense>button[data-tab]{padding:12px 8px 10px;font-size:13px;letter-spacing:-.4px}
+.tabs.dense .subbar{margin:0 6px}
+.tabs.dense .subbar button{padding:4px 9px;font-size:11.5px}
+/* 두 줄일 때는 **매체별로 한 줄씩** — 1줄: 디지털 메뉴 + 오른쪽 도구 · 2줄: TV 메뉴 + 트렌드 */
+.tabs.wrap2{flex-wrap:wrap;row-gap:0}
+.tabs.wrap2>.spacer,.tabs.wrap2>#darkToggle,.tabs.wrap2>#sectMngBtn,.tabs.wrap2>.dlgrp{order:1}
+.tabs.wrap2>.tabsep{order:2;flex:0 0 100%;height:1px;margin:0;background:var(--line2)}
+/* 디지털만 운영할 때도 두 줄이면 구분선에서 끊는다 — 1줄 디지털, 2줄 트렌드 (탭을 옮겨도 높이가 같게) */
+.tabs.wrap2>.tabsep.medoff{display:block!important}
+/* TV만 운영할 때 — 순서는 그대로 두고 자연스럽게 접는다 */
+.tabs.wrapn{flex-wrap:wrap;row-gap:0}
+/* 1줄에 도구까지 안 들어가면 도구를 2줄 오른쪽 끝으로 (tl2) */
+.tabs.wrap2.tl2>.spacer,.tabs.wrap2.tl2>#darkToggle,.tabs.wrap2.tl2>#sectMngBtn,.tabs.wrap2.tl2>.dlgrp{order:4}
+.tabs.wrap2>button[data-tab="tvdash"],.tabs.wrap2>button[data-tab="tvinput"],
+.tabs.wrap2>button[data-tab="tvplan"],.tabs.wrap2>button[data-tab="trend"]{order:3}
+/* 설정 › 운영 매체 */
+.medgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.medcard{display:flex;flex-direction:column;gap:6px;border:1.5px solid var(--line);border-radius:12px;
+  padding:14px 16px;cursor:pointer;background:var(--surface);position:relative}
+.medcard input{position:absolute;right:14px;top:14px;width:17px;height:17px;accent-color:var(--acc)}
+.medcard b{font-size:16px;color:var(--ink)}
+.medcard i{font-style:normal;font-size:11.5px;color:var(--muted);line-height:1.5;padding-right:20px}
+.medcard.on{border-color:var(--acc);background:var(--acc-soft)}
+/* TV 대시보드 카드 */
+.tvkpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:6px 0 4px}
+@media (max-width:1100px){.tvkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tvkpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px 14px;position:relative}
+.tvkpi .tt{font-size:12px;font-weight:700;color:var(--muted)}
+.tvkpi .vv{font-size:24px;font-weight:800;color:var(--ink);margin:6px 0 4px;letter-spacing:-.5px}
+.tvkpi .gg{font-size:11.5px;color:var(--muted)}
+.tvkpi .gg b{color:var(--ink2)}
+.tvkpi .gg .neg{color:var(--neg);font-weight:700}
+.tvkpi .gg .pos{color:var(--acc);font-weight:700}
+.tvkpi .bar{height:6px;border-radius:99px;background:var(--line2);margin-top:12px;overflow:hidden}
+.tvkpi .bar i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.tvkpi .rr{position:absolute;right:18px;top:16px;font-size:13px;font-weight:800;color:var(--acc)}
+table.tvch{width:100%}
+table.tvch td,table.tvch th{text-align:center}
+table.tvch td.head{font-weight:700}
+/* TV 입력 표 — 디지털 입력 시트(table.sheet)의 모양을 그대로 쓰고 계산 칸 · 합계만 더한다 */
+table.tvsheet td.calc{padding:0 10px;text-align:right;color:var(--ink2);background:var(--bg2,rgba(125,140,158,.05))}
+table.tvsheet th.tvcalc{color:var(--muted)}
+table.tvsheet td input.mono{text-align:right}
+table.tvsheet tfoot td{position:sticky;bottom:0;background:var(--acc-soft2);font-weight:800;padding:8px 10px;
+  text-align:right;border-top:1px solid var(--line);z-index:2}
+table.tvsheet tfoot td:nth-child(2){text-align:center}
+table.tvsheet tr.tvempty td{padding:26px;text-align:center;color:var(--muted);font-size:12.5px}
 
 /* ===== 트렌드 리포트 게시판 (v66) ===== */
 .trendwrap{display:grid;grid-template-columns:212px 1fr;gap:20px;align-items:start}
@@ -1255,6 +1332,8 @@ table.tbl tbody tr:hover td{background:var(--acc-soft2)}
 table.tbl tbody tr:hover td.head{background:var(--acc-soft)}
 /* 합계 행은 헤더 첫 행과 배경색을 구분한다 */
 table.tbl tr.total td,table.tbl tbody tr.total:hover td{background:var(--tot) !important;color:#fff;font-weight:800}
+/* 세로 세그먼트 블록의 합계 행 — 맨 위 "전체 합계" 블록과 헷갈리지 않게 한 단 연하게 (v70) */
+table.tbl.sublv tr.total td,table.tbl.sublv tbody tr.total:hover td{background:var(--tot-sub) !important}
 table.tbl tr.sub td,table.tbl tbody tr.sub:hover td{background:var(--sub2) !important;font-weight:700;color:var(--acc-d)}
 /* 소계가 여러 단계면 단계마다 배경을 조금씩 다르게 (1단계가 가장 진함) */
 table.tbl tr.sub.sub-l0 td,table.tbl tbody tr.sub.sub-l0:hover td{background:var(--sub0) !important;color:var(--ink)}
@@ -1324,6 +1403,9 @@ td.expcell .gchk input{width:12px;height:12px;flex:none}   /* 게런티 체크�
 /* 예상효율 표 — 선택된 셀 */
 #tblKpi td.lsel{box-shadow:inset 0 0 0 2px var(--acc);background:var(--acc-soft)}
 #tblKpi td.lsel input,#tblKpi td.lsel select,#tblKpi td.lsel textarea{background:var(--surface)}
+/* 끌어서 고른 나머지 칸 — 기준 칸보다 연하게 (v70) */
+#tblKpi td.lselr{background:var(--acc-soft)}
+#tblKpi td.lselr input,#tblKpi td.lselr select,#tblKpi td.lselr textarea{background:transparent}
 /* 예상효율 표 — 열 폭을 좁게, 값은 모두 가운데 정렬 */
 #tblKpi th,#tblKpi td{padding-left:5px;padding-right:5px}
 #tblKpi input,#tblKpi select{min-width:0;padding:0 4px}
@@ -1887,6 +1969,10 @@ table.sheet td.badcell input,table.sheet td.badcell select{color:#b5564e;font-we
 [data-theme="dark"] table.sheet td.badcell select{color:#e8a9a1}
 /* 머리글 정렬 · 필터 */
 table.sheet th.thsf,table.tbl.lines th.thsf{position:relative;padding-right:22px}
+/* ⚠ 위 규칙(relative)이 table.sheet th 의 sticky 를 **이겨서** 입력 시트의 값 열 머리글이
+   표 안에서 스크롤하면 위로 밀려 사라졌다 (맨 앞 ✕ 칸만 붙어 있었다 — v71 실사용 버그).
+   sticky 도 위치 지정 요소라 ⋮ · 너비 손잡이(absolute)의 기준은 그대로 유지된다. */
+table.sheet th.thsf{position:sticky;top:0}
 th.thsf .thl{display:inline-block}
 /* 머리글이 밝은 표(입력 시트)와 어두운 표(예상 효율) 모두에서 보이도록 글자색을 물려받는다 */
 .thmenu{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;
@@ -1943,7 +2029,18 @@ table.sheet th.thsf .colgrip{cursor:col-resize}
 .btn.sm.done,.btn.sm.done:hover{background:transparent;border-color:transparent;
   color:var(--muted);font-weight:600;cursor:default;box-shadow:none}
 .btn.sm:disabled{cursor:default}
-table.sheet td.rm button{border:0;background:transparent;color:var(--muted);cursor:pointer;height:32px;width:100%}
+table.sheet td.rm button{border:0;background:transparent;color:var(--muted);cursor:pointer;height:32px;width:calc(100% - 16px);vertical-align:middle}
+/* 행 순서 끌기 (v71) — 맨 왼쪽 칸의 점 손잡이(또는 칸의 빈 곳)를 잡고 위아래로 끈다 */
+td.rm{white-space:nowrap}
+td.rm .rgrip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:22px;
+  color:var(--muted);opacity:.5;cursor:grab;vertical-align:middle;user-select:none}
+td.rm:hover .rgrip{opacity:1;color:var(--acc)}
+tr[data-rd] td.rm{cursor:grab}
+td.rm button{cursor:pointer}
+body.rdragging,body.rdragging *{cursor:grabbing!important;user-select:none!important}
+tr.rdrag td{opacity:.42}
+tr.rdrop-b td{box-shadow:inset 0 2px 0 var(--acc)!important}
+tr.rdrop-a td{box-shadow:inset 0 -2px 0 var(--acc)!important}
 table.sheet td.rm button:hover{color:var(--neg)}
 table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:center;height:32px;line-height:32px}
 

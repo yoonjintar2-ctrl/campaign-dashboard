@@ -400,10 +400,14 @@ function autoComment(){
   /* 한 줄씩 끊어서 — 길게 이어 쓰면 읽기 어렵다 */
   const lines=[
     `조회 기간 <b>${period}</b> (${days}일) · 캠페인 <b>${esc(CAMPAIGN.name)}</b>`,
-    `총 광고비 <b>${won(allGross)}</b> 중 <b>${won(allAgg.cost)}</b> 집행 `
+    L(`총 광고비 <b>${won(allGross)}</b> 중 <b>${won(allAgg.cost)}</b> 집행 `
       +`(소진율 <b>${pct(allAgg.cost/allGross,1)}</b>)`,
-    `종합 KPI 달성률 <b>${pct(allAch,1)}</b> · 목표 페이스 ${pct(pr,1)} 대비 `
-      +(allGap>=0?`<b>+${allGap.toFixed(1)}%p 앞섬</b>`:`진행 중`)
+      `Delivered <b>${won(allAgg.cost)}</b> of total ad spend <b>${won(allGross)}</b> `
+      +`(spend rate <b>${pct(allAgg.cost/allGross,1)}</b>)`),
+    L(`종합 KPI 달성률 <b>${pct(allAch,1)}</b> · 목표 페이스 ${pct(pr,1)} 대비 `
+      +(allGap>=0?`<b>+${allGap.toFixed(1)}%p 앞섬</b>`:`진행 중`),
+      `Overall KPI achievement <b>${pct(allAch,1)}</b> · vs. target pace ${pct(pr,1)}: `
+      +(allGap>=0?`<b>+${allGap.toFixed(1)}%p ahead</b>`:`in progress`))
   ];
   if(byMedia.length>1)
     lines.push(`매체별 달성률 ${byMedia.map(x=>`${esc(x.m)} <b>${pct(x.ach,1)}</b>`).join(' · ')} `
@@ -519,7 +523,11 @@ function cmtRedo(){
   },true);
   const auto=$('cmtAuto');
   if(auto)auto.onclick=()=>{
-    const write=()=>{b.innerHTML=autoComment();cmtDirty();cmtSnap();};
+    /* 영어 화면이면 초안도 영어로 (v71) — 코멘트 칸은 사용자 글이라 번역기가 건너뛰므로, 넣기 전에 옮긴다 */
+    const draftHTML=()=>{const h=autoComment();
+      if(typeof LANG==='undefined'||LANG!=='en'||typeof trNode!=='function')return h;
+      const tmp=document.createElement('div');tmp.innerHTML=h;trNode(tmp);return tmp.innerHTML;};
+    const write=()=>{b.innerHTML=draftHTML();cmtDirty();cmtSnap();};
     if(b.innerHTML.trim())
       confirmModal('지금 내용을 지우고 새로 작성할까요?',
         '조회 기간 기준으로 매체·광고상품별 초안을 다시 만듭니다.',write,'새로 작성');

@@ -201,7 +201,7 @@ document.addEventListener('mousedown',e=>{
   const t=e.target;
   if(!t||typeof t.closest!=='function'){closeTblMenu();return;}
   if(!t.closest('.thpop')&&!t.closest('.thmenu')&&!t.closest('th.thsf'))closeTblMenu();});
-function openTblMenu(btn,id,k,label,arr,getVal,rerender){
+function openTblMenu(btn,id,k,label,arr,getVal,rerender,onHide){
   closeTblMenu();
   const vals=[...new Set(arr.map(x=>tblStr(getVal(x,k))))]
     .sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
@@ -225,6 +225,9 @@ function openTblMenu(btn,id,k,label,arr,getVal,rerender){
     <div class="thbtns"><button type="button" class="thmini" data-all="1">전체 선택</button>
       <button type="button" class="thmini" data-all="0">전체 해제</button></div>
     <div class="thlist"></div>
+    ${onHide?`<div class="thsep"></div>
+    <button type="button" class="thi" data-hide="1">✕ 이 열 숨기기</button>
+    <div class="hint" style="padding:2px 10px 6px;font-size:10.5px">지우는 것이 아니라 화면에서만 감춥니다 — ⚙ 열 설정에서 다시 켤 수 있습니다.</div>`:''}
     <div class="thfoot"><button type="button" class="btn sm" data-clear="1">필터 해제</button>
       <div class="spacer"></div><button type="button" class="btn sm primary" data-ok="1">적용</button></div>`;
   document.body.appendChild(pop);
@@ -241,6 +244,8 @@ function openTblMenu(btn,id,k,label,arr,getVal,rerender){
     const on=b.dataset.all==='1';
     cur.clear();if(on)vals.forEach(v=>cur.add(v));
     draw(pop.querySelector('.thq').value);});
+  const hb=pop.querySelector('[data-hide]');
+  if(hb)hb.onclick=()=>{closeTblMenu();onHide(k);};
   pop.querySelector('[data-clear]').onclick=()=>{
     if(TBL_FILTER[id])delete TBL_FILTER[id][k];
     closeTblMenu();rerender();};
@@ -311,7 +316,7 @@ function renderSheet(){
       h2=optsFor(k,r).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
       OPT_HTML.set(key,h2);}
     return h2;};
-  let h='<thead><tr><th style="width:34px" class="rm">'
+  let h='<thead><tr><th style="width:50px" class="rm">'
     +'<button id="sheetClearAll" title="입력한 일별 실적을 모두 지웁니다">✕</button></th>'
     +cols.map(c=>`<th style="min-width:${c.w||110}px" class="thsf" title="누르면 정렬 · 필터 · 끌면 열 순서 이동">`
       +`<span class="thl">${c.l}${c.type==='calc'?' ƒ':''}</span>`
@@ -331,8 +336,8 @@ function renderSheet(){
     const r=SHEET[ri];
     /* 매칭 실패는 행 전체가 아니라 "문제가 된 칸" 만 표시한다 */
     const cIss=rowCellIssues(r),badSet=new Set(cIss.cells);
-    h+=`<tr data-ri="${ri}">`
-      +`<td class="rm"><button data-del="${ri}">✕</button></td>`;
+    h+=`<tr data-ri="${ri}" data-rd="${ri}">`
+      +`<td class="rm">${RGRIP}<button data-del="${ri}" title="행 삭제">✕</button></td>`;
     cols.forEach((c,ci)=>{
       if(c.type==='calc'){h+=`<td class="calc mono">${fmt(evalFormula(c.rule,r))}</td>`;return;}
       /* 숫자 칸은 값이 없으면(0·미입력) 빈칸으로 둔다 */
@@ -388,7 +393,9 @@ function renderSheet(){
   const nLine=SHEET.filter(r=>rowIssue(r)==='line').length;
   const nDate=badIdx.length-nLine;
   $('sheetNote').innerHTML=`${SHEET.length}행`
-    +(hid?` · <button type="button" class="badjump" id="sheetFilterOff" title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`:'')
+    +(hid?` · <button type="button" class="badjump" id="sheetFilterOff" title="정렬·필터를 모두 없앱니다">필터로 ${hid}행 숨김 · 해제 ✕</button>`
+      /* 정렬만 걸려 있어도 알려 준다 — 정렬 중에는 행을 끌어 옮길 수 없다 (v71) */
+      :(TBL_SORT.sheet?` · <button type="button" class="badjump" id="sheetFilterOff" title="정렬을 없애고 입력한 순서로 되돌립니다">정렬 켜짐 · 해제 ✕</button>`:''))
     +` · 새 행 기본 일자 = 어제(${YESTERDAY})`
     +(badIdx.length?` · <button type="button" class="badjump" id="sheetBadJump"
         title="누를 때마다 다음 행으로 이동합니다&#10;`
@@ -419,7 +426,16 @@ function renderSheet(){
     openTblMenu(anchor,'sheet',k,c.l||k,SHEET,
       (r,kk)=>{const cc=SHEET_COLS.find(x=>x.k===kk);
         return cc&&cc.type==='calc'?evalFormula(cc.rule,r):r[kk];},
-      ()=>{SHEET_PAGE=0;renderSheet();});};
+      ()=>{SHEET_PAGE=0;renderSheet();},
+      /* 머리글에서 바로 열 숨기기 — 값은 그대로 두고 화면에서만 감춘다 (v70).
+         필수 열(일자·매체명 등)은 감추지 않는다. */
+      kk=>{const cc=SHEET_COLS.find(x=>x.k===kk);
+        if(!cc)return;
+        if(SHEET_REQ.includes(kk)){
+          confirmModal('이 열은 감출 수 없습니다.',
+            `${cc.l} 은(는) 라인을 찾는 데 꼭 필요한 열입니다.`,()=>{},'확인');return;}
+        cc.on=false;SHEET_PAGE=0;renderSheet();
+        try{markDirty();saveLocal();}catch(x){}});};
   t.querySelectorAll('th.thsf').forEach((th,i)=>{
     const c=cols[i];if(!c)return;
     th.onclick=e=>{
@@ -471,6 +487,14 @@ function renderSheet(){
   const ca=$('sheetClearAll');
   if(ca)ca.onclick=wipeAll;
   {const wb=$('sheetWipe');if(wb)wb.onclick=wipeAll;}
+  /* 화면을 아래로 내려도 머리글이 위에 붙어 있게 (v70) */
+  try{if(typeof mountFloatHead==='function')mountFloatHead(t);}catch(e){}
+  /* 맨 왼쪽 칸을 끌어 행 순서 바꾸기 (v71).
+     머리글로 정렬해 둔 상태에서는 보이는 순서와 실제 순서가 달라 엉뚱한 자리로 가므로 막는다. */
+  enableRowMove(t,()=>({
+    why:()=>TBL_SORT.sheet?'머리글 정렬이 켜져 있어 보이는 순서와 실제 순서가 다릅니다. 표 위의 「정렬 켜짐 · 해제 ✕」를 누른 뒤 옮겨 주세요.':'',
+    apply:(from,to)=>{pushUndo();moveItem(SHEET,from,to);
+      renderSheet();syncSheet();try{markDirty();}catch(e){}}}));
 }
 /* 선택 표시는 "지금 칠해진 칸"만 지우고 새로 칠한다 — 매번 2만 칸을 훑지 않게 */
 let SEL_PAINTED=[];
@@ -616,17 +640,45 @@ document.addEventListener('keydown',e=>{
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undoSheet();return;}
   if(mod&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redoSheet();return;}
+  const ae0=document.activeElement;
+  const typing0=ae0&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae0.tagName);
+  const maxR0=SHEET.length-1,maxC0=sheetCols().length-1;
+  const cl0=(v,mx)=>Math.max(0,Math.min(v,mx));
+  const after=()=>{sheetShowRow(SEL.r2);paintSel();
+    const cell=document.querySelector(`#sheet td[data-r="${SEL.r2}"][data-c="${SEL.c2}"]`);
+    if(cell)cell.scrollIntoView({block:'nearest',inline:'nearest'});};
+  /* 고른 칸(들) 비우기 (v70) */
+  if((e.key==='Delete'||e.key==='Backspace')&&!typing0&&document.querySelector('#sheet td.sel')){
+    e.preventDefault();pushUndo();
+    const cols=sheetCols();
+    const r0=Math.min(SEL.r1,SEL.r2),r1=Math.max(SEL.r1,SEL.r2);
+    const c0=Math.min(SEL.c1,SEL.c2),c1=Math.max(SEL.c1,SEL.c2);
+    for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++)if(cols[c])setCell(r,cols[c].k,'');
+    renderSheet();syncSheet();return;}
+  /* Home · End — 맨 왼쪽 / 맨 오른쪽 칸으로 (Ctrl 과 함께면 첫 줄 · 마지막 줄까지) (v70) */
+  if((e.key==='Home'||e.key==='End')&&!typing0&&document.querySelector('#sheet td.sel')){
+    e.preventDefault();
+    const c=e.key==='Home'?0:maxC0;
+    const r=mod?(e.key==='Home'?0:maxR0):(e.shiftKey?SEL.r2:SEL.r1);
+    if(e.shiftKey){SEL.r2=r;SEL.c2=c;}else SEL={r1:r,c1:c,r2:r,c2:c};
+    after();return;}
   const ARROW={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
-  if(!ARROW[e.key]||mod)return;
+  if(!ARROW[e.key])return;
   if(!document.querySelector('#sheet td.sel'))return;
   const ae=document.activeElement;
   /* 텍스트 입력 중에는 좌우 방향키를 커서 이동에 양보하고, 위·아래만 셀 이동으로 쓴다 */
   const typing=ae&&(ae.tagName==='INPUT'&&ae.type==='text');
-  if(typing&&!e.shiftKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return;
+  if(typing&&!e.shiftKey&&!mod&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return;
   e.preventDefault();
   const [dr,dc]=ARROW[e.key];
-  const maxR=SHEET.length-1,maxC=sheetCols().length-1;
-  const cl=(v,mx)=>Math.max(0,Math.min(v,mx));
+  const maxR=maxC0>=0?SHEET.length-1:0,maxC=sheetCols().length-1;
+  const cl=cl0;
+  /* Ctrl+방향키 — 그 방향 끝까지 한 번에 (v70) */
+  if(mod){
+    const nr=dr<0?0:dr>0?maxR:(e.shiftKey?SEL.r2:SEL.r1);
+    const nc=dc<0?0:dc>0?maxC:(e.shiftKey?SEL.c2:SEL.c1);
+    if(e.shiftKey){SEL.r2=nr;SEL.c2=nc;}else SEL={r1:nr,c1:nc,r2:nr,c2:nc};
+    after();return;}
   if(e.shiftKey){SEL.r2=cl(SEL.r2+dr,maxR);SEL.c2=cl(SEL.c2+dc,maxC);}
   else{const r=cl(SEL.r1+dr,maxR),c=cl(SEL.c1+dc,maxC);SEL={r1:r,c1:c,r2:r,c2:c};}
   /* 방향키로 500행 경계를 넘으면 쪽도 같이 넘긴다 (v58) */

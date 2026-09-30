@@ -102,6 +102,12 @@ function freezeLeadCols(tbl,leadN){
   ths.forEach(th=>{L.push(acc);acc+=th.getBoundingClientRect().width;});
   if(!acc)return 0;                                   /* 아직 화면에 없다 */
   ths.forEach((th,i)=>{th.classList.add('lfz');th.classList.toggle('lfze',i===leadN-1);
+    /* ⚠ 숨어 있는 동안 그려진 표는 고정이 안 걸린 채(static) 너비 손잡이가 먼저 붙으면서
+       머리글에 **인라인 position:relative** 가 박힌다. 그 뒤에 여기서 left 를 주면
+       relative + left 가 되어 **머리글만 그만큼 오른쪽으로 밀린다** —
+       「구분 | 빈칸 | 매체」 로 깨지고 예산 머리글이 가려지던 원인 (v71 실사용 버그,
+       미디어믹스·일자별 탭에 있다가 서머리로 돌아올 때 재현). 인라인 값을 걷어 sticky 로 되돌린다. */
+    if(th.style.position&&th.style.position!=='sticky'){th.style.position='';th.style.top='';}
     th.style.left=Math.round(L[i])+'px';});
   const tb=tbl.tBodies[0];
   if(tb)[...tb.rows].forEach(tr=>{
@@ -136,13 +142,14 @@ function fhPrune(){
   if(!window.__fhList)window.__fhList=[];
   document.querySelectorAll('.ghfix').forEach(bar=>{
     const t=bar.__fhTbl;
-    if(t&&t.isConnected&&t.closest('.tbl-wrap'))return;
+    if(t&&t.isConnected&&t.closest('.tbl-wrap,.sheet-wrap'))return;
     const pl=bar.__fhPlace;
     if(pl){const i=window.__fhList.indexOf(pl);if(i>=0)window.__fhList.splice(i,1);}
     bar.remove();});
 }
 function mountFloatHead(tbl){
-  const wrap=tbl.closest('.tbl-wrap');if(!wrap||!tbl.tHead)return;
+  /* 리포트 데이터 입력 시트(.sheet-wrap)도 같은 방식으로 머리글을 띄운다 (v70) */
+  const wrap=tbl.closest('.tbl-wrap,.sheet-wrap');if(!wrap||!tbl.tHead)return;
   if(!window.__fhList){window.__fhList=[];
     const run=()=>window.__fhList.forEach(f=>{try{f();}catch(e){}});
     addEventListener('scroll',run,true);addEventListener('resize',run);}
@@ -190,6 +197,19 @@ function mountFloatHead(tbl){
     sized=sig;return true;};
   const stick=()=>parseInt(getComputedStyle(document.documentElement)
     .getPropertyValue('--stick'),10)||144;
+  /* 복사본의 행 머리 열 고정 위치는 **원본을 따라간다** (v71).
+     복사본은 그릴 때 한 번 만들어지므로, 그 뒤 원본이 다시 고정(refreezeAll)되면
+     복사본에만 옛 left 가 남아 떠 있는 머리글이 어긋났다. */
+  const realThs=[...tbl.tHead.querySelectorAll('th')],cloneThs=[...clone.querySelectorAll('th')];
+  let fzSig=null;
+  const syncFz=()=>{
+    const sig=realThs.map(t=>t.classList.contains('lfz')?(t.style.left||'0'):'-').join('|');
+    if(sig===fzSig)return;fzSig=sig;
+    realThs.forEach((t,i)=>{const c=cloneThs[i];if(!c)return;
+      if(t.classList.contains('lfz')){
+        c.classList.add('lfz');c.classList.toggle('lfze',t.classList.contains('lfze'));
+        c.style.position='';c.style.left=t.style.left;}
+      else{c.classList.remove('lfz','lfze');c.style.position='static';c.style.left='auto';}});};
   const place=()=>{
     if(!tbl.isConnected||!wrap.offsetParent){bar.classList.remove('on');return;}
     syncR2Top(tbl);
@@ -198,6 +218,7 @@ function mountFloatHead(tbl){
     const on=r.top<top&&r.bottom>top+headH+24&&sizeCols();
     bar.classList.toggle('on',on);
     if(!on)return;
+    syncFz();
     bar.style.left=Math.round(r.left)+'px';
     bar.style.top=top+'px';
     bar.style.width=Math.round(r.width)+'px';
@@ -213,6 +234,78 @@ function mountFloatHead(tbl){
   syncR2Top(tbl);
   setTimeout(place,0);setTimeout(place,320);
 }
+/* ===== 입력 표 — 맨 왼쪽 칸을 끌어서 행 순서 바꾸기 (v71) =====
+   예상효율 · 리포트 데이터 입력(디지털·TV)이 같이 쓴다.
+   ⚠ 서머리·미디어믹스의 enableRowDrag(피벗 그룹 끌기)와는 다른 함수다 — 이름을 겹치지 말 것.
+   표를 다시 그려도 <table> 요소는 그대로라서 리스너는 한 번만 걸고,
+   매번 바뀌는 것(배열 · 적용 함수 · 막는 이유)은 get() 으로 새로 받는다.
+   get() → {apply(from,to), why()} — why() 가 글을 돌려주면 옮기지 않고 그 이유를 알린다. */
+/* 끌기 손잡이 (점 6개) — 글꼴에 따라 안 나올 수 있는 특수문자 대신 SVG */
+const RGRIP='<span class="rgrip" title="끌어서 행 순서 바꾸기"><svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true">'
+  +'<g fill="currentColor"><circle cx="2" cy="3" r="1.2"/><circle cx="6" cy="3" r="1.2"/>'
+  +'<circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/>'
+  +'<circle cx="2" cy="11" r="1.2"/><circle cx="6" cy="11" r="1.2"/></g></svg></span>';
+function enableRowMove(tbl,get){
+  if(!tbl)return;
+  tbl.__rmGet=get;
+  if(tbl.__rmWired)return;
+  tbl.__rmWired=1;
+  let st=null;
+  const rowOf=n=>{const tr=n&&n.closest?n.closest('tr[data-rd]'):null;
+    return tr&&tbl.contains(tr)?tr:null;};
+  const clearMark=()=>tbl.querySelectorAll('tr.rdrop-b,tr.rdrop-a')
+    .forEach(tr=>tr.classList.remove('rdrop-b','rdrop-a'));
+  const end=()=>{
+    if(!st)return null;
+    document.body.classList.remove('rdragging');
+    if(st.tr)st.tr.classList.remove('rdrag');
+    clearMark();
+    const s=st;st=null;return s;};
+  tbl.addEventListener('mousedown',e=>{
+    if(e.button)return;
+    const cell=e.target.closest&&e.target.closest('td.rm');
+    if(!cell||!tbl.contains(cell))return;
+    /* 복제 · 삭제 단추는 그대로 눌리게 둔다 */
+    if(e.target.closest('button,input,select,a,label'))return;
+    const tr=rowOf(cell);if(!tr)return;
+    const g=tbl.__rmGet&&tbl.__rmGet();if(!g)return;
+    const why=g.why?g.why():'';
+    e.preventDefault();
+    if(why){confirmModal('지금은 행을 옮길 수 없습니다.',why,()=>{},'확인');return;}
+    st={tr,from:+tr.dataset.rd,g,moved:false,at:-1,after:false,y0:e.clientY};
+    tr.classList.add('rdrag');document.body.classList.add('rdragging');});
+  addEventListener('mousemove',e=>{
+    if(!st)return;
+    if(!st.moved&&Math.abs(e.clientY-st.y0)<3)return;
+    st.moved=true;
+    const tr=rowOf(document.elementFromPoint(e.clientX,e.clientY));
+    clearMark();
+    if(!tr||tr===st.tr){st.at=-1;return;}
+    const r=tr.getBoundingClientRect();
+    st.after=e.clientY>r.top+r.height/2;
+    st.at=+tr.dataset.rd;
+    tr.classList.add(st.after?'rdrop-a':'rdrop-b');
+    /* 표 상자 끝에 닿으면 조금씩 따라 내려간다 */
+    const box=tbl.closest('.sheet-wrap,.tbl-wrap');
+    if(box&&box.scrollHeight>box.clientHeight){
+      const b=box.getBoundingClientRect();
+      if(e.clientY>b.bottom-28)box.scrollTop+=14;
+      else if(e.clientY<b.top+28)box.scrollTop-=14;}});
+  addEventListener('mouseup',()=>{
+    const s=end();if(!s||!s.moved||s.at<0)return;
+    /* 놓은 자리 = 가리킨 행의 위(앞) 또는 아래(뒤) */
+    let ins=s.at+(s.after?1:0);
+    if(ins>s.from)ins--;
+    if(ins===s.from)return;
+    try{s.g.apply(s.from,ins);}catch(err){console.warn('row move',err);}});
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&st)end();});
+}
+/* 배열 안에서 한 칸을 옮긴다 (from 을 빼고 to 자리에 넣는다) */
+function moveItem(arr,from,to){
+  if(!Array.isArray(arr)||from===to||from<0||from>=arr.length)return arr;
+  const [x]=arr.splice(from,1);
+  arr.splice(Math.max(0,Math.min(to,arr.length)),0,x);
+  return arr;}
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
@@ -522,7 +615,10 @@ function pivotLayout(keys,rows){
   keys.forEach((vals,ri)=>{
     out.push({kind:'data',ri,vals});
     for(let L=D-1;L>=0;L--){
-      if(!rows[L].sub)continue;
+      /* 맨 마지막 기준 열의 소계는 그 행 하나의 합(=같은 값)이라 의미가 없고,
+         "○○ 소계" 문구가 들어갈 오른쪽 기준 열이 없어 **값 열이 한 칸씩 밀린다** (v71).
+         (광고상품을 빼서 매체가 마지막이 되면 기본 구성에서도 생긴다) */
+      if(!rows[L].sub||L===D-1)continue;
       const nk=keys[ri+1];
       if(nk&&nk.slice(0,L+1).join(SEP)===vals.slice(0,L+1).join(SEP))continue;
       out.push({kind:'sub',level:L,vals:vals.slice(0,L+1)});}});
@@ -1200,8 +1296,12 @@ function renderDonuts(){
       const it=items.filter(l=>kpiOf(l)===k),w=sum(it.map(lineGross));
       const goal=safe(sum(it.map(l=>goalIn(l,k))));
       const due=safe(sum(it.map(l=>paceDue(l,k))));
-      return {k,ach:safe(sum(it.map(l=>safe(kpiAch(l))*lineGross(l)))/w),
-        act:safe(sum(it.map(l=>paceSum(l.daily[k])))),goal,due,
+      const act=safe(sum(it.map(l=>paceSum(l.daily[k]))));
+      /* 달성률 = 집행 ÷ 목표. 툴팁에 적히는 집행·목표와 늘 같은 값이 되게 (v70).
+         예전에는 라인별 달성률을 **예산으로 가중 평균** 했는데, 예산을 아직 안 넣었거나
+         무상(보너스) 라인이면 0 으로 나눠져 달성률이 0.0% 로 떨어졌다
+         (집행 8,360 · 목표 9,429 인데 0.0% 로 보이던 문제). */
+      return {k,ach:goal?act/goal:0,act,goal,due,w,
         /* 지표별 목표 페이스 — 목표가 없으면 라인 기간만으로 잡는다 */
         pace:goal?due/goal:paceRatioOf(it)};};
     const rings=kpis.map((k,i)=>({...mk(k),color:COL[i%COL.length]}));
@@ -1319,9 +1419,14 @@ function renderDonuts(){
         +(lineSpanNote(items.filter(l=>kpiOf(l)===r.k))||'')));
       hit.addEventListener('mouseleave',hideTip);});
     ring.appendChild(svg);
-    /* 가운데 — 달성률만 (KPI가 여러 개면 예산 가중 평균) */
-    const totW=sum(items.map(lineGross));
-    const total=totW?sum(items.map(l=>(isFinite(kpiAch(l))?kpiAch(l):0)*lineGross(l)))/totW:0;
+    /* 가운데 — 달성률만. KPI 가 하나면 그 고리와 같은 값, 여러 개면 예산으로 가중 평균한다.
+       예산이 아직 없으면(무상·미입력) 고리들의 단순 평균으로 — 0 으로 떨어지지 않게 (v70) */
+    const allRows=rings.concat(restRows);
+    const totW=sum(allRows.map(r=>safe(r.w)));
+    const total=allRows.length===0?0
+      :allRows.length===1?safe(allRows[0].ach)
+      :totW?sum(allRows.map(r=>safe(r.ach)*safe(r.w)))/totW
+      :sum(allRows.map(r=>safe(r.ach)))/allRows.length;
     const ctr=el('div','ctr',ring);
     const lg=el('div','dlgd',c);
     /* 범례는 "무슨 색이 무엇인지" 만 알려 준다 — 수치는 도넛 안(달성률)과 툴팁에서 본다 */

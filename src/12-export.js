@@ -524,10 +524,18 @@ async function exportDashboard(){
       g.rows.forEach(r=>s3.rows.push(r));
       s3.merges.push(...g.merges);}
 
+    /* 영어 화면이면 리포트도 영어로 (v71) — 너비를 재기 **전에** 옮긴다 (글자 길이가 달라서).
+       표에서 가져온 칸은 이미 화면에서 영어가 됐고, 여기서는 코드가 적은 제목 · 라벨을 옮긴다.
+       사용자 데이터(매체명 등)를 건드리지 않도록 낱말 대체 없이 사전 · 틀만 쓴다. */
+    if(typeof LANG!=='undefined'&&LANG==='en'&&typeof trXL==='function')
+      [s1,s2,s3].forEach(sh=>{sh.name=trXL(sh.name);
+        (sh.rows||[]).forEach(r=>(r||[]).forEach(c=>{
+          if(c&&!c.n&&typeof c.v==='string')c.v=trXL(c.v);}));});
     [s1,s2,s3].forEach(sh=>{offsetSheet(sh);autoWidths(sh);});
     s1.rows[0]=[];                       /* 1행은 비워 둔다 */
     const bytes=buildWorkbook([s1,s2,s3]);
-    saveFile(bytes,`대시보드_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}_${sc.startIso}~${sc.endIso}.xlsx`,
+    const fname=`대시보드_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}_${sc.startIso}~${sc.endIso}.xlsx`;
+    saveFile(bytes,(typeof trXL==='function'?trXL(fname):fname),
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   }catch(err){
     confirmModal('엑셀을 만들지 못했습니다.',String(err&&err.message||err),()=>{},'확인');
@@ -854,12 +862,16 @@ function renderBrand(){
   else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
   nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
   try{refreshBgDots();tuneTopbarForLogo();}catch(e){}
-  try{setFavicon(logo||DMD_MARK);}catch(e){}
+  /* 브라우저 탭·작업표시줄 아이콘에는 광고주 로고를 쓰지 않는다 (v71).
+     광고주마다 밝은 바탕 / 어두운 바탕용 로고 규정이 따로 있는데, 탭·작업표시줄의 바탕색은
+     사용자의 OS·브라우저 테마가 정해서 우리가 맞춰 줄 수 없다 → 가이드 위반 소지를 아예 없앤다.
+     화면 안(좌상단)의 로고는 우리 테마에 맞춰 보여 주므로 그대로 둔다. */
+  try{setFavicon(DMD_MARK);}catch(e){}
   try{document.title=(adv&&!isDMD?adv+' — ':'')
     +(CAMPAIGN.name?CAMPAIGN.name+' · ':'')+'Media Dashboard';}catch(e){}
 }
-/* 브라우저 탭 아이콘 — 광고주 로고가 있으면 그 로고를 쓴다.
-   로고는 가로로 긴 경우가 많아 정사각 캔버스 가운데에 얹어 잘리지 않게 만든다. */
+/* 브라우저 탭 아이콘 — 서비스 마크(DMD_MARK)만 쓴다 (v71 부터 광고주 로고는 쓰지 않는다).
+   정사각 캔버스 가운데에 얹어 잘리지 않게 만든다. */
 let FAV_SRC='';
 function setFavicon(src){
   if(!src||src===FAV_SRC)return;
@@ -1271,7 +1283,8 @@ function openAdvManage(after){
 const HUB_MAIN=[
   {id:'campMng',t:'캠페인 관리',d:'새 캠페인 · 이름 변경 · 복제 · 삭제 · 코드 전달',need:'camp'},
   {id:'__adv',t:'광고주 관리',d:'광고주 이름과 로고를 관리합니다',need:'adv'},
-  {id:'themeBtn',t:'디자인',d:'테마 색상과 배경을 고릅니다'}
+  {id:'themeBtn',t:'디자인',d:'테마 색상과 배경을 고릅니다'},
+  {id:'__media',t:'운영 매체',d:'이번 캠페인에서 운영한 매체(TV · Digital)를 고릅니다',need:'edit'}
 ];
 const HUB_SUB=[
   {id:'guideBtn',t:'사용 가이드'},
@@ -1470,10 +1483,11 @@ function canManageCamp(){
 }
 function openSettingsHub(){
   const agency=!(typeof isClient==='function'&&isClient());
-  const okNeed=n=>!n||(n==='adv'?canManageAdv():n==='camp'?canManageCamp():true);
+  const okNeed=n=>!n||(n==='adv'?canManageAdv():n==='camp'?canManageCamp()
+    :n==='edit'?(typeof canSaveView==='function'?canSaveView():true):true);
   const items=HUB_MAIN.filter(x=>agency&&okNeed(x.need));
   const box=openModal('설정',
-    (items.length?`<div class="hubgrid">`+items.map(x=>
+    (items.length?`<div class="hubgrid${items.length%2===0&&items.length<=4?' two':''}">`+items.map(x=>
       `<button class="hubcard" type="button" data-hub="${x.id}">
          <b>${x.t}</b><i>${x.d}</i></button>`).join('')+`</div>`:'')
     +`<div class="hubsub">`+HUB_SUB.map(x=>
@@ -1484,6 +1498,7 @@ function openSettingsHub(){
     const id=b.dataset.hub;
     if(id==='__adv'){if(typeof openAdvManage==='function')openAdvManage();return;}
     if(id==='__cols'){openColDict();return;}
+    if(id==='__media'){openMediaSettings();return;}
     const t=$(id);if(t&&t.onclick)t.onclick();});
 }
 (function initHub(){
