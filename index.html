@@ -918,7 +918,12 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pbar .mstack{position:absolute;left:0;top:0;bottom:0;display:flex;gap:3px}
 /* 구간 채움 = 색 물결(위) + 남색 바탕(아래) 두 겹.
    물결을 배경으로 넣었기 때문에 매체 이름 글자보다 뒤에 있고, 구간 사이 간격(구분선)도 침범하지 않는다.
-   --ambt(0~1, #paceBox 에서 한 번에 움직인다) 로 모든 지표가 같은 위상으로 흐른다. */
+   --ambt(0~1, 구간마다 같은 값을 한 번에 쓴다) 로 모든 지표가 같은 위상으로 흐른다. */
+/* v78 — 두 값은 **물려받지 않는** 속성으로 등록한다. 예전에는 #paceBox 에 써서
+   그 아래 요소 전부(280여 개)가 매번 스타일 재계산 대상이 됐다 (가만히 있어도 CPU 를 가장 많이 쓰던 곳).
+   이제는 값을 쓰는 매체 구간(<i>)만 다시 계산된다. 초기값 .5 = 움직임 줄이기 설정일 때의 고정값 */
+@property --ambt{syntax:'<number>';inherits:false;initial-value:.5}
+@property --ambp{syntax:'<number>';inherits:false;initial-value:.5}
 .pbar .mstack>i{min-width:0;overflow:hidden;
   background-image:linear-gradient(100deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 8%,
       var(--ambc,rgba(0,0,0,0)) 34%,var(--ambc,rgba(0,0,0,0)) 66%,
@@ -3529,7 +3534,10 @@ if(!window.__fzWired){window.__fzWired=1;
     window.__fzT=setTimeout(refreezeAll,160);});}
 function freezeLeadCols(tbl,leadN){
   if(!tbl||!tbl.tHead||!tbl.tHead.rows[0]||!leadN)return 0;
-  if(!window.__fzList.some(x=>x.t===tbl))window.__fzList.push({t:tbl,n:leadN});
+  /* 다시 그려 떨어져 나간 표는 넣을 때 걷어 낸다 (v78) — 창 크기를 바꾸기 전까지 옛 표를 계속 붙잡고 있었다 */
+  if(!window.__fzList.some(x=>x.t===tbl)){
+    window.__fzList=window.__fzList.filter(x=>x.t&&x.t.isConnected);
+    window.__fzList.push({t:tbl,n:leadN});}
   else window.__fzList.find(x=>x.t===tbl).n=leadN;
   tbl.querySelectorAll('.lfz').forEach(c=>{c.classList.remove('lfz','lfze');c.style.left='';});
   const ths=[...tbl.tHead.rows[0].cells].slice(0,leadN);
@@ -3663,7 +3671,11 @@ function mountFloatHead(tbl){
     clone.style.minWidth=clone.style.width;
     clone.style.maxWidth=clone.style.width;
     inner.scrollLeft=wrap.scrollLeft;};
-  wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
+  /* 스크롤 리스너는 상자마다 한 번만 (v78) — 미디어믹스처럼 상자가 그대로인 표는 그릴 때마다
+     리스너가 하나씩 쌓이고, 그 안에 붙잡힌 옛 복사본 머리글이 메모리에 계속 남았다 */
+  wrap.__fhInner=inner;
+  if(!wrap.__fhScroll){wrap.__fhScroll=1;
+    wrap.addEventListener('scroll',()=>{const i=wrap.__fhInner;if(i)i.scrollLeft=wrap.scrollLeft;});}
   if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
   tbl.__fhPlace=place;bar.__fhPlace=place;window.__fhList.push(place);
   syncR2Top(tbl);
@@ -4577,15 +4589,21 @@ function wirePaceTip(){
         bar.classList.add('hot');showTip(e.clientX,e.clientY,mine+all);});
       seg.addEventListener('mouseleave',e=>{e.stopPropagation();});});});
 }
-/* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
+/* 물결은 지표마다 따로 돌지 않고 --ambt 하나(같은 값)로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
 let AMB_RAF=null;
+/* 움직임 줄이기(접근성) 설정 — 물결 · 스파크라인 빛 띠가 따른다 */
+function reduceMotion(){
+  try{return matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){return false;}}
 function startAmb(){
   if(AMB_RAF!==null)return;
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){
-    const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
+  /* 움직임 줄이기면 돌리지 않는다 — 등록 속성의 초기값(.5)이 곧 고정 모습이다 */
+  if(reduceMotion()){AMB_RAF=-1;return;}
   const P=13000;
-  let lt='',lp='';
+  /* v78 — 초당 약 15번만 쓴다. 매 프레임(60번) 쓸 만큼 빨리 변하는 값이 아니다 */
+  const GAP=66;
+  let lt='',lp='',last=-1e9,segs=null;
+  const next=()=>{AMB_RAF=requestAnimationFrame(step);};
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
@@ -4593,8 +4611,11 @@ function startAmb(){
        ⚠ 이 고리가 페이지에서 가장 비싼 상시 작업이었다 — 매 프레임 #paceBox 에
        사용자 정의 속성 두 개를 써 넣으면 그 안의 구간 전부가 스타일 재계산 + 다시 칠하기 대상이 된다.
        다른 탭을 보고 있거나 이 영역이 화면 밖으로 밀려 있어도 쉬지 않고 돌았다.
-       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다. */
-    if(!ambVisible(b)){AMB_RAF=requestAnimationFrame(step);return;}
+       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다.
+       v78 — 숨어 있는 동안에는 프레임마다 깨지 않고 0.3초마다 한 번만 살핀다 */
+    if(!ambVisible(b)){AMB_RAF=setTimeout(next,300);return;}
+    if(ts-last<GAP){next();return;}
+    last=ts;
     const t=(ts%P)/P;
     const vt=((1-Math.cos(t*2*Math.PI))/2).toFixed(4);
     /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
@@ -4602,11 +4623,17 @@ function startAmb(){
     /* 고정 색조의 세기 — 0 에 더 오래 머물게 해서 기본 색이 보이는 시간을 늘린다 */
     const w=(1-Math.cos(t*2*Math.PI))/2;
     const vp=Math.pow(w,2.1).toFixed(4);
-    /* 값이 그대로면 쓰지 않는다 — 쓰는 순간 그 아래가 전부 다시 계산된다 */
-    if(vt!==lt){lt=vt;b.style.setProperty('--ambt',vt);}
-    if(vp!==lp){lp=vp;b.style.setProperty('--ambp',vp);}
-    AMB_RAF=requestAnimationFrame(step);};
-  AMB_RAF=requestAnimationFrame(step);
+    /* 값은 구간(<i>)마다 직접 쓴다 (v78 · 등록 속성이라 아래로 물려주지 않는다 — 01-head 의 @property).
+       다시 그려 구간이 바뀌었으면 값이 같아도 새 구간에 한 번 써 준다 */
+    const cur=b.querySelectorAll('.mstack>i');
+    const fresh=!segs||segs.length!==cur.length||segs[0]!==cur[0];
+    if(fresh)segs=cur;
+    /* 값이 그대로면 쓰지 않는다 */
+    if(fresh||vt!==lt){lt=vt;segs.forEach(s=>s.style.setProperty('--ambt',vt));}
+    if(fresh||vp!==lp){lp=vp;segs.forEach(s=>s.style.setProperty('--ambp',vp));}
+    /* 다음 쓰기까지는 프레임마다 깨지 않고 타이머로 쉰다 */
+    AMB_RAF=setTimeout(next,GAP-12);};
+  next();
 }
 /* 물결을 돌릴 만큼 #paceBox 가 실제로 보이는가 — 탭이 숨었거나 화면 밖이면 false.
    IntersectionObserver 로 상태만 받아 두고, 못 쓰는 환경에서는 늘 보이는 것으로 본다. */
@@ -5135,7 +5162,8 @@ function drawSpark(host,pill,ser,k){
   S('stop',{offset:'0%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
   const mid=S('stop',{offset:'50%','stop-color':'var(--acc-d)','stop-opacity':'1'},lg);
   S('stop',{offset:'100%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
-  const an=S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'5.2s',
+  /* 움직임 줄이기 설정이면 빛 띠를 가운데에 세워 둔다 (v78 — SMIL 은 CSS 미디어 쿼리를 따르지 않는다) */
+  if(!reduceMotion())S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'5.2s',
     repeatCount:'indefinite',calcMode:'spline',keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid);
   S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2.2,
     'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'},svg);
@@ -5988,7 +6016,9 @@ function enableHPager(card,wrap,o){
     addEventListener('scroll',q,{passive:true});addEventListener('resize',q);}
   /* 같은 상자에 다시 걸면 예전 그리기 함수는 목록에서 빠진다 (다시 그릴 때마다 쌓이지 않게) */
   if(card.__hpPaint){const i=window.__hpList.indexOf(card.__hpPaint);if(i>=0)window.__hpList.splice(i,1);}
-  card.__hpPaint=paint;window.__hpList.push(paint);
+  /* 다시 그려 떨어져 나간 상자도 여기서 걷어 낸다 — 스크롤이 없으면 옛 화면을 계속 붙잡고 있었다 (v78) */
+  window.__hpList=window.__hpList.filter(f=>!f.__card||f.__card.isConnected);
+  paint.__card=card;card.__hpPaint=paint;window.__hpList.push(paint);
   setTimeout(paint,0);setTimeout(paint,360);}
 /* 카드 줄(주요 지표 · KPI 달성 현황) — 스크롤 상자를 한 겹 감싸 단추를 얹는다.
    감싼 상자에도 같은 data-sect 를 줘서 영역 관리(순서 · 숨기기)가 그대로 따라온다 */
@@ -6233,7 +6263,11 @@ function rawRestore(){
 function renderRaw(){
   const cols=cfgCols(RAW_CFG),seps=gsepSet(RAW_CFG);
   const fs=factFilter();
-  const host=$('rawHost');host.innerHTML='';
+  const host=$('rawHost');
+  /* 지난번 표의 "가로 막대 감춤" 여백(enableHPager keepY 가 잰 값)을 새 표에도 미리 넣는다 (v78) —
+     같으면 hpPaint 가 다시 쓰지 않아서, 그리자마자 표 전체를 한 번 더 배치하는 일이 없다. 다르면 hpPaint 가 고친다 */
+  const prevMB=(()=>{const w=host.querySelector('.tbl-wrap.hpy');return w?w.style.marginBottom:'';})();
+  host.innerHTML='';
   /* 세그먼트는 예산이 큰 순서로 (끌어서 바꾼 순서가 있으면 그 순서로) · 숨긴 항목은 뺀다 */
   const vSegs=segValues(RAW_SEG);
   const hSegs=segValues(RAW_HSEG);
@@ -6295,10 +6329,16 @@ function renderRaw(){
         if(bm&&METRICS[k]){const vOf=di=>{const g=bm.get(di);return g?mval(k,aggFacts(g)):NaN;};
           const vm=new Map(days.map(di=>[di,vOf(di)]));
           days.sort((a2,b2)=>hpCmp(vm.get(a2),vm.get(b2),rs.dir)||(a2-b2));}}}
-    const card=el('div','card fit',wrapDiv);
-    const wrap=el('div','tbl-wrap',card);
-    const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
     const many=blocks.length>1;
+    /* 고정 열(hfrozen) · 좌우 넘김(hp*) 클래스는 처음부터 달아 둔다 —
+       첫 배치 뒤에 달면 4만 칸 표를 한 번 더 계산한다 (v78 · mountHNav · enableHPager 도 똑같이 단다) */
+    const card=el('div','card fit'+(many?' hpcard hpclip':''),wrapDiv);
+    const wrap=el('div','tbl-wrap'+(many?' hfrozen hpwrap hpy':''),card);
+    /* 둘째 열의 고정 위치(--fz1)도 지난번에 잰 값으로 미리 넣어 둔다 — 재 보니 같으면 다시 쓰지 않는다 (mountHNav) */
+    const fzv=many&&window.__rawFz1?window.__rawFz1:'';
+    if(fzv)wrap.__fz1=fzv;
+    if(many&&prevMB)wrap.style.marginBottom=prevMB;
+    const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
     let h='<thead>';
     if(many){
       /* 가로 세그먼트 — 첫 블록(합계)은 진한 헤더, 하위 블록은 연한 헤더 */
@@ -6325,7 +6365,7 @@ function renderRaw(){
       const label=(showY?String(y).slice(2)+'/':'')+`${d.getMonth()+1}/${d.getDate()}`;
       const cls=rest?' hol':'';
       h+=`<tr><td class="head mono${cls}" style="min-width:72px" title="${dFull(d)}${hol?' · '+hol:''}">${label}</td>`
-        +`<td class="head${cls}" style="min-width:40px">${WD[wd]}</td>`
+        +`<td class="head${cls}" style="min-width:40px${fzv?';--fz1:'+fzv:''}">${WD[wd]}</td>`
         +blocks.map((bk,bi)=>{const g=bDay[bi].get(di);
           const b2=g?aggFacts(g):null;
           return cols.map((k,i)=>`<td class="mono${bi>0&&i===0?' hsep':seps.has(i)?' gsep':''}${cls}">`
@@ -6362,33 +6402,72 @@ function renderRaw(){
 /* 세로 블록끼리 열 폭을 똑같이 맞춘다 —
    글자 수로 어림한 최소 폭만으로는 실제 픽셀이 블록마다 조금씩 달라져
    위쪽 버튼으로 가로로 옮길 때 아래 블록이 미묘하게 어긋났다. 그려진 뒤 실측해서 맞춘다. */
+/* ⚡ v78 — **모두 먼저 재고, 그다음에 한꺼번에 쓴다.**
+   예전에는 재기(getBoundingClientRect)와 쓰기(min-width · --fz1)를 번갈아 해서
+   2만 8천 칸짜리 표 전체의 레이아웃을 열 번 넘게 새로 계산했다 (열 때마다 1~3초).
+   이제는 재는 레이아웃 한 번 + (폭을 고쳤을 때만) 그리기 직전 한 번뿐이다.
+   값 열의 결과 폭은 예전과 똑같다 (border-box 라 min-width = 잰 폭의 올림값이 곧 열 폭).
+   일자 · 요일 두 열은 블록끼리 이미 같으면 그대로 둔다 (예전 결과와 1px 안쪽 차이, 두 열 합은 같다).
+   돌려주는 값 = 블록마다 --fz1(첫 열 폭) · null 이면 나중에 잰다. */
 function equalizeRawCols(parts){
-  if(!parts||parts.length<2)return;
+  if(!parts||!parts.length)return [];
+  /* ── 읽기 ── */
+  const firstRow=pt=>pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
+  const lead=parts.map(pt=>{const tr=firstRow(pt);
+    return tr&&tr.cells.length>=2?[tr.cells[0].getBoundingClientRect().width,tr.cells[1].getBoundingClientRect().width]:null;});
+  const fz=lead.map(L=>L?L[0]:null);             /* 맞추지 않을 때는 잰 폭 그대로 */
+  if(parts.length<2)return fz;
   const hrs=parts.map(pt=>{const r=pt.tbl.tHead.rows;return r[1]||r[0];}).filter(Boolean);
-  if(hrs.length!==parts.length)return;
+  if(hrs.length!==parts.length)return fz;
   const n=Math.min(...hrs.map(r=>r.cells.length));
-  const mx=[];
-  for(let i=0;i<n;i++)mx[i]=Math.max(...hrs.map(r=>r.cells[i].getBoundingClientRect().width));
-  hrs.forEach(r=>{for(let i=0;i<n;i++)r.cells[i].style.minWidth=Math.ceil(mx[i])+'px';});
-  /* 왼쪽에 고정되는 일자 · 요일 두 열도 */
-  const lead=parts.map(pt=>{const tr=pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
-    return tr?[...tr.cells].slice(0,2):null;}).filter(Boolean);
-  if(lead.length===parts.length)[0,1].forEach(i=>{
-    const w=Math.ceil(Math.max(...lead.map(L=>L[i].getBoundingClientRect().width)));
-    lead.forEach(L=>{L[i].style.minWidth=w+'px';});
-    parts.forEach(pt=>{[...pt.tbl.tBodies[0].rows].forEach(tr=>{
-      if(tr.cells[i])tr.cells[i].style.minWidth=w+'px';});});});
+  const ws=hrs.map(r=>{const a=[];for(let i=0;i<n;i++)a.push(r.cells[i].getBoundingClientRect().width);return a;});
+  /* ── 쓰기 ──
+     열마다 가장 넓은 값(올림)으로 맞춘다 (예전과 같은 규칙 · 같은 결과 폭).
+     이미 모든 블록이 그 폭이면 쓰지 않는다 — 한 칸이라도 폭을 쓰면 4만 칸 표 전체를 다시 배치한다 */
+  const same=col=>col.every(w=>w===col[0]);
+  for(let i=0;i<n;i++){const col=ws.map(a=>a[i]);
+    const t=Math.ceil(Math.max(...col));if(col.every(w=>w===t))continue;
+    hrs.forEach(r=>{r.cells[i].style.minWidth=t+'px';});}
+  /* 왼쪽에 고정되는 일자 · 요일 두 열 — 블록끼리 이미 같으면 그대로 둔다
+     (예전에는 여기서도 올림 폭을 한 열씩 재고 써서 레이아웃을 두 번 더 돌렸다) */
+  if(!lead.every(Boolean))return fz;
+  if(same(lead.map(L=>L[0]))&&same(lead.map(L=>L[1])))return fz;
+  const lw=[0,1].map(i=>Math.ceil(Math.max(...lead.map(L=>L[i]))));
+  parts.forEach(pt=>{[...pt.tbl.tBodies[0].rows].forEach(tr=>{
+    if(tr.cells[0])tr.cells[0].style.minWidth=lw[0]+'px';
+    if(tr.cells[1])tr.cells[1].style.minWidth=lw[1]+'px';});});
+  /* 첫 열 폭 = 방금 맞춘 값. 두 열 합이 '일자' 머리글(두 칸 합친 칸)의 최소 폭보다 좁으면
+     표가 남는 폭을 나눠 늘리므로 그때는 null — 그리기 직전에 다시 잰다 (mountHNav) */
+  const span=parseFloat(parts[0].tbl.tHead.rows[0].cells[0].style.minWidth)||0;
+  return parts.map(()=>lw[0]+lw[1]>=span?lw[0]:null);
 }
+/* 일자별 효율 미니맵의 창 크기 변경 처리 — 공용 목록 (v78).
+   다시 그리면 옛 미니맵(nav)은 화면에서 떨어져 나가므로, 넣을 때 · 돌 때 스스로 빠진다.
+   ⚠ 부팅 중에 불리므로 최상위 let/const 대신 window 에 둔다 */
+function hnavOnResize(nav,fn){
+  if(!window.__hnavList){window.__hnavList=[];
+    let raf=0;
+    addEventListener('resize',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
+      window.__hnavList=window.__hnavList.filter(x=>x.nav.isConnected);
+      window.__hnavList.forEach(x=>{try{x.fn();}catch(e){}});});});}
+  window.__hnavList=window.__hnavList.filter(x=>x.nav.isConnected);
+  window.__hnavList.push({nav,fn});}
 function mountHNav(parts,blocks,hKeys,hDim){
-  equalizeRawCols(parts);
+  const fz0=equalizeRawCols(parts);
   const first=parts[0];
   const {card,tbl}=first;
   const wrap=first.wrap;
-  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 (모든 블록) */
-  const setFz=()=>parts.forEach(pt=>{const r=pt.tbl.querySelector('tbody tr');
-    if(r&&r.children[0])pt.wrap.style.setProperty('--fz1',r.children[0].getBoundingClientRect().width+'px');});
+  /* 좌우로 길어지므로 일자 · 요일 두 열은 왼쪽에 붙여 둔다 (모든 블록).
+     --fz1 은 위에서 잰 값으로 바로 쓴다 — 다시 재면 레이아웃을 또 강제한다.
+     값은 둘째 열 칸에만 쓴다 — 표 상자(.tbl-wrap)에 쓰면 그 아래 4만 칸이 전부 스타일 재계산된다 (v78) */
+  const putFz=ws=>parts.forEach((pt,i)=>{const w=ws[i];if(!(w>0))return;   /* 숨어 있어 0 으로 잰 값은 쓰지 않는다 */
+    const v=w+'px';window.__rawFz1=v;if(pt.wrap.__fz1===v)return;pt.wrap.__fz1=v;
+    const tb=pt.tbl.tBodies[0];if(tb)[...tb.rows].forEach(tr=>{const c=tr.cells[1];if(c)c.style.setProperty('--fz1',v);});});
+  /* 나중에(글꼴 · 창 크기) 폭이 바뀌었을 때 — 전부 재고 나서 바뀐 것만 쓴다 */
+  const setFz=()=>putFz(parts.map(pt=>{const r=pt.tbl.tBodies[0]&&pt.tbl.tBodies[0].rows[0];
+    return r&&r.cells[0]?r.cells[0].getBoundingClientRect().width:null;}));
   parts.forEach(pt=>pt.wrap.classList.add('hfrozen'));
-  setFz();setTimeout(setFz,0);addEventListener('resize',setFz);
+  putFz(fz0);requestAnimationFrame(setFz);setTimeout(setFz,0);
   /* 어느 블록을 밀든 나머지도 같은 위치로 따라온다.
      ⚠ 버튼으로 부드럽게 옮기는 동안에는 서로 따라가기를 잠시 멈춘다 —
         안 그러면 첫 블록이 움직이자마자 그 위치를 나머지에 복사해 버려서
@@ -6459,8 +6538,10 @@ function mountHNav(parts,blocks,hKeys,hDim){
   chips.forEach((c,i)=>c.onclick=()=>goTo(i));
   nav.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>goTo(cur()+ +b.dataset.step));
   wrap.addEventListener('scroll',paint,{passive:true});
-  addEventListener('resize',paint);
-  paint();setTimeout(paint,0);
+  /* 창 크기 변경 — 창 리스너는 공용 하나만 (v78). 예전에는 그릴 때마다 두 개씩 쌓였다 */
+  hnavOnResize(nav,()=>{setFz();paint();});
+  /* 첫 칠하기는 그리기 직전에 — 여기서 바로 재면 방금 쓴 폭 때문에 레이아웃을 한 번 더 강제한다 */
+  requestAnimationFrame(paint);setTimeout(paint,0);
   /* 표마다 좌우 넘김 단추 (v77) — 누르면 위 세그먼트 칩과 같이 **블록 단위로** 모든 표가 함께 넘어간다.
      세로 스크롤이 있는 표라 가로 스크롤바만 감춘다(keepY) */
   parts.forEach(pt=>{try{const c=pt.wrap.closest('.card');
@@ -10702,7 +10783,9 @@ $('addLine').onclick=()=>{
 
 $('lineHistBtn').onclick=openLineHistory;
 $('lineColCfgBtn').onclick=openLineColCfg;
-addEventListener('resize',()=>renderDaily());
+/* 창 크기를 끄는 동안 매번 다시 그리지 않고, 멈춘 뒤 한 번만 (v78) */
+addEventListener('resize',()=>{clearTimeout(window.__dailyRzT);
+  window.__dailyRzT=setTimeout(()=>renderDaily(),150);});
 function renderIssueAlert(){
   const box=$('issueAlert');if(!box)return;
   if(ISSUE_OVERFLOW>0){box.classList.remove('hidden');
@@ -10738,34 +10821,48 @@ function dashEmpty(){
 
   return on;
 }
+/* 돌려주는 값 — 효율 탭(간트 · 히트맵 · 소재 · 버블 · 트리맵)을 여기서 이미 그렸으면 true.
+   바로 뒤에서 같은 그래프를 또 그리지 않도록 부르는 쪽이 본다 (v78) */
 function renderAll(){
   renderCampBar();
-  if(dashEmpty())return;
+  if(dashEmpty())return false;
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
+  let drew=false;
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
-    equalizeDuo();renderTreemap();}
+    equalizeDuo();renderTreemap();drew=true;}
   else PERF_STALE=true;                     /* 숨어 있는 동안 바뀐 건 다시 열 때 그린다 */
-  if(!$('sub-table').classList.contains('hidden'))renderRaw();}
+  if(rawShown())renderRaw();
+  return drew;}
+/* 일자별 상세 효율이 지금 화면에 있는가 — 숨어 있으면 그리지 않는다 (v78).
+   (하위 메뉴로 열 때 · 대시보드로 돌아올 때 switchTab 이 다시 그린다. 엑셀 리포트는 스스로 그린다) */
+function rawShown(){
+  const t=$('sub-table'),d=$('tab-dash');
+  return !!t&&!t.classList.contains('hidden')&&!(d&&d.classList.contains('hidden'));}
 /* 효율 탭이 숨어 있는 사이에 데이터가 바뀌었는지 */
 let PERF_STALE=false;
 /* 데이터가 바뀌면 어느 경로로 들어와도 빠지는 영역 없이 전부 다시 그린다.
    (히트맵·버블·트리맵이 갱신되지 않아 "일자별 토글을 눌러야 바뀌던" 문제) */
 function renderEverything(){
   try{buildFilters();buildSelects();}catch(e){}
-  renderAll();
+  const drew=renderAll();
   try{renderSheet();}catch(e){}
   try{renderIssues();renderIssueAlert();}catch(e){}
   try{renderKpiTable();}catch(e){}
-  try{renderRaw();}catch(e){}
-  try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
-  try{equalizeDuo();renderTreemap();}catch(e){}
+  /* 일자별 상세 효율은 renderAll 이 보일 때만 그린다 — 숨은 표(4만 칸)를 매번 다시 그리지 않는다 (v78) */
+  /* 효율 탭은 renderAll 이 이미 그렸으면 건너뛴다. 숨어 있을 때는 예전처럼 그린다 (인쇄가 숨은 효율 탭도 옮긴다) */
+  if(!drew){
+    try{renderCreatives();renderGantt();renderHeat();renderBubble();}catch(e){}
+    try{equalizeDuo();renderTreemap();}catch(e){}}
   /* TV 메뉴 · 운영 매체에 따른 탭 (v71) */
   try{if(typeof renderTV==='function')renderTV();}catch(e){}
   try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   PERF_STALE=false;
 }
-buildFilters();buildSelects();renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();renderRaw();renderCreatives();renderGantt();renderHeat();renderBubble();
+/* 첫 그림 — renderAll 이 (보이는) 효율 탭 · 일자별 효율을 이미 그렸으면 다시 그리지 않는다 (v78) */
+(function firstPaint(){
+  buildFilters();buildSelects();const drew=renderAll();renderSheet();renderIssues();renderKpiTable();renderIssueAlert();
+  if(!drew){renderCreatives();renderGantt();renderHeat();renderBubble();}})();
 setTimeout(()=>{equalizeDuo();renderTreemap();},0);
 /* 예상 효율 히스토리는 실제로 저장할 때만 쌓인다 (예시 값 없음) */
 /* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
@@ -12913,13 +13010,24 @@ function attachInfo(tools,html,title){
     pop.style.setProperty('--arrx',Math.max(6,Math.min(pw-17,ax)).toFixed(1)+'px');
     w.classList.toggle('up',up);
     pop.style.visibility='';};
-  const open=v=>{w.classList.toggle('open',v);if(v)place();};
+  /* 열린 설명 상자만 창 스크롤 · 크기 변경을 따라간다 — 창 리스너는 전체에 한 쌍만 (v78).
+     예전에는 그릴 때마다 아이콘마다 창 리스너를 새로 걸어 쌓였고, 떨어져 나간 화면까지 붙잡고 있었다. */
+  w.__place=place;
+  const open=v=>{w.classList.toggle('open',v);
+    const S=infoOpenSet();if(v){S.add(w);place();}else S.delete(w);};
   w.addEventListener('mouseenter',()=>open(true));
   w.addEventListener('mouseleave',()=>open(false));
   w.querySelector('.infoi').onclick=e=>{e.stopPropagation();open(!w.classList.contains('open'));};
-  addEventListener('scroll',()=>{if(w.classList.contains('open'))place();},true);
-  addEventListener('resize',()=>{if(w.classList.contains('open'))place();});
 }
+/* 열린 설명 상자 목록 + 공용 창 리스너. 닫혔거나 화면에서 떨어진 것은 돌 때 스스로 빠진다.
+   ⚠ 부팅 중(p5 서머리)에 먼저 불리므로 최상위 let/const 대신 window 에 둔다 */
+function infoOpenSet(){
+  if(!window.__infoOpen){window.__infoOpen=new Set();
+    const run=()=>{const S=window.__infoOpen;
+      S.forEach(w=>{if(!w.isConnected||!w.classList.contains('open')){S.delete(w);return;}
+        try{w.__place();}catch(e){}});};
+    addEventListener('scroll',run,true);addEventListener('resize',run);}
+  return window.__infoOpen;}
 document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open')
   .forEach(w=>w.classList.remove('open')));
 
@@ -13937,7 +14045,7 @@ function applyTheme(k,quiet){
   try{refreshBgDots();}catch(e){}
   try{paintDarkBtn();}catch(e){}
   if(quiet)return;
-  try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
+  try{if(!renderAll()){renderCreatives();renderGantt();}renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
 }
 /* ---- 다크 보기 토글 (v57) ----
@@ -13959,7 +14067,7 @@ function applyDarkView(){
   syncThemeColors();
   try{refreshBgDots();}catch(e){}
   /* 그래프 색은 자바스크립트 값이라 다시 그려야 바뀐다 (v53 에서 겪은 것과 같은 이유) */
-  try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+  try{if(!renderAll()){renderCreatives&&renderCreatives();renderGantt&&renderGantt();}
       renderKpiTable&&renderKpiTable();}catch(e){}
   paintDarkBtn();
 }
@@ -13969,7 +14077,7 @@ function toggleDarkView(){
   if(THEME==='dark'&&!DARK_VIEW){
     document.documentElement.setAttribute('data-theme','mono');
     syncThemeColors();try{refreshBgDots();}catch(e){}
-    try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+    try{if(!renderAll()){renderCreatives&&renderCreatives();renderGantt&&renderGantt();}
         renderKpiTable&&renderKpiTable();}catch(e){}
     paintDarkBtn();return;}
   applyDarkView();
@@ -14224,10 +14332,11 @@ function openAdvEditor(){
        그래프 색은 자바스크립트 값(ACC · KPI_RING …)이라 CSS 변수만 바꿔서는 안 바뀐다 —
        기본(남색)이 아닌 테마로 시작할 때는 색을 반영해 한 번 다시 그린다. */
     if(THEME){try{
-      renderAll();
+      /* renderAll 이 (보이는) 효율 탭을 이미 그렸으면 겹쳐 그리지 않는다 (v78) */
+      const drew=renderAll();
       renderKpiTable&&renderKpiTable();
-      renderCreatives&&renderCreatives();renderGantt&&renderGantt();
-      renderHeat&&renderHeat();renderBubble&&renderBubble();
+      if(!drew){renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+        renderHeat&&renderHeat();renderBubble&&renderBubble();}
       setTimeout(()=>{try{equalizeDuo&&equalizeDuo();renderTreemap&&renderTreemap();}catch(e){}},0);
     }catch(e){}}
     renderBrand();};
@@ -16800,15 +16909,24 @@ function i18nRestore(root){
 /* 그리는 순간 옮기기 — innerHTML · insertAdjacentHTML · textContent · 속성 */
 (function i18nHooks(){
   try{
+    /* v78 — 여기서 바로 옮긴 부분을 관찰자가 한 번 더 훑지 않게 한다 (영어 화면 다시 그리기가 두 배로 걸렸다).
+       ① 넣기 전에 쌓여 있던 기록은 관찰자가 하던 그대로 먼저 처리하고
+       ② 넣고 옮긴 뒤 생긴 기록 중 **이 요소에 붙은 것(방금 옮긴 자식들)** 만 버린다 */
     const ih=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
     Object.defineProperty(Element.prototype,'innerHTML',{configurable:true,enumerable:ih.enumerable,
       get(){return ih.get.call(this);},
-      set(v){ih.set.call(this,v);if(LANG==='en'&&!I18N_BUSY&&I18N_HANGUL.test(v||''))trNode(this);}});
+      set(v){
+        const go=LANG==='en'&&!I18N_BUSY&&I18N_HANGUL.test(v||'');
+        if(go)i18nFlush();
+        ih.set.call(this,v);
+        if(go){trNode(this);i18nDrop(this);}}});
     const iah=Element.prototype.insertAdjacentHTML;
     Element.prototype.insertAdjacentHTML=function(pos,html){
+      const go=LANG==='en'&&I18N_HANGUL.test(html||'');
+      const p=go?((pos==='beforebegin'||pos==='afterend')?this.parentNode:this):null;
+      if(p)i18nFlush();
       iah.call(this,pos,html);
-      if(LANG==='en'&&I18N_HANGUL.test(html||'')){
-        const p=(pos==='beforebegin'||pos==='afterend')?this.parentNode:this;if(p)trNode(p);}};
+      if(p){trNode(p);i18nDrop(p);}};
     const tc=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
     Object.defineProperty(Node.prototype,'textContent',{configurable:true,enumerable:tc.enumerable,
       get(){return tc.get.call(this);},
@@ -16845,15 +16963,27 @@ function i18nRestore(root){
   try{window.alert=wrap(window.alert);window.confirm=wrap(window.confirm);window.prompt=wrap(window.prompt);}catch(e){}
 })();
 /* 나머지 경로(appendChild · createTextNode …)는 관찰자가 뒤따라 옮긴다 */
-const I18N_MO=new MutationObserver(recs=>{
+function i18nApply(recs){
   if(LANG!=='en')return;
   for(const r of recs){
     if(r.type==='childList')r.addedNodes.forEach(n=>trNode(n));
     else if(r.type==='characterData')trTextNode(r.target);
-    else if(r.type==='attributes'&&!I18N_BUSY)trAttrs(r.target);}});
+    else if(r.type==='attributes'&&!I18N_BUSY)trAttrs(r.target);}}
+const I18N_MO=new MutationObserver(i18nApply);
+/* 관찰자에 쌓인 기록 — 함수로 감싼다: 훅(위)이 이 파일의 const 보다 먼저 돌 수 있다 (TDZ) */
+function i18nTake(){try{return window.__i18nOn?I18N_MO.takeRecords():[];}catch(e){return [];}}
+function i18nFlush(){const recs=i18nTake();if(recs.length)i18nApply(recs);}
+function i18nDrop(target){
+  const recs=i18nTake();if(!recs.length)return;
+  const rest=recs.filter(r=>r.target!==target);
+  if(rest.length)i18nApply(rest);}
+/* 한국어 화면에서는 아예 관찰하지 않는다 (v78) — 예전에는 모든 변경을 기록만 쌓고 버렸다 */
 function i18nWatch(){
-  try{I18N_MO.observe(document.body,{subtree:true,childList:true,characterData:true,
-    attributes:true,attributeFilter:I18N_ATTRS});}catch(e){}}
+  try{
+    if(LANG==='en'){if(!window.__i18nOn){I18N_MO.observe(document.body,{subtree:true,childList:true,characterData:true,
+      attributes:true,attributeFilter:I18N_ATTRS});window.__i18nOn=true;}}
+    else if(window.__i18nOn){I18N_MO.disconnect();window.__i18nOn=false;}
+  }catch(e){}}
 /* ---------- 언어 바꾸기 ---------- */
 function setLang(v,opt){
   v=v==='en'?'en':'ko';
@@ -16865,6 +16995,8 @@ function setLang(v,opt){
   ['langSel','gateLang'].forEach(id=>{const e=document.getElementById(id);if(e&&e.value!==v)e.value=v;});
   try{if(typeof paintLangBtn==='function')paintLangBtn();}catch(e){}
   if(!changed&&!(opt&&opt.force))return;
+  /* 영어면 관찰을 켜고, 한국어면 끈다 (v78) */
+  if(document.body)i18nWatch();
   if(v==='ko'){restoreBlocks(document.body);i18nRestore(document.body);}
   /* 코드 안에서 만든 문장(L() · 요일 · 달력)은 다시 그려야 바뀐다 */
   try{if(typeof renderEverything==='function')renderEverything();}catch(e){}

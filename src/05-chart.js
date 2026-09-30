@@ -815,7 +815,9 @@ function enableHPager(card,wrap,o){
     addEventListener('scroll',q,{passive:true});addEventListener('resize',q);}
   /* 같은 상자에 다시 걸면 예전 그리기 함수는 목록에서 빠진다 (다시 그릴 때마다 쌓이지 않게) */
   if(card.__hpPaint){const i=window.__hpList.indexOf(card.__hpPaint);if(i>=0)window.__hpList.splice(i,1);}
-  card.__hpPaint=paint;window.__hpList.push(paint);
+  /* 다시 그려 떨어져 나간 상자도 여기서 걷어 낸다 — 스크롤이 없으면 옛 화면을 계속 붙잡고 있었다 (v78) */
+  window.__hpList=window.__hpList.filter(f=>!f.__card||f.__card.isConnected);
+  paint.__card=card;card.__hpPaint=paint;window.__hpList.push(paint);
   setTimeout(paint,0);setTimeout(paint,360);}
 /* 카드 줄(주요 지표 · KPI 달성 현황) — 스크롤 상자를 한 겹 감싸 단추를 얹는다.
    감싼 상자에도 같은 data-sect 를 줘서 영역 관리(순서 · 숨기기)가 그대로 따라온다 */

@@ -222,13 +222,24 @@ function attachInfo(tools,html,title){
     pop.style.setProperty('--arrx',Math.max(6,Math.min(pw-17,ax)).toFixed(1)+'px');
     w.classList.toggle('up',up);
     pop.style.visibility='';};
-  const open=v=>{w.classList.toggle('open',v);if(v)place();};
+  /* 열린 설명 상자만 창 스크롤 · 크기 변경을 따라간다 — 창 리스너는 전체에 한 쌍만 (v78).
+     예전에는 그릴 때마다 아이콘마다 창 리스너를 새로 걸어 쌓였고, 떨어져 나간 화면까지 붙잡고 있었다. */
+  w.__place=place;
+  const open=v=>{w.classList.toggle('open',v);
+    const S=infoOpenSet();if(v){S.add(w);place();}else S.delete(w);};
   w.addEventListener('mouseenter',()=>open(true));
   w.addEventListener('mouseleave',()=>open(false));
   w.querySelector('.infoi').onclick=e=>{e.stopPropagation();open(!w.classList.contains('open'));};
-  addEventListener('scroll',()=>{if(w.classList.contains('open'))place();},true);
-  addEventListener('resize',()=>{if(w.classList.contains('open'))place();});
 }
+/* 열린 설명 상자 목록 + 공용 창 리스너. 닫혔거나 화면에서 떨어진 것은 돌 때 스스로 빠진다.
+   ⚠ 부팅 중(p5 서머리)에 먼저 불리므로 최상위 let/const 대신 window 에 둔다 */
+function infoOpenSet(){
+  if(!window.__infoOpen){window.__infoOpen=new Set();
+    const run=()=>{const S=window.__infoOpen;
+      S.forEach(w=>{if(!w.isConnected||!w.classList.contains('open')){S.delete(w);return;}
+        try{w.__place();}catch(e){}});};
+    addEventListener('scroll',run,true);addEventListener('resize',run);}
+  return window.__infoOpen;}
 document.addEventListener('click',()=>document.querySelectorAll('.infowrap.open')
   .forEach(w=>w.classList.remove('open')));
 

@@ -704,7 +704,7 @@ function applyTheme(k,quiet){
   try{refreshBgDots();}catch(e){}
   try{paintDarkBtn();}catch(e){}
   if(quiet)return;
-  try{renderAll();renderCreatives();renderGantt();renderKpiTable&&renderKpiTable();}catch(e){}
+  try{if(!renderAll()){renderCreatives();renderGantt();}renderKpiTable&&renderKpiTable();}catch(e){}
   try{saveLocal();markDirty();}catch(e){}
 }
 /* ---- 다크 보기 토글 (v57) ----
@@ -726,7 +726,7 @@ function applyDarkView(){
   syncThemeColors();
   try{refreshBgDots();}catch(e){}
   /* 그래프 색은 자바스크립트 값이라 다시 그려야 바뀐다 (v53 에서 겪은 것과 같은 이유) */
-  try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+  try{if(!renderAll()){renderCreatives&&renderCreatives();renderGantt&&renderGantt();}
       renderKpiTable&&renderKpiTable();}catch(e){}
   paintDarkBtn();
 }
@@ -736,7 +736,7 @@ function toggleDarkView(){
   if(THEME==='dark'&&!DARK_VIEW){
     document.documentElement.setAttribute('data-theme','mono');
     syncThemeColors();try{refreshBgDots();}catch(e){}
-    try{renderAll();renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+    try{if(!renderAll()){renderCreatives&&renderCreatives();renderGantt&&renderGantt();}
         renderKpiTable&&renderKpiTable();}catch(e){}
     paintDarkBtn();return;}
   applyDarkView();
@@ -991,10 +991,11 @@ function openAdvEditor(){
        그래프 색은 자바스크립트 값(ACC · KPI_RING …)이라 CSS 변수만 바꿔서는 안 바뀐다 —
        기본(남색)이 아닌 테마로 시작할 때는 색을 반영해 한 번 다시 그린다. */
     if(THEME){try{
-      renderAll();
+      /* renderAll 이 (보이는) 효율 탭을 이미 그렸으면 겹쳐 그리지 않는다 (v78) */
+      const drew=renderAll();
       renderKpiTable&&renderKpiTable();
-      renderCreatives&&renderCreatives();renderGantt&&renderGantt();
-      renderHeat&&renderHeat();renderBubble&&renderBubble();
+      if(!drew){renderCreatives&&renderCreatives();renderGantt&&renderGantt();
+        renderHeat&&renderHeat();renderBubble&&renderBubble();}
       setTimeout(()=>{try{equalizeDuo&&equalizeDuo();renderTreemap&&renderTreemap();}catch(e){}},0);
     }catch(e){}}
     renderBrand();};

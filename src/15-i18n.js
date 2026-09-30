@@ -240,15 +240,24 @@ function i18nRestore(root){
 /* 그리는 순간 옮기기 — innerHTML · insertAdjacentHTML · textContent · 속성 */
 (function i18nHooks(){
   try{
+    /* v78 — 여기서 바로 옮긴 부분을 관찰자가 한 번 더 훑지 않게 한다 (영어 화면 다시 그리기가 두 배로 걸렸다).
+       ① 넣기 전에 쌓여 있던 기록은 관찰자가 하던 그대로 먼저 처리하고
+       ② 넣고 옮긴 뒤 생긴 기록 중 **이 요소에 붙은 것(방금 옮긴 자식들)** 만 버린다 */
     const ih=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
     Object.defineProperty(Element.prototype,'innerHTML',{configurable:true,enumerable:ih.enumerable,
       get(){return ih.get.call(this);},
-      set(v){ih.set.call(this,v);if(LANG==='en'&&!I18N_BUSY&&I18N_HANGUL.test(v||''))trNode(this);}});
+      set(v){
+        const go=LANG==='en'&&!I18N_BUSY&&I18N_HANGUL.test(v||'');
+        if(go)i18nFlush();
+        ih.set.call(this,v);
+        if(go){trNode(this);i18nDrop(this);}}});
     const iah=Element.prototype.insertAdjacentHTML;
     Element.prototype.insertAdjacentHTML=function(pos,html){
+      const go=LANG==='en'&&I18N_HANGUL.test(html||'');
+      const p=go?((pos==='beforebegin'||pos==='afterend')?this.parentNode:this):null;
+      if(p)i18nFlush();
       iah.call(this,pos,html);
-      if(LANG==='en'&&I18N_HANGUL.test(html||'')){
-        const p=(pos==='beforebegin'||pos==='afterend')?this.parentNode:this;if(p)trNode(p);}};
+      if(p){trNode(p);i18nDrop(p);}};
     const tc=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
     Object.defineProperty(Node.prototype,'textContent',{configurable:true,enumerable:tc.enumerable,
       get(){return tc.get.call(this);},
@@ -285,15 +294,27 @@ function i18nRestore(root){
   try{window.alert=wrap(window.alert);window.confirm=wrap(window.confirm);window.prompt=wrap(window.prompt);}catch(e){}
 })();
 /* 나머지 경로(appendChild · createTextNode …)는 관찰자가 뒤따라 옮긴다 */
-const I18N_MO=new MutationObserver(recs=>{
+function i18nApply(recs){
   if(LANG!=='en')return;
   for(const r of recs){
     if(r.type==='childList')r.addedNodes.forEach(n=>trNode(n));
     else if(r.type==='characterData')trTextNode(r.target);
-    else if(r.type==='attributes'&&!I18N_BUSY)trAttrs(r.target);}});
+    else if(r.type==='attributes'&&!I18N_BUSY)trAttrs(r.target);}}
+const I18N_MO=new MutationObserver(i18nApply);
+/* 관찰자에 쌓인 기록 — 함수로 감싼다: 훅(위)이 이 파일의 const 보다 먼저 돌 수 있다 (TDZ) */
+function i18nTake(){try{return window.__i18nOn?I18N_MO.takeRecords():[];}catch(e){return [];}}
+function i18nFlush(){const recs=i18nTake();if(recs.length)i18nApply(recs);}
+function i18nDrop(target){
+  const recs=i18nTake();if(!recs.length)return;
+  const rest=recs.filter(r=>r.target!==target);
+  if(rest.length)i18nApply(rest);}
+/* 한국어 화면에서는 아예 관찰하지 않는다 (v78) — 예전에는 모든 변경을 기록만 쌓고 버렸다 */
 function i18nWatch(){
-  try{I18N_MO.observe(document.body,{subtree:true,childList:true,characterData:true,
-    attributes:true,attributeFilter:I18N_ATTRS});}catch(e){}}
+  try{
+    if(LANG==='en'){if(!window.__i18nOn){I18N_MO.observe(document.body,{subtree:true,childList:true,characterData:true,
+      attributes:true,attributeFilter:I18N_ATTRS});window.__i18nOn=true;}}
+    else if(window.__i18nOn){I18N_MO.disconnect();window.__i18nOn=false;}
+  }catch(e){}}
 /* ---------- 언어 바꾸기 ---------- */
 function setLang(v,opt){
   v=v==='en'?'en':'ko';
@@ -305,6 +326,8 @@ function setLang(v,opt){
   ['langSel','gateLang'].forEach(id=>{const e=document.getElementById(id);if(e&&e.value!==v)e.value=v;});
   try{if(typeof paintLangBtn==='function')paintLangBtn();}catch(e){}
   if(!changed&&!(opt&&opt.force))return;
+  /* 영어면 관찰을 켜고, 한국어면 끈다 (v78) */
+  if(document.body)i18nWatch();
   if(v==='ko'){restoreBlocks(document.body);i18nRestore(document.body);}
   /* 코드 안에서 만든 문장(L() · 요일 · 달력)은 다시 그려야 바뀐다 */
   try{if(typeof renderEverything==='function')renderEverything();}catch(e){}

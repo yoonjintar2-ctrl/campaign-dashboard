@@ -94,7 +94,10 @@ if(!window.__fzWired){window.__fzWired=1;
     window.__fzT=setTimeout(refreezeAll,160);});}
 function freezeLeadCols(tbl,leadN){
   if(!tbl||!tbl.tHead||!tbl.tHead.rows[0]||!leadN)return 0;
-  if(!window.__fzList.some(x=>x.t===tbl))window.__fzList.push({t:tbl,n:leadN});
+  /* 다시 그려 떨어져 나간 표는 넣을 때 걷어 낸다 (v78) — 창 크기를 바꾸기 전까지 옛 표를 계속 붙잡고 있었다 */
+  if(!window.__fzList.some(x=>x.t===tbl)){
+    window.__fzList=window.__fzList.filter(x=>x.t&&x.t.isConnected);
+    window.__fzList.push({t:tbl,n:leadN});}
   else window.__fzList.find(x=>x.t===tbl).n=leadN;
   tbl.querySelectorAll('.lfz').forEach(c=>{c.classList.remove('lfz','lfze');c.style.left='';});
   const ths=[...tbl.tHead.rows[0].cells].slice(0,leadN);
@@ -228,7 +231,11 @@ function mountFloatHead(tbl){
     clone.style.minWidth=clone.style.width;
     clone.style.maxWidth=clone.style.width;
     inner.scrollLeft=wrap.scrollLeft;};
-  wrap.addEventListener('scroll',()=>{inner.scrollLeft=wrap.scrollLeft;});
+  /* 스크롤 리스너는 상자마다 한 번만 (v78) — 미디어믹스처럼 상자가 그대로인 표는 그릴 때마다
+     리스너가 하나씩 쌓이고, 그 안에 붙잡힌 옛 복사본 머리글이 메모리에 계속 남았다 */
+  wrap.__fhInner=inner;
+  if(!wrap.__fhScroll){wrap.__fhScroll=1;
+    wrap.addEventListener('scroll',()=>{const i=wrap.__fhInner;if(i)i.scrollLeft=wrap.scrollLeft;});}
   if(tbl.__fhPlace){const i=window.__fhList.indexOf(tbl.__fhPlace);if(i>=0)window.__fhList.splice(i,1);}
   tbl.__fhPlace=place;bar.__fhPlace=place;window.__fhList.push(place);
   syncR2Top(tbl);
@@ -1142,15 +1149,21 @@ function wirePaceTip(){
         bar.classList.add('hot');showTip(e.clientX,e.clientY,mine+all);});
       seg.addEventListener('mouseleave',e=>{e.stopPropagation();});});});
 }
-/* 물결은 지표마다 따로 돌지 않고 #paceBox 의 --ambt 하나로 전부 같이 움직인다.
+/* 물결은 지표마다 따로 돌지 않고 --ambt 하나(같은 값)로 전부 같이 움직인다.
    0 → 1 → 0 으로 부드럽게 오가며 한 바퀴가 13초. */
 let AMB_RAF=null;
+/* 움직임 줄이기(접근성) 설정 — 물결 · 스파크라인 빛 띠가 따른다 */
+function reduceMotion(){
+  try{return matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){return false;}}
 function startAmb(){
   if(AMB_RAF!==null)return;
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){
-    const b=$('paceBox');if(b){b.style.setProperty('--ambt','.5');b.style.setProperty('--ambp','.5');}AMB_RAF=-1;return;}
+  /* 움직임 줄이기면 돌리지 않는다 — 등록 속성의 초기값(.5)이 곧 고정 모습이다 */
+  if(reduceMotion()){AMB_RAF=-1;return;}
   const P=13000;
-  let lt='',lp='';
+  /* v78 — 초당 약 15번만 쓴다. 매 프레임(60번) 쓸 만큼 빨리 변하는 값이 아니다 */
+  const GAP=66;
+  let lt='',lp='',last=-1e9,segs=null;
+  const next=()=>{AMB_RAF=requestAnimationFrame(step);};
   const step=ts=>{
     const b=$('paceBox');
     if(!b||!b.querySelector('.mstack')){AMB_RAF=null;return;}
@@ -1158,8 +1171,11 @@ function startAmb(){
        ⚠ 이 고리가 페이지에서 가장 비싼 상시 작업이었다 — 매 프레임 #paceBox 에
        사용자 정의 속성 두 개를 써 넣으면 그 안의 구간 전부가 스타일 재계산 + 다시 칠하기 대상이 된다.
        다른 탭을 보고 있거나 이 영역이 화면 밖으로 밀려 있어도 쉬지 않고 돌았다.
-       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다. */
-    if(!ambVisible(b)){AMB_RAF=requestAnimationFrame(step);return;}
+       화면에 있을 때의 모습과 주기는 ts(문서 시각) 기준이라 조금도 달라지지 않는다.
+       v78 — 숨어 있는 동안에는 프레임마다 깨지 않고 0.3초마다 한 번만 살핀다 */
+    if(!ambVisible(b)){AMB_RAF=setTimeout(next,300);return;}
+    if(ts-last<GAP){next();return;}
+    last=ts;
     const t=(ts%P)/P;
     const vt=((1-Math.cos(t*2*Math.PI))/2).toFixed(4);
     /* 짧은 막대는 지나가는 물결이 눈에 띄지 않아 고정 색조만 계속 보였다.
@@ -1167,11 +1183,17 @@ function startAmb(){
     /* 고정 색조의 세기 — 0 에 더 오래 머물게 해서 기본 색이 보이는 시간을 늘린다 */
     const w=(1-Math.cos(t*2*Math.PI))/2;
     const vp=Math.pow(w,2.1).toFixed(4);
-    /* 값이 그대로면 쓰지 않는다 — 쓰는 순간 그 아래가 전부 다시 계산된다 */
-    if(vt!==lt){lt=vt;b.style.setProperty('--ambt',vt);}
-    if(vp!==lp){lp=vp;b.style.setProperty('--ambp',vp);}
-    AMB_RAF=requestAnimationFrame(step);};
-  AMB_RAF=requestAnimationFrame(step);
+    /* 값은 구간(<i>)마다 직접 쓴다 (v78 · 등록 속성이라 아래로 물려주지 않는다 — 01-head 의 @property).
+       다시 그려 구간이 바뀌었으면 값이 같아도 새 구간에 한 번 써 준다 */
+    const cur=b.querySelectorAll('.mstack>i');
+    const fresh=!segs||segs.length!==cur.length||segs[0]!==cur[0];
+    if(fresh)segs=cur;
+    /* 값이 그대로면 쓰지 않는다 */
+    if(fresh||vt!==lt){lt=vt;segs.forEach(s=>s.style.setProperty('--ambt',vt));}
+    if(fresh||vp!==lp){lp=vp;segs.forEach(s=>s.style.setProperty('--ambp',vp));}
+    /* 다음 쓰기까지는 프레임마다 깨지 않고 타이머로 쉰다 */
+    AMB_RAF=setTimeout(next,GAP-12);};
+  next();
 }
 /* 물결을 돌릴 만큼 #paceBox 가 실제로 보이는가 — 탭이 숨었거나 화면 밖이면 false.
    IntersectionObserver 로 상태만 받아 두고, 못 쓰는 환경에서는 늘 보이는 것으로 본다. */
@@ -1700,7 +1722,8 @@ function drawSpark(host,pill,ser,k){
   S('stop',{offset:'0%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
   const mid=S('stop',{offset:'50%','stop-color':'var(--acc-d)','stop-opacity':'1'},lg);
   S('stop',{offset:'100%','stop-color':'var(--acc-lt)','stop-opacity':'.22'},lg);
-  const an=S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'5.2s',
+  /* 움직임 줄이기 설정이면 빛 띠를 가운데에 세워 둔다 (v78 — SMIL 은 CSS 미디어 쿼리를 따르지 않는다) */
+  if(!reduceMotion())S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'5.2s',
     repeatCount:'indefinite',calcMode:'spline',keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid);
   S('path',{d:line,fill:'none',stroke:`url(#${lid})`,'stroke-width':2.2,
     'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'},svg);
