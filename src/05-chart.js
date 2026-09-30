@@ -448,12 +448,9 @@ function buildSumCell(){
   });
   /* 사전 계산으로 만들 수 없는 항목들 */
   SUM_CELL.budget=(a,e,x)=>[HA(x)?'–':won(e.budget)];
-  SUM_CELL.net=(a,e,x)=>[HA(x)?'–':won(e.netSum)];
   SUM_CELL.value=(a,e,x)=>[HA(x)?'–':won(e.value)];
   SUM_CELL.bonus=(a,e,x)=>[HA(x)?'–':won(e.bonusSum)];
   SUM_CELL.bonusRate=(a,e,x)=>[HA(x)?'–':pct(e.bonusSum/e.budget,1)];
-  SUM_CELL.feeA=(a,e,x)=>[HA(x)?'–':pct(e.feeA,1)];
-  SUM_CELL.feeR=(a,e,x)=>[HA(x)?'–':pct(e.feeR,1)];
   SUM_CELL.cost=a=>[won(a.cost)];
   SUM_CELL.spend_r=(a,e,x)=>[null,x?NaN:a.cost/e.budget];
   SUM_CELL.progress=()=>[pct(paceRatio(),1)];
@@ -566,8 +563,6 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       return String(av[i]).localeCompare(String(bv[i]),'ko');}
     return 0;});
   entries=applyOrder(entries,cfg);
-  const keys=entries.map(e=>e[0].split(SEP));
-  const {out,span}=pivotLayout(keys,rows);
   /* 예상 효율(라인)보다 행이 더 잘게 나뉜 경우:
      예상값은 라인 단위까지만 매칭해 구하고, 같은 라인 그룹에서는 첫 행에만 합쳐서 표시한다.
      (소재·월처럼 라인에 없는 차원으로 쪼개면 값이 흩어져 표시가 안 되기 때문) */
@@ -575,6 +570,16 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const finer=expIdx.length<dims.length;                 /* 라인보다 잘게 나뉘었는가 */
   const expKey=vals=>expIdx.map(i=>vals[i]).join(SEP);
   const expFor=vals=>aggExp(LINES.filter(l=>expIdx.every(i=>i>=vals.length||l[dims[i]]===vals[i])));
+  /* 머리글 정렬 (v72) — 화면에서만. 같은 부모 안에서 그 열 값으로 형제끼리 줄 세운다 */
+  const hpKey='piv:'+(cfg.id||'mix');
+  const srt=HP_SORT[hpKey];
+  if(srt&&srt.dir&&(cols.includes(srt.k)||dims.includes(srt.k))){
+    entries=hpSortEntries(entries,dims,srt,pre=>{
+      if(!cellDef[srt.k])return NaN;
+      const gf=facts.filter(f=>pre.every((v,x)=>f[dims[x]]===v));
+      try{return hpVal(cellDef[srt.k](aggFacts(gf),expFor(pre),expIdx.length?false:'all')[0]);}catch(e){return NaN;}});}
+  const keys=entries.map(e=>e[0].split(SEP));
+  const {out,span}=pivotLayout(keys,rows);
   /* 예상값이 들어가는 열 — 소재처럼 잘게 나뉜 구간에서는 위·아래 셀을 합쳐 한 번만 표시한다 */
   const EXPCOL=cellDef.__exp||new Set();
   const lead=rows.map(r=>`<th rowspan="2">${(DIMS.find(d=>d.k===r.k)||{l:r.k}).l}</th>`);
@@ -664,6 +669,9 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   freezeLeadCols(tbl,rows.length);
   /* 값 열 머리글을 끌어 너비 조절 — 정한 폭은 표 설정에 저장된다 */
   wirePivotColResize(tbl,cfg,cols,rerender);
+  /* 머리글을 누르면 설명 + 정렬 (v72) */
+  if(rerender)wireHeadPops(pivotHeadList(tbl,cfg,cols,dims,cdef),{cur:srt,scope:'sum',
+    onSort:(k,d)=>{if(d)HP_SORT[hpKey]={k,dir:d};else delete HP_SORT[hpKey];rerender();}});
   /* 세로 스크롤 시 떠 있는 머리글 */
   mountFloatHead(tbl);
   /* 표 위쪽에도 가로 스크롤바를 하나 더 (표가 길면 아래 스크롤바가 화면 밖이라) */

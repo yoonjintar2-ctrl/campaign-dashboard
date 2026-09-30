@@ -740,6 +740,94 @@ const applyOrder=(entries,cfg)=>{
   return entries.slice().sort((a,b)=>idx(a[0])-idx(b[0]));
 };
 
+/* ===== 머리글 팝업 (v72) — 머리글을 누르면 그 열이 무슨 값인지 설명하고,
+   그 열 기준으로 오름차순 · 내림차순 정렬을 고른다. 모든 표(서머리 · 일자별 · 미디어믹스 · TV)에 쓴다.
+   입력 표(데이터 입력 · 예상효율 입력)는 기존 정렬 · 필터 메뉴 위에 같은 설명을 붙인다. */
+let HP_DOWN_GRIP=false;
+document.addEventListener('mousedown',e=>{const t=e.target;HP_DOWN_GRIP=!!(t&&t.closest&&t.closest('.colgrip'));},true);
+function openHeadPop(th,o){
+  closeTblMenu();
+  const info=(typeof colInfo==='function')?colInfo(o.k,o.label,o.scope):{};
+  const d=o.dir||0;
+  const pop=document.createElement('div');pop.className='thpop hpop';
+  pop.innerHTML=`<div class="thttl">${esc(o.label)}</div>`
+    +(info.desc?`<div class="thdesc">${info.desc}</div>`:'')
+    +(info.formula?`<div class="thform"><span>계산</span><b>${esc(info.formula)}</b></div>`:'')
+    +(info.note?`<div class="thdesc sub">${info.note}</div>`:'')
+    +(o.sortable===false?''
+      :`<div class="thsep"></div>
+        <button type="button" class="thi${d===1?' on':''}" data-sort="1">▲ 오름차순 정렬</button>
+        <button type="button" class="thi${d===-1?' on':''}" data-sort="-1">▼ 내림차순 정렬</button>`
+        +(d?`<button type="button" class="thi" data-sort="0">정렬 해제 (원래 순서)</button>`:''));
+  document.body.appendChild(pop);
+  const r=th.getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(innerWidth-pop.offsetWidth-8,r.left))+'px';
+  const below=r.bottom+6;
+  pop.style.top=(below+pop.offsetHeight>innerHeight-8?Math.max(8,r.top-pop.offsetHeight-6):below)+'px';
+  pop.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{closeTblMenu();o.onSort&&o.onSort(+b.dataset.sort);});
+  return pop;}
+/* 머리글 칸들에 팝업을 건다 — list: [{th,k,label,sortable}] · o: {cur:{k,dir}, onSort(k,dir), scope} */
+function wireHeadPops(list,o){
+  (list||[]).forEach(it=>{
+    const th=it.th;if(!th)return;
+    const dir=o.cur&&o.cur.k===it.k?o.cur.dir:0;
+    th.classList.add('thpk');
+    th.classList.toggle('srt-a',dir===1);th.classList.toggle('srt-d',dir===-1);
+    if(!th.title)th.title='눌러서 설명 · 정렬';
+    th.addEventListener('click',e=>{
+      if(HP_DOWN_GRIP)return;
+      const t=e.target;if(t&&t.closest&&t.closest('.colgrip,.thmenu,input,select,a,button'))return;
+      const nowDir=o.cur&&o.cur.k===it.k?o.cur.dir:0;
+      openHeadPop(th,{k:it.k,label:it.label||th.textContent.trim(),scope:o.scope,dir:nowDir,
+        sortable:it.sortable!==false,onSort:dd=>o.onSort(it.k,dd)});});});}
+/* 정렬 값 — 칸에 찍힌 글자에서 숫자를 뽑는다(₩ · , · % · x · p 제거). 숫자가 아니면 글자 그대로 */
+function hpVal(html){
+  const t=String(html==null?'':html).replace(/<[^>]*>/g,'').replace(/&nbsp;/g,' ').trim();
+  if(!t||/^[–\-—]$/.test(t))return NaN;
+  const m=t.replace(/[,₩원\s]/g,'').match(/^[+\-]?\d+(\.\d+)?/);
+  if(m&&/^[+\-]?[\d.,₩원\s]+(%|%p|x|배|회|초|일)?$/.test(t.replace(/\s/g,'')))return parseFloat(m[0]);
+  return t;}
+/* 비교 — 빈 값(NaN)은 방향과 상관없이 언제나 맨 뒤 */
+function hpCmp(a,b,dir){
+  const an=typeof a==='number',bn=typeof b==='number';
+  if(an||bn){
+    const aa=an&&isFinite(a),bb=bn&&isFinite(b);
+    if(!aa&&!bb){if(!an&&!bn)return String(a).localeCompare(String(b),'ko',{numeric:true})*dir;return an?1:bn?-1:0;}
+    if(!aa)return 1;if(!bb)return -1;
+    return (a-b)*dir;}
+  return String(a).localeCompare(String(b),'ko',{numeric:true})*dir;}
+/* 피벗(서머리 · 미디어믹스) — 같은 부모 안에서 형제끼리 그 열 값으로 정렬한다.
+   묶음(소계) 단위는 묶음 값으로, 맨 아래 행은 행 값으로 줄 세운다. valOf(prefix) → 그 묶음의 값 */
+function hpSortEntries(entries,dims,sort,valOf){
+  if(!sort||!sort.dir)return entries;
+  const di=dims.indexOf(sort.k);          /* 행 머리(매체 · 광고상품 …) 열이면 그 단계만 이름순 */
+  const memo=new Map();
+  const v=pre=>{const key=pre.join('\u0001');if(!memo.has(key))memo.set(key,valOf(pre));return memo.get(key);};
+  return entries.slice().sort((a,b)=>{
+    const av=a[0].split(SEP),bv=b[0].split(SEP);
+    for(let i=0;i<dims.length;i++){
+      if(av[i]===bv[i])continue;
+      if(di>=0){if(i===di)return hpCmp(av[i],bv[i],sort.dir);return 0;}
+      const c=hpCmp(v(av.slice(0,i+1)),v(bv.slice(0,i+1)),sort.dir);
+      if(c)return c;
+      return 0;}
+    return 0;});}
+/* 피벗 머리글 칸 목록 — [{th,k,label}] (행 머리 + 값 열) */
+function pivotHeadList(tbl,cfg,cols,dims,cdef){
+  const out=[];
+  const gs=(cfg.groups||[]).filter(g=>g.cols.length);
+  const soloThs=[...tbl.querySelectorAll('thead th.g.solo')];
+  const row2=tbl.tHead&&tbl.tHead.rows[1]?[...tbl.tHead.rows[1].cells]:[];
+  const leadThs=tbl.tHead&&tbl.tHead.rows[0]?[...tbl.tHead.rows[0].cells].slice(0,dims.length):[];
+  leadThs.forEach((th,i)=>out.push({th,k:dims[i],label:th.textContent.trim()}));
+  let si=0,ri=0,ci=0;
+  gs.forEach(g=>{
+    if(g.solo&&g.cols.length===1){const th=soloThs[si++];out.push({th,k:cols[ci++],label:th&&th.textContent.trim()});}
+    else g.cols.forEach(()=>{const th=row2[ri++];out.push({th,k:cols[ci++],label:th&&th.textContent.trim()});});});
+  return out;}
+/* 화면에서만 쓰는 정렬 상태 (저장하지 않는다) — 표마다 열쇠 */
+const HP_SORT={};
+
 /* ===== 4. 캠페인 요약 · 진행 현황 · 도넛 · 타일 ===== */
 const tip=$('tip');
 function showTip(x,y,html){tip.innerHTML=html;tip.style.opacity=1;
@@ -1184,7 +1272,7 @@ function renderSpendDonut(box,pr){
   hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
     `<div class="t">예산 소진율 · 전체 매체</div>`
     +`<div class="r"><span class="l">소진 광고비</span><b>${won(spent)}</b></div>`
-    +`<div class="r"><span class="l">전체 예산 (Gross)</span><b>${won(budget)}</b></div>`
+    +`<div class="r"><span class="l">전체 예산</span><b>${won(budget)}</b></div>`
     +`<div class="r"><span class="l">소진율</span><b>${pct(rate,1)}</b></div>`
     +`<div class="r"><span class="l">목표 페이스</span><b>${pct(pr,1)}</b></div>`
     +`<div class="r"><span class="l">페이스 대비</span><b>${(rate-pr>=0?'+':'−')+Math.abs((rate-pr)*100).toFixed(1)}%p</b></div>`));

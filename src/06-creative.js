@@ -237,6 +237,14 @@ function renderRaw(){
     const bDay=bf.map(arr=>{const m=new Map();
       arr.forEach(f=>{if(!m.has(f.d))m.set(f.d,[]);m.get(f.d).push(f);});return m;});
     const bTot=bf.map(arr=>aggFacts(arr));
+    /* 머리글 정렬 (v72) — 일자 또는 (블록 · 열) 값으로. 화면에서만 */
+    const rs=HP_SORT['raw'];
+    if(rs&&rs.dir){
+      if(rs.k==='date')days.sort((a2,b2)=>(a2-b2)*rs.dir);
+      else{const [bi,k]=String(rs.k).split('|');const bm=bDay[+bi];
+        if(bm&&METRICS[k]){const vOf=di=>{const g=bm.get(di);return g?mval(k,aggFacts(g)):NaN;};
+          const vm=new Map(days.map(di=>[di,vOf(di)]));
+          days.sort((a2,b2)=>hpCmp(vm.get(a2),vm.get(b2),rs.dir)||(a2-b2));}}}
     const card=el('div','card fit',wrapDiv);
     const wrap=el('div','tbl-wrap',card);
     const tbl=el('table','tbl gln fit'+(vb.all?'':' sublv'),wrap);
@@ -275,6 +283,14 @@ function renderRaw(){
         +'</tr>';});
     tbl.innerHTML=h+'</tbody>';
     markBlanks(tbl);
+    /* 머리글 — 설명 + 정렬 (v72) */
+    {const hl=[];const r0=tbl.tHead.rows[0];
+     hl.push({th:r0.cells[0],k:'date',label:'일자'});
+     const vr=many?tbl.tHead.rows[1]:r0,off=many?0:1;
+     blocks.forEach((bk,bi)=>cols.forEach((k,i)=>{const th=vr.cells[off+bi*cols.length+i];
+       if(th)hl.push({th,k:bi+'|'+k,label:(many?bk.name+' · ':'')+RAW_DEF[k].l,ck:k});}));
+     wireHeadPops(hl.map(x=>({th:x.th,k:x.k,label:x.label})),{cur:HP_SORT['raw'],scope:'raw',
+       onSort:(k,d)=>{if(d)HP_SORT['raw']={k,dir:d};else delete HP_SORT['raw'];renderRaw();}});}
     if(many)hParts.push({wrapDiv,card,wrap,tbl});
   });
   /* 가로 이동 버튼은 맨 위에 하나만 — 누르면 아래 블록들도 같이 움직인다 */

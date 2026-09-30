@@ -53,7 +53,9 @@ function serializeDoc(){
       bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
       agencyLogo:CAMPAIGN.agencyLogo||'',
       /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
-      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false})},
+      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false}),
+      /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
+      menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{}))},
     /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
     tv:(typeof tvForDoc==='function'?tvForDoc():{plan:[],spots:[]}),
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
@@ -151,6 +153,7 @@ function applyDoc(d,keepToday){
   /* 운영 매체 · TV 데이터 (v71) — 예전 저장본은 디지털만 */
   {const m=d.campaign&&d.campaign.media;
    CAMPAIGN.media=(m&&(m.digital||m.tv))?{digital:!!m.digital,tv:!!m.tv}:{digital:true,tv:false};}
+  {const mm=d.campaign&&d.campaign.menus;CAMPAIGN.menus=(mm&&typeof mm==='object')?JSON.parse(JSON.stringify(mm)):{};}
   try{if(typeof tvFromDoc==='function')tvFromDoc(d);}catch(e){}
   /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
   try{if(!CAMPAIGN.agencyLogo&&typeof agencyLogo==='function')CAMPAIGN.agencyLogo=agencyLogo();}catch(e){}
@@ -188,8 +191,10 @@ function applyDoc(d,keepToday){
   try{DOC_RANGE=(v.range&&ISO_RE.test(v.range.from||'')&&ISO_RE.test(v.range.to||''))
       ?{from:v.range.from,to:v.range.to}:null;
     FILTER_TOUCHED=false;}catch(e){}
-  if(v.summaries)SUMMARIES=v.summaries;
-  if(v.mix)MIX_CFG=v.mix;
+  /* v72 — 예전 구성에 남아 있는 수수료 · Net 열은 뺀다 */
+  const dropCfg=c=>{try{(c&&c.groups||[]).forEach(g=>{if(Array.isArray(g.cols))g.cols=g.cols.filter(k=>!DROP_COLS.has(k));});}catch(e){}return c;};
+  if(v.summaries){SUMMARIES=v.summaries;SUMMARIES.forEach(dropCfg);}
+  if(v.mix)MIX_CFG=dropCfg(v.mix);
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
@@ -665,6 +670,7 @@ function paintAuth(){
     if(mail)mail.textContent=u.email||nm;
     if(nameEl)nameEl.textContent=nm;
     if(sub)sub.textContent=`${u.email||''} · ${APP_ROLE_LABEL[CLOUD.appRole]||'게스트'}`;
+    {const mb=$('meBtn');if(mb)mb.title=(nm&&nm!==u.email?nm+' · ':'')+(u.email||'');}
     si.classList.add('hidden');
     if(wrap)wrap.classList.remove('hidden');
     if(bar)bar.classList.add('hidden');
@@ -820,7 +826,8 @@ async function cloudSave(silent){
   CLOUD.saving=true;CLOUD.saveAgain=false;
   try{
   cloudState('저장 중…');
-  const chip=$('savedAgo');if(chip){chip.textContent='저장 중…';chip.classList.remove('on');}
+  /* "저장 중…" 은 한 군데만 — 옆 칩은 비워 둔다 (v72: 두 번 겹쳐 보였다) */
+  const chip=$('savedAgo');if(chip){chip.textContent='';chip.classList.remove('on');}
   const doc=serializeDoc();
   /* .select() 를 붙여 실제로 몇 행이 바뀌었는지 확인한다.
      권한이 없으면 RLS 가 오류 대신 "0행 수정"으로 조용히 넘어가기 때문. */
@@ -944,7 +951,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
-  CAMPAIGN.media={digital:true,tv:false};
+  CAMPAIGN.media={digital:true,tv:false};CAMPAIGN.menus={};
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   clearWorkState();
   rebuildPeriod();buildFacts();resetDateFilter(true);renderEverything();
@@ -1281,7 +1288,7 @@ async function removeMember(userId,campId){
     if(m&&!m.classList.contains('hidden')&&!e.target.closest('#meWrap'))m.classList.add('hidden');});
   if(b('cloudSave'))b('cloudSave').onclick=()=>{
     /* 누르는 즉시 표시부터 바꾼다 — 저장이 끝나면 "방금 저장" 으로 확정된다 */
-    const c=$('savedAgo');if(c){c.classList.remove('on');c.textContent='저장 중…';}
+    const c=$('savedAgo');if(c){c.classList.remove('on');c.textContent='';}
     if(typeof applySheet==='function'){try{applySheet();}catch(e){}}
     cloudSave(false);};
   if(b('campMng'))b('campMng').onclick=openCampManage;

@@ -8,11 +8,9 @@ function renderCampForm(){
       <div class="ro ell" title="${esc(CAMPAIGN.advertiser||'')}">${esc(CAMPAIGN.advertiser||'–')}</div></div>
     <div class="fld" style="width:124px"><label>시작일 (자동)</label><div class="ro">${campStart()}</div></div>
     <div class="fld" style="width:124px"><label>종료일 (자동)</label><div class="ro">${campEnd()}</div></div>
-    <div class="fld" style="width:160px"><label>Gross 예산 (합계)</label><div class="ro">${won(gross)}</div></div>
-    <div class="fld" style="width:160px"><label>Net 예산 (자동 역산)</label><div class="ro">${won(net)}</div></div>
+    <div class="fld" style="width:160px"><label>예산 (합계)</label><div class="ro">${won(gross)}</div></div>
     <div class="fld" style="min-width:210px"><label>Value (합계)</label>
-      <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>
-    <div class="fld" style="width:120px"><label>평균 수수료율</label><div class="ro">${((1-net/gross)*100).toFixed(2)}%</div></div>`;
+      <div class="ro">${won(val)}<span style="color:var(--muted);font-weight:600;margin-left:7px">보너스율 ${pct(bonusRate(LINES),1)}</span></div></div>`;
 }
 /* 라인 표 — 열 정의 기반 (열 설정에서 on/off) */
 /* 라인 표 열 — 고정 열(차원·KPI) + 항목 사전의 "예상효율&미디어믹스 사용 가능" 항목 */
@@ -34,7 +32,7 @@ const LINE_FIXED=[
   {k:'kpi',l:'KPI 지표',w:84,type:'kpi',on:true,g:'KPI'},
   {k:'sub',l:'보조 지표',w:84,type:'subm',on:false,g:'KPI'}
 ];
-const LINE_LABEL={budget:'Gross 예산',net:'Net 예산 (자동)'};
+const LINE_LABEL={budget:'예산'};
 /* 사전에서 온 열의 입력 방식 */
 const LINE_TYPE={start:'date',end:'date',startT:'time',endT:'time',
   feeA:'pct',feeR:'pct',net:'ro',budget:'gross',value:'val',bonus:'num',bonusRate:'ro2'};
@@ -322,8 +320,6 @@ function renderKpiTable(){
     else if(c.k==='budget')v=fmt(gross);
     else if(c.k==='bonus')v=fmt(sum(LINES.map(l=>l.bonus||0)));
     else if(c.k==='value')v=fmt(sum(LINES.map(lineValue)));
-    else if(c.k==='feeA')v=((sum(LINES.map(l=>lineGross(l)*l.feeA))/gross)*100).toFixed(1)+'%';
-    else if(c.k==='feeR')v=((sum(LINES.map(l=>lineGross(l)*l.feeR))/gross)*100).toFixed(1)+'%';
     return `<td class="${cls}">${v}</td>`;}).join('')+'</tr></tbody>'+dl;
   t.innerHTML=h;
   t.classList.add('lines');
@@ -602,7 +598,7 @@ function openLineHistory(){
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:160px">반영 시각</th><th style="width:96px">입력자</th><th style="width:104px">소속</th>
       <th style="width:70px">라인</th><th>예상 노출</th><th>예상 클릭</th><th>예상 조회</th>
-      <th>Gross 예산</th><th style="width:104px">상태</th><th style="width:118px"></th></tr></thead><tbody>`;
+      <th>예산</th><th style="width:104px">상태</th><th style="width:118px"></th></tr></thead><tbody>`;
   LINE_HIST.forEach((hs,n)=>{
     const ls=JSON.parse(hs.snap);
     const g=k=>sum(ls.map(l=>+(l.e&&l.e[k])||0));
@@ -779,7 +775,7 @@ function openLineColCfg(){
       date:'YYYY-MM-DD',time:'HH:MM',
       bid:'CPM · CPC · CPV · CPA …',kpi:'노출 · 클릭 · 조회 · 전환 …',
       subm:'보조로 함께 볼 지표',dev:'PC · MO · CTV 중 선택',
-      exp:'제안 목표 수치 (숫자)',gross:'Gross 예산 · Net 자동 역산',val:'밸류 (직접 입력)',
+      exp:'제안 목표 수치 (숫자)',gross:'예산 (숫자 입력)',val:'밸류 (직접 입력)',
       pct:'수수료율 (10 또는 10%)',ro:'자동 계산 — 입력하지 않습니다',
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
@@ -836,8 +832,6 @@ function renderMix(){
       return String(av[i]).localeCompare(String(bv[i]),'ko');}
     return 0;});
   entries=applyOrder(entries,MIX_CFG);
-  const keys=entries.map(e=>e[0].split(SEP));
-  const {out,span}=pivotLayout(keys,MIX_CFG.rows);
   const totalBudget=sum(LINES.map(lineGross));
   const linesOf=rs=>[...new Set(rs.map(r=>r.l))];
   const cell=(rs,k,tot)=>{
@@ -892,8 +886,6 @@ function renderMix(){
       case 'value':return fmt(val);
       case 'bonus':return fmt(sum(ls.map(l=>l.bonus||0)));
       case 'bonusRate':return pct(sum(ls.map(l=>l.bonus||0))/gross,1);
-      case 'feeA':return pct(sum(ls.map(l=>lineGross(l)*(+l.feeA||0)))/gross,1);
-      case 'feeR':return pct(sum(ls.map(l=>lineGross(l)*(+l.feeR||0)))/gross,1);
       case 'cost':return fmt(sum(ls.map(l=>sum(paceFacts().filter(f=>f.lid===l.id).map(x=>x.cost)))));
     }
     /* 목표 수치 — 게런티 지표는 굵은 파랑 */
@@ -905,6 +897,14 @@ function renderMix(){
     if(eff[k]){const v=eff[k]();
       return ['ctr','vtr','cvr','etr'].includes(k)?pct(v):fmt(v);}
     return '–';};
+  /* 머리글 정렬 (v72) — 화면에서만 */
+  const srt=HP_SORT['mix'];
+  if(srt&&srt.dir&&(cols.includes(srt.k)||dims.includes(srt.k)))
+    entries=hpSortEntries(entries,dims,srt,pre=>{
+      const gr=rows.filter(x=>pre.every((v,y)=>x.vals[y]===v));
+      try{return hpVal(cell(gr,srt.k,pre.length<dims.length));}catch(e){return NaN;}});
+  const keys=entries.map(e=>e[0].split(SEP));
+  const {out,span}=pivotLayout(keys,MIX_CFG.rows);
   const crIdx=dims.indexOf('creative');
   const lead=dims.map(d=>`<th rowspan="2">${(DIMS.find(x=>x.k===d)||{l:d}).l}</th>`);
   let h='<thead>'+groupHeaderHTML(MIX_CFG,MIX_DEF,lead)+'</thead><tbody>';
@@ -945,6 +945,8 @@ function renderMix(){
   enableRowDrag($('tblMix'),MIX_CFG,renderMix);
   freezeLeadCols($('tblMix'),dims.length);
   wirePivotColResize($('tblMix'),MIX_CFG,cols,renderMix);
+  wireHeadPops(pivotHeadList($('tblMix'),MIX_CFG,cols,dims,MIX_DEF),{cur:srt,scope:'mix',
+    onSort:(k,d)=>{if(d)HP_SORT['mix']={k,dir:d};else delete HP_SORT['mix'];renderMix();}});
   mountFloatHead($('tblMix'));
 }
 function openPerm(){
@@ -1258,26 +1260,35 @@ function switchTab(name){
       +'(리포트 데이터 입력 탭의 <b>“매칭 안 되는 셀 N개”</b> 를 누르면 그 행으로 바로 갑니다)',
       ()=>{pendingLeave=true;switchTab(name);pendingLeave=false;},'그대로 이동',true);
     return;}
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
+  /* 선택 표시는 paintTabsOn() 이 한다 (v72 — 영역 · 하위 메뉴 두 줄) */
+  {const T=$('tabs');if(T)T.dataset.cur=name;}
+  if(['tvdash','tvdaily','tvmix'].includes(name)){try{TV_LAST=name;}catch(e){}}
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvinput','tvplan'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvmix','tvinput','tvplan'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
+  if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
+  if(name==='tvmix'){try{renderTvMix();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
   if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
   /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
-  $('subbar').classList.toggle('hidden',name!=='dash');
-  /* 다크 보기는 대시보드에서만 쓰는 기능이라 그 탭에서만 보인다 (v58) */
-  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',name!=='dash');}
+  /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
+  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvmix'].includes(name));}
+  if(name==='dash'){try{ensureDashSub();}catch(e){}}
+  try{paintTabsOn();}catch(e){}
   /* 일자별 상세 효율로 돌아왔으면 보던 자리로, 그 밖에는 맨 위로 */
   const backRaw=name==='dash'&&$('sub-table')&&!$('sub-table').classList.contains('hidden');
   if(backRaw&&typeof renderRaw==='function'){renderRaw();}
   else scrollTo({top:0});}
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+/* 영역(1줄) — 디지털은 대시보드(보던 하위 화면), TV 는 마지막으로 본 TV 대시보드 (v72) */
+document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=()=>switchTab(areaHome(b.dataset.area)));
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
+  /* 다른 화면에서 누르면 먼저 디지털 대시보드로 (v72 — 하위 메뉴가 늘 보인다) */
+  if($('tab-dash').classList.contains('hidden')){switchTab('dash');if(!$('tab-dash').classList.contains('hidden')&&curDashSub()===b.dataset.sub){paintTabsOn();return;}}
   /* 일자별 상세 효율에서 나갈 때는 보던 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
@@ -1290,6 +1301,7 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
     PERF_STALE=false;}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();
+  try{paintTabsOn();}catch(e){}
   /* 숨어 있는 동안 그려진 표는 폭을 재지 못해 머리 열 고정이 걸리지 않는다 — 다시 건다 */
   try{if(typeof refreezeAll==='function')setTimeout(refreezeAll,0);}catch(e){}});
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
@@ -1346,32 +1358,14 @@ function applyRole(){
   /* 샘플 둘러보기 중이거나 아직 등급이 없으면 권한 요청 버튼을 보여 준다 */
   document.body.dataset.mode=sample?'sample':'';
   const rb=$('reqBtn');if(rb)rb.classList.toggle('hidden',!needReq);
-  const st=document.querySelector('#tabs [data-tab="setup"]');
-  const it=document.querySelector('#tabs [data-tab="input"]');
-  const tt=document.querySelector('#tabs [data-tab="trend"]');
-  /* TV 입력 메뉴 (v71) — 디지털 입력 메뉴와 같은 규칙 */
-  const tvIns=['tvinput','tvplan'].map(k=>document.querySelector(`#tabs [data-tab="${k}"]`)).filter(Boolean);
-  tvIns.forEach(e=>{e.classList.toggle('hidden',c);e.classList.toggle('vhide',!c);});
-  if(st)st.classList.toggle('hidden',c);
-  if(it)it.classList.toggle('hidden',c);
-  /* 트렌드 리포트 — 캠페인마다 광고주에게 보일지 정한다 (v66) */
+  /* 메뉴의 보임 · 옅게는 applyMenus() 가 메뉴 설정 · 권한을 보고 한꺼번에 정한다 (v72) */
   let tv=true;try{tv=trendVisibleToViewer();}catch(e){}
-  if(tt)tt.classList.toggle('hidden',c&&!tv);
-  /* 광고주에게 **보이지 않는** 메뉴는 시행사 화면에서 글씨를 옅게 해 둔다 (v66) —
-     "이건 내 화면에만 있는 메뉴" 라는 걸 한눈에 알 수 있게. */
-  if(!c){
-    if(st)st.classList.add('vhide');
-    if(it)it.classList.add('vhide');
-    if(tt)tt.classList.toggle('vhide',!tv);
-  }else{
-    [st,it,tt].forEach(e=>{if(e)e.classList.remove('vhide');});}
   try{paintTrendToggle();}catch(e){}
   document.querySelectorAll('.agency-only').forEach(x=>x.classList.toggle('hidden',c));
   /* 광고주는 대시보드로 — 디지털을 운영하지 않은 캠페인이면 TV 대시보드로 (v71) */
   const home=(typeof firstDashTab==='function')?firstDashTab():'dash';
-  if(c&&!tv&&!$('tab-trend').classList.contains('hidden'))switchTab(home);
   if(c)switchTab(home);
-  try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
+  try{if(typeof applyMenus==='function')applyMenus();}catch(e){}
   /* 권한이 바뀌면 화면 구성 버튼이 붙어 있는 영역을 다시 그린다
      (서머리·소재 카드는 그릴 때 isClient() 로 버튼 유무를 정하기 때문) */
   if(__lastRole!==null&&__lastRole!==role){

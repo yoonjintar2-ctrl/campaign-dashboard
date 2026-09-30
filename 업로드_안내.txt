@@ -1,0 +1,25 @@
+깃허브 업로드용 폴더 (v72 · 2026-09-30)
+==========================================
+
+이 폴더 안의 파일을 깃허브 리포(campaign-dashboard) 에 **그대로 덮어쓰기** 하면 됩니다.
+GitHub 웹에서 리포 → Add file → Upload files → 이 폴더의 내용물(src · tools · guide · README.md)을
+끌어다 놓고 Commit changes. 같은 이름의 파일은 새 것으로 바뀝니다.
+
+올라가는 것
+  src/01-head.html … src/15-i18n.js   화면 소스 (15개) — 이번에 전부 바뀜
+  tools/build.py                       빌드 스크립트 (src → index.html)
+  guide/guide.html · guide/사용가이드.pdf  사용 가이드
+  README.md
+
+일부러 뺀 것 (리포에 있는 그대로 두세요)
+  config.js                 — 실제 값은 GitHub Secrets 에서 채워집니다. 덮어쓰면 안 됩니다.
+  .github/workflows/pages.yml — 지금 리포의 것이 정상 동작합니다. 건드리지 마세요.
+  index.html                — push 하면 Actions 가 src 로 자동으로 다시 만듭니다.
+
+⚠ 한 번에 올리세요
+  새 파일(src/14-tv.js · src/15-i18n.js)과 tools/build.py 가 같이 올라가야 빌드가 됩니다.
+  나눠 올리면 중간 빌드가 실패로 표시될 수 있지만, 사이트는 이전 버전 그대로 유지됩니다.
+
+확인
+  업로드 뒤 Actions 탭에서 초록 체크가 뜨면 배포 완료. 사이트를 새로고침(Ctrl+F5)해서
+  상단 메뉴가 두 줄(디지털 · TV · 트렌드 리포트)로 보이면 새 버전입니다.

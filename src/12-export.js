@@ -398,7 +398,7 @@ async function exportDashboard(){
       ['집행 기간',{v:`${campStart()} ~ ${campEnd()}  (${ps.days}일)`,s:XS.val}],
       ['조회 기간',{v:`${sc.startIso} ~ ${sc.endIso}`,s:XS.val}],
       ['집행 경과',{v:`${ps.elapsed}일차 / ${ps.days}일`,s:XS.val}],
-      ['총 광고비 (Gross)',{v:budget,n:1,s:XS.valWon}],
+      ['총 광고비',{v:budget,n:1,s:XS.valWon}],
       ['소진 광고비',{v:b.cost,n:1,s:XS.valWon}],
       ['목표 달성 수치',{v:kAct,n:1,s:XS.val}],
       ['종합 목표',{v:kGoal,n:1,s:XS.val}],
@@ -496,8 +496,8 @@ async function exportDashboard(){
       blank(R);}
 
     /* ---- 시트 2 · 일자별 상세 효율 ---- */
-    const s2={name:'일자별 상세 효율',rows:[],merges:[]};
-    push(s2.rows,[T(`${CAMPAIGN.name} — 일자별 상세 효율`,1)]);
+    const s2={name:'일자별 효율',rows:[],merges:[]};
+    push(s2.rows,[T(`${CAMPAIGN.name} — 일자별 효율`,1)]);
     push(s2.rows,[T(`캠페인 전 기간 ${campStart()} ~ ${campEnd()}   ·   주말·공휴일은 붉은 글씨, `
       +`아직 도래하지 않았거나 실적이 없는 날은 빈 칸입니다.`,2)]);
     blank(s2.rows);
@@ -516,7 +516,7 @@ async function exportDashboard(){
     /* ---- 시트 3 · 미디어믹스 ---- */
     const s3={name:'미디어믹스',rows:[],merges:[]};
     push(s3.rows,[T(`${CAMPAIGN.name} — 미디어믹스 (예상 효율 기준)`,1)]);
-    push(s3.rows,[T(`집행 기간 ${campStart()} ~ ${campEnd()}   ·   Gross ${won(sum(LINES.map(lineGross)))}   ·   Value ${won(sum(LINES.map(lineValue)))}`,2)]);
+    push(s3.rows,[T(`집행 기간 ${campStart()} ~ ${campEnd()}   ·   예산 ${won(sum(LINES.map(lineGross)))}   ·   Value ${won(sum(LINES.map(lineValue)))}`,2)]);
     blank(s3.rows);
     renderMix();
     const mtbl=$('tblMix');
@@ -858,15 +858,16 @@ function renderBrand(){
   const adv=CAMPAIGN.advertiser||'';
   const logo=CAMPAIGN.advLogo||advLogo(adv);
   const isDMD=!adv||/^(digital )?media dashboard$/i.test(adv);
-  if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;}
-  else{mark.src=DMD_MARK;mark.classList.remove('adv');mark.alt='DmD';}
+  /* v72 — 서비스 마크(DmD)는 쓰지 않는다. 광고주 로고가 없으면 로고 자리를 비운다 */
+  if(logo){mark.src=logo;mark.classList.add('adv');mark.alt=adv;mark.hidden=false;}
+  else{mark.removeAttribute('src');mark.classList.remove('adv');mark.alt='';mark.hidden=true;}
   nm.hidden=isDMD;nm.textContent=isDMD?'':adv;
   try{refreshBgDots();tuneTopbarForLogo();}catch(e){}
   /* 브라우저 탭·작업표시줄 아이콘에는 광고주 로고를 쓰지 않는다 (v71).
      광고주마다 밝은 바탕 / 어두운 바탕용 로고 규정이 따로 있는데, 탭·작업표시줄의 바탕색은
      사용자의 OS·브라우저 테마가 정해서 우리가 맞춰 줄 수 없다 → 가이드 위반 소지를 아예 없앤다.
      화면 안(좌상단)의 로고는 우리 테마에 맞춰 보여 주므로 그대로 둔다. */
-  try{setFavicon(DMD_MARK);}catch(e){}
+  try{setFavicon('');}catch(e){}
   try{document.title=(adv&&!isDMD?adv+' — ':'')
     +(CAMPAIGN.name?CAMPAIGN.name+' · ':'')+'Media Dashboard';}catch(e){}
 }
@@ -874,7 +875,13 @@ function renderBrand(){
    정사각 캔버스 가운데에 얹어 잘리지 않게 만든다. */
 let FAV_SRC='';
 function setFavicon(src){
-  if(!src||src===FAV_SRC)return;
+  /* v72 — 로고 없이: 빈 아이콘(data:,)을 걸어 두면 브라우저 기본 아이콘이 나오고
+     /favicon.ico 를 따로 찾지도 않는다 */
+  if(!src){let l=document.querySelector('link[rel="icon"]');
+    if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}
+    if(l.getAttribute('href')!=='data:,'){l.removeAttribute('type');l.setAttribute('href','data:,');}
+    FAV_SRC='';return;}
+  if(src===FAV_SRC)return;
   FAV_SRC=src;
   const put=href=>{
     let l=document.querySelector('link[rel="icon"]');
@@ -1284,7 +1291,7 @@ const HUB_MAIN=[
   {id:'campMng',t:'캠페인 관리',d:'새 캠페인 · 이름 변경 · 복제 · 삭제 · 코드 전달',need:'camp'},
   {id:'__adv',t:'광고주 관리',d:'광고주 이름과 로고를 관리합니다',need:'adv'},
   {id:'themeBtn',t:'디자인',d:'테마 색상과 배경을 고릅니다'},
-  {id:'__media',t:'운영 매체',d:'이번 캠페인에서 운영한 매체(TV · Digital)를 고릅니다',need:'edit'}
+  {id:'__media',t:'메뉴 설정',d:'쓸 메뉴와 광고주(뷰어)에게 보일 메뉴를 고릅니다',need:'edit'}
 ];
 const HUB_SUB=[
   {id:'guideBtn',t:'사용 가이드'},
@@ -1296,10 +1303,10 @@ const HUB_SUB=[
    "이 열이 뭐고 어떻게 계산되는지" 를 한 곳에서 본다.
    계산식은 화면에서 실제로 쓰는 식을 그대로 적는다 — 여기와 코드가 어긋나면 안 된다. */
 const COL_FORMULA={
-  /* 단가 — 모두 Gross 소진금액 기준 */
+  /* 단가 — 모두 소진금액 기준 */
   cpm:'소진금액 ÷ 노출 × 1,000',cpc:'소진금액 ÷ 클릭',cpv:'소진금액 ÷ 조회',
   cpa:'소진금액 ÷ 전환',cpe:'소진금액 ÷ 참여',cpi:'소진금액 ÷ 설치',
-  /* 목표 단가 — 예산(Gross) ÷ 목표 수치 */
+  /* 목표 단가 — 예산 ÷ 목표 수치 */
   g_cpm:'예산 ÷ 목표 노출 × 1,000',g_cpc:'예산 ÷ 목표 클릭',g_cpv:'예산 ÷ 목표 조회',
   g_cpa:'예산 ÷ 목표 전환',g_cpe:'예산 ÷ 목표 참여',
   /* 비율 */
@@ -1311,16 +1318,70 @@ const COL_FORMULA={
   progress:'오늘까지 지난 일수 ÷ 전체 집행 일수 (목표 페이스)',
   bonusRate:'보너스 밸류 ÷ 예산',
   /* 금액 */
-  budget:'단가 × 밸류 (= Gross 예산)',
-  net:'예산 × (1 − 대행사 수수료율 − 렙사 수수료율)',
-  cost:'입력한 Gross 소진비용의 합',
+  budget:'예상효율 입력에 적은 예산의 합',
+  cost:'데이터 입력에 적은 소진비용의 합',
   value:'예상 효율에 적은 판매 단위 수량',
   period:'그 행에 걸린 라인들의 가장 이른 시작일 ~ 가장 늦은 종료일',
   bid:'그 행에 걸린 라인들의 비드 타입 (여러 개면 함께 표시)'
 };
+/* 머리글 팝업에 쓰는 설명 (v72) — "이 칸은 무슨 값인가" 를 한 문장으로.
+   계산 열은 COL_FORMULA 의 식을 함께 보여 준다. */
+const COL_DESC={
+  date:'실적이 발생한 날짜입니다.',segment:'캠페인 안의 큰 묶음(예: 브랜딩 · 퍼포먼스)입니다.',
+  media:'광고를 집행한 매체입니다.',product:'매체의 광고상품입니다.',slot:'광고가 노출된 지면입니다.',
+  target:'광고를 보여 준 타겟팅 그룹입니다.',line:'광고하는 제품입니다.',creative:'광고 소재 이름입니다.',
+  month:'실적이 발생한 달입니다.',
+  imp:'광고가 화면에 노출된 횟수입니다 (매체 리포트 기준).',click:'광고를 누른 횟수입니다.',
+  view:'광고 영상을 조회한 횟수입니다 (매체가 정한 조회 기준).',
+  conv:'구매 · 가입처럼 목표로 잡은 행동이 일어난 횟수입니다.',lead:'상담 신청 같은 양식을 제출한 횟수입니다.',
+  install:'앱을 설치한 횟수입니다.',eng:'좋아요 · 댓글 · 공유처럼 광고에 반응한 횟수입니다.',
+  like:'공감(좋아요) 수입니다.',rev:'광고로 발생한 매출입니다.',
+  cost:'실제로 집행(소진)된 광고비입니다.',budget:'예상효율 입력에 적은 예산입니다.',
+  value:'판매 단위 수량(밸류)입니다.',bonus:'무상으로 더 받은 밸류입니다.',
+  v25:'영상을 25% 지점까지 본 조회 수입니다.',v50:'영상을 50% 지점까지 본 조회 수입니다.',
+  v75:'영상을 75% 지점까지 본 조회 수입니다.',v100:'영상을 끝까지 본 조회 수입니다.',
+  v3:'영상을 3초 이상 본 조회 수입니다.',v15:'영상을 15초 이상 본 조회 수입니다.',v30:'영상을 30초 이상 본 조회 수입니다.',
+  period:'라인이 집행되는 기간입니다.',bid:'과금 방식(CPM · CPC · CPV …)입니다.',
+  kpi:'이 라인에서 가장 중요하게 보는 지표입니다.',kpiGoal:'KPI 지표의 목표 수치입니다.',
+  price:'판매 단가입니다.',device:'광고가 나가는 기기(PC · MO · CTV)입니다.',sec:'영상 소재의 길이(초)입니다.',
+  note:'자유롭게 적은 메모입니다.',start:'라인의 집행 시작일입니다.',end:'라인의 집행 종료일입니다.',
+  startT:'집행 시작 시간입니다.',endT:'집행 종료 시간입니다.',sub:'KPI 와 함께 보조로 보는 지표입니다.',
+  spend_r:'예산 중 얼마나 썼는지입니다.',progress:'캠페인 기간이 얼마나 지났는지입니다 — 목표 페이스의 기준입니다.',
+  bonusRate:'예산 대비 보너스 밸류의 비율입니다.',roas:'광고비 1원당 매출입니다.'};
+/* TV 표 (v72) */
+const TV_DESC={
+  ch:'광고가 나간 채널(방송사)입니다.',prog:'광고가 붙은 프로그램입니다.',
+  grade:'광고 시간대 등급(시급 — SA · A · B · C)입니다.',dur:'광고 길이(초)입니다.',
+  cnt:'방송 횟수입니다.',price:'1회 방송 단가입니다.',rating:'가구 시청률(%)입니다.',
+  amt:'계획 금액입니다.',grp:'시청률의 합 — 광고가 닿은 총량입니다.',cprp:'시청률 1%p 를 얻는 데 든 비용입니다.',
+  cost:'실제로 집행된 광고비입니다.',date:'광고가 방송된 날짜입니다.',time:'광고가 방송된 시간입니다.',
+  cr:'방송된 광고 소재입니다.',note:'자유롭게 적은 메모입니다.',
+  spots:'그날 방송된 횟수의 합입니다.',cumgrp:'캠페인 첫날부터 그날까지 쌓인 GRP 입니다.',
+  cumcost:'캠페인 첫날부터 그날까지 쓴 광고비입니다.',share:'전체 계획 금액 중 차지하는 비중입니다.',
+  grpshare:'전체 예상 GRP 중 차지하는 비중입니다.',progs:'계획에 넣은 프로그램 수입니다.',wd:'요일입니다.'};
+const TV_FORMULA={amt:'횟수 × 단가',grp:'횟수 × 시청률(%)',cprp:'금액 ÷ GRP',
+  cumgrp:'첫날부터 그날까지 GRP 합',cumcost:'첫날부터 그날까지 광고비 합',share:'금액 ÷ 전체 금액',grpshare:'GRP ÷ 전체 GRP'};
+/* 열 설명 한 벌 — {desc, formula, note}. scope 가 'tv' 면 TV 사전을 먼저 본다 */
+function colInfo(k,label,scope){
+  k=String(k||'');
+  if(scope==='raw'&&k.includes('|'))k=k.split('|')[1];
+  if(scope==='tv'){
+    const f=TV_FORMULA[k];
+    return {desc:TV_DESC[k]||'',formula:f||'',note:k==='cprp'?'낮을수록 효율이 좋습니다.':''};}
+  if(scope==='mix'&&k==='share')return {desc:'전체 예산 중 이 행이 차지하는 비중입니다.',formula:'예산 ÷ 전체 예산'};
+  const out={desc:COL_DESC[k]||'',formula:COL_FORMULA[k]||'',note:''};
+  if(!out.desc&&/^e_/.test(k)){const b=(typeof FLD!=='undefined'&&FLD[k.slice(2)])?FLD[k.slice(2)].l:k.slice(2);
+    out.desc=`예상효율 입력에 적은 목표 ${b}입니다.`;}
+  if(!out.desc&&/^g_cp/.test(k))out.desc='예산을 목표 수치로 나눈 목표 단가입니다.';
+  if(!out.desc&&/_r$/.test(k))out.desc='목표 대비 실적의 비율(달성률)입니다.';
+  if(!out.desc&&/^(cpm|cpc|cpv|cpa|cpe|cpi)$/.test(k))out.desc='실적 단가입니다 — 낮을수록 효율이 좋습니다.';
+  if(!out.desc&&/^(ctr|vtr|cvr|etr)$/.test(k))out.desc='비율 지표입니다 — 높을수록 좋습니다.';
+  if(!out.desc){const f=(typeof FLD!=='undefined')&&FLD[k];
+    if(f&&f.__uc)out.desc='열 사전에서 직접 만든 열입니다.';}
+  const n=(typeof COL_NOTE!=='undefined')&&COL_NOTE[k];if(n)out.note=n;
+  return out;}
 const COL_NOTE={
-  cost:'Gross 기준입니다. Net 이 필요하면 수수료율로 역산합니다.',
-  budget:'모든 예산·소진 관련 값은 Gross 로 통일해 계산합니다.',
+  budget:'모든 예산 · 소진 금액은 하나의 기준(입력한 금액 그대로)으로 계산합니다.',
   spend_r:'페이스 대비는 이 값에서 목표 페이스(진도율)를 뺀 %p 입니다.',
   imp_r:'달성률은 기간 필터를 따릅니다 — 조회 기간의 실적 ÷ 그 기간의 목표.',
   creative:'소재별 실적은 입력 시트에 적힌 소재 그대로 집계합니다. 시트에 소재를 적지 않은 날만 소재 비중으로 나눕니다.'
@@ -1415,7 +1476,7 @@ function openColDict(){
     return w.join(' · ')||'–';};
   const body=`<div class="hint" style="margin-bottom:10px">
       화면에 쓸 수 있는 모든 열입니다. <b>계산</b> 열은 아래 식으로 그때그때 만들어지므로 따로 입력하지 않습니다.
-      단가·비율은 모두 <b>Gross 소진금액</b> 기준입니다.</div>
+      단가·비율은 모두 <b>소진금액</b> 기준입니다.</div>
     <div class="fld" style="margin-bottom:10px">
       <input class="txt" id="cdQ" placeholder="이름 · 영문 · 계산식으로 검색" style="width:100%" autocomplete="off"></div>
     <div class="tbl-wrap" style="max-height:52vh">
@@ -1498,7 +1559,7 @@ function openSettingsHub(){
     const id=b.dataset.hub;
     if(id==='__adv'){if(typeof openAdvManage==='function')openAdvManage();return;}
     if(id==='__cols'){openColDict();return;}
-    if(id==='__media'){openMediaSettings();return;}
+    if(id==='__media'){openMenuSettings();return;}
     const t=$(id);if(t&&t.onclick)t.onclick();});
 }
 (function initHub(){

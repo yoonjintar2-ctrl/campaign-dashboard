@@ -15,8 +15,8 @@ const SHEET_DIMS=[
 const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
 /* 기본 표시 열 — 일자 · 매체명 · 광고상품명 · 타겟팅 그룹명 · 소재 · 노출 · 클릭 · 조회 · 소진비용 */
 const SHEET_DEF_ON=['date','media','product','target','creative','imp','click','view','cost'];
-const SHEET_LABEL={cost:'소진비용 (Gross)',net:'Net 광고비'};
-const SHEET_RULE={cost:'숫자 입력 · Gross 기준',net:'Gross 소진비용에서 자동 역산'};
+const SHEET_LABEL={cost:'소진비용'};
+const SHEET_RULE={cost:'숫자 입력'};
 const sheetColsDefault=()=>
   [{k:'date',l:'일자',w:112,type:'text',rule:'YYYY-MM-DD · 라인 집행 기간 내',lock:1,on:true}]
   .concat(SHEET_DIMS.map(c=>({...c,on:SHEET_DEF_ON.includes(c.k)})))
@@ -29,6 +29,8 @@ let SHEET_COLS=sheetColsDefault();
 /* 예전 저장본(net 기준·소재 열 없음)을 지금 열 구성에 맞춰 얹는다 */
 function mergeCols(saved,def){
   if(!Array.isArray(saved)||!saved.length)return def;
+  /* v72 — 수수료 · Net 열은 저장본에 남아 있어도 버린다 */
+  saved=saved.filter(c=>c&&!DROP_COLS.has(c.k));
   const by={};saved.forEach(c=>by[c.k]=c);
   const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
     .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:c.l,w:c.w,on:c.on}:c;});
@@ -200,7 +202,7 @@ function closeTblMenu(){document.querySelectorAll('.thpop').forEach(x=>x.remove(
 document.addEventListener('mousedown',e=>{
   const t=e.target;
   if(!t||typeof t.closest!=='function'){closeTblMenu();return;}
-  if(!t.closest('.thpop')&&!t.closest('.thmenu')&&!t.closest('th.thsf'))closeTblMenu();});
+  if(!t.closest('.thpop')&&!t.closest('.thmenu')&&!t.closest('th.thsf')&&!t.closest('th.thpk'))closeTblMenu();});
 function openTblMenu(btn,id,k,label,arr,getVal,rerender,onHide){
   closeTblMenu();
   const vals=[...new Set(arr.map(x=>tblStr(getVal(x,k))))]
@@ -216,7 +218,11 @@ function openTblMenu(btn,id,k,label,arr,getVal,rerender,onHide){
       ||'<div class="hint" style="padding:8px">찾는 값이 없습니다</div>';
     pop.querySelectorAll('.thlist [data-v]').forEach(cb=>cb.onchange=()=>{
       if(cb.checked)cur.add(cb.dataset.v);else cur.delete(cb.dataset.v);});};
+  const info=(typeof colInfo==='function')?colInfo(k,label,id):{};
   pop.innerHTML=`<div class="thttl">${esc(label)}</div>
+    ${info.desc?`<div class="thdesc">${info.desc}</div>`:''}
+    ${info.formula?`<div class="thform"><span>계산</span><b>${esc(info.formula)}</b></div>`:''}
+    ${info.desc||info.formula?'<div class="thsep"></div>':''}
     <button type="button" class="thi" data-sort="1">▲ 오름차순 정렬</button>
     <button type="button" class="thi" data-sort="-1">▼ 내림차순 정렬</button>
     <button type="button" class="thi" data-sort="0">정렬 해제</button>
@@ -411,7 +417,7 @@ function renderSheet(){
     클릭 <b class="mono">${fmt(sum(SHEET.map(r=>+r.click||0)))}</b> ·
     조회 <b class="mono">${fmt(sum(SHEET.map(r=>+r.view||0)))}</b> ·
     전환 <b class="mono">${fmt(sum(SHEET.map(r=>+r.conv||0)))}</b> ·
-    Gross 광고비 <b class="mono">${won(gross)}</b>`;
+    광고비 <b class="mono">${won(gross)}</b>`;
   /* 머리글 끝을 끌어 열 너비 조정 — 맨 앞 삭제 열 다음부터가 값 열이라 off=1 */
   enableColResize(t,cols,()=>markDirty(),1);
   /* 머리글을 끌어 열 순서 바꾸기 */
@@ -868,7 +874,7 @@ function openHistory(){
     </div>
     <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="width:160px">반영 완료 시각</th><th style="width:96px">입력자</th><th style="width:104px">소속</th>
-      <th style="width:70px">행 수</th><th>노출</th><th>클릭</th><th>조회</th><th>전환</th><th>Gross 광고비</th>
+      <th style="width:70px">행 수</th><th>노출</th><th>클릭</th><th>조회</th><th>전환</th><th>광고비</th>
       <th style="width:104px">상태</th><th style="width:118px"></th></tr></thead><tbody>`;
   if(!SHEET_HIST.length)
     h+='<tr><td colspan="11" class="hint" style="padding:20px">아직 저장된 시점이 없습니다. '

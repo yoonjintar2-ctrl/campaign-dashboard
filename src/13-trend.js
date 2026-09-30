@@ -1014,12 +1014,8 @@ function paintTrendToggle(){
 }
 /* 탭 자체의 보임·회색 — 저장본을 되살렸을 때도 바로 맞도록 따로 떼어 둔다 (v66) */
 function paintTrendTab(){
-  const tab=document.querySelector('#tabs [data-tab="trend"]');
-  if(!tab)return;
-  let c=false;try{c=isClient();}catch(e){}
-  const tv=trendVisibleToViewer();
-  tab.classList.toggle('hidden',c&&!tv);
-  tab.classList.toggle('vhide',!c&&!tv);
+  /* v72 — 메뉴 줄 전체를 applyMenus() 가 맞춘다 */
+  try{if(typeof applyMenus==='function')applyMenus();}catch(e){}
 }
 function toggleTrendViewer(){
   TREND_VIEWER=!trendVisibleToViewer();

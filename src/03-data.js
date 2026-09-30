@@ -79,43 +79,46 @@ const DEVICES=['PC','MO','CTV'];
 let LINES=[
  {id:'L1',segment:'Phase 1',media:'YouTube',product:'VRC',target:'카테고리 관심 오디언스',line:'신제품 A',
   device:['PC','MO'],bid:'CPV',price:19,start:'2026-08-01',end:'2026-09-30',
-  kpi:'view',sub:'vtr',feeA:.10,feeR:.05,gross:30000000,bonus:3000000,sec:6,
+  kpi:'view',sub:'vtr',gross:30000000,bonus:3000000,sec:6,
   g:{imp:false,click:false,view:true},note:'PC+MO 디바이스 최적화 운영'},
  {id:'L2',segment:'Phase 1',media:'YouTube',product:'VVC',target:'구매 의향 IM',line:'신제품 B',
   device:['PC','MO','CTV'],bid:'CPV',price:20,start:'2026-08-01',end:'2026-09-30',
-  kpi:'view',sub:'cpv',feeA:.10,feeR:.05,gross:60000000,bonus:6000000,sec:15,
+  kpi:'view',sub:'cpv',gross:60000000,bonus:6000000,sec:15,
   g:{imp:false,click:false,view:true},note:'CTV 포함 확장 운영'},
  {id:'L3',segment:'Phase 1',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'신제품 B',
   device:['MO'],bid:'CPC',price:1000,start:'2026-08-01',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:35000000,bonus:0,sec:0,
+  kpi:'click',sub:'ctr',gross:35000000,bonus:0,sec:0,
   g:{imp:false,click:true,view:false},note:'관심사 타겟 확장'},
  {id:'L4',segment:'Phase 2',media:'YouTube',product:'Demand Gen (구독)',target:'리마케팅 · 유사',line:'신제품 A',
   device:['MO'],bid:'CPC',price:1050,start:'2026-08-15',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:25000000,bonus:0,sec:0,
+  kpi:'click',sub:'ctr',gross:25000000,bonus:0,sec:0,
   g:{imp:false,click:true,view:false},note:'2차 런칭 구간'},
  {id:'L5',segment:'Phase 2',media:'Meta',product:'IG (View)',target:'2049 남성 · 관심사',line:'신제품 C',
   device:['MO'],bid:'CPM',price:8500,start:'2026-08-01',end:'2026-09-30',
-  kpi:'imp',sub:'cpm',feeA:.13,feeR:.07,gross:50000000,bonus:5000000,sec:15,
+  kpi:'imp',sub:'cpm',gross:50000000,bonus:5000000,sec:15,
   g:{imp:true,click:false,view:false},note:'페이스북+인스타 노출'},
  {id:'L6',segment:'Phase 1',media:'네이버',product:'성과형 DA',target:'리타겟팅 · 유사',line:'신제품 A',
   device:['PC','MO'],bid:'CPC',price:700,start:'2026-08-01',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:30000000,bonus:0,sec:0,
+  kpi:'click',sub:'ctr',gross:30000000,bonus:0,sec:0,
   g:{imp:false,click:true,view:false},note:'검색 리타겟 연계'},
  {id:'L7',segment:'Phase 2',media:'카카오',product:'비즈보드',target:'2039 여성 · 관심사',line:'신제품 C',
   device:['MO'],bid:'CPC',price:850,start:'2026-08-08',end:'2026-09-30',
-  kpi:'click',sub:'ctr',feeA:.10,feeR:.05,gross:25000000,bonus:0,sec:0,
+  kpi:'click',sub:'ctr',gross:25000000,bonus:0,sec:0,
   g:{imp:false,click:true,view:false},note:'톡 비즈보드 상단 고정'},
  {id:'L8',segment:'Phase 1',media:'Teads',product:'inRead 동영상',target:'프리미엄 매체 지면',line:'신제품 B',
   device:['PC','MO'],bid:'CPM',price:6500,start:'2026-08-01',end:'2026-09-30',
-  kpi:'imp',sub:'cpm',feeA:.12,feeR:.05,gross:20000000,bonus:2000000,sec:15,
+  kpi:'imp',sub:'cpm',gross:20000000,bonus:2000000,sec:15,
   g:{imp:true,click:false,view:false},note:'프리미엄 지면 브랜드 세이프티'}
 ];
-const feeOf=l=>(+l.feeA||0)+(+l.feeR||0);
-/* 예산은 Gross 를 직접 넣고 Net 을 수수료로 역산한다
-   (수수료가 정해지기 전에 Gross 만 아는 경우가 많아 v17 에서 방향을 뒤집었다) */
+/* v72 — 수수료 · Net 개념을 뺐다. 예산 · 소진금액은 입력한 금액 하나의 기준으로만 계산한다
+   (수수료 정리는 내부에서 따로 한다). 예전 저장본에 수수료율이 남아 있어도 무시한다.
+   내부의 net 계열 값은 이제 소진금액과 같다. */
+const feeOf=l=>0;
+/* 캠페인 문서에 남아 있던 수수료 · Net 관련 열 열쇠 — 열 설정 · 헤더 구성에서 걸러 낸다 */
+const DROP_COLS=new Set(['feeA','feeR','net']);
 const lineGross=l=>Math.round(+l.gross||0);
 const lineNet=l=>Math.round(lineGross(l)*(1-feeOf(l)));
-/* 밸류는 직접 입력(v21) — 값이 없으면 Gross + 보너스로 본다 */
+/* 밸류는 직접 입력(v21) — 값이 없으면 예산 + 보너스로 본다 */
 const lineValue=l=>(l.value===undefined||l.value===null||l.value==='')
   ? lineGross(l)+(+l.bonus||0) : Math.round(+l.value||0);
 const toGross=(net,fee)=>net/(1-fee);
@@ -455,9 +458,6 @@ const FIELDS=[
   ['rev','매출','revenue','비용','in',0,0,1,1],
   ['e_rev','목표 매출','est.revenue','비용','in',0,1,0,1],
   ['budget','예산','budget','비용','calc',1,1,1,1],
-  ['feeA','대행사 수수료율','agency fee','비용','in',1,1,0,1],
-  ['feeR','렙사 수수료율','rep fee','비용','in',1,1,0,1],
-  ['net','예산(net)','budget(net)','비용','in',1,1,0,1],
   ['cost','소진금액','spend','비용','in',0,1,1,1],
   ['value','밸류','value','비용','in',1,1,0,1],
   ['bonus','보너스 밸류','bonus','비용','in',0,1,0,1],
@@ -651,6 +651,26 @@ function resetDateFilter(force){
    예전에는 조회 기간이 문서에 실리지 않아 광고주(뷰어)는 늘 기본 구간(첫날~실적 마지막 날)으로 봤다 —
    마스터가 고른 기간과 기본 구간이 우연히 같을 때만 같아 보여 "가끔 다르게 보인다" 로 나타났다.
    문서를 열 때 applyDoc 이 채우고, 기간을 기본으로 되돌리면 비운다. */
+/* ---------- 메뉴 목록 (v72) — 영역 × 하위 메뉴. 설정 › 메뉴 설정 · 메뉴 줄이 이 목록을 따른다 ----------
+   kind: view(대시보드 — 뷰어에게 보일 수 있다) · edit(입력 — 언제나 관리자 전용) */
+const MENUS=[
+  {id:'d_sum',  area:'digital',tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
+  {id:'d_daily',area:'digital',tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
+  {id:'d_mix',  area:'digital',tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
+  {id:'d_input',area:'digital',tab:'input',              l:'데이터 입력',  kind:'edit'},
+  {id:'d_plan', area:'digital',tab:'setup',              l:'예상효율 입력',kind:'edit'},
+  {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'서머리',       kind:'view'},
+  {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 효율',  kind:'view'},
+  {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
+  {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
+  {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
+  {id:'trend',  area:'trend',  tab:'trend',              l:'트렌드 리포트',kind:'view'}];
+const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
+const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
+  tvdash:'tv',tvdaily:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',trend:'trend'};
+const AREA_LABEL={digital:'디지털',tv:'TV',trend:'트렌드 리포트'};
+function campMenus(){return (typeof CAMPAIGN!=='undefined'&&CAMPAIGN.menus)||{};}
+let TV_LAST='tvdash';
 let DOC_RANGE=null;
 const ISO_RE=/^\d{4}-\d{2}-\d{2}$/;
 function resetDateFilter0(auto){
