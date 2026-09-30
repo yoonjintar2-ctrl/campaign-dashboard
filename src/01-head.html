@@ -351,21 +351,19 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .topbar.tcompact3 #betaTag{display:none}
 .glang select{border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink2);
   font:inherit;font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer}
-/* ===== 메뉴 한 줄 + 드롭다운 (v74) =====
-   [디지털 › 서머리 ▾] [TV ▾] [트렌드 리포트] ………… [도구]
-   상위 메뉴를 누르면 그 아래로 하위 메뉴 판(.subgrp)이 펼쳐진다 — #tabs[data-pop="<영역>"].
+/* ===== 메뉴 한 줄 + 전체 메뉴 판 (v75) =====
+   [디지털 › 서머리 ▾] [TV ▾] [트렌드 리포트 ▾] ………… [도구]
+   상위 메뉴 어느 것을 눌러도 모든 영역의 하위 메뉴가 한 판(.megapop)에 열로 펼쳐진다 — #tabs[data-pop].
    지금 보고 있는 하위 메뉴는 상위 버튼 옆 .acur 에 작게. 머리 영역 = 상단바 50 + 메뉴 44 = 94px. */
 .tabs{flex-direction:row;align-items:center;gap:0;min-height:44px}
-.tabs .arearow{display:flex;align-items:stretch;gap:2px;align-self:stretch;flex:none}
-.tabs .areawrap{position:relative;display:flex;align-items:stretch}
-.tabs .areawrap:has(>.area.menuoff){display:none}
+.tabs .arearow{position:relative;display:flex;align-items:stretch;gap:2px;align-self:stretch;flex:none}
 .tabs .area{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;cursor:pointer;
   padding:0 11px;font:inherit;font-size:14px;font-weight:700;color:var(--ink2);letter-spacing:-.3px;
   border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex:none}
 .tabs .area:hover{color:var(--ink)}
-.tabs .area .aic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
+.tabs .aic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
   background:var(--sub1);color:var(--ink2);border:1px solid var(--line);transition:background .15s,color .15s}
-.tabs .area .aic svg{display:block}
+.tabs .aic svg{display:block}
 .tabs .area.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:800}
 .tabs .area.on .aic{background:var(--acc);color:var(--surface);border-color:var(--acc)}
 .tabs .area.vhide{color:var(--muted)}
@@ -376,28 +374,38 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs .area .acur::before{content:'›';margin-right:6px;color:var(--gline);font-weight:600}
 .tabs .area .acv{flex:none;opacity:.5;margin-left:-2px;transition:transform .15s}
 .tabs .area:hover .acv{opacity:.85}
-.tabs .area[aria-expanded="true"]{color:var(--ink)}
-.tabs .area[aria-expanded="true"] .acv{transform:rotate(180deg);opacity:.9}
-/* 하위 메뉴 판 */
-.tabs .subgrp{display:none;position:absolute;top:calc(100% + 4px);left:2px;z-index:5;min-width:188px;
-  flex-direction:column;align-items:stretch;gap:0;padding:6px;background:var(--surface);
-  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2)}
-#tabs[data-pop="digital"] .subgrp[data-area="digital"],#tabs[data-pop="tv"] .subgrp[data-area="tv"]{display:flex;
-  animation:subpop .12s ease-out}
+#tabs[data-pop] .area .acv{transform:rotate(180deg);opacity:.9}
+/* 전체 메뉴 판 */
+.tabs .megapop{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:5;
+  align-items:stretch;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow2)}
+#tabs[data-pop] .megapop{display:flex;animation:subpop .12s ease-out}
 @keyframes subpop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.tabs .subhd{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.04em;padding:5px 10px 4px}
-.tabs .subhd.subinhd{border-top:1px solid var(--line2);margin-top:5px;padding-top:9px}
+.tabs .subgrp{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:176px;padding:4px 6px 6px;border-radius:10px}
+.tabs .subgrp+.subgrp{margin-left:6px;position:relative}
+.tabs .subgrp+.subgrp::before{content:'';position:absolute;left:-4px;top:8px;bottom:8px;width:1px;background:var(--line2)}
+/* 지금 있는 영역의 열 — 옅은 바탕 */
+.tabs .subgrp.cur{background:var(--acc-soft2)}
+.tabs .subttl{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:800;color:var(--ink);letter-spacing:-.3px;
+  padding:6px 8px 8px;margin-bottom:2px;border-bottom:1px solid var(--line2)}
+.tabs .subgrp.cur .subttl .aic{background:var(--acc);color:var(--surface);border-color:var(--acc)}
+.tabs .subhd{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.04em;padding:7px 10px 3px}
+.tabs .subhd.subinhd{margin-top:3px}
 .tabs .subhd:has(+.subbar.menuoff){display:none}
+.tabs .subnote{margin:6px 10px 0;font-size:11px;line-height:1.5;color:var(--muted);max-width:170px;white-space:normal;word-break:keep-all}
 .tabs .subgrp .subbar{display:flex;flex-direction:column;align-items:stretch;gap:1px;margin:0;padding:0;
   background:transparent;border:0;border-radius:0;flex:none}
 .tabs .subgrp .subbar::before{display:none}
 .tabs .subgrp .subbar button{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
-  white-space:nowrap;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink2);box-shadow:none}
-.tabs .subgrp .subbar button:hover{background:var(--acc-soft2);color:var(--ink)}
-.tabs .subgrp .subbar button.on{background:var(--acc-soft);color:var(--acc);font-weight:800;box-shadow:none}
+  white-space:nowrap;padding:7px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink2);box-shadow:none}
+.tabs .subgrp .subbar button:hover{background:var(--acc-soft);color:var(--ink)}
+.tabs .subgrp .subbar button.on{background:var(--surface);color:var(--acc);font-weight:800;box-shadow:0 0 0 1px var(--line)}
 .tabs .subgrp .subbar button.on::after{content:'✓';font-size:11px}
 .tabs .subgrp .subbar button.vhide{color:var(--muted)}
 .tabs .subgrp .subbar button.vhide.on{color:var(--acc)}
+/* 좁은 화면 — 열이 넘치면 두 줄로 */
+/* 좁은 화면 — 열이 넘치면 줄을 바꾼다. 판의 기준 상자(.arearow)가 좁아서 width 를 max-content 로 줘야
+   "상위 메뉴 줄 폭"에서 꺾이지 않는다 */
+@media (max-width:760px){.tabs .megapop{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 24px)}}
 /* 디지털 대시보드가 아닐 때는 서머리 · 일자별 · 미디어믹스의 "고른 흔적"을 지운다 */
 #tabs:not([data-cur="dash"]) #subbar button.on{background:transparent;box-shadow:none;color:var(--ink2);font-weight:600}
 #tabs:not([data-cur="dash"]) #subbar button.on::after{content:none}
@@ -1327,6 +1335,26 @@ table.tbl.fit{width:auto}
 .cmt .cmtsum .ln{display:block;margin:2px 0;padding-left:11px;text-indent:-11px}
 .cmt .cmtsum .ln::before{content:'· ';color:var(--muted)}
 .cmt[contenteditable="false"]{color:var(--ink2)}
+
+/* ---------- 가로 넘김 버튼 (v75 · enableHPager) — 서머리 표 ----------
+   스크롤바는 감추고(트랙패드 · Shift+휠은 그대로) 양옆에 둥근 ‹ › 단추 */
+.card.hpcard{position:relative}
+.tbl-wrap.hpwrap{scrollbar-width:none}
+.tbl-wrap.hpwrap::-webkit-scrollbar{display:none;height:0}
+.hpbtn{position:absolute;z-index:4;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;padding:0;
+  background:rgba(250,250,251,.9);color:var(--ink);border:1px solid var(--line);
+  box-shadow:0 4px 16px rgba(20,30,45,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  opacity:0;visibility:hidden;transition:opacity .18s,visibility .18s,transform .12s,background .12s}
+.hpbtn.on{opacity:1;visibility:visible}
+.hpbtn:hover{background:var(--surface);transform:scale(1.06)}
+.hpbtn:active{transform:scale(.96)}
+.hpbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-soft),0 4px 16px rgba(20,30,45,.14)}
+.hpbtn svg{display:block}
+.hpbtn.r{right:10px}
+[data-theme="dark"] .hpbtn{background:rgba(52,52,52,.9);border-color:#4a4a4a;box-shadow:0 4px 16px rgba(0,0,0,.45)}
+[data-theme="dark"] .hpbtn:hover{background:#3d3d3d}
+@media print{.hpbtn{display:none!important}}
 
 /* ---------- tables ---------- */
 .tbl-wrap{overflow:auto;max-height:74vh}

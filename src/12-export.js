@@ -1005,15 +1005,20 @@ function openAdvEditor(){
    예상 효율처럼 세로로 긴 표는 스크롤바가 화면 밖 아래에 있어 좌우로 옮기기가 번거롭다.
    같은 폭의 얇은 막대를 표 위에 하나 더 두고 서로 위치를 맞춘다. */
 function attachTopScroll(wrap){
-  if(!wrap||wrap.dataset.tsc)return;
+  /* 좌우 버튼으로 넘기는 표(서머리 · enableHPager)에는 달지 않는다 (v75) */
+  if(!wrap||wrap.dataset.tsc||wrap.classList.contains('hpwrap'))return;
   wrap.dataset.tsc='1';
   const bar=el('div','topscroll'),inner=el('i','',bar);
   wrap.parentNode.insertBefore(bar,wrap);
-  let lock=false;
   const sync=()=>{inner.style.width=wrap.scrollWidth+'px';
     bar.style.display=wrap.scrollWidth>wrap.clientWidth+2?'':'none';};
-  bar.addEventListener('scroll',()=>{if(lock)return;lock=true;wrap.scrollLeft=bar.scrollLeft;lock=false;});
-  wrap.addEventListener('scroll',()=>{if(lock)return;lock=true;bar.scrollLeft=wrap.scrollLeft;lock=false;});
+  /* ⚠ 메아리 막기 (v75) — 표가 움직여 막대를 맞추면 막대의 scroll 이벤트가 **나중에(비동기로)** 와서
+     예전 lock 은 이미 풀려 있었다 → 막대가 표의 scrollLeft 를 다시 써서 **부드러운 스크롤이 찔끔 멈췄다**(함정 54).
+     내가 맞춘 값(exp)과 같으면 무시한다. */
+  let exp=null;
+  bar.addEventListener('scroll',()=>{if(exp!=null&&Math.abs(bar.scrollLeft-exp)<1)return;
+    exp=null;wrap.scrollLeft=bar.scrollLeft;});
+  wrap.addEventListener('scroll',()=>{exp=wrap.scrollLeft;bar.scrollLeft=exp;});
   new ResizeObserver(sync).observe(wrap);
   const t=wrap.querySelector('table');
   if(t)new MutationObserver(()=>setTimeout(sync,0)).observe(t,{childList:true,subtree:true});

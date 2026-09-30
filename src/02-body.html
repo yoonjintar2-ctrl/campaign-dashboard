@@ -66,15 +66,18 @@
   <button class="btn sm" id="demoHide">닫기</button>
 </div>
 
-<!-- 상단 메뉴 — 한 줄 + **드롭다운** (v74): 상위 메뉴(디지털 · TV)를 누르면 그 아래로 하위 메뉴가 펼쳐진다.
-     지금 보고 있는 하위 메뉴 이름은 상위 버튼 옆(.acur)에 작게 — paintTabsOn() 이 채운다.
-     하위가 하나뿐이면(뷰어에게 서머리만 보이는 경우 등) 펼치지 않고 바로 이동 · 트렌드 리포트는 하위 없음.
+<!-- 상단 메뉴 — 한 줄 + **전체 메뉴 판** (v75): 상위 메뉴(디지털 · TV · 트렌드 리포트) 중 어느 것을 눌러도
+     모든 영역의 하위 메뉴가 **한 판**에 열(列)로 펼쳐진다 — #tabs[data-pop]. 지금 있는 영역의 열은 .cur 로 옅게 표시.
+     지금 보고 있는 하위 메뉴 이름은 상위 버튼 옆(.acur) — paintTabsOn(). 보이는 메뉴가 하나뿐이면 펼치지 않고 바로 이동.
      data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따른다 (applyMenus) -->
 <div class="tabs" id="tabs" data-cur="dash">
   <div class="arearow">
-    <div class="areawrap" data-area="digital">
-      <button class="area on" type="button" data-area="digital" aria-haspopup="menu" aria-expanded="false" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="subgrp" data-area="digital" role="menu">
+    <button class="area on" type="button" data-area="digital" aria-haspopup="menu" aria-expanded="false" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="area" type="button" data-area="tv" aria-haspopup="menu" aria-expanded="false" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="area" type="button" data-area="trend" aria-haspopup="menu" aria-expanded="false" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="megapop" role="menu">
+    <div class="subgrp" data-area="digital">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="subbar">
         <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
@@ -86,11 +89,9 @@
         <button type="button" data-tab="input" data-menu="d_input">데이터 입력</button>
         <button type="button" data-tab="setup" data-menu="d_plan">예상효율 입력</button>
       </div>
-      </div>
     </div>
-    <div class="areawrap" data-area="tv">
-      <button class="area" type="button" data-area="tv" aria-haspopup="menu" aria-expanded="false" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="subgrp" data-area="tv" role="menu">
+    <div class="subgrp" data-area="tv">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
@@ -102,11 +103,15 @@
         <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
         <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
       </div>
+    </div>
+    <div class="subgrp" data-area="trend">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span>트렌드 리포트</span></div>
+      <div class="subbar">
+        <button type="button" data-tab="trend" data-menu="trend">자료 게시판</button>
       </div>
+      <p class="subnote">모든 캠페인이 함께 쓰는 자료 게시판입니다</p>
     </div>
-    <div class="areawrap" data-area="trend">
-      <button class="area" type="button" data-area="trend" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span></button>
-    </div>
+  </div>
   </div>
   <div class="spacer"></div>
   <!-- 다크 보기는 대시보드에서만 쓰는 기능이라 탭 줄(하위 레벨)에 둔다 (v58) -->

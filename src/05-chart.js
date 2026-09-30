@@ -730,6 +730,69 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
       try{markDirty();saveLocal();}catch(x){}
       rerender&&rerender();});}
 }
+/* ---------- 가로 넘김 버튼 (v75) ----------
+   표가 옆으로 넘칠 때 스크롤바 대신 양옆에 둥근 ‹ › 단추를 띄운다 (애플 스토어 진열대처럼).
+   · 한 번에 "보이는 폭 − 고정 열(행 머리)" 의 85% 쯤 넘기고, **열 경계에 맞춰** 멈춘다
+   · 왼쪽 단추는 고정 열(.lfz) 바로 오른쪽에 — 매체·상품 이름을 가리지 않게
+   · 세로로는 표의 "화면에 보이는 부분" 한가운데 — 긴 표라도 단추가 화면 밖으로 나가지 않는다
+   · 스크롤바만 감춘 것이라 트랙패드 · Shift+휠 가로 스크롤은 그대로 된다
+   · 떠 있는 머리글(.ghfix)은 wrap 의 scroll 이벤트를 따라가므로 부드러운 이동에도 함께 움직인다 */
+function hpFrozenW(wrap){
+  const t=wrap.querySelector('table');if(!t||!t.tHead)return 0;
+  const wl=wrap.getBoundingClientRect().left;let w=0;
+  t.tHead.querySelectorAll('th.lfz').forEach(th=>{const r=th.getBoundingClientRect();if(r.width)w=Math.max(w,r.right-wl);});
+  return Math.max(0,Math.round(w));}
+/* 스크롤 좌표로 본 열 시작 위치들 — 머리글의 잎(묶음이 아닌 칸) 기준, 고정 열은 뺀다 */
+function hpColStarts(wrap){
+  const t=wrap.querySelector('table');if(!t||!t.tHead)return [];
+  const wl=wrap.getBoundingClientRect().left,sl=wrap.scrollLeft,out=new Set();
+  t.tHead.querySelectorAll('th').forEach(th=>{if(th.classList.contains('lfz')||th.colSpan>1)return;
+    const r=th.getBoundingClientRect();if(r.width)out.add(Math.round(r.left-wl+sl));});
+  return [...out].sort((a,b)=>a-b);}
+function hpGo(wrap,dir){
+  const fz=hpFrozenW(wrap),view=wrap.clientWidth-fz,max=wrap.scrollWidth-wrap.clientWidth;
+  const cur=wrap.scrollLeft,step=Math.max(120,view*0.85);
+  /* 고정 열 바로 오른쪽 경계(=cur+fz)에 열 시작이 오도록 맞춘다 */
+  const starts=hpColStarts(wrap).map(x=>x-fz);
+  let to=dir>0?cur+step:cur-step;
+  if(dir>0){const c=starts.filter(x=>x>cur+8&&x<=to);if(c.length)to=c[c.length-1];}
+  else{const c=starts.filter(x=>x>=to&&x<cur-8);if(c.length)to=c[0];}
+  to=Math.max(0,Math.min(max,to));
+  wrap.scrollTo({left:to,behavior:'smooth'});}
+function hpPaint(P){
+  const {card,wrap,L,R}=P;
+  if(!card.isConnected)return false;
+  const max=wrap.scrollWidth-wrap.clientWidth,over=max>2&&wrap.offsetParent;
+  L.classList.toggle('on',!!over&&wrap.scrollLeft>2);
+  R.classList.toggle('on',!!over&&wrap.scrollLeft<max-2);
+  wrap.classList.toggle('hpover',!!over);
+  if(!over)return true;
+  const cr=card.getBoundingClientRect(),top=(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stick'),10)||94)+40;
+  const vt=Math.max(cr.top,top),vb=Math.min(cr.bottom,innerHeight-10);
+  const y=vb>vt?(vt+vb)/2-cr.top:cr.height/2;
+  const wl=wrap.getBoundingClientRect().left-cr.left;
+  L.style.top=R.style.top=Math.round(y)+'px';
+  L.style.left=Math.round(wl+hpFrozenW(wrap)+10)+'px';
+  return true;}
+function enableHPager(card,wrap){
+  if(!card||!wrap)return;
+  card.classList.add('hpcard');wrap.classList.add('hpwrap');
+  card.querySelectorAll(':scope>.hpbtn').forEach(b=>b.remove());
+  /* 위쪽 거울 스크롤바가 먼저 붙어 있었다면 떼어 낸다 (버튼과 둘 다 있을 필요가 없다) */
+  const ts=wrap.previousElementSibling;if(ts&&ts.classList.contains('topscroll'))ts.remove();
+  const mk=(cls,dir,lab)=>{const b=el('button','hpbtn '+cls,card);b.type='button';b.title=lab;b.setAttribute('aria-label',lab);
+    b.innerHTML=`<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="${dir<0?'M12.5 4.5 7 10l5.5 5.5':'M7.5 4.5 13 10l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    b.onclick=e=>{e.stopPropagation();hpGo(wrap,dir);};return b;};
+  const P={card,wrap,L:mk('l',-1,'이전'),R:mk('r',1,'다음')};
+  const paint=()=>hpPaint(P);
+  wrap.addEventListener('scroll',()=>{cancelAnimationFrame(P.raf);P.raf=requestAnimationFrame(paint);},{passive:true});
+  try{new ResizeObserver(paint).observe(wrap);}catch(e){}
+  if(!window.__hpList){window.__hpList=[];
+    const run=()=>{window.__hpList=window.__hpList.filter(f=>f());};
+    let raf=0;const q=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(run);};
+    addEventListener('scroll',q,{passive:true});addEventListener('resize',q);}
+  window.__hpList.push(paint);
+  setTimeout(paint,0);setTimeout(paint,360);}
 function renderSummaries(){
   const host=$('summaryHost');host.innerHTML='';
   SUMMARIES.forEach((s,i)=>{
@@ -755,10 +818,12 @@ function renderSummaries(){
     const cfgBox=el('div','hidden',host);
     const card=el('div','card fit',host);
     /* 서머리는 세로 스크롤 없이 전체 높이를 그대로 노출한다 (가로 스크롤만) */
-    const tbl=el('table','tbl gln fit cmpt',el('div','tbl-wrap noy',card));
+    const tbl=el('table','tbl gln fit cmpt',el('div','tbl-wrap noy hpwrap',card));
     const draw=()=>{tbl.classList.toggle('nogauge',!!s.noGauge);
       buildPivot(tbl,s,SUM_DEF,SUM_CELL,draw);};
     draw();
+    /* 가로 스크롤바 대신 좌우 버튼 (v75) */
+    try{enableHPager(card,tbl.parentNode);}catch(e){}
     const nm=sec.querySelector('[data-nm]');
     if(!isClient())nm.onclick=()=>{const n=prompt('서머리 이름',s.name);if(n){s.name=n;renderSummaries();}};
     const cb=tools.querySelector('[data-cfg]');

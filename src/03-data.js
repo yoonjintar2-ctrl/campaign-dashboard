@@ -5,6 +5,12 @@
    file:// 로 여는 시안 파일은 사내에서만 쓰므로 한국어가 기본이다(드롭다운으로 바꿀 수 있다).
    ⚠ 부트스트랩 중에도 쓰이므로 맨 앞에 둔다 (p15 의 번역기보다 먼저). */
 const LANG_KEY='dmd:lang';
+/* 구글 로그인에서 돌아오면 주소 뒤(?code · menu · lang)가 빠져 있다 — 떠나기 전 주소를 되살린다 (v75).
+   언어를 정하기 전에 해야 ?lang= 이 먹는다. 이미 주소 뒤가 있으면(다른 경로로 온 것) 건드리지 않는다. */
+(function restoreReturnUrl(){try{
+  const s=sessionStorage.getItem('dmd:return');if(s==null)return;sessionStorage.removeItem('dmd:return');
+  if(!location.search&&/^\?/.test(s))history.replaceState(history.state,'',location.pathname+s+location.hash);
+}catch(e){}})();
 /* env 를 넘기면 그 조건으로 판단한다 (검사용) — 안 넘기면 지금 브라우저 */
 function langEnv(){
   const e={search:'',stored:'',protocol:'',tz:'',langs:[]};

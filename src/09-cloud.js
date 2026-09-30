@@ -412,6 +412,7 @@ function enterShareView(name,kind){
   cloudState(kind==='staff'
     ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
     : `${name||CAMPAIGN.name} · 뷰어 코드로 열람 (조회 전용)`);
+  try{urlSettled();}catch(e){}
 }
 /* 샘플 둘러보기는 시행사 전용 — 데이터 입력 · 캠페인 설정까지 다 열어 둔다.
    (공유 코드로 들어온 광고주와 달리 화면 전체를 둘러볼 수 있어야 하기 때문) */
@@ -428,11 +429,13 @@ function enterSample(){
   endBoot();
   const bar=$('demoBar');
   if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');
+  try{urlSettled();}catch(e){}
 }
 /* 코드 확인 — 클라우드가 있으면 RPC(open_by_code)로, 없으면 샘플 코드만 */
 async function tryCode(raw){
   const code=normCode(raw);
   if(code.replace('-','').length<8){gateMsg('8자리 코드를 모두 입력해 주세요.');return false;}
+  CLOUD.shareCode=code;                  /* 주소창에 실을 코드 (syncUrl) */
   if(code===SAMPLE_CODE){enterSample();return true;}
   if(code===SAMPLE_VIEW_CODE){enterShareView('샘플 캠페인','viewer');return true;}
   if(!CLOUD.on){
@@ -467,6 +470,8 @@ async function tryCode(raw){
   endBoot();
   /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
   if(kind==='staff'){try{sessionStorage.setItem('staffCode',code);}catch(e){}}
+  /* 운영진 코드는 주소창에 싣지 않는다(복사해 보내도 권한이 퍼지지 않게) — 같은 탭 새로고침만 이어 준다 (v75) */
+  try{if(kind==='staff')sessionStorage.setItem('staffResume',code);else sessionStorage.removeItem('staffResume');}catch(e){}
   return true;
 }
 /* 게이트를 쓸 수 있는 상태로 (로그인 세션이 없을 때만 보인다) */
@@ -497,16 +502,18 @@ function gateReady(){
   if(local&&qs.has('nogate')){
     hideGate();
     /* 새로고침해도 입력한 값이 남아 있게 — 이 브라우저에 적어 둔 마지막 상태를 되살린다 */
-    setTimeout(()=>{try{loadLocal();}catch(e){}endBoot();},0);
+    setTimeout(()=>{try{loadLocal();}catch(e){}endBoot();try{urlSettled();}catch(e){}},0);
     return;}
   /* 주소에 ?code=XXXX 가 있으면 바로 열어 준다 */
-  const q=qs.get('code');
+  let q=qs.get('code');
+  /* 운영진 코드로 보던 탭을 새로고침한 경우 — 주소에는 코드가 없으므로 이 탭에 적어 둔 코드로 이어 연다 (v75) */
+  if(!q){try{q=sessionStorage.getItem('staffResume')||'';}catch(e){q='';}}
   if(q){if(inp)inp.value=normCode(q);tryCode(q);}
 }
 
 /* 로고를 누르면 첫 화면(접속 화면)으로 — 저장하지 않은 내용이 있으면 한 번 묻는다 */
 function goHome(){
-  const home=()=>{location.href=location.pathname;};
+  const home=()=>{try{sessionStorage.removeItem('staffResume');}catch(e){}location.href=location.pathname+'?lang='+LANG;};
   if(CLOUD.shareView&&!CLOUD.user){home();return;}     /* 조회 전용은 잃을 게 없다 */
   confirmModal('첫 화면으로 돌아갈까요?',
     '저장하지 않은 내용은 사라집니다. 먼저 ☁ 저장을 눌러 주세요.',home,'첫 화면으로');
@@ -536,6 +543,8 @@ async function cloudInit(){
 }
 async function signInGoogle(){
   if(!CLOUD.on){alert('클라우드가 설정되지 않았습니다. config.js 의 Supabase URL / anon key 를 확인해 주세요.');return;}
+  /* 돌아왔을 때 같은 캠페인 · 메뉴 · 언어로 — 주소 뒤를 적어 둔다 (restoreReturnUrl, p3) */
+  try{sessionStorage.setItem('dmd:return',location.search||'');}catch(e){}
   await CLOUD.sb.auth.signInWithOAuth({provider:'google',
     options:{redirectTo:location.href.split('#')[0].split('?')[0],
              queryParams:{prompt:'select_account'}}});
@@ -547,7 +556,9 @@ async function signOutCloud(){
   CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='guest';
   paintAuth();paintCampSel();cloudState('로그아웃됨');
   const g=gateEl();if(g)g.classList.remove('hidden');
+  try{sessionStorage.removeItem('staffResume');}catch(e){}
   gateReady();
+  try{syncUrl();}catch(e){}
 }
 async function afterSignIn(){
   const u=CLOUD.user;
@@ -697,6 +708,13 @@ async function loadCampaignList(listOnly){
   CLOUD.list=data||[];
   paintCampSel();
   if(listOnly)return;
+  /* 주소에 코드가 있으면(링크로 들어온 경우) 그 캠페인을 연다 — 내가 멤버면 내 권한으로 (v75) */
+  const UB=urlBoot(),bc=UB.code?normCode(UB.code):'';UB.code='';
+  const isSample=bc===SAMPLE_CODE||bc===SAMPLE_VIEW_CODE;
+  const hit=bc&&CLOUD.list.find(c=>normCode(c.share_code||'')===bc||normCode(c.staff_code||'')===bc);
+  if(hit){await openCampaign(hit.id);return;}
+  /* 멤버가 아닌 캠페인의 링크 — 코드 권한(뷰어/운영진)으로 연다 */
+  if(bc&&!isSample){try{if(await tryCode(bc))return;}catch(e){}}
   if(CLOUD.list.length)await openCampaign(CLOUD.list[0].id);
   else{
     /* 로그인은 했는데 캠페인이 없다 → 데모 데이터를 계속 보여 주면
@@ -756,6 +774,7 @@ async function openCampaign(id){
   clearLocal();
   endBoot();
   cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
+  try{urlSettled();}catch(e){}
 }
 const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
 /* 조회 권한이면 편집 화면을 잠근다 (광고주 모드와 동일한 처리) */

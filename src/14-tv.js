@@ -72,52 +72,100 @@ function paintTabsOn(){
       lb=m?m.l:'';}
     const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
     if(src!==lb||(!lb&&c.textContent))c.textContent=lb;});
+  T.querySelectorAll('.subgrp').forEach(g=>g.classList.toggle('cur',g.dataset.area===area));
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 리포트 엑셀은 디지털 영역에서만 */
   const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash');
   const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');
   /* "지금 메뉴" 글자 길이가 바뀌면 줄이 넘칠 수 있다 — 한 번 더 잰다 */
-  cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});}
-/* ---------- 상위 메뉴 드롭다운 (v74) ----------
-   상위 메뉴(디지털 · TV)를 누르면 하위 메뉴 판을 펼친다. 하위가 하나뿐이면 펼치지 않고 바로 간다.
-   바깥 클릭 · Esc · 창 크기 변경 · 하위 메뉴 선택 → 닫힘. 펼친 채로 다른 상위 메뉴에 올리면 그쪽으로 옮겨 간다. */
-function areaItems(a){
-  const g=document.querySelector(`#tabs .subgrp[data-area="${a}"]`);if(!g)return [];
+  cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});
+  syncUrl();}
+/* ---------- 전체 메뉴 판 (v75) ----------
+   상위 메뉴(디지털 · TV · 트렌드 리포트) 중 어느 것을 눌러도 모든 영역의 하위 메뉴를 한 판에 펼친다.
+   보이는 메뉴가 하나뿐이면 펼치지 않고 바로 간다. 바깥 클릭 · Esc · 창 크기 변경 · 메뉴 선택 → 닫힘. */
+function areaItems(){
+  const g=document.querySelector('#tabs .megapop');if(!g)return [];
   return [...g.querySelectorAll('button')].filter(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden')
-    &&!x.closest('.subbar.menuoff'));}
+    &&!x.closest('.subbar.menuoff')&&!x.closest('.subgrp.menuoff'));}
 function openAreaPop(a){
   const T=$('tabs');if(!T)return;
-  T.dataset.pop=a;
+  T.dataset.pop=a||'1';
   T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded',x.dataset.area===a?'true':'false'));
-  /* 오른쪽이 모자라면 버튼 오른쪽 끝에 맞춘다 */
-  const g=T.querySelector(`.subgrp[data-area="${a}"]`);
-  if(g){g.style.left='';g.style.right='';
-    const r=g.getBoundingClientRect();if(r.right>innerWidth-8){g.style.left='auto';g.style.right='2px';}}}
+  /* 오른쪽이 모자라면 판을 왼쪽으로 당긴다 */
+  const g=T.querySelector('.megapop');
+  if(g){g.style.left='';const r=g.getBoundingClientRect();if(r.right>innerWidth-8)g.style.left=Math.round(innerWidth-8-r.right)+'px';}}
 function closeAreaPop(){
   const T=$('tabs');if(!T||!T.dataset.pop)return;
   delete T.dataset.pop;
   T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded','false'));}
 function areaClick(b,e){
   if(e)e.stopPropagation();
-  const a=b.dataset.area,T=$('tabs'),items=areaItems(a);
+  const a=b.dataset.area,T=$('tabs'),items=areaItems();
   if(items.length<=1){closeAreaPop();
     if(items.length===1)items[0].click();else switchTab(areaHome(a));return;}
-  if(T&&T.dataset.pop===a){closeAreaPop();return;}
+  if(T&&T.dataset.pop){closeAreaPop();return;}
   openAreaPop(a);}
 (function wireAreaPop(){
   const go=()=>{
     const T=$('tabs');if(!T)return;
-    /* 하위 메뉴를 고르면 닫는다 (각 단추의 원래 동작은 그대로 돈다) */
-    T.addEventListener('click',e=>{if(e.target.closest('.subgrp button'))closeAreaPop();});
-    /* 펼친 채로 옆 상위 메뉴에 올리면 그쪽 판으로 */
-    T.querySelectorAll('.area[aria-haspopup]').forEach(b=>b.addEventListener('mouseenter',()=>{
-      if(T.dataset.pop&&T.dataset.pop!==b.dataset.area&&areaItems(b.dataset.area).length>1)openAreaPop(b.dataset.area);}));
-    document.addEventListener('click',e=>{if(T.dataset.pop&&!e.target.closest('#tabs .areawrap'))closeAreaPop();});
+    /* 메뉴를 고르면 닫는다 (각 단추의 원래 동작은 그대로 돈다) */
+    T.addEventListener('click',e=>{if(e.target.closest('.megapop button'))closeAreaPop();});
+    document.addEventListener('click',e=>{if(T.dataset.pop&&!e.target.closest('#tabs .arearow'))closeAreaPop();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&T.dataset.pop){closeAreaPop();
       const b=T.querySelector('.area.on');if(b)b.focus();}});
     addEventListener('resize',closeAreaPop);};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):go();})();
+/* ---------- 주소창 = 지금 화면 (v75) ----------
+   ?code=<코드>&menu=<메뉴>&lang=<ko|en> — 캠페인 · 메뉴 · 언어가 바뀔 때마다 주소를 고쳐 쓴다(뒤로 가기 기록은 쌓지 않음).
+   주소창을 그대로 복사해 보내면 받는 사람도 같은 캠페인 · 같은 메뉴 · 같은 언어로 열린다.
+   · 로그인한 시행사 → 그 캠페인의 **뷰어(광고주) 코드** — 복사해 보내도 조회 전용이다
+   · 운영진 코드로 들어온 화면 → 코드를 싣지 않는다(운영진 권한이 퍼지지 않게). 같은 탭 새로고침은 staffResume 로 이어 연다
+   · 샘플 → DEMO-2026(시행사 화면) / VIEW-2026(광고주 화면) · 접속 화면 → lang 만
+   ⚠ 첫 화면이 자리 잡기 전(window.__urlLive 없음)에는 절대 고치지 않는다 — 접속 화면이 ?code 를 읽기 전에 지워지면 안 된다. */
+/* ⚠ 부트스트랩 중(접속 화면이 코드를 읽는 순간 · p8 의 첫 switchTab)에 이 파일보다 **먼저** 불린다 →
+   최상위 const/let/var 로 두면 TDZ 이거나, 나중에 `var …=false` 가 이미 켠 값을 되돌린다. 전부 window 에 둔다 (함정 10) */
+function urlBoot(){
+  if(!window.__urlBoot){try{const q=new URLSearchParams(location.search);
+    window.__urlBoot={code:q.get('code')||'',menu:q.get('menu')||''};}catch(e){window.__urlBoot={code:'',menu:''};}}
+  return window.__urlBoot;}
+function urlCode(){
+  const g=$('gate');if(g&&!g.classList.contains('hidden'))return '';
+  if(CLOUD.sample)return SAMPLE_CODE;
+  if(CLOUD.shareView)return CLOUD.shareRole==='staff'?'':(CLOUD.shareCode||'');
+  if(CLOUD.user&&CLOUD.campaign&&CLOUD.campaign.id){
+    const c=(CLOUD.list||[]).find(x=>x.id===CLOUD.campaign.id);return (c&&c.share_code)||CLOUD.campaign.share_code||'';}
+  return '';}
+function urlMenu(){
+  const g=$('gate');if(g&&!g.classList.contains('hidden'))return '';
+  const T=$('tabs');if(!T)return '';
+  const cur=T.dataset.cur||'dash';
+  const m=cur==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===curDashSub()):MENUS.find(x=>x.tab===cur);
+  return m?m.id:'';}
+function syncUrl(){
+  if(!window.__urlLive)return;
+  try{
+    const keep=new URLSearchParams(location.search);['code','menu','lang'].forEach(k=>keep.delete(k));
+    const q=new URLSearchParams();
+    const c=urlCode(),m=urlMenu();
+    if(c)q.set('code',c);if(m)q.set('menu',m);q.set('lang',LANG);
+    keep.forEach((v,k)=>q.append(k,v));
+    const url=location.pathname+'?'+q.toString()+location.hash;
+    if(url!==location.pathname+location.search+location.hash)history.replaceState(history.state,'',url);
+  }catch(e){}}
+/* 주소에 적힌 메뉴로 가기 — 보이지 않는 메뉴(꺼짐 · 광고주에게 숨김)면 그대로 둔다 */
+function goMenu(id){
+  const m=MENU_BY[id];if(!m||!menuVisible(id))return false;
+  if(m.tab==='dash'){
+    if(($('tabs')||{}).dataset?.cur!=='dash')switchTab('dash');
+    const b=document.querySelector(`#subbar [data-sub="${m.sub}"]`);if(b&&curDashSub()!==m.sub)b.click();}
+  else switchTab(m.tab);
+  return true;}
+/* 캠페인(또는 샘플 · 코드 화면)이 자리 잡은 뒤 한 번 — 주소의 메뉴로 옮기고, 이후로는 주소를 따라 고친다 */
+function urlSettled(){
+  const B=urlBoot(),m=B.menu;B.menu='';
+  if(m){try{goMenu(m);}catch(e){}}
+  window.__urlLive=true;syncUrl();}
 /* 디지털 대시보드에서 지금 하위 화면이 꺼져 있으면 보이는 첫 하위 화면으로 */
 function ensureDashSub(){
   const cs=curDashSub(),m=MENUS.find(x=>x.tab==='dash'&&x.sub===cs);
@@ -145,6 +193,9 @@ function applyMenus(){
   T.querySelectorAll('.subgrp .subbar').forEach(sb=>{
     const any=[...sb.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
     sb.classList.toggle('menuoff',!any);});
+  /* 보이는 트레이가 없는 영역은 판에서 열째로 감춘다 */
+  T.querySelectorAll('.megapop .subgrp').forEach(g=>{
+    g.classList.toggle('menuoff',![...g.querySelectorAll('.subbar')].some(x=>!x.classList.contains('menuoff')));});
   const cur=T.dataset.cur||'dash';
   if(!tabVisible(cur))switchTab(firstDashTab());
   else{if(cur==='dash')ensureDashSub();paintTabsOn();}
