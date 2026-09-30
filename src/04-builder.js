@@ -1525,6 +1525,7 @@ function renderDonuts(){
       +`<b class="achv mono" title="${rings.length===1?KPI_LABEL[rings[0].k]:'KPI 종합'} 기준">${pct(total,1)}</b></div>`;
   });
   wireDonutDrag(box,mode);
+  try{hpStrip('donuts');}catch(e){}
 }
 /* 아직 시작하지 않았거나 이미 끝난 라인이면 그 사실을 툴팁에 덧붙인다 */
 function lineSpanNote(ls){
@@ -1667,6 +1668,7 @@ function renderStrip(){
       </div>
       <div class="spark"></div><div class="sppill" hidden></div>`;
     drawSpark(c.querySelector('.spark'),c.querySelector('.sppill'),S,k);});
+  try{hpStrip('statStrip');}catch(e){}
 }
 /* 카드 배경에 깔리는 일별 추이 — 축·범례·여백 없이 추세만.
    오늘(데이터 기준일)에 작은 원 표식, 마우스를 올리면 그 날의 값을 알약으로 보여준다. */

@@ -411,6 +411,10 @@ function mountHNav(parts,blocks,hKeys,hDim){
   wrap.addEventListener('scroll',paint,{passive:true});
   addEventListener('resize',paint);
   paint();setTimeout(paint,0);
+  /* 표마다 좌우 넘김 단추 (v77) — 누르면 위 세그먼트 칩과 같이 **블록 단위로** 모든 표가 함께 넘어간다.
+     세로 스크롤이 있는 표라 가로 스크롤바만 감춘다(keepY) */
+  parts.forEach(pt=>{try{const c=pt.wrap.closest('.card');
+    if(c)enableHPager(c,pt.wrap,{go:d=>goTo(cur()+d),frozen:()=>frozen(),keepY:true});}catch(e){}});
 }
 /* ===== 요일별 · 일자별 효율 히트맵 =====
    열 = 매체 × 광고상품 × KPI 지표, 값 = 그 KPI 의 단가.
@@ -1657,6 +1661,8 @@ function renderGantt(){
     t.querySelectorAll('td.day .vnum').forEach(u=>{
       u.classList.toggle('nofit',wOf(u.textContent)>w);});
   }catch(e){}});
+  /* 가로 스크롤바 대신 좌우 넘김 단추 (v77) — 왼쪽 소재 열(sticky)은 자동으로 비켜 간다 */
+  try{const w=$('ganttTbl')&&$('ganttTbl').closest('.gantt-wrap');if(w)enableHPager(w.closest('.card'),w);}catch(e){}
 }
 /* ---- 떠 있는 머리글 막대 ----
    게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서

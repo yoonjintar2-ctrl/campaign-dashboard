@@ -737,62 +737,96 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
    · 세로로는 표의 "화면에 보이는 부분" 한가운데 — 긴 표라도 단추가 화면 밖으로 나가지 않는다
    · 스크롤바만 감춘 것이라 트랙패드 · Shift+휠 가로 스크롤은 그대로 된다
    · 떠 있는 머리글(.ghfix)은 wrap 의 scroll 이벤트를 따라가므로 부드러운 이동에도 함께 움직인다 */
+/* 왼쪽에 붙어 있는(가로 고정) 열의 폭 — .lfz 든, 가로 sticky(left≠auto) 든 */
 function hpFrozenW(wrap){
   const t=wrap.querySelector('table');if(!t||!t.tHead)return 0;
   const wl=wrap.getBoundingClientRect().left;let w=0;
-  t.tHead.querySelectorAll('th.lfz').forEach(th=>{const r=th.getBoundingClientRect();if(r.width)w=Math.max(w,r.right-wl);});
+  t.tHead.querySelectorAll('th').forEach(th=>{
+    if(!th.classList.contains('lfz')){const cs=getComputedStyle(th);if(cs.position!=='sticky'||cs.left==='auto')return;}
+    const r=th.getBoundingClientRect();if(r.width)w=Math.max(w,r.right-wl);});
   return Math.max(0,Math.round(w));}
-/* 스크롤 좌표로 본 열 시작 위치들 — 머리글의 잎(묶음이 아닌 칸) 기준, 고정 열은 뺀다 */
+/* 스크롤 좌표로 본 "멈출 자리"들 — 표면 머리글 잎(묶음이 아닌 칸), 카드 줄이면 카드 */
 function hpColStarts(wrap){
-  const t=wrap.querySelector('table');if(!t||!t.tHead)return [];
   const wl=wrap.getBoundingClientRect().left,sl=wrap.scrollLeft,out=new Set();
-  t.tHead.querySelectorAll('th').forEach(th=>{if(th.classList.contains('lfz')||th.colSpan>1)return;
-    const r=th.getBoundingClientRect();if(r.width)out.add(Math.round(r.left-wl+sl));});
+  const t=wrap.querySelector('table');
+  const cells=t&&t.tHead?[...t.tHead.querySelectorAll('th')].filter(th=>th.colSpan<=1):[...wrap.children];
+  cells.forEach(el=>{
+    if(el.classList.contains('lfz')||el.classList.contains('hpbtn'))return;
+    if(el.tagName==='TH'){const cs=getComputedStyle(el);if(cs.position==='sticky'&&cs.left!=='auto')return;}
+    const r=el.getBoundingClientRect();if(r.width)out.add(Math.round(r.left-wl+sl));});
   return [...out].sort((a,b)=>a-b);}
-function hpGo(wrap,dir){
-  const fz=hpFrozenW(wrap),view=wrap.clientWidth-fz,max=wrap.scrollWidth-wrap.clientWidth;
+function hpGo(wrap,dir,o){
+  if(o&&o.go){o.go(dir);return;}
+  const fz=o&&o.frozen?o.frozen():hpFrozenW(wrap),view=wrap.clientWidth-fz,max=wrap.scrollWidth-wrap.clientWidth;
   const cur=wrap.scrollLeft,step=Math.max(120,view*0.85);
-  /* 고정 열 바로 오른쪽 경계(=cur+fz)에 열 시작이 오도록 맞춘다 */
-  const starts=hpColStarts(wrap).map(x=>x-fz);
+  /* 고정 열 바로 오른쪽 경계(=cur+fz)에 열(카드) 시작이 오도록 맞춘다 */
+  const starts=hpColStarts(wrap).map(x=>x-fz-(o&&o.pad||0));
   let to=dir>0?cur+step:cur-step;
   if(dir>0){const c=starts.filter(x=>x>cur+8&&x<=to);if(c.length)to=c[c.length-1];}
   else{const c=starts.filter(x=>x>=to&&x<cur-8);if(c.length)to=c[0];}
   to=Math.max(0,Math.min(max,to));
   wrap.scrollTo({left:to,behavior:'smooth'});}
 function hpPaint(P){
-  const {card,wrap,L,R}=P;
+  const {card,wrap,L,R,o}=P;
   if(!card.isConnected)return false;
   const max=wrap.scrollWidth-wrap.clientWidth,over=max>2&&wrap.offsetParent;
-  L.classList.toggle('on',!!over&&wrap.scrollLeft>2);
-  R.classList.toggle('on',!!over&&wrap.scrollLeft<max-2);
+  /* 카드 줄은 scroll-snap 과 안쪽 여백 때문에 맨 앞에서도 몇 px 밀려 있을 수 있다 — 8px 까지는 "처음"으로 본다 */
+  L.classList.toggle('on',!!over&&wrap.scrollLeft>8);
+  R.classList.toggle('on',!!over&&wrap.scrollLeft<max-8);
   wrap.classList.toggle('hpover',!!over);
+  /* 세로 스크롤 상자 — 가로 막대만 카드 밖으로 밀어 잘라 낸다 (위 CSS 설명) */
+  if(o.keepY){const cs=getComputedStyle(wrap);
+    const sb=Math.max(0,wrap.offsetHeight-wrap.clientHeight-(parseFloat(cs.borderTopWidth)||0)-(parseFloat(cs.borderBottomWidth)||0)-(parseFloat(wrap.style.marginBottom)?0:0));
+    const cur=-(parseFloat(wrap.style.marginBottom)||0);
+    if(over&&sb!==cur)wrap.style.marginBottom=sb?(-sb)+'px':'';
+    if(!over&&cur)wrap.style.marginBottom='';}
   if(!over)return true;
-  const cr=card.getBoundingClientRect(),top=(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stick'),10)||94)+40;
-  const vt=Math.max(cr.top,top),vb=Math.min(cr.bottom,innerHeight-10);
-  const y=vb>vt?(vt+vb)/2-cr.top:cr.height/2;
-  const wl=wrap.getBoundingClientRect().left-cr.left;
+  const cr=card.getBoundingClientRect(),wr=wrap.getBoundingClientRect();
+  const top=(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stick'),10)||94)+40;
+  const vt=Math.max(wr.top,top),vb=Math.min(wr.bottom,innerHeight-10);
+  const y=vb>vt?(vt+vb)/2-cr.top:(wr.top+wr.bottom)/2-cr.top;
   L.style.top=R.style.top=Math.round(y)+'px';
-  L.style.left=Math.round(wl+hpFrozenW(wrap)+10)+'px';
+  const fz=o.frozen?o.frozen():hpFrozenW(wrap);
+  L.style.left=Math.round(wr.left-cr.left+fz+10)+'px';
+  R.style.right=Math.round(cr.right-wr.right+10)+'px';
   return true;}
-function enableHPager(card,wrap){
-  if(!card||!wrap)return;
-  card.classList.add('hpcard');wrap.classList.add('hpwrap');
+/* host = 단추를 얹을 상자(position:relative 가 된다), wrap = 옆으로 넘치는 상자.
+   o.go(dir) — 넘기는 방법을 직접 줄 때(일자별 효율: 블록 단위로 여러 표를 함께) · o.frozen() — 고정 폭을 직접 잴 때
+   o.keepY — 세로 스크롤이 있는 상자라 가로 스크롤바만 감춘다 */
+function enableHPager(card,wrap,o){
+  if(!card||!wrap)return;o=o||{};
+  card.classList.add('hpcard');wrap.classList.add('hpwrap');wrap.classList.toggle('hpy',!!o.keepY);
+  card.classList.toggle('hpclip',!!o.keepY);
   card.querySelectorAll(':scope>.hpbtn').forEach(b=>b.remove());
   /* 위쪽 거울 스크롤바가 먼저 붙어 있었다면 떼어 낸다 (버튼과 둘 다 있을 필요가 없다) */
   const ts=wrap.previousElementSibling;if(ts&&ts.classList.contains('topscroll'))ts.remove();
   const mk=(cls,dir,lab)=>{const b=el('button','hpbtn '+cls,card);b.type='button';b.title=lab;b.setAttribute('aria-label',lab);
-    b.innerHTML=`<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="${dir<0?'M12.5 4.5 7 10l5.5 5.5':'M7.5 4.5 13 10l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    b.onclick=e=>{e.stopPropagation();hpGo(wrap,dir);};return b;};
-  const P={card,wrap,L:mk('l',-1,'이전'),R:mk('r',1,'다음')};
+    b.innerHTML=`<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="${dir<0?'M12.5 4.5 7 10l5.5 5.5':'M7.5 4.5 13 10l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    b.onclick=e=>{e.stopPropagation();hpGo(wrap,dir,o);};return b;};
+  const P={card,wrap,o,L:mk('l',-1,'이전'),R:mk('r',1,'다음')};
   const paint=()=>hpPaint(P);
-  wrap.addEventListener('scroll',()=>{cancelAnimationFrame(P.raf);P.raf=requestAnimationFrame(paint);},{passive:true});
-  try{new ResizeObserver(paint).observe(wrap);}catch(e){}
+  if(!wrap.__hpScroll){wrap.__hpScroll=1;
+    wrap.addEventListener('scroll',()=>{cancelAnimationFrame(wrap.__hpRaf);wrap.__hpRaf=requestAnimationFrame(()=>wrap.__hpPaint&&wrap.__hpPaint());},{passive:true});
+    try{new ResizeObserver(()=>wrap.__hpPaint&&wrap.__hpPaint()).observe(wrap);}catch(e){}}
+  wrap.__hpPaint=paint;
   if(!window.__hpList){window.__hpList=[];
     const run=()=>{window.__hpList=window.__hpList.filter(f=>f());};
     let raf=0;const q=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(run);};
     addEventListener('scroll',q,{passive:true});addEventListener('resize',q);}
-  window.__hpList.push(paint);
+  /* 같은 상자에 다시 걸면 예전 그리기 함수는 목록에서 빠진다 (다시 그릴 때마다 쌓이지 않게) */
+  if(card.__hpPaint){const i=window.__hpList.indexOf(card.__hpPaint);if(i>=0)window.__hpList.splice(i,1);}
+  card.__hpPaint=paint;window.__hpList.push(paint);
   setTimeout(paint,0);setTimeout(paint,360);}
+/* 카드 줄(주요 지표 · KPI 달성 현황) — 스크롤 상자를 한 겹 감싸 단추를 얹는다.
+   감싼 상자에도 같은 data-sect 를 줘서 영역 관리(순서 · 숨기기)가 그대로 따라온다 */
+function hpStrip(id){
+  const s=$(id);if(!s)return;
+  let box=s.parentElement;
+  if(!box.classList.contains('hpbox')){
+    box=document.createElement('div');box.className='hpbox';
+    if(s.dataset.sect)box.dataset.sect=s.dataset.sect;
+    s.parentNode.insertBefore(box,s);box.appendChild(s);}
+  enableHPager(box,s,{frozen:()=>0});}
 function renderSummaries(){
   const host=$('summaryHost');host.innerHTML='';
   SUMMARIES.forEach((s,i)=>{

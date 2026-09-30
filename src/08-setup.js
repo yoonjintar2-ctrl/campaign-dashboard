@@ -948,6 +948,7 @@ function renderMix(){
   wireHeadPops(pivotHeadList($('tblMix'),MIX_CFG,cols,dims,MIX_DEF),{cur:srt,scope:'mix',
     onSort:(k,d)=>{if(d)HP_SORT['mix']={k,dir:d};else delete HP_SORT['mix'];renderMix();}});
   mountFloatHead($('tblMix'));
+  try{const w=$('tblMix')&&$('tblMix').closest('.tbl-wrap');if(w)enableHPager(w.closest('.card'),w);}catch(e){}
 }
 function openPerm(){
   /* 로그인 상태면 실제 캠페인 멤버·초대를 보여준다 (미로그인이면 예시 목록) */
