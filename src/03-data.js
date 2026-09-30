@@ -170,7 +170,9 @@ let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
    상수로 한 번만 잡아 두면 예전 캠페인의 날짜(예: 9/24)가 계속 남아
    기간 필터의 종료일이 엉뚱한 날로 고정된다 */
 let dT=new Date(CAMPAIGN.today+'T00:00:00');
-let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.round((dT-d0)/DAY)+1;
+/* ⚠ 오늘이 캠페인 종료일을 지나면 ELAPSED 가 기간보다 커져 buildFacts 가 없는 날짜를 읽다 멈췄다 —
+   샘플(9/30 종료)이 10/1 부터 첫 화면에서 통째로 멈춤. rebuildPeriod 와 같이 기간 안으로 자른다 (v77.1) */
+let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
 let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
 let dates=ALLDATES.slice(0,ELAPSED);
 /* 요일 이름 — 언어를 바꾸면 setLang 이 갈아 끼운다 */
