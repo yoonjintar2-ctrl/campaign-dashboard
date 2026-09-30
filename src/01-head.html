@@ -267,7 +267,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 
 /* ---------- top ---------- */
 .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:14px;padding:0 152px;height:56px}
+  display:flex;align-items:center;gap:14px;padding:0 152px;height:50px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
 .logo{cursor:pointer}
 .logo:hover .mark{filter:brightness(1.06)}
@@ -303,7 +303,7 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .demobar .btn{height:24px;padding:0 9px;font-size:11px;border-color:#e4d3b8;background:#fffdf8}
 /* 상단 메뉴는 한 줄 — 메인 탭 · 하위 탭 · 오른쪽 도구 (v49) */
 .tabs{background:var(--surface);padding:0 152px;display:flex;gap:4px;align-items:center;
-  position:sticky;top:56px;z-index:59;border-bottom:1px solid var(--line)}
+  position:sticky;top:50px;z-index:59;border-bottom:1px solid var(--line)}
 @media (max-width:1500px){.topbar{padding:0 40px}.tabs{padding:0 40px}.demobar{padding:9px 40px}}
 /* 상위 탭 — 크고 굵게, 밑줄로 현재 위치를 표시 (v52: 하위 탭과 확실히 구분되게) */
 .tabs>button[data-tab]{border:0;background:transparent;padding:13px 15px 11px;cursor:pointer;color:var(--ink2);
@@ -351,33 +351,28 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .topbar.tcompact3 #betaTag{display:none}
 .glang select{border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink2);
   font:inherit;font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer}
-/* ===== 메뉴 두 줄 (v72) =====
-   1줄(.arearow): 영역 — 디지털 · TV · 트렌드 리포트 (큰 글씨 · 아이콘 · 밑줄) + 오른쪽 도구
-   2줄(.subrow): 고른 영역의 하위 메뉴 — 앞에 영역 이름(빵부스러기) + 알약 트레이 두 개
-                 (보기: 서머리 · 일자별 효율 · 미디어믹스 / 입력: 데이터 입력 · 예상효율 입력 — 점선 트레이) */
-.tabs{flex-direction:column;align-items:stretch;gap:0}
-.tabs .arearow{display:flex;align-items:center;gap:4px;min-height:46px}
-.tabs .arearow>.spacer{flex:1}
-.tabs .subrow{display:flex;align-items:center;min-height:42px;border-top:1px solid var(--line2)}
-.tabs .area{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;cursor:pointer;
-  padding:10px 14px 9px;font:inherit;font-size:14.5px;font-weight:700;color:var(--ink2);letter-spacing:-.3px;
+/* ===== 메뉴 한 줄 (v73 — v72 의 두 줄을 합쳤다) =====
+   [영역: 디지털 · TV · 트렌드 리포트] │ [고른 영역의 하위 메뉴 — 보기 트레이 · 입력 트레이(점선)] … [도구]
+   머리 영역(상단바 + 메뉴)이 145px → 94px. 상하위 구분은 생김새로: 영역은 아이콘 + 밑줄, 하위는 알약. */
+.tabs{flex-direction:row;align-items:center;gap:0;min-height:44px}
+.tabs .arearow{display:flex;align-items:center;gap:2px;align-self:stretch;flex:none}
+.tabs .subrow{display:flex;align-items:center;min-width:0;margin-left:10px}
+/* 영역 │ 하위 메뉴 사이 세로 구분선 */
+.tabs .subrow::before{content:'';width:1px;height:22px;background:var(--line);margin-right:12px;flex:none}
+.tabs .area{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;cursor:pointer;
+  padding:0 11px;height:100%;font:inherit;font-size:14px;font-weight:700;color:var(--ink2);letter-spacing:-.3px;
   border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex:none}
 .tabs .area:hover{color:var(--ink)}
-.tabs .area .aic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;flex:none;
+.tabs .area .aic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
   background:var(--sub1);color:var(--ink2);border:1px solid var(--line);transition:background .15s,color .15s}
 .tabs .area .aic svg{display:block}
 .tabs .area.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:800}
 .tabs .area.on .aic{background:var(--acc);color:var(--surface);border-color:var(--acc)}
 .tabs .area.vhide{color:var(--muted)}
 .tabs .area.vhide.on{color:var(--acc)}
-/* 영역 사이 가는 구분선 — 디지털 | TV | 트렌드 */
-.tabs .area+.area{position:relative}
-.tabs .area+.area::before{content:'';position:absolute;left:-3px;top:14px;bottom:14px;width:1px;background:var(--line)}
-.tabs .subgrp{display:none;align-items:center;gap:10px;min-width:0}
+.tabs .subgrp{display:none;align-items:center;gap:8px;min-width:0}
 .tabs .subgrp.show{display:flex}
-.tabs .crumb{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;color:var(--muted);
-  letter-spacing:.02em;white-space:nowrap;padding-left:2px}
-.tabs .crumb::after{content:'›';font-size:15px;font-weight:600;color:var(--gline);margin-top:-2px}
+.tabs .crumb{display:none}
 .tabs .subbar{margin:0;flex:none}
 .tabs .subbar::before{display:none}
 .tabs .subbar button{white-space:nowrap}
@@ -387,16 +382,20 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs .subbar button.vhide.on{color:var(--acc)}
 /* 디지털 대시보드가 아닐 때는 서머리 · 일자별 · 미디어믹스의 "고른 흔적"을 지운다 */
 #tabs:not([data-cur="dash"]) #subbar button.on{background:transparent;box-shadow:none;color:var(--ink2);font-weight:600}
-.tabs .subcap{font-size:12px;color:var(--muted)}
+.tabs .subcap{font-size:12px;color:var(--muted);white-space:nowrap}
 /* 쓰지 않는 메뉴(메뉴 설정) · 이 화면에 필요 없는 도구 */
 .tabs .menuoff,.tabs .tooloff{display:none!important}
-/* 좁으면 글자 · 여백을 줄인다 (fitTabs) */
-.tabs.dense .area{padding:10px 9px 9px;font-size:13.5px;gap:6px}
-.tabs.dense .area .aic{width:22px;height:22px}
+/* 좁으면 글자·여백을 줄인다 (fitTabs) — dense: 여백 ↓ · dense2: 영역 아이콘 · 도구 글자 숨김 · dense3: 영역 이름도 숨김(아이콘만) */
+.tabs.dense .area{padding:0 8px;font-size:13.5px;gap:5px}
 .tabs.dense .subbar button{padding:4px 9px;font-size:11.5px}
-.tabs.dense .subgrp{gap:7px}
+.tabs.dense .subgrp{gap:6px}
+.tabs.dense .subrow{margin-left:6px}.tabs.dense .subrow::before{margin-right:8px}
 .tabs.dense2 .area .aic{display:none}
-.tabs.dense2 .crumb{display:none}
+.tabs.dense2 .darkbtn .lb,.tabs.dense2 .dlgrp>.lb{display:none}
+.tabs.dense2 .subcap{display:none}
+.tabs.dense3 .area .aic{display:grid}
+.tabs.dense3 .area .al{display:none}
+.tabs.dense3 .area{padding:0 7px}
 /* 설정 › 메뉴 설정 (v72) */
 table.mset{width:100%;border-collapse:collapse;font-size:12.5px}
 table.mset th{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:0 8px 8px;border-bottom:1px solid var(--line)}
@@ -444,7 +443,7 @@ table.tvsheet tr.tvempty td{padding:26px;text-align:center;color:var(--muted);fo
 /* ===== 트렌드 리포트 게시판 (v66) ===== */
 .trendwrap{display:grid;grid-template-columns:212px 1fr;gap:20px;align-items:start}
 @media (max-width:1100px){.trendwrap{grid-template-columns:1fr}}
-.tsidebar{position:sticky;top:112px;display:flex;flex-direction:column;gap:12px}
+.tsidebar{position:sticky;top:calc(var(--stick,94px) + 12px);display:flex;flex-direction:column;gap:12px}
 .btn.tpost{width:100%;justify-content:center;font-weight:800;padding:11px 0}
 .tcats{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .tct{padding:10px 13px 8px;font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:-.2px}

@@ -66,15 +66,43 @@
   <button class="btn sm" id="demoHide">닫기</button>
 </div>
 
-<!-- 상단 메뉴는 한 줄 — 메인 탭 · (대시보드일 때) 하위 탭 · 오른쪽에 영역 관리와 리포트 -->
+<!-- 상단 메뉴 — **한 줄** (v73): 왼쪽 영역(디지털 · TV · 트렌드 리포트) │ 고른 영역의 하위 메뉴 │ 오른쪽 도구.
+     v72 의 두 줄(영역 줄 + 하위 줄)이 머리 영역을 145px 까지 두껍게 만들어 본문이 좁아졌다 →
+     하위 메뉴를 영역 오른쪽에 붙이고 빵부스러기(영역 이름 ›)는 뺐다. 표시 규칙은 그대로:
+     data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따르고, 선택 표시는 paintTabsOn() -->
 <div class="tabs" id="tabs" data-cur="dash">
-  <!-- v72 — 메뉴 두 줄: 1줄은 **영역**(디지털 · TV · 트렌드 리포트)과 오른쪽 도구,
-       2줄은 고른 영역의 **하위 메뉴**(서머리 · 일자별 효율 · 미디어믹스 · 데이터 입력 · 예상효율 입력).
-       data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따른다 -->
   <div class="arearow">
   <button class="area on" type="button" data-area="digital" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span></button>
   <button class="area" type="button" data-area="tv" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span></button>
   <button class="area" type="button" data-area="trend" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span></button>
+  </div>
+  <div class="subrow">
+    <div class="subgrp show" data-area="digital">
+      <div class="subbar" id="subbar">
+        <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
+        <button type="button" data-sub="table" data-menu="d_daily">일자별 효율</button>
+        <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
+      </div>
+      <div class="subbar subin">
+        <button type="button" data-tab="input" data-menu="d_input">데이터 입력</button>
+        <button type="button" data-tab="setup" data-menu="d_plan">예상효율 입력</button>
+      </div>
+    </div>
+    <div class="subgrp" data-area="tv">
+      <div class="subbar" id="tvsubbar">
+        <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
+        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 효율</button>
+        <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
+      </div>
+      <div class="subbar subin">
+        <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
+        <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
+      </div>
+    </div>
+    <div class="subgrp" data-area="trend">
+      <span class="subcap">모든 캠페인이 함께 쓰는 자료 게시판입니다</span>
+    </div>
+  </div>
   <div class="spacer"></div>
   <!-- 다크 보기는 대시보드에서만 쓰는 기능이라 탭 줄(하위 레벨)에 둔다 (v58) -->
   <button class="darkbtn" id="darkToggle" type="button" aria-pressed="false"
@@ -89,37 +117,6 @@
       <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.6" width="14" height="12.8" rx="2" fill="#1f6b41"/><path d="M4.3 5.2h2.1L8 7.5l1.6-2.3h2.1L9.1 8.6l2.7 3.4H9.6L8 9.6l-1.6 2.4H4.3L7 8.6z" fill="#fff"/></svg>
       <span>엑셀</span></button>
   </span>
-  </div>
-  <div class="subrow">
-    <div class="subgrp show" data-area="digital">
-      <span class="crumb">디지털</span>
-      <div class="subbar" id="subbar">
-        <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
-        <button type="button" data-sub="table" data-menu="d_daily">일자별 효율</button>
-        <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
-      </div>
-      <div class="subbar subin">
-        <button type="button" data-tab="input" data-menu="d_input">데이터 입력</button>
-        <button type="button" data-tab="setup" data-menu="d_plan">예상효율 입력</button>
-      </div>
-    </div>
-    <div class="subgrp" data-area="tv">
-      <span class="crumb">TV</span>
-      <div class="subbar" id="tvsubbar">
-        <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
-        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 효율</button>
-        <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
-      </div>
-      <div class="subbar subin">
-        <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
-        <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
-      </div>
-    </div>
-    <div class="subgrp" data-area="trend">
-      <span class="crumb">트렌드 리포트</span>
-      <span class="subcap">모든 캠페인이 함께 쓰는 자료 게시판입니다</span>
-    </div>
-  </div>
 </div>
 
 <!-- ================= 대시보드 ================= -->

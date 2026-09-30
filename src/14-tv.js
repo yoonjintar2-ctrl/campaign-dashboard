@@ -103,10 +103,10 @@ function applyMenus(){
 }
 /* 예전 이름 — 부르는 곳이 여럿이라 남겨 둔다 */
 function applyMediaTabs(){applyMenus();}
-/* 줄이 넘치면 글자·여백을 줄인다(.dense). 영역마다 하위 줄 길이가 달라 모두 재 본다 */
+/* 줄이 넘치면 글자·여백을 줄인다(.dense → .dense2 → .dense3). v73 — 메뉴가 한 줄이라 `.tabs` 자체가 넘치는지 잰다.
+   영역마다 하위 메뉴 길이가 달라 모두 켜 보며 재 본다 (영역을 바꿔도 모양이 튀지 않게) */
 function fitTabs(){
   const t=$('tabs');if(!t)return;
-  const rows=[...t.querySelectorAll('.arearow,.subrow')];
   const grps=[...t.querySelectorAll('.subgrp')];
   const shown=grps.filter(g=>g.classList.contains('show'));
   /* 대시보드에서만 보이는 도구(🌙 다크 · 영역 관리 · 리포트)가 **보일 때** 기준 — 탭을 옮겨도 모양이 그대로 */
@@ -114,13 +114,14 @@ function fitTabs(){
     .filter(e=>e&&(e.classList.contains('hidden')||e.classList.contains('tooloff'))&&!e.classList.contains('medoff'));
   const was=tmp.map(e=>[e.classList.contains('hidden'),e.classList.contains('tooloff')]);
   tmp.forEach(e=>e.classList.remove('hidden','tooloff'));
-  const over=()=>rows.some(r=>r.scrollWidth>r.clientWidth+2)||grps.some(g=>{
+  const over=()=>grps.some(g=>{
     grps.forEach(x=>x.classList.toggle('show',x===g));
-    const r=t.querySelector('.subrow');return r&&r.scrollWidth>r.clientWidth+2;});
+    return t.scrollWidth>t.clientWidth+2;});
   try{
-    t.classList.remove('dense','dense2');
+    t.classList.remove('dense','dense2','dense3');
     if(over())t.classList.add('dense');
     if(over())t.classList.add('dense2');
+    if(over())t.classList.add('dense3');
   }finally{
     grps.forEach(g=>g.classList.toggle('show',shown.includes(g)));
     tmp.forEach((e,i)=>{if(was[i][0])e.classList.add('hidden');if(was[i][1])e.classList.add('tooloff');});}
