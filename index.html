@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="build" content="__BUILD__">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Media Dashboard</title>
 <!-- 클라우드(선택) — 웹에 올렸을 때만 로드한다. 파일로 직접 열면 데모(더미) 모드로만 동작. -->
@@ -1372,6 +1373,12 @@ table.tbl.fit{width:auto}
 [data-theme="dark"] .hpbtn:hover{background:rgba(110,110,115,.9);color:#fff}
 @media print{.hpbtn{display:none!important}}
 
+/* 일자별 효율 비교 — 운영 이슈 깃발 (v78) */
+.isflag{transition:opacity .15s}
+.isflag.on>rect:nth-of-type(2){filter:brightness(1.08)}
+.isflag.on{opacity:1}
+#chartDaily svg:hover .isflag:not(.on){opacity:.8}
+
 /* ---------- tables ---------- */
 .tbl-wrap{overflow:auto;max-height:74vh}
 /* 세로 스크롤 없이 전체 높이 그대로 (가로 스크롤만) — 효율 탭 서머리 */
@@ -2701,8 +2708,15 @@ const cssRgb=h=>{h=String(h||'').trim();
 /* ===== 1. 캠페인 · 라인 ===== */
 /* 기준일은 언제나 "실제 오늘"이다. 예전에는 시연용 날짜(2026-09-25)가 박혀 있어서
    캐시를 지우고 새 브라우저로 열어도 기간 필터 종료일이 늘 9/24 로 잡히는 문제가 있었다. */
-const TODAY_ISO=(()=>{const d=new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+/* 오늘 = **서울 날짜** (v78). 보는 사람 PC 시간대를 쓰면 해외(예: LA 오전 10시 = 서울 새벽 2시)에서
+   "오늘"이 하루 늦어 어제 실적이 비고 페이스가 달라졌다. 팀 · 데이터 기준은 한국이다. */
+/* 배포 표시 — CI 가 __BUILD__ 를 커밋 번호 · 시각으로 바꾼다 (콘솔에서 BUILD 로 확인) */
+try{window.BUILD=(document.querySelector('meta[name="build"]')||{}).content||'local';}catch(e){}
+function todaySeoul(){try{
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  if(/^\d{4}-\d{2}-\d{2}$/.test(p))return p;}catch(e){}
+  const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+const TODAY_ISO=todaySeoul();
 const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Media Dashboard',today:TODAY_ISO};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
@@ -2810,8 +2824,12 @@ let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
 let dT=new Date(CAMPAIGN.today+'T00:00:00');
 /* ⚠ 오늘이 캠페인 종료일을 지나면 ELAPSED 가 기간보다 커져 buildFacts 가 없는 날짜를 읽다 멈췄다 —
    샘플(9/30 종료)이 10/1 부터 첫 화면에서 통째로 멈춤. rebuildPeriod 와 같이 기간 안으로 자른다 (v77.1) */
+/* 일별 배열의 0번 날짜 — rebuildPeriod 가 시작일 이동을 알아채는 데 쓴다 (v78) */
+var DAILY_D0=campStart();
 let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
-let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
+/* 날짜는 달력으로 하루씩 더한다 (v78) — "0시 + i×24시간" 은 서머타임이 바뀌는 날 한 시간 어긋나
+   해외(베를린 · 뉴욕 등)에서 같은 날짜가 두 번 나오고 마지막 날이 밀렸다 */
+let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i));
 let dates=ALLDATES.slice(0,ELAPSED);
 /* 요일 이름 — 언어를 바꾸면 setLang 이 갈아 끼운다 */
 const WD_KO=['일','월','화','수','목','금','토'],WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -2841,7 +2859,7 @@ const isRest=d=>d.getDay()===0||d.getDay()===6||!!holName(d);   // 토·일·공
 
 function seeded(s){return()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};}
 function spread(total,n,rnd,ramp){
-  const w=[...Array(n)].map((_,i)=>{const d=new Date(d0.getTime()+i*DAY);
+  const w=[...Array(n)].map((_,i)=>{const d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i);
     return (0.72+0.56*rnd())*(isRest(d)?0.76:1)*(1+ramp*(i/Math.max(n-1,1)));});
   const t=sum(w);let acc=0,out=[];
   for(let i=0;i<n;i++){out.push(Math.round(total*(acc+w[i])/t)-Math.round(total*acc/t));acc+=w[i];}
@@ -5529,6 +5547,8 @@ function renderDaily(){
     const benchV=METRICS[lk].c(aggExp(dailyLines()));
     const useBench=SHOW_BENCH&&isFinite(benchV);
     const dom=useBench?ok.concat([benchV]):ok;
+    /* 꺾은선에 쓸 값도 예상 기준선도 없으면 눈금이 NaN 이 된다 → 꺾은선 없이 그린다 (v78) */
+    if(!dom.length){lineVals=null;}else{
     const mn=Math.min(...dom),mx=Math.max(...dom);
     const rg=(mx-mn)||mx*.2||1;
     const lt=niceTicks(mn-rg*.12,mx+rg*.12,3,false);
@@ -5550,7 +5570,9 @@ function renderDaily(){
     S('stop',{offset:'0%','stop-color':'var(--acc-lt)'},lg2);
     const mid2=S('stop',{offset:'50%','stop-color':'var(--acc-d)'},lg2);
     S('stop',{offset:'100%','stop-color':'var(--acc-lt)'},lg2);
-    S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
+    /* 동작 줄이기 설정이면 흐르는 띠를 멈춘다 (v78 — 가만히 있어도 CPU 를 쓰던 원인) */
+    let rm=false;try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+    if(!rm)S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
       repeatCount:'indefinite',calcMode:'spline',
       keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid2);
     S('path',{d:smoothPath(pts),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
@@ -5570,46 +5592,9 @@ function renderDaily(){
       const t2=S('text',{x:bx+3,y:y+3.6,'font-size':10,'font-weight':700,fill:ACC2},svg);
       t2.textContent=`예상 ${METRICS[lk].f(ev)}`;}
     }
+    }
   }
-  /* 운영 이슈 — 시작일 위치에서 세로선이 솟아 라벨로 연결 · 최대 5줄 */
   ISSUE_OVERFLOW=0;
-  if(SHOW_ISSUES){
-    const MAXLANE=5,laneEnd=[],laneTop=P.t+PH*0.12;
-    ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach(is=>{
-      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;   /* 스코프 기준 인덱스 */
-      if(b2<0||a>ds.length-1)return;
-      const ax=cx(Math.max(a,0));
-      const g=S('g',{},svg);g.style.cursor='pointer';
-      /* 유형([기타] 등)은 앞에 붙이지 않는다 — 이슈 문구만 그대로 (자세한 건 툴팁에) */
-      const label=String(is.txt||is.type||'').trim()||'이슈';
-      /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
-      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
-      t.textContent=label;
-      /* 화면에 붙기 전이거나 폰트가 아직 안 잡히면 측정값이 0 으로 나와 라벨이 서로 겹친다.
-         그럴 때는 글자 종류로 폭을 어림해 쓴다. */
-      let mw=0;try{mw=t.getComputedTextLength();}catch(e){}
-      if(!(mw>4))mw=estTextW(label,10.5);
-      const pw=mw+18;
-      let li=0;while(laneEnd[li]!==undefined&&laneEnd[li]>ax-8)li++;
-      if(li>=MAXLANE){svg.removeChild(g);ISSUE_OVERFLOW++;return;}
-      /* 오른쪽으로 삐져나가지 않게 당긴다 */
-      const bx=Math.max(X0,Math.min(ax,W-P.r-pw));
-      laneEnd[li]=Math.max(ax,bx)+pw;
-      const y=laneTop+li*26;
-      const rect=S('rect',{x:bx,y,width:pw,height:19,rx:6,fill:'var(--acc-soft)',stroke:'var(--gline)'});
-      g.insertBefore(rect,t);
-      t.setAttribute('x',bx+9);t.setAttribute('y',y+13.2);
-      const line=S('line',{x1:ax,x2:ax,y1:y+19,y2:H-P.b,stroke:'var(--gline)','stroke-dasharray':'3 3','stroke-width':1});
-      g.insertBefore(line,rect);
-      const bw2=Math.max((Math.min(b2,ds.length-1)-Math.max(a,0)+1)*step-3,6);
-      const band=S('rect',{x:cx(Math.max(a,0))-step/2+1.5,y:H-P.b-4,width:bw2,height:4,fill:'var(--acc-lt)',rx:2});
-      g.insertBefore(band,line);
-      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
-        `<div class="t">${is.s} ~ ${is.e}</div><div class="r"><span class="l">${esc(is.scope)}</span><b>${is.type}</b></div>
-         <div style="margin-top:6px;opacity:.92">${esc(is.txt)}</div>`));
-      g.addEventListener('mouseleave',hideTip);
-    });
-  }
   if(typeof renderIssueAlert==='function')renderIssueAlert();
   ds.forEach((d,i)=>{
     if(i>=EL)return;
@@ -5622,6 +5607,41 @@ function renderDaily(){
       /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
+  /* 운영 이슈 — 바닥의 작은 깃발 (v78 · 디자인 제언)
+     예전에는 위쪽에 이슈 문구 알약이 최대 5줄로 쌓여 그래프를 가렸다.
+     이제 시작일에 번호 깃발 하나 + 바닥에 기간 띠만 두고, 올리면 그 기간을 옅게 칠하고 내용을 띄운다.
+     깃발 색은 테마와 무관한 호박색(의미 색) — 어두운 막대 위에서도 보이게. 가까이 붙으면 3단까지 위로 쌓는다. */
+  if(SHOW_ISSUES){
+    const baseY=H-P.b,FLC='#e0902f',lvEnd=[];
+    ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
+      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;
+      if(!(isFinite(a)&&isFinite(b2))||b2<0||a>ds.length-1)return;
+      const ai=Math.max(a,0),bi=Math.min(isFinite(b2)?b2:a,ds.length-1),ax=cx(ai);
+      let lv=0;while(lvEnd[lv]!==undefined&&lvEnd[lv]>ax-21)lv++;
+      if(lv>=3){ISSUE_OVERFLOW++;return;}
+      lvEnd[lv]=ax;
+      const top=baseY-27-lv*17;
+      const g=S('g',{class:'isflag'},svg);
+      S('rect',{x:cx(ai)-step/2+1.5,y:baseY-3,width:Math.max((bi-ai+1)*step-3,4),height:3,rx:1.5,fill:FLC,opacity:.55},g);
+      S('line',{x1:ax,x2:ax,y1:baseY,y2:top,stroke:FLC,'stroke-width':1.6},g);
+      S('rect',{x:ax,y:top,width:19,height:13,rx:3,fill:FLC,stroke:'var(--surface)','stroke-width':1},g);
+      const t=S('text',{x:ax+9.5,y:top+9.8,'text-anchor':'middle','font-size':9.5,'font-weight':800,fill:'#fff'},g);
+      t.textContent=String(n+1);
+      S('rect',{x:ax-5,y:top-4,width:29,height:baseY-top+6,fill:'transparent'},g);
+      g.style.cursor='pointer';
+      let hl=null;
+      g.addEventListener('mouseenter',()=>{
+        g.classList.add('on');
+        hl=S('rect',{x:cx(ai)-step/2,y:P.t,width:Math.max((bi-ai+1)*step,step),height:baseY-P.t,
+          fill:FLC,opacity:.09,'pointer-events':'none'});
+        svg.insertBefore(hl,svg.firstChild&&svg.firstChild.nextSibling||null);});
+      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+        `<div class="t">운영 이슈 ${n+1} · ${esc(is.s)}${is.e&&is.e!==is.s?' ~ '+esc(is.e):''}</div>`
+        +(is.scope||is.type?`<div class="r"><span class="l">${esc(is.scope||'')}</span><b>${esc(is.type||'')}</b></div>`:'')
+        +`<div style="margin-top:6px;opacity:.92;white-space:normal;max-width:280px">${esc(is.txt||'')}</div>`));
+      g.addEventListener('mouseleave',()=>{g.classList.remove('on');if(hl&&hl.parentNode)hl.parentNode.removeChild(hl);hl=null;hideTip();});
+    });
+  }
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it drag',lg);
     x.draggable=true;x.dataset.k=s.key;
@@ -8398,6 +8418,8 @@ const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
    실제 매체 리포트도 소재 단위로 내려오고, 이렇게 적어야 소재별 효율이
    시트에 적힌 그대로 대시보드에 잡힌다 (v55 — 예전에는 라인당 한 줄이라
    그 날의 실적이 첫 번째 소재 하나로 몰렸다). */
+/* 지난번 applySheet 가 채운 칸 {라인id␁날짜} (v78) — 다음 적용 때 먼저 비운다. 캠페인이 바뀌면 clearWorkState 가 비운다 */
+var SHEET_COVER=null;
 let SHEET=LINES.flatMap(l=>{
   const idx=ELAPSED-1,fee=feeOf(l);
   const cs=CREATIVES.filter(c=>c.lid===l.id);
@@ -8432,14 +8454,28 @@ const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
   return [...new Set(ls.map(l=>l[k]))].filter(Boolean);};
 /* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다.
    광고상품·지면·타겟팅은 순서가 달라도, 조합 중 일부만 적어도 같은 라인으로 본다. */
-function rowLine(r){
+function rowLine(r){return rowLineCands(r)[0]||null;}
+/* 이 행이 붙을 수 있는 라인 후보 (v78).
+   매체 · 광고상품 · 타겟이 같은 라인이 둘 이상이면(예: 구분만 다른 Phase 1/2 라인) 예전에는 무조건 첫 라인으로 갔다 →
+   합계는 같아도 구분 · 제품 · 라인별 달성률이 틀어졌다. 이제는
+   ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
+   그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
+function rowLineCands(r){
   const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
-  if(!keys.length)return null;
+  if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
-  /* 조합이 정확히 같은 라인을 먼저 고르고, 없으면 그 항목을 품고 있는 라인 */
-  const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
-    ||lineMulti(l,k).length===parseMulti(r[k]).length));
-  return exact||LINES.find(ok)||null;}
+  let pool=LINES.filter(ok);
+  if(pool.length<2)return pool;
+  const ex=pool.filter(l=>keys.every(k=>!MULTI_DIMS.includes(k)||lineMulti(l,k).length===parseMulti(r[k]).length));
+  if(ex.length)pool=ex;
+  if(pool.length>1){
+    const cn=String(r.creative==null?'':r.creative).trim();
+    if(cn){const ck=dimKey(cn),parts=parseMulti(cn).map(dimKey);
+      const hit=pool.filter(l=>{const reg=lineCreatives(l).map(dimKey);
+        return reg.includes(ck)||(parts.length>1&&parts.every(p=>reg.includes(p)));});
+      if(hit.length)pool=hit;}}
+  if(pool.length>1&&r.date){const inP=pool.filter(l=>r.date>=l.start&&r.date<=l.end);if(inP.length)pool=inP;}
+  return pool;}
 /* 이 행이 예상 효율(라인)에 붙지 못하는 이유 —
    '' 정상 · 'line' 어느 라인과도 매칭되지 않음(매체·상품·타겟팅 이름이 다름 등)
    · 'date' 라인은 찾았지만 그 라인의 집행 기간 밖의 날짜 */
@@ -8468,18 +8504,22 @@ function rowCellIssues(r){
     const next=pool.filter(l=>dimMatch(l,k,r[k]));
     if(next.length)pool=next;else bad.push(k);});
   if(bad.length)return {kind:'line',cells:bad.concat(nb)};
-  const l=rowLine(r)||pool[0];
+  const cands=rowLineCands(r),l=cands[0]||pool[0];
   if(l&&!(r.date>=l.start&&r.date<=l.end))return {kind:'date',cells:['date'].concat(nb)};
+  /* 후보 라인이 둘 이상 남음 — 소재 칸(없으면 매체 칸)을 표시 (v78) */
+  if(cands.length>1)return {kind:'ambig',cells:[r.creative!=null&&String(r.creative).trim()?'creative':'media'].concat(nb)};
   return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};}
 function rowIssue(r){return rowCellIssues(r).kind;}
 const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
   date:'그 라인의 집행 기간 밖의 날짜입니다',
-  num:'숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다'};
+  num:'숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다',
+  ambig:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 어느 라인인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 등록된 소재 이름을 적어 주세요'};
 const CELL_ISSUE_LABEL={
   segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
   product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
   target:'앞 칸과 맞는 타겟팅 그룹이 아닙니다',line:'앞 칸과 맞는 제품이 아닙니다',
-  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+  date:'그 라인의 집행 기간 밖의 날짜입니다',
+  creative:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 이 소재가 어느 라인 것인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 예상 효율에 소재를 등록해 주세요'};
 function rowBad(r){return !!rowIssue(r);}
 /* 매칭 안 되는 행들의 위치 (0부터) */
 const badRowIdx=()=>SHEET.map((r,i)=>rowBad(r)?i:-1).filter(i=>i>=0);
@@ -8859,7 +8899,8 @@ function renderSheet(){
     `${fmt(SHEET.length)}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
     ()=>{pushUndo();SHEET.length=0;SHEET_PAGE=0;
       delete TBL_FILTER.sheet;delete TBL_SORT.sheet;
-      renderSheet();buildFacts();renderAll();
+      /* 시트가 채웠던 숫자도 함께 비운다 (v78 — 예전에는 buildFacts 만 해서 대시보드에 그대로 남았다) */
+      renderSheet();applySheet();buildFacts();renderAll();
       try{markDirty();saveLocal();}catch(e){}},'모두 지우기');
   const ca=$('sheetClearAll');
   if(ca)ca.onclick=wipeAll;
@@ -8947,18 +8988,29 @@ function redoSheet(){if(!REDO.length)return false;UNDO.push(snapSheet());applySn
 /* ===== 자동 저장 (마지막 입력 후 10분 이상 추가 입력이 없으면 스냅샷 저장) ===== */
 const AUTOSAVE_MIN=10;
 let DIRTY_AT=null,autosaveTimer=null;
-function markDirty(){
+/* ⚠ 예전 이름은 markDirty 였는데 09-cloud 의 markDirty(클라우드 자동 저장)와 이름이 겹쳐
+   이쪽이 통째로 덮여 있었다 → 입력 히스토리가 늘 비고 로컬 백업도 안 됐다 (v78).
+   이제 09 의 markDirty 가 이 함수를 불러 준다. */
+function sheetDirty(){
   DIRTY_AT=Date.now();
   clearTimeout(autosaveTimer);
-  /* 시안에서는 10분을 기다리지 않고 12초 뒤 저장되는 것으로 시연한다 */
-  autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),12000);
-  const el2=$('saveState');if(el2)el2.textContent='변경됨 · 저장 대기';
+  /* 입력이 끝나고 AUTOSAVE_MIN 분 동안 더 입력이 없으면 그 시점의 표를 히스토리에 남긴다 (안내 문구와 같은 규칙) */
+  autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),AUTOSAVE_MIN*60000);
+  /* 상태 문구(#saveState)는 건드리지 않는다 — 엑셀 불러오기 결과 안내를 덮어쓰면 안 된다 */
   try{if(typeof saveLocal==='function')saveLocal();}catch(e){}
 }
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;
   const now=new Date();
-  SHEET_HIST.unshift({t:now,who:'윤석진',org:'미디어웍스',kind,rows:JSON.parse(JSON.stringify(SHEET))});
+  const rows=JSON.parse(JSON.stringify(SHEET));
+  /* 표가 바뀌지 않았으면(설정만 바뀐 경우) 같은 시점을 또 쌓지 않는다 */
+  if(SHEET_HIST[0]&&JSON.stringify(SHEET_HIST[0].rows)===JSON.stringify(rows)){DIRTY_AT=null;return;}
+  /* 입력자 = 지금 로그인한 사람 (예전에는 시안용 이름이 박혀 있었다) */
+  let who='게스트',org='';
+  try{const u=CLOUD&&CLOUD.user;
+    if(u)who=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||who;
+    org=CLOUD&&CLOUD.shareView?(CLOUD.shareRole==='staff'?'운영진 코드':'뷰어 코드'):(u?'시행사':'데모');}catch(e){}
+  SHEET_HIST.unshift({t:now,who,org,kind,rows});
   if(SHEET_HIST.length>40)SHEET_HIST.pop();
   DIRTY_AT=null;
   const el2=$('saveState');if(el2)el2.textContent=`${kind} ${hhmm(now)}`;
@@ -9110,12 +9162,23 @@ function applySheet(){
       if(!b2){b2={l,i,ck,v:zeroV()};cbucket.set(k2,b2);}
       addV(b2.v,r,fee,1/names.length);});});
   const touched=new Set();
+  /* ⚠ 지난번 시트가 채웠던 칸을 먼저 비운다 (v78).
+     예전에는 지금 시트에 있는 칸만 덮어써서, 행을 지우거나 「모두 지우기」 해도 대시보드 숫자가 그대로 남았다
+     (클라우드 저장은 시트만 올리므로 새로고침하면 맞았지만 그 전까지 화면 · 리포트 엑셀이 틀렸다).
+     시트가 채우지 않은 칸(샘플의 예시 실적 등)은 건드리지 않는다. */
+  if(SHEET_COVER)SHEET_COVER.forEach(key=>{
+    const p=key.split('\u0001'),l=LINES.find(x=>x.id===p[0]);if(!l||!l.daily)return;
+    const i=dIdx(p[1]);if(!(i>=0&&i<TOTAL_DAYS))return;
+    AMET.forEach(m=>{const a=l.daily[m];if(Array.isArray(a)&&i<a.length)a[i]=0;});
+    touched.add(l);});
+  const cover=new Set();
   bucket.forEach(b=>{
-    touched.add(b.l);
+    touched.add(b.l);cover.add(b.l.id+'\u0001'+iso(ALLDATES[b.i]));
     AMET.forEach(m=>{
       if(!Array.isArray(b.l.daily[m]))b.l.daily[m]=[];
       while(b.l.daily[m].length<TOTAL_DAYS)b.l.daily[m].push(0);
       b.l.daily[m][b.i]=b.v[m];});});
+  SHEET_COVER=cover;
   touched.forEach(l=>AMET.forEach(m=>{l.a[m]=sum(l.daily[m]||[]);}));
   /* ---- 소재별 실적 (v55) ----
      예전에는 라인 합계만 담고 소재 비중(share) 하나로 나눠 추정했다. 그래서
@@ -9256,7 +9319,7 @@ function openHistory(){
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));
     const cost=sum(rs.map(r=>+r.cost||0));
-    h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${hs.who}</td><td>${hs.org}</td>
+    h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${esc(hs.who)}</td><td>${esc(hs.org)}</td>
       <td class="mono">${rs.length}</td><td class="mono">${fmt(g('imp'))}</td><td class="mono">${fmt(g('click'))}</td>
       <td class="mono">${fmt(g('view'))}</td><td class="mono">${fmt(g('conv'))}</td><td class="mono">${won(cost)}</td>
       <td><span class="tagchip ${hs.kind==='자동 저장'?'':'on'}">${hs.kind}</span></td>
@@ -10085,20 +10148,27 @@ document.addEventListener('mouseup',()=>{lSelecting=false;});
    예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
   const PREV=TOTAL_DAYS;                  /* 기간이 바뀌기 전 길이 — 소재 게재 기간 보정에 쓴다 */
-  d0=new Date(campStart()+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
+  /* ⚠ 시작일이 옮겨지면 일별 배열도 그만큼 민다 (v78).
+     예전에는 길이만 맞춰서, 시작일을 8/1 → 7/25 로 당기면 8/1 실적이 7/25 에 찍혔다.
+     DAILY_D0 = 지금 배열의 0번 날짜. 캠페인을 새로 불러올 때는 비워 둬서(clearWorkState · loadLocal) 밀지 않는다. */
+  const NEW0=campStart();
+  const OFF=(DAILY_D0&&DAILY_D0!==NEW0)?Math.round((new Date(DAILY_D0+'T00:00:00')-new Date(NEW0+'T00:00:00'))/DAY):0;
+  d0=new Date(NEW0+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
   dT=new Date(CAMPAIGN.today+'T00:00:00');
   YESTERDAY=iso(new Date(dT.getTime()-DAY));
   TOTAL_DAYS=Math.round((dE-d0)/DAY)+1;ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
-  ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
+  ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i));
   dates=ALLDATES.slice(0,ELAPSED);
   /* 길이만 새 기간에 맞춘다 (모자라면 0 으로 채우고, 넘치면 자른다) */
+  const move=(a,fill)=>{const b=new Array(TOTAL_DAYS).fill(fill);
+    if(Array.isArray(a))for(let i=0;i<a.length;i++){const j=i+OFF;if(j>=0&&j<TOTAL_DAYS)b[j]=fill===false?!!a[i]:(+a[i]||0);}
+    return b;};
   LINES.forEach(l=>{
     if(!l.daily)l.daily={};
-    AMET.forEach(m=>{
-      const a=Array.isArray(l.daily[m])?l.daily[m]:[];
-      const b=new Array(TOTAL_DAYS).fill(0);
-      for(let i=0;i<Math.min(a.length,TOTAL_DAYS);i++)b[i]=+a[i]||0;
-      l.daily[m]=b;});});
+    AMET.forEach(m=>{l.daily[m]=move(l.daily[m],0);});
+    /* 소재별 실적(시트에 소재까지 적힌 날)도 같이 민다 */
+    if(l.cdaily){Object.keys(l.cdaily).forEach(ck=>{const st=l.cdaily[ck];AMET.forEach(m=>{st[m]=move(st[m],0);});});
+      l.cdet=move(l.cdet,false);}});
   /* 소재 게재 기간도 새 기간에 맞춘다.
      라인을 불러오는 시점에는 아직 캠페인 기간이 정해지지 않아 게재 기간이 [[0,0]] 처럼
      하루로 잡히는 일이 있었고, 그러면 이튿날부터의 실적이 화면에서 통째로 사라졌다.
@@ -10107,8 +10177,9 @@ function rebuildPeriod(){
     const last=Math.max(TOTAL_DAYS-1,0);
     if(!Array.isArray(c.run)||!c.run.length){c.run=[[0,last]];return;}
     c.run=c.run.map(([a,z])=>[
-      Math.max(0,Math.min(+a||0,last)),
-      (+z>=(PREV||1)-1)?last:Math.max(0,Math.min(+z||0,last))]);});
+      Math.max(0,Math.min((+a||0)+OFF,last)),
+      (+z>=(PREV||1)-1)?last:Math.max(0,Math.min((+z||0)+OFF,last))]);});
+  DAILY_D0=NEW0;
 }
 /* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
 function seedDemoDaily(){
@@ -10920,13 +10991,17 @@ const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:fal
   shareView:false,sample:false,appRole:'guest',shareRole:null,savedAt:null,dirty:false};
 const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
-/* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
+/* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지 기다린다.
+   ⚠ 예전에는 3초만 기다려서, 회사망 등에서 라이브러리가 늦게 오면 **영구 데모 모드**가 되고
+   올바른 뷰어 코드도 "그런 코드를 찾지 못했습니다" 로 나왔다 (v78) → 받는 중이면 15초까지 기다린다.
+   실패가 확실하면(onerror 로 __noConfig · __noSupabase) 바로 넘어간다. */
 function cloudReady(cb){
   if(window.__offline||window.__noConfig||window.__noSupabase)return cb();
   let n=0;
   (function tick(){
     const ok=cfgOf()&&typeof supabase!=='undefined'&&supabase.createClient;
-    if(ok||n>60||window.__noConfig||window.__noSupabase)return cb();
+    if(ok||n>300||window.__noConfig||window.__noSupabase)return cb();
+    if(n===30)try{cloudState('클라우드 연결 중…');}catch(e){}
     n++;setTimeout(tick,50);})();
 }
 const LINE_KEY=l=>['segment','media','product','target','line'].map(k=>String(l[k]||'')).join('|');
@@ -11054,7 +11129,7 @@ function applyDoc(d,keepToday){
   if(!d||!d.lines)return;
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
-  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
+  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:todaySeoul();   /* 서울 날짜 (v78) */
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
   /* 배경 움직임 (v56) — 없던 저장본은 지금까지의 동작(흘러다니기)으로 본다 */
@@ -11167,6 +11242,7 @@ function applyDoc(d,keepToday){
 }
 /* 일별 실적 행 → 라인의 daily 배열 · 누적 a 로 되돌린다 */
 function applyDaily(rows){
+  SHEET_COVER=null;                       /* 서버에서 통째로 새로 채운다 (v78) */
   const byKey={};LINES.forEach(l=>{
     byKey[LINE_KEY(l)]=l;
     l.daily={};AMET.forEach(m=>l.daily[m]=new Array(TOTAL_DAYS).fill(0));
@@ -11205,7 +11281,11 @@ function sheetToRows(){
     SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))
       row.extra[c.k]=(+row.extra[c.k]||0)+(+r[c.k]||0);});
   });
-  return [...by.values()];
+  /* ⚠ DB 의 실적 열은 정수(bigint)다 (v78). 엑셀 서식만 정수이고 실제 값에 소수점이 있으면(1234.6)
+     저장이 실패하는데, 그 전에 옛 일별 실적을 지워 버려 서버가 빈 채로 남았다 → 여기서 정수로 맞춘다 */
+  const rows=[...by.values()];
+  rows.forEach(row=>DAILY_COLS.forEach(k=>{row[k]=Math.round(+row[k]||0);}));
+  return rows;
 }
 
 
@@ -11271,6 +11351,7 @@ function loadLocal(){
     const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
     const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
     applyDoc(o.doc);
+    SHEET_COVER=null;DAILY_D0=null;       /* 불러오기 — 날짜 밀기 없이 새로 맞춘다 (v78) */
     rebuildPeriod();resetDateFilter();
     unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
     if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
@@ -11840,6 +11921,8 @@ function paintSaved(){
 let DIRTY_T=null;
 function markDirty(){
   CLOUD.dirty=true;CLOUD.dirtyAt=Date.now();
+  /* 입력 히스토리 · 로컬 백업 (07-input 의 sheetDirty — v78 전에는 이름이 겹쳐 안 돌았다) */
+  try{if(typeof sheetDirty==='function')sheetDirty();}catch(e){}
   paintSaved();
   clearTimeout(DIRTY_T);
   DIRTY_T=setTimeout(tryAutoSave,DIRTY_WAIT_MS);
@@ -11862,6 +11945,8 @@ function tryAutoSave(){
 /* 캠페인을 옮겨 다닐 때 앞 캠페인의 값이 남지 않도록 화면 상태를 통째로 비운다 */
 function clearWorkState(){
   if(typeof SHEET!=='undefined')SHEET.length=0;
+  /* 다른 캠페인의 "시트가 채운 칸" · 일별 배열 기준일을 들고 가지 않게 (v78) */
+  SHEET_COVER=null;DAILY_D0=null;
   if(typeof SHEET_HIST!=='undefined')SHEET_HIST.length=0;
   if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
   if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
@@ -15975,11 +16060,13 @@ async function trendPut(rec,picked,thumbFile,edit,say){
 async function trendDelete(p){
   try{
     if(trendOn()){
-      const paths=(p.files||[]).map(f=>f.path).filter(Boolean);
-      if(paths.length){try{await CLOUD.sb.storage.from(TREND_BUCKET).remove(paths);}catch(e){}}
+      /* v78 — 글을 먼저 지우고(서버가 권한 · 비밀번호 확인) 그다음 파일을 지운다.
+         저장소는 이제 "글에 붙어 있지 않은 파일"만 지울 수 있다 (2026-09-30_trend_security.sql) */
       const {error}=await CLOUD.sb.rpc('trend_remove',
         {p_id:p.id,p_hash:TREND_PW[p.id]||null});
-      if(error)throw error;}
+      if(error)throw error;
+      const paths=(p.files||[]).map(f=>f.path).filter(Boolean);
+      if(paths.length){try{await CLOUD.sb.storage.from(TREND_BUCKET).remove(paths);}catch(e){}}}
     TREND.posts=TREND.posts.filter(x=>x.id!==p.id);
     if(!trendOn())trendLocalWrite();
     renderTrend();
@@ -15987,10 +16074,10 @@ async function trendDelete(p){
 }
 async function trendSaveMeta(){
   if(!trendOn()){trendLocalWrite();return;}
-  try{
-    await CLOUD.sb.from('trend_meta').upsert([
-      {k:'categories',v:TREND.cats},{k:'media',v:TREND.media}]);
-  }catch(e){}
+  /* v78 — 매체명 사전은 누구나, 카테고리 목록은 관리 계정만 서버가 받아 준다 → 따로 보낸다
+     (한 번에 보내면 게스트는 카테고리 때문에 매체명까지 저장이 막혔다) */
+  try{await CLOUD.sb.from('trend_meta').upsert([{k:'media',v:TREND.media}]);}catch(e){}
+  try{if(CLOUD.user)await CLOUD.sb.from('trend_meta').upsert([{k:'categories',v:TREND.cats}]);}catch(e){}
 }
 
 /* 저장소가 돌려준 영문 오류를 무엇을 하면 되는지로 바꿔 준다 (v67) */

@@ -733,20 +733,27 @@ document.addEventListener('mouseup',()=>{lSelecting=false;});
    예전에는 여기서 daily 를 매번 새로 만들어(spread) 사용자가 올린 데이터가 통째로 사라졌다. */
 function rebuildPeriod(){
   const PREV=TOTAL_DAYS;                  /* 기간이 바뀌기 전 길이 — 소재 게재 기간 보정에 쓴다 */
-  d0=new Date(campStart()+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
+  /* ⚠ 시작일이 옮겨지면 일별 배열도 그만큼 민다 (v78).
+     예전에는 길이만 맞춰서, 시작일을 8/1 → 7/25 로 당기면 8/1 실적이 7/25 에 찍혔다.
+     DAILY_D0 = 지금 배열의 0번 날짜. 캠페인을 새로 불러올 때는 비워 둬서(clearWorkState · loadLocal) 밀지 않는다. */
+  const NEW0=campStart();
+  const OFF=(DAILY_D0&&DAILY_D0!==NEW0)?Math.round((new Date(DAILY_D0+'T00:00:00')-new Date(NEW0+'T00:00:00'))/DAY):0;
+  d0=new Date(NEW0+'T00:00:00');dE=new Date(campEnd()+'T00:00:00');
   dT=new Date(CAMPAIGN.today+'T00:00:00');
   YESTERDAY=iso(new Date(dT.getTime()-DAY));
   TOTAL_DAYS=Math.round((dE-d0)/DAY)+1;ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
-  ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
+  ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i));
   dates=ALLDATES.slice(0,ELAPSED);
   /* 길이만 새 기간에 맞춘다 (모자라면 0 으로 채우고, 넘치면 자른다) */
+  const move=(a,fill)=>{const b=new Array(TOTAL_DAYS).fill(fill);
+    if(Array.isArray(a))for(let i=0;i<a.length;i++){const j=i+OFF;if(j>=0&&j<TOTAL_DAYS)b[j]=fill===false?!!a[i]:(+a[i]||0);}
+    return b;};
   LINES.forEach(l=>{
     if(!l.daily)l.daily={};
-    AMET.forEach(m=>{
-      const a=Array.isArray(l.daily[m])?l.daily[m]:[];
-      const b=new Array(TOTAL_DAYS).fill(0);
-      for(let i=0;i<Math.min(a.length,TOTAL_DAYS);i++)b[i]=+a[i]||0;
-      l.daily[m]=b;});});
+    AMET.forEach(m=>{l.daily[m]=move(l.daily[m],0);});
+    /* 소재별 실적(시트에 소재까지 적힌 날)도 같이 민다 */
+    if(l.cdaily){Object.keys(l.cdaily).forEach(ck=>{const st=l.cdaily[ck];AMET.forEach(m=>{st[m]=move(st[m],0);});});
+      l.cdet=move(l.cdet,false);}});
   /* 소재 게재 기간도 새 기간에 맞춘다.
      라인을 불러오는 시점에는 아직 캠페인 기간이 정해지지 않아 게재 기간이 [[0,0]] 처럼
      하루로 잡히는 일이 있었고, 그러면 이튿날부터의 실적이 화면에서 통째로 사라졌다.
@@ -755,8 +762,9 @@ function rebuildPeriod(){
     const last=Math.max(TOTAL_DAYS-1,0);
     if(!Array.isArray(c.run)||!c.run.length){c.run=[[0,last]];return;}
     c.run=c.run.map(([a,z])=>[
-      Math.max(0,Math.min(+a||0,last)),
-      (+z>=(PREV||1)-1)?last:Math.max(0,Math.min(+z||0,last))]);});
+      Math.max(0,Math.min((+a||0)+OFF,last)),
+      (+z>=(PREV||1)-1)?last:Math.max(0,Math.min((+z||0)+OFF,last))]);});
+  DAILY_D0=NEW0;
 }
 /* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
 function seedDemoDaily(){

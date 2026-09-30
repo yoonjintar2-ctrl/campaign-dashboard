@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="build" content="__BUILD__">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Media Dashboard</title>
 <!-- 클라우드(선택) — 웹에 올렸을 때만 로드한다. 파일로 직접 열면 데모(더미) 모드로만 동작. -->
@@ -1371,6 +1372,12 @@ table.tbl.fit{width:auto}
 [data-theme="dark"] .hpbtn{background:rgba(88,88,92,.72);color:rgba(255,255,255,.78)}
 [data-theme="dark"] .hpbtn:hover{background:rgba(110,110,115,.9);color:#fff}
 @media print{.hpbtn{display:none!important}}
+
+/* 일자별 효율 비교 — 운영 이슈 깃발 (v78) */
+.isflag{transition:opacity .15s}
+.isflag.on>rect:nth-of-type(2){filter:brightness(1.08)}
+.isflag.on{opacity:1}
+#chartDaily svg:hover .isflag:not(.on){opacity:.8}
 
 /* ---------- tables ---------- */
 .tbl-wrap{overflow:auto;max-height:74vh}

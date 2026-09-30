@@ -905,11 +905,13 @@ async function trendPut(rec,picked,thumbFile,edit,say){
 async function trendDelete(p){
   try{
     if(trendOn()){
-      const paths=(p.files||[]).map(f=>f.path).filter(Boolean);
-      if(paths.length){try{await CLOUD.sb.storage.from(TREND_BUCKET).remove(paths);}catch(e){}}
+      /* v78 — 글을 먼저 지우고(서버가 권한 · 비밀번호 확인) 그다음 파일을 지운다.
+         저장소는 이제 "글에 붙어 있지 않은 파일"만 지울 수 있다 (2026-09-30_trend_security.sql) */
       const {error}=await CLOUD.sb.rpc('trend_remove',
         {p_id:p.id,p_hash:TREND_PW[p.id]||null});
-      if(error)throw error;}
+      if(error)throw error;
+      const paths=(p.files||[]).map(f=>f.path).filter(Boolean);
+      if(paths.length){try{await CLOUD.sb.storage.from(TREND_BUCKET).remove(paths);}catch(e){}}}
     TREND.posts=TREND.posts.filter(x=>x.id!==p.id);
     if(!trendOn())trendLocalWrite();
     renderTrend();
@@ -917,10 +919,10 @@ async function trendDelete(p){
 }
 async function trendSaveMeta(){
   if(!trendOn()){trendLocalWrite();return;}
-  try{
-    await CLOUD.sb.from('trend_meta').upsert([
-      {k:'categories',v:TREND.cats},{k:'media',v:TREND.media}]);
-  }catch(e){}
+  /* v78 — 매체명 사전은 누구나, 카테고리 목록은 관리 계정만 서버가 받아 준다 → 따로 보낸다
+     (한 번에 보내면 게스트는 카테고리 때문에 매체명까지 저장이 막혔다) */
+  try{await CLOUD.sb.from('trend_meta').upsert([{k:'media',v:TREND.media}]);}catch(e){}
+  try{if(CLOUD.user)await CLOUD.sb.from('trend_meta').upsert([{k:'categories',v:TREND.cats}]);}catch(e){}
 }
 
 /* 저장소가 돌려준 영문 오류를 무엇을 하면 되는지로 바꿔 준다 (v67) */

@@ -43,6 +43,8 @@ const sheetCols=()=>SHEET_COLS.filter(c=>c.on!==false);
    실제 매체 리포트도 소재 단위로 내려오고, 이렇게 적어야 소재별 효율이
    시트에 적힌 그대로 대시보드에 잡힌다 (v55 — 예전에는 라인당 한 줄이라
    그 날의 실적이 첫 번째 소재 하나로 몰렸다). */
+/* 지난번 applySheet 가 채운 칸 {라인id␁날짜} (v78) — 다음 적용 때 먼저 비운다. 캠페인이 바뀌면 clearWorkState 가 비운다 */
+var SHEET_COVER=null;
 let SHEET=LINES.flatMap(l=>{
   const idx=ELAPSED-1,fee=feeOf(l);
   const cs=CREATIVES.filter(c=>c.lid===l.id);
@@ -77,14 +79,28 @@ const dimOpts=(k,row)=>{const i=DIM_CHAIN.indexOf(k);
   return [...new Set(ls.map(l=>l[k]))].filter(Boolean);};
 /* 켜 둔 열만으로 라인을 찾는다 — 값이 빈 차원은 조건에서 뺀다.
    광고상품·지면·타겟팅은 순서가 달라도, 조합 중 일부만 적어도 같은 라인으로 본다. */
-function rowLine(r){
+function rowLine(r){return rowLineCands(r)[0]||null;}
+/* 이 행이 붙을 수 있는 라인 후보 (v78).
+   매체 · 광고상품 · 타겟이 같은 라인이 둘 이상이면(예: 구분만 다른 Phase 1/2 라인) 예전에는 무조건 첫 라인으로 갔다 →
+   합계는 같아도 구분 · 제품 · 라인별 달성률이 틀어졌다. 이제는
+   ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
+   그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
+function rowLineCands(r){
   const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
-  if(!keys.length)return null;
+  if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
-  /* 조합이 정확히 같은 라인을 먼저 고르고, 없으면 그 항목을 품고 있는 라인 */
-  const exact=LINES.find(l=>ok(l)&&keys.every(k=>!MULTI_DIMS.includes(k)
-    ||lineMulti(l,k).length===parseMulti(r[k]).length));
-  return exact||LINES.find(ok)||null;}
+  let pool=LINES.filter(ok);
+  if(pool.length<2)return pool;
+  const ex=pool.filter(l=>keys.every(k=>!MULTI_DIMS.includes(k)||lineMulti(l,k).length===parseMulti(r[k]).length));
+  if(ex.length)pool=ex;
+  if(pool.length>1){
+    const cn=String(r.creative==null?'':r.creative).trim();
+    if(cn){const ck=dimKey(cn),parts=parseMulti(cn).map(dimKey);
+      const hit=pool.filter(l=>{const reg=lineCreatives(l).map(dimKey);
+        return reg.includes(ck)||(parts.length>1&&parts.every(p=>reg.includes(p)));});
+      if(hit.length)pool=hit;}}
+  if(pool.length>1&&r.date){const inP=pool.filter(l=>r.date>=l.start&&r.date<=l.end);if(inP.length)pool=inP;}
+  return pool;}
 /* 이 행이 예상 효율(라인)에 붙지 못하는 이유 —
    '' 정상 · 'line' 어느 라인과도 매칭되지 않음(매체·상품·타겟팅 이름이 다름 등)
    · 'date' 라인은 찾았지만 그 라인의 집행 기간 밖의 날짜 */
@@ -113,18 +129,22 @@ function rowCellIssues(r){
     const next=pool.filter(l=>dimMatch(l,k,r[k]));
     if(next.length)pool=next;else bad.push(k);});
   if(bad.length)return {kind:'line',cells:bad.concat(nb)};
-  const l=rowLine(r)||pool[0];
+  const cands=rowLineCands(r),l=cands[0]||pool[0];
   if(l&&!(r.date>=l.start&&r.date<=l.end))return {kind:'date',cells:['date'].concat(nb)};
+  /* 후보 라인이 둘 이상 남음 — 소재 칸(없으면 매체 칸)을 표시 (v78) */
+  if(cands.length>1)return {kind:'ambig',cells:[r.creative!=null&&String(r.creative).trim()?'creative':'media'].concat(nb)};
   return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};}
 function rowIssue(r){return rowCellIssues(r).kind;}
 const ROW_ISSUE_LABEL={line:'예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)',
   date:'그 라인의 집행 기간 밖의 날짜입니다',
-  num:'숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다'};
+  num:'숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다',
+  ambig:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 어느 라인인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 등록된 소재 이름을 적어 주세요'};
 const CELL_ISSUE_LABEL={
   segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
   product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
   target:'앞 칸과 맞는 타겟팅 그룹이 아닙니다',line:'앞 칸과 맞는 제품이 아닙니다',
-  date:'그 라인의 집행 기간 밖의 날짜입니다'};
+  date:'그 라인의 집행 기간 밖의 날짜입니다',
+  creative:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 이 소재가 어느 라인 것인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 예상 효율에 소재를 등록해 주세요'};
 function rowBad(r){return !!rowIssue(r);}
 /* 매칭 안 되는 행들의 위치 (0부터) */
 const badRowIdx=()=>SHEET.map((r,i)=>rowBad(r)?i:-1).filter(i=>i>=0);
@@ -504,7 +524,8 @@ function renderSheet(){
     `${fmt(SHEET.length)}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.`,
     ()=>{pushUndo();SHEET.length=0;SHEET_PAGE=0;
       delete TBL_FILTER.sheet;delete TBL_SORT.sheet;
-      renderSheet();buildFacts();renderAll();
+      /* 시트가 채웠던 숫자도 함께 비운다 (v78 — 예전에는 buildFacts 만 해서 대시보드에 그대로 남았다) */
+      renderSheet();applySheet();buildFacts();renderAll();
       try{markDirty();saveLocal();}catch(e){}},'모두 지우기');
   const ca=$('sheetClearAll');
   if(ca)ca.onclick=wipeAll;
@@ -592,18 +613,29 @@ function redoSheet(){if(!REDO.length)return false;UNDO.push(snapSheet());applySn
 /* ===== 자동 저장 (마지막 입력 후 10분 이상 추가 입력이 없으면 스냅샷 저장) ===== */
 const AUTOSAVE_MIN=10;
 let DIRTY_AT=null,autosaveTimer=null;
-function markDirty(){
+/* ⚠ 예전 이름은 markDirty 였는데 09-cloud 의 markDirty(클라우드 자동 저장)와 이름이 겹쳐
+   이쪽이 통째로 덮여 있었다 → 입력 히스토리가 늘 비고 로컬 백업도 안 됐다 (v78).
+   이제 09 의 markDirty 가 이 함수를 불러 준다. */
+function sheetDirty(){
   DIRTY_AT=Date.now();
   clearTimeout(autosaveTimer);
-  /* 시안에서는 10분을 기다리지 않고 12초 뒤 저장되는 것으로 시연한다 */
-  autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),12000);
-  const el2=$('saveState');if(el2)el2.textContent='변경됨 · 저장 대기';
+  /* 입력이 끝나고 AUTOSAVE_MIN 분 동안 더 입력이 없으면 그 시점의 표를 히스토리에 남긴다 (안내 문구와 같은 규칙) */
+  autosaveTimer=setTimeout(()=>commitSnapshot('자동 저장'),AUTOSAVE_MIN*60000);
+  /* 상태 문구(#saveState)는 건드리지 않는다 — 엑셀 불러오기 결과 안내를 덮어쓰면 안 된다 */
   try{if(typeof saveLocal==='function')saveLocal();}catch(e){}
 }
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;
   const now=new Date();
-  SHEET_HIST.unshift({t:now,who:'윤석진',org:'미디어웍스',kind,rows:JSON.parse(JSON.stringify(SHEET))});
+  const rows=JSON.parse(JSON.stringify(SHEET));
+  /* 표가 바뀌지 않았으면(설정만 바뀐 경우) 같은 시점을 또 쌓지 않는다 */
+  if(SHEET_HIST[0]&&JSON.stringify(SHEET_HIST[0].rows)===JSON.stringify(rows)){DIRTY_AT=null;return;}
+  /* 입력자 = 지금 로그인한 사람 (예전에는 시안용 이름이 박혀 있었다) */
+  let who='게스트',org='';
+  try{const u=CLOUD&&CLOUD.user;
+    if(u)who=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||who;
+    org=CLOUD&&CLOUD.shareView?(CLOUD.shareRole==='staff'?'운영진 코드':'뷰어 코드'):(u?'시행사':'데모');}catch(e){}
+  SHEET_HIST.unshift({t:now,who,org,kind,rows});
   if(SHEET_HIST.length>40)SHEET_HIST.pop();
   DIRTY_AT=null;
   const el2=$('saveState');if(el2)el2.textContent=`${kind} ${hhmm(now)}`;
@@ -755,12 +787,23 @@ function applySheet(){
       if(!b2){b2={l,i,ck,v:zeroV()};cbucket.set(k2,b2);}
       addV(b2.v,r,fee,1/names.length);});});
   const touched=new Set();
+  /* ⚠ 지난번 시트가 채웠던 칸을 먼저 비운다 (v78).
+     예전에는 지금 시트에 있는 칸만 덮어써서, 행을 지우거나 「모두 지우기」 해도 대시보드 숫자가 그대로 남았다
+     (클라우드 저장은 시트만 올리므로 새로고침하면 맞았지만 그 전까지 화면 · 리포트 엑셀이 틀렸다).
+     시트가 채우지 않은 칸(샘플의 예시 실적 등)은 건드리지 않는다. */
+  if(SHEET_COVER)SHEET_COVER.forEach(key=>{
+    const p=key.split('\u0001'),l=LINES.find(x=>x.id===p[0]);if(!l||!l.daily)return;
+    const i=dIdx(p[1]);if(!(i>=0&&i<TOTAL_DAYS))return;
+    AMET.forEach(m=>{const a=l.daily[m];if(Array.isArray(a)&&i<a.length)a[i]=0;});
+    touched.add(l);});
+  const cover=new Set();
   bucket.forEach(b=>{
-    touched.add(b.l);
+    touched.add(b.l);cover.add(b.l.id+'\u0001'+iso(ALLDATES[b.i]));
     AMET.forEach(m=>{
       if(!Array.isArray(b.l.daily[m]))b.l.daily[m]=[];
       while(b.l.daily[m].length<TOTAL_DAYS)b.l.daily[m].push(0);
       b.l.daily[m][b.i]=b.v[m];});});
+  SHEET_COVER=cover;
   touched.forEach(l=>AMET.forEach(m=>{l.a[m]=sum(l.daily[m]||[]);}));
   /* ---- 소재별 실적 (v55) ----
      예전에는 라인 합계만 담고 소재 비중(share) 하나로 나눠 추정했다. 그래서
@@ -901,7 +944,7 @@ function openHistory(){
     const rs=rowsOf(hs);
     const g=k=>sum(rs.map(r=>+r[k]||0));
     const cost=sum(rs.map(r=>+r.cost||0));
-    h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${hs.who}</td><td>${hs.org}</td>
+    h+=`<tr><td class="mono">${hhmm(hs.t)}</td><td>${esc(hs.who)}</td><td>${esc(hs.org)}</td>
       <td class="mono">${rs.length}</td><td class="mono">${fmt(g('imp'))}</td><td class="mono">${fmt(g('click'))}</td>
       <td class="mono">${fmt(g('view'))}</td><td class="mono">${fmt(g('conv'))}</td><td class="mono">${won(cost)}</td>
       <td><span class="tagchip ${hs.kind==='자동 저장'?'':'on'}">${hs.kind}</span></td>

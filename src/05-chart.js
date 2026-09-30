@@ -312,6 +312,8 @@ function renderDaily(){
     const benchV=METRICS[lk].c(aggExp(dailyLines()));
     const useBench=SHOW_BENCH&&isFinite(benchV);
     const dom=useBench?ok.concat([benchV]):ok;
+    /* 꺾은선에 쓸 값도 예상 기준선도 없으면 눈금이 NaN 이 된다 → 꺾은선 없이 그린다 (v78) */
+    if(!dom.length){lineVals=null;}else{
     const mn=Math.min(...dom),mx=Math.max(...dom);
     const rg=(mx-mn)||mx*.2||1;
     const lt=niceTicks(mn-rg*.12,mx+rg*.12,3,false);
@@ -333,7 +335,9 @@ function renderDaily(){
     S('stop',{offset:'0%','stop-color':'var(--acc-lt)'},lg2);
     const mid2=S('stop',{offset:'50%','stop-color':'var(--acc-d)'},lg2);
     S('stop',{offset:'100%','stop-color':'var(--acc-lt)'},lg2);
-    S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
+    /* 동작 줄이기 설정이면 흐르는 띠를 멈춘다 (v78 — 가만히 있어도 CPU 를 쓰던 원인) */
+    let rm=false;try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+    if(!rm)S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
       repeatCount:'indefinite',calcMode:'spline',
       keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid2);
     S('path',{d:smoothPath(pts),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
@@ -353,46 +357,9 @@ function renderDaily(){
       const t2=S('text',{x:bx+3,y:y+3.6,'font-size':10,'font-weight':700,fill:ACC2},svg);
       t2.textContent=`예상 ${METRICS[lk].f(ev)}`;}
     }
+    }
   }
-  /* 운영 이슈 — 시작일 위치에서 세로선이 솟아 라벨로 연결 · 최대 5줄 */
   ISSUE_OVERFLOW=0;
-  if(SHOW_ISSUES){
-    const MAXLANE=5,laneEnd=[],laneTop=P.t+PH*0.12;
-    ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach(is=>{
-      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;   /* 스코프 기준 인덱스 */
-      if(b2<0||a>ds.length-1)return;
-      const ax=cx(Math.max(a,0));
-      const g=S('g',{},svg);g.style.cursor='pointer';
-      /* 유형([기타] 등)은 앞에 붙이지 않는다 — 이슈 문구만 그대로 (자세한 건 툴팁에) */
-      const label=String(is.txt||is.type||'').trim()||'이슈';
-      /* 라벨 글자색은 테마를 따른다 (예전 고정 남색은 다크톤에서 파랗게 보였다) */
-      const t=S('text',{x:0,y:0,'font-size':10.5,fill:'var(--ink2)','font-weight':700},g);
-      t.textContent=label;
-      /* 화면에 붙기 전이거나 폰트가 아직 안 잡히면 측정값이 0 으로 나와 라벨이 서로 겹친다.
-         그럴 때는 글자 종류로 폭을 어림해 쓴다. */
-      let mw=0;try{mw=t.getComputedTextLength();}catch(e){}
-      if(!(mw>4))mw=estTextW(label,10.5);
-      const pw=mw+18;
-      let li=0;while(laneEnd[li]!==undefined&&laneEnd[li]>ax-8)li++;
-      if(li>=MAXLANE){svg.removeChild(g);ISSUE_OVERFLOW++;return;}
-      /* 오른쪽으로 삐져나가지 않게 당긴다 */
-      const bx=Math.max(X0,Math.min(ax,W-P.r-pw));
-      laneEnd[li]=Math.max(ax,bx)+pw;
-      const y=laneTop+li*26;
-      const rect=S('rect',{x:bx,y,width:pw,height:19,rx:6,fill:'var(--acc-soft)',stroke:'var(--gline)'});
-      g.insertBefore(rect,t);
-      t.setAttribute('x',bx+9);t.setAttribute('y',y+13.2);
-      const line=S('line',{x1:ax,x2:ax,y1:y+19,y2:H-P.b,stroke:'var(--gline)','stroke-dasharray':'3 3','stroke-width':1});
-      g.insertBefore(line,rect);
-      const bw2=Math.max((Math.min(b2,ds.length-1)-Math.max(a,0)+1)*step-3,6);
-      const band=S('rect',{x:cx(Math.max(a,0))-step/2+1.5,y:H-P.b-4,width:bw2,height:4,fill:'var(--acc-lt)',rx:2});
-      g.insertBefore(band,line);
-      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
-        `<div class="t">${is.s} ~ ${is.e}</div><div class="r"><span class="l">${esc(is.scope)}</span><b>${is.type}</b></div>
-         <div style="margin-top:6px;opacity:.92">${esc(is.txt)}</div>`));
-      g.addEventListener('mouseleave',hideTip);
-    });
-  }
   if(typeof renderIssueAlert==='function')renderIssueAlert();
   ds.forEach((d,i)=>{
     if(i>=EL)return;
@@ -405,6 +372,41 @@ function renderDaily(){
       /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
+  /* 운영 이슈 — 바닥의 작은 깃발 (v78 · 디자인 제언)
+     예전에는 위쪽에 이슈 문구 알약이 최대 5줄로 쌓여 그래프를 가렸다.
+     이제 시작일에 번호 깃발 하나 + 바닥에 기간 띠만 두고, 올리면 그 기간을 옅게 칠하고 내용을 띄운다.
+     깃발 색은 테마와 무관한 호박색(의미 색) — 어두운 막대 위에서도 보이게. 가까이 붙으면 3단까지 위로 쌓는다. */
+  if(SHOW_ISSUES){
+    const baseY=H-P.b,FLC='#e0902f',lvEnd=[];
+    ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
+      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;
+      if(!(isFinite(a)&&isFinite(b2))||b2<0||a>ds.length-1)return;
+      const ai=Math.max(a,0),bi=Math.min(isFinite(b2)?b2:a,ds.length-1),ax=cx(ai);
+      let lv=0;while(lvEnd[lv]!==undefined&&lvEnd[lv]>ax-21)lv++;
+      if(lv>=3){ISSUE_OVERFLOW++;return;}
+      lvEnd[lv]=ax;
+      const top=baseY-27-lv*17;
+      const g=S('g',{class:'isflag'},svg);
+      S('rect',{x:cx(ai)-step/2+1.5,y:baseY-3,width:Math.max((bi-ai+1)*step-3,4),height:3,rx:1.5,fill:FLC,opacity:.55},g);
+      S('line',{x1:ax,x2:ax,y1:baseY,y2:top,stroke:FLC,'stroke-width':1.6},g);
+      S('rect',{x:ax,y:top,width:19,height:13,rx:3,fill:FLC,stroke:'var(--surface)','stroke-width':1},g);
+      const t=S('text',{x:ax+9.5,y:top+9.8,'text-anchor':'middle','font-size':9.5,'font-weight':800,fill:'#fff'},g);
+      t.textContent=String(n+1);
+      S('rect',{x:ax-5,y:top-4,width:29,height:baseY-top+6,fill:'transparent'},g);
+      g.style.cursor='pointer';
+      let hl=null;
+      g.addEventListener('mouseenter',()=>{
+        g.classList.add('on');
+        hl=S('rect',{x:cx(ai)-step/2,y:P.t,width:Math.max((bi-ai+1)*step,step),height:baseY-P.t,
+          fill:FLC,opacity:.09,'pointer-events':'none'});
+        svg.insertBefore(hl,svg.firstChild&&svg.firstChild.nextSibling||null);});
+      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
+        `<div class="t">운영 이슈 ${n+1} · ${esc(is.s)}${is.e&&is.e!==is.s?' ~ '+esc(is.e):''}</div>`
+        +(is.scope||is.type?`<div class="r"><span class="l">${esc(is.scope||'')}</span><b>${esc(is.type||'')}</b></div>`:'')
+        +`<div style="margin-top:6px;opacity:.92;white-space:normal;max-width:280px">${esc(is.txt||'')}</div>`));
+      g.addEventListener('mouseleave',()=>{g.classList.remove('on');if(hl&&hl.parentNode)hl.parentNode.removeChild(hl);hl=null;hideTip();});
+    });
+  }
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it drag',lg);
     x.draggable=true;x.dataset.k=s.key;

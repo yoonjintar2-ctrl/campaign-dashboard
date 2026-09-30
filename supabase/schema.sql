@@ -749,3 +749,61 @@ create policy trend_files_write on storage.objects
 drop policy if exists trend_files_delete on storage.objects;
 create policy trend_files_delete on storage.objects
   for delete to anon, authenticated using (bucket_id = 'trend');
+
+-- =====================================================================
+-- v78 (2026-09-30) 트렌드 리포트 게시판 보안 보강 — 위 트렌드 권한을 덮어쓴다
+-- (이미 만든 DB 는 supabase/2026-09-30_trend_security.sql 만 실행하면 된다)
+--   대외비 글은 관리 계정 · 글쓴이에게만 · 대외비 파일은 목록 조회 불가 ·
+--   글에 붙은 파일은 저장소에서 바로 못 지움 · 카테고리는 관리 계정만
+-- =====================================================================
+-- 파일이 어느 글에 붙어 있는지 — 저장소 권한 안에서 쓰는 도우미.
+-- (글 표는 직접 읽을 수 없게 막혀 있으므로 SECURITY DEFINER 로 판정만 돌려준다)
+create or replace function public.trend_file_state(p_name text)
+returns text language sql stable security definer set search_path=public as $$
+  select case
+    when exists(select 1 from public.trend_posts t, jsonb_array_elements(t.files) f
+                 where t.secret and f->>'path' = p_name) then 'secret'
+    when exists(select 1 from public.trend_posts t, jsonb_array_elements(t.files) f
+                 where f->>'path' = p_name) then 'live'
+    else 'orphan' end;
+$$;
+grant execute on function public.trend_file_state(text) to anon, authenticated;
+
+-- ① 목록 뷰 — 대외비 글은 관리 계정 · 글쓴이에게만
+create or replace view public.trend_posts_pub
+with (security_invoker = off) as
+select id,title,body,category,medium,tags,secret,files,link,thumb,bytes,
+       author_id,author_name,guest_id,
+       (guest_hash is not null and guest_hash <> '') as has_pw,
+       created_at,updated_at
+from public.trend_posts
+where not secret
+   or public.trend_is_admin()
+   or (author_id is not null and author_id = auth.uid());
+grant select on public.trend_posts_pub to anon, authenticated;
+
+-- ② 저장소 읽기(목록) — 대외비 글의 파일은 관리 계정만
+drop policy if exists trend_files_read on storage.objects;
+create policy trend_files_read on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'trend'
+         and (public.trend_file_state(name) <> 'secret' or public.trend_is_admin()));
+
+-- ③ 저장소 지우기 — 글에 붙어 있지 않은 파일만 (관리 계정은 전부)
+drop policy if exists trend_files_delete on storage.objects;
+create policy trend_files_delete on storage.objects
+  for delete to anon, authenticated
+  using (bucket_id = 'trend'
+         and (public.trend_file_state(name) = 'orphan' or public.trend_is_admin()));
+
+-- ④ 게시판 설정
+drop policy if exists trend_meta_write on public.trend_meta;
+drop policy if exists trend_meta_ins   on public.trend_meta;
+drop policy if exists trend_meta_upd   on public.trend_meta;
+create policy trend_meta_ins on public.trend_meta
+  for insert to anon, authenticated
+  with check (k = 'media' or public.trend_is_admin());
+create policy trend_meta_upd on public.trend_meta
+  for update to anon, authenticated
+  using (k = 'media' or public.trend_is_admin())
+  with check (k = 'media' or public.trend_is_admin());

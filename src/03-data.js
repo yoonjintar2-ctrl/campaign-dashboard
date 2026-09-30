@@ -63,8 +63,15 @@ const cssRgb=h=>{h=String(h||'').trim();
 /* ===== 1. 캠페인 · 라인 ===== */
 /* 기준일은 언제나 "실제 오늘"이다. 예전에는 시연용 날짜(2026-09-25)가 박혀 있어서
    캐시를 지우고 새 브라우저로 열어도 기간 필터 종료일이 늘 9/24 로 잡히는 문제가 있었다. */
-const TODAY_ISO=(()=>{const d=new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+/* 오늘 = **서울 날짜** (v78). 보는 사람 PC 시간대를 쓰면 해외(예: LA 오전 10시 = 서울 새벽 2시)에서
+   "오늘"이 하루 늦어 어제 실적이 비고 페이스가 달라졌다. 팀 · 데이터 기준은 한국이다. */
+/* 배포 표시 — CI 가 __BUILD__ 를 커밋 번호 · 시각으로 바꾼다 (콘솔에서 BUILD 로 확인) */
+try{window.BUILD=(document.querySelector('meta[name="build"]')||{}).content||'local';}catch(e){}
+function todaySeoul(){try{
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  if(/^\d{4}-\d{2}-\d{2}$/.test(p))return p;}catch(e){}
+  const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+const TODAY_ISO=todaySeoul();
 const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Media Dashboard',today:TODAY_ISO};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
@@ -172,8 +179,12 @@ let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
 let dT=new Date(CAMPAIGN.today+'T00:00:00');
 /* ⚠ 오늘이 캠페인 종료일을 지나면 ELAPSED 가 기간보다 커져 buildFacts 가 없는 날짜를 읽다 멈췄다 —
    샘플(9/30 종료)이 10/1 부터 첫 화면에서 통째로 멈춤. rebuildPeriod 와 같이 기간 안으로 자른다 (v77.1) */
+/* 일별 배열의 0번 날짜 — rebuildPeriod 가 시작일 이동을 알아채는 데 쓴다 (v78) */
+var DAILY_D0=campStart();
 let TOTAL_DAYS=Math.round((dE-d0)/DAY)+1,ELAPSED=Math.min(Math.round((dT-d0)/DAY)+1,TOTAL_DAYS);
-let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getTime()+i*DAY));
+/* 날짜는 달력으로 하루씩 더한다 (v78) — "0시 + i×24시간" 은 서머타임이 바뀌는 날 한 시간 어긋나
+   해외(베를린 · 뉴욕 등)에서 같은 날짜가 두 번 나오고 마지막 날이 밀렸다 */
+let ALLDATES=[...Array(TOTAL_DAYS)].map((_,i)=>new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i));
 let dates=ALLDATES.slice(0,ELAPSED);
 /* 요일 이름 — 언어를 바꾸면 setLang 이 갈아 끼운다 */
 const WD_KO=['일','월','화','수','목','금','토'],WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -203,7 +214,7 @@ const isRest=d=>d.getDay()===0||d.getDay()===6||!!holName(d);   // 토·일·공
 
 function seeded(s){return()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};}
 function spread(total,n,rnd,ramp){
-  const w=[...Array(n)].map((_,i)=>{const d=new Date(d0.getTime()+i*DAY);
+  const w=[...Array(n)].map((_,i)=>{const d=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+i);
     return (0.72+0.56*rnd())*(isRest(d)?0.76:1)*(1+ramp*(i/Math.max(n-1,1)));});
   const t=sum(w);let acc=0,out=[];
   for(let i=0;i<n;i++){out.push(Math.round(total*(acc+w[i])/t)-Math.round(total*acc/t));acc+=w[i];}

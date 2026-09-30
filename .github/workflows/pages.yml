@@ -30,6 +30,24 @@ jobs:
         run: |
           mkdir -p dist
           python tools/build.py dist/index.html
+          # 어느 커밋이 배포됐는지 페이지에 표시 (<meta name="build">, 콘솔 window.BUILD)
+          sed -i "s/__BUILD__/${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%MZ)/" dist/index.html
+          # 설정 › 사용 가이드 버튼이 여는 PDF 도 함께 배포 (예전에는 빠져서 항상 "가이드 파일을 찾지 못했습니다")
+          if [ -d guide ]; then cp -r guide dist/; fi
+
+      - name: Check script syntax
+        run: |
+          node -e "const h=require('fs').readFileSync('dist/index.html','utf8');const m=[...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(x=>x.length>1000);for(const c of m)new Function(c);console.log('syntax ok',m.length)"
+
+      - name: Smoke test (headless Chrome)
+        run: |
+          # 샘플 캠페인을 열어 로딩 가림막이 걷히고 주요 지표 카드가 그려지는지 본다 — 부팅 오류면 배포하지 않는다
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
+          if [ -z "$CHROME" ]; then echo "::warning::Chrome not found - smoke test skipped"; exit 0; fi
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$PWD/dist/index.html?code=DEMO-2026&lang=ko" > dom.html 2>/dev/null || true
+          if grep -q '<body[^>]*class="[^"]*booting' dom.html; then echo "::error::page stuck on the loading veil (boot error)"; exit 1; fi
+          if ! grep -q 'class="card stat' dom.html; then echo "::error::dashboard did not render"; exit 1; fi
+          echo "smoke ok"
 
       - name: Create Supabase config
         env:

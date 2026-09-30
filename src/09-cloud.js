@@ -8,13 +8,17 @@ const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:fal
   shareView:false,sample:false,appRole:'guest',shareRole:null,savedAt:null,dirty:false};
 const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
-/* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지(최대 3초) 기다린다 */
+/* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지 기다린다.
+   ⚠ 예전에는 3초만 기다려서, 회사망 등에서 라이브러리가 늦게 오면 **영구 데모 모드**가 되고
+   올바른 뷰어 코드도 "그런 코드를 찾지 못했습니다" 로 나왔다 (v78) → 받는 중이면 15초까지 기다린다.
+   실패가 확실하면(onerror 로 __noConfig · __noSupabase) 바로 넘어간다. */
 function cloudReady(cb){
   if(window.__offline||window.__noConfig||window.__noSupabase)return cb();
   let n=0;
   (function tick(){
     const ok=cfgOf()&&typeof supabase!=='undefined'&&supabase.createClient;
-    if(ok||n>60||window.__noConfig||window.__noSupabase)return cb();
+    if(ok||n>300||window.__noConfig||window.__noSupabase)return cb();
+    if(n===30)try{cloudState('클라우드 연결 중…');}catch(e){}
     n++;setTimeout(tick,50);})();
 }
 const LINE_KEY=l=>['segment','media','product','target','line'].map(k=>String(l[k]||'')).join('|');
@@ -142,7 +146,7 @@ function applyDoc(d,keepToday){
   if(!d||!d.lines)return;
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
-  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:iso(new Date());
+  CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:todaySeoul();   /* 서울 날짜 (v78) */
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
   /* 배경 움직임 (v56) — 없던 저장본은 지금까지의 동작(흘러다니기)으로 본다 */
@@ -255,6 +259,7 @@ function applyDoc(d,keepToday){
 }
 /* 일별 실적 행 → 라인의 daily 배열 · 누적 a 로 되돌린다 */
 function applyDaily(rows){
+  SHEET_COVER=null;                       /* 서버에서 통째로 새로 채운다 (v78) */
   const byKey={};LINES.forEach(l=>{
     byKey[LINE_KEY(l)]=l;
     l.daily={};AMET.forEach(m=>l.daily[m]=new Array(TOTAL_DAYS).fill(0));
@@ -293,7 +298,11 @@ function sheetToRows(){
     SHEET_COLS.forEach(c=>{if(c.type==='num'&&!AMET.includes(c.k)&&!DAILY_COLS.includes(c.k))
       row.extra[c.k]=(+row.extra[c.k]||0)+(+r[c.k]||0);});
   });
-  return [...by.values()];
+  /* ⚠ DB 의 실적 열은 정수(bigint)다 (v78). 엑셀 서식만 정수이고 실제 값에 소수점이 있으면(1234.6)
+     저장이 실패하는데, 그 전에 옛 일별 실적을 지워 버려 서버가 빈 채로 남았다 → 여기서 정수로 맞춘다 */
+  const rows=[...by.values()];
+  rows.forEach(row=>DAILY_COLS.forEach(k=>{row[k]=Math.round(+row[k]||0);}));
+  return rows;
 }
 
 
@@ -359,6 +368,7 @@ function loadLocal(){
     const raw=localStorage.getItem(LS_KEY());if(!raw)return false;
     const o=JSON.parse(raw);if(!o||!o.doc||!o.doc.lines)return false;
     applyDoc(o.doc);
+    SHEET_COVER=null;DAILY_D0=null;       /* 불러오기 — 날짜 밀기 없이 새로 맞춘다 (v78) */
     rebuildPeriod();resetDateFilter();
     unpackDaily(o.daily);                 /* 저장해 둔 일별 실적을 먼저 되살리고 */
     if(typeof applySheet==='function')applySheet();   /* 시트에 적힌 날짜만 덮어쓴다 */
@@ -928,6 +938,8 @@ function paintSaved(){
 let DIRTY_T=null;
 function markDirty(){
   CLOUD.dirty=true;CLOUD.dirtyAt=Date.now();
+  /* 입력 히스토리 · 로컬 백업 (07-input 의 sheetDirty — v78 전에는 이름이 겹쳐 안 돌았다) */
+  try{if(typeof sheetDirty==='function')sheetDirty();}catch(e){}
   paintSaved();
   clearTimeout(DIRTY_T);
   DIRTY_T=setTimeout(tryAutoSave,DIRTY_WAIT_MS);
@@ -950,6 +962,8 @@ function tryAutoSave(){
 /* 캠페인을 옮겨 다닐 때 앞 캠페인의 값이 남지 않도록 화면 상태를 통째로 비운다 */
 function clearWorkState(){
   if(typeof SHEET!=='undefined')SHEET.length=0;
+  /* 다른 캠페인의 "시트가 채운 칸" · 일별 배열 기준일을 들고 가지 않게 (v78) */
+  SHEET_COVER=null;DAILY_D0=null;
   if(typeof SHEET_HIST!=='undefined')SHEET_HIST.length=0;
   if(typeof LINE_HIST!=='undefined')LINE_HIST.length=0;
   if(typeof CAMP_HIST!=='undefined')CAMP_HIST.length=0;
