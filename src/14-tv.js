@@ -57,18 +57,67 @@ function areaHome(a){
 /* 지금 디지털 대시보드의 하위 화면 */
 function curDashSub(){
   return ['perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');})||'perf';}
-/* 선택 표시 — 영역 · 하위 메뉴 · 하위 줄 */
+/* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
   const name=T.dataset.cur||'dash',area=AREA_OF_TAB[name]||'digital';
-  T.querySelectorAll('.area').forEach(b=>b.classList.toggle('on',b.dataset.area===area));
-  T.querySelectorAll('.subgrp').forEach(g=>g.classList.toggle('show',g.dataset.area===area));
-  T.querySelectorAll('.subrow [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   const cs=curDashSub();
+  T.querySelectorAll('.area').forEach(b=>{
+    const on=b.dataset.area===area;b.classList.toggle('on',on);
+    const c=b.querySelector('.acur');if(!c)return;
+    /* 사전 번역이 되도록 한국어 원문(MENUS.l)을 넣는다 — 영어 화면이면 textContent 훅이 옮긴다 */
+    let lb='';
+    if(on&&area!=='trend'){
+      const m=name==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===cs):MENUS.find(x=>x.tab===name);
+      lb=m?m.l:'';}
+    const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
+    if(src!==lb||(!lb&&c.textContent))c.textContent=lb;});
+  T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 리포트 엑셀은 디지털 영역에서만 */
   const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash');
-  const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');}
+  const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');
+  /* "지금 메뉴" 글자 길이가 바뀌면 줄이 넘칠 수 있다 — 한 번 더 잰다 */
+  cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});}
+/* ---------- 상위 메뉴 드롭다운 (v74) ----------
+   상위 메뉴(디지털 · TV)를 누르면 하위 메뉴 판을 펼친다. 하위가 하나뿐이면 펼치지 않고 바로 간다.
+   바깥 클릭 · Esc · 창 크기 변경 · 하위 메뉴 선택 → 닫힘. 펼친 채로 다른 상위 메뉴에 올리면 그쪽으로 옮겨 간다. */
+function areaItems(a){
+  const g=document.querySelector(`#tabs .subgrp[data-area="${a}"]`);if(!g)return [];
+  return [...g.querySelectorAll('button')].filter(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden')
+    &&!x.closest('.subbar.menuoff'));}
+function openAreaPop(a){
+  const T=$('tabs');if(!T)return;
+  T.dataset.pop=a;
+  T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded',x.dataset.area===a?'true':'false'));
+  /* 오른쪽이 모자라면 버튼 오른쪽 끝에 맞춘다 */
+  const g=T.querySelector(`.subgrp[data-area="${a}"]`);
+  if(g){g.style.left='';g.style.right='';
+    const r=g.getBoundingClientRect();if(r.right>innerWidth-8){g.style.left='auto';g.style.right='2px';}}}
+function closeAreaPop(){
+  const T=$('tabs');if(!T||!T.dataset.pop)return;
+  delete T.dataset.pop;
+  T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded','false'));}
+function areaClick(b,e){
+  if(e)e.stopPropagation();
+  const a=b.dataset.area,T=$('tabs'),items=areaItems(a);
+  if(items.length<=1){closeAreaPop();
+    if(items.length===1)items[0].click();else switchTab(areaHome(a));return;}
+  if(T&&T.dataset.pop===a){closeAreaPop();return;}
+  openAreaPop(a);}
+(function wireAreaPop(){
+  const go=()=>{
+    const T=$('tabs');if(!T)return;
+    /* 하위 메뉴를 고르면 닫는다 (각 단추의 원래 동작은 그대로 돈다) */
+    T.addEventListener('click',e=>{if(e.target.closest('.subgrp button'))closeAreaPop();});
+    /* 펼친 채로 옆 상위 메뉴에 올리면 그쪽 판으로 */
+    T.querySelectorAll('.area[aria-haspopup]').forEach(b=>b.addEventListener('mouseenter',()=>{
+      if(T.dataset.pop&&T.dataset.pop!==b.dataset.area&&areaItems(b.dataset.area).length>1)openAreaPop(b.dataset.area);}));
+    document.addEventListener('click',e=>{if(T.dataset.pop&&!e.target.closest('#tabs .areawrap'))closeAreaPop();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&T.dataset.pop){closeAreaPop();
+      const b=T.querySelector('.area.on');if(b)b.focus();}});
+    addEventListener('resize',closeAreaPop);};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):go();})();
 /* 디지털 대시보드에서 지금 하위 화면이 꺼져 있으면 보이는 첫 하위 화면으로 */
 function ensureDashSub(){
   const cs=curDashSub(),m=MENUS.find(x=>x.tab==='dash'&&x.sub===cs);
@@ -93,7 +142,7 @@ function applyMenus(){
     b.classList.toggle('menuoff',!vis);
     b.classList.toggle('vhide',vis&&!cl&&!anyV);});
   /* 보이는 단추가 없는 묶음(트레이)은 통째로 감춘다 */
-  T.querySelectorAll('.subrow .subbar').forEach(sb=>{
+  T.querySelectorAll('.subgrp .subbar').forEach(sb=>{
     const any=[...sb.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
     sb.classList.toggle('menuoff',!any);});
   const cur=T.dataset.cur||'dash';
@@ -103,27 +152,23 @@ function applyMenus(){
 }
 /* 예전 이름 — 부르는 곳이 여럿이라 남겨 둔다 */
 function applyMediaTabs(){applyMenus();}
-/* 줄이 넘치면 글자·여백을 줄인다(.dense → .dense2 → .dense3). v73 — 메뉴가 한 줄이라 `.tabs` 자체가 넘치는지 잰다.
-   영역마다 하위 메뉴 길이가 달라 모두 켜 보며 재 본다 (영역을 바꿔도 모양이 튀지 않게) */
+/* 줄이 넘치면 줄인다(.dense → .dense2 → .dense3). v74 — 하위 메뉴는 드롭다운이라 줄에는 상위 메뉴 · 지금 메뉴 · 도구만 */
 function fitTabs(){
   const t=$('tabs');if(!t)return;
-  const grps=[...t.querySelectorAll('.subgrp')];
-  const shown=grps.filter(g=>g.classList.contains('show'));
   /* 대시보드에서만 보이는 도구(🌙 다크 · 영역 관리 · 리포트)가 **보일 때** 기준 — 탭을 옮겨도 모양이 그대로 */
   const tmp=[$('darkToggle'),$('sectMngBtn'),t.querySelector('.dlgrp')]
     .filter(e=>e&&(e.classList.contains('hidden')||e.classList.contains('tooloff'))&&!e.classList.contains('medoff'));
   const was=tmp.map(e=>[e.classList.contains('hidden'),e.classList.contains('tooloff')]);
+  const pop=t.dataset.pop;if(pop)delete t.dataset.pop;      /* 펼친 판은 재는 동안만 접는다 */
   tmp.forEach(e=>e.classList.remove('hidden','tooloff'));
-  const over=()=>grps.some(g=>{
-    grps.forEach(x=>x.classList.toggle('show',x===g));
-    return t.scrollWidth>t.clientWidth+2;});
+  const over=()=>t.scrollWidth>t.clientWidth+2;
   try{
     t.classList.remove('dense','dense2','dense3');
     if(over())t.classList.add('dense');
     if(over())t.classList.add('dense2');
     if(over())t.classList.add('dense3');
   }finally{
-    grps.forEach(g=>g.classList.toggle('show',shown.includes(g)));
+    if(pop)t.dataset.pop=pop;
     tmp.forEach((e,i)=>{if(was[i][0])e.classList.add('hidden');if(was[i][1])e.classList.add('tooloff');});}
   try{if(typeof syncStick==='function')syncStick();}catch(e){}try{fitTop();}catch(e){}
 }

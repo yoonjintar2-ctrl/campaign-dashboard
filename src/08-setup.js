@@ -1284,8 +1284,8 @@ function switchTab(name){
   if(backRaw&&typeof renderRaw==='function'){renderRaw();}
   else scrollTo({top:0});}
 document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
-/* 영역(1줄) — 디지털은 대시보드(보던 하위 화면), TV 는 마지막으로 본 TV 대시보드 (v72) */
-document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=()=>switchTab(areaHome(b.dataset.area)));
+/* 상위 메뉴 — 누르면 하위 메뉴 드롭다운을 펼친다 (v74 · areaClick 은 p14). 하위가 하나뿐이면 바로 이동 */
+document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=e=>areaClick(b,e));
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   /* 다른 화면에서 누르면 먼저 디지털 대시보드로 (v72 — 하위 메뉴가 늘 보인다) */
   if($('tab-dash').classList.contains('hidden')){switchTab('dash');if(!$('tab-dash').classList.contains('hidden')&&curDashSub()===b.dataset.sub){paintTabsOn();return;}}

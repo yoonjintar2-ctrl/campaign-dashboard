@@ -351,16 +351,16 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .topbar.tcompact3 #betaTag{display:none}
 .glang select{border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink2);
   font:inherit;font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer}
-/* ===== 메뉴 한 줄 (v73 — v72 의 두 줄을 합쳤다) =====
-   [영역: 디지털 · TV · 트렌드 리포트] │ [고른 영역의 하위 메뉴 — 보기 트레이 · 입력 트레이(점선)] … [도구]
-   머리 영역(상단바 + 메뉴)이 145px → 94px. 상하위 구분은 생김새로: 영역은 아이콘 + 밑줄, 하위는 알약. */
+/* ===== 메뉴 한 줄 + 드롭다운 (v74) =====
+   [디지털 › 서머리 ▾] [TV ▾] [트렌드 리포트] ………… [도구]
+   상위 메뉴를 누르면 그 아래로 하위 메뉴 판(.subgrp)이 펼쳐진다 — #tabs[data-pop="<영역>"].
+   지금 보고 있는 하위 메뉴는 상위 버튼 옆 .acur 에 작게. 머리 영역 = 상단바 50 + 메뉴 44 = 94px. */
 .tabs{flex-direction:row;align-items:center;gap:0;min-height:44px}
-.tabs .arearow{display:flex;align-items:center;gap:2px;align-self:stretch;flex:none}
-.tabs .subrow{display:flex;align-items:center;min-width:0;margin-left:10px}
-/* 영역 │ 하위 메뉴 사이 세로 구분선 */
-.tabs .subrow::before{content:'';width:1px;height:22px;background:var(--line);margin-right:12px;flex:none}
+.tabs .arearow{display:flex;align-items:stretch;gap:2px;align-self:stretch;flex:none}
+.tabs .areawrap{position:relative;display:flex;align-items:stretch}
+.tabs .areawrap:has(>.area.menuoff){display:none}
 .tabs .area{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;cursor:pointer;
-  padding:0 11px;height:100%;font:inherit;font-size:14px;font-weight:700;color:var(--ink2);letter-spacing:-.3px;
+  padding:0 11px;font:inherit;font-size:14px;font-weight:700;color:var(--ink2);letter-spacing:-.3px;
   border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex:none}
 .tabs .area:hover{color:var(--ink)}
 .tabs .area .aic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
@@ -370,31 +370,46 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs .area.on .aic{background:var(--acc);color:var(--surface);border-color:var(--acc)}
 .tabs .area.vhide{color:var(--muted)}
 .tabs .area.vhide.on{color:var(--acc)}
-.tabs .subgrp{display:none;align-items:center;gap:8px;min-width:0}
-.tabs .subgrp.show{display:flex}
-.tabs .crumb{display:none}
-.tabs .subbar{margin:0;flex:none}
-.tabs .subbar::before{display:none}
-.tabs .subbar button{white-space:nowrap}
-/* 입력 트레이 — 관리자만 쓰는 메뉴라 점선으로 한 번 더 구분 */
-.tabs .subbar.subin{background:transparent;border-style:dashed}
-.tabs .subbar button.vhide{color:var(--muted)}
-.tabs .subbar button.vhide.on{color:var(--acc)}
+/* 지금 보고 있는 하위 메뉴 — "디지털 › 서머리" */
+.tabs .area .acur{font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:-.2px;margin-left:-1px}
+.tabs .area .acur:empty{display:none}
+.tabs .area .acur::before{content:'›';margin-right:6px;color:var(--gline);font-weight:600}
+.tabs .area .acv{flex:none;opacity:.5;margin-left:-2px;transition:transform .15s}
+.tabs .area:hover .acv{opacity:.85}
+.tabs .area[aria-expanded="true"]{color:var(--ink)}
+.tabs .area[aria-expanded="true"] .acv{transform:rotate(180deg);opacity:.9}
+/* 하위 메뉴 판 */
+.tabs .subgrp{display:none;position:absolute;top:calc(100% + 4px);left:2px;z-index:5;min-width:188px;
+  flex-direction:column;align-items:stretch;gap:0;padding:6px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2)}
+#tabs[data-pop="digital"] .subgrp[data-area="digital"],#tabs[data-pop="tv"] .subgrp[data-area="tv"]{display:flex;
+  animation:subpop .12s ease-out}
+@keyframes subpop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.tabs .subhd{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.04em;padding:5px 10px 4px}
+.tabs .subhd.subinhd{border-top:1px solid var(--line2);margin-top:5px;padding-top:9px}
+.tabs .subhd:has(+.subbar.menuoff){display:none}
+.tabs .subgrp .subbar{display:flex;flex-direction:column;align-items:stretch;gap:1px;margin:0;padding:0;
+  background:transparent;border:0;border-radius:0;flex:none}
+.tabs .subgrp .subbar::before{display:none}
+.tabs .subgrp .subbar button{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
+  white-space:nowrap;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink2);box-shadow:none}
+.tabs .subgrp .subbar button:hover{background:var(--acc-soft2);color:var(--ink)}
+.tabs .subgrp .subbar button.on{background:var(--acc-soft);color:var(--acc);font-weight:800;box-shadow:none}
+.tabs .subgrp .subbar button.on::after{content:'✓';font-size:11px}
+.tabs .subgrp .subbar button.vhide{color:var(--muted)}
+.tabs .subgrp .subbar button.vhide.on{color:var(--acc)}
 /* 디지털 대시보드가 아닐 때는 서머리 · 일자별 · 미디어믹스의 "고른 흔적"을 지운다 */
 #tabs:not([data-cur="dash"]) #subbar button.on{background:transparent;box-shadow:none;color:var(--ink2);font-weight:600}
-.tabs .subcap{font-size:12px;color:var(--muted);white-space:nowrap}
+#tabs:not([data-cur="dash"]) #subbar button.on::after{content:none}
 /* 쓰지 않는 메뉴(메뉴 설정) · 이 화면에 필요 없는 도구 */
 .tabs .menuoff,.tabs .tooloff{display:none!important}
-/* 좁으면 글자·여백을 줄인다 (fitTabs) — dense: 여백 ↓ · dense2: 영역 아이콘 · 도구 글자 숨김 · dense3: 영역 이름도 숨김(아이콘만) */
+/* 좁으면 줄인다 (fitTabs) — dense: 여백 ↓ · dense2: 영역 아이콘 · 도구 글자 숨김 · dense3: 영역 이름 숨김(아이콘 + 지금 메뉴만) */
 .tabs.dense .area{padding:0 8px;font-size:13.5px;gap:5px}
-.tabs.dense .subbar button{padding:4px 9px;font-size:11.5px}
-.tabs.dense .subgrp{gap:6px}
-.tabs.dense .subrow{margin-left:6px}.tabs.dense .subrow::before{margin-right:8px}
 .tabs.dense2 .area .aic{display:none}
 .tabs.dense2 .darkbtn .lb,.tabs.dense2 .dlgrp>.lb{display:none}
-.tabs.dense2 .subcap{display:none}
 .tabs.dense3 .area .aic{display:grid}
 .tabs.dense3 .area .al{display:none}
+.tabs.dense3 .area .acur::before{content:none}
 .tabs.dense3 .area{padding:0 7px}
 /* 설정 › 메뉴 설정 (v72) */
 table.mset{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -2198,41 +2213,46 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   <button class="btn sm" id="demoHide">닫기</button>
 </div>
 
-<!-- 상단 메뉴 — **한 줄** (v73): 왼쪽 영역(디지털 · TV · 트렌드 리포트) │ 고른 영역의 하위 메뉴 │ 오른쪽 도구.
-     v72 의 두 줄(영역 줄 + 하위 줄)이 머리 영역을 145px 까지 두껍게 만들어 본문이 좁아졌다 →
-     하위 메뉴를 영역 오른쪽에 붙이고 빵부스러기(영역 이름 ›)는 뺐다. 표시 규칙은 그대로:
-     data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따르고, 선택 표시는 paintTabsOn() -->
+<!-- 상단 메뉴 — 한 줄 + **드롭다운** (v74): 상위 메뉴(디지털 · TV)를 누르면 그 아래로 하위 메뉴가 펼쳐진다.
+     지금 보고 있는 하위 메뉴 이름은 상위 버튼 옆(.acur)에 작게 — paintTabsOn() 이 채운다.
+     하위가 하나뿐이면(뷰어에게 서머리만 보이는 경우 등) 펼치지 않고 바로 이동 · 트렌드 리포트는 하위 없음.
+     data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따른다 (applyMenus) -->
 <div class="tabs" id="tabs" data-cur="dash">
   <div class="arearow">
-  <button class="area on" type="button" data-area="digital" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span></button>
-  <button class="area" type="button" data-area="tv" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span></button>
-  <button class="area" type="button" data-area="trend" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span></button>
-  </div>
-  <div class="subrow">
-    <div class="subgrp show" data-area="digital">
-      <div class="subbar" id="subbar">
+    <div class="areawrap" data-area="digital">
+      <button class="area on" type="button" data-area="digital" aria-haspopup="menu" aria-expanded="false" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="subgrp" data-area="digital" role="menu">
+        <div class="subhd">대시보드</div>
+        <div class="subbar" id="subbar">
         <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
         <button type="button" data-sub="table" data-menu="d_daily">일자별 효율</button>
         <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
       </div>
-      <div class="subbar subin">
+        <div class="subhd subinhd">입력</div>
+        <div class="subbar subin">
         <button type="button" data-tab="input" data-menu="d_input">데이터 입력</button>
         <button type="button" data-tab="setup" data-menu="d_plan">예상효율 입력</button>
       </div>
+      </div>
     </div>
-    <div class="subgrp" data-area="tv">
-      <div class="subbar" id="tvsubbar">
+    <div class="areawrap" data-area="tv">
+      <button class="area" type="button" data-area="tv" aria-haspopup="menu" aria-expanded="false" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="subgrp" data-area="tv" role="menu">
+        <div class="subhd">대시보드</div>
+        <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 효율</button>
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
       </div>
-      <div class="subbar subin">
+        <div class="subhd subinhd">입력</div>
+        <div class="subbar subin">
         <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
         <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
       </div>
+      </div>
     </div>
-    <div class="subgrp" data-area="trend">
-      <span class="subcap">모든 캠페인이 함께 쓰는 자료 게시판입니다</span>
+    <div class="areawrap" data-area="trend">
+      <button class="area" type="button" data-area="trend" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span></button>
     </div>
   </div>
   <div class="spacer"></div>
@@ -10336,8 +10356,8 @@ function switchTab(name){
   if(backRaw&&typeof renderRaw==='function'){renderRaw();}
   else scrollTo({top:0});}
 document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
-/* 영역(1줄) — 디지털은 대시보드(보던 하위 화면), TV 는 마지막으로 본 TV 대시보드 (v72) */
-document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=()=>switchTab(areaHome(b.dataset.area)));
+/* 상위 메뉴 — 누르면 하위 메뉴 드롭다운을 펼친다 (v74 · areaClick 은 p14). 하위가 하나뿐이면 바로 이동 */
+document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=e=>areaClick(b,e));
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   /* 다른 화면에서 누르면 먼저 디지털 대시보드로 (v72 — 하위 메뉴가 늘 보인다) */
   if($('tab-dash').classList.contains('hidden')){switchTab('dash');if(!$('tab-dash').classList.contains('hidden')&&curDashSub()===b.dataset.sub){paintTabsOn();return;}}
@@ -15684,18 +15704,67 @@ function areaHome(a){
 /* 지금 디지털 대시보드의 하위 화면 */
 function curDashSub(){
   return ['perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');})||'perf';}
-/* 선택 표시 — 영역 · 하위 메뉴 · 하위 줄 */
+/* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
   const name=T.dataset.cur||'dash',area=AREA_OF_TAB[name]||'digital';
-  T.querySelectorAll('.area').forEach(b=>b.classList.toggle('on',b.dataset.area===area));
-  T.querySelectorAll('.subgrp').forEach(g=>g.classList.toggle('show',g.dataset.area===area));
-  T.querySelectorAll('.subrow [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   const cs=curDashSub();
+  T.querySelectorAll('.area').forEach(b=>{
+    const on=b.dataset.area===area;b.classList.toggle('on',on);
+    const c=b.querySelector('.acur');if(!c)return;
+    /* 사전 번역이 되도록 한국어 원문(MENUS.l)을 넣는다 — 영어 화면이면 textContent 훅이 옮긴다 */
+    let lb='';
+    if(on&&area!=='trend'){
+      const m=name==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===cs):MENUS.find(x=>x.tab===name);
+      lb=m?m.l:'';}
+    const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
+    if(src!==lb||(!lb&&c.textContent))c.textContent=lb;});
+  T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 리포트 엑셀은 디지털 영역에서만 */
   const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash');
-  const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');}
+  const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');
+  /* "지금 메뉴" 글자 길이가 바뀌면 줄이 넘칠 수 있다 — 한 번 더 잰다 */
+  cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});}
+/* ---------- 상위 메뉴 드롭다운 (v74) ----------
+   상위 메뉴(디지털 · TV)를 누르면 하위 메뉴 판을 펼친다. 하위가 하나뿐이면 펼치지 않고 바로 간다.
+   바깥 클릭 · Esc · 창 크기 변경 · 하위 메뉴 선택 → 닫힘. 펼친 채로 다른 상위 메뉴에 올리면 그쪽으로 옮겨 간다. */
+function areaItems(a){
+  const g=document.querySelector(`#tabs .subgrp[data-area="${a}"]`);if(!g)return [];
+  return [...g.querySelectorAll('button')].filter(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden')
+    &&!x.closest('.subbar.menuoff'));}
+function openAreaPop(a){
+  const T=$('tabs');if(!T)return;
+  T.dataset.pop=a;
+  T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded',x.dataset.area===a?'true':'false'));
+  /* 오른쪽이 모자라면 버튼 오른쪽 끝에 맞춘다 */
+  const g=T.querySelector(`.subgrp[data-area="${a}"]`);
+  if(g){g.style.left='';g.style.right='';
+    const r=g.getBoundingClientRect();if(r.right>innerWidth-8){g.style.left='auto';g.style.right='2px';}}}
+function closeAreaPop(){
+  const T=$('tabs');if(!T||!T.dataset.pop)return;
+  delete T.dataset.pop;
+  T.querySelectorAll('.area[aria-haspopup]').forEach(x=>x.setAttribute('aria-expanded','false'));}
+function areaClick(b,e){
+  if(e)e.stopPropagation();
+  const a=b.dataset.area,T=$('tabs'),items=areaItems(a);
+  if(items.length<=1){closeAreaPop();
+    if(items.length===1)items[0].click();else switchTab(areaHome(a));return;}
+  if(T&&T.dataset.pop===a){closeAreaPop();return;}
+  openAreaPop(a);}
+(function wireAreaPop(){
+  const go=()=>{
+    const T=$('tabs');if(!T)return;
+    /* 하위 메뉴를 고르면 닫는다 (각 단추의 원래 동작은 그대로 돈다) */
+    T.addEventListener('click',e=>{if(e.target.closest('.subgrp button'))closeAreaPop();});
+    /* 펼친 채로 옆 상위 메뉴에 올리면 그쪽 판으로 */
+    T.querySelectorAll('.area[aria-haspopup]').forEach(b=>b.addEventListener('mouseenter',()=>{
+      if(T.dataset.pop&&T.dataset.pop!==b.dataset.area&&areaItems(b.dataset.area).length>1)openAreaPop(b.dataset.area);}));
+    document.addEventListener('click',e=>{if(T.dataset.pop&&!e.target.closest('#tabs .areawrap'))closeAreaPop();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&T.dataset.pop){closeAreaPop();
+      const b=T.querySelector('.area.on');if(b)b.focus();}});
+    addEventListener('resize',closeAreaPop);};
+  document.readyState==='loading'?addEventListener('DOMContentLoaded',go):go();})();
 /* 디지털 대시보드에서 지금 하위 화면이 꺼져 있으면 보이는 첫 하위 화면으로 */
 function ensureDashSub(){
   const cs=curDashSub(),m=MENUS.find(x=>x.tab==='dash'&&x.sub===cs);
@@ -15720,7 +15789,7 @@ function applyMenus(){
     b.classList.toggle('menuoff',!vis);
     b.classList.toggle('vhide',vis&&!cl&&!anyV);});
   /* 보이는 단추가 없는 묶음(트레이)은 통째로 감춘다 */
-  T.querySelectorAll('.subrow .subbar').forEach(sb=>{
+  T.querySelectorAll('.subgrp .subbar').forEach(sb=>{
     const any=[...sb.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
     sb.classList.toggle('menuoff',!any);});
   const cur=T.dataset.cur||'dash';
@@ -15730,27 +15799,23 @@ function applyMenus(){
 }
 /* 예전 이름 — 부르는 곳이 여럿이라 남겨 둔다 */
 function applyMediaTabs(){applyMenus();}
-/* 줄이 넘치면 글자·여백을 줄인다(.dense → .dense2 → .dense3). v73 — 메뉴가 한 줄이라 `.tabs` 자체가 넘치는지 잰다.
-   영역마다 하위 메뉴 길이가 달라 모두 켜 보며 재 본다 (영역을 바꿔도 모양이 튀지 않게) */
+/* 줄이 넘치면 줄인다(.dense → .dense2 → .dense3). v74 — 하위 메뉴는 드롭다운이라 줄에는 상위 메뉴 · 지금 메뉴 · 도구만 */
 function fitTabs(){
   const t=$('tabs');if(!t)return;
-  const grps=[...t.querySelectorAll('.subgrp')];
-  const shown=grps.filter(g=>g.classList.contains('show'));
   /* 대시보드에서만 보이는 도구(🌙 다크 · 영역 관리 · 리포트)가 **보일 때** 기준 — 탭을 옮겨도 모양이 그대로 */
   const tmp=[$('darkToggle'),$('sectMngBtn'),t.querySelector('.dlgrp')]
     .filter(e=>e&&(e.classList.contains('hidden')||e.classList.contains('tooloff'))&&!e.classList.contains('medoff'));
   const was=tmp.map(e=>[e.classList.contains('hidden'),e.classList.contains('tooloff')]);
+  const pop=t.dataset.pop;if(pop)delete t.dataset.pop;      /* 펼친 판은 재는 동안만 접는다 */
   tmp.forEach(e=>e.classList.remove('hidden','tooloff'));
-  const over=()=>grps.some(g=>{
-    grps.forEach(x=>x.classList.toggle('show',x===g));
-    return t.scrollWidth>t.clientWidth+2;});
+  const over=()=>t.scrollWidth>t.clientWidth+2;
   try{
     t.classList.remove('dense','dense2','dense3');
     if(over())t.classList.add('dense');
     if(over())t.classList.add('dense2');
     if(over())t.classList.add('dense3');
   }finally{
-    grps.forEach(g=>g.classList.toggle('show',shown.includes(g)));
+    if(pop)t.dataset.pop=pop;
     tmp.forEach((e,i)=>{if(was[i][0])e.classList.add('hidden');if(was[i][1])e.classList.add('tooloff');});}
   try{if(typeof syncStick==='function')syncStick();}catch(e){}try{fitTop();}catch(e){}
 }
