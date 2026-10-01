@@ -493,6 +493,10 @@ async function tryCode(raw){
   CLOUD.campaign={id:c.id,name:c.name};
   CLOUD.role=kind==='staff'?'editor':'viewer';
   CLOUD.dirty=false;
+  /* 코드로 연 화면도 저장 시각을 알아 둔다 (로그인해 있고 볼 수 있을 때만 — 없으면 예전처럼 검사 없이 저장) */
+  CLOUD.baseAt=null;CLOUD.conflict=false;
+  if(CLOUD.user){try{const {data:ua}=await CLOUD.sb.from('campaigns').select('updated_at').eq('id',c.id).maybeSingle();
+    if(seq!==OPEN_SEQ)return false;if(ua&&ua.updated_at)CLOUD.baseAt=ua.updated_at;}catch(e){}}
   /* 이 브라우저에 남아 있던 다른 캠페인의 입력 시트·소재·이슈를 먼저 비운다.
      (예전에는 이걸 빼먹어서 운영진 코드로 들어가면 데이터 입력 탭에
       전에 보던 캠페인의 시트가 그대로 남아 있었다) */
@@ -861,6 +865,8 @@ async function openCampaign(id){
   CLOUD.campaign=c;
   CLOUD.role=role||'viewer';
   CLOUD.dirty=false;
+  /* 이 화면이 받은 문서의 저장 시각 (v94) — 저장할 때 서버 것과 같을 때만 덮어쓴다 */
+  CLOUD.baseAt=c.updated_at||null;CLOUD.conflict=false;
   clearWorkState();
   applyDoc(c.doc);
   DOC_CID=c.id;
@@ -941,7 +947,19 @@ async function wipeDaily(campId,onStep){
     }catch(e){return String(e&&e.message||e);}}
   return null;
 }
-async function cloudSave(silent){
+/* 저장 충돌 (v94) — 이 화면을 연 뒤에 다른 창 · 다른 사람이 먼저 저장했다.
+   예전에는 나중에 저장한 쪽이 앞의 변경(데이터 입력 · 헤더 편집 등)을 통째로 덮어썼다 */
+function showSaveConflict(cur){
+  CLOUD.conflict=true;
+  cloudState('저장하지 않았습니다 — 다른 곳에서 먼저 저장했습니다');
+  if(document.querySelector('.modal [data-conflict]'))return;
+  openModal('확인',`<div data-conflict style="font-size:14px;font-weight:700;margin-bottom:6px">다른 곳에서 이 캠페인을 먼저 저장했습니다</div>`
+    +`<div class="hint">이 화면을 연 뒤에 다른 창(또는 다른 사람)이 저장했습니다. 지금 저장하면 그 변경이 사라집니다.<br>`
+    +`[새로고침]으로 최신 내용을 받은 뒤 다시 고쳐 주세요. 이 화면에서 고친 내용을 꼭 남겨야 하면 [덮어쓰기]를 누릅니다.</div>`,
+    `<button class="btn" data-close>취소</button><button class="btn danger" id="cfOver">덮어쓰기</button><button class="btn primary" id="cfReload">새로고침</button>`,{w:480});
+  $('cfReload').onclick=()=>{CLOUD.dirty=false;location.reload();};
+  $('cfOver').onclick=()=>{closeModal();cloudSave(false,true);};}
+async function cloudSave(silent,force){
   if(CLOUD.saving){CLOUD.saveAgain=true;return;}     /* 이미 저장 중 — 끝나면 한 번 더 */
   if(!CLOUD.on||!CLOUD.user){
     if(!silent)confirmModal('데모 모드입니다.','구글 로그인을 하면 이 캠페인을 클라우드에 저장할 수 있습니다.',
@@ -962,16 +980,28 @@ async function cloudSave(silent){
   /* .select() 를 붙여 실제로 몇 행이 바뀌었는지 확인한다.
      권한이 없으면 RLS 가 오류 대신 "0행 수정"으로 조용히 넘어가기 때문. */
   let upd,error;
-  try{({data:upd,error}=await withTimeout(CLOUD.sb.from('campaigns').update({
+  /* 충돌을 알린 뒤에는 자동 저장을 멈춘다 — 사용자가 고르게 둔다 (덮어쓰기 = force) */
+  if(CLOUD.conflict&&!force){if(!silent)showSaveConflict(null);return;}
+  const savedAtIso=new Date().toISOString();
+  try{let q=CLOUD.sb.from('campaigns').update({
     name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,
     /* 디지털 · TV · OOH 를 모두 본 캠페인 기간 (v81 — 예전에는 디지털 라인만 봐서 TV · OOH 만 쓰면 오늘 날짜로 들어갔다) */
     start_date:(typeof campPeriodAll==='function'?campPeriodAll().start:'')||campStart(),
     end_date:(typeof campPeriodAll==='function'?campPeriodAll().end:'')||campEnd(),
-    doc,updated_at:new Date().toISOString(),updated_by:CLOUD.user.id
-  }).eq('id',CLOUD.campaign.id).select('id'),30000,'설정 저장'));
+    doc,updated_at:savedAtIso,updated_by:CLOUD.user.id
+  }).eq('id',CLOUD.campaign.id);
+  /* 내가 받은 뒤로 아무도 저장하지 않았을 때만 (v94) */
+  if(CLOUD.baseAt&&!force)q=q.eq('updated_at',CLOUD.baseAt);
+  ({data:upd,error}=await withTimeout(q.select('id,updated_at'),30000,'설정 저장'));
   }catch(e){error={message:String(e&&e.message||e)};}
   if(error){cloudState('저장 실패: '+error.message);return;}
-  if(!upd||!upd.length){cloudState('저장 권한이 없습니다 (조회 전용)');return;}
+  if(!upd||!upd.length){
+    /* 0행 — 권한이 없거나, 그사이 다른 곳에서 저장했거나 */
+    let cur=null;
+    try{({data:cur}=await CLOUD.sb.from('campaigns').select('updated_at,updated_by').eq('id',CLOUD.campaign.id).maybeSingle());}catch(e){}
+    if(cur&&CLOUD.baseAt&&cur.updated_at&&new Date(cur.updated_at).getTime()!==new Date(CLOUD.baseAt).getTime()){showSaveConflict(cur);return;}
+    cloudState('저장 권한이 없습니다 (조회 전용)');return;}
+  CLOUD.baseAt=upd[0].updated_at||savedAtIso;CLOUD.conflict=false;
   /* 일별 실적은 입력 시트가 원본이라 늘 통째로 다시 쓴다.
      (예전에는 upsert 만 했는데, 같은 라인·같은 날짜가 두 줄이면
       "ON CONFLICT DO UPDATE command cannot affect row a second time" 로 저장이 실패했다.
@@ -1049,6 +1079,7 @@ function markDirty(){
 }
 function tryAutoSave(){
   if(!CLOUD.on||!CLOUD.user||!CLOUD.campaign||CLOUD.role==='viewer')return;
+  if(CLOUD.conflict)return;
   if(!CLOUD.dirty||CLOUD.busy)return;
   if(CLOUD.savedAt&&Date.now()-CLOUD.savedAt.getTime()<AUTO_SAVE_MS){
     clearTimeout(DIRTY_T);

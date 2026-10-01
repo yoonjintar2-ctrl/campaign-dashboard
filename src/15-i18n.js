@@ -147,6 +147,14 @@ Object.assign(I18N_EN,{
   "일자별 실적 표가 비어 있습니다. 템플릿을 내려받아 채운 뒤 불러와 주세요.":"The daily results table is empty. Download the template, fill it in and import it.",
   "입력값 {}행을 엑셀로 내려받았습니다 · 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 바뀝니다":"Downloaded {} rows to Excel · edit and re-upload with [Import Excel] to replace the whole table"
 });
+/* v94 — 저장 충돌 */
+Object.assign(I18N_EN,{
+  "저장하지 않았습니다 — 다른 곳에서 먼저 저장했습니다":"Not saved — this campaign was saved elsewhere first",
+  "다른 곳에서 이 캠페인을 먼저 저장했습니다":"This campaign was saved elsewhere first",
+  "이 화면을 연 뒤에 다른 창(또는 다른 사람)이 저장했습니다. 지금 저장하면 그 변경이 사라집니다.":"Another window (or person) saved after you opened this page. Saving now would erase those changes.",
+  "[새로고침]으로 최신 내용을 받은 뒤 다시 고쳐 주세요. 이 화면에서 고친 내용을 꼭 남겨야 하면 [덮어쓰기]를 누릅니다.":"Use [Reload] to get the latest version and redo your edits. If you must keep the edits on this page, choose [Overwrite].",
+  "덮어쓰기":"Overwrite","새로고침":"Reload"
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
