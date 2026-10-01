@@ -10,6 +10,7 @@ const SHEET_DIMS=[
   {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
+  {k:'landing',l:'랜딩 페이지',w:130,type:'dim',rule:'예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
 const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
@@ -66,7 +67,7 @@ let SHEET=LINES.flatMap(l=>{
     const r={...base,creative:c.name,cost:Math.round(c.daily.cost[idx]||0)};
     AMET.forEach(m=>{if(m!=='net')r[m]=c.daily[m][idx]||0;});
     return r;});});
-const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','landing','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
    조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
@@ -75,6 +76,8 @@ const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 const dimKey=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' ');
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
+  /* 랜딩 페이지는 라인에 적어 둔 경우에만 맞춰 본다 (v92) — 안 적은 라인은 어떤 랜딩이든 받는다 */
+  if(k==='landing'&&!lineLandings(l).length)return true;
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
   const set=new Set(lineMulti(l,k).map(dimKey));
@@ -100,7 +103,7 @@ function rowLine(r){return rowLineCands(r)[0]||null;}
    ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
    그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
 function rowLineCands(r){
-  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
   if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
   let pool=LINES.filter(ok);
@@ -135,7 +138,7 @@ function rowNumBad(r){
   return out;}
 function rowCellIssues(r){
   const nb=rowNumBad(r);
-  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
   if(!keys.length)return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};
   let pool=LINES,bad=[];
   DIM_CHAIN.forEach(k=>{
@@ -157,6 +160,7 @@ const CELL_ISSUE_LABEL={
   segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
   product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
   target:'앞 칸과 맞는 타겟팅 그룹이 아닙니다',line:'앞 칸과 맞는 제품이 아닙니다',
+  landing:'그 라인에 적어 둔 랜딩 페이지가 아닙니다',
   date:'그 라인의 집행 기간 밖의 날짜입니다',
   creative:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 이 소재가 어느 라인 것인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 예상 효율에 소재를 등록해 주세요'};
 function rowBad(r){return !!rowIssue(r);}

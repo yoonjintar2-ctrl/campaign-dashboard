@@ -2537,6 +2537,63 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   padding:7px 15px;font-size:11.5px;z-index:120;box-shadow:var(--shadow2)}
 @media print{.topbar,.tabs,.subbar,.filters,.mock,.btn,.ctl{display:none!important}.wrap{padding:0}body{background:#fff}
   .card{break-inside:avoid;box-shadow:none}}
+
+/* ===== 유입 분석 (v92) ===== */
+.infnone{display:none!important}
+.infkpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.infk{border:1px solid var(--line);border-radius:12px;background:var(--acc-soft2);padding:11px 14px;
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.infk>span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.infk>b{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.infk>em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.infgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.infcell{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;background:var(--surface);min-width:0;margin-bottom:14px}
+.infgrid .infcell{margin-bottom:14px}
+.infh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
+.infh>b{font-size:13px;font-weight:800;color:var(--ink)}
+.infh>span{font-size:11.5px;color:var(--muted)}
+.infh .infbl{margin-left:auto;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--ink2);font-weight:600}
+.infbl i{display:inline-block;width:12px;height:10px;border-radius:3px;background:rgb(var(--accrgb)/var(--op));margin-left:6px}
+.infbl i:first-child{margin-left:0}
+.infsk,.infmap{width:100%;overflow:hidden}
+.sksvg,.msvg{display:block;max-width:100%;height:auto}
+.sklink{fill-opacity:.36;transition:fill-opacity .12s,opacity .12s;cursor:default}
+.sklink.leak{fill-opacity:.9}
+.sklink:hover{fill-opacity:.62}
+.sklink.dim{opacity:.13}
+.sknode{stroke:var(--surface);stroke-width:1}
+.sklab{font-size:12px;font-weight:700;fill:var(--ink)}
+.skval{font-size:10.5px;fill:var(--muted)}
+.mgrid{stroke:var(--cell);stroke-width:1}
+.mtick{font-size:10.5px;fill:var(--muted)}
+.mavg{stroke:var(--acc-lt);stroke-width:1.2;stroke-dasharray:4 4}
+.mq{font-size:10.5px;font-weight:700;fill:var(--ink2)}
+.mq.lo{font-weight:600;fill:var(--muted)}
+.mqbg{fill:var(--acc-soft2)}
+.mlab{font-size:11px;font-weight:700;fill:var(--ink2);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.mc{fill-opacity:.5;stroke-width:1.5}
+.mdot{cursor:default}
+.mdot:hover .mc{stroke-width:2.5}
+.maxl{font-size:11px;font-weight:700;fill:var(--ink2)}
+.infdw{display:flex;flex-direction:column;gap:7px}
+.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 150px;gap:12px;align-items:center}
+.dwl{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.dwl b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dwl span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dwbar{display:flex;gap:2px;height:20px;border-radius:5px;overflow:hidden}
+.dwbar i{display:block;min-width:2px;background:rgb(var(--accrgb)/var(--op))}
+.dwbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
+.dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
+.dwr b{font-size:13px;font-weight:800;color:var(--ink)}
+.dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+table.tbl.inftbl td.l,table.tbl.inftbl th.l{text-align:left}
+table.tbl.inftbl td.l em{font-style:normal;font-size:11px;color:var(--muted);margin-left:4px}
+table.tbl.inftbl td.strong{font-weight:800}
+.infmiss{margin-top:2px}
+.infempty{padding:22px 6px}
+@media (max-width:1100px){.infgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
 </style>
 </head>
 <body class="booting">

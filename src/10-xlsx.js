@@ -123,6 +123,7 @@ const TPL_NOTE='  (동일 예산 내 항목이 여러개인 경우 콤마로 표
 const TPL_HINT={
   product:'광고상품'+TPL_NOTE,
   slot:'광고 지면'+TPL_NOTE,
+  landing:'랜딩 페이지'+TPL_NOTE,
   creative:'소재'+TPL_NOTE,
   target:'타겟팅 그룹'+TPL_NOTE};
 /* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
@@ -228,7 +229,7 @@ function canonRow(r){
 }
 /* 완전히 같은 행인지 판단하는 열쇠 — 날짜 · 차원 · 모든 수치 */
 function rowKey(r){
-  const dims=['date','segment','media','product','slot','target','line','creative']
+  const dims=['date','segment','media','product','slot','target','line','landing','creative']
     .map(k=>k!=='date'&&MULTI_DIMS.includes(k)
       ? parseMulti(r[k]).slice().sort().join('|')
       : String(r[k]==null?'':r[k]).trim());
@@ -277,6 +278,10 @@ function trimGrid(g){
 /* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 내고 영문은 소문자로
    ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹", "Published\nAmount" → "publishedamount") */
 const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'').toLowerCase();
+/* 괄호까지 그대로 둔 정규화 (v92) — "IWV(all)" · "IWV(tda)" 처럼 괄호 안이 이름의 일부인 열을 구분한다.
+   머리글은 이것으로 먼저 찾고, 없으면 괄호 안내를 뗀 이름(normHdr)으로 찾는다 */
+const normHdrFull=v=>String(v==null?'':v).trim().replace(/\s+/g,'').toLowerCase();
+const hdrGet=(dict,v)=>dict.get('\u0001'+normHdrFull(v))||dict.get(normHdr(v));
 /* ---------- 머리글 별칭 (v79) ----------
    템플릿 이름이 아니어도 실무 엑셀 · 매체 리포트에서 흔히 쓰는 이름이면 알아본다.
    (미디어믹스의 "상품 · 타겟팅 가이드 · 최종 예산 · 예상 노출수", 매체 RAW 의 "일 · 광고그룹 · 노출수 · 비용" 등)
@@ -287,6 +292,7 @@ const HDR_ALIAS={
     media:['매체','매체명','media','채널'],
     product:['광고상품','광고 상품','상품','상품명','광고상품명','광고 유형','product'],
     slot:['광고 지면','지면','노출 지면','placement'],
+    landing:['랜딩 페이지','랜딩페이지','랜딩 url','설정 랜딩','landing page','landing url'],
     target:['타겟팅 그룹','타겟팅','타겟','타깃','타깃팅','타겟팅 가이드','타겟팅 그룹명','광고그룹','광고 그룹','target','targeting'],
     creative:['소재','소재명','광고 소재','creative'],
     line:['제품','제품명'],
@@ -314,6 +320,7 @@ const HDR_ALIAS={
     target:['타겟팅 그룹명','타겟팅 그룹','타겟팅','타겟','타깃','광고그룹','광고 그룹','광고그룹 이름','광고 그룹 이름',
       '광고 세트','광고세트','광고 세트 이름','ad group','ad set'],
     line:['제품'],
+    landing:['랜딩 페이지','랜딩페이지','설정 랜딩','landing page','entry page'],
     creative:['소재','소재명','광고 이름','광고명','광고 소재','ad name','creative'],
     imp:['노출','노출수','impressions','impression','imps','impr.'],
     click:['클릭','클릭수','clicks','click'],
@@ -327,12 +334,28 @@ const HDR_ALIAS={
     install:['설치','설치수','installs'],
     eng:['참여','참여수','engagements'],
     rev:['매출','revenue'],
+    /* 유입 · 체류시간 (v92) — Adobe Analytics 등 사이트 분석 리포트 머리글 */
+    iwv:['IWV(all)','IWV','interacting visits','인터랙팅 방문','인터랙팅 비짓'],
+    iwv_mh:['IWV(mobilityhub)','IWV(mobility hub)','IWV(e-mobilityhub)'],
+    iwv_mp:['IWV(modelpage)','IWV(model page)','IWV(ix3-modelpage)'],
+    iwv_tda:['IWV(tda)','IWV(tda-experience)','IWV(ix3-tda)'],
+    dw15:['체류시간 : less than 15 seconds','time on site : less than 15 seconds','time spent per visit : less than 15 seconds','15초 미만'],
+    dw30:['체류시간 : 15 to 29 seconds','time on site : 15 to 29 seconds','time spent per visit : 15 to 29 seconds','15~29초'],
+    dw60:['체류시간 : 30 to 59 seconds','time on site : 30 to 59 seconds','time spent per visit : 30 to 59 seconds','30~59초'],
+    dw3m:['체류시간 : 1 to 3 minutes','time on site : 1 to 3 minutes','time spent per visit : 1 to 3 minutes','1~3분'],
+    dw5m:['체류시간 : 3 to 5 minutes','time on site : 3 to 5 minutes','time spent per visit : 3 to 5 minutes','3~5분'],
+    dw10m:['체류시간 : 5 to 10 minutes','time on site : 5 to 10 minutes','time spent per visit : 5 to 10 minutes','5~10분'],
+    dw15m:['체류시간 : 10 to 15 minutes','time on site : 10 to 15 minutes','time spent per visit : 10 to 15 minutes','10~15분'],
+    dw20m:['체류시간 : 15 to 20 minutes','time on site : 15 to 20 minutes','time spent per visit : 15 to 20 minutes','15~20분'],
+    dw30m:['체류시간 : 20 to 30 minutes','time on site : 20 to 30 minutes','time spent per visit : 20 to 30 minutes','20~30분'],
+    dw30p:['체류시간 : more than 30 minutes','time on site : more than 30 minutes','time spent per visit : more than 30 minutes','30분 이상'],
     cost:['소진비용','소진 비용','소진금액','소진 금액','비용','광고비','지출','지출 금액','집행 금액','집행금액',
       'cost','spend','amount spent']}};
 /* 머리글 → 항목 열쇠 사전. 지금 열 이름(사용자가 바꾼 이름 포함) > 기본 이름 > 별칭 순으로 채운다 */
 function hdrDict(cols,kind){
   const m=new Map();
-  const put=(l,k)=>{const n=normHdr(l);if(n&&!m.has(n))m.set(n,k);};
+  const put=(l,k)=>{const n=normHdr(l);if(n&&!m.has(n))m.set(n,k);
+    const f='\u0001'+normHdrFull(l);if(f.length>1&&!m.has(f))m.set(f,k);};
   cols.forEach(c=>put(c.l,c.k));
   try{const def=kind==='line'?lineColsDefault():sheetColsDefault();def.forEach(c=>put(c.l,c.k));}catch(e){}
   Object.entries(HDR_ALIAS[kind]||{}).forEach(([k,ls])=>ls.forEach(l=>put(l,k)));
@@ -341,7 +364,7 @@ function hdrDict(cols,kind){
 /* 한 줄이 머리글로서 몇 개의 항목을 알아보는가. need 중 하나는 꼭 있어야 한다 (일자별 = 일자, 예상 효율 = 매체·상품) */
 function hdrScore(row,dict,need){
   const ks=new Set();
-  (row||[]).forEach(v=>{const k=dict.get(normHdr(v));if(k)ks.add(k);});
+  (row||[]).forEach(v=>{const k=hdrGet(dict,v);if(k)ks.add(k);});
   if(need&&!need.some(k=>ks.has(k)))return 0;
   return ks.size>=2?ks.size:0;
 }
@@ -366,7 +389,7 @@ function basisRank(h){
 function mapHeader(headRow,dict){
   const best={};
   (headRow||[]).forEach((h,ci)=>{
-    const k=dict.get(normHdr(h));if(!k)return;
+    const k=hdrGet(dict,h);if(!k)return;
     const r=basisRank(h);
     if(!best[k]||r>best[k].r)best[k]={ci,r};});
   const keys=(headRow||[]).map(()=>null);
@@ -378,7 +401,7 @@ const TOTAL_RE=/^(grand\s*|sub\s*)?total$|\s(sub\s*)?total$|^(합계|소계|총�
 function isTotalRow(r,skip){
   return (r||[]).some((v,ci)=>ci!==skip&&typeof v==='string'&&TOTAL_RE.test(v.trim()));}
 /* 표 중간에 다시 나오는 머리글 줄 (한 시트에 표가 둘 이상일 때) */
-const isHeaderRow=(r,dict)=>{let n=0;(r||[]).forEach(v=>{if(typeof v==='string'&&dict.get(normHdr(v)))n++;});return n>=2;};
+const isHeaderRow=(r,dict)=>{let n=0;(r||[]).forEach(v=>{if(typeof v==='string'&&hdrGet(dict,v))n++;});return n>=2;};
 /* 머리글을 못 찾은 한 장짜리 시트 — **템플릿 열 순서대로** 읽는다 (v79).
    제목 · 머리글 같은 윗부분은 숫자가 하나도 없는 줄이라 건너뛰고, 숫자가 처음 나오는 줄부터 데이터로 본다 */
 function positionalStart(grid,keys){
@@ -393,7 +416,7 @@ function positionalStart(grid,keys){
    한 장짜리 시트에서 이러면 머리글은 무시하고 템플릿 열 순서로 읽는다 */
 function hdrWeak(row,dict){
   const named=(row||[]).filter(v=>String(v==null?'':v).trim()!=='');
-  const hit=named.filter(v=>dict.get(normHdr(v))).length;
+  const hit=named.filter(v=>hdrGet(dict,v)).length;
   return !named.length||hit/named.length<0.4;}
 /* 여러 줄 · 여러 칸 공백을 한 칸으로 (셀 안 줄바꿈 "M2544 + 육아 관심사\n*부모 타겟팅") */
 const oneLine=v=>String(v==null?'':v).replace(/\s*[\r\n]+\s*/g,' ').replace(/\s{2,}/g,' ').trim();
@@ -747,7 +770,7 @@ function importLines(f){
       if(isTotalRow(r,noteCi)){skipTot++;continue;}
       if(isHeaderRow(r,dict))continue;
       const n=blankLine();
-      let filled=false,creatives=[],targets=[],products=[],slots=[],period='',hasBonus=false;
+      let filled=false,creatives=[],targets=[],products=[],slots=[],landings=[],period='',hasBonus=false;
       keys.forEach((k,ci)=>{
         if(!k)return;
         const raw0=String(r[ci]==null?'':r[ci]).trim();
@@ -764,6 +787,7 @@ function importLines(f){
         else if(k==='target'){targets=parseMulti(raw);}
         else if(k==='product'){products=parseMulti(raw);}
         else if(k==='slot'){slots=parseMulti(raw);}
+        else if(k==='landing'){landings=parseMulti(raw);}
         else if(k==='period'){period=raw;}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
@@ -788,7 +812,7 @@ function importLines(f){
       if(n.value!=null&&n.value!==''&&!hasBonus)n.bonus=Math.max(0,(+n.value||0)-(+n.gross||0));
       if(!n.bid&&BID_TYPES.length)n.bid='CPM';
       if(BID_KPI[n.bid]&&KPI_KEYS.includes(BID_KPI[n.bid])&&!keys.includes('kpi'))n.kpi=BID_KPI[n.bid];
-      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
+      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;n.__ld=landings;
       out.push(n);}
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     /* 덧붙임 — 읽은 시트 · 행 한도 · 숫자로 읽을 수 없어 비워 둔 칸 (값은 사용자 데이터라 번역하지 않는다) */
@@ -808,7 +832,7 @@ function importLines(f){
         +extra.map(x=>'<br><br>'+x).join(''),
       ()=>{
         pushLineUndo();
-        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
+        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,__ld,...rest}=l;return rest;});
         CREATIVES=CREATIVES.filter(()=>false);
         /* 소재를 만들기 **전에** 캠페인 기간부터 잡는다 —
            그래야 소재 게재 기간이 캠페인 전체로 잡힌다 */
@@ -817,6 +841,7 @@ function importLines(f){
           const src=out[i];
           if(src.__pd.length)setLineProducts(l,src.__pd);
           if(src.__sl.length)setLineSlots(l,src.__sl);
+          if(src.__ld&&src.__ld.length)setLineLandings(l,src.__ld);
           if(src.__tg.length)setLineTargets(l,src.__tg);
           if(src.__cr.length)setLineCreatives(l,src.__cr);});
         rebuildPeriod();buildFacts();

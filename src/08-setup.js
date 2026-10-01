@@ -25,6 +25,7 @@ const LINE_FIXED=[
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
+  {k:'landing',l:'랜딩 페이지',w:160,type:'chips',on:false},   /* v92 — 광고를 누르면 넘어가는 페이지(여러 개면 칩) */
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
   {k:'sec',l:'소재 초수',w:74,type:'num',on:false},
   {k:'bid',l:'비드 타입',w:84,type:'bid',on:true,g:'집행 조건'},
@@ -59,7 +60,7 @@ const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
    (패키지로 파는 광고상품, 한 예산으로 함께 돌리는 타겟팅·소재 등)
    라인에는 배열(products/slots/targets/creatives)로 두고,
    집계용 차원 값(l.product 등)은 " · " 로 이어 붙인 한 덩어리로 유지한다. */
-const MULTI_DIMS=['product','slot','target','creative'];
+const MULTI_DIMS=['product','slot','target','creative','landing'];
 /* 콤마 · 가운뎃점으로 나눠 읽는다. **괄호 안의 콤마는 나누지 않는다** (v79) —
    "VVC 2.0 (인스트림, 인피드)" 가 "VVC 2.0 (인스트림" · "인피드)" 두 개로 쪼개졌다.
    & 는 이름에 흔히 들어가서("자녀 연령 & 학부모 호칭", P&G) 새로 나눌 때는 쓰지 않는다.
@@ -82,9 +83,10 @@ const lineCreatives=l=>Array.isArray(l.creatives)?l.creatives
 const lineTargets=l=>Array.isArray(l.targets)?l.targets:parseMulti(l.target);
 const lineProducts=l=>Array.isArray(l.products)&&l.products.length?l.products:parseMulti(l.product);
 const lineSlots=l=>Array.isArray(l.slots)?l.slots:parseMulti(l.slot);
+const lineLandings=l=>Array.isArray(l.landings)?l.landings:parseMulti(l.landing);
 /* 차원 이름 → 그 라인의 항목 배열 */
 const lineMulti=(l,k)=>k==='creative'?lineCreatives(l):k==='target'?lineTargets(l)
-  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):(l[k]?[l[k]]:[]);
+  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):k==='landing'?lineLandings(l):(l[k]?[l[k]]:[]);
 const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
@@ -93,6 +95,8 @@ const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
 const allProductNames=(media)=>[...new Set((media?LINES.filter(l=>l.media===media):LINES).flatMap(lineProducts))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allLandingNames=()=>[...new Set(LINES.flatMap(lineLandings))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#b3c1cf,#495e72)',
   'linear-gradient(140deg,#93a2b1,#35536f)','linear-gradient(140deg,#aabbcb,#495e72)',
@@ -153,12 +157,19 @@ function setLineSlots(l,names){
   l.slot=joinMulti(names);
   buildFacts();
 }
+function setLineLandings(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.landings=names;
+  l.landing=joinMulti(names);
+  buildFacts();
+}
 /* 칩 필드 종류별 동작 — 이름표 · 현재 값 · 저장 · 고를 수 있는 목록 */
 const CHIP_KIND={
   creative:{label:'소재',      get:lineCreatives,set:setLineCreatives,all:allCreativeNames},
   target:  {label:'타겟팅 그룹',get:lineTargets,  set:setLineTargets,  all:allTargetNames},
   product: {label:'광고상품',   get:lineProducts, set:setLineProducts, all:allProductNames},
-  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames}};
+  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames},
+  landing: {label:'랜딩 페이지',get:lineLandings, set:setLineLandings, all:allLandingNames}};
 /* 기본은 "이미 등록된 항목 중에서 고르기". 새 이름이 필요할 때만 ＋ 버튼으로 직접 추가한다. */
 function chipFieldHTML(kind,li,items){
   return `<div class="chipfield" data-cf="${kind}" data-l="${li}">`
@@ -417,7 +428,7 @@ function renderKpiTable(){
     LINES.splice(i+1,0,n);
     /* 소재·타겟팅은 실제 레코드까지 함께 복제한다 */
     setLineTargets(n,lineTargets(src));setLineCreatives(n,lineCreatives(src));
-    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));
+    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));setLineLandings(n,lineLandings(src));
     rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();});
   /* 셀 선택 — 클릭한 칸이 선택, 끌면 범위 선택 (v70).
      리스너는 표 하나에만 걸고 위임한다 (라인이 많아도 가볍게) */
@@ -537,7 +548,8 @@ function setLineCell(i,c,raw){
       const set={product:typeof setLineProducts==='function'&&setLineProducts,
                  target:typeof setLineTargets==='function'&&setLineTargets,
                  creative:typeof setLineCreatives==='function'&&setLineCreatives,
-                 slot:typeof setLineSlots==='function'&&setLineSlots}[c.k];
+                 slot:typeof setLineSlots==='function'&&setLineSlots,
+                 landing:typeof setLineLandings==='function'&&setLineLandings}[c.k];
       if(set)set(l,arr);return;}
     default:l[c.k]=s2;return;}
 }
@@ -636,7 +648,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','slot','target','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','landing','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');
@@ -788,7 +800,7 @@ function rebuildPeriod(){
 /* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
 function seedDemoDaily(){
   LINES.forEach((l,i)=>{l.daily={};
-    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m]||0,ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 }
 function openLineColCfg(){
   openColCfgUI({
@@ -807,10 +819,10 @@ function openLineColCfg(){
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
 }
-const mkMixCat=()=>fieldCatalog('mix').concat([
+const mkMixCat=()=>mergeCatalog(fieldCatalog('mix').concat([
   {g:'KPI',cols:[{k:'kpi',l:'KPI 지표'},{k:'kpiGoal',l:'KPI 목표 수'}]},
   {g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
-  {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
+  {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]));
 let MIX_CATALOG=mkMixCat();
 let MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
 COLREB.push(()=>{MIX_CATALOG=mkMixCat();
@@ -1498,8 +1510,8 @@ function blankLine(){
   const base=LINES[LINES.length-1]||{};
   const n=JSON.parse(JSON.stringify({...base,daily:undefined}));
   n.id='L'+Math.random().toString(36).slice(2,7);
-  ['segment','media','product','slot','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
-  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.creativeTxt='';n.device=[];
+  ['segment','media','product','slot','target','line','landing','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
+  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.landings=[];n.creativeTxt='';n.device=[];
   n.sec=0;n.price=0;n.gross=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
   n.e={};AMET.forEach(m=>n.e[m]=0);
   n.a={};AMET.forEach(m=>n.a[m]=0);

@@ -222,8 +222,23 @@ function spread(total,n,rnd,ramp){
   return out;
 }
 const AMET=['imp','click','view','eng','conv','lead','install','like','share',
-  'v25','v50','v75','v100','v3','v15','v30','rev','net'];
-LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+  'v25','v50','v75','v100','v3','v15','v30','rev','net',
+  /* 유입 · 체류시간 (v92 — 사이트 분석 도구 Adobe Analytics 등에서 받는 값) */
+  'iwv','iwv_mh','iwv_mp','iwv_tda',
+  'dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p'];
+/* 체류시간 구간 — 열쇠 · 구간 중앙값(초). 평균 체류시간은 구간 중앙값으로 어림한다 */
+const DW_KEYS=['dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p'];
+const DW_MID={dw15:7.5,dw30:22,dw60:45,dw3m:120,dw5m:240,dw10m:450,dw15m:750,dw20m:1050,dw30m:1500,dw30p:2100};
+const dwSum=d=>DW_KEYS.reduce((s,k)=>s+(+d[k]||0),0);
+const dwAvg=d=>{const n=dwSum(d);return n?DW_KEYS.reduce((s,k)=>s+(+d[k]||0)*DW_MID[k],0)/n:NaN;};
+const dw30Rate=d=>{const n=dwSum(d);return n?DW_KEYS.slice(2).reduce((s,k)=>s+(+d[k]||0),0)/n:NaN;};
+/* 초 → "48초" · "1분 05초" */
+function fmtDur(v){
+  if(!isFinite(v))return '–';
+  const t=Math.round(v),m=Math.floor(t/60),r=t%60;
+  const LL=(a,b)=>typeof L==='function'?L(a,b):a;
+  return m?LL(`${m}분 ${String(r).padStart(2,'0')}초`,`${m}m ${String(r).padStart(2,'0')}s`):LL(`${r}초`,`${r}s`);}
+LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m]||0,ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 
 let CREATIVES=[
  {id:'c1',lid:'L1',name:'6초 범퍼',type:'video',yt:'M7lc1UVf-VE',ratio:'16:9',
@@ -362,7 +377,7 @@ function buildFacts(){
          (예전에는 이런 라인의 숫자가 대시보드에서 통째로 사라졌다) */
       if(!cs.length){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
-          target:l.target,line:l.line,creative:'(소재 미등록)',
+          target:l.target,line:l.line,landing:l.landing||'',creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=RD[m][i]);
         f.cost=toGross(f.net,feeOf(l));
@@ -379,7 +394,7 @@ function buildFacts(){
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
-          line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+          line:l.line,landing:l.landing||'',creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=part[m][ci]);
         f.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
@@ -389,7 +404,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=l.landing||'';});
 }
 buildFacts();
 
@@ -417,7 +432,7 @@ let CAMP_HIST=[];
     미디어믹스·예상효율 기본표시, 미디어믹스·예상효율 사용가능,
     대시보드·데이터입력 기본표시, 대시보드·데이터입력 사용가능]                       */
 /* 맨 끝 '사용자' 는 설정 › 열 사전에서 직접 만든 열들의 자리다 (v57) */
-const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타','사용자'];
+const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','유입','체류시간','비용','기타','사용자'];
 const FIELDS=[
   ['date','일자','date','운영','in',0,0,1,1],
   ['start','시작일','start date','운영','in',1,1,0,1],
@@ -481,6 +496,29 @@ const FIELDS=[
   ['share','공유','share','참여','in',0,0,0,1],
   ['e_share','목표 공유','est.share','참여','in',0,1,0,1],
 
+  /* 유입 (v92) — IWV = Interacting Visits: 유입(Visit) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용
+     ③ 페이지 20초 이상 유지 중 하나를 충족한 방문. all = 랜딩 구분 없는 합계, 나머지는 첫 방문(랜딩) 페이지 기준이라 서로 겹치지 않는다 */
+  ['iwv','IWV(all)','IWV (all)','유입','in',0,0,0,1],
+  ['iwv_mh','IWV(mobilityhub)','IWV (mobility hub)','유입','in',0,0,0,1],
+  ['iwv_mp','IWV(modelpage)','IWV (model page)','유입','in',0,0,0,1],
+  ['iwv_tda','IWV(tda)','IWV (TDA)','유입','in',0,0,0,1],
+  ['iwvr','유입률','inflow rate','유입','calc',0,0,0,1],
+  ['cpiwv','유입 단가','cost per IWV','유입','calc',0,0,0,1],
+  /* 체류시간 (v92) — 방문을 체류시간 구간별로 센 값 */
+  ['dw15','체류 15초 미만','time <15s','체류시간','in',0,0,0,1],
+  ['dw30','체류 15~29초','time 15–29s','체류시간','in',0,0,0,1],
+  ['dw60','체류 30~59초','time 30–59s','체류시간','in',0,0,0,1],
+  ['dw3m','체류 1~3분','time 1–3m','체류시간','in',0,0,0,1],
+  ['dw5m','체류 3~5분','time 3–5m','체류시간','in',0,0,0,1],
+  ['dw10m','체류 5~10분','time 5–10m','체류시간','in',0,0,0,1],
+  ['dw15m','체류 10~15분','time 10–15m','체류시간','in',0,0,0,1],
+  ['dw20m','체류 15~20분','time 15–20m','체류시간','in',0,0,0,1],
+  ['dw30m','체류 20~30분','time 20–30m','체류시간','in',0,0,0,1],
+  ['dw30p','체류 30분 이상','time 30m+','체류시간','in',0,0,0,1],
+  ['dwv','체류 방문수','visits (time on site)','체류시간','calc',0,0,0,1],
+  ['dwavg','평균 체류시간','avg. time on site','체류시간','calc',0,0,0,1],
+  ['dw30r','30초 이상 체류율','30s+ rate','체류시간','calc',0,0,0,1],
+
   ['rev','매출','revenue','비용','in',0,0,1,1],
   ['e_rev','목표 매출','est.revenue','비용','in',0,1,0,1],
   ['budget','예산','budget','비용','calc',1,1,1,1],
@@ -504,6 +542,13 @@ function fieldCatalog(scope,extra){
     if(cols.length)out.push({g:c+' 관련',cols});});
   return out;
 }
+/* 같은 묶음 이름(예: "기타 관련" 과 덧붙인 "기타")은 하나로 합친다 (v92) — 열 목록에 "기타" 가 두 번 나오던 문제 */
+function mergeCatalog(list){
+  const out=[],by={};
+  (list||[]).forEach(g=>{const base=String(g.g||'').replace(/\s*관련$/,'').trim();
+    if(by[base]){const seen=new Set(by[base].cols.map(c=>c.k));g.cols.forEach(c=>{if(!seen.has(c.k))by[base].cols.push(c);});return;}
+    const ng={...g,cols:g.cols.slice()};by[base]=ng;out.push(ng);});
+  return out;}
 const fieldDefaults=scope=>FIELDS.filter(f=>scope==='mix'?f.mixDef:f.dashDef).map(f=>f.k);
 
 /* ===== 사용자가 만든 열 (v57) =====
@@ -628,8 +673,17 @@ const METRICS={
   v25:{l:'25% 조회',f:fmt,kind:'abs'},v50:{l:'50% 조회',f:fmt,kind:'abs'},
   v75:{l:'75% 조회',f:fmt,kind:'abs'},v100:{l:'100% 조회',f:fmt,kind:'abs'},
   v3:{l:'3초 조회',f:fmt,kind:'abs'},v15:{l:'15초 조회',f:fmt,kind:'abs'},v30:{l:'30초 조회',f:fmt,kind:'abs'},
-  roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost}
+  roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost},
+  /* 유입 · 체류시간 (v92) */
+  iwv:{l:'IWV(all)',f:fmt,kind:'abs'},iwv_mh:{l:'IWV(mobilityhub)',f:fmt,kind:'abs'},
+  iwv_mp:{l:'IWV(modelpage)',f:fmt,kind:'abs'},iwv_tda:{l:'IWV(tda)',f:fmt,kind:'abs'},
+  iwvr:{l:'유입률',f:v=>pct(v),kind:'rate',c:d=>d.iwv/d.click},
+  cpiwv:{l:'유입 단가',f:won,kind:'rate',c:d=>d.cost/d.iwv},
+  dwv:{l:'체류 방문수',f:fmt,kind:'rate',c:d=>dwSum(d)||NaN},
+  dwavg:{l:'평균 체류시간',f:fmtDur,kind:'rate',c:d=>dwAvg(d)},
+  dw30r:{l:'30초 이상 체류율',f:v=>pct(v),kind:'rate',c:d=>dw30Rate(d)}
 };
+DW_KEYS.forEach(k=>{METRICS[k]={l:k,f:fmt,kind:'abs'};});
 /* METRICS 라벨은 항목 사전을 따른다 */
 Object.keys(METRICS).forEach(k=>{if(FLD[k])METRICS[k].l=FLD[k].l;});
 const mval=(k,b)=>METRICS[k].kind==='abs'?b[k]:METRICS[k].c(b);
@@ -657,7 +711,7 @@ const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
 
 const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'slot',l:'광고 지면'},
   {k:'target',l:'타겟팅 그룹'},
-  {k:'line',l:'제품'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
+  {k:'line',l:'제품'},{k:'landing',l:'랜딩 페이지'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};

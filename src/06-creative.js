@@ -1364,9 +1364,9 @@ function openLightbox(c){
 const GANTT_GOAL_COLS=[
   {k:'g_cpm',l:'목표 CPM'},{k:'g_cpc',l:'목표 CPC'},{k:'g_cpv',l:'목표 CPV'},
   {k:'g_cpa',l:'목표 CPA'},{k:'g_cpe',l:'목표 CPE'},{k:'g_cpi',l:'목표 CPI'}];
-const mkGanttCat=()=>fieldCatalog('dash',f=>!!METRICS[f.k])
+const mkGanttCat=()=>mergeCatalog(fieldCatalog('dash',f=>!!METRICS[f.k])
   .concat([{g:'목표 단가',cols:GANTT_GOAL_COLS},
-           {g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
+           {g:'기타',cols:[{k:'days',l:'게재일수'}]}]));
 let GANTT_CATALOG=mkGanttCat();
 let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();

@@ -291,6 +291,19 @@
       </div>
     </div>
 
+    <div class="sec gap3" data-sect="inflow">유입 분석
+      <span class="note">사이트 분석(Adobe 등) 기준 · <b>IWV</b> = 인터랙팅 방문 (2페이지 이상 · 기능 사용 · 20초 이상 중 하나)</span>
+      <div class="tools">
+        <span class="hint">묶음</span><select class="ctl" id="infDim">
+          <option value="media" selected>매체별</option>
+          <option value="product">광고상품별</option>
+          <option value="creative">소재별</option>
+        </select>
+        <span class="switch on" id="infLeak" title="클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다"><i></i> 이탈 포함</span>
+      </div>
+    </div>
+    <div class="card" data-sect="inflow"><div class="bd" id="infBody"></div></div>
+
     <div id="slotEnd"></div>
   </div>
 

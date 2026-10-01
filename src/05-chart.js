@@ -450,8 +450,8 @@ function renderDaily(){
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */
-const mkSumCat=()=>fieldCatalog('dash').concat([{g:'기타',
-  cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]);
+const mkSumCat=()=>mergeCatalog(fieldCatalog('dash').concat([{g:'기타',
+  cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]));
 let SUM_CATALOG=mkSumCat();
 let SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
 /* x: false = 정상 · 'ratio' = 예상값은 표시하되 비율은 의미가 없어 숨김 · 'all' = 예상값 전부 숨김 */

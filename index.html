@@ -2537,6 +2537,63 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   padding:7px 15px;font-size:11.5px;z-index:120;box-shadow:var(--shadow2)}
 @media print{.topbar,.tabs,.subbar,.filters,.mock,.btn,.ctl{display:none!important}.wrap{padding:0}body{background:#fff}
   .card{break-inside:avoid;box-shadow:none}}
+
+/* ===== 유입 분석 (v92) ===== */
+.infnone{display:none!important}
+.infkpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.infk{border:1px solid var(--line);border-radius:12px;background:var(--acc-soft2);padding:11px 14px;
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.infk>span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.infk>b{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.infk>em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.infgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.infcell{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;background:var(--surface);min-width:0;margin-bottom:14px}
+.infgrid .infcell{margin-bottom:14px}
+.infh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
+.infh>b{font-size:13px;font-weight:800;color:var(--ink)}
+.infh>span{font-size:11.5px;color:var(--muted)}
+.infh .infbl{margin-left:auto;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--ink2);font-weight:600}
+.infbl i{display:inline-block;width:12px;height:10px;border-radius:3px;background:rgb(var(--accrgb)/var(--op));margin-left:6px}
+.infbl i:first-child{margin-left:0}
+.infsk,.infmap{width:100%;overflow:hidden}
+.sksvg,.msvg{display:block;max-width:100%;height:auto}
+.sklink{fill-opacity:.36;transition:fill-opacity .12s,opacity .12s;cursor:default}
+.sklink.leak{fill-opacity:.9}
+.sklink:hover{fill-opacity:.62}
+.sklink.dim{opacity:.13}
+.sknode{stroke:var(--surface);stroke-width:1}
+.sklab{font-size:12px;font-weight:700;fill:var(--ink)}
+.skval{font-size:10.5px;fill:var(--muted)}
+.mgrid{stroke:var(--cell);stroke-width:1}
+.mtick{font-size:10.5px;fill:var(--muted)}
+.mavg{stroke:var(--acc-lt);stroke-width:1.2;stroke-dasharray:4 4}
+.mq{font-size:10.5px;font-weight:700;fill:var(--ink2)}
+.mq.lo{font-weight:600;fill:var(--muted)}
+.mqbg{fill:var(--acc-soft2)}
+.mlab{font-size:11px;font-weight:700;fill:var(--ink2);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.mc{fill-opacity:.5;stroke-width:1.5}
+.mdot{cursor:default}
+.mdot:hover .mc{stroke-width:2.5}
+.maxl{font-size:11px;font-weight:700;fill:var(--ink2)}
+.infdw{display:flex;flex-direction:column;gap:7px}
+.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 150px;gap:12px;align-items:center}
+.dwl{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.dwl b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dwl span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dwbar{display:flex;gap:2px;height:20px;border-radius:5px;overflow:hidden}
+.dwbar i{display:block;min-width:2px;background:rgb(var(--accrgb)/var(--op))}
+.dwbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
+.dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
+.dwr b{font-size:13px;font-weight:800;color:var(--ink)}
+.dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+table.tbl.inftbl td.l,table.tbl.inftbl th.l{text-align:left}
+table.tbl.inftbl td.l em{font-style:normal;font-size:11px;color:var(--muted);margin-left:4px}
+table.tbl.inftbl td.strong{font-weight:800}
+.infmiss{margin-top:2px}
+.infempty{padding:22px 6px}
+@media (max-width:1100px){.infgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
 </style>
 </head>
 <body class="booting">
@@ -2832,6 +2889,19 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
       </div></div>
       </div>
     </div>
+
+    <div class="sec gap3" data-sect="inflow">유입 분석
+      <span class="note">사이트 분석(Adobe 등) 기준 · <b>IWV</b> = 인터랙팅 방문 (2페이지 이상 · 기능 사용 · 20초 이상 중 하나)</span>
+      <div class="tools">
+        <span class="hint">묶음</span><select class="ctl" id="infDim">
+          <option value="media" selected>매체별</option>
+          <option value="product">광고상품별</option>
+          <option value="creative">소재별</option>
+        </select>
+        <span class="switch on" id="infLeak" title="클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다"><i></i> 이탈 포함</span>
+      </div>
+    </div>
+    <div class="card" data-sect="inflow"><div class="bd" id="infBody"></div></div>
 
     <div id="slotEnd"></div>
   </div>
@@ -3288,8 +3358,23 @@ function spread(total,n,rnd,ramp){
   return out;
 }
 const AMET=['imp','click','view','eng','conv','lead','install','like','share',
-  'v25','v50','v75','v100','v3','v15','v30','rev','net'];
-LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+  'v25','v50','v75','v100','v3','v15','v30','rev','net',
+  /* 유입 · 체류시간 (v92 — 사이트 분석 도구 Adobe Analytics 등에서 받는 값) */
+  'iwv','iwv_mh','iwv_mp','iwv_tda',
+  'dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p'];
+/* 체류시간 구간 — 열쇠 · 구간 중앙값(초). 평균 체류시간은 구간 중앙값으로 어림한다 */
+const DW_KEYS=['dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p'];
+const DW_MID={dw15:7.5,dw30:22,dw60:45,dw3m:120,dw5m:240,dw10m:450,dw15m:750,dw20m:1050,dw30m:1500,dw30p:2100};
+const dwSum=d=>DW_KEYS.reduce((s,k)=>s+(+d[k]||0),0);
+const dwAvg=d=>{const n=dwSum(d);return n?DW_KEYS.reduce((s,k)=>s+(+d[k]||0)*DW_MID[k],0)/n:NaN;};
+const dw30Rate=d=>{const n=dwSum(d);return n?DW_KEYS.slice(2).reduce((s,k)=>s+(+d[k]||0),0)/n:NaN;};
+/* 초 → "48초" · "1분 05초" */
+function fmtDur(v){
+  if(!isFinite(v))return '–';
+  const t=Math.round(v),m=Math.floor(t/60),r=t%60;
+  const LL=(a,b)=>typeof L==='function'?L(a,b):a;
+  return m?LL(`${m}분 ${String(r).padStart(2,'0')}초`,`${m}m ${String(r).padStart(2,'0')}s`):LL(`${r}초`,`${r}s`);}
+LINES.forEach((l,i)=>{l.daily={};AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m]||0,ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 
 let CREATIVES=[
  {id:'c1',lid:'L1',name:'6초 범퍼',type:'video',yt:'M7lc1UVf-VE',ratio:'16:9',
@@ -3428,7 +3513,7 @@ function buildFacts(){
          (예전에는 이런 라인의 숫자가 대시보드에서 통째로 사라졌다) */
       if(!cs.length){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
-          target:l.target,line:l.line,creative:'(소재 미등록)',
+          target:l.target,line:l.line,landing:l.landing||'',creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=RD[m][i]);
         f.cost=toGross(f.net,feeOf(l));
@@ -3445,7 +3530,7 @@ function buildFacts(){
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
-          line:l.line,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+          line:l.line,landing:l.landing||'',creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         AMET.forEach(m=>f[m]=part[m][ci]);
         f.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
@@ -3455,7 +3540,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=l.landing||'';});
 }
 buildFacts();
 
@@ -3483,7 +3568,7 @@ let CAMP_HIST=[];
     미디어믹스·예상효율 기본표시, 미디어믹스·예상효율 사용가능,
     대시보드·데이터입력 기본표시, 대시보드·데이터입력 사용가능]                       */
 /* 맨 끝 '사용자' 는 설정 › 열 사전에서 직접 만든 열들의 자리다 (v57) */
-const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','비용','기타','사용자'];
+const CAT_ORDER=['운영','노출','클릭','조회','전환','설치','참여','유입','체류시간','비용','기타','사용자'];
 const FIELDS=[
   ['date','일자','date','운영','in',0,0,1,1],
   ['start','시작일','start date','운영','in',1,1,0,1],
@@ -3547,6 +3632,29 @@ const FIELDS=[
   ['share','공유','share','참여','in',0,0,0,1],
   ['e_share','목표 공유','est.share','참여','in',0,1,0,1],
 
+  /* 유입 (v92) — IWV = Interacting Visits: 유입(Visit) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용
+     ③ 페이지 20초 이상 유지 중 하나를 충족한 방문. all = 랜딩 구분 없는 합계, 나머지는 첫 방문(랜딩) 페이지 기준이라 서로 겹치지 않는다 */
+  ['iwv','IWV(all)','IWV (all)','유입','in',0,0,0,1],
+  ['iwv_mh','IWV(mobilityhub)','IWV (mobility hub)','유입','in',0,0,0,1],
+  ['iwv_mp','IWV(modelpage)','IWV (model page)','유입','in',0,0,0,1],
+  ['iwv_tda','IWV(tda)','IWV (TDA)','유입','in',0,0,0,1],
+  ['iwvr','유입률','inflow rate','유입','calc',0,0,0,1],
+  ['cpiwv','유입 단가','cost per IWV','유입','calc',0,0,0,1],
+  /* 체류시간 (v92) — 방문을 체류시간 구간별로 센 값 */
+  ['dw15','체류 15초 미만','time <15s','체류시간','in',0,0,0,1],
+  ['dw30','체류 15~29초','time 15–29s','체류시간','in',0,0,0,1],
+  ['dw60','체류 30~59초','time 30–59s','체류시간','in',0,0,0,1],
+  ['dw3m','체류 1~3분','time 1–3m','체류시간','in',0,0,0,1],
+  ['dw5m','체류 3~5분','time 3–5m','체류시간','in',0,0,0,1],
+  ['dw10m','체류 5~10분','time 5–10m','체류시간','in',0,0,0,1],
+  ['dw15m','체류 10~15분','time 10–15m','체류시간','in',0,0,0,1],
+  ['dw20m','체류 15~20분','time 15–20m','체류시간','in',0,0,0,1],
+  ['dw30m','체류 20~30분','time 20–30m','체류시간','in',0,0,0,1],
+  ['dw30p','체류 30분 이상','time 30m+','체류시간','in',0,0,0,1],
+  ['dwv','체류 방문수','visits (time on site)','체류시간','calc',0,0,0,1],
+  ['dwavg','평균 체류시간','avg. time on site','체류시간','calc',0,0,0,1],
+  ['dw30r','30초 이상 체류율','30s+ rate','체류시간','calc',0,0,0,1],
+
   ['rev','매출','revenue','비용','in',0,0,1,1],
   ['e_rev','목표 매출','est.revenue','비용','in',0,1,0,1],
   ['budget','예산','budget','비용','calc',1,1,1,1],
@@ -3570,6 +3678,13 @@ function fieldCatalog(scope,extra){
     if(cols.length)out.push({g:c+' 관련',cols});});
   return out;
 }
+/* 같은 묶음 이름(예: "기타 관련" 과 덧붙인 "기타")은 하나로 합친다 (v92) — 열 목록에 "기타" 가 두 번 나오던 문제 */
+function mergeCatalog(list){
+  const out=[],by={};
+  (list||[]).forEach(g=>{const base=String(g.g||'').replace(/\s*관련$/,'').trim();
+    if(by[base]){const seen=new Set(by[base].cols.map(c=>c.k));g.cols.forEach(c=>{if(!seen.has(c.k))by[base].cols.push(c);});return;}
+    const ng={...g,cols:g.cols.slice()};by[base]=ng;out.push(ng);});
+  return out;}
 const fieldDefaults=scope=>FIELDS.filter(f=>scope==='mix'?f.mixDef:f.dashDef).map(f=>f.k);
 
 /* ===== 사용자가 만든 열 (v57) =====
@@ -3694,8 +3809,17 @@ const METRICS={
   v25:{l:'25% 조회',f:fmt,kind:'abs'},v50:{l:'50% 조회',f:fmt,kind:'abs'},
   v75:{l:'75% 조회',f:fmt,kind:'abs'},v100:{l:'100% 조회',f:fmt,kind:'abs'},
   v3:{l:'3초 조회',f:fmt,kind:'abs'},v15:{l:'15초 조회',f:fmt,kind:'abs'},v30:{l:'30초 조회',f:fmt,kind:'abs'},
-  roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost}
+  roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost},
+  /* 유입 · 체류시간 (v92) */
+  iwv:{l:'IWV(all)',f:fmt,kind:'abs'},iwv_mh:{l:'IWV(mobilityhub)',f:fmt,kind:'abs'},
+  iwv_mp:{l:'IWV(modelpage)',f:fmt,kind:'abs'},iwv_tda:{l:'IWV(tda)',f:fmt,kind:'abs'},
+  iwvr:{l:'유입률',f:v=>pct(v),kind:'rate',c:d=>d.iwv/d.click},
+  cpiwv:{l:'유입 단가',f:won,kind:'rate',c:d=>d.cost/d.iwv},
+  dwv:{l:'체류 방문수',f:fmt,kind:'rate',c:d=>dwSum(d)||NaN},
+  dwavg:{l:'평균 체류시간',f:fmtDur,kind:'rate',c:d=>dwAvg(d)},
+  dw30r:{l:'30초 이상 체류율',f:v=>pct(v),kind:'rate',c:d=>dw30Rate(d)}
 };
+DW_KEYS.forEach(k=>{METRICS[k]={l:k,f:fmt,kind:'abs'};});
 /* METRICS 라벨은 항목 사전을 따른다 */
 Object.keys(METRICS).forEach(k=>{if(FLD[k])METRICS[k].l=FLD[k].l;});
 const mval=(k,b)=>METRICS[k].kind==='abs'?b[k]:METRICS[k].c(b);
@@ -3723,7 +3847,7 @@ const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
 
 const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'slot',l:'광고 지면'},
   {k:'target',l:'타겟팅 그룹'},
-  {k:'line',l:'제품'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
+  {k:'line',l:'제품'},{k:'landing',l:'랜딩 페이지'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
 const NO_EXP_DIMS=['creative','month'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
@@ -6154,8 +6278,8 @@ function renderDaily(){
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */
-const mkSumCat=()=>fieldCatalog('dash').concat([{g:'기타',
-  cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]);
+const mkSumCat=()=>mergeCatalog(fieldCatalog('dash').concat([{g:'기타',
+  cols:[{k:'period',l:'기간'},{k:'bid',l:'비드 타입'}]}]));
 let SUM_CATALOG=mkSumCat();
 let SUM_DEF={};SUM_CATALOG.forEach(g=>g.cols.forEach(c=>SUM_DEF[c.k]=c));
 /* x: false = 정상 · 'ratio' = 예상값은 표시하되 비율은 의미가 없어 숨김 · 'all' = 예상값 전부 숨김 */
@@ -7977,9 +8101,9 @@ function openLightbox(c){
 const GANTT_GOAL_COLS=[
   {k:'g_cpm',l:'목표 CPM'},{k:'g_cpc',l:'목표 CPC'},{k:'g_cpv',l:'목표 CPV'},
   {k:'g_cpa',l:'목표 CPA'},{k:'g_cpe',l:'목표 CPE'},{k:'g_cpi',l:'목표 CPI'}];
-const mkGanttCat=()=>fieldCatalog('dash',f=>!!METRICS[f.k])
+const mkGanttCat=()=>mergeCatalog(fieldCatalog('dash',f=>!!METRICS[f.k])
   .concat([{g:'목표 단가',cols:GANTT_GOAL_COLS},
-           {g:'기타',cols:[{k:'days',l:'게재일수'}]}]);
+           {g:'기타',cols:[{k:'days',l:'게재일수'}]}]));
 let GANTT_CATALOG=mkGanttCat();
 let GANTT_DEF={};GANTT_CATALOG.forEach(g=>g.cols.forEach(c=>GANTT_DEF[c.k]=c));
 COLREB.push(()=>{GANTT_CATALOG=mkGanttCat();
@@ -8902,6 +9026,7 @@ const SHEET_DIMS=[
   {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
+  {k:'landing',l:'랜딩 페이지',w:130,type:'dim',rule:'예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
 const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
@@ -8958,7 +9083,7 @@ let SHEET=LINES.flatMap(l=>{
     const r={...base,creative:c.name,cost:Math.round(c.daily.cost[idx]||0)};
     AMET.forEach(m=>{if(m!=='net')r[m]=c.daily[m][idx]||0;});
     return r;});});
-const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','landing','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
    조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
@@ -8967,6 +9092,8 @@ const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 const dimKey=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' ');
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
+  /* 랜딩 페이지는 라인에 적어 둔 경우에만 맞춰 본다 (v92) — 안 적은 라인은 어떤 랜딩이든 받는다 */
+  if(k==='landing'&&!lineLandings(l).length)return true;
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
   const set=new Set(lineMulti(l,k).map(dimKey));
@@ -8992,7 +9119,7 @@ function rowLine(r){return rowLineCands(r)[0]||null;}
    ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
    그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
 function rowLineCands(r){
-  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
   if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
   let pool=LINES.filter(ok);
@@ -9027,7 +9154,7 @@ function rowNumBad(r){
   return out;}
 function rowCellIssues(r){
   const nb=rowNumBad(r);
-  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
   if(!keys.length)return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};
   let pool=LINES,bad=[];
   DIM_CHAIN.forEach(k=>{
@@ -9049,6 +9176,7 @@ const CELL_ISSUE_LABEL={
   segment:'예상 효율에 없는 구분입니다',media:'예상 효율에 없는 매체명입니다',
   product:'앞 칸(매체 등)과 맞는 광고상품이 아닙니다',slot:'앞 칸과 맞는 광고 지면이 아닙니다',
   target:'앞 칸과 맞는 타겟팅 그룹이 아닙니다',line:'앞 칸과 맞는 제품이 아닙니다',
+  landing:'그 라인에 적어 둔 랜딩 페이지가 아닙니다',
   date:'그 라인의 집행 기간 밖의 날짜입니다',
   creative:'매체 · 광고상품 · 타겟이 같은 라인이 여러 개라 이 소재가 어느 라인 것인지 정할 수 없습니다 — 구분 · 제품 열을 넣거나 예상 효율에 소재를 등록해 주세요'};
 function rowBad(r){return !!rowIssue(r);}
@@ -9974,6 +10102,7 @@ const LINE_FIXED=[
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
+  {k:'landing',l:'랜딩 페이지',w:160,type:'chips',on:false},   /* v92 — 광고를 누르면 넘어가는 페이지(여러 개면 칩) */
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
   {k:'sec',l:'소재 초수',w:74,type:'num',on:false},
   {k:'bid',l:'비드 타입',w:84,type:'bid',on:true,g:'집행 조건'},
@@ -10008,7 +10137,7 @@ const lineOpts=k=>[...new Set(LINES.map(l=>l[k]).filter(Boolean))];
    (패키지로 파는 광고상품, 한 예산으로 함께 돌리는 타겟팅·소재 등)
    라인에는 배열(products/slots/targets/creatives)로 두고,
    집계용 차원 값(l.product 등)은 " · " 로 이어 붙인 한 덩어리로 유지한다. */
-const MULTI_DIMS=['product','slot','target','creative'];
+const MULTI_DIMS=['product','slot','target','creative','landing'];
 /* 콤마 · 가운뎃점으로 나눠 읽는다. **괄호 안의 콤마는 나누지 않는다** (v79) —
    "VVC 2.0 (인스트림, 인피드)" 가 "VVC 2.0 (인스트림" · "인피드)" 두 개로 쪼개졌다.
    & 는 이름에 흔히 들어가서("자녀 연령 & 학부모 호칭", P&G) 새로 나눌 때는 쓰지 않는다.
@@ -10031,9 +10160,10 @@ const lineCreatives=l=>Array.isArray(l.creatives)?l.creatives
 const lineTargets=l=>Array.isArray(l.targets)?l.targets:parseMulti(l.target);
 const lineProducts=l=>Array.isArray(l.products)&&l.products.length?l.products:parseMulti(l.product);
 const lineSlots=l=>Array.isArray(l.slots)?l.slots:parseMulti(l.slot);
+const lineLandings=l=>Array.isArray(l.landings)?l.landings:parseMulti(l.landing);
 /* 차원 이름 → 그 라인의 항목 배열 */
 const lineMulti=(l,k)=>k==='creative'?lineCreatives(l):k==='target'?lineTargets(l)
-  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):(l[k]?[l[k]]:[]);
+  :k==='product'?lineProducts(l):k==='slot'?lineSlots(l):k==='landing'?lineLandings(l):(l[k]?[l[k]]:[]);
 const allCreativeNames=()=>[...new Set(CREATIVES.map(c=>c.name)
   .concat(LINES.flatMap(lineCreatives)))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
@@ -10042,6 +10172,8 @@ const allTargetNames=()=>[...new Set(LINES.flatMap(lineTargets))]
 const allProductNames=(media)=>[...new Set((media?LINES.filter(l=>l.media===media):LINES).flatMap(lineProducts))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const allSlotNames=()=>[...new Set(LINES.flatMap(lineSlots))]
+  .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+const allLandingNames=()=>[...new Set(LINES.flatMap(lineLandings))]
   .filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
 const GRADS=['linear-gradient(140deg,#93a9bf,#354758)','linear-gradient(140deg,#b3c1cf,#495e72)',
   'linear-gradient(140deg,#93a2b1,#35536f)','linear-gradient(140deg,#aabbcb,#495e72)',
@@ -10102,12 +10234,19 @@ function setLineSlots(l,names){
   l.slot=joinMulti(names);
   buildFacts();
 }
+function setLineLandings(l,names){
+  names=[...new Set(names.map(s=>String(s).trim()).filter(Boolean))];
+  l.landings=names;
+  l.landing=joinMulti(names);
+  buildFacts();
+}
 /* 칩 필드 종류별 동작 — 이름표 · 현재 값 · 저장 · 고를 수 있는 목록 */
 const CHIP_KIND={
   creative:{label:'소재',      get:lineCreatives,set:setLineCreatives,all:allCreativeNames},
   target:  {label:'타겟팅 그룹',get:lineTargets,  set:setLineTargets,  all:allTargetNames},
   product: {label:'광고상품',   get:lineProducts, set:setLineProducts, all:allProductNames},
-  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames}};
+  slot:    {label:'광고 지면',  get:lineSlots,    set:setLineSlots,    all:allSlotNames},
+  landing: {label:'랜딩 페이지',get:lineLandings, set:setLineLandings, all:allLandingNames}};
 /* 기본은 "이미 등록된 항목 중에서 고르기". 새 이름이 필요할 때만 ＋ 버튼으로 직접 추가한다. */
 function chipFieldHTML(kind,li,items){
   return `<div class="chipfield" data-cf="${kind}" data-l="${li}">`
@@ -10366,7 +10505,7 @@ function renderKpiTable(){
     LINES.splice(i+1,0,n);
     /* 소재·타겟팅은 실제 레코드까지 함께 복제한다 */
     setLineTargets(n,lineTargets(src));setLineCreatives(n,lineCreatives(src));
-    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));
+    setLineProducts(n,lineProducts(src));setLineSlots(n,lineSlots(src));setLineLandings(n,lineLandings(src));
     rebuildPeriod();buildFacts();renderKpiTable();renderCampForm();renderMix();renderAll();});
   /* 셀 선택 — 클릭한 칸이 선택, 끌면 범위 선택 (v70).
      리스너는 표 하나에만 걸고 위임한다 (라인이 많아도 가볍게) */
@@ -10486,7 +10625,8 @@ function setLineCell(i,c,raw){
       const set={product:typeof setLineProducts==='function'&&setLineProducts,
                  target:typeof setLineTargets==='function'&&setLineTargets,
                  creative:typeof setLineCreatives==='function'&&setLineCreatives,
-                 slot:typeof setLineSlots==='function'&&setLineSlots}[c.k];
+                 slot:typeof setLineSlots==='function'&&setLineSlots,
+                 landing:typeof setLineLandings==='function'&&setLineLandings}[c.k];
       if(set)set(l,arr);return;}
     default:l[c.k]=s2;return;}
 }
@@ -10585,7 +10725,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','slot','target','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','landing','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');
@@ -10737,7 +10877,7 @@ function rebuildPeriod(){
 /* 예시(샘플) 캠페인에서만 쓰는 가짜 일별 분포 — 실제 데이터가 있으면 절대 부르지 않는다 */
 function seedDemoDaily(){
   LINES.forEach((l,i)=>{l.daily={};
-    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m],ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
+    AMET.forEach((m,j)=>l.daily[m]=spread(l.a[m]||0,ELAPSED,seeded(17+i*131+j*29),.3+.05*j));});
 }
 function openLineColCfg(){
   openColCfgUI({
@@ -10756,10 +10896,10 @@ function openLineColCfg(){
       ro2:'자동 계산 — 입력하지 않습니다',note:'자유 입력'})[c.type]||'숫자 입력',
     onSave:d=>{LINE_COLS=d;renderKpiTable();renderMix();}});
 }
-const mkMixCat=()=>fieldCatalog('mix').concat([
+const mkMixCat=()=>mergeCatalog(fieldCatalog('mix').concat([
   {g:'KPI',cols:[{k:'kpi',l:'KPI 지표'},{k:'kpiGoal',l:'KPI 목표 수'}]},
   {g:'기타',cols:[{k:'note',l:'비고'},{k:'period',l:'기간'},
-  {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]);
+  {k:'price',l:'판매단가'},{k:'device',l:'디바이스'},{k:'sec',l:'소재 초수'},{k:'share',l:'예산 비중'}]}]));
 let MIX_CATALOG=mkMixCat();
 let MIX_DEF={};MIX_CATALOG.forEach(g=>g.cols.forEach(c=>MIX_DEF[c.k]=c));
 COLREB.push(()=>{MIX_CATALOG=mkMixCat();
@@ -11447,8 +11587,8 @@ function blankLine(){
   const base=LINES[LINES.length-1]||{};
   const n=JSON.parse(JSON.stringify({...base,daily:undefined}));
   n.id='L'+Math.random().toString(36).slice(2,7);
-  ['segment','media','product','slot','target','line','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
-  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.creativeTxt='';n.device=[];
+  ['segment','media','product','slot','target','line','landing','note','startT','endT','start','end','sub'].forEach(k=>n[k]='');
+  n.targets=[];n.creatives=[];n.products=[];n.slots=[];n.landings=[];n.creativeTxt='';n.device=[];
   n.sec=0;n.price=0;n.gross=0;n.bonus=0;n.feeA=0;n.feeR=0;n.bid='';n.kpi='imp';
   n.e={};AMET.forEach(m=>n.e[m]=0);
   n.a={};AMET.forEach(m=>n.a[m]=0);
@@ -13156,6 +13296,7 @@ const TPL_NOTE='  (동일 예산 내 항목이 여러개인 경우 콤마로 표
 const TPL_HINT={
   product:'광고상품'+TPL_NOTE,
   slot:'광고 지면'+TPL_NOTE,
+  landing:'랜딩 페이지'+TPL_NOTE,
   creative:'소재'+TPL_NOTE,
   target:'타겟팅 그룹'+TPL_NOTE};
 /* 일자별 실적은 한 행 = 하나의 타겟팅 그룹이라 콤마 안내를 붙이지 않는다 */
@@ -13261,7 +13402,7 @@ function canonRow(r){
 }
 /* 완전히 같은 행인지 판단하는 열쇠 — 날짜 · 차원 · 모든 수치 */
 function rowKey(r){
-  const dims=['date','segment','media','product','slot','target','line','creative']
+  const dims=['date','segment','media','product','slot','target','line','landing','creative']
     .map(k=>k!=='date'&&MULTI_DIMS.includes(k)
       ? parseMulti(r[k]).slice().sort().join('|')
       : String(r[k]==null?'':r[k]).trim());
@@ -13310,6 +13451,10 @@ function trimGrid(g){
 /* 머리글 비교용 정규화 — 공백과 끝의 괄호 안내를 떼어 내고 영문은 소문자로
    ("타겟팅 그룹 (여러 개면 콤마로 구분)" → "타겟팅그룹", "Published\nAmount" → "publishedamount") */
 const normHdr=v=>String(v==null?'':v).trim().replace(/\s*\([^()]*\)\s*$/,'').replace(/\s+/g,'').toLowerCase();
+/* 괄호까지 그대로 둔 정규화 (v92) — "IWV(all)" · "IWV(tda)" 처럼 괄호 안이 이름의 일부인 열을 구분한다.
+   머리글은 이것으로 먼저 찾고, 없으면 괄호 안내를 뗀 이름(normHdr)으로 찾는다 */
+const normHdrFull=v=>String(v==null?'':v).trim().replace(/\s+/g,'').toLowerCase();
+const hdrGet=(dict,v)=>dict.get('\u0001'+normHdrFull(v))||dict.get(normHdr(v));
 /* ---------- 머리글 별칭 (v79) ----------
    템플릿 이름이 아니어도 실무 엑셀 · 매체 리포트에서 흔히 쓰는 이름이면 알아본다.
    (미디어믹스의 "상품 · 타겟팅 가이드 · 최종 예산 · 예상 노출수", 매체 RAW 의 "일 · 광고그룹 · 노출수 · 비용" 등)
@@ -13320,6 +13465,7 @@ const HDR_ALIAS={
     media:['매체','매체명','media','채널'],
     product:['광고상품','광고 상품','상품','상품명','광고상품명','광고 유형','product'],
     slot:['광고 지면','지면','노출 지면','placement'],
+    landing:['랜딩 페이지','랜딩페이지','랜딩 url','설정 랜딩','landing page','landing url'],
     target:['타겟팅 그룹','타겟팅','타겟','타깃','타깃팅','타겟팅 가이드','타겟팅 그룹명','광고그룹','광고 그룹','target','targeting'],
     creative:['소재','소재명','광고 소재','creative'],
     line:['제품','제품명'],
@@ -13347,6 +13493,7 @@ const HDR_ALIAS={
     target:['타겟팅 그룹명','타겟팅 그룹','타겟팅','타겟','타깃','광고그룹','광고 그룹','광고그룹 이름','광고 그룹 이름',
       '광고 세트','광고세트','광고 세트 이름','ad group','ad set'],
     line:['제품'],
+    landing:['랜딩 페이지','랜딩페이지','설정 랜딩','landing page','entry page'],
     creative:['소재','소재명','광고 이름','광고명','광고 소재','ad name','creative'],
     imp:['노출','노출수','impressions','impression','imps','impr.'],
     click:['클릭','클릭수','clicks','click'],
@@ -13360,12 +13507,28 @@ const HDR_ALIAS={
     install:['설치','설치수','installs'],
     eng:['참여','참여수','engagements'],
     rev:['매출','revenue'],
+    /* 유입 · 체류시간 (v92) — Adobe Analytics 등 사이트 분석 리포트 머리글 */
+    iwv:['IWV(all)','IWV','interacting visits','인터랙팅 방문','인터랙팅 비짓'],
+    iwv_mh:['IWV(mobilityhub)','IWV(mobility hub)','IWV(e-mobilityhub)'],
+    iwv_mp:['IWV(modelpage)','IWV(model page)','IWV(ix3-modelpage)'],
+    iwv_tda:['IWV(tda)','IWV(tda-experience)','IWV(ix3-tda)'],
+    dw15:['체류시간 : less than 15 seconds','time on site : less than 15 seconds','time spent per visit : less than 15 seconds','15초 미만'],
+    dw30:['체류시간 : 15 to 29 seconds','time on site : 15 to 29 seconds','time spent per visit : 15 to 29 seconds','15~29초'],
+    dw60:['체류시간 : 30 to 59 seconds','time on site : 30 to 59 seconds','time spent per visit : 30 to 59 seconds','30~59초'],
+    dw3m:['체류시간 : 1 to 3 minutes','time on site : 1 to 3 minutes','time spent per visit : 1 to 3 minutes','1~3분'],
+    dw5m:['체류시간 : 3 to 5 minutes','time on site : 3 to 5 minutes','time spent per visit : 3 to 5 minutes','3~5분'],
+    dw10m:['체류시간 : 5 to 10 minutes','time on site : 5 to 10 minutes','time spent per visit : 5 to 10 minutes','5~10분'],
+    dw15m:['체류시간 : 10 to 15 minutes','time on site : 10 to 15 minutes','time spent per visit : 10 to 15 minutes','10~15분'],
+    dw20m:['체류시간 : 15 to 20 minutes','time on site : 15 to 20 minutes','time spent per visit : 15 to 20 minutes','15~20분'],
+    dw30m:['체류시간 : 20 to 30 minutes','time on site : 20 to 30 minutes','time spent per visit : 20 to 30 minutes','20~30분'],
+    dw30p:['체류시간 : more than 30 minutes','time on site : more than 30 minutes','time spent per visit : more than 30 minutes','30분 이상'],
     cost:['소진비용','소진 비용','소진금액','소진 금액','비용','광고비','지출','지출 금액','집행 금액','집행금액',
       'cost','spend','amount spent']}};
 /* 머리글 → 항목 열쇠 사전. 지금 열 이름(사용자가 바꾼 이름 포함) > 기본 이름 > 별칭 순으로 채운다 */
 function hdrDict(cols,kind){
   const m=new Map();
-  const put=(l,k)=>{const n=normHdr(l);if(n&&!m.has(n))m.set(n,k);};
+  const put=(l,k)=>{const n=normHdr(l);if(n&&!m.has(n))m.set(n,k);
+    const f='\u0001'+normHdrFull(l);if(f.length>1&&!m.has(f))m.set(f,k);};
   cols.forEach(c=>put(c.l,c.k));
   try{const def=kind==='line'?lineColsDefault():sheetColsDefault();def.forEach(c=>put(c.l,c.k));}catch(e){}
   Object.entries(HDR_ALIAS[kind]||{}).forEach(([k,ls])=>ls.forEach(l=>put(l,k)));
@@ -13374,7 +13537,7 @@ function hdrDict(cols,kind){
 /* 한 줄이 머리글로서 몇 개의 항목을 알아보는가. need 중 하나는 꼭 있어야 한다 (일자별 = 일자, 예상 효율 = 매체·상품) */
 function hdrScore(row,dict,need){
   const ks=new Set();
-  (row||[]).forEach(v=>{const k=dict.get(normHdr(v));if(k)ks.add(k);});
+  (row||[]).forEach(v=>{const k=hdrGet(dict,v);if(k)ks.add(k);});
   if(need&&!need.some(k=>ks.has(k)))return 0;
   return ks.size>=2?ks.size:0;
 }
@@ -13399,7 +13562,7 @@ function basisRank(h){
 function mapHeader(headRow,dict){
   const best={};
   (headRow||[]).forEach((h,ci)=>{
-    const k=dict.get(normHdr(h));if(!k)return;
+    const k=hdrGet(dict,h);if(!k)return;
     const r=basisRank(h);
     if(!best[k]||r>best[k].r)best[k]={ci,r};});
   const keys=(headRow||[]).map(()=>null);
@@ -13411,7 +13574,7 @@ const TOTAL_RE=/^(grand\s*|sub\s*)?total$|\s(sub\s*)?total$|^(합계|소계|총�
 function isTotalRow(r,skip){
   return (r||[]).some((v,ci)=>ci!==skip&&typeof v==='string'&&TOTAL_RE.test(v.trim()));}
 /* 표 중간에 다시 나오는 머리글 줄 (한 시트에 표가 둘 이상일 때) */
-const isHeaderRow=(r,dict)=>{let n=0;(r||[]).forEach(v=>{if(typeof v==='string'&&dict.get(normHdr(v)))n++;});return n>=2;};
+const isHeaderRow=(r,dict)=>{let n=0;(r||[]).forEach(v=>{if(typeof v==='string'&&hdrGet(dict,v))n++;});return n>=2;};
 /* 머리글을 못 찾은 한 장짜리 시트 — **템플릿 열 순서대로** 읽는다 (v79).
    제목 · 머리글 같은 윗부분은 숫자가 하나도 없는 줄이라 건너뛰고, 숫자가 처음 나오는 줄부터 데이터로 본다 */
 function positionalStart(grid,keys){
@@ -13426,7 +13589,7 @@ function positionalStart(grid,keys){
    한 장짜리 시트에서 이러면 머리글은 무시하고 템플릿 열 순서로 읽는다 */
 function hdrWeak(row,dict){
   const named=(row||[]).filter(v=>String(v==null?'':v).trim()!=='');
-  const hit=named.filter(v=>dict.get(normHdr(v))).length;
+  const hit=named.filter(v=>hdrGet(dict,v)).length;
   return !named.length||hit/named.length<0.4;}
 /* 여러 줄 · 여러 칸 공백을 한 칸으로 (셀 안 줄바꿈 "M2544 + 육아 관심사\n*부모 타겟팅") */
 const oneLine=v=>String(v==null?'':v).replace(/\s*[\r\n]+\s*/g,' ').replace(/\s{2,}/g,' ').trim();
@@ -13780,7 +13943,7 @@ function importLines(f){
       if(isTotalRow(r,noteCi)){skipTot++;continue;}
       if(isHeaderRow(r,dict))continue;
       const n=blankLine();
-      let filled=false,creatives=[],targets=[],products=[],slots=[],period='',hasBonus=false;
+      let filled=false,creatives=[],targets=[],products=[],slots=[],landings=[],period='',hasBonus=false;
       keys.forEach((k,ci)=>{
         if(!k)return;
         const raw0=String(r[ci]==null?'':r[ci]).trim();
@@ -13797,6 +13960,7 @@ function importLines(f){
         else if(k==='target'){targets=parseMulti(raw);}
         else if(k==='product'){products=parseMulti(raw);}
         else if(k==='slot'){slots=parseMulti(raw);}
+        else if(k==='landing'){landings=parseMulti(raw);}
         else if(k==='period'){period=raw;}
         else if(k==='kpi'){n.kpi=kpiByLabel[raw]||(KPI_KEYS.includes(raw)?raw:n.kpi);}
         else if(t==='date'){n[k]=normDate(raw)||raw;}
@@ -13821,7 +13985,7 @@ function importLines(f){
       if(n.value!=null&&n.value!==''&&!hasBonus)n.bonus=Math.max(0,(+n.value||0)-(+n.gross||0));
       if(!n.bid&&BID_TYPES.length)n.bid='CPM';
       if(BID_KPI[n.bid]&&KPI_KEYS.includes(BID_KPI[n.bid])&&!keys.includes('kpi'))n.kpi=BID_KPI[n.bid];
-      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;
+      n.__cr=creatives;n.__tg=targets;n.__pd=products;n.__sl=slots;n.__ld=landings;
       out.push(n);}
     if(!out.length){confirmModal('가져올 행이 없습니다.','머리글 아래에 데이터가 있는지 확인해 주세요.',()=>{},'확인');return;}
     /* 덧붙임 — 읽은 시트 · 행 한도 · 숫자로 읽을 수 없어 비워 둔 칸 (값은 사용자 데이터라 번역하지 않는다) */
@@ -13841,7 +14005,7 @@ function importLines(f){
         +extra.map(x=>'<br><br>'+x).join(''),
       ()=>{
         pushLineUndo();
-        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,...rest}=l;return rest;});
+        LINES=out.map(l=>{const {__cr,__tg,__pd,__sl,__ld,...rest}=l;return rest;});
         CREATIVES=CREATIVES.filter(()=>false);
         /* 소재를 만들기 **전에** 캠페인 기간부터 잡는다 —
            그래야 소재 게재 기간이 캠페인 전체로 잡힌다 */
@@ -13850,6 +14014,7 @@ function importLines(f){
           const src=out[i];
           if(src.__pd.length)setLineProducts(l,src.__pd);
           if(src.__sl.length)setLineSlots(l,src.__sl);
+          if(src.__ld&&src.__ld.length)setLineLandings(l,src.__ld);
           if(src.__tg.length)setLineTargets(l,src.__tg);
           if(src.__cr.length)setLineCreatives(l,src.__cr);});
         rebuildPeriod();buildFacts();
@@ -13920,7 +14085,7 @@ const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:
   stat:'주요 지표',daily:'일자별 캠페인 효율 비교',treemap:'분포(트리맵)',
   gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
   creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
-  bubble:'효율 버블'};
+  bubble:'효율 버블',inflow:'유입 분석'};
 function applyHidden(){
   document.querySelectorAll('[data-sect]').forEach(elm=>{
     elm.style.display=HIDDEN.has(elm.dataset.sect)?'none':'';});
@@ -14056,6 +14221,14 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
 /* ---------- 영역 설명 (ⓘ) ----------
    광고주 · 시행사가 공통으로 궁금해할 만한 내용을 영역마다 한 덩어리로 적어 둔다. */
 const SECT_INFO={
+  inflow:`<p><b>IWV(인터랙팅 방문)</b> — 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다.
+     매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.</p>
+   <p><b>유입 흐름</b> — 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다.
+     IWV(all) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.</p>
+   <p><b>유입 효율 지도</b> — 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입 단가(소진금액 ÷ IWV)가 쌉니다.
+     점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.</p>
+   <p><b>체류시간 분포</b> — 방문을 머문 시간 구간으로 나눈 비율입니다. 평균 체류시간은 구간 가운데 값으로 어림한 값입니다.</p>
+   <p>사이트 데이터는 매체 리포트와 집계 기준이 달라 IWV 가 클릭보다 많을 수도 있습니다(조회 후 방문 등).</p>`,
   pace:`<p>지표마다 <b>그 지표를 KPI로 잡은 라인들만</b> 모아 실적과 목표를 비교합니다.
      캠페인 전체 노출·클릭·조회가 아니라, 그 지표를 <b>보장한 라인</b>의 합입니다.</p>
    <p><b>막대 위의 점 = 목표 페이스.</b> 각 라인의 목표를 그 라인의 <b>집행 일수로 나눠 하루치</b>를 구하고
@@ -15806,7 +15979,12 @@ const COL_FORMULA={
   cost:'데이터 입력에 적은 소진비용의 합',
   value:'예상 효율에 적은 판매 단위 수량',
   period:'그 행에 걸린 라인들의 가장 이른 시작일 ~ 가장 늦은 종료일',
-  bid:'그 행에 걸린 라인들의 비드 타입 (여러 개면 함께 표시)'
+  bid:'그 행에 걸린 라인들의 비드 타입 (여러 개면 함께 표시)',
+  /* 유입 · 체류시간 (v92) */
+  iwvr:'IWV(all) ÷ 클릭',cpiwv:'소진금액 ÷ IWV(all)',
+  dwv:'체류시간 구간 방문수의 합',
+  dwavg:'구간별 방문수 × 구간 중앙값(15초 미만 7.5초 · 1~3분 2분 …) ÷ 체류 방문수',
+  dw30r:'30초 이상 구간 방문수 ÷ 체류 방문수'
 };
 /* 머리글 팝업에 쓰는 설명 (v72) — "이 칸은 무슨 값인가" 를 한 문장으로.
    계산 열은 COL_FORMULA 의 식을 함께 보여 준다. */
@@ -15831,7 +16009,19 @@ const COL_DESC={
   note:'자유롭게 적은 메모입니다.',start:'라인의 집행 시작일입니다.',end:'라인의 집행 종료일입니다.',
   startT:'집행 시작 시간입니다.',endT:'집행 종료 시간입니다.',sub:'KPI 와 함께 보조로 보는 지표입니다.',
   spend_r:'예산 중 얼마나 썼는지입니다.',progress:'캠페인 기간이 얼마나 지났는지입니다 — 목표 페이스의 기준입니다.',
-  bonusRate:'예산 대비 보너스 밸류의 비율입니다.',roas:'광고비 1원당 매출입니다.'};
+  bonusRate:'예산 대비 보너스 밸류의 비율입니다.',roas:'광고비 1원당 매출입니다.',
+  landing:'광고를 누르면 넘어가는 랜딩 페이지입니다.',
+  iwv:'인터랙팅 방문(IWV) — 유입(방문) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용 ③ 페이지에 20초 이상 머묾 중 하나를 충족한 방문입니다. 랜딩 구분 없는 합계입니다.',
+  iwv_mh:'첫 방문 페이지가 모빌리티 허브인 인터랙팅 방문입니다.',
+  iwv_mp:'첫 방문 페이지가 모델 페이지인 인터랙팅 방문입니다.',
+  iwv_tda:'첫 방문 페이지가 시승 신청(TDA) 페이지인 인터랙팅 방문입니다.',
+  iwvr:'클릭 대비 실제로 사이트에 들어와 반응한 비율입니다.',cpiwv:'인터랙팅 방문 1회를 얻는 데 든 광고비입니다.',
+  dwv:'체류시간이 기록된 방문 수입니다.',dwavg:'방문 1회당 평균 체류시간(구간 중앙값으로 어림)입니다.',
+  dw30r:'30초 이상 머문 방문의 비율입니다.',
+  dw15:'15초 안에 떠난 방문 수입니다.',dw30:'15~29초 머문 방문 수입니다.',dw60:'30~59초 머문 방문 수입니다.',
+  dw3m:'1~3분 머문 방문 수입니다.',dw5m:'3~5분 머문 방문 수입니다.',dw10m:'5~10분 머문 방문 수입니다.',
+  dw15m:'10~15분 머문 방문 수입니다.',dw20m:'15~20분 머문 방문 수입니다.',dw30m:'20~30분 머문 방문 수입니다.',
+  dw30p:'30분 넘게 머문 방문 수입니다.'};
 /* TV 표 (v72) */
 const TV_DESC={
   ch:'광고가 나간 채널(방송사)입니다.',prog:'광고가 붙은 프로그램입니다.',
@@ -15977,7 +16167,9 @@ function drawDigitalCols(bd,ft){
   const agency=!(typeof isClient==='function'&&isClient());
   const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind,uc:f.__uc}))
     .concat([{k:'period',l:'기간',en:'period',cat:'기타',kind:'calc'},
-             {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}]);
+             {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}])
+    /* 분류 순서대로 — '기타' 가 사용자 열 뒤에 한 번 더 나오지 않게 (v92) */
+    .map((r,i)=>({r,i})).sort((a,b)=>((CAT_ORDER.indexOf(a.r.cat)+99)%99-(CAT_ORDER.indexOf(b.r.cat)+99)%99)||a.i-b.i).map(x=>x.r);
   const where=k=>{
     const w=[];
     const f=FLD[k];
@@ -18960,6 +19152,273 @@ window.addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=set
   const fl=$('ovFlow'),tab=$('tab-overview');
   if(!fl||!OVFLOW_LAST||!tab||tab.classList.contains('hidden')||fl.clientWidth===OVFLOW_LAST.w)return;
   paintOvFlow(fl,OVFLOW_LAST.rows,OVFLOW_LAST.won0);},160);};})());
+/* ===== 유입 분석 (v92) =====
+   사이트 분석 도구(Adobe Analytics 등)에서 받은 IWV(인터랙팅 방문) · 랜딩별 IWV · 체류시간 구간 값을
+   매체 · 광고상품 · 소재별로 모아 본다. 디지털 서머리 맨 아래 영역.
+   ① 유입 흐름 (Sankey) — 클릭이 어느 랜딩 페이지로 들어왔는지, 얼마나 IWV 로 이어지지 않았는지
+   ② 유입 효율 지도 (버블) — 가로 = 클릭 대비 유입률, 세로 = 유입 단가(위로 갈수록 저렴), 크기 = IWV, 색 = 평균 체류시간
+   ③ 체류시간 분포 — 100% 막대(짧게 머문 방문 → 오래 머문 방문), 평균 체류시간 순
+   ④ 상세 표
+   데이터가 전혀 없는 캠페인에서는 영역 자체를 감춘다. */
+var INF={dim:'media',leak:true};
+const INF_LAND=[{k:'iwv_tda',l:'tda'},{k:'iwv_mh',l:'mobilityhub'},{k:'iwv_mp',l:'modelpage'}];
+/* 체류시간 10구간 → 화면에서는 5묶음 */
+const INF_BANDS=[
+  {l:'15초 미만',en:'<15s',ks:['dw15']},
+  {l:'15~59초',en:'15–59s',ks:['dw30','dw60']},
+  {l:'1~3분',en:'1–3m',ks:['dw3m']},
+  {l:'3~10분',en:'3–10m',ks:['dw5m','dw10m']},
+  {l:'10분 이상',en:'10m+',ks:['dw15m','dw20m','dw30m','dw30p']}];
+const INF_BAND_OP=[.16,.34,.55,.76,.96];
+const infHas=b=>(+b.iwv||0)>0||dwSum(b)>0||INF_LAND.some(x=>(+b[x.k]||0)>0);
+const infRate=b=>b.click?b.iwv/b.click:NaN;
+const infCpv=b=>b.iwv?b.cost/b.iwv:NaN;
+/* 캠페인 전체(기간 무관)에 유입 데이터가 하나라도 있는가 */
+function infAny(){try{return FACTS.some(f=>infHas(f));}catch(e){return false;}}
+/* 기준(매체 · 광고상품 · 소재)별로 묶는다 — 지금 조회 기간 · 필터를 따른다 */
+function infGroups(dim){
+  const map=new Map();
+  factFilter().forEach(f=>{
+    let key,lab,sub,col;
+    if(dim==='product'){key=f.media+'\u0001'+f.product;lab=f.product||'–';sub=f.media;col=f.media;}
+    else if(dim==='creative'){key=f.creative;lab=f.creative||'–';sub='';col=f.creative;}
+    else{key=f.media;lab=f.media||'–';sub='';col=f.media;}
+    let g=map.get(key);if(!g){g={key,lab,sub,col,fs:[]};map.set(key,g);}
+    g.fs.push(f);});
+  return [...map.values()].map(g=>({key:g.key,lab:g.lab,sub:g.sub,col:g.col,b:aggFacts(g.fs)}));}
+const infColor=g=>{if(g.col==='__etc')return 'rgb(150,157,166)';try{const c=hueOf(g.col);return `rgb(${c[0]},${c[1]},${c[2]})`;}catch(e){return 'var(--acc)';}};
+const infName=g=>g.sub?`${g.sub} · ${g.lab}`:g.lab;
+const infClip=(s,n)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;};
+
+function renderInflow(){
+  const body=$('infBody');if(!body)return;
+  const any=infAny();
+  document.querySelectorAll('[data-sect="inflow"]').forEach(n=>n.classList.toggle('infnone',!any));
+  if(!any){body.innerHTML='';return;}
+  const dim=INF.dim||'media';
+  /* 머리 단추 */
+  const seg=$('infDim');
+  if(seg){seg.value=dim;seg.onchange=e=>{INF.dim=e.target.value;renderInflow();};}
+  const lk=$('infLeak');
+  if(lk){lk.classList.toggle('on',INF.leak!==false);lk.onclick=()=>{INF.leak=!(INF.leak!==false);renderInflow();};}
+  const all=infGroups(dim);
+  const rows=all.filter(g=>infHas(g.b)).sort((a,b)=>(b.b.iwv||0)-(a.b.iwv||0)||(b.b.click||0)-(a.b.click||0));
+  if(!rows.length){body.innerHTML=`<div class="hint infempty">${L('지금 조회 기간에는 유입 데이터가 없습니다. 조회 기간을 넓혀 보세요.','No inflow data in this period. Try a wider date range.')}</div>`;return;}
+  const T=aggFacts([]);rows.forEach(g=>{AMET.concat(['cost']).forEach(m=>T[m]+=+g.b[m]||0);});
+  /* 추적 데이터가 없는 매체 — 클릭은 있는데 IWV · 체류시간이 없다 */
+  const miss=infGroups('media').filter(g=>(g.b.click||0)>0&&!infHas(g.b)).map(g=>g.lab);
+  const kp=(l,v,s)=>`<div class="infk"><span>${l}</span><b class="mono">${v}</b>${s?`<em>${s}</em>`:''}</div>`;
+  body.innerHTML=`<div class="infkpis">
+      ${kp('IWV(all)',fmt(T.iwv),L(`클릭 ${fmt(T.click)}`,`${fmt(T.click)} clicks`))}
+      ${kp(L('클릭 대비 유입률','Inflow / click'),pct(infRate(T)),L('IWV ÷ 클릭','IWV ÷ clicks'))}
+      ${kp(L('유입 단가','Cost per IWV'),won(Math.round(infCpv(T))||0),L(`소진 ${won(Math.round(T.cost))}`,`spent ${won(Math.round(T.cost))}`))}
+      ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(T)),isFinite(dw30Rate(T))?L(`30초 이상 ${pct(dw30Rate(T),1)}`,`${pct(dw30Rate(T),1)} stay 30s+`):'')}
+    </div>
+    <div class="infgrid">
+      <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('클릭이 어느 랜딩 페이지로 들어왔는지 · 굵기 = 수','Where clicks landed · width = count')}${INF.leak!==false?L(' · 빗금 = 클릭했지만 IWV 로 이어지지 않음',' · hatched = clicked but no IWV'):''}</span></div>
+        <div class="infsk" id="infSankey"></div></div>
+      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 유입 단가 낮음 · 원 크기 = IWV · 점선 = 전체 평균','right = higher inflow rate · up = cheaper per IWV · size = IWV · dashed = overall average')}</span></div>
+        <div class="infmap" id="infMap"></div></div>
+    </div>
+    <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
+        <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
+      <div id="infDwell"></div></div>
+    <div class="infcell"><div class="infh"><b>${L('상세','Details')}</b><span>${L('IWV 많은 순','by IWV')}</span></div>
+      <div class="tbl-wrap"><table class="tbl lite inftbl" id="infTbl"></table></div></div>
+    ${miss.length?`<div class="hint infmiss">${L('유입 데이터가 없는 매체','No inflow data')}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
+  try{infSankey($('infSankey'),rows,T);}catch(e){console.warn(e);}
+  try{infMap($('infMap'),rows,T);}catch(e){console.warn(e);}
+  try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
+  try{infTable($('infTbl'),rows,T,dim);}catch(e){console.warn(e);}
+}
+
+/* ---------- ① 유입 흐름 (Sankey) ---------- */
+function infSankey(host,rows0,T){
+  if(!host)return;
+  const leakOn=INF.leak!==false;
+  /* 왼쪽 마디는 클릭(없으면 IWV) 많은 순 10개 + 그 외 */
+  let rows=rows0.slice().sort((a,b)=>Math.max(b.b.click||0,b.b.iwv||0)-Math.max(a.b.click||0,a.b.iwv||0));
+  if(rows.length>10){const rest=rows.slice(9),b=aggFacts([]);rest.forEach(g=>{AMET.concat(['cost']).forEach(m=>b[m]+=+g.b[m]||0);});
+    rows=rows.slice(0,9).concat([{key:'__etc',lab:L(`그 외 ${rest.length}개`,`${rest.length} more`),sub:'',col:'__etc',b}]);}
+  /* 오른쪽 마디 — 랜딩별 IWV, IWV(all) 중 랜딩 구분이 없는 몫, 클릭 이탈 */
+  const lands=INF_LAND.filter(x=>rows.some(g=>(+g.b[x.k]||0)>0));
+  const R=lands.map(x=>({k:x.k,l:x.l,kind:'land'}));
+  const otherOf=g=>Math.max((+g.b.iwv||0)-lands.reduce((s,x)=>s+(+g.b[x.k]||0),0),0);
+  if(rows.some(g=>otherOf(g)>0))R.push({k:'__other',l:L('랜딩 구분 없음','other landing'),kind:'other'});
+  const leakOf=g=>Math.max((+g.b.click||0)-Math.max(+g.b.iwv||0,lands.reduce((s,x)=>s+(+g.b[x.k]||0),0)),0);
+  if(leakOn&&rows.some(g=>leakOf(g)>0))R.push({k:'__leak',l:L('IWV 아님 (이탈)','no IWV (dropped)'),kind:'leak'});
+  const flow=(g,r)=>r.kind==='land'?(+g.b[r.k]||0):r.kind==='other'?otherOf(g):leakOf(g);
+  const links=[];rows.forEach((g,i)=>R.forEach((r,j)=>{const v=flow(g,r);if(v>0)links.push({i,j,v});}));
+  const lv=rows.map((g,i)=>links.filter(x=>x.i===i).reduce((s,x)=>s+x.v,0));
+  const rv=R.map((r,j)=>links.filter(x=>x.j===j).reduce((s,x)=>s+x.v,0));
+  const keep=rows.map((g,i)=>lv[i]>0);
+  const W=Math.max(host.clientWidth||600,320);
+  const LW=Math.min(170,W*.3),RW=Math.min(150,W*.26),NW=12,GAP=8,TOP=10;
+  const nL=rows.filter((g,i)=>keep[i]).length,nR=R.length;
+  /* 배율 — 마디가 많아도 띠가 너무 가늘어지지 않도록 높이를 마디 수에 맞춘다 */
+  const H=Math.max(300,Math.min(560,Math.max(nL,nR)*40+20));
+  const tot=Math.max(lv.reduce((s,v)=>s+v,0),rv.reduce((s,v)=>s+v,0))||1;
+  const kk=(H-2*TOP-GAP*Math.max(nL-1,nR-1,0))/tot;
+  const x0=LW,x1=W-RW-NW;
+  /* 마디 위치 — 이름표(두 줄)가 겹치지 않도록 가운데끼리 최소 LBL 만큼 띄운다 */
+  const LBL=32;
+  const place=list=>{let y=TOP,pc=-1e9;return list.map(v=>{if(v==null)return null;const h=Math.max(v*kk,2);
+    let top=Math.max(y,pc+LBL-h/2);const n={y:top,h,used:0};y=top+h+GAP;pc=top+h/2;return n;});};
+  const LN=place(rows.map((g,i)=>keep[i]?lv[i]:null));
+  const RN=place(rv);
+  const rTot=rv.reduce((s,v)=>s+v,0)||1;
+  /* 두 쪽 높이가 다르면 짧은 쪽을 가운데로 내린다 */
+  const bot=a=>Math.max(...a.filter(Boolean).map(n=>n.y+n.h),0);
+  const bL=bot(LN),bR=bot(RN);
+  if(bL>bR)RN.forEach(n=>{n.y+=(bL-bR)/2;});else if(bR>bL)LN.forEach(n=>{if(n)n.y+=(bR-bL)/2;});
+  const Hh=Math.max(bL,bR)+TOP;
+  const rCol=r=>r.kind==='leak'?'url(#skHatch)':r.kind==='other'?'var(--gline)':'var(--acc)';
+  let paths='',nodes='',labs='';
+  links.sort((a,b)=>a.i-b.i||a.j-b.j).forEach((ln,li)=>{
+    const a=LN[ln.i],b=RN[ln.j];if(!a||!b)return;
+    const h=ln.v*kk,ya=a.y+a.used,yb=b.y+b.used;a.used+=h;b.used+=h;
+    const cx=(x0+NW+x1)/2;
+    const d=`M${x0+NW},${ya} C${cx},${ya} ${cx},${yb} ${x1},${yb} L${x1},${yb+h} C${cx},${yb+h} ${cx},${ya+h} ${x0+NW},${ya+h} Z`;
+    const g=rows[ln.i],r=R[ln.j];
+    paths+=`<path class="sklink${r.kind==='leak'?' leak':''}" d="${d}" fill="${r.kind==='leak'?'url(#skHatch)':infColor(g)}" data-li="${li}" data-i="${ln.i}" data-j="${ln.j}" data-v="${ln.v}"></path>`;});
+  rows.forEach((g,i)=>{const n=LN[i];if(!n)return;
+    nodes+=`<rect class="sknode" x="${x0}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="${infColor(g)}" data-i="${i}"></rect>`;
+    const cy=n.y+n.h/2;
+    labs+=`<text class="sklab" x="${x0-8}" y="${cy-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,18))}</text>
+      <text class="skval" x="${x0-8}" y="${cy+11}" text-anchor="end">${g.sub?esc(infClip(g.sub,12))+' · ':''}${L('클릭','clicks')} ${fmt(g.b.click||0)}</text>`;});
+  R.forEach((r,j)=>{const n=RN[j];
+    nodes+=`<rect class="sknode r" x="${x1}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="${rCol(r)}" data-j="${j}"></rect>`;
+    const cy=n.y+n.h/2;
+    labs+=`<text class="sklab" x="${x1+NW+8}" y="${cy-2}">${esc(r.l)}</text>
+      <text class="skval" x="${x1+NW+8}" y="${cy+11}">${fmt(rv[j])} · ${pct(rv[j]/(T.click||rTot),1)}</text>`;});
+  host.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" class="sksvg">
+    <defs><pattern id="skHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" style="fill:var(--surface)"></rect><rect width="2.4" height="6" style="fill:var(--gline)"></rect></pattern></defs>
+    ${paths}${nodes}${labs}</svg>`;
+  const svg=host.querySelector('svg');
+  const hl=(fn)=>svg.querySelectorAll('.sklink').forEach(p=>p.classList.toggle('dim',!fn(p)));
+  svg.querySelectorAll('.sklink').forEach(p=>{
+    const g=rows[+p.dataset.i],r=R[+p.dataset.j],v=+p.dataset.v;
+    p.addEventListener('mousemove',e=>{hl(q=>q===p);showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))} → ${esc(r.l)}</div>`
+      +`<div class="r"><span class="l">${r.kind==='leak'?L('이탈 (클릭 − IWV)','dropped (clicks − IWV)'):'IWV'}</span><b>${fmt(v)}</b></div>`
+      +`<div class="r"><span class="l">${L('클릭 대비','of clicks')}</span><b>${g.b.click?pct(v/g.b.click,1):'–'}</b></div>`
+      +(r.kind!=='leak'&&g.b.iwv?`<div class="r"><span class="l">${L('IWV 중','of IWV')}</span><b>${pct(v/g.b.iwv,1)}</b></div>`:''));});
+    p.addEventListener('mouseleave',()=>{hl(()=>true);hideTip();});});
+  svg.querySelectorAll('.sknode,.sklab').forEach(n=>{
+    const on=()=>{if(n.dataset.i!=null)hl(p=>p.dataset.i===n.dataset.i);else if(n.dataset.j!=null)hl(p=>p.dataset.j===n.dataset.j);};
+    n.addEventListener('mouseenter',on);n.addEventListener('mouseleave',()=>hl(()=>true));
+    if(n.dataset.i!=null){const g=rows[+n.dataset.i];
+      n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
+        +`<div class="r"><span class="l">${L('클릭','Clicks')}</span><b>${fmt(g.b.click||0)}</b></div>`
+        +`<div class="r"><span class="l">IWV(all)</span><b>${fmt(g.b.iwv||0)}</b></div>`
+        +`<div class="r"><span class="l">${L('유입률','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`));
+      n.addEventListener('mouseleave',hideTip);}});
+}
+
+/* ---------- ② 유입 효율 지도 (버블) ---------- */
+function infMap(host,rows0,T){
+  if(!host)return;
+  const rows=rows0.filter(g=>(g.b.click||0)>0&&(g.b.iwv||0)>0&&(g.b.cost||0)>0);
+  if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('클릭 · IWV · 소진금액이 모두 있는 항목이 없어 그릴 수 없습니다.','Needs clicks, IWV and spend.')}</div>`;return;}
+  const sk=document.querySelector('#infSankey svg');
+  const W=Math.max(host.clientWidth||420,300),H=Math.round(Math.min(460,Math.max(320,sk&&innerWidth>1100?+sk.getAttribute('height')||0:0))),P={l:54,r:14,t:30,b:40};
+  const RMAX=rows.length>8?18:rows.length>4?23:27;
+  const xs=rows.map(g=>infRate(g.b)),ys=rows.map(g=>infCpv(g.b));
+  const xMax=Math.max(...xs,infRate(T)||0)*1.08||1;
+  /* 유입 단가는 몇 백 원 ~ 몇 만 원으로 벌어지므로 로그 눈금 · 위로 갈수록 저렴 */
+  const yl=ys.map(v=>Math.log10(v));let ylo=Math.min(...yl),yhi=Math.max(...yl);
+  if(yhi-ylo<.3){const m=(ylo+yhi)/2;ylo=m-.15;yhi=m+.15;}
+  /* 원이 그림 밖으로 나가지 않게 데이터 자리는 안쪽으로 원 반지름만큼 줄인다 */
+  const ix0=P.l+10,ix1=W-P.r-RMAX,iy0=P.t+RMAX,iy1=H-P.b-10;
+  const X=v=>ix0+v/xMax*(ix1-ix0);
+  const Y=v=>iy0+(Math.log10(v)-ylo)/((yhi-ylo)||1)*(iy1-iy0);   /* 낮은 단가가 위 */
+  const maxI=Math.max(...rows.map(g=>g.b.iwv));
+  const Rr=v=>4+Math.sqrt(v/maxI)*(RMAX-4);
+  /* 눈금 */
+  const xt=[];{const st=niceStep(xMax,4);for(let v=0;v<=xMax+1e-9;v+=st)xt.push(v);}
+  const yv=v=>{const y=Y(v);return y>=P.t-1&&y<=H-P.b+1;};
+  const yt=[];for(let e=Math.floor(ylo)-1;e<=Math.ceil(yhi)+1;e++){[1,2,5].forEach(m=>{const v=m*Math.pow(10,e);if(yv(v))yt.push(v);});}
+  const yLab=v=>v>=10000?(LANG==='en'?fmt(v/1000)+'k':(v/10000)+'만'):fmt(v);
+  const ax=xt.map(v=>`<line class="mgrid" x1="${X(v)}" x2="${X(v)}" y1="${P.t}" y2="${H-P.b}"></line><text class="mtick" x="${X(v)}" y="${H-P.b+15}" text-anchor="middle">${(v*100).toFixed((v*100)%1?1:0)}%</text>`).join('')
+    +yt.map(v=>`<line class="mgrid" x1="${P.l}" x2="${W-P.r}" y1="${Y(v)}" y2="${Y(v)}"></line><text class="mtick" x="${P.l-6}" y="${Y(v)+3}" text-anchor="end">${yLab(v)}</text>`).join('');
+  /* 기준선 = 전체 평균 — 오른쪽 위 칸(유입 잘 되고 저렴)을 옅게 칠한다 */
+  const ax0=infRate(T),ay0=infCpv(T);
+  let mid='';
+  if(isFinite(ax0)&&isFinite(ay0)){const qx=Math.min(Math.max(X(ax0),P.l),W-P.r),qy=Math.min(Math.max(Y(ay0),P.t),H-P.b);
+    mid=`<rect class="mqbg" x="${qx}" y="${P.t}" width="${W-P.r-qx}" height="${qy-P.t}"></rect>
+    <line class="mavg" x1="${qx}" x2="${qx}" y1="${P.t}" y2="${H-P.b}"></line>
+    <line class="mavg" x1="${P.l}" x2="${W-P.r}" y1="${qy}" y2="${qy}"></line>
+    <text class="mq" x="${W-P.r}" y="${P.t-9}" text-anchor="end">${L('↗ 유입 잘 되고 저렴','↗ high rate · cheap')}</text>
+    <text class="mq lo" x="${qx}" y="${P.t-9}" text-anchor="middle">${L('평균','avg')}</text>`;}
+  const order=rows.map((g,i)=>i).sort((a,b)=>rows[b].b.iwv-rows[a].b.iwv);   /* 큰 원을 먼저(뒤에) 깐다 */
+  /* 이름표 — 큰 원부터 위 · 아래 · 오른쪽 · 왼쪽 중 겹치지 않는 자리에. 자리가 없으면 생략(툴팁으로 확인) */
+  const boxes=[];const hit=(a)=>boxes.some(b=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y)
+    ||a.x<P.l||a.x+a.w>W-P.r+6||a.y<P.t-2||a.y+a.h>H-P.b;
+  const tw=t=>[...t].reduce((s,c)=>s+(c.charCodeAt(0)>255?11:6.4),0);
+  rows.forEach((g,i)=>{const r=Rr(g.b.iwv);boxes.push({x:X(xs[i])-r*.7,y:Y(ys[i])-r*.7,w:r*1.4,h:r*1.4,dot:1});});
+  const labs={};
+  order.forEach(i=>{const g=rows[i],cx=X(xs[i]),cy=Y(ys[i]),r=Rr(g.b.iwv),t=infClip(g.lab,14),w=tw(t),h=13;
+    const cand=[{x:cx-w/2,y:cy-r-3-h,a:'middle',tx:cx,ty:cy-r-5},{x:cx-w/2,y:cy+r+3,a:'middle',tx:cx,ty:cy+r+13},
+      {x:cx+r+4,y:cy-h/2,a:'start',tx:cx+r+4,ty:cy+4},{x:cx-r-4-w,y:cy-h/2,a:'end',tx:cx-r-4,ty:cy+4}];
+    const own=boxes.findIndex(b=>b.dot&&Math.abs(b.x+b.w/2-cx)<.01&&Math.abs(b.y+b.h/2-cy)<.01);
+    const saved=own>=0?boxes.splice(own,1)[0]:null;
+    const c=cand.find(c=>!hit({x:c.x,y:c.y,w,h}));
+    if(saved)boxes.push(saved);
+    if(c){boxes.push({x:c.x,y:c.y,w,h});labs[i]=`<text class="mlab" x="${c.tx}" y="${c.ty}" text-anchor="${c.a}">${esc(t)}</text>`;}});
+  const dots=order.map(i=>{const g=rows[i],cx=X(xs[i]),cy=Y(ys[i]),r=Rr(g.b.iwv),col=infColor(g);
+    return `<g class="mdot" data-i="${i}"><circle cx="${cx}" cy="${cy}" r="${r}" class="mc" style="fill:${col};stroke:${col}"></circle></g>`;}).join('');
+  host.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="msvg">${ax}${mid}${dots}${order.map(i=>labs[i]||'').join('')}
+      <text class="maxl" x="${(P.l+W-P.r)/2}" y="${H-4}" text-anchor="middle">${L('클릭 대비 유입률 (IWV ÷ 클릭) →','Inflow rate (IWV ÷ clicks) →')}</text>
+      <text class="maxl" transform="translate(12 ${(P.t+H-P.b)/2}) rotate(-90)" text-anchor="middle">${L('유입 단가 · 위로 갈수록 저렴','Cost per IWV · cheaper upward')}</text></svg>`;
+  host.querySelectorAll('.mdot').forEach(n=>{const g=rows[+n.dataset.i];
+    n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
+      +`<div class="r"><span class="l">${L('클릭 대비 유입률','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`
+      +`<div class="r"><span class="l">${L('유입 단가','Cost per IWV')}</span><b>${won(Math.round(infCpv(g.b)))}</b></div>`
+      +`<div class="r"><span class="l">IWV(all)</span><b>${fmt(g.b.iwv)}</b></div>`
+      +`<div class="r"><span class="l">${L('평균 체류시간','Avg. time')}</span><b>${fmtDur(dwAvg(g.b))}</b></div>`));
+    n.addEventListener('mouseleave',hideTip);});
+}
+
+/* ---------- ③ 체류시간 분포 ---------- */
+function infDwell(host,rows0){
+  if(!host)return;
+  const rows=rows0.filter(g=>dwSum(g.b)>0).sort((a,b)=>(dwAvg(b.b)||0)-(dwAvg(a.b)||0));
+  if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('체류시간 구간 데이터가 없습니다.','No time-on-site data.')}</div>`;return;}
+  host.innerHTML=`<div class="infdw">${rows.map((g,i)=>{const n=dwSum(g.b);
+      const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
+      return `<div class="dwrow" data-i="${i}">
+        <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
+        <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}" data-b="${s.bi}" data-v="${s.v}"></i>`).join('')}</div>
+        <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`30초+ ${pct(dw30Rate(g.b),0)} · 방문 ${fmt(n)}`,`30s+ ${pct(dw30Rate(g.b),0)} · ${fmt(n)} visits`)}</span></div></div>`;}).join('')}</div>`;
+  host.querySelectorAll('.dwbar i').forEach(seg=>{const g=rows[+seg.closest('.dwrow').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
+    seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))} · ${L(b.l,b.en)}</div>`
+      +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
+      +`<div class="r"><span class="l">${L('비율','Share')}</span><b>${pct(v/dwSum(g.b),1)}</b></div>`));
+    seg.addEventListener('mouseleave',hideTip);});
+}
+
+/* ---------- ④ 상세 표 ---------- */
+function infTable(t,rows,T,dim){
+  if(!t)return;
+  const lands=INF_LAND.filter(x=>rows.some(g=>(+g.b[x.k]||0)>0));
+  const dl={media:L('매체','Media'),product:L('광고상품','Product'),creative:L('소재','Creative')}[dim];
+  const cell=b=>`<td class="mono">${fmt(b.click||0)}</td><td class="mono strong">${fmt(b.iwv||0)}</td>
+    <td class="mono">${pct(infRate(b))}</td><td class="mono">${won(Math.round(b.cost||0))}</td>
+    <td class="mono">${b.iwv?won(Math.round(infCpv(b))):'–'}</td>
+    ${lands.map(x=>`<td class="mono">${(+b[x.k]||0)?fmt(b[x.k]):'–'}</td>`).join('')}
+    <td class="mono">${fmtDur(dwAvg(b))}</td><td class="mono">${isFinite(dw30Rate(b))?pct(dw30Rate(b),1):'–'}</td>`;
+  t.innerHTML=`<thead><tr><th class="l">${dl}</th><th>${L('클릭','Clicks')}</th><th>IWV(all)</th><th>${L('유입률','Inflow rate')}</th>
+      <th>${L('소진금액','Spend')}</th><th>${L('유입 단가','Cost / IWV')}</th>${lands.map(x=>`<th>IWV(${x.l})</th>`).join('')}
+      <th>${L('평균 체류','Avg. time')}</th><th>${L('30초 이상','30s+')}</th></tr></thead>
+    <tbody>${rows.map(g=>`<tr><td class="l"><span class="ovdot" style="background:${infColor(g)}"></span>${esc(g.lab)}${g.sub?` <em>${esc(g.sub)}</em>`:''}</td>${cell(g.b)}</tr>`).join('')}
+      <tr class="total"><td class="l">TOTAL</td>${cell(T)}</tr></tbody>`;
+}
+
+/* 효율 버블이 다시 그려질 때(데이터 · 필터 · 기간이 바뀔 때) 함께 그린다 */
+(function(){try{const orig=renderBubble;renderBubble=function(){const r=orig.apply(this,arguments);try{renderInflow();}catch(e){console.warn(e);}return r;};}catch(e){}})();
+window.addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=setTimeout(()=>{
+  const d=$('tab-dash');if(d&&!d.classList.contains('hidden'))try{renderInflow();}catch(e){}},200);};})());
+setTimeout(()=>{try{renderInflow();}catch(e){}},0);
 
 /* ===== 15. 영어 사전 (v71 · i18n/build_dict.py 가 만든다 — 직접 고치지 말 것) ===== */
 const I18N_EN={"\"{}\" 서머리를 삭제할까요?":"Delete the summary \"{}\"?","\"{}\" 소재를 삭제할까요?":"Delete the creative \"{}\"?","\"{}\" 은(는) 지금":"\"{}\" is currently used","\"{}\" 캠페인을 삭제할까요?":"Delete the campaign \"{}\"?","\"예상 효율\" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)":"Row 1 of the \"Forecast\" sheet is the header. Enter data from row 2. (This guide is on a separate sheet and can be deleted.)","\"일자별 실적\" 시트의 1행이 머리글입니다. 2행부터 바로 데이터를 넣으세요. (이 안내는 별도 시트라 지워도 됩니다.)":"Row 1 of the \"Daily results\" sheet is the header. Enter data from row 2. (This guide is on a separate sheet and can be deleted.)","% (소수점 1자리)":"% (1 decimal)","% (소수점 2자리)":"% (2 decimals)","% (소수점 없음)":"% (no decimals)","'{}' 열을 지울까요?":"Delete the column '{}'?","(1:1 ~ 3:1 · 3MB 이하 · 한 번 올리면 다른 캠페인에서도 쓸 수 있습니다)":"(1:1 ~ 3:1 · up to 3MB · once uploaded, usable in other campaigns too)","({} 시작)":"(starts {})","({}% 저조)":"({}% under)","({}일) · 캠페인":"({} days) · Campaign","(가입 전)":"(not yet joined)","(광고주 화면)":"(advertiser view)","(내려받은 zip 안에 들어 있습니다. 파일 하나만 열어 보는 중이라면 같은 폴더에 guide 폴더를 두면 됩니다.)":"(It's included in the downloaded zip. If you're opening just one file, put the guide folder in the same folder.)","(내용 없음)":"(No content)","(데모)":"(Demo)","(동일 예산 내 항목이 여러개인 경우 콤마로 표시)":"(If a budget has several items, separate them with commas)","(또는 더블클릭)로 입력 시작,":"(or double-click) to start editing,","(리포트 데이터 입력 탭의":"(Click","(목표 페이스 {})":"(target pace {})","(미지정)":"(Unassigned)","(빈칸)":"(Blank)","(상위 {})":"(top {})","(샘플)":"(Sample)","(선택 · 1:1 ~ 3:1 · 3MB 이하)":"(Optional · 1:1 ~ 3:1 · up to 3MB)","(선택 · 가로세로 1:1 ~ 3:1 · 높이는 자동으로 맞춰집니다)":"(Optional · aspect 1:1 ~ 3:1 · height adjusts automatically)","(소재 미등록)":"(No creative registered)","(소진율":"(spend rate","(시행사 화면) ·":"(agency view) ·","(여러 타겟팅·소재는 한 칸에 쉼표로 나열합니다.)":"(List multiple targetings·creatives in one cell, separated by commas.)","(오늘까지 제안대로면 {})":"(per proposal, by today: {})","(오늘까지 제안대로면 {})\">":"(on proposal, by today: {})","(우수)":"(strong)","(우측 축)":"(right axis)","(이름 없음)":"(No name)","(일평균 {})":"(daily avg. {})","(잘 된 곳 초록 · 저조한 곳 붉은색)은 뜻이 정해진 색이라 테마와 무관하게 그대로 둡니다.":"(green for strong · red for weak) uses colors with fixed meanings, so it stays the same regardless of theme.","(저조)":"(under)","(제안 대비 {})":"(vs. proposal {})","(채널 없음)":"(No channel)","(캠페인 삭제 정책과":"(the campaign deletion policy and","+ 라인 추가":"+ Add line","+ 목록에 추가":"+ Add to list","+ 사용자 초대":"+ Invite user","+ 월":"+ Month","+ 이슈 추가":"+ Add issue","+ 추가":"+ Add","+ 항목 추가…":"+ Add item…","+ 행 추가":"+ Add row","+{}%p 앞섬":"+{}%p ahead",", 그 자리에":"or",", 나머지는 조회 기간의 실제 집행값입니다.":"; the rest are actual delivery values for the period.",", 목표 페이스 {} 대비":", vs. target pace {}","0.3MB 안팎":"around 0.3MB","100% 조회":"100% views","10분 이상":"10 minutes or more","15초 조회":"15s views","1개 행은 예산을 배분하는 기준으로 나눕니다. 타겟팅 그룹이나 소재를 매체가 자동으로 예산 최적화하는 경우에는 나누지 말고 한 개의 라인으로 적어 주세요.":"Split rows by how the budget is allocated. If the media automatically optimizes budget across targeting groups or creatives, don't split them — enter them as a single line.","1위":"#1","1회 방송 단가입니다.":"The price per airing.","1회 이상 발생한 날":"at least one impression","2026 상반기 TV 시청률 트렌드":"2026 H1 TV rating trends","2026년 9월 Google Analytics 소식지 — 수명 주기 보고서 심층 분석":"Sep 2026 Google Analytics newsletter — Deep dive into lifecycle reports","25% 조회":"25% views","2GB 짜리 원본을 골라도 저장되는 용량은 보통":"even if you choose a 2GB original, the stored size is usually","2호선·9호선 주요 역사 도면과 매체 위치를 한 파일에 모았습니다.":"Floor plans of major Line 2·Line 9 stations and media locations in one file.","30초 조회":"30s views","3초 조회":"3s views","50% 조회":"50% views","75% 조회":"75% views","8/3, 08-03, 2026-08-03 등 자유롭게 입력하면 자동 변환됩니다":"Type freely, e.g. 8/3, 08-03, 2026-08-03 — it's converted automatically","8자리 코드를 모두 입력해 주세요.":"Please enter all 8 characters of the code.","= 그 매체 안의 광고상품":"= ad product within that media","= 매체":"= media","= 매체 ·":"= media ·","= 소진 광고비 (클수록 많이 쓴 {})":"= ad spend (larger = more spent {})","ADVoost 플레이스 상품 소개서":"ADVoost Place product deck","AI Max 캠페인 구조와 iOS 앱 캠페인 변경 사항 세션 자료입니다.":"Session materials on AI Max campaign structure and iOS app campaign changes.","BMW Korea 대행 검수":"BMW Korea agency review","BMW Korea 마케팅팀":"BMW Korea Marketing Team","CPM·CPC 처럼 낮을수록 좋은 지표는 목표 ÷ 실적으로 읽습니다.":"For metrics where lower is better, like CPM·CPC, read as target ÷ actual.","CTR · CPM · CPV 같은 계산 항목은 템플릿에 없습니다. 불러오면 사이트가 자동으로 계산합니다.":"Calculated items such as CTR · CPM · CPV aren't in the template. The site calculates them automatically on import.","GRP = 횟수 × 시청률(%)":"GRP = spots × rating (%)","GRP ÷ 전체 GRP":"GRP ÷ total GRP","GRP 달성":"GRP achieved","GRP 비중":"GRP %","Gross 광고비":"Gross ad spend","Gross 기준입니다. Net 이 필요하면 수수료율로 역산합니다.":"Gross basis. If you need Net, back-calculate with the fee rates.","Gross 소진금액":"Gross spend","Gross 소진비용에서 자동 역산":"Back-calculated from Gross spend","Gross 예산":"Gross budget","Gross 예산 (합계)":"Gross budget (total)","Gross 예산 · Net 자동 역산":"Gross budget · Net auto back-calculated","Gross 예산을 넣고 대행사 · 렙사 수수료율을 적으면 Net 예산 · 밸류 · 보너스율은 자동으로 역산됩니다.":"Enter the Gross budget and the agency · rep fee rates, and the Net budget · value · bonus rate are back-calculated automatically.","Gross로 입력":"in Gross","ID 또는 비밀번호가 맞지 않습니다.":"The ID or password is incorrect.","ID 와 비밀번호를 넣어 주세요.":"Please enter an ID and password.","KPI 가 아닌 단가 열의":"For non-KPI unit cost columns,","KPI 가 아닌 단가 열의 \"제안 대비 저조\" 붉은 표시를 끄거나 켭니다. KPI 지표 표시는 그대로 남습니다.":"Turns the red \"Under proposal\" highlight on non-KPI unit cost columns off or on. KPI highlights remain.","KPI 개선 고려":"KPI needs attention","KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다":"Not a KPI, but the unit cost is higher than proposed (target)","KPI 달성 현황":"KPI achievement","KPI 달성 현황 — 표시할 {}":"KPI achievement — {} to show","KPI 목표 수":"KPI target","KPI 목표 수는 각 라인이 자기 KPI로 잡은 목표의 합입니다.":"The KPI target count is the sum of targets each line set as its KPI.","KPI 와 함께 보조로 보는 지표입니다.":"A secondary metric viewed alongside the KPI.","KPI 종합":"KPI overall","KPI 지표":"KPI","KPI 지표 ({}) · 목표 {} 대비":"KPI metric ({}) · vs. target {}","KPI 지표 ({}) · 목표 {} 대비 {}% (우수)":"KPI metric ({0}) · {2}% vs. target {1} (strong)","KPI 지표 ({}) · 목표 {} 대비 {}% (저조)":"KPI metric ({0}) · {2}% vs. target {1} (under)","KPI 지표 ({}) · 목표 {}와 같음":"KPI metric ({}) · same as target {}","KPI 지표 단가":"KPI unit cost","KPI 지표의 목표 수치입니다.":"The target value of the KPI metric.","Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿":"Media Dashboard — Forecast (media mix) input template","Media Dashboard — 일자별 실적 입력 템플릿":"Media Dashboard — Daily results input template","Net 광고비":"Net ad spend","Net 예산 (자동 역산)":"Net budget (auto back-calculated)","Net 예산 (자동)":"Net budget (auto)","N일차 · NN% 경과":"Day N · NN% elapsed","OOH 제안 — 지하철 도면 ZIP":"OOH proposal — Subway floor plans ZIP","OTT 오리지널 PPL 집행 사례집":"OTT original PPL case studies","PC · MO · CTV 중 선택":"Choose PC · MO · CTV","PDF 첫 장으로 썸네일 만드는 중…":"Creating a thumbnail from the first PDF page…","Shift+방향키":"Shift+Arrow keys","Storage > trend 버킷의 File size limit 이 {}MB 이상인지 확인해 주세요.":"Please check that the File size limit of the Storage > trend bucket is {}MB or more.","Storage 에 trend 버킷(Public, {}MB)을 만들어 주세요.":"create a trend bucket (Public, {}MB) in Storage.","TV 계획이 아직 없습니다.":"No TV plan yet.","TV 계획이 아직 없습니다. <b>TV › 예상효율 입력</b>에 채널 · 프로그램 · 횟수 · 단가 · 예상 시청률을 넣으면 채널별 믹스로 모입니다.":"No TV plan yet. Enter channel · program · spots · unit price · expected rating in <b>TV › Forecast input</b> to build the channel mix.","TV 데이터가 아직 없습니다.":"No TV data yet.","TV 리포트 데이터":"TV report data","TV 리포트 데이터 입력으로":"Go to TV data input","TV 미디어믹스":"TV media mix","TV 방송 실적 입력":"TV airing results input","TV 실적이 아직 없습니다. <b>TV › 데이터 입력</b>에 방송일 · 광고비 · 시청률을 넣으면 날짜별로 모입니다.":"No TV results yet. Enter air date · ad spend · rating in <b>TV › Data input</b> and they will be grouped by date.","TV 예상효율":"TV forecast","TV 예상효율 입력으로":"Go to TV forecast input","TV 와 Digital 중":"Of TV and Digital,","TV 와 Digital 중 최소 한 개는 선택해야 합니다.":"At least one of TV and Digital must be selected.","TV 일자별 효율":"TV daily performance","TV 캠페인 메뉴":"TV campaign menus","TV 캠페인 현황":"TV campaign status","TV광고":"TV ads","TV캠페인 대시보드":"TV Campaign Dashboard","TV캠페인 대시보드 · TV캠페인 리포트 데이터 입력 · TV캠페인 예상효율 입력":"TV Campaign Dashboard · TV Campaign Report Data Input · TV Campaign Forecast Input","TV캠페인 대시보드에서 리포트 데이터(실적)와 나란히 비교합니다.":"Compared side by side with report data (actuals) on the TV Campaign Dashboard.","TV캠페인 리포트 데이터 입력":"TV Campaign Report Data Input","TV캠페인 예상효율 입력":"TV Campaign Forecast Input","TV캠페인 예상효율 입력(계획) 기준 · 채널 › 프로그램":"Based on TV forecast input (plan) · Channel › Program","Value (합계)":"Value (total)","Value(밸류)는 직접 입력하며, 보너스는 Gross와의 차액으로 맞춰집니다.":"Value is entered directly; the bonus is adjusted to the difference from Gross.","X축":"X-axis","YYYY-MM-DD · 라인 집행 기간 내":"YYYY-MM-DD · within the line's flight dates","YouTube 링크 또는 영상 ID":"YouTube link or video ID","Y축":"Y-axis","[SOOP] 2026 LOL WORLDS 롤드컵 패키지 소개서":"[SOOP] 2026 LOL WORLDS package deck","https://youtu.be/... 또는 dQw4w9WgXcQ":"https://youtu.be/... or dQw4w9WgXcQ","pdf.js 를 못 불러왔습니다 —":"Couldn't load pdf.js —","supabase/schema.sql 의 \"v66 — 트렌드 리포트 게시판\" 블록을 실행하고,":"run the \"v66 — Trend report board\" block in supabase/schema.sql, and","trend 버킷(Public, {}MB)을 만들어 주세요.":"please create a trend bucket (Public, {}MB).","{} ({}) 이(가) 저장소 한도를 넘었습니다.":"{} ({}) exceeds the storage limit.","{} / {}개":"{} / {}","{} / {}행 맞춰 보는 중…":"Matching {} / {} rows…","{} / {}행 정리 중…":"Organizing {} / {} rows…","{} 1개 (매체 × 광고상품 × {} 기준)":"One {0} (by media × ad product × {1})","{} ~ {} ({}일)":"{} ~ {} ({} days)","{} · {} · {} · {} ({}행)":"{} · {} · {} · {} ({} rows)","{} · {} · 저장됨":"{} · {} · Saved","{} · 광고주":"{} · Advertiser","{} · 뷰어 코드로 열람 (조회 전용)":"{} · Viewing with a viewer code (view only)","{} · 상위 {}개":"{} · top {}","{} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다":"{} · Signed in with a staff code — Google sign-in is required to save","{} · 페이스 대비":"{} · vs. pace","{} — 대시보드 리포트":"{} — Dashboard report","{} — 미디어믹스 (예상 효율 기준)":"{} — Media mix (forecast basis)","{} — 오른쪽·위로 갈수록 좋습니다":"{} — further right·higher is better","{} — 일자별 상세 효율":"{} — Daily performance","{} — 일자별 효율":"{} — Daily performance","{} — 제안 {} 대비 {} 비쌈":"{} — {2} more expensive than proposed {1}","{} — 제안 {} 대비 {} 비쌈 ({}% 저조)":"{0} — {2} more expensive than proposed {1} ({3}% under)","{} 과(와) 같은 경로가 이미 있습니다. 잠시 뒤 다시 올려 주세요.":"A path identical to {} already exists. Please upload again shortly.","{} 관련":"{}-related","{} 기준":"Based on {}","{} 기준 평균 {}":"Average {} on {} basis","{} 달성률":"{} achievement","{} 로 맞추기":"Use {}","{} 분포":"{} distribution","{} 소계":"{} subtotal","{} 소재 전체에 적용":"Apply to all {} creatives","{} 시점으로 되돌릴까요?":"Restore to {}?","{} 시점으로 복원됨":"Restored to {}","{} 안에서":"within {}","{} 에서 집행된 소재가 없습니다.":"No creatives delivered on {}.","{} 외 {}":"{} and {} more","{} 외 {}개":"{} and {} more","{} 은(는) 라인을 이루는 필수 열입니다.":"{} is a required column for lines.","{} 은(는) 라인을 찾는 데 꼭 필요한 열입니다.":"{} is required to match lines.","{} 의 이름을 저장소가 받지 못했습니다.":"The storage couldn't accept the name of {}.","{} 이름 수정":"Rename {}","{} 읽는 중…":"Reading {}…","{} 저장":"Saved {}","{} 합계":"{} total","{}% 경과":"{}% elapsed","{}MB 를 넘어 뺐습니다 — {}":"Removed for exceeding {}MB — {}","{}개":"{}","{}개 라인":"in {} lines","{}개 라인을 불러옵니다.":"Importing {} lines.","{}개 라인이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.":"All {} lines will be removed. Press Ctrl+Z to undo.","{}개 열":"{} columns","{}개 중 {}개만 시작":"Only {1} of {0} started","{}건":"{}","{}건 대기":"{} pending","{}건 등록됨":"{} registered","{}년":"{}","{}를 계산할 수 있는 소재가 없습니다.":"No creatives can calculate {}.","{}분 이상":"{} minutes or more","{}분 전 저장":"Saved {} min ago","{}시간 전 저장":"Saved {} hr ago","{}요일":"{}","{}월 {}일":"{0}/{1}","{}을 모두 지울까요?":"Delete all {}?","{}을(를) 대시보드에서 숨깁니다":"Hide {} from the dashboard","{}일":"{} days","{}일차 / {}일":"Day {} / {} days","{}입니다":"{}","{}줄 · 머리글 찾는 중…":"{} rows · finding the header…","{}행":"{} rows","{}행 중 {}–{}":"{1}–{2} of {0} rows","{}행을 불러왔습니다.":"Imported {} rows.","{}행을 표에 옮기는 중…":"Moving {} rows into the table…","{}행이 모두 사라집니다.":"All {} rows will be removed.","{}행이 모두 사라집니다. 되돌리려면 Ctrl+Z 를 누르세요.":"All {} rows will be removed. Press Ctrl+Z to undo.","· 값까지 같은 행 {}개 포함":"· including {} rows with identical values","· 광고주":"· Advertiser","· 면적 = 값의 크기 ·":"· Area = size of value ·","· 목표 페이스 {} 대비":"· vs. target pace {}","· 새 행 기본 일자 = 어제({})":"· Default date for new rows = yesterday ({})","· 색은 카테고리 안에서 비교 — 초록 = 좋음 · 회색 = 중간 · 빨강 = 나쁨":"· Colors compare within each category — green = good · gray = average · red = poor","· 열 {}개":"· {} columns","· 예상 효율과 맞지 않는 칸 {}개({}행)는 붉게 표시":"· {} cells ({} rows) not matching the forecast are highlighted in red","· 예정 {}":"· Scheduled {}","· 이름이 맞지 않는 칸 {}행":"· Cells with unmatched names: {} rows","· 저장 대기":"· waiting to save","· 집행 기간 밖 {}행":"· Outside flight dates: {} rows","· 현재 OFF":"· currently OFF","— 1개 행(라인)은":"— Split rows (lines) by","— 서버 응답이 없습니다 (시간 초과)":"— No response from the server (timed out)","— 예상 효율을 고친 뒤":"— after editing the forecast, if there's no input for","— 이 그래프에만 적용됩니다":"— applies to this chart only","— 이 캠페인에 초대되었거나 코드를 받은 사람만 볼 수 있습니다.":"— only people invited to this campaign or given a code can view it.","— 이미 지운 만큼은 줄어 있어 대개 두세 번이면 끝납니다.":"— what's already deleted has been reduced, so it usually finishes in two or three tries.","— 입력이 끝나고":"— after input stops for","— 제안 {} 대비":"— vs. proposal {}","— 지금 보이는 값은 예시 데이터입니다.":"— The values shown are sample data.","— 합계를 넘어 올릴 수 없습니다":"— can't exceed the total","‘{}’ 광고주를 지울까요?":"Delete the advertiser '{}'?","‘{}’ 영역을 숨길까요?":"Hide the '{}' section?","“{}” 광고주의 로고로 저장됩니다":"Saved as the logo of advertiser \"{}\"","“매칭 안 되는 셀 N개”":"\"N unmatched cells\"","※ Gross 예산과 수수료율(대행사 + 렙사)을 넣으면 Net이 자동 역산됩니다 (Net = Gross × (1 − 합산 수수료율)).":"※ Enter the Gross budget and fee rates (agency + rep) and Net is back-calculated automatically (Net = Gross × (1 − combined fee rate)).","※ Value(밸류)는 직접 입력하며, 보너스는 예산과의 차액으로 맞춰집니다.":"※ Enter Value directly; the bonus is set to the difference from the budget.","※ 미디어믹스 표는":"※ The media mix table is in the","■ 굵은 파란 숫자 = 게런티(보장) 항목":"■ Bold blue numbers = guaranteed items","■ 작성 요령":"■ How to fill in","▲ 오름차순 정렬":"▲ Sort ascending","▴ 접기":"▴ Collapse","▶ 영상":"▶ Video","▼ 내림차순 정렬":"▼ Sort descending","▼ 필터":"▼ Filter","▾ 펼치기":"▾ Expand","▾ 펼치기 ({}건)":"▾ Expand ({})","☁ 저장":"☁ Save","☑ 예상 노출·클릭·조회 옆 체크 = 게런티(보장) 지표":"☑ Check next to forecast impressions·clicks·views = guaranteed metric","⚙ 설정":"⚙ Settings","⚙ 열 설정":"⚙ Column settings","⚙ 지표 설정":"⚙ Metric settings","⚙ 카테고리 편집":"⚙ Edit categories","⚙ 표시 항목":"⚙ Display items","⚙ 헤더 편집":"⚙ Edit header","⚙ 헤더 편집에서 열 구성과 묶음을 바꿀 수 있습니다.":"You can change columns and grouping in ⚙ Edit header.","✎ 자동 작성":"✎ Auto-draft","✎ 자동 작성을 누르면 지금 수치를 바탕으로 초안을 만들어 줍니다.":"Press ✎ Auto-draft to create a draft based on the current figures.","✓ 올바른 수식입니다.":"✓ Valid formula.","✓ 저장 완료":"✓ Saved","✕ 열 이름을 입력하세요.":"✕ Enter a column name.","✕ 이 열 숨기기":"✕ Hide this column","⤒ 엑셀 불러오기":"⤒ Import Excel","⤓ 리포트":"⤓ Report","⤓ 엑셀 템플릿":"⤓ Excel template","⧉ 서머리 복제":"⧉ Duplicate summary","ㄴ":"└","가 {}":"{}","가 가장 앞서 있음":"is furthest ahead","가 그 라인의 집행 기간 안인지 확인해 주세요.":"falls within the line's flight dates.","가 자동으로 계산됩니다.":"are calculated automatically.","가 자동으로 붙습니다 —":"automatically —","가구 시청률(%)입니다.":"Household rating (%).","가로":"Horizontal","가로 {} {}개":"Horizontal: {} ({})","가로 세그먼트":"Horizontal segments","가로·세로 두 축 모두":"Both horizontal and vertical axes are","가로로 길어지면 표 위":"when it gets wide, above the table","가로세로 비율이 맞지 않습니다.":"The aspect ratio doesn't fit.","가이드 파일을 찾지 못했습니다.":"Couldn't find the guide file.","가져올 행이 없습니다.":"No rows to import.","각 라인의 목표를 그 라인의":"Each line's target is divided by its","각 열의":"Each column's","값 검색":"Search values","값 열 목록":"Value columns","값 차이가 커서 {}축은":"Because values vary widely, the {} axis is drawn on","값이 없는 항목은 열을 통째로 비워 두세요. 0 을 채워 넣을 필요 없습니다.":"Leave entire columns empty for items without values. No need to fill in 0.","값이 없는 항목은 칸만 비워 두세요. 열을 지우거나 순서를 바꿔도 머리글 이름을 보고 찾아 넣습니다.":"Leave cells empty for items without values. Even if you delete or reorder columns, they're matched by header name.","강조":"Emphasis","강조색 (파랑) — 색은 고정입니다":"Accent color (blue) — the color is fixed","같은 이름은 매체·상품·타겟팅이 달라도 하나의 소재로 봅니다.":"The same name is treated as one creative even across different media·products·targeting.","같은 이름의 열이 이미 있습니다.":"A column with the same name already exists.","같은 줄이 있는지 보는 중…":"Checking for duplicate rows…","같은 카테고리 · 같은 열 안에서만":"compare only within the same category · same column","개":"","개천절":"National Foundation Day","개천절 대체":"National Foundation Day (substitute)","거절":"Decline","건":"","검색 결과가 없습니다":"No results","검색어나 카테고리를 바꿔 보세요.":"Try a different search term or category.","게런티(보장) 지표 — 체크하면 보장 물량으로 봅니다":"Guaranteed metric — check to treat as a guaranteed volume","게스트":"Guest","게시판 저장소가 아직 만들어지지 않았습니다. Supabase > SQL Editor 에서":"The board storage hasn't been created yet. In Supabase > SQL Editor,","게시판에 올라온 파일 용량의 합계입니다":"Total size of files posted on the board","게이지 숨김":"Hide gauges","게이지 표시":"Show gauges","게재일수":"Days live","견줍니다 · 캠페인 전체 기간":"compared · entire campaign period","계산":"Formula","계산식 · 설명":"Formula · Description","계속 같은 화면이 뜨면 Supabase SQL 편집기에서":"If the same screen keeps appearing, in the Supabase SQL editor","계정":"Account","계정 · 권한":"Accounts · Permissions","계정 · 등급 관리 (슈퍼마스터)":"Accounts · Level management (super master)","계정 등급 관리 (슈퍼마스터 전용)":"Manage account levels (super master only)","계정 등급 관리는 슈퍼마스터 계정에서만 가능합니다.":"Account level management is only available to super master accounts.","계정 목록":"Accounts","계정(이메일)":"Account (email)","계획":"Plan","계획 금액":"Plan amt","계획 금액입니다.":"The planned amount.","계획 대비 {}%":"{}% vs. plan","계획에 넣은 프로그램 수입니다.":"Number of programs in the plan.","고르기":"Choose","고른 구분의 소재만 견줍니다":"Compare creatives in the selected segment only","고른 기간의 마지막 집행일에 집행이 없던":"with no delivery on the last live day of the selected period","고른 매체의 소재만 견줍니다":"Compare creatives in the selected media only","고릅니다.":".","고정":"Fixed","고정으로 두면 그만큼 그리는 일이 줄어듭니다.":"Fixed reduces drawing work accordingly.","골라 달성률을 그립니다.":"is picked to draw achievement.","공감":"Likes","공감(좋아요) 수입니다.":"Number of likes.","공유":"Shares","공유 코드":"Share codes","공유 코드를 입력해 주세요":"Enter your share code","공휴일":"Holiday","공휴일 설정":"Holiday settings","공휴일 설정 (2026 – 2028)":"Holiday settings (2026 – 2028)","공휴일 이름":"Holiday name","과금 방식(CPM · CPC · CPV …)입니다.":"The billing type (CPM · CPC · CPV …).","관련":"related","관리자 · 권한 — {}":"Admins · Permissions — {}","관리자 계정":"Admin accounts","관리자 목록":"Admins","관리자 전용":"Admins only","괄호가 맞지 않습니다.":"Parentheses don't match.","광고 길이(초)입니다.":"The ad length (seconds).","광고 소재 이름입니다.":"The creative name.","광고 시간대 등급(시급 — SA · A · B · C)입니다.":"The time-slot grade (SA · A · B · C).","광고 영상을 조회한 횟수입니다 (매체가 정한 조회 기준).":"How many times the video ad was viewed (by the media's view definition).","광고 지면":"Placement","광고가 나가는 기기(PC · MO · CTV)입니다.":"The device the ad runs on (PC · MO · CTV).","광고가 나간 채널(방송사)입니다.":"The channel (broadcaster) that aired the ad.","광고가 노출된 지면입니다.":"The placement where the ad appeared.","광고가 방송된 날짜입니다.":"The date the ad aired.","광고가 방송된 시간입니다.":"The time the ad aired.","광고가 붙은 프로그램입니다.":"The program the ad aired with.","광고가 화면에 노출된 횟수입니다 (매체 리포트 기준).":"How many times the ad was shown (per media report).","광고로 발생한 매출입니다.":"Revenue generated by the ads.","광고를 누른 횟수입니다.":"How many times the ad was clicked.","광고를 보여 준 타겟팅 그룹입니다.":"The targeting group the ad was shown to.","광고를 집행한 매체입니다.":"The media where the ad ran.","광고비":"Spend","광고비 1원당 매출입니다.":"Revenue per 1 won of ad spend.","광고비(Gross)":"Ad spend (Gross)","광고상품":"Ad product","광고상품 · 광고 지면 · 타겟팅 그룹 · 소재는 동일 예산 안에 여러 개가 있으면 한 칸에 콤마(,) 로 이어 적습니다. 예) 20대남성, 30대남성":"If ad product · placement · targeting group · creative have several items in the same budget, list them in one cell separated by commas (,). e.g.) Males 20s, Males 30s","광고상품 · 타겟팅 그룹 · 소재는 예상 효율에 등록한 조합 그대로 적어도 되고, 그 안의 한 항목만 적어 따로 나누어 넣어도 됩니다.":"Ad product · targeting group · creative can be entered as the combination registered in the forecast, or split by entering just one item of it.","광고상품도 패키지로 판매하는 경우가 있어 타겟팅 · 소재와 똑같이 콤마로 여러 개를 적을 수 있습니다.":"Ad products are sometimes sold as packages, so you can list several with commas, just like targeting · creatives.","광고상품명":"Ad product","광고상품별":"By ad product","광고상품처럼 카테고리 안의 제목":"Title within a category, like ad product","광고주":"Advertiser","광고주 (뷰어)":"Advertiser (viewer)","광고주 {}":"Advertiser {}","광고주 · 로고":"Advertiser · Logo","광고주 관리":"Advertiser management","광고주 로고":"Advertiser logo","광고주 목록과 로고를 관리합니다":"Manage the advertiser list and logos","광고주 이름 변경":"Rename advertiser","광고주 이름과 로고를 관리합니다":"Manage advertiser names and logos","광고주 추가":"Add advertiser","광고주도 같은 색으로 봅니다.":"The advertiser sees the same colors.","광고주를 골라 주세요.":"Please choose an advertiser.","광고주를 먼저 고르고":"Pick the advertiser first,","광고주를 먼저 골라 주세요":"Please choose an advertiser first","광고주마다 로고를 한 번 등록해 두면, 그 광고주의 캠페인을 열 때":"Register a logo once per advertiser, and when opening that advertiser's campaigns,","광고주명":"Advertiser name","광고주명은 반드시 필요합니다.":"An advertiser name is required.","광고주에게 노출":"Visible to advertiser","광고주에게 전달할 주소입니다.":"This is the address to share with the advertiser.","광고주용 접속 링크를 복사합니다":"Copies the advertiser access link","광고하는 제품입니다.":"The product being advertised.","광고형 요금제 가입자 추이와 국내 인벤토리 구매 조건입니다.":"Ad-supported plan subscriber trends and domestic inventory buying terms.","광복절":"Liberation Day","광복절 대체":"Liberation Day (substitute)","구글":"Google","구글 AwG Q3 Product Session — AI Max & App":"Google AwG Q3 Product Session — AI Max & App","구글 로그인":"Google sign-in","구글 로그인을 하면 이 캠페인을 클라우드에 저장할 수 있습니다.":"Sign in with Google to save this campaign to the cloud.","구글 로그인이 필요합니다.":"Google sign-in is required.","구매 · 가입처럼 목표로 잡은 행동이 일어난 횟수입니다.":"How many times a target action (purchase · sign-up) happened.","구분":"Segment","구분 · 매체":"Segment · Media","구분 · 매체 · 광고상품 · 타겟팅 그룹 · 소재 · 시작일 · 종료일이 모두 같은 라인입니다 — {}.":"These lines have identical segment · media · ad product · targeting group · creative · start date · end date — {}.","구분 · 매체명 · 광고상품명 · 타겟팅 그룹 · 제품은 캠페인 설정에 등록된 이름과 똑같이 적어야 합니다.":"Segment · media name · ad product name · targeting group · product must exactly match the names registered in campaign settings.","구분 · 매체별":"By segment · media","구분 › 매체 › 광고상품":"Segment › Media › Ad product","구분 없음":"No segment","구분·매체·광고상품·타겟팅·제품은":"Segment · media · ad product · targeting · product can only use items registered in","구분별":"By segment","굵은 파란 숫자는 게런티(보장) 항목":"Bold blue numbers are guaranteed items","권한":"Permission","권한 요청":"Permission requests","권한 요청이 접수되어 있습니다.":"Your permission request has been received.","권한을 변경했습니다.":"Permissions changed.","권한이 있는 캠페인에서만 됩니다.":"only works for campaigns you have permission for.","그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다":"Cells where the line's KPI unit cost is higher than its target unit cost","그 라인의 집행 기간 밖의 날짜입니다":"This date is outside the line's flight dates","그 라인이 KPI로 잡은 지표의 단가":"the unit cost of the metric the line set as its KPI","그 매체가 KPI로 잡은 지표만":"only the metric that media set as its KPI","그 소재 안에서 어느 날이 셌는지를 봅니다.":"shows which days were strong within that creative.","그 지표를 KPI로 잡은 라인들만":"only the lines that set that metric as their KPI","그 칸만":"only that cell","그 행에 걸린 라인들의 가장 이른 시작일 ~ 가장 늦은 종료일":"Earliest start ~ latest end date of the lines in that row","그 행에 걸린 라인들의 비드 타입 (여러 개면 함께 표시)":"Bid types of the lines in that row (shown together if several)","그날 방송된 횟수의 합입니다.":"Total airings that day.","그대로 이동":"Move on anyway","그대로 이동하면 해당 행은 집계되지 않습니다.":"If you move on as is, those rows won't be counted.","그래프 값":"Chart value","그래프를 다시 그리는 중…":"Redrawing charts…","그래프에만 적용됩니다.":"applies to the chart only.","그런 코드를 찾지 못했습니다. 시행사에서 받은 코드를 다시 확인해 주세요.":"We couldn't find that code. Please check the code you received from the agency.","그룹 이름":"Group name","그룹과 그 안의 열을 함께 삭제":"Delete the group and its columns","글머리가 붙는 본문 한 줄":"A bulleted body line","금액":"Amount","금액 = 횟수 × 단가":"Amount = spots × unit price","금액 ÷ GRP":"Amount ÷ GRP","금액 ÷ 전체 금액":"Amount ÷ total amount","금액 비중":"Amt %","기간":"Period","기간이 겹치는 이슈의 내용을 짧게 줄이거나 통합해 주세요. (그래프에는 최대 5줄까지 표시됩니다)":"Shorten or merge the notes of issues with overlapping periods. (The chart shows up to 5 lines)","기록":"recorded","기본":"Default","기본 열":"Default columns","기본 열과 이름이 같습니다. 다른 이름을 써 주세요.":"This name matches a default column. Please use a different name.","기존 광고주를 고르거나 새 광고주명을 적어 주세요.":"Choose an existing advertiser or enter a new advertiser name.","기준":"Basis","기준별로":"For each basis,","기준으로 적습니다.":"basis.","기준입니다.":"basis.","기타":"Other","김미디어":"Kim Media","꺾은선 그래프 값":"Line value","끌어다 그룹에 놓기":"Drag into a group","끌어다 놓기만 해도":"drag and drop it","끌어서 순서 변경":"Drag to reorder","끌어서 순서 변경 (같은 상위 그룹 안에서만)":"Drag to reorder (within the same parent group only)","끌어서 순서를 바꿀 수 있습니다":"Drag to reorder","끌어서 순서를 바꿀 수 있습니다 (기본은 예산 큰 순)":"Drag to reorder (default: largest budget first)","끌어서 열 순서를 바꿀 수 있습니다":"Drag to reorder columns","끌어서 행 순서 바꾸기":"Drag to reorder rows","나쁨":"Poor","나쁩니다":"poor","나중에":"Later","나중에 이 자료를 고치거나 지울 때 쓸 ID 와 비밀번호를 정해 주세요.":"Set an ID and password to use when editing or deleting this material later.","날짜":"Date","날짜까지 완전히 똑같은 행은 불러올 때 한 번만 반영합니다. 파일에 계속 이어 붙여도 중복으로 쌓이지 않습니다.":"Rows identical down to the date are applied only once on import. Appending to the file won't create duplicates.","날짜별 숫자를 그대로 봅니다. 주말·공휴일은 붉은 글씨, 값이 없는 칸은 회색입니다.":"Shows daily figures as-is. Weekends·holidays are in red; cells without values are gray.","남색 (기본)":"Navy (default)","남은 공간으로 {}MB 자료 약 {}건":"Room for about {1} more {0}MB items","낮을수록 효율이 좋습니다.":"Lower is more efficient.","내가":"Only campaigns","내가 등록한 광고주만 지울 수 있습니다.":"You can only delete advertisers you registered.","내려받기":"Download","내려받은 시각 {}":"Downloaded at {}","내용":"Content","네이버":"Naver","네이버 플레이스 광고를 간편하게 집행하는 베타 상품 안내입니다.":"Guide to a beta product for easily running Naver Place ads.","넷플릭스":"Netflix","넷플릭스 광고형 요금제 인벤토리 안내":"Netflix ad-supported plan inventory guide","노출":"Imps","노출 1,000회당 단가가 낮은 순":"Lowest cost per 1,000 impressions first","노출 · 클릭":"Impressions · Clicks","노출 · 클릭 · 조회 · 전환 …":"Impressions · Clicks · Views · Conversions …","노출 ÷ 목표 노출":"Impressions ÷ Target impressions","노출 달성률":"Imp. achv.","노출 보장(O/X)":"Impression guarantee (O/X)","노출 분포":"Impression distribution","노출 분포 · 효율 버블":"Impression distribution · Performance bubble","노출 분포와":"Media colors always match","노출 효과":"Imp. eff.","노출 효율":"Imp. eff.","노출 효율 (CPM)":"Impression efficiency (CPM)","노출 효율은 CPM 기준입니다.":"and impression efficiency CPM.","노출/클릭/조회 보장(O/X) 칸에 O 를 적으면 게런티(보장) 지표로 표시됩니다.":"Enter O in the impression/click/view guarantee (O/X) cells to mark it as a guaranteed metric.","노출이":"A day with","노출이 있었던 소재만 · 칸 색은 그 날의":"Creatives with impressions only · cell color shows that day's","농도 기준은":"The shading is based on","농도는 단가 효율":"shade is unit-cost efficiency","높이는 막대에 맞춰 잡습니다. 정확한 금액은 날짜 위에 마우스를 올리면 나옵니다.":"so its height follows the bars. Hover over a date to see the exact amount.","누르면 정렬 · 필터 · 끌면 열 순서 이동":"Click to sort · filter · drag to move the column","누적 GRP":"Cum. GRP","누적 광고비":"Cum. spend","눌러서 선택한 그룹에 추가 · 드래그해서 원하는 그룹에 놓기":"Click to add to the selected group · drag to drop into a group","눌러서 설명 · 정렬":"Click for description · sort","눌러서 이 매체의 색 계열 바꾸기":"Click to change this media's color family","는 “제안대로면 오늘쯤 여기까지” 와 비교한 값입니다.":"is compared with \"where it should be by today per the proposal\".","는 골라야 합니다.":"must be chosen.","는 그 캠페인의 데이터를 수정·추가할 수 있고,":"can edit and add data for that campaign, and","는 그대로 남고, 목록과 로고만 사라집니다.":"remain; only the list entry and logo are removed.","는 달력상 경과일이라 목표 페이스와 값이 다를 수 있습니다.":"is calendar days elapsed, so it may differ from the target pace.","는 대시보드 열람과 엑셀 다운로드만 됩니다.":" can only view the dashboard and download Excel.","는 데이터 수정까지,":"can edit data, and","는 선택해야 합니다.":"must be selected.","다른 계정이 등록":"Registered by another account","다른 라인도 함께 바꿀지 골라 주세요.":"Choose whether to change other lines as well.","다른 열로 계산합니다 (예: 클릭 ÷ 노출)":"Calculated from other columns (e.g. Clicks ÷ Impressions)","다시":"press","다시 보이게 하려면":"To show it again,","다시 표시":"Show again","다음":"Next","다음 500행":"Next 500 rows","다음 세그먼트로":"Next segment","다크":"Dark","단가":"Price","단가 × 밸류 (= Gross 예산)":"Unit price × Value (= Gross budget)","단가·비율은 모두":"All unit costs·rates are based on","단가가 낮은 순":"lowest unit cost first","단가는 낮을수록 좋으므로 부호를 뒤집어 읽습니다.":"Lower unit costs are better, so read the sign in reverse.","닫기":"Close","달력에서 선택":"Pick from calendar","달성률":"Achv.","달성률 {} − 목표 페이스 {} (오늘까지 제안대로면 {})":"Achievement {} − target pace {} (per proposal, by today: {})","달성률 · 목표 페이스":"Achievement · Target pace","달성률 막대(게이지)를 숨기거나 다시 표시합니다":"Hide or show the achievement bars (gauges)","달성률 막대는 목표 대비 실적입니다.":"Achievement bars show actual vs. target.","달성률은 기간 필터를 따릅니다 — 조회 기간의 실적 ÷ 그 기간의 목표.":"Achievement follows the period filter — actual for the period ÷ target for that period.","당근":"Daangn","대기 중인 요청이 없습니다.":"No pending requests.","대시보드":"Dashboard","대시보드 · 데이터 입력":"Dashboard · Data input","대시보드 · 미디어믹스":"Dashboard · Media mix","대시보드 › 미디어믹스":"Dashboard › Media mix","대시보드 그래프에 표시":"Show on dashboard charts","대시보드 리포트 내려받기":"Download dashboard report","대시보드 열람과 엑셀 다운로드만 가능합니다":"Can only view the dashboard and download Excel","대시보드_{}_{}~{}.xlsx":"Dashboard_{}_{}~{}.xlsx","대시보드에 반영하는 중…":"Applying to the dashboard…","대외비":"Confidential","대외비 — 카드에":"Confidential — cards get a","대표 컷만 있음":"Key frame only","대표 컷을 뽑는 중…":"Extracting a key frame…","대행사 로고":"Agency logo","대행사 수수료율":"Agency fee rate","데모 모드":"Demo mode","데모 모드 · 클라우드 미설정":"Demo mode · Cloud not configured","데모 모드입니다.":"This is demo mode.","데이터 선택":"Data","데이터 입력":"Data input","데이터 입력 · 열 설정":"Data input · Column settings","데이터 입력에 적은 소진비용의 합":"Sum of spend entered in Data input","데이터가 많아 서버가 시간 안에 다 지우지 못했습니다.":"There's too much data for the server to delete in time.","도넛의":"In the donut,","도면":"Floor plan","도트로 크게 깔고":"as large dots","되돌리기":"Restore","되돌리면 그 시점의 예상 효율이 그대로 복원되고, 지금 입력한 값은 실행 취소(Ctrl+Z)로 다시 돌아올 수 있습니다.":"Restoring brings back the forecast as of that point, and the values you've entered now can be recovered with undo (Ctrl+Z).","두 축을 모두 계산할 수 있는 데이터가 없습니다. 축을 바꿔 보세요.":"No data can calculate both axes. Try changing the axes.","둘러보기용 샘플 코드":"Sample codes for browsing","드래그로 바꾼 행 순서를 기본(가나다) 순서로 되돌립니다":"Resets the dragged row order to the default (alphabetical) order","드래그로 범위 선택":"drag-selecting a range","드래그해서 그룹 순서 변경":"Drag to reorder groups","드래그해서 열 너비 조정 · 더블클릭하면 자동":"Drag to resize column · Double-click to auto-fit","드롭다운":"Dropdown","등급":"Level","등록된 {}":"Registered {}","등록된 소재가 없습니다":"No creatives registered","등록된 이미지가 없습니다":"No image registered","등록된 항목에서 선택":"Choose from registered items","등록된 항목에서 선택 · ＋로 신규 추가":"Choose from registered items · add new with ＋","등록해 둔 로고가 함께 사라집니다.":"The registered logo is removed as well.","디바이스":"Device","디자인":"Design","디자인 — 테마 색상":"Design — Theme color","디자인 시안 · 더미 데이터":"Design mockup · Dummy data","디지털":"Digital","디지털 리포트 데이터 입력":"Digital Report Data Input","디지털 예상효율 입력":"Digital Forecast Input","디지털 캠페인 대시보드":"Digital Campaign Dashboard","디지털 캠페인 대시보드 · 디지털 리포트 데이터 입력 · 디지털 예상효율 입력":"Digital Campaign Dashboard · Digital Report Data Input · Digital Forecast Input","디지털 캠페인 메뉴":"Digital campaign menus","또는":"or","또는 눌러서 고르기 — PDF · 이미지 · 엑셀 · 워드 · PPT · 영상":"or click to choose — PDF · images · Excel · Word · PPT · video","라서":", so","라인":"Line","라인 {}개":"{} lines","라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다":"the level that should have been reached by today, reflecting each line's flight dates · the bar is tinted green when ahead of pace and red when behind","라인의 집행 시작일입니다.":"The start date of the line.","라인의 집행 종료일입니다.":"The end date of the line.","라인이 집행되는 기간입니다.":"The flight period of the line.","렙사 수수료율":"Rep fee rate","로 가장 우수":"is the best","로 구글 계정을 직접 초대할 수 있습니다.":"to invite a Google account directly.","로 다시 실행하며,":"to redo,","로 되돌리고":"to undo,","로 모입니다.":"are gathered under","로 범위를 넓힐 수 있습니다.":"to extend the selection.","로 복사·붙여넣기 할 수 있습니다.":"copies and pastes.","로 셀을 옮기고":"to move between cells, and","로 시작하세요.":"below.","로 쓰고 있는 매체 같습니다.":".","로 완료하면 셀 선택 상태로 돌아옵니다 ·":"again to finish and return to cell selection ·","로 자동 계산됩니다. 광고비는":"is calculated automatically. Enter ad spend on a","로,":"and","로고":"Logo","로고 · 광고주명 · Media Dashboard":"Logo · Advertiser name · Media Dashboard","로고 등록":"Register logo","로고 변경":"Change logo","로고 삭제":"Delete logo","로고는 1:1 부터 3:1 까지 등록할 수 있습니다. (지금 {}:1)":"Logos from 1:1 to 3:1 can be registered. (Currently {}:1)","로고는 3MB 이하로 올려 주세요.":"Please upload a logo of 3MB or less.","로고는 가로세로":"Logos: aspect ratio","로고를 등록하면 이 광고주의 대시보드 왼쪽 위에 로고와 광고주명이 함께 보입니다.":"Register a logo to show it with the advertiser name at the top left of this advertiser's dashboards.","로고를 등록하면 이 캠페인 대시보드 왼쪽 위에":"Register a logo to show it at the top left of this campaign dashboard with","로그 눈금":"a log scale","로그아웃":"Sign out","로그아웃됨":"Signed out","로그아웃됨 · 데모 모드":"Signed out · Demo mode","로그인 상태에 따라 자동으로 정해집니다":"Set automatically based on your sign-in status","로그인하면 내 캠페인이 열립니다":"Sign in to open your campaigns","로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.":"After signing in, only campaigns assigned to you are listed.","로그인하지 않고 올립니다":"Posting without signing in","로그인하지 않음":"Not signed in","롤드컵":"Worlds","롤드컵 기간 SOOP 스트리밍 패키지 단가와 인벤토리 구성입니다. 결승 주간은 별도 견적입니다.":"SOOP streaming package rates and inventory during Worlds. Finals week is quoted separately.","를 구하고":",","를 나타냅니다. 기본은 남색이고, 앞설수록 초록 · 뒤처질수록":". It's navy by default; the further ahead, the more green — the further behind,","를 넣으면 해당 캠페인 대시보드가 열립니다.":"you received from the agency to open that campaign's dashboard.","를 누르거나 엑셀에서 복사해 첫 칸에 붙여 넣으세요.":"press it, or copy from Excel and paste into the first cell.","를 누르면 그 행으로 바로 갑니다)":"on the Report Data Input tab to jump to that row)","를 누르면 접속 링크가 복사되고,":"next to a code to copy its access link, and use","를 받으시면 됩니다.":"instead of requesting.","를 봅니다. 열이 다르면 단위도 다릅니다.":"is shown. Different columns have different units.","를 적어 보내 주시면 확인 후":"below, and after review we'll grant","를 할 수 있습니다.":"below.","리포트 데이터 입력":"Report Data Input","리포트 데이터 입력에 칸이 생깁니다":"A field is added to Report Data Input","리포트 데이터 입력으로":"Go to Report Data Input","리포팅":"Reporting","마스터":"Master","마스터 권한":"master permission","마스터 권한을 해제할까요?":"Revoke master permission?","마스터 부여":"Grant master","마스터 승인":"Approve as master","마스터 해제":"Revoke master","마스터는":"Masters","마스터는 아래에서":"Masters can","마지막 서머리는 삭제할 수 없습니다.":"The last summary can't be deleted.","마지막 자동 저장 {} {} · 저장 버튼을 누르지 않아도 자동으로 저장됩니다":"Last auto-save {} {} · Saved automatically even if you don't press Save","막대 끝이 이 점보다 오른쪽이면 페이스보다 앞선 것입니다.":"If the bar extends past this dot, you're ahead of pace.","막대 뒤에 옅게 깔린 회색 면입니다. 눈금 없이 하루하루 얼마를 썼는지 흐름만 보는 용도라,":"The faint gray area behind the bars. It shows only the day-to-day spending trend without a scale,","막대 색은":"The bar color shows","막대 안 구간은":"Segments within the bar show","막대 위의 점 =":"Dot on the bar =","막대 위의 점 = 목표 페이스.":"Dot on the bar = target pace.","막대그래프 값":"Bar value","막대는 물량, 꺾은선은 단가입니다. 위쪽 말풍선은 그 기간에 있었던":"Bars are volume; lines are unit cost. The callouts above mark issues during that period","만 마스터 권한을 주거나 뺏을 수 있습니다.":"can grant or revoke master permission.","만드는 중…":"Creating…","만든 뒤에 엑셀로 불러오거나 직접 입력합니다.":"can be imported from Excel or entered after creation.","만들기":"Create","만들어 줍니다 — PDF 는 첫 장,":"— the first page for PDFs,","만들었거나 초대받은":"you created or were invited to","맞춘 열: {}":"Matched columns: {}","매 수정마다 저장하지는 않습니다. 되돌리면 그 시점의 표가 그대로 복원되고, 지금 표는 실행 취소(Ctrl+Z)로 다시 돌아올 수 있습니다.":"It isn't saved on every edit. Restoring brings back the table as of that point, and the current table can be recovered with undo (Ctrl+Z).","매체":"Media","매체 1개":"One media","매체 · 상품":"Media · Product","매체 › 광고상품":"Media › Ad product","매체 › 광고상품 › 소재":"Media › Ad product › Creative","매체 › 광고상품 › 타겟팅":"Media › Ad product › Targeting","매체 › 소재":"Media › Creative","매체 구분 없음":"No media grouping","매체 구분 없이 비교":"Compare across media","매체 색이 항상 같습니다.":"the impression distribution.","매체 필터 적용":"Media filter applied","매체(또는 상품)마다":"For each media (or product),","매체명":"Media","매체별":"By media","매체별 기여":"each media's contribution","매체별 달성률 {}":"Achievement by media {}","매체별 집행":"Delivery by media","매체의 광고상품입니다.":"The media's ad product.","매체처럼 가장 큰 묶음의 제목 (붉은색)":"Title of the largest group, like media (red)","매출":"Revenue","매출 ÷ 소진금액":"Revenue ÷ Spend","매칭 결과 확인 중…":"Checking match results…","매칭 안 되는 셀 {}개 · {}번째 행 ▸":"{} unmatched cells · row {} ▸","매칭 안 되는 셀 {}개 ▸":"{} unmatched cells ▸","매칭 없는 소재 모두 삭제":"Delete all unmatched creatives","매칭 없는 소재를 모두 지울까요?":"Delete all unmatched creatives?","매칭 없음":"No match","매칭 없음 · 삭제 권장":"No match · deletion recommended","맨 앞 카드는 전체 매체 기준":"The first card is based on all media","맨 왼쪽 점 손잡이를 끌면 행 순서를 바꿀 수 있습니다.":"Drag the dotted handle on the far left to reorder rows.","맨 위":"The top","머리글 아래에 데이터가 있는지 확인해 주세요.":"Please check that there is data below the header.","머리글 정렬이 켜져 있어 보이는 순서와 실제 순서가 다릅니다. 표 위의 「정렬 켜짐 · 해제 ✕」를 누른 뒤 옮겨 주세요.":"Sorting is on, so the displayed order differs from the actual order. Click \"Sorted · Clear ✕\" above the table, then move the row.","머리글 줄을 찾지 못했습니다.":"Couldn't find the header row.","머리글을 찾지 못했습니다.":"Couldn't find the header.","먼저":"First, in the","먼저 구글 로그인이 필요합니다.":"Google sign-in is required first.","먼저 새로운 써머리를 추가해 주세요.":"Please add a new summary first.","메뉴":"Menu","메뉴 설정":"Menu settings","메인 코멘트":"Main comment","메타":"Meta","면적은 값의 크기, 색은 매체입니다. 매체 → 광고상품 → 소재 순으로 물량이":"Area is the value size, color is the media. See where volume is concentrated","모두 다시 표시":"Show all again","모두 더하면 달성률이 됩니다.":"they add up to the achievement.","모두 삭제":"Delete all","모두 지우기":"Clear all","모든 예산 · 소진 금액은 하나의 기준(입력한 금액 그대로)으로 계산합니다.":"All budget · spend amounts are calculated on one basis (the amounts as entered).","모든 예산·소진 관련 값은 Gross 로 통일해 계산합니다.":"All budget·spend values are calculated uniformly in Gross.","모든 캠페인이 함께 쓰는 자료 게시판":"A shared board used by all campaigns","모든 캠페인이 함께 쓰는 자료 게시판입니다":"A shared board used by all campaigns","모든 캠페인이 함께 쓰는 자료 게시판입니다 · 파일 한 개당 10MB 까지":"A shared board used by all campaigns · up to 10MB per file","모르는 열입니다:":"Unknown column:","모아 실적과 목표를 비교합니다.":"are gathered to compare actuals with targets.","목록을 불러오지 못했습니다:":"Couldn't load the list:","목표":"Target","목표 100% 조회":"Tgt 100% V","목표 15초 조회":"Tgt 15s V","목표 25% 조회":"Tgt 25% V","목표 30초 조회":"Tgt 30s V","목표 3초 조회":"Tgt 3s V","목표 50% 조회":"Tgt 50% V","목표 75% 조회":"Tgt 75% V","목표 CPA":"Tgt CPA","목표 CPC":"Tgt CPC","목표 CPE":"Tgt CPE","목표 CPI":"Target CPI","목표 CPM":"Tgt CPM","목표 CPV":"Tgt CPV","목표 {}":"Target {}","목표 공감":"Tgt likes","목표 공유":"Tgt shares","목표 노출":"Tgt imps","목표 단가":"Target unit cost","목표 달성 수치":"Target achievement","목표 대비 실적의 비율(달성률)입니다.":"Actual as a share of the target (achievement).","목표 매출":"Tgt revenue","목표 설치":"Tgt installs","목표 열은 캠페인 설정의":"Target columns are from campaign settings'","목표 전환":"Tgt conv.","목표 조회":"Tgt views","목표 지점이 어디인지 보입니다.":"you can see where the target point is.","목표 참여":"Tgt eng.","목표 클릭":"Tgt clicks","목표 페이스":"Target pace","목표 페이스 {} 와 같습니다":"Same as target pace {}","목표는 캠페인 전체 기준(예상 효율·예산), 실적은 조회 기간의 집행값입니다.":"Targets are for the whole campaign (forecast·budget); actuals are delivery values for the period.","목표는 캠페인 전체 기준(예상 효율·예산), 실적은 조회 기간의 집행값입니다. CPM·CPC 처럼 낮을수록 좋은 지표는 목표 ÷ 실적으로 읽습니다.":"Targets are for the whole campaign (forecast·budget); actuals are delivery values for the period. For metrics where lower is better, like CPM·CPC, read as target ÷ actual.","무료 한도 1GB · 파일 한 개 {}MB 까지":"Free quota 1GB · up to {}MB per file","무상으로 더 받은 밸류입니다.":"Extra value received at no cost.","무채색 다크":"Neutral dark","무채색 화이트":"Neutral white","묶음":"Group","미디어믹스":"Media mix","미디어웍스":"Mediaworks","미리 볼 자료가 없습니다.":"No material to preview.","미리보기":"Preview","미리보기 영상은 이 브라우저에서 만들 수 없어 대표 컷만 담았습니다":"Preview videos can't be generated in this browser, so only a key frame is included","미리보기 있음":"Preview available","미리보기 저장에 실패해 대표 컷만 담았습니다":"Saving the preview failed, so only a key frame is included","미리보기가 너무 커서 대표 컷만 담았습니다":"The preview was too large, so only a key frame is included","미리보기를 만드는 중… 0%":"Building preview… 0%","미리보기를 만드는 중… {}%":"Building preview… {}%","미집행":"Not delivered","미집행 구간 예상값 (일할)":"Forecast for undelivered period (pro-rated)","바꾸기":"Change","바꾸는 즉시 표에 반영됩니다":"Changes apply to the table immediately","바꾸는 즉시 화면에 반영됩니다.":"Changes apply to the screen immediately.","반영 시각":"Applied at","반영 완료":"Applied","반영 완료 시각":"Applied at","방금 저장":"Just saved","방송 횟수입니다.":"Number of airings.","방송된 광고 소재입니다.":"The creative that aired.","방송된 광고 한 건(스팟)":"one aired spot","방송시간":"Air time","방송일":"Air date","방송일 {}~{} · 실적 {}행":"Air dates {}~{} · {} result rows","방송일이 적힌 실적이 아직 없습니다.":"No airing results with dates yet.","방향키":"Arrow keys","배경 로고":"Background logo","배경 로고를 천천히":"Choose whether the background logo","배경 움직임":"Background motion","배경에 로고를":"Lays the logo in the background","배포 폴더의 guide/사용가이드.pdf 를 함께 올려 주세요.":"Please upload guide/사용가이드.pdf in the deployment folder as well.","밸류":"Value","밸류 (직접 입력)":"Value (enter directly)","버블 하나":"One bubble","버블에 마우스를 올리면 {} 이름과 세부 값이 나옵니다":"Hover over a bubble to see the {} name and details","베타":"Beta","베타 버전":"Beta","변경 시각":"Changed at","변경 전":"Before","변경 후":"After","변경 히스토리":"Change history","변경됨 · 곧 저장":"Changed · saving soon","변경됨 · 저장 대기":"Changed · waiting to save","변경자":"Changed by","변환에 실패했습니다":"Conversion failed","보고 관리하며, 다른 사람에게 마스터 권한을 줄 수 없습니다.":", and can't grant master permission to others.","보내신 메시지 — “{}”":"Your message — \"{}\"","보내지 못했습니다:":"Couldn't send:","보낸 날":"Sent on","보낸 요청은 슈퍼마스터 화면에 그대로 표시됩니다.":"Your request appears as-is on the super master's screen.","보너스 밸류":"Bonus val.","보너스 밸류 ÷ 예산":"Bonus value ÷ Budget","보너스율":"Bonus %","보너스율 {}":"Bonus rate {}","보장":"Gtd.","보장한 라인":"lines that guarantee","보조 지표":"Sub KPI","보조로 함께 볼 지표":"Metric to view alongside","보조줄":"Sub-line","복사할 서머리를 고르세요. 행 헤더 · 열 그룹 구성이 그대로 복사됩니다.":"Choose a summary to copy. Row headers · column groups are copied as-is.","복제":"Duplicate","복제 실패:":"Duplicate failed:","복제 완료":"Duplicated","복제 중…":"Duplicating…","복제할 서머리가 없습니다.":"No summary to duplicate.","본문":"Body","본문이 없습니다.":"No content.","본인이 만든 캠페인만":"see and manage only the campaigns they created","볼륨":"Volume","볼륨·금액은 제안값 × 목표 페이스, 단가(CPM·CPC·CPV 등)는 제안 단가와 직접 견줍니다.":"Volumes·amounts compare with proposal × target pace; unit costs (CPM·CPC·CPV etc.) compare directly with the proposed unit cost.","부처님오신날":"Buddha's Birthday","부처님오신날 대체":"Buddha's Birthday (substitute)","분류":"Category","분모가 0인 소재(조회가 없는데 CPV를 보는 등)는 순위에서 빠집니다.":"Creatives with a zero denominator (e.g. no views when viewing CPV) are excluded from ranking.","분석 리포트":"Analysis report","분포(트리맵)":"Distribution (treemap)","불러오기":"Import","불러오기 실패":"Load failed","불러오는 중…":"Loading…","불러오지 못했습니다.":"Couldn't load.","불러옵니다.":"onto this tab.","붉게 표시되고 다른 탭으로 이동할 때 알려 드립니다.":"is highlighted in red, and you'll be alerted when moving to another tab.","붉게 표시된":"Please check that the red-highlighted","붉은 표시를 끄거나 켭니다. KPI 지표 표시는 그대로 남습니다.":"turns the red highlight off or on. KPI highlights remain.","붉은 호가 목표 페이스":"the red arc is the target pace","붉은색 물결이 은은하게 흐릅니다. 페이스와 같으면 물결 없이 남색만 보입니다.":"a subtle red ripple flows. When on pace, it's plain navy without ripples.","뷰어":"Viewer","뷰어 코드":"Viewer code","뷰어에게 보이기":"Visible to viewers","브라우저 안에서 대표 컷 한 장과 {}초짜리 무음 미리보기(가로 {}px)로 줄여서 담기 때문에":"It's reduced in the browser to one key frame and a {0}-second silent preview ({1}px wide), so","브라우저 안에서 대표 컷 한 장과 {}초짜리 무음 미리보기(가로 {}px)로 줄여서 담기 때문에 2GB 짜리 원본을 골라도 저장되는 용량은 보통":"It's reduced in the browser to one key frame and a {0}-second silent preview ({1}px wide), so even if you choose a 2GB original, the stored size is usually","브라우저에서 바로 볼 수 없는 형식입니다. 오른쪽에서 내려받아 확인해 주세요.":"This format can't be viewed in the browser. Please download it on the right.","비고":"Notes","비교합니다.":".","비드 타입":"Bid type","비드 타입은 경매형CPC · Bid CPC 처럼 적어도 CPC 로 알아서 정리됩니다.":"Bid types such as \"auction CPC\" or \"Bid CPC\" are normalized to CPC automatically.","비밀번호":"Password","비쌉니다":"more expensive","비용":"Cost","비워 두면 비드 타입으로 판단합니다":"If left blank, it's determined by the bid type","비율 지표입니다 — 높을수록 좋습니다.":"A ratio metric — higher is better.","비율(%)":"Ratio (%)","빈 캠페인":"It starts as a blank campaign","빼기":"Subtract","사례":"Case study","사본":"Copy","사용":"Use","사용 가이드":"User guide","사용 중인 매체 · 상품":"Media · products in use","사용자":"Custom","사용자 초대":"Invite user","사칙연산(+ - * /)과 괄호만 사용할 수 있습니다.":"Only arithmetic (+ - * /) and parentheses are allowed.","삭제":"Delete","삭제하면 되돌릴 수 없습니다.":"Deleting can't be undone.","삭제하면 이 영역의 구성이 사라집니다.":"Deleting removes this section's configuration.","삭제하지 못했습니다 —":"Couldn't delete —","삭제하지 못했습니다.":"Couldn't delete.","삼일절":"Independence Movement Day","삼일절 대체":"Independence Movement Day (substitute)","상담 신청 같은 양식을 제출한 횟수입니다.":"How many forms (e.g., consultation requests) were submitted.","상세 효율 비교":"Detailed performance comparison","상위 선택에 매칭":"Matches the upper selection","상위 선택에 매칭 · 소재 목록":"Matches the upper selection · creative list","상위 선택에 매칭 · 조합 또는 개별 항목":"Matches the upper selection · combination or individual item","상위 소재입니다. 조회 효율은 CPV, 클릭 효율은 CPC,":"top creatives. View efficiency uses CPV, click efficiency CPC,","상태":"Status","상품":"Product","상품별":"By product","새 {} 이름 (쉼표로 여러 개 한 번에)":"New {} name (comma-separate to add several)","새 광고주명":"New advertiser name","새 그룹":"New group","새 서머리":"New summary","새 이름":"New name","새 카테고리":"New category","새 캠페인":"New campaign","새 캠페인 · 이름 변경 · 복제 · 삭제 · 코드 전달":"New campaign · Rename · Duplicate · Delete · Share codes","새 캠페인 만들기":"Create new campaign","새 항목 직접 추가":"Add a new item","새 행 기본 일자 = 어제({})":"Default date for new rows = yesterday ({})","새로 작성":"Draft anew","색":"Color","색 변경":"Change color","색·크기·위치는 같고 움직임만 달라집니다.":"Color·size·position are the same; only the motion differs.","색은":"Colors","색은 매체 구분":"Color = media","색의":"The color's","색이 진할수록 {} 우수":"Darker = better {}","샘플 (시행사 화면)":"Sample (agency view)","샘플 데이터 둘러보기":"Browse sample data","샘플 데이터 둘러보기 · 시행사 화면":"Browsing sample data · agency view","샘플 캠페인":"Sample campaign","생성 실패:":"Creation failed:","서머리":"Summary","서머리 복제":"Duplicate summary","서머리 삭제":"Delete summary","서머리 이름":"Summary name","서머리(상세 효율 비교)":"Summary (detailed performance comparison)","서버 응답: {}":"Server response: {}","선택":"Select","선택 ▾":"Select ▾","선택한 차원(매체 · 광고상품 · 타겟팅 등)으로 묶어 본":"grouped by the chosen dimension (media · ad product · targeting, etc.):","설날":"Lunar New Year","설날 대체":"Lunar New Year (substitute)","설날 연휴":"Lunar New Year holiday","설명":"Description","설정":"Settings","설정 — 사용 가이드 · 공휴일 · 변경 히스토리 · 디자인 · 캠페인/광고주 관리":"Settings — User guide · Holidays · Change history · Design · Campaign/advertiser management","설정 › 라인 목록":"Settings › Line list","설정 저장":"Save settings","설치":"Installs","성탄절":"Christmas","세그먼트 미니맵":"the segment minimap","세로":"Vertical","세로 {} {}개":"Vertical: {} ({})","세로 · 가로 세그먼트로 매체별 · 상품별로 나눠 볼 수 있고,":"You can split by media · product with vertical · horizontal segments, and","세로 세그먼트":"Vertical segments","세로·가로 세그먼트를 \"없음\" 이 아닌 값으로 고르면 여기서 항목을 고를 수 있습니다.":"Choose a value other than \"None\" for vertical·horizontal segments to pick items here.","세부 매체명":"Media detail","세워 둘지":"stays in place","셀 이동 ·":"move between cells ·","셀을":"After","소계":"Subtotal","소속":"Organization","소속 · 이름":"Organization · Name","소속과 용도":"organization and purpose","소재":"Creative","소재 × 일자 게재 히스토리":"Creative × date delivery history","소재 › 매체":"Creative › Media","소재 관리":"Manage creatives","소재 링크":"Creative link","소재 중":"Among creatives,","소재 지표":"Creative metrics","소재 초수":"Length","소재 탭 간트에서 음영":"shaded in the creative Gantt","소재 파일 · 링크":"Creative file · link","소재 효율":"Creative efficiency","소재 효율(단가)":"creative efficiency (unit cost)","소재를 누르면 원본과 지표를 볼 수 있습니다.":"Click a creative to see the original and its metrics.","소재를 새로 추가하려면":"To add a new creative,","소재명":"Creative name","소재별":"By creative","소재별 실적은 입력 시트에 적힌 소재 그대로 집계합니다. 시트에 소재를 적지 않은 날만 소재 비중으로 나눕니다.":"Results by creative are aggregated exactly as the creatives written in the input sheet. Only days without a creative in the sheet are split by creative share.","소재별 효율":"Performance by creative","소진 광고비":"Ad spend","소진금액":"Spend","소진금액 ÷ 노출 × 1,000":"Spend ÷ Impressions × 1,000","소진금액 ÷ 설치":"Spend ÷ Installs","소진금액 ÷ 예산":"Spend ÷ Budget","소진금액 ÷ 전환":"Spend ÷ Conversions","소진금액 ÷ 조회":"Spend ÷ Views","소진금액 ÷ 참여":"Spend ÷ Engagements","소진금액 ÷ 클릭":"Spend ÷ Clicks","소진비용":"Spend","소진비용 (Gross)":"Spend (Gross)","소진비용은":"Enter spend","소진비용은 매체 리포트의 광고비(집행 금액)를 그대로 적습니다.":"Enter spend exactly as the ad spend in the media report.","소진율":"Spend %","수수료율 (10 또는 10%)":"Fee rate (10 or 10%)","수수료율은 10 또는 10% 어느 쪽으로 적어도 됩니다.":"Fee rates can be written as either 10 or 10%.","수식":"Formula","수식 열 추가":"Add formula column","수식으로 계산":"Calculate with a formula","수식을 계산할 수 없습니다.":"The formula can't be calculated.","수식을 읽을 수 없습니다. 숫자 · 열 이름 · + - * / ( ) 만 쓸 수 있습니다.":"The formula can't be read. Only numbers · column names · + - * / ( ) are allowed.","수식을 입력하세요.":"Enter a formula.","수정":"Edit","수정 저장":"Save changes","수정·삭제 확인":"Confirm edit·delete","순서":"Order","순서 · 소계":"Order · Subtotal","순서 초기화":"Reset order","순서로 함께 보입니다.":"are shown together in this order.","순서를 바꾸고, 더하거나 뺄 수 있습니다.":"Reorder, add, or remove categories.","숨기기":"Hide","숨긴 항목 {}개":"{} hidden items","숫자":"Number","숫자 (#,###)":"Number (#,###)","숫자 입력":"Enter a number","숫자 입력 · Gross 기준":"Enter a number · Gross basis","숫자 직접 입력":"Enter numbers directly","숫자와 + − × ÷ ( ) 를 쓸 수 있습니다. 아래에서 열 이름을 눌러 넣으세요.":"You can use numbers and + − × ÷ ( ). Click column names below to insert them.","쉼표로 구분 · 최대 5개":"Comma-separated · up to 5","슈퍼마스터":"Super master","슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다":"Super masters · masters · staff can see all screens","슈퍼마스터만 열 수 있습니다.":"Only super masters can open this.","슈퍼마스터인데도 이 창이 뜨면 Supabase SQL 편집기에서":"If this appears even though you're a super master, in the Supabase SQL editor","스트리밍":"Streaming","스포츠":"Sports","승인되면 캠페인을 만들 수 있습니다.":"Once approved, you can create campaigns.","승인되면 캠페인을 만들 수 있습니다. 잠시만 기다려 주세요.":"Once approved, you can create campaigns. Please wait a moment.","시간":"Time","시간 초과":"Timed out","시급":"Grade","시작 시간":"Start time","시작일":"Start","시작일 (자동)":"Start date (auto)","시작일 · 종료일은 YYYY-MM-DD 로 적습니다.":"Enter start · end dates as YYYY-MM-DD.","시청률":"Rating","시청률 1%p 를 얻는 데 든 비용입니다.":"The cost of gaining 1 rating point.","시청률(%)":"Rating %","시청률의 합 — 광고가 닿은 총량입니다.":"The sum of ratings — total reach of the ads.","시트에서 확인합니다.":"sheet.","시행사":"Agency","시행사 (관리자)":"Agency (admin)","시행사 (운영)":"Agency (operator)","시행사 구글 로그인":"Agency Google sign-in","시행사가 직접 적는":"written directly by the agency","시행사에서 받은":"Enter the","시행사에서 실적을 입력하면 이 화면에 대시보드가 나타납니다.":"The dashboard will appear here once the agency enters results.","신정":"New Year's Day","실적":"Actual","실적 단가입니다 — 낮을수록 효율이 좋습니다.":"Actual unit cost — lower is more efficient.","실적이 발생한 날짜입니다.":"The date the results occurred.","실적이 발생한 달입니다.":"The month the results occurred.","실제 사이트에 올린 뒤에는 이 버튼으로 바로 권한을 요청할 수 있습니다.":"Once deployed to the actual site, you can request permission with this button.","실제 선이 그 아래(단가) 또는 위(물량)에 있으면 제안보다 잘 나오고 있다는 뜻입니다.":"If the actual line is below it (unit cost) or above it (volume), performance is better than proposed.","실제로 집행(소진)된 광고비입니다.":"The ad spend actually delivered.","실제로 집행된 광고비입니다.":"The ad spend actually delivered.","실집행 달성률":"Actual achievement","실집행 소진율":"Actual spend rate","실행 취소·다시 실행":"undo·redo","쓰이는 곳":"Used in","쓸 메뉴와 광고주(뷰어)에게 보일 메뉴를 고릅니다":"Choose the menus to use and the ones viewers can see","아래 세로 세그먼트들의 합계":"Total of the vertical segments below","아래 열 버튼을 눌러 수식을 만드세요":"Build a formula with the column buttons below","아래로":"Down","아래로 내리기":"Move down","아래에":"Send us your","아직 TV 데이터가 없습니다.":"No TV data yet.","아직 기록된 변경이 없습니다.":"No changes recorded yet.","아직 기록된 변경이 없습니다. 캠페인 정보를 바꾸면 여기에 쌓입니다.":"No changes recorded yet. Changes to campaign info will appear here.","아직 다듬는 중인 베타 버전입니다 — 이상한 점은 알려 주세요":"This is a beta version still being polished — please let us know if anything looks off","아직 도래하지 않았거나 실적이 없는 날은 빈 칸입니다.":"days not yet reached or without results are blank.","아직 등록된 광고주가 없습니다. 아래":"No advertisers registered yet. Start with","아직 시작 전{}":"Not started yet{}","아직 올라온 자료가 없습니다.":"No materials posted yet.","아직 입력한 행이 없습니다 —":"No rows entered yet —","아직 저장된 시점이 없습니다.":"No saved points yet.","아직 저장된 시점이 없습니다. 표를 입력하고 저장하면 여기에 쌓입니다.":"No saved points yet. Entries appear here once you enter and save the table.","아직 캠페인이 없습니다. 아래":"No campaigns yet. Start with","아직 표시할 데이터가 없습니다":"No data to display yet","아직 효율을 계산할 수 있는 지표가 없습니다.":"No metrics can be calculated yet.","안 쓰는 열은 되도록 지우지 마세요. 값이 없으면 열은 그대로 두고 칸만 비워 둡니다. (지우거나 순서를 바꿔도 머리글 이름으로 찾아 넣습니다.)":"Please avoid deleting unused columns. If there are no values, keep the column and leave the cells empty. (Even if you delete or reorder columns, they're matched by header name.)","알 수 없는 열: {}":"Unknown column: {}","앞 칸(매체 등)과 맞는 광고상품이 아닙니다":"This ad product doesn't match the preceding cells (media, etc.)","앞 칸과 맞는 광고 지면이 아닙니다":"This placement doesn't match the preceding cells","앞 칸과 맞는 제품이 아닙니다":"This product doesn't match the preceding cells","앞 칸과 맞는 타겟팅 그룹이 아닙니다":"This targeting group doesn't match the preceding cells","앞서 있음":"ahead","앱":"App","앱을 설치한 횟수입니다.":"How many times the app was installed.","양식제출":"Leads","양호":"On track","어느 카테고리에도 넣지 않은 자료는":"Materials not in any category","어디에 몰려 있는지 봅니다.":"across media → ad product → creative.","어떤 계정에 권한을 드릴지 확인해야 하기 때문입니다. 로그인한 뒤 소속과 용도를 적어 보내 주세요.":"We need to confirm which account to grant permission to. After signing in, send us your organization and purpose.","어떤 효율 기준으로 줄 세울지 고릅니다 (여러 개 고르면 칸이 나란히 붙습니다)":"Choose which performance metric to rank by (select several to show them side by side)","어린이날":"Children's Day","언어 · Language":"Language","업로드된 이미지가 있습니다":"An uploaded image exists","업로드됨":"Uploaded","없음":"None","없음 (앰비언트)":"None (ambient)","에 등록된 항목만 사용할 수 있습니다.":".","에 실제 방송 실적(광고비 · 시청률)을 넣으면 여기에 모입니다.":"and actual airing results (ad spend · rating) in","에 적어도 됩니다(비우면 1회).":"(blank = 1).","에 채널별 계획(횟수 · 단가 · 예상 시청률)을,":"add per-channel plans (spots · unit price · expected rating) in","에서 되돌리면 됩니다.":".","에서 라인(예상 효율)을 먼저 넣고,":"first, add lines (forecast) in","에서 바꿉니다":"at the top right","에서 쓰고 있습니다.":".","에서 일자별 실적을 채워 주세요.":"and fill in daily results in","엑셀":"Excel","엑셀 {}개 라인 불러옴 · 저장 대기":"Imported {} lines from Excel · waiting to save","엑셀 {}행 불러옴":"Imported {} rows from Excel","엑셀 파일은 이 탭 위로":"To import an Excel file, just","엑셀(.xlsx) · CSV · TSV · 텍스트 파일만 불러옵니다.":"Only Excel (.xlsx) · CSV · TSV · text files can be imported.","엑셀(.xlsx)로 내려받기":"Download as Excel (.xlsx)","엑셀에서 여러 칸을 복사해 표의 칸에 붙여 넣으면 그 칸부터 펼쳐지고, 모자라는 행은 새로 만들어집니다.":"Copy several cells in Excel and paste into a cell of the table to spread them from that cell; missing rows are created automatically.","엑셀을 만들지 못했습니다.":"Couldn't create the Excel file.","여기로 파일을 끌어다 놓으세요":"Drag files here","여기에 놓으면 불러옵니다":"Drop here to import","여러 개를 고르면 칸이 나란히 붙습니다":"Choosing several places the columns side by side","역할":"Role","열 그룹":"Column groups","열 그룹 이름을 직접 입력하세요":"Enter a column group name","열 사전":"Column dictionary","열 사전 — 전체 열과 계산식":"Column dictionary — all columns and formulas","열 사전에서 직접 만든 열입니다.":"A custom column created in the column dictionary.","열 수정":"Edit column","열 이름":"Column name","열 추가":"Add column","열과 연산자 버튼만으로 수식을 구성합니다.":"Build formulas using only column and operator buttons.","열기":"Open","열려 있음":"Open","열마다":"For each column,","열은 아래 식으로 그때그때 만들어지므로 따로 입력하지 않습니다.":"columns are generated on the fly with the formulas below, so they aren't entered.","열을 하나 이상 넣어 주세요.":"Please include at least one column.","열을 하나 이상 포함해야 합니다.":"Must include at least one column.","열이 하나뿐이라 그룹명 대신 항목명을 두 줄에 걸쳐 보여 줍니다":"With only one column, the item name spans two lines instead of a group name","열지 못했습니다:":"Couldn't open:","영문":"English","영상":"Video","영상 링크를 입력하면 여기에서 재생됩니다":"Enter a video link to play it here","영상 소재":"Video creative","영상 소재의 길이(초)입니다.":"The length of the video creative (seconds).","영상 첫 장면으로 썸네일 만드는 중…":"Creating a thumbnail from the first video frame…","영상 파일 올리기":"Upload video file","영상은":"For videos,","영상은 첫 장면, PPT·워드·엑셀은 파일 안의 미리보기. 안 되면 제목으로 표지를 그립니다.":"the first frame for videos, the built-in preview for PPT·Word·Excel. Otherwise a cover is drawn from the title.","영상을 15초 이상 본 조회 수입니다.":"Views of 15 seconds or longer.","영상을 25% 지점까지 본 조회 수입니다.":"Views that reached 25% of the video.","영상을 30초 이상 본 조회 수입니다.":"Views of 30 seconds or longer.","영상을 3초 이상 본 조회 수입니다.":"Views of 3 seconds or longer.","영상을 50% 지점까지 본 조회 수입니다.":"Views that reached 50% of the video.","영상을 75% 지점까지 본 조회 수입니다.":"Views that reached 75% of the video.","영상을 끝까지 본 조회 수입니다.":"Views that watched the video to the end.","영상을 읽는 중…":"Reading the video…","영상을 재생할 수 없어 대표 컷만 담았습니다":"The video couldn't be played, so only a key frame is included","영역 관리":"Sections","예: 2026 하반기 브랜드 캠페인":"e.g. 2026 H2 Brand Campaign","예: NAVER GFA (선택)":"e.g. NAVER GFA (optional)","예: OO전자":"e.g. OO Electronics","예: click/imp":"e.g. click/imp","예: 노출클릭효율":"e.g. ImpClickEfficiency","예: 미디어웍스 / 윤석진":"e.g. Mediaworks / Jane Doe","예: 소재 교체로 초기 학습 구간":"e.g. Early learning phase after creative swap","예: 하반기 브랜드 캠페인 운영을 맡고 있어 캠페인 생성 권한이 필요합니다.":"e.g. I manage the H2 brand campaign and need permission to create campaigns.","예를 들어 CPV로 산 상품은 조회만, CPM으로 산 상품은 노출만 봅니다.":"For example, products bought on CPV show only views; products bought on CPM show only impressions.","예산":"Budget","예산 (숫자 입력)":"Budget (number)","예산 (합계)":"Budget (total)","예산 × (1 − 대행사 수수료율 − 렙사 수수료율)":"Budget × (1 − agency fee rate − rep fee rate)","예산 ÷ 목표 노출 × 1,000":"Budget ÷ Target impressions × 1,000","예산 ÷ 목표 전환":"Budget ÷ Target conversions","예산 ÷ 목표 조회":"Budget ÷ Target views","예산 ÷ 목표 참여":"Budget ÷ Target engagements","예산 ÷ 목표 클릭":"Budget ÷ Target clicks","예산 ÷ 전체 예산":"Budget ÷ total budget","예산 대비 보너스 밸류의 비율입니다.":"Bonus value as a share of the budget.","예산 비중":"Budget %","예산 소진":"Budget spent","예산 소진율":"Spend %","예산 소진율 · 전체 매체":"Budget spend rate · All media","예산 중 얼마나 썼는지입니다.":"How much of the budget has been spent.","예산(net)":"Budget (Net)","예산을 나누어 세팅한 항목은 행을 나누어 각각의 예산을 적어 주세요. 한 행 = 하나의 예산 단위입니다.":"For items with separately allocated budgets, split them into rows and enter each budget. One row = one budget unit.","예산을 넣고 밸류를 적으면 보너스율은 자동으로 계산됩니다.":"Enter the budget and value, and the bonus rate is calculated automatically.","예산을 목표 수치로 나눈 목표 단가입니다.":"Target unit cost — budget divided by the target volume.","예산을 배분하는 기준":"how the budget is allocated","예상":"Forecast","예상 100% 조회":"Est. 100% V","예상 15초 조회":"Est. 15s V","예상 25% 조회":"Est. 25% V","예상 30초 조회":"Est. 30s V","예상 3초 조회":"Est. 3s V","예상 50% 조회":"Est. 50% V","예상 75% 조회":"Est. 75% V","예상 CPRP":"Est. CPRP","예상 CPRP = 금액 ÷ 예상 GRP":"Expected CPRP = amount ÷ expected GRP","예상 GRP":"Est. GRP","예상 GRP = 횟수 × 예상 시청률(%)":"Expected GRP = spots × expected rating (%)","예상 {}":"Forecast {}","예상 공감":"Est. likes","예상 공유":"Est. shares","예상 노출":"Est. imps","예상 노출 · 클릭 · 조회 같은 목표 수치를 넣습니다. CPM · CPV · CTR 은 넣지 않습니다 — 자동 계산됩니다.":"Enter target figures such as forecast impressions · clicks · views. Don't enter CPM · CPV · CTR — they're calculated automatically.","예상 매출":"Est. revenue","예상 설치":"Est. installs","예상 수치":"Forecast figures","예상 시청률":"Est. rating","예상 시청률(%)":"Est. rating %","예상 전환":"Est. conv.","예상 조회":"Est. views","예상 참여":"Est. eng.","예상 클릭":"Est. clicks","예상 효율":"Forecast","예상 효율 · 열 설정":"Forecast · Column settings","예상 효율 · 입력 히스토리":"Forecast · Input history","예상 효율 값을 모두 지웁니다":"Clears all forecast values","예상 효율 기준 제안서용 한 판 표":"One-page forecast table for proposals","예상 효율(미디어믹스)":"Forecast (media mix)","예상 효율과 맞지 않는 값이 있으면":"If a value doesn't match the forecast,","예상 효율과 맞춰 보는 중…":"Matching with the forecast…","예상 효율과 매칭되지 않는 셀이 {}개 있습니다. ({}행)":"There are {} cells that don't match the forecast. ({} rows)","예상 효율선":"Forecast line","예상 효율에 같은 이름의 소재가 없습니다.":"there's no creative with the same name in the forecast.","예상 효율에 같은 조합이 없습니다 (매체 · 광고상품 · 타겟팅 이름을 확인하세요)":"No matching combination in the forecast (check the media · ad product · targeting names)","예상 효율에 그 이름을 다시 넣으면 자동으로 연결되고, 쓸 일이 없다면 지우는 편이 좋습니다.":"Re-entering that name in the forecast reconnects it automatically; if it's no longer needed, deleting it is best.","예상 효율에 없는 구분입니다":"This segment isn't in the forecast","예상 효율에 없는 매체명입니다":"This media name isn't in the forecast","예상 효율에 적은 판매 단위 수량":"Units sold as entered in the forecast","예상 효율을 모두 지울까요?":"Delete all forecasts?","예상값":"Forecast","예상효율 입력":"Forecast input","예상효율 입력에 적은 목표 {}입니다.":"The target {} entered in Forecast input.","예상효율 입력에 적은 예산의 합":"Sum of budgets entered in Forecast input","예상효율 입력에 적은 예산입니다.":"The budget entered in Forecast input.","예상효율 입력으로":"Go to Forecast Input","예상효율(계획) 대비 리포트 데이터(실적)":"Forecast (plan) vs. report data (actual)","예상효율_템플릿_{}.xlsx":"Forecast_template_{}.xlsx","오늘까지 지난 날만큼 더한 값입니다. 캠페인 중간에 들어온 매체는 시작 전까지 목표에 잡히지 않습니다.":"then added up for the days elapsed until today. Media that joined mid-campaign aren't counted toward the target until they start.","오늘까지 지난 일수 ÷ 전체 집행 일수 (목표 페이스)":"Days elapsed until today ÷ Total flight days (target pace)","오늘까지 채웠어야 할 양":"Amount due by today","오른쪽 · 위로 갈수록 좋습니다.":"further right · higher is better.","옥외광고":"Out-of-home","온에어 기간":"On-air period","온에어 기간은 노출이 발생한 날 기준입니다. 중간에 쉰 구간이 있으면 줄을 나눠 적습니다.":"On-air periods are based on days with impressions. Breaks in between are listed on separate lines.","온에어 예정":"Scheduled to go live","올려 둔 이미지·영상은 남아 있지만":"The uploaded image·video remains, but","올려 둔 이미지·영상이 사라집니다. 예상 효율에 같은 이름을 다시 넣어도 연결되지 않습니다.":"Uploaded images·videos will be removed. Re-entering the same name in the forecast won't reconnect them.","올리기":"Post","올리는 중…":"Posting…","완료":"Done","왓챠":"Watcha","왼쪽 위에":"at the top left","요일":"Day","요일별":"By day of week","요일별 · 일자별 효율 히트맵":"Day-of-week · daily performance heatmap","요일별과 휴일·평일은 한 묶음으로 보고, 일자별은 따로 봅니다.":"Day-of-week and holiday·weekday are treated as one group; daily is separate.","요일입니다.":"Day of the week.","요청":"Request","요청 메시지":"Request message","요청 메시지를 적어 주세요.":"Please write a request message.","요청 보내기":"Send request","요청을 보냈습니다.":"Request sent.","우리 회사 로고 (전 캠페인 공용)":"Our company logo (shared across campaigns)","우수":"Strong","운영":"Operations","운영 매체":"Campaign media","운영 이슈":"Operational issues","운영 코멘트":"Operator comments","운영 코멘트를 입력하세요. ‘자동 작성’을 누르면 지금 조회 기간 기준으로 초안을 만들어 드립니다.":"Enter operator comments. Press 'Auto-draft' to create a draft based on the current period.","운영 코멘트입니다.":"operator comments.","운영사항":"Ops","운영진":"Staff","운영진 임명 · 해제":"appoint · remove staff","운영진 코드":"Staff code","운영진에게 전달할 주소입니다.":"This is the address to share with staff.","운영진용 접속 링크를 복사합니다":"Copies the staff access link","움직이지 않음 · 더 가벼움":"Doesn't move · lighter","원래 테마로 되돌립니다 (새로고침해도 원래 테마입니다)":"Return to the original theme (the original theme also returns on refresh)","원본 이미지 {}":"Original image {}","원본이 올라가지 않습니다.":"the original isn't uploaded.","원의 크기는 노출량, 색은 매체입니다.":"Circle size is impressions; color is media.","웨이브":"Wavve","웹 주소(https)로 올린 뒤 열면 정상 재생됩니다.":"It plays normally when opened from a web address (https).","위 목록에서 항목을 끌어다 놓거나 눌러서 추가":"Drag items from the list above or click to add","위로":"Up","위로 올리기":"Move up","위에서 항목을 눌러 추가하세요 (드래그로 순서 변경)":"Click items above to add them (drag to reorder)","위쪽 조회 기간·필터는 그대로 두고":"Keeps the period·filters above unchanged and","윗줄보다 한 글자 들여 쓰고 ㄴ 를 붙인 보조 설명":"Supplementary note indented one character with └","유튜브":"YouTube","유튜브 링크를 넣어 두면 파일을 올리지 않아도 됩니다.":"If you enter a YouTube link, you don't need to upload a file.","유튜브에서 열기 ↗":"Open on YouTube ↗","유형":"Type","윤석진":"윤석진","으로 건너뜁니다. 일자 · 요일 열은 왼쪽에 고정됩니다.":". Date · day-of-week columns are pinned on the left.","으로 그렸습니다":".","으로 나눕니다.":".","으로 시작하세요.":"below.","으로 시작합니다 — 예상 효율과 일별 실적은":"— the forecast and daily results","으로 적어 주세요.":".","으로 표시됩니다.":".","은 이 캠페인 안에서 마스터와 동등하게 모든 데이터를 수정·추가할 수 있고,":"can edit and add all data in this campaign, just like masters,","은 캠페인 설정에 넣은 제안값을 일평균으로 편 선입니다.":"is the proposal from campaign settings spread as a daily average.","을 게재한 날로 봅니다. 칸 색이 진할수록 그날 값이 큽니다.":"counts as a live day. Darker cells mean larger values that day.","을 고르면 테마 색에 맞춘 은은한 그라데이션이 대신 흐릅니다. 캠페인마다 따로 정해집니다.":"Choosing it instead shows a subtle gradient matching the theme color. Set separately for each campaign.","을 그대로 불러옵니다.":"entered in campaign settings as-is.","을 다시 실행해 주세요":"please run again","을 다시 한 번 실행해 주세요":"please run once more","을 드립니다.":".","을 적으면":"and","의 이름이 예상 효율과 같은지,":"have names matching the forecast, and that the","의 표시 이름이 함께 바뀝니다.":"display names change together.","의 합입니다.":"that metric.","이 계정에는 아직":"This account doesn't yet have","이 계정은 더 이상 캠페인을 만들 수 없습니다. 이미 만든 캠페인은 남습니다.":"This account will no longer be able to create campaigns. Campaigns already created remain.","이 광고주를 쓰는 캠페인":"Campaigns using this advertiser","이 그래프만 좁혀 보기":"Narrow this chart only","이 날 전체 ({}/{}개 소재)":"All that day ({}/{} creatives)","이 라인만 바꾸기":"Change this line only","이 라인에서 가장 중요하게 보는 지표입니다.":"The most important metric for this line.","이 라인의 KPI 지표 ({})":"This line's KPI metric ({})","이 매체 집행":"This media's delivery","이 분류의 항목은 모두 쓰고 있습니다.":"All items in this category are in use.","이 브라우저가 읽을 수 없는 영상 형식입니다 (mp4 · mov · webm 을 권장합니다)":"This browser can't read this video format (mp4 · mov · webm recommended)","이 서머리 숨기기":"Hide this summary","이 시점으로 되돌리기":"Restore to this point","이 없습니다.":".","이 열은 감출 수 없습니다.":"This column can't be hidden.","이 열을 켜 둔 표에서 함께 사라집니다. 입력해 둔 숫자는 그대로 남아 있어, 다시 만들면 되살아납니다.":"It disappears from tables where it's turned on. Entered numbers remain, and come back if you recreate it.","이 영역 숨기기":"Hide this section","이 영역이 대시보드에서 사라지고, 광고주 화면에서도 보이지 않습니다.":"This section disappears from the dashboard and from the advertiser's screen too.","이 이름을 쓰는 모든 라인에서 소재가 빠지고 일별 실적도 함께 사라집니다.":"The creative is removed from every line using this name, along with its daily results.","이 자료는 데모 화면에서 만든 것이라 내려받을 파일이 없습니다.":"This material was created in the demo, so there's no file to download.","이 자료를 삭제할까요?":"Delete this material?","이 자료를 올릴 때 정한 ID 와 비밀번호를 넣어 주세요.":"Enter the ID and password set when this material was posted.","이 줄을 삭제합니다":"Delete this row","이 줄의 바뀐 내용을 저장합니다":"Save the changes in this row","이 캠페인 대시보드 전체(배경 · 강조색 · 표 · 그래프)의 색 계열을 바꿉니다.":"Changes the color family of this whole campaign dashboard (background · accent · tables · charts).","이 캠페인에 대해":"For this campaign,","이 캠페인에서 내보냅니다":"Removes from this campaign","이 캠페인을 지울 권한이 확인되지 않았습니다.":"Permission to delete this campaign couldn't be confirmed.","이 캠페인의 관리자 계정을 보고, 마스터라면 운영진을 임명·해제합니다":"View this campaign's admin accounts; masters can appoint or remove staff","이 캠페인의 광고주 로고":"This campaign's advertiser logo","이 캠페인의 광고주(조회모드)에게 트렌드 리포트 탭을 보일지 정합니다":"Choose whether this campaign's advertiser (view mode) can see the Trend Report tab","이 캠페인의 마스터만 초대·권한 변경을 할 수 있습니다.":"Only this campaign's masters can invite or change permissions.","이 캠페인의 설정과 일별 실적이 모두 사라집니다. 되돌릴 수 없습니다.":"All settings and daily results of this campaign will be removed. This can't be undone.","이 파일은 불러올 수 없습니다.":"This file can't be imported.","이 표시되지 못했습니다.":"couldn't be shown on the chart.","이 필터에 해당하는 데이터가 없습니다.":"No data matches this filter.","이 행을 같은 값으로 복제":"Duplicate this row with the same values","이 화면에서는 .xlsx 를 바로 읽을 수 없습니다. 엑셀에서 [다른 이름으로 저장 → CSV]로 바꿔 올려 주세요.":"This screen can't read .xlsx directly. In Excel, use [Save As → CSV] and upload that.","이 화면에서만 어둡게 봅니다 · 새로고침하면 원래 테마로 돌아갑니다":"Dark view for this screen only · Refresh to return to the original theme","이름":"Name","이름 · 영문 · 계산식으로 검색":"Search by name · English name · formula","이름 변경":"Rename","이름 변경 · 복제 · 삭제는":"Rename · duplicate · delete","이름 수정":"Rename","이름 합치기":"Merge names","이름·유형·이미지를 고치면 그 이름을 쓰는 모든 라인에 함께 반영됩니다.":"Editing a name·type·image applies to every line using that name.","이름으로 검색":"Search by name","이름을 바꾸지 못했습니다 (권한 확인)":"Couldn't rename (check permissions)","이름을 적어 주세요.":"Please enter a name.","이메일":"Email","이메일 형식을 확인해 주세요.":"Please check the email format.","이미":"It looks like a media already used as","이미 쓰인 이름이 있으면 그대로 골라 주세요 — 같은 매체가 여러 이름으로 갈리지 않게 합니다.":"If the name is already in use, pick it — so the same media isn't split across several names.","이미지":"Image","이미지 선택":"Choose image","이미지 소재":"Image creative","이미지 업로드":"Upload image","이미지 파일":"Image file","이번 캠페인에서 운영한 매체(TV · Digital)를 고릅니다":"Choose the media operated in this campaign (TV · Digital)","이번 캠페인에서 운영한 매체를 고릅니다. 고른 매체의 메뉴만 위쪽 탭에 보입니다.":"Choose the media operated in this campaign. Only the chosen media's menus appear in the tabs above.","이슈":"Issue","이슈 내용":"Issue details","이슈 문구가 많아 그래프에":"There are too many issue notes, so","이운영":"Lee Ops","이전":"Previous","이전 500행":"Previous 500 rows","이전 세그먼트로":"Previous segment","이하 이미지를 올려 주세요.":"images or smaller, please.","익명":"Anonymous","인스타그램":"Instagram","일별 광고비는 Net 기준으로 넣습니다. Gross 소진액은 설정의 수수료율로 자동 환산됩니다.":"Enter daily ad spend on a Net basis. Gross spend is converted automatically using the fee rates in settings.","일별 소진금액 (배경 · 눈금 없음)":"Daily spend (background · no scale)","일별 실적 저장":"Save daily results","일별 실적 저장 실패:":"Saving daily results failed:","일별 실적 저장 중… {} / {}행":"Saving daily results… {} / {} rows","일별 실적 정리":"Daily results summary","일별 실적 정리 실패:":"Daily results cleanup failed:","일별 실적을 정리하는 중…":"Cleaning up daily results…","일별 실적을 정리하는 중… {} / {}":"Cleaning up daily results… {} / {}","일별 추이":"daily trend","일요일":"Sunday","일자":"Date","일자는 YYYY-MM-DD 로 적습니다. 8/3, 2026.8.3, 20260803 처럼 적어도 불러올 때 자동으로 바뀝니다.":"Enter dates as YYYY-MM-DD. Formats like 8/3, 2026.8.3, 20260803 are converted automatically on import.","일자별":"Daily","일자별 상세 효율":"Daily performance","일자별 상세 효율 — 표시 항목":"Daily performance — display items","일자별 실적":"Daily results","일자별 실적 입력":"Daily results input","일자별 실적을 불러오는 중":"Importing daily results","일자별 캠페인 효율 비교":"Daily campaign performance","일자별 효율":"Daily","일자별_실적_템플릿_{}.xlsx":"Daily_results_template_{}.xlsx","입니다.":".","입니다. 각 %는 “그 매체가 전체 목표의 몇 %를 채웠나”라서":". Each % is \"what % of the total target that media filled\", so","입니다. 같은 매체 안에서 진할수록 단가가 낮습니다(= 효율이 좋습니다).":". Within the same media, darker means lower unit cost (= better efficiency).","입니다. 같은 프로그램에 여러 번 나갔으면":". If it aired several times in the same program, you can enter that in","입니다. 달성 호는 살짝 비쳐 있어 페이스보다 앞서 있어도":". The achievement arc is slightly translucent, so even when ahead of pace","입니다. 묶인 라인이 모두 그 지표를 보장할 때만 표시됩니다.":". Shown only when all grouped lines guarantee that metric.","입니다. 소재끼리의 절대 비교가 아니라":". It's not an absolute comparison between creatives but","입니다. 지표는 ⚙ 지표 설정에서 바꿉니다.":". Change the metric in ⚙ Metric settings.","입니다. 집행 실적이 아니라 캠페인 설정에 넣은":". It's not delivery results but the values entered in campaign settings:","입니다. 필터를 걸면 그 범위만 집계됩니다.":"for the period. Applying filters counts only that range.","입력":"Input","입력 · 조회":"Edit · View","입력 규칙 · 수식":"Input rule · Formula","입력 히스토리":"Input history","입력자":"Entered by","입력한 Gross 소진비용의 합":"Sum of the Gross spend entered","입력한 일별 실적을 모두 지울까요?":"Delete all entered daily results?","입력한 일별 실적을 모두 지웁니다":"Deletes all entered daily results","입력한 일별 실적을 한 번에 모두 지웁니다":"Deletes all entered daily results at once","잊어버리면 마스터·운영진만 지울 수 있습니다.":"If you forget them, only masters·staff can delete it.","자동":"Auto","자동 ({})":"Auto ({})","자동 계산":"Auto-calculated","자동 계산 — 입력하지 않습니다":"Auto-calculated — not entered","자동 저장":"Auto-save","자동 저장 규칙":"Auto-save rule","자동 저장 시각":"Auto-save time","자동으로 예산 최적화":"(automatic budget optimization)","자료":"Materials","자료 등록":"Add material","자료 설명 — 카드에는 첫 줄만 보입니다":"Description — only the first line shows on the card","자료 수정":"Edit material","자료를 불러오지 못했습니다.":"Couldn't load materials.","자유 입력":"Free text","자유롭게 적은 메모입니다.":"Free-form notes.","작성 요령":"How to fill in","잔존율":"Retention","저렴합니다":"cheaper","저장":"Save","저장 공간":"Storage","저장 권한이 없습니다 (조회 전용)":"No permission to save (view only)","저장 대기 중":"Waiting to save","저장 실패 —":"Save failed —","저장 실패:":"Save failed:","저장 중…":"Saving…","저장되어 있습니다 — 고치면 다시 저장할 수 있습니다":"Saved — edit it to save again","저장됨":"Saved","저장소(trend 버킷)를 찾지 못했습니다. Supabase > Storage 에서":"Couldn't find the storage (trend bucket). In Supabase > Storage,","저장소에 올릴 권한이 없습니다. schema.sql 의 storage 정책이 실행됐는지 확인해 주세요.":"No permission to upload to storage. Please check that the storage policy in schema.sql has been run.","저장하는 중…":"Saving…","저장하면 광고주 화면에도 같이 보입니다.":"Once saved, it's also shown on the advertiser's screen.","저장하지 않은 내용은 사라집니다. 먼저 ☁ 저장을 눌러 주세요.":"Unsaved changes will be lost. Press ☁ Save first.","저조":"Under target","저조 표시":"Show under-proposal highlight","저조 표시 숨김":"Hide under-proposal highlight","적용":"Apply","전체":"All","전체 {}":"All {}","전체 {}개 함께 바꾸기":"Change all {} together","전체 · 설정/입력/조회":"All · Settings/Input/View","전체 계획 금액 중 차지하는 비중입니다.":"Share of the total planned amount.","전체 구분":"All segments","전체 대비":"vs. total","전체 매체":"All media","전체 목표 대비":"vs. overall target","전체 선택":"Select all","전체 소재":"All creatives","전체 숨김":"Hide all","전체 예산":"Total budget","전체 예산 (Gross)":"Total budget (Gross)","전체 예산 중 이 행이 차지하는 비중입니다.":"This row's share of the total budget.","전체 예상 GRP 중 차지하는 비중입니다.":"Share of the total expected GRP.","전체 표시":"Show all","전체 합계":"Grand total","전체 해제":"Clear all","전체 효율":"Overall efficiency","전환":"Conv.","전환 ÷ 목표 전환":"Conversions ÷ Target conversions","전환 ÷ 클릭":"Conversions ÷ Clicks","전환 달성률":"Conv. achv.","전환 효율 (CPA)":"Conversion efficiency (CPA)","전환당 단가가 낮은 순":"Lowest cost per conversion first","점검 필요":"needs review","정렬 · 필터":"Sort · Filter","정렬 켜짐 · 해제 ✕":"Sorted · Clear ✕","정렬 해제":"Clear sort","정렬 해제 (원래 순서)":"Clear sort (original order)","정렬·필터를 모두 없앱니다":"Clears all sorting and filters","정렬을 없애고 입력한 순서로 되돌립니다":"Removes sorting and returns to the order you entered","제목":"Title","제목 · 내용 · 해시태그 · 매체로 찾기":"Search title · content · hashtags · media","제목을 넣어 주세요.":"Please enter a title.","제안 단가 {} 보다 {} 비쌉니다":"{1} more expensive than proposed unit price {0}","제안 단가 {} 보다 {} 저렴합니다":"{1} cheaper than proposed unit price {0}","제안 단가 {} 와 같습니다":"Same as proposed unit price {}","제안 대비":"vs. proposal","제안 대비 {}":"vs. proposal {}","제안 대비 {}원":"vs. proposal {} KRW","제안 대비 ±0":"vs. proposal ±0","제안 대비 –":"vs. proposal –","제안 대비 저조":"Under proposal","제안 목표 수치 (숫자)":"Proposed target (number)","제안서용 표":"proposal table","제품":"Product","제품별":"By product","조건에 맞는 소재가 없습니다.":"No creatives match the conditions.","조건에 맞는 자료가 없습니다.":"No materials match the conditions.","조합으로 적을 때 순서는 상관없습니다. 포함된 항목이 같으면 같은 라인으로 봅니다.":"When entering a combination, the order doesn't matter. If the included items are the same, it's treated as the same line.","조회":"Views","조회 · 전환":"Views · Conversions","조회 ÷ 노출":"Views ÷ Impressions","조회 ÷ 목표 조회":"Views ÷ Target views","조회 권한이라 저장할 수 없습니다":"Can't save with view-only permission","조회 기간":"Period","조회 기간 {} ~ {} · 출력 {}":"Period {} ~ {} · Printed {}","조회 기간 기준으로 매체·광고상품별 초안을 다시 만듭니다.":"Rebuilds the draft by media·ad product based on the period.","조회 기간 동안의":"This is the","조회 기간 밖":"Outside period","조회 기간의 마지막 날({}) 실적입니다":"Results for the last day of the period ({})","조회 달성률":"View achv.","조회 보장(O/X)":"View guarantee (O/X)","조회 전용":"View only","조회 효과":"View eff.","조회 효율":"View eff.","조회 효율 (CPV)":"View efficiency (CPV)","조회결과":"Results","조회기간 : {}~{}":"Period: {}~{}","조회당 단가가 낮은 순":"Lowest cost per view first","조회모드":"View mode","조회율 (VTR)":"View rate (VTR)","조회율이 높은 순":"Highest view rate first","종료 시간":"End time","종료된 소재는 테두리만 그립니다.":"Ended creatives are drawn with an outline only.","종료일":"End","종료일 (자동)":"End date (auto)","종류":"Kind","종합 KPI 달성률":"Overall KPI achievement","종합 목표":"Overall target","좋습니다":"good","좋아요 · 댓글 · 공유처럼 광고에 반응한 횟수입니다.":"How many reactions (likes · comments · shares) the ad got.","좋음":"Good","주요 지표":"Key metrics","주요 지표 달성 현황":"Key metric achievement","줄이는 중…":"Reducing…","중복된 라인이 {}건 있습니다.":"There are {} duplicate lines.","지금":"currently","지금 내용을 지우고 새로 작성할까요?":"Clear the current content and draft anew?","지금 바로 저장합니다 (평소에는 자동으로 저장됩니다)":"Save now (it's normally saved automatically)","지금 보고 있는 기간입니다 ({}일)":"The period you're viewing ({} days)","지금 열려 있는 캠페인입니다":"This campaign is currently open","지금 입력한 값은 실행 취소(Ctrl+Z)로 다시 돌아올 수 있습니다.":"The values you've entered now can be recovered with undo (Ctrl+Z).","지금 입력한 내용은 실행 취소(Ctrl+Z)로 다시 돌아올 수 있습니다.":"What you've entered now can be recovered with undo (Ctrl+Z).","지금 캠페인":"Current campaign","지금 화면 조건({})에 걸린 소재 {}개입니다.":"{1} creatives match the current conditions ({0}).","지금 화면 조건({})에 걸린 소재 {}개입니다. 소재를 누르면 원본과 지표를 볼 수 있습니다.":"{1} creatives match the current conditions ({0}). Click a creative to see the original and its metrics.","지금은 광고주(조회모드)에게도 트렌드 리포트 탭이 보입니다":"The Trend Report tab is currently visible to advertisers (view mode) too","지금은 마스터·운영진에게만 보입니다":"Currently visible only to masters·staff","지금은 샘플 화면입니다.":"This is a sample screen.","지금은 행을 옮길 수 없습니다.":"Rows can't be moved right now.","지금의 예상 효율 표를 이 내용으로 바꿉니다. 되돌리려면 Ctrl+Z 를 누르세요.":"Replaces the current forecast table with this content. Press Ctrl+Z to undo.","지상파":"Terrestrial TV","지상파·종편 시간대별 시청률 변화와 광고 단가 흐름을 정리했습니다.":"Changes in terrestrial·general-programming channel ratings by daypart and ad rate trends.","지우기":"Clear","지우는 것이 아니라 화면에서만 감춥니다 — ⚙ 열 설정에서 다시 켤 수 있습니다.":"This only hides it from view, not delete — you can turn it back on in ⚙ Column settings.","지표":"Metric","지표마다":"For each metric,","지하철":"Subway","직접 고른 기간을 지우고 기본값(캠페인 첫날 ~ 실적이 들어온 마지막 날)으로 돌아갑니다":"Clears the period you picked and returns to the default (campaign start ~ last day with results)","직접 입력하는 값":"Entered directly","진도율":"Progress","진하기":"Shade","진행 중":"In progress","집행":"Delivered","집행 / 목표":"Delivered / Target","집행 {}":"Delivered {}","집행 {} {}건":"Delivered {} · {}","집행 {}일차":"Day {} of delivery","집행 경과":"Elapsed","집행 광고비":"Spend","집행 기간":"Flight dates","집행 기간 {} ~ {} · Gross {} · Value {}":"Flight dates {} ~ {} · Gross {} · Value {}","집행 상태":"Delivery status","집행 소재":"Delivered creatives","집행 시작 시간입니다.":"The start time.","집행 실적 요약":"delivery results summary","집행 일수로 나눠 하루치":"number of flight days to get a daily amount","집행 전 (집행 금액 없음":"Not yet delivered (no spend","집행 조건":"Buying terms","집행 종료 시간입니다.":"The end time.","집행 횟수":"Spots","집행분 중 비중":"Share of delivered","집행일":"Live day","차이":"Difference","참여":"Eng.","참여 ÷ 노출":"Engagements ÷ Impressions","찾는 값이 없습니다":"No matching values","찾는 열이 없습니다":"No matching columns","채널":"Channel","채널 · 프로그램(또는 시급 묶음) 단위로":"Per channel · program (or time-grade bundle), enter","채널 없음":"No channel","채널별 집행":"Delivery by channel","처리 중":"Processing","천천히 떠다니게 합니다.":"and lets it drift slowly.","천천히 떠다니는 기본값":"Default — slowly drifting","첨부 합계 {} / {}MB":"Attachments total {} / {}MB","첨부 합계가 {}MB 를 넘습니다. 파일을 덜어 주세요.":"Attachments exceed {}MB in total. Please remove some files.","첫 시트에서 {} 같은 머리글 줄을 찾지 못했습니다.":"Couldn't find a header row like {} on the first sheet.","첫 화면으로":"Back to start","첫 화면으로 돌아갈까요?":"Return to the start screen?","첫날부터 그날까지 GRP 합":"GRP sum from day one to that day","첫날부터 그날까지 광고비 합":"Spend sum from day one to that day","체크를 풀면 표에서 빠집니다. 왼쪽을 끌어 순서를 바꿀 수 있습니다.":"Uncheck to remove it from the table. Drag the left side to reorder.","체크를 풀면 화면에서 빠집니다. 왼쪽 손잡이를 끌어 순서를 바꿉니다.":"Uncheck to remove it from the screen. Drag the left handle to reorder.","체크를 풀면 화면에서 빠집니다. 왼쪽을 끌어 순서를 바꿀 수 있습니다.":"Uncheck to remove it from the screen. Drag the left side to reorder.","체크박스":"Checkbox","체크한 열만 예상 효율 표에 나타납니다. 필수 열은 매체 · 광고상품 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.":"Only checked columns appear in the forecast table. Only Media · Ad product are required; the rest can be turned on or off freely.","체크한 열만 표에 나타납니다.":"Only checked columns appear in the table.","체크한 열만 표에 나타납니다. 필수 열은 일자 · 매체명 두 개뿐이고, 나머지는 자유롭게 켜고 끌 수 있습니다.":"Only checked columns appear in the table. Only Date · Media name are required; the rest can be turned on or off freely.","초대":"Invite","초대 대기":"Invitation pending","초대 대기 {}":"Invitation pending {}","초대 목록":"Invitations","초대 실패:":"Invite failed:","초대한 이메일로 구글 로그인하면 이 캠페인이 자동으로 열립니다.":"When the invited email signs in with Google, this campaign opens automatically.","초대할 구글 계정 이메일":"Google account email to invite","초록이 쌀수록(좋음), 빨강이 비쌀수록(나쁨)이고 가운데값은 회색입니다.":"Greener = cheaper (good), redder = more expensive (poor), and the middle is gray.","초수":"Sec","총 Value":"Total value","총 {}일":"{} days total","총 광고비":"Total ad spend","총 광고비 (Gross)":"Total ad spend (Gross)","총 예산":"Total budget","최근 6개월 OTT 오리지널 시리즈 PPL 집행 사례와 노출 효과를 모았습니다.":"PPL cases and exposure effects from OTT original series over the last 6 months.","최근 저장":"Last saved","최소 한 개":"At least one","최신순":"Newest","최우수 소재":"Top creative","추가":"Add","추가 입력이 없으면 그 시점의 표를 자동으로 저장합니다.":"If there's no further input, the table at that point is saved automatically.","추가할 {}이 없습니다 · ＋로 새로 만드세요":"No {} to add · Create one with ＋","추가할 비드 타입 (예: 1주일, 1개월, CPP)":"Bid type to add (e.g. 1 week, 1 month, CPP)","추석":"Chuseok","추석 · 개천절":"Chuseok · National Foundation Day","추석 연휴":"Chuseok holiday","취소":"Cancel","칩 선택":"Chip select","카드 그림은":"The card image is","카드 뒤 회색 선은":"The gray line behind the card is the","카드에 표시할 항목":"Items shown on cards","카카오":"Kakao","카카오모먼트":"Kakao Moment","카테고리":"Category","카테고리 편집":"Edit categories","카테고리를 추가·삭제하고 순서를 바꿉니다":"Add or delete categories and change their order","카테고리를 하나 이상 남겨 주세요.":"Please keep at least one category.","카테고리와 같은 크기의 남색 제목":"Navy title the same size as a category","칸":"cells","칸에 마우스를 올리면 그 구간의 노출·클릭·조회·소진금액을 볼 수 있습니다.":"Hover over a cell to see that period's impressions·clicks·views·spend.","칸에 이름을 적어 주세요.":"enter the name in the field.","캠페인":"Campaign","캠페인 {} · 집행 기간 {} ~ {}":"Campaign {} · Flight dates {} ~ {}","캠페인 관리":"Campaign management","캠페인 권한 요청":"Campaign permission request","캠페인 기간이 얼마나 지났는지입니다 — 목표 페이스의 기준입니다.":"How much of the campaign period has passed — the basis for the target pace.","캠페인 기본 정보":"Campaign basics","캠페인 단위 공유":"Shared per campaign","캠페인 및 광고주 관리":"Campaign & advertiser management","캠페인 복제":"Duplicate campaign","캠페인 삭제":"Delete campaign","캠페인 선택 · 맨 아래에서 새 캠페인을 만들 수 있습니다":"Select a campaign · You can create a new one at the bottom","캠페인 설정":"Campaign settings","캠페인 설정에 입력된":"Loads the","캠페인 설정의 구분 목록":"Segment list in campaign settings","캠페인 안의 큰 묶음(예: 브랜딩 · 퍼포먼스)입니다.":"A top-level group within the campaign (e.g., Branding · Performance).","캠페인 없음":"No campaign","캠페인 이름 · 광고주":"Campaign name · Advertiser","캠페인 이름을 정합니다.":"then name the campaign.","캠페인 전 기간 {} ~ {} · 주말·공휴일은 붉은 글씨,":"Entire campaign {} ~ {} · Weekends·holidays in red,","캠페인 전 기간 {} ~ {} · 주말·공휴일은 붉은 글씨, 아직 도래하지 않았거나 실적이 없는 날은 빈 칸입니다.":"Entire campaign {} ~ {} · Weekends·holidays in red; days not yet reached or without results are blank.","캠페인 전체 노출·클릭·조회가 아니라, 그 지표를":"It's not the campaign-wide impressions·clicks·views, but the sum of","캠페인 전체 노출·클릭·조회가 아닙니다.":"It's not campaign-wide impressions·clicks·views.","캠페인 정보":"Campaign info","캠페인 정보 변경 히스토리":"Campaign info change history","캠페인 정보를 바꾸면 여기에 쌓입니다.":"Changes to campaign info will appear here.","캠페인 정보를 지우는 중…":"Deleting campaign info…","캠페인 진행 현황":"Campaign progress","캠페인 집행 현황":"Campaign delivery status","캠페인 첫날부터 그날까지 쌓인 GRP 입니다.":"GRP accumulated from the first day up to that day.","캠페인 첫날부터 그날까지 쓴 광고비입니다.":"Ad spend from the first day up to that day.","캠페인 코드":"campaign code","캠페인마다":"Each campaign gets","캠페인만 보입니다.":"are shown.","캠페인명":"Campaign name","캠페인명 · 광고주 · 공휴일 · 디자인은 오른쪽 위":"Campaign name · advertiser · holidays · design can be changed in","캠페인에 등록된 값 중 선택 · 직접 입력 가능":"Choose from campaign values · or type your own","캠페인을 만들 권한":"permission to create campaigns","캠페인을 만들 수 있는 마스터 권한을 요청합니다":"Request master permission to create campaigns","캠페인을 먼저 여세요.":"Open a campaign first.","캠페인을 지우는 중":"Deleting the campaign","캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요":"No campaigns yet · Start with ＋ New campaign","켜면 매체 구분 없이 같은 이름의 소재를 하나로 합쳐 비교합니다":"When on, creatives with the same name are merged across media for comparison","코드 두 개":"two codes","코드 옆":"Click","코드는 두 가지입니다 —":"There are two kinds of codes —","쿠팡":"Coupang","쿠팡플레이":"Coupang Play","크기":"Size","클라우드가 설정되지 않아 지금은 샘플만 볼 수 있습니다.":"The cloud isn't configured, so only the sample is available right now.","클라우드가 설정되지 않았습니다. config.js 의 Supabase URL / anon key 를 확인해 주세요.":"The cloud isn't configured. Please check the Supabase URL / anon key in config.js.","클릭":"Clicks","클릭 ÷ 노출":"Clicks ÷ Impressions","클릭 ÷ 목표 클릭":"Clicks ÷ Target clicks","클릭 달성률":"Click achv.","클릭 보장(O/X)":"Click guarantee (O/X)","클릭 효과":"Click eff.","클릭 효율":"Click eff.","클릭 효율 (CPC)":"Click efficiency (CPC)","클릭당 단가가 낮은 순":"Lowest cost per click first","클릭률 (CTR)":"Click-through rate (CTR)","클릭률이 높은 순":"Highest click-through rate first","클릭해서 그룹 이름 변경":"Click to rename the group","키보드 — 셀을 한 번 누르면":"Keyboard — click a cell once to","타겟팅":"Targeting","타겟팅 그룹":"Targeting","타겟팅 그룹명":"Targeting","타겟팅 그룹별":"By targeting group","타겟팅 그룹별 효율":"Performance by targeting group","타겟팅 그룹이나 소재를 매체가":"If the media automatically optimizes budget across targeting groups or creatives,","타겟팅별":"By targeting","탐색 보고서의 코호트·잔존율 지표를 캠페인 리포팅에 붙이는 방법을 정리했습니다. GA4 표준 리포트와 어떤 값이 어긋나는지도 함께 담았습니다.":"How to bring cohort·retention metrics from exploration reports into campaign reporting, including where values differ from GA4 standard reports.","탭에서":"in the","탭에서 라인을 추가하고 그 라인의":"tab, add a line and enter creative names in its","테두리가 그려진 칸(2행 ~ 501행)이 입력 영역입니다. 그 안에 값을 채워 주세요. 행이 모자라면 더 붙여도 됩니다.":"The bordered cells (rows 2 – 501) are the input area. Fill in values there. You can add more rows if needed.","테마 색 그라데이션":"Theme color gradient","테마 색상과 배경을 고릅니다":"Choose theme colors and background","텍스트":"Text","텍스트 스타일":"Text style","템플릿의 머리글(구분 · 매체 · 광고상품 …) 줄이 그대로 있어야 합니다.":"The template's header row (Segment · Media · Ad product …) must remain intact.","템플릿의 머리글(일자 · 구분 · 매체명 …) 줄이 그대로 있어야 합니다. 템플릿을 내려받아 다시 시도해 주세요.":"The template's header row (Date · Segment · Media name …) must remain intact. Download the template and try again.","토·일요일과 아래 공휴일은":"Saturdays·Sundays and the holidays below are shown","토스":"Toss","토요일":"Saturday","트렌드 리포트":"Trend Report","특정 구분 · 매체 · 광고상품만 그래프에 표시합니다":"Show only specific segments · media · ad products on the chart","특정 캠페인만 보시는 분은 요청 대신 시행사에서":"If you only need to view a specific campaign, ask the agency for a","티빙":"TVING","틱톡":"TikTok","파일":"File","파일 내용으로":"generated from the file content","파일 안의 미리보기를 찾는 중…":"Looking for a preview inside the file…","파일 올리기 실패 —":"File upload failed —","파일 올리는 중… {}/{} · {} ({})":"Uploading files… {}/{} · {} ({})","파일 이름을 영문·숫자로 바꿔 다시 올려 보시고, 계속 같으면 알려 주세요.":"Rename the file using English letters·numbers and upload again; if it persists, let us know.","파일 한 개당 {}MB · 한 자료 합계 {}MB 까지":"Up to {}MB per file · {}MB total per material","파일을 붙이면 파일 이름으로 채워집니다":"Attaching a file fills this with the file name","파일을 읽지 못했습니다.":"Couldn't read the file.","파일을 직접 열면 유튜브가 재생을 막습니다(구성 오류 153).":"YouTube blocks playback when the file is opened directly (configuration error 153).","파일이 큽니다.":"The file is large.","판매 단가":"Price","판매 단가입니다.":"The selling unit price.","판매 단위 수량(밸류)입니다.":"The sold volume (value).","판매단가":"Price","퍼포먼스랩":"Performance Lab","페이스 대비":"vs. pace","페이스 대비 {}%p":"vs. pace {}%p","페이스 대비 ±0.0%p":"vs. pace ±0.0%p","페이스 대비 –":"vs. pace –","페이스 대비 성과":"performance vs. pace","페이스 대비는 이 값에서 목표 페이스(진도율)를 뺀 %p 입니다.":"vs. pace is this value minus the target pace (progress), in %p.","페이스북":"Facebook","페이지 맨 위의 숨김 목록":"restore it from the hidden list at the top of the page","평균 수수료율":"Average fee rate","평일":"Weekday","표 머리글의 기준 항목과 값 열을 정합니다":"Choose the row fields and value columns for the table header","표 탭에서 붉은 글씨":"in red text on the table tab","표를 입력하고 저장하면 여기에 쌓입니다.":"Entries appear here once you enter and save the table.","표시":"Show","표시 기준":"Display basis","표시 형식":"Display format","표시가 붙습니다":"label","표시될 이름":"Display name","표시할 값이 없습니다.":"No values to display.","표시할 데이터가 없습니다.":"No data to display.","표시할 세그먼트를 고르고 순서를 바꿉니다":"Choose segments to show and change their order","표시할 소재가 없습니다.":"No creatives to show.","표시할 항목을 고르고 순서를 바꿉니다":"Choose items to show and change their order","표에 반영하는 중":"Applying to the table","프로그램":"Program","플레이스":"Place","필터 해제":"Clear filters","필터로 {}행 숨김 · 해제 ✕":"{} rows hidden by filter · Clear ✕","하고 Net은 설정의 수수료율로 자동 역산됩니다.":"; Net is back-calculated automatically from the fee rates in settings.","하는 경우에는 나누지 말고":"don't split them — enter them as","하면 내 캠페인을 불러오고, 입력한 값이 클라우드에 저장됩니다.":"to load your campaigns; your input will be saved to the cloud.","한 개의 라인":"a single line","한 뒤":"of cells,","한 번 더 눌러 주세요":"Please press it once more","한 자료 합계 {}MB 를 넘어 뺐습니다 — {}":"Removed for exceeding the {}MB per-material total — {}","한 줄 = 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹) 입니다.":"One row = one line (segment × media × ad product × targeting group).","한 줄 = 하루 × 하나의 라인(구분 × 매체 × 광고상품 × 타겟팅 그룹 × 제품) 입니다.":"One row = one day × one line (segment × media × ad product × targeting group × product).","한 칸을 복사해 여러 칸에 붙이면 선택 범위 전체가 같은 값으로 채워지고, 엑셀에서 여러 셀을 복사하면 표에 그대로 펼쳐집니다.":"Copying one cell and pasting into several fills the whole selection with that value; copying several cells from Excel spreads them into the table as-is.","한 행은":"Each row is","한글날":"Hangul Day","한글날 대체":"Hangul Day (substitute)","함수가 최신이어야 합니다).":"function must be up to date).","함수의 시간 제한이 늘어납니다).":"(this increases the function's time limit).","합계":"Total","합계 — 노출":"Total — Impressions","합산 후 저장":"Combine and save","항목":"Item","항목에 소재명을 입력하세요.":"field.","항목이 없습니다":"No items","해당 라인을 먼저 추가한 뒤":"tab, first add the line, then","해시태그":"Hashtags","해제":"Remove","행 삭제":"Delete row","행 수":"Rows","행 순서 초기화":"Reset row order","행 헤더":"Row header","행(소재)별 최댓값":"each row's (creative's) maximum","헤더 {}":"Header {}","헤더 기준 안에서":"within the header grouping","현재 OFF":"Currently OFF","현재 달성률":"Current achievement","현충일":"Memorial Day","현충일 대체":"Memorial Day (substitute)","홀딩":"On hold","화면만 담은 {}초 미리보기입니다 (소리 없음)":"A {}-second screen-only preview (no sound)","화면에 보일 영역과 순서를 정합니다":"Choose which sections appear on screen and their order","화면에 쓸 수 있는 모든 열입니다.":"All columns available on screen.","확인":"OK","확인 중…":"Checking…","확인을 누르면 해당 라인의 예상 효율 데이터를 하나로 합산해 저장합니다.":"Press OK to combine the forecast data of those lines into one and save.","활성":"Active","회색 버블은":"Gray bubbles are","횟수":"Spots","횟수 · 단가 · 예상 시청률":"spots · unit price · expected rating","횟수 × 단가":"Spots × price","횟수 × 시청률(%)":"Spots × rating (%)","효율":"Efficiency","효율 버블":"Performance bubble","효율 우수":"Efficient","효율 우수 소재":"Top-performing creatives","효율 히트맵":"Performance heatmap","효율이 좋은 순서로 · 소재를 누르면 원본과 지표를 볼 수 있습니다":"Ranked by efficiency · click a creative to see the original and its metrics","효율이 좋을수록 오른쪽 · 위":"Better efficiency is further right · higher","휴일 (주말 · 공휴일)":"Holiday (weekend · public holiday)","휴일 · 평일":"Holiday · Weekday","흘러다니기":"Floating","흘려보낼지":"drifts slowly","히스토리 기록":"Record history","＋ 광고주 추가":"＋ Add advertiser","＋ 그룹 추가":"＋ Add group","＋ 새 광고주 직접 입력":"＋ Enter a new advertiser","＋ 새 캠페인":"＋ New campaign","＋ 새로운 써머리 추가":"＋ Add summary","＋ 열 추가":"＋ Add column","＋ 자료 등록":"＋ Add material","＋ 자료 등록 으로 첫 자료를 올려 보세요.":"Post the first material with ＋ Add material.","＋ 카테고리 추가":"＋ Add category","＋ 캠페인 추가 및 관리":"＋ Add and manage campaigns","🏷 광고주 관리":"🏷 Manage advertisers","👥 관리자 관리":"👥 Manage admins","👥 초대":"👥 Invite","📁 전체 소재 보기":"📁 All creatives","🔑 권한 요청하기":"🔑 Request permission","🕘 입력 히스토리":"🕘 Input history","🖼 이미지":"🖼 Image","🗂 소재 관리":"🗂 Manage creatives","🗑 데이터 모두 삭제":"🗑 Delete all data","🛡 계정 관리":"🛡 Accounts"};
@@ -19054,6 +19513,47 @@ Object.assign(I18N_EN,{
   "막대는 물량, 꺾은선은 단가입니다. 꺾은선 위의 주황 원은 그날 시작된":"Bars are volume; lines are unit cost. Orange circles on the line mark",
   "입니다 — 마우스를 올리면 내용과 기간이 보입니다.":" that started that day — hover to see details and period.",
   "이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Shown on the line on the day the issue started. Hover a circle to see details and period."
+});
+/* v92 — 유입 · 체류시간 · 랜딩 페이지 · 유입 분석 */
+Object.assign(I18N_EN,{
+  "유입":"Inflow","체류시간":"Time on site","랜딩 페이지":"Landing page","유입률":"Inflow rate","유입 단가":"Cost per IWV",
+  "체류 15초 미만":"Time <15s","체류 15~29초":"Time 15–29s","체류 30~59초":"Time 30–59s","체류 1~3분":"Time 1–3m",
+  "체류 3~5분":"Time 3–5m","체류 5~10분":"Time 5–10m","체류 10~15분":"Time 10–15m","체류 15~20분":"Time 15–20m",
+  "체류 20~30분":"Time 20–30m","체류 30분 이상":"Time 30m+","체류 방문수":"Visits (time on site)",
+  "평균 체류시간":"Avg. time on site","30초 이상 체류율":"30s+ stay rate",
+  "그 라인에 적어 둔 랜딩 페이지가 아닙니다":"Not one of the landing pages set on that line",
+  "예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)":"One of the line's landing pages in Forecast (anything if the line has none)",
+  "IWV(all) ÷ 클릭":"IWV(all) ÷ clicks","소진금액 ÷ IWV(all)":"Spend ÷ IWV(all)","체류시간 구간 방문수의 합":"Sum of visits across time-on-site bands",
+  "구간별 방문수 × 구간 중앙값(15초 미만 7.5초 · 1~3분 2분 …) ÷ 체류 방문수":"Visits per band × band midpoint (<15s = 7.5s · 1–3m = 2m …) ÷ visits",
+  "30초 이상 구간 방문수 ÷ 체류 방문수":"Visits in 30s+ bands ÷ visits",
+  "광고를 누르면 넘어가는 랜딩 페이지입니다.":"The landing page the ad leads to.",
+  "인터랙팅 방문(IWV) — 유입(방문) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용 ③ 페이지에 20초 이상 머묾 중 하나를 충족한 방문입니다. 랜딩 구분 없는 합계입니다.":"Interacting visits (IWV) — visits that ① viewed 2+ pages, ② used a site feature, or ③ stayed 20s+ on a page. Total regardless of landing page.",
+  "첫 방문 페이지가 모빌리티 허브인 인터랙팅 방문입니다.":"Interacting visits whose entry page is the mobility hub.",
+  "첫 방문 페이지가 모델 페이지인 인터랙팅 방문입니다.":"Interacting visits whose entry page is a model page.",
+  "첫 방문 페이지가 시승 신청(TDA) 페이지인 인터랙팅 방문입니다.":"Interacting visits whose entry page is the test-drive (TDA) page.",
+  "클릭 대비 실제로 사이트에 들어와 반응한 비율입니다.":"Share of clicks that became interacting site visits.",
+  "인터랙팅 방문 1회를 얻는 데 든 광고비입니다.":"Ad spend per interacting visit.",
+  "체류시간이 기록된 방문 수입니다.":"Visits with a recorded time on site.",
+  "방문 1회당 평균 체류시간(구간 중앙값으로 어림)입니다.":"Average time per visit (estimated from band midpoints).",
+  "30초 이상 머문 방문의 비율입니다.":"Share of visits that stayed 30s or more.",
+  "15초 안에 떠난 방문 수입니다.":"Visits that left within 15s.","15~29초 머문 방문 수입니다.":"Visits that stayed 15–29s.",
+  "30~59초 머문 방문 수입니다.":"Visits that stayed 30–59s.","1~3분 머문 방문 수입니다.":"Visits that stayed 1–3m.",
+  "3~5분 머문 방문 수입니다.":"Visits that stayed 3–5m.","5~10분 머문 방문 수입니다.":"Visits that stayed 5–10m.",
+  "10~15분 머문 방문 수입니다.":"Visits that stayed 10–15m.","15~20분 머문 방문 수입니다.":"Visits that stayed 15–20m.",
+  "20~30분 머문 방문 수입니다.":"Visits that stayed 20–30m.","30분 넘게 머문 방문 수입니다.":"Visits that stayed over 30m.",
+  "유입 분석":"Inflow analysis","사이트 분석(Adobe 등) 기준 ·":"From site analytics (Adobe etc.) ·",
+  "= 인터랙팅 방문 (2페이지 이상 · 기능 사용 · 20초 이상 중 하나)":"= interacting visit (2+ pages · used a feature · or stayed 20s+)",
+  "이탈 포함":"Show drop-off",
+  "클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다":"Show clicks that didn't become IWV as hatched bands in the flow",
+  "IWV(인터랙팅 방문)":"IWV (interacting visits)",
+  "— 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다. 매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.":"— site visits that viewed 2+ pages, used a feature, or stayed 20s+. This section links clicks from media reports with visits from site analytics (Adobe Analytics etc.).",
+  "유입 흐름":"Inflow flow",
+  "— 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다. IWV(all) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.":"— band width shows how clicks on the left (media · product · creative) flowed to landing pages on the right (IWV by entry page). IWV(all) without a landing breakdown is ‘other landing’; clicks that didn't become IWV are the hatched ‘dropped’ band.",
+  "유입 효율 지도":"Inflow efficiency map",
+  "— 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입 단가(소진금액 ÷ IWV)가 쌉니다. 점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.":"— further right = higher inflow rate (IWV ÷ clicks); higher up = lower cost per IWV (spend ÷ IWV). Dashed lines are the overall average, so the top-right quadrant is the most efficient. Circle size = IWV.",
+  "체류시간 분포":"Time on site",
+  "— 방문을 머문 시간 구간으로 나눈 비율입니다. 평균 체류시간은 구간 가운데 값으로 어림한 값입니다.":"— share of visits by time-on-site band. Average time is estimated from band midpoints.",
+  "사이트 데이터는 매체 리포트와 집계 기준이 달라 IWV 가 클릭보다 많을 수도 있습니다(조회 후 방문 등).":"Site data is counted differently from media reports, so IWV can exceed clicks (e.g. view-through visits)."
 });
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
