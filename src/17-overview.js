@@ -178,38 +178,63 @@ function paintOverview(loading){
   const sb=tot.digital.budget+tot.tv.budget,sp=tot.digital.spend+tot.tv.spend;
   const shr=k=>all?tot[k].budget/all:NaN;
   const Bn=v=>`<b class="mono">${fmt(v)}</b>`;
-  /* v83 — 키가 큰 카드. 총 광고비는 매체 비중 도넛, 매체 카드는 집행 · 잔여와 소진율 게이지(광고비 중 집행 비율) */
-  const kstat=(k,v)=>`<div class="kstat"><span>${k}</span><b class="mono">${v}</b></div>`;
-  const kbar=(a,b)=>{const v=b?a/b:NaN;return isFinite(v)?`<div class="kbar"><i style="width:${Math.min(Math.max(v,0),1)*100}%"></i></div>
-      <div class="kbl"><span>${L('소진율','Spend rate')}</span><b class="mono">${pc1(v)}</b></div>`:'';};
+  /* v84 — 총 광고비: 큰 도넛. 비중(%)은 도넛 조각 안에, 이름은 아래 범례에만, 가운데 구멍에 총 광고비 · 집행 · 소진율.
+     매체 카드: 큰 단색 아이콘 + 막대 하나 — 아래 왼쪽 집행금액 · 오른쪽 잔여금액 · 가운데 작은 회색 소진율.
+     OOH 는 실적이 없어 막대가 집행 기간(시작~종료 중 지난 비율) */
   const donut=()=>{
-    const R=46,C=2*Math.PI*R;let acc=0;
-    const segs=OV_AREAS.filter(x=>tot[x.k].budget>0).map(x=>{const f=tot[x.k].budget/all,len=f*C,off=acc;acc+=len;
-      return `<circle r="${R}" cx="60" cy="60" fill="none" stroke="var(--ov-${x.k})" stroke-width="18"
+    const CX=120,R=92,SW=25,C=2*Math.PI*R;let acc=0;
+    const live=OV_AREAS.filter(x=>tot[x.k].budget>0);
+    const segs=live.map(x=>{const f=tot[x.k].budget/all,len=f*C,off=acc;acc+=len;
+      return `<circle r="${R}" cx="${CX}" cy="${CX}" fill="none" stroke="var(--ov-${x.k})" stroke-width="${SW}"
         stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" data-ovpie="${x.k}"></circle>`;}).join('');
-    return `<div class="kdonut"><svg viewBox="0 0 120 120" width="118" height="118" role="img">
-        <circle r="${R}" cx="60" cy="60" fill="none" stroke="var(--line2)" stroke-width="18"></circle>
-        <g transform="rotate(-90 60 60)">${segs}</g>
-        <text x="60" y="56" text-anchor="middle" class="dt">${L('매체 비중','By media')}</text>
-        <text x="60" y="72" text-anchor="middle" class="dv">${fmt(OV_AREAS.filter(x=>tot[x.k].budget>0).length)}${L('개 매체',' media')}</text></svg>
-      <div class="klegend">${OV_AREAS.map(x=>`<div class="kl${tot[x.k].budget?'':' zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.k[0]}"></i><span>${x.l}</span>
-        <b class="mono">${pc1(all?tot[x.k].budget/all:0)}</b><em class="mono">${tot[x.k].budget?manUnit(tot[x.k].budget):'–'}</em></div>`).join('')}</div></div>`;};
-  const areaCard=(x,body)=>`<div class="ovk ov${x.k[0]}"><div class="kh"><i class="ovdot ${x.k[0]}"></i><span class="tt">${x.l}</span>
-      <span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div>
+    /* 조각 안의 % — 작은 조각(5% 미만)은 고리 바깥에 */
+    let a0=0;
+    const labs=live.map(x=>{const f=tot[x.k].budget/all,mid=(a0+f/2)*2*Math.PI-Math.PI/2;a0+=f;
+      const out=f<0.05,r=out?R+SW/2+13:R;
+      const tx=CX+r*Math.cos(mid),ty=CX+r*Math.sin(mid)+4;
+      return `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" class="dp${out?' out':' in-'+x.k[0]}">${(f*100).toFixed(f<0.1?1:0)}%</text>`;}).join('');
+    /* 가운데 구멍 폭에 맞춰 글자 크기를 줄인다 */
+    const fit=(t,base,w)=>Math.min(base,w/(String(t).replace(/<[^>]+>/g,'').length*.56)).toFixed(1);
+    const t3=`${L('집행','Spent')} ${won0(sp)}`;
+    const t4=(sb?L(`소진 ${pc1(sp/sb)}`,`${pc1(sp/sb)} spent`)+' · ':'')+L(`캠페인 ${fmt(rows.length)}개`,`${fmt(rows.length)} campaigns`);
+    return `<div class="kdonut2"><svg viewBox="0 0 240 240" width="232" height="232" role="img">
+        <circle r="${R}" cx="${CX}" cy="${CX}" fill="none" stroke="var(--line2)" stroke-width="${SW}"></circle>
+        <g transform="rotate(-90 ${CX} ${CX})">${segs}</g>${labs}
+        <text x="${CX}" y="${CX-27}" text-anchor="middle" class="dc1">${L('총 광고비','Total ad spend')}</text>
+        <text x="${CX}" y="${CX-3}" text-anchor="middle" class="dc2" style="font-size:${Math.min(18,148/(won0(all).length*.6)).toFixed(1)}px">${won0(all)}</text>
+        <text x="${CX}" y="${CX+19}" text-anchor="middle" class="dc3" style="font-size:${fit(t3,10.5,140)}px">${t3}</text>
+        <text x="${CX}" y="${CX+36}" text-anchor="middle" class="dc4" style="font-size:${fit(t4,10,126)}px">${t4}</text></svg>
+      <div class="klegend2">${OV_AREAS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;};
+  const ICON={
+    digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="9" width="29" height="20" rx="2.5"/><path d="M14 36h11M19.5 29v7"/><rect x="30" y="17" width="13" height="23" rx="3"/><path d="M35 36h3"/></svg>',
+    tv:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="13" width="38" height="25" rx="3.5"/><path d="M17 6l7 7 7-7M16 43h16"/><path d="M36 20v4"/></svg>',
+    ooh:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="22" rx="2.5"/><path d="M15 29v13M33 29v13M9 42h30M12 14h14M12 20h9"/></svg>'};
+  const gauge=(ratio,l1,v1,mid,l2,v2)=>`<div class="kbar">${isFinite(ratio)?`<i style="width:${(Math.min(Math.max(ratio,0),1)*100).toFixed(2)}%"></i>`:''}</div>
+    <div class="kfoot"><div class="kf l"><span>${l1}</span><b class="mono">${v1}</b></div>
+      <div class="kf r"><span>${l2}</span><b class="mono">${v2}</b></div>${mid?`<div class="kf c">${mid}</div>`:''}</div>`;
+  const areaCard=(x,body)=>`<div class="ovk ov${x.k[0]}"><div class="kt"><div class="ktx"><span class="tt">${x.l}</span>
+        <span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div><span class="kic">${ICON[x.k]}</span></div>
       <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div>
       <div class="kfill"></div>${body}</div>`;
+  const spentCard=k=>{const b=tot[k].budget,sv=tot[k].spend;
+    return gauge(b?sv/b:NaN,L('집행금액','Spent'),won0(sv),b?L(`소진율 ${pc1(sv/b)}`,`${pc1(sv/b)} spent`):'',L('잔여금액','Remaining'),won0(Math.max(b-sv,0)));};
+  /* OOH — 집행 기간 게이지: 가장 이른 시작 ~ 가장 늦은 종료 중 오늘까지 지난 비율 */
+  const oohCard=()=>{
+    const rs=rows.filter(r=>r.a.ooh.inc);
+    const ss=rs.map(r=>r.a.ooh.start||r.start).filter(Boolean).sort(),ee=rs.map(r=>r.a.ooh.end||r.end).filter(Boolean).sort();
+    const s0=ss[0],e0=ee[ee.length-1];
+    if(!s0||!e0)return gauge(NaN,L('시작일','Start'),'–','',L('종료일','End'),'–');
+    const D=x=>new Date(x+'T00:00:00').getTime(),days=Math.round((D(e0)-D(s0))/864e5)+1;
+    const done=today<s0?0:today>e0?days:Math.round((D(today)-D(s0))/864e5)+1;
+    const rt=days?done/days:NaN;
+    return gauge(rt,L('시작일','Start'),s0.replace(/-/g,'.'),
+      today<s0?L('집행 전','Not started'):today>e0?L('집행 종료','Ended'):L(`기간 ${pc1(rt)} 경과`,`${pc1(rt)} of flight`),
+      L('종료일','End'),e0.replace(/-/g,'.'));};
   box.innerHTML=
-    `<div class="ovk ovall"><div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span>
-        <span class="kr">${sb?L(`소진 ${pc1(sp/sb)}`,`spent ${pc1(sp/sb)}`):''}</span></div>
-      <div class="kv mono">${won0(all)}</div>
-      <div class="ks">${L(`캠페인 ${Bn(rows.length)}개 · 집행 <b class="mono">${won0(sp)}</b>`,`${Bn(rows.length)} campaigns · spent <b class="mono">${won0(sp)}</b>`)}</div>
-      ${all?donut():`<div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
-   +areaCard(OV_AREAS[0],kstat(L('집행','Spent'),won0(tot.digital.spend))+kstat(L('잔여','Remaining'),won0(Math.max(tot.digital.budget-tot.digital.spend,0)))+kbar(tot.digital.spend,tot.digital.budget))
-   +areaCard(OV_AREAS[1],kstat(L('집행','Spent'),won0(tot.tv.spend))+kstat(L('잔여','Remaining'),won0(Math.max(tot.tv.budget-tot.tv.spend,0)))+kbar(tot.tv.spend,tot.tv.budget))
-   /* OOH 는 실적(집행) 입력이 없어 게이지를 그리지 않는다 */
-   +areaCard(OV_AREAS[2],kstat(L('지면','Placements'),L(`${fmt(tot.ooh.slots)}개`,fmt(tot.ooh.slots)))
-      +kstat(L('매체','Media'),L(`${fmt(sum(rows.filter(r=>r.a.ooh.inc).map(r=>r.a.ooh.media||0)))}곳`,fmt(sum(rows.filter(r=>r.a.ooh.inc).map(r=>r.a.ooh.media||0)))))
-      +`<div class="kbl muted"><span>${L('계획 광고비 기준 — 실적 입력 없음','Plan basis — no actuals')}</span></div>`);
+    `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
+   +areaCard(OV_AREAS[0],spentCard('digital'))
+   +areaCard(OV_AREAS[1],spentCard('tv'))
+   +areaCard(OV_AREAS[2],oohCard());
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
     el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(x.l)}</div>`
@@ -301,25 +326,10 @@ function paintOverview(loading){
       rs=>`<td class="head" colspan="3">TOTAL</td><td class="mono">${won0(sum(rs.map(r=>r.a.ooh.budget)))}</td>`
         +`<td class="mono"></td><td class="mono">${n0(sum(rs.map(r=>r.a.ooh.slots)))}</td>`);
     ls.innerHTML=`<div class="ovlists">${dg}${tv}${oh}</div>`;}
-  /* 캠페인별 광고비 (v83) — 시작한 순서로 한 줄씩, 막대 하나에 디지털 + TV + OOH 를 쌓는다 */
+  /* 캠페인별 광고비 (v84) — 세로 막대(입체) · 시작한 순서. 막대 하나에 디지털 + TV + OOH 를 쌓는다.
+     캠페인 이름은 막대 위에 지그재그(2~3단)로 놓고 가는 선으로 막대와 잇는다 — 긴 이름도 겹치지 않게 */
   const bx=$('ovBars');
-  if(bx){
-    const mx=Math.max(1,...rows.map(r=>r.budget||0));
-    const seg=(r,x)=>{const v=r.a[x.k].inc?r.a[x.k].budget:0;return v>0?`<i class="${x.k[0]}" style="width:${(v/mx*100).toFixed(3)}%"></i>`:'';};
-    bx.innerHTML=rows.length?`<div class="ovbars">${rows.map((r,i)=>{
-        const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
-          a:OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0).map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
-        return `<div class="obr"><div class="obn"><b>${esc(r.name)}</b><span>${r.start?`${mdy(r.start)} ~ ${mdy(r.end)}`:'–'}</span></div>
-          <div class="obt" data-ovtip="${tip}">${OV_AREAS.map(x=>seg(r,x)).join('')}</div>
-          <div class="obv mono">${r.budget?won(r.budget):'–'}</div></div>`;}).join('')}</div>
-        <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div>`
-      :`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;
-    bx.querySelectorAll('[data-ovtip]').forEach(b=>{let o=null;try{o=JSON.parse(b.dataset.ovtip);}catch(e){return;}
-      b.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o.n)}</div>`
-        +(o.p?`<div class="r"><span class="l">${L('기간','Period')}</span><b>${esc(o.p)}</b></div>`:'')
-        +o.a.map(([l,v])=>`<div class="r"><span class="l">${esc(l)}</span><b>${won0(v)} · ${o.t?((v/o.t)*100).toFixed(1)+'%':''}</b></div>`).join('')
-        +`<div class="r"><span class="l">${L('합계','Total')}</span><b>${won0(o.t)}</b></div>`));
-      b.addEventListener('mouseleave',hideTip);});}
+  if(bx)paintOvColumns(bx,rows,won0);
   /* 소재 콜라주 (v83) */
   try{paintCollage(rows);}catch(e){console.warn(e);}
   document.querySelectorAll('#tab-overview [data-ovgo]').forEach(b=>b.onclick=()=>{const g=OV_GO[+b.dataset.ovgo];if(g)ovGoAsk(g.r,g.area);});
@@ -453,3 +463,58 @@ function paintCollage(rows){
       .finally(()=>{if(seq!==OVC.seq)return;OVC.busy=false;const t=$('tab-overview');if(t&&!t.classList.contains('hidden'))draw();});
     return;}
   draw();}
+
+/* ---------- 캠페인별 광고비 — 세로 입체 막대 (v84) ---------- */
+var OVCOL_LAST=null;
+function paintOvColumns(bx,rows,won0){
+  OVCOL_LAST={rows,won0,w:bx.clientWidth};
+  if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
+  const cs=getComputedStyle(bx),pad=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
+  const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-pad,300);
+  const YW=52,RP=28,n=rows.length;
+  /* 칸이 너무 좁아지면(84px 미만) 좌우로 스크롤 */
+  const cellW=Math.max(Math.min((W-YW-RP)/n,220),84);
+  const plotW=cellW*n;
+  /* 이름은 두 단 지그재그 — 이름 폭이 좌우 이웃 막대의 줄에 닿지 않도록 2칸 폭 이내, 길면 두 줄까지 */
+  const LV=2,LH=52,labZ=LV*LH+12,plotH=230,DEP=9;
+  const mx=Math.max(1,...rows.map(r=>r.budget||0));
+  /* 눈금 — 보기 좋은 단위로 4칸 */
+  const raw=mx/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),stp=[1,2,2.5,5,10].map(k=>k*mag).find(v=>v>=raw)||raw;
+  const top=Math.ceil(mx/stp)*stp,ticks=[];for(let v=0;v<=top+1e-6;v+=stp)ticks.push(v);
+  const Y=v=>labZ+plotH-v/top*plotH;
+  const labW=Math.min(2*cellW-12,300);
+  const cols=rows.map((r,i)=>{
+    const cx=YW+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.42,58),14);
+    const segs=OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0);
+    const h=r.budget?Math.max(r.budget/top*plotH,3):0;
+    const lv=i%LV,lt=lv*LH+2;
+    /* 이름은 늘 자기 막대 줄 위 가운데 — 양 끝 캠페인은 폭을 줄여 옆 캠페인의 줄을 덮지 않게 */
+    const hw=Math.min(labW/2,cx,YW+plotW+RP-cx),ll=cx-hw,lw=hw*2;
+    const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
+      a:segs.map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
+    return `<div class="ocl" style="left:${ll.toFixed(1)}px;top:${lt}px;width:${lw.toFixed(1)}px;height:${LH-8}px" data-oci="${i}">
+        <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span></div>
+      <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Y(r.budget||0)-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
+      <div class="ocbar" style="left:${(cx-bw/2).toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(labZ+plotH-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
+        ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>
+      <div class="ocx mono" style="left:${(cx-cellW/2).toFixed(1)}px;width:${cellW.toFixed(1)}px;top:${labZ+plotH+7}px" data-oci="${i}">${r.start?mdy(r.start):'–'}</div>`;}).join('');
+  const grid=ticks.map(v=>`<i class="ocg${v?'':' z'}" style="top:${Y(v).toFixed(1)}px;left:${YW}px;width:${plotW.toFixed(1)}px"></i>
+      <span class="ocy mono" style="top:${(Y(v)-7).toFixed(1)}px;width:${YW-8}px">${v?manUnit(v):'0'}</span>`).join('');
+  bx.innerHTML=`<div class="ovcols" style="height:${labZ+plotH+30}px;width:${(YW+plotW+RP).toFixed(1)}px">${grid}${cols}</div>
+    <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}<span class="ocnote">${L('막대 아래 날짜 = 캠페인 시작일','Date under bar = campaign start')}</span></div>`;
+  const C=bx.querySelector('.ovcols');
+  bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
+    el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));
+    el.addEventListener('mouseleave',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.remove('hl')));});
+  bx.querySelectorAll('.ocbar[data-ovtip]').forEach(b=>{let o=null;try{o=JSON.parse(b.dataset.ovtip);}catch(e){return;}
+    b.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o.n)}</div>`
+      +(o.p?`<div class="r"><span class="l">${L('기간','Period')}</span><b>${esc(o.p)}</b></div>`:'')
+      +o.a.map(([l,v])=>`<div class="r"><span class="l">${esc(l)}</span><b>${won0(v)} · ${o.t?((v/o.t)*100).toFixed(1)+'%':''}</b></div>`).join('')
+      +`<div class="r"><span class="l">${L('합계','Total')}</span><b>${won0(o.t)}</b></div>`));
+    b.addEventListener('mouseleave',hideTip);});
+}
+/* 창 폭이 바뀌면 막대 폭 · 이름 단수를 다시 계산 */
+window.addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=setTimeout(()=>{
+  const bx=$('ovBars'),tab=$('tab-overview');
+  if(!bx||!OVCOL_LAST||!tab||tab.classList.contains('hidden')||bx.clientWidth===OVCOL_LAST.w)return;
+  paintOvColumns(bx,OVCOL_LAST.rows,OVCOL_LAST.won0);},160);};})());

@@ -602,58 +602,85 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovtoday{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--pace);z-index:2}
 .ovtoday span{position:absolute;top:-37px;left:0;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--surface);
   background:var(--pace);padding:1px 6px;border-radius:5px;white-space:nowrap;line-height:15px}
-.ovleg{display:flex;gap:14px;justify-content:flex-end;margin-top:10px;font-size:11px;color:var(--muted);font-weight:700}
-.ovleg span{display:inline-flex;align-items:center}
+.ovleg{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:flex-end;margin-top:10px;font-size:11px;color:var(--muted);font-weight:700}
+.ovleg span{display:inline-flex;align-items:center;white-space:nowrap}
 .ovlists{display:flex;flex-direction:column;gap:14px}
 .ovcard{padding:0;overflow:hidden}
-/* 광고비 현황 — 키가 큰 카드 (v83) */
-.ovkpis{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 4px}
+/* 광고비 현황 — 키가 큰 카드 (v83 → v84) */
+.ovkpis{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 4px}
 @media (max-width:1100px){.ovkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){.ovkpis{grid-template-columns:minmax(0,1fr)}}
-.ovk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px 18px;min-height:250px;
-  display:flex;flex-direction:column;position:relative}
-.ovk.ovall{background:linear-gradient(165deg,var(--surface) 40%,var(--acc-soft2))}
-.ovk .kh{display:flex;align-items:center;gap:2px;min-height:20px}
-.ovk .kh .tt{font-size:12.5px;font-weight:800;color:var(--ink2)}
-.ovk .kh .kr{margin-left:auto;font-size:12px;font-weight:800;color:var(--acc)}
-.ovk .kv{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.6px;margin:12px 0 4px;white-space:nowrap}
+@media (max-width:640px){.ovkpis{grid-template-columns:minmax(0,1fr)}.ovk{min-height:0!important}.ovk .kfill{min-height:22px!important}}
+.ovk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px 18px;min-height:296px;
+  display:flex;flex-direction:column;position:relative;min-width:0;container-type:inline-size}
+.ovk.ovall{background:linear-gradient(165deg,var(--surface) 40%,var(--acc-soft2));align-items:center;justify-content:center;padding:14px 16px}
+.ovk .kh{display:flex;align-items:center;gap:2px;min-height:20px;align-self:stretch}
+.ovk .tt{font-size:12.5px;font-weight:800;color:var(--ink2)}
+.ovk .kv{font-size:min(25px,11cqw);font-weight:800;color:var(--ink);letter-spacing:-.6px;margin:8px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ovk .ks{font-size:11.5px;color:var(--muted)}
 .ovk .ks b{color:var(--ink2)}
 .ovk .kfill{flex:1;min-height:14px}
-.ovk .kstat{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--line2);font-size:12px}
-.ovk .kstat span{color:var(--muted);font-weight:700}
-.ovk .kstat b{color:var(--ink);font-weight:800}
-.ovk .kbar{height:8px;border-radius:99px;background:var(--line2);margin-top:10px;overflow:hidden}
+.ovk .hint{align-self:stretch}
+/* 총 광고비 — 도넛: 조각 안에 %, 가운데 구멍에 총액 */
+.ovk .kdonut2{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.ovk .kdonut2 svg{display:block;max-width:100%;height:auto;overflow:visible}
+.ovk .kdonut2 circle[data-ovpie]{cursor:default;transition:stroke-width .12s}
+.ovk .kdonut2 circle[data-ovpie]:hover{stroke-width:29}
+.ovk .dp{font-size:12.5px;font-weight:800;pointer-events:none;font-variant-numeric:tabular-nums}
+.ovk .dp.in-d,.ovk .dp.in-t{fill:#fff}
+.ovk .dp.in-o{fill:var(--ink)}
+.ovk .dp.out{fill:var(--ink2);font-size:11px}
+.ovk .dc1{font-size:11px;font-weight:700;fill:var(--muted)}
+.ovk .dc2{font-size:18px;font-weight:800;fill:var(--ink);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.ovk .dc3{font-size:10.5px;font-weight:700;fill:var(--ink2);font-variant-numeric:tabular-nums}
+.ovk .dc4{font-size:10px;font-weight:600;fill:var(--muted)}
+[data-theme="dark"] .ovk .dp.in-d,[data-theme="dark"] .ovk .dp.in-t{fill:#161616}
+[data-theme="dark"] .ovk .dp.in-o{fill:#fff}
+.ovk .klegend2{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:11.5px;font-weight:700;color:var(--ink2)}
+.ovk .klegend2 span{display:inline-flex;align-items:center;cursor:default}
+.ovk .klegend2 span.zero{opacity:.45}
+/* 매체 카드 — 큰 단색 아이콘 + 막대 하나 */
+.ovk .kt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ovk .ktx{display:flex;flex-direction:column;gap:3px;min-width:0;padding-top:2px}
+.ovk .kt .kr{font-size:11.5px;font-weight:800;color:var(--acc)}
+.ovk .kic{flex:none;display:flex;width:56px;height:56px;margin:-4px -4px 0 0;color:var(--acc);opacity:.9}
+.ovk .kic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ovk .kbar{height:10px;border-radius:99px;background:var(--line2);overflow:hidden}
 .ovk .kbar i{display:block;height:100%;border-radius:99px;background:var(--acc)}
-.ovk.ovd .kbar i{background:var(--ov-digital)}.ovk.ovt .kbar i{background:var(--ov-tv)}
-.ovk .kbl{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted);font-weight:700}
-.ovk .kbl b{color:var(--ink);font-weight:800}
-.ovk .kbl.muted{justify-content:flex-start;margin-top:12px;font-weight:600}
-.ovk .kdonut{display:flex;align-items:center;gap:16px;margin-top:auto;padding-top:14px}
-.ovk .kdonut svg{flex:none;overflow:visible}
-.ovk .kdonut circle[data-ovpie]{cursor:default;transition:stroke-width .12s}
-.ovk .kdonut circle[data-ovpie]:hover{stroke-width:21}
-.ovk .kdonut .dt{font-size:9.5px;font-weight:700;fill:var(--muted)}
-.ovk .kdonut .dv{font-size:12px;font-weight:800;fill:var(--ink)}
-.ovk .klegend{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.ovk .kl{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:4px;font-size:12px}
-.ovk .kl span{color:var(--ink2);font-weight:700}
-.ovk .kl b{font-size:14px;font-weight:800;color:var(--ink);text-align:right}
-.ovk .kl em{grid-column:2 / 4;font-style:normal;font-size:10.5px;color:var(--muted);text-align:right;margin-top:-3px}
-.ovk .kl.zero{opacity:.45}
-/* 캠페인별 광고비 — 한 줄에 캠페인 하나, 막대 하나에 디지털 + TV + OOH */
-.ovbars{display:flex;flex-direction:column;gap:2px}
-.obr{display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr) 128px;align-items:center;gap:14px;padding:7px 2px;border-bottom:1px solid var(--line2)}
-.obr:last-child{border-bottom:0}
-.obn{min-width:0}
-.obn b{display:block;font-size:12.8px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.obn span{font-size:10.5px;color:var(--muted);font-weight:600}
-.obt{display:flex;height:18px;border-radius:6px;background:var(--line2);overflow:hidden;cursor:default}
-.obt i{display:block;height:100%;background:var(--ov-digital)}
-.obt i.t{background:var(--ov-tv)}.obt i.o{background:var(--ov-ooh)}
-.obt i+i{box-shadow:inset 1px 0 0 var(--surface)}
-.obv{text-align:right;font-weight:800;color:var(--ink);font-size:12.5px}
-@media (max-width:640px){.obr{grid-template-columns:1fr;gap:6px}.obv{text-align:left}}
+.ovk.ovd .kbar i{background:var(--ov-digital)}.ovk.ovt .kbar i{background:var(--ov-tv)}.ovk.ovo .kbar i{background:var(--ov-ooh)}
+[data-theme="dark"] .ovk .kbar{background:var(--line)}
+.ovk .kfoot{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
+.ovk .kf{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ovk .kf span{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.ovk .kf b{font-size:min(13.5px,5.7cqw);font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovk .kf.r{text-align:right;align-items:flex-end}
+.ovk .kf.c{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:min(10.5px,4.6cqw);font-weight:600;color:var(--muted);white-space:nowrap}
+/* 캠페인별 광고비 — 세로 입체 막대: 위쪽 이름은 지그재그, 줄로 막대와 이어진다 */
+#ovBars{overflow-x:auto}
+.ovcols{position:relative;margin:2px auto 0}
+.ovcols>*{position:absolute}
+.ocg{height:0;border-top:1px dashed var(--line);pointer-events:none}
+.ocg.z{border-top:1.5px solid var(--gline)}
+.ocy{left:0;text-align:right;font-size:10.5px;font-weight:700;color:var(--muted);line-height:14px}
+.ocl{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;line-height:1.25;cursor:default;min-width:0}
+.ocl b{max-width:100%;font-size:12px;font-weight:800;color:var(--ink);overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.ocl span{font-size:11px;font-weight:700;color:var(--muted);margin-top:1px}
+.ocl.hl b{color:var(--acc)}
+.ocl.hl span{color:var(--ink2)}
+.ocln{width:0;border-left:1px solid var(--gline);transform:translateX(-.5px);pointer-events:none}
+.ocln.hl{border-left-color:var(--acc)}
+.ocbar{display:flex;flex-direction:column;cursor:default;transition:filter .12s}
+.ocbar i{position:relative;display:block;min-height:1px;background:var(--ov-digital)}
+.ocbar i.t{background:var(--ov-tv)}.ocbar i.o{background:var(--ov-ooh)}
+/* 옆면(어둡게) · 윗면(밝게) */
+.ocbar i::after{content:'';position:absolute;left:100%;top:0;width:9px;height:100%;background:inherit;filter:brightness(.72);
+  transform:skewY(-45deg);transform-origin:left top}
+.ocbar i:first-child::before{content:'';position:absolute;left:0;bottom:100%;width:100%;height:9px;background:inherit;filter:brightness(1.18);
+  transform:skewX(-45deg);transform-origin:left bottom}
+.ocbar.hl{filter:brightness(1.08) drop-shadow(0 4px 10px rgba(0,0,0,.18))}
+.ocx{text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.ocx.hl{color:var(--ink)}
+.ovleg .ocnote{margin-left:10px;font-weight:600;color:var(--muted)}
 /* 소재 콜라주 */
 #ovCollage{margin-top:2px}
 .ovcol{display:flex;flex-direction:column;gap:5px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
