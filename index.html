@@ -383,6 +383,8 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   border-radius:0 0 14px 14px;box-shadow:var(--shadow2)}
 #tabs[data-pop] .megapop{display:flex;animation:subpop .12s ease-out}
 .tabs .megapop::before{content:'';position:absolute;left:0;right:0;top:44px;border-top:1px solid var(--line)}
+/* 판이 열려 있는 동안 아래 메뉴 줄은 감춘다 — 열리는 순간(반투명)에도 머리글이 겹쳐 보이지 않게 */
+#tabs[data-pop] .arearow>.area{visibility:hidden}
 @keyframes subpop{from{opacity:0;clip-path:inset(0 0 60% 0)}to{opacity:1;clip-path:inset(0 0 -40px 0)}}
 .tabs .subgrp{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:176px;padding:0 6px 6px;border-radius:0}
 .tabs .subgrp+.subgrp{margin-left:6px;position:relative}
