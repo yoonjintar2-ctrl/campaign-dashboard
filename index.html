@@ -2898,7 +2898,7 @@ table.tbl.inftbl td.strong{font-weight:800}
           <option value="product">광고상품별</option>
           <option value="creative">소재별</option>
         </select>
-        <span class="switch on" id="infLeak" title="클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다"><i></i> 이탈 포함</span>
+        <span class="switch" id="infLeak" title="클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다"><i></i> 이탈 포함</span>
       </div>
     </div>
     <div class="card" data-sect="inflow"><div class="bd" id="infBody"></div></div>
@@ -19160,7 +19160,10 @@ window.addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=set
    ③ 체류시간 분포 — 100% 막대(짧게 머문 방문 → 오래 머문 방문), 평균 체류시간 순
    ④ 상세 표
    데이터가 전혀 없는 캠페인에서는 영역 자체를 감춘다. */
-var INF={dim:'media',leak:true};
+var INF={dim:'media',leak:false};
+/* IWV 가 이보다 적은 라인은 추적이 빠진 것으로 보고 분석에서 뺀다 — 클릭은 많은데 IWV 가 한두 건이면
+   유입률 · 유입 단가가 0% · 수천만 원으로 튀어 다른 매체가 묻힌다 (표 아래 안내로 알려 준다) */
+const INF_MIN=10;
 const INF_LAND=[{k:'iwv_tda',l:'tda'},{k:'iwv_mh',l:'mobilityhub'},{k:'iwv_mp',l:'modelpage'}];
 /* 체류시간 10구간 → 화면에서는 5묶음 */
 const INF_BANDS=[
@@ -19176,9 +19179,17 @@ const infCpv=b=>b.iwv?b.cost/b.iwv:NaN;
 /* 캠페인 전체(기간 무관)에 유입 데이터가 하나라도 있는가 */
 function infAny(){try{return FACTS.some(f=>infHas(f));}catch(e){return false;}}
 /* 기준(매체 · 광고상품 · 소재)별로 묶는다 — 지금 조회 기간 · 필터를 따른다 */
-function infGroups(dim){
+function infLineStat(){
+  const by=new Map();
+  factFilter().forEach(f=>{let a=by.get(f.lid);if(!a){a=[];by.set(f.lid,a);}a.push(f);});
+  const out=[];
+  by.forEach((fs,lid)=>{const b=aggFacts(fs);const l=LINES.find(x=>x.id===lid)||{};
+    out.push({lid,l,b,ok:(+b.iwv||0)>=INF_MIN||(!(+b.iwv)&&dwSum(b)>=INF_MIN)});});
+  return out;}
+function infGroups(dim,okSet){
   const map=new Map();
   factFilter().forEach(f=>{
+    if(okSet&&!okSet.has(f.lid))return;
     let key,lab,sub,col;
     if(dim==='product'){key=f.media+'\u0001'+f.product;lab=f.product||'–';sub=f.media;col=f.media;}
     else if(dim==='creative'){key=f.creative;lab=f.creative||'–';sub='';col=f.creative;}
@@ -19200,13 +19211,21 @@ function renderInflow(){
   const seg=$('infDim');
   if(seg){seg.value=dim;seg.onchange=e=>{INF.dim=e.target.value;renderInflow();};}
   const lk=$('infLeak');
-  if(lk){lk.classList.toggle('on',INF.leak!==false);lk.onclick=()=>{INF.leak=!(INF.leak!==false);renderInflow();};}
-  const all=infGroups(dim);
+  if(lk){lk.classList.toggle('on',!!INF.leak);lk.onclick=()=>{INF.leak=!INF.leak;renderInflow();};}
+  /* 추적되는 라인만 — IWV(또는 체류시간) 가 INF_MIN 이상인 라인 */
+  const LS=infLineStat();
+  const okSet=new Set(LS.filter(x=>x.ok).map(x=>x.lid));
+  const all=infGroups(dim,okSet);
   const rows=all.filter(g=>infHas(g.b)).sort((a,b)=>(b.b.iwv||0)-(a.b.iwv||0)||(b.b.click||0)-(a.b.click||0));
   if(!rows.length){body.innerHTML=`<div class="hint infempty">${L('지금 조회 기간에는 유입 데이터가 없습니다. 조회 기간을 넓혀 보세요.','No inflow data in this period. Try a wider date range.')}</div>`;return;}
   const T=aggFacts([]);rows.forEach(g=>{AMET.concat(['cost']).forEach(m=>T[m]+=+g.b[m]||0);});
   /* 추적 데이터가 없는 매체 — 클릭은 있는데 IWV · 체류시간이 없다 */
-  const miss=infGroups('media').filter(g=>(g.b.click||0)>0&&!infHas(g.b)).map(g=>g.lab);
+  /* 빠진 라인 — 매체별로 묶어 "Google (IWV 2)" 처럼 */
+  const missM=new Map();
+  const okMedia=new Set(LS.filter(x=>x.ok).map(x=>x.l.media));
+  LS.filter(x=>!x.ok&&(x.b.click||0)>0).forEach(x=>{const m=(x.l.media||'–')+(okMedia.has(x.l.media)&&x.l.segment?' · '+x.l.segment:'');
+    missM.set(m,(missM.get(m)||0)+(+x.b.iwv||0));});
+  const miss=[...missM].map(([m,v])=>v?`${m} (IWV ${fmt(v)})`:m);
   const kp=(l,v,s)=>`<div class="infk"><span>${l}</span><b class="mono">${v}</b>${s?`<em>${s}</em>`:''}</div>`;
   body.innerHTML=`<div class="infkpis">
       ${kp('IWV(all)',fmt(T.iwv),L(`클릭 ${fmt(T.click)}`,`${fmt(T.click)} clicks`))}
@@ -19215,7 +19234,7 @@ function renderInflow(){
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(T)),isFinite(dw30Rate(T))?L(`30초 이상 ${pct(dw30Rate(T),1)}`,`${pct(dw30Rate(T),1)} stay 30s+`):'')}
     </div>
     <div class="infgrid">
-      <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('클릭이 어느 랜딩 페이지로 들어왔는지 · 굵기 = 수','Where clicks landed · width = count')}${INF.leak!==false?L(' · 빗금 = 클릭했지만 IWV 로 이어지지 않음',' · hatched = clicked but no IWV'):''}</span></div>
+      <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${INF.leak?L('클릭이 어느 랜딩 페이지로 들어왔는지 · 굵기 = 수 · 빗금 = 클릭했지만 IWV 로 이어지지 않음','Where clicks landed · width = count · hatched = clicked but no IWV'):L('IWV 가 어디서 와서 어느 랜딩 페이지로 들어왔는지 · 굵기 = IWV','Where IWV came from and which landing page it entered · width = IWV')}</span></div>
         <div class="infsk" id="infSankey"></div></div>
       <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 유입 단가 낮음 · 원 크기 = IWV · 점선 = 전체 평균','right = higher inflow rate · up = cheaper per IWV · size = IWV · dashed = overall average')}</span></div>
         <div class="infmap" id="infMap"></div></div>
@@ -19225,7 +19244,7 @@ function renderInflow(){
       <div id="infDwell"></div></div>
     <div class="infcell"><div class="infh"><b>${L('상세','Details')}</b><span>${L('IWV 많은 순','by IWV')}</span></div>
       <div class="tbl-wrap"><table class="tbl lite inftbl" id="infTbl"></table></div></div>
-    ${miss.length?`<div class="hint infmiss">${L('유입 데이터가 없는 매체','No inflow data')}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
+    ${miss.length?`<div class="hint infmiss">${L(`IWV 가 없거나 ${INF_MIN}건 미만이라 분석에서 뺀 매체`,`Excluded (no IWV or fewer than ${INF_MIN})`)}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
   try{infSankey($('infSankey'),rows,T);}catch(e){console.warn(e);}
   try{infMap($('infMap'),rows,T);}catch(e){console.warn(e);}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
@@ -19235,9 +19254,10 @@ function renderInflow(){
 /* ---------- ① 유입 흐름 (Sankey) ---------- */
 function infSankey(host,rows0,T){
   if(!host)return;
-  const leakOn=INF.leak!==false;
-  /* 왼쪽 마디는 클릭(없으면 IWV) 많은 순 10개 + 그 외 */
-  let rows=rows0.slice().sort((a,b)=>Math.max(b.b.click||0,b.b.iwv||0)-Math.max(a.b.click||0,a.b.iwv||0));
+  const leakOn=!!INF.leak;
+  /* 왼쪽 마디는 많은 순(이탈 포함이면 클릭, 아니면 IWV) 10개 + 그 외 */
+  const sk=g=>leakOn?Math.max(g.b.click||0,g.b.iwv||0):(g.b.iwv||0);
+  let rows=rows0.slice().sort((a,b)=>sk(b)-sk(a));
   if(rows.length>10){const rest=rows.slice(9),b=aggFacts([]);rest.forEach(g=>{AMET.concat(['cost']).forEach(m=>b[m]+=+g.b[m]||0);});
     rows=rows.slice(0,9).concat([{key:'__etc',lab:L(`그 외 ${rest.length}개`,`${rest.length} more`),sub:'',col:'__etc',b}]);}
   /* 오른쪽 마디 — 랜딩별 IWV, IWV(all) 중 랜딩 구분이 없는 몫, 클릭 이탈 */
@@ -19285,12 +19305,12 @@ function infSankey(host,rows0,T){
     nodes+=`<rect class="sknode" x="${x0}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="${infColor(g)}" data-i="${i}"></rect>`;
     const cy=n.y+n.h/2;
     labs+=`<text class="sklab" x="${x0-8}" y="${cy-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,18))}</text>
-      <text class="skval" x="${x0-8}" y="${cy+11}" text-anchor="end">${g.sub?esc(infClip(g.sub,12))+' · ':''}${L('클릭','clicks')} ${fmt(g.b.click||0)}</text>`;});
+      <text class="skval" x="${x0-8}" y="${cy+11}" text-anchor="end">${g.sub?esc(infClip(g.sub,12))+' · ':''}${leakOn?`${L('클릭','clicks')} ${fmt(g.b.click||0)}`:`IWV ${fmt(g.b.iwv||0)}`}</text>`;});
   R.forEach((r,j)=>{const n=RN[j];
     nodes+=`<rect class="sknode r" x="${x1}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="${rCol(r)}" data-j="${j}"></rect>`;
     const cy=n.y+n.h/2;
     labs+=`<text class="sklab" x="${x1+NW+8}" y="${cy-2}">${esc(r.l)}</text>
-      <text class="skval" x="${x1+NW+8}" y="${cy+11}">${fmt(rv[j])} · ${pct(rv[j]/(T.click||rTot),1)}</text>`;});
+      <text class="skval" x="${x1+NW+8}" y="${cy+11}">${fmt(rv[j])} · ${pct(rv[j]/(leakOn?(T.click||rTot):rTot),1)}</text>`;});
   host.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" class="sksvg">
     <defs><pattern id="skHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
       <rect width="6" height="6" style="fill:var(--surface)"></rect><rect width="2.4" height="6" style="fill:var(--gline)"></rect></pattern></defs>
