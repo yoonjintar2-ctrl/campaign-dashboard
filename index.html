@@ -606,25 +606,22 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovleg span{display:inline-flex;align-items:center;white-space:nowrap}
 .ovlists{display:flex;flex-direction:column;gap:14px}
 .ovcard{padding:0;overflow:hidden}
-/* 광고비 현황 — 키가 큰 카드 (v83 → v84) */
-.ovkpis{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 4px}
-@media (max-width:1100px){.ovkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){.ovkpis{grid-template-columns:minmax(0,1fr)}.ovk{min-height:0!important}.ovk .kfill{min-height:22px!important}}
-.ovk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px 18px;min-height:296px;
-  display:flex;flex-direction:column;position:relative;min-width:0;container-type:inline-size}
-.ovk.ovall{background:linear-gradient(165deg,var(--surface) 40%,var(--acc-soft2));align-items:center;justify-content:center;padding:14px 16px}
+/* 광고비 현황 (v86) — 왼쪽 총 광고비 도넛 → 연결선 → 오른쪽 디지털 · TV · OOH 세 줄 */
+.ovkpis{display:grid;grid-template-columns:288px 44px minmax(0,1fr);margin:6px 0 4px;align-items:stretch}
+.ovrows{display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.ovk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;
+  display:flex;flex-direction:column;position:relative;min-width:0;container-type:inline-size;transition:border-color .15s,box-shadow .15s}
+.ovk.ovall{background:linear-gradient(165deg,var(--surface) 40%,var(--acc-soft2));align-items:center;justify-content:center;
+  padding:16px 14px;min-height:336px}
 .ovk .kh{display:flex;align-items:center;gap:2px;min-height:20px;align-self:stretch}
 .ovk .tt{font-size:12.5px;font-weight:800;color:var(--ink2)}
-.ovk .kv{font-size:min(25px,11cqw);font-weight:800;color:var(--ink);letter-spacing:-.6px;margin:8px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ovk .ks{font-size:11.5px;color:var(--muted)}
-.ovk .ks b{color:var(--ink2)}
 .ovk .kfill{flex:1;min-height:14px}
 .ovk .hint{align-self:stretch}
 /* 총 광고비 — 도넛: 조각 안에 %, 가운데 구멍에 총액 */
 .ovk .kdonut2{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
 .ovk .kdonut2 svg{display:block;max-width:100%;height:auto;overflow:visible}
 .ovk .kdonut2 circle[data-ovpie]{cursor:default;transition:stroke-width .12s}
-.ovk .kdonut2 circle[data-ovpie]:hover{stroke-width:29}
+.ovk .kdonut2 circle[data-ovpie]:hover,.ovk .kdonut2 circle[data-ovpie].hl{stroke-width:31}
 .ovk .dp{font-size:12.5px;font-weight:800;pointer-events:none;font-variant-numeric:tabular-nums}
 .ovk .dp.in-d,.ovk .dp.in-t{fill:#fff}
 .ovk .dp.in-o{fill:var(--ink)}
@@ -638,12 +635,36 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovk .klegend2{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:11.5px;font-weight:700;color:var(--ink2)}
 .ovk .klegend2 span{display:inline-flex;align-items:center;cursor:default}
 .ovk .klegend2 span.zero{opacity:.45}
-/* 매체 카드 — 큰 단색 아이콘 + 막대 하나 */
-.ovk .kt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.ovk .ktx{display:flex;flex-direction:column;gap:3px;min-width:0;padding-top:2px}
+/* 연결선 — 총 광고비에서 세 매체로 갈라진다. 끝의 선 · 점은 매체 색 */
+.ovtree{position:relative}
+.ovtree i{position:absolute;display:block;pointer-events:none}
+.ovtree .tin{left:0;width:50%;top:50%;border-top:1.5px solid var(--gline);transform:translateY(-.75px)}
+.ovtree .tin::before{content:'';position:absolute;left:-4px;top:-4.75px;width:8px;height:8px;border-radius:50%;background:var(--gline)}
+.ovtree .tv{left:50%;top:calc((100% - 24px)/6);bottom:calc((100% - 24px)/6);border-left:1.5px solid var(--gline);transform:translateX(-.75px)}
+.ovtree .tout{left:50%;right:-1px;height:0;border-top:2px solid var(--ov-digital);transform:translateY(-1px);transition:border-width .15s}
+.ovtree .tout.ovt{border-top-color:var(--ov-tv)}.ovtree .tout.ovo{border-top-color:var(--ov-ooh)}
+.ovtree .tout::after{content:'';position:absolute;right:-3px;top:-5px;width:8px;height:8px;border-radius:50%;background:inherit;
+  border:2px solid var(--surface);box-sizing:content-box;margin-top:-1px}
+.ovtree .tout.ovd::after{background:var(--ov-digital)}.ovtree .tout.ovt::after{background:var(--ov-tv)}.ovtree .tout.ovo::after{background:var(--ov-ooh)}
+.ovtree .t0{top:calc((100% - 24px)/6)}.ovtree .t1{top:50%}.ovtree .t2{top:calc(100% - (100% - 24px)/6)}
+.ovtree .tout.zero{opacity:.35}
+.ovtree .tout.hl{border-top-width:3.5px;transform:translateY(-1.75px)}
+/* 매체 줄 카드 — [아이콘] [이름 · 비중 / 금액 / 캠페인 수] [막대 + 집행 · 잔여] */
+.ovk.ovm{padding:14px 22px 14px 18px;justify-content:center}
+.ovk.ovm.hl{border-color:var(--gline);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.ovk.ovm.zero .ovri{opacity:.55}
+.ovri{display:grid;grid-template-columns:54px minmax(0,215px) minmax(200px,1fr);align-items:center;column-gap:22px;row-gap:12px}
+.ovk .kic{display:flex;width:54px;height:54px;color:var(--acc)}
+.ovk .kic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ovk .kic svg .cut{fill:var(--surface);stroke:var(--surface);stroke-width:6}
+.ovk .kic svg .fg{fill:var(--surface)}
+.ovk .kinfo{min-width:0}
+.ovk .kt{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .ovk .kt .kr{font-size:11.5px;font-weight:800;color:var(--acc)}
-.ovk .kic{flex:none;display:flex;width:56px;height:56px;margin:-4px -4px 0 0;color:var(--acc);opacity:.9}
-.ovk .kic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ovk .kv{font-size:min(23px,7.4cqw);font-weight:800;color:var(--ink);letter-spacing:-.5px;margin:4px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovk .ks{font-size:11.5px;color:var(--muted)}
+.ovk .ks b{color:var(--ink2)}
+.ovk .kg{min-width:0}
 .ovk .kbar{height:10px;border-radius:99px;background:var(--line2);overflow:hidden}
 .ovk .kbar i{display:block;height:100%;border-radius:99px;background:var(--acc)}
 .ovk.ovd .kbar i{background:var(--ov-digital)}.ovk.ovt .kbar i{background:var(--ov-tv)}.ovk.ovo .kbar i{background:var(--ov-ooh)}
@@ -651,9 +672,26 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovk .kfoot{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
 .ovk .kf{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ovk .kf span{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
-.ovk .kf b{font-size:min(13.5px,5.7cqw);font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovk .kf b{font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ovk .kf.r{text-align:right;align-items:flex-end}
-.ovk .kf.c{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:min(10.5px,4.6cqw);font-weight:600;color:var(--muted);white-space:nowrap}
+.ovk .kf.c{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:10.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+/* 줄 카드가 좁으면 막대를 아래 줄로 */
+@container (max-width:500px){
+  .ovri{grid-template-columns:46px minmax(0,1fr);column-gap:16px}
+  .ovri .kg{grid-column:1 / -1}
+  .ovk .kic{width:46px;height:46px}
+}
+/* 좁은 화면 — 위아래로 쌓고, 연결선은 줄 카드 왼쪽의 세로 줄기로 */
+@media (max-width:980px){
+  .ovkpis{grid-template-columns:minmax(0,1fr);row-gap:12px}
+  .ovtree{display:none}
+  .ovk.ovall{min-height:0}
+  .ovrows{grid-template-rows:none;padding-left:22px}
+  .ovk.ovm::after{content:'';position:absolute;left:-15px;top:-13px;height:calc(50% + 13px);border-left:1.5px solid var(--gline)}
+  .ovk.ovm:not(:last-child)::after{height:calc(100% + 13px)}
+  .ovk.ovm::before{content:'';position:absolute;left:-15px;width:14px;top:50%;border-top:2px solid var(--ov-digital);transform:translateY(-1px)}
+  .ovk.ovm.ovt::before{border-top-color:var(--ov-tv)}.ovk.ovm.ovo::before{border-top-color:var(--ov-ooh)}
+}
 /* 캠페인별 광고비 — 세로 입체 막대: 위쪽 이름은 지그재그, 줄로 막대와 이어진다 */
 #ovBars{overflow-x:auto}
 .ovcols{position:relative;margin:2px auto 0}
@@ -1633,11 +1671,12 @@ table.tbl.fit{width:auto}
 [data-theme="dark"] .hpbtn:hover{background:rgba(110,110,115,.9);color:#fff}
 @media print{.hpbtn{display:none!important}}
 
-/* 일자별 효율 비교 — 운영 이슈 깃발 (v78) */
-.isflag{transition:opacity .15s}
-.isflag.on>rect:nth-of-type(2){filter:brightness(1.08)}
-.isflag.on{opacity:1}
-#chartDaily svg:hover .isflag:not(.on){opacity:.8}
+/* 운영 이슈 — 꺾은선 위의 원 (v86) */
+.isdot{cursor:pointer}
+.isdot .ring{transition:stroke-width .12s}
+.isdot.on .ring{stroke-width:4.4}
+.isdot .halo{transition:opacity .12s}
+.issuekey{display:inline-block;width:8px;height:8px;border-radius:50%;border:2.5px solid #e0902f;background:var(--surface);margin-right:6px;vertical-align:-1px}
 
 /* ---------- tables ---------- */
 .tbl-wrap{overflow:auto;max-height:74vh}
@@ -5920,7 +5959,7 @@ function renderDaily(){
     if(d.getDate()===1||i===0){
       const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'var(--ink2)','font-weight':600},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
-  let lineVals=null;
+  let lineVals=null,LYf=null;
   if(lk!=='none'){
     lineVals=ds.map((_,i)=>{
       if(i>=EL)return NaN;
@@ -5941,6 +5980,7 @@ function renderDaily(){
     const lo=lt.lo,hi=lt.hi;
     const lTop=P.t+PH*0.34,lBot=P.t+PH*0.66;
     const LY=v=>lBot-(num(v)-lo)/(hi-lo)*(lBot-lTop);
+    LYf=LY;
     const lfmt=v=>['ctr','vtr','cvr'].includes(lk)?(v*100).toFixed(2)+'%':lk==='roas'?v.toFixed(2)+'x':fmt(v);
     const tickLabels=[];
     lt.ticks.forEach(v=>{const y=LY(v);
@@ -6005,39 +6045,45 @@ function renderDaily(){
       /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
-  /* 운영 이슈 — 바닥의 작은 깃발 (v78 · 디자인 제언)
-     예전에는 위쪽에 이슈 문구 알약이 최대 5줄로 쌓여 그래프를 가렸다.
-     이제 시작일에 번호 깃발 하나 + 바닥에 기간 띠만 두고, 올리면 그 기간을 옅게 칠하고 내용을 띄운다.
-     깃발 색은 테마와 무관한 호박색(의미 색) — 어두운 막대 위에서도 보이게. 가까이 붙으면 3단까지 위로 쌓는다. */
+  /* 운영 이슈 — 꺾은선 위의 원 (v86)
+     이슈가 시작된 날의 꺾은선 점에 흰 바탕 · 호박색 테두리 원을 찍는다. 그날 꺾은선 값이 없으면
+     (꺾은선 없음 · 집행 공백 · 미집행 구간) 막대 꼭대기 위에. 같은 날 시작한 이슈는 원 하나로 묶고 개수 배지를 단다.
+     올리면 이슈 기간을 옅게 칠하고 내용을 띄운다. 예전의 바닥 깃발 · 기간 띠(v78)는 이것으로 대체 */
+  let ISSUE_DRAWN=0;
   if(SHOW_ISSUES){
-    const baseY=H-P.b,FLC='#e0902f',lvEnd=[];
+    const FLC='#e0902f',groups=new Map();
     ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
-      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;
-      if(!(isFinite(a)&&isFinite(b2))||b2<0||a>ds.length-1)return;
-      const ai=Math.max(a,0),bi=Math.min(isFinite(b2)?b2:a,ds.length-1),ax=cx(ai);
-      let lv=0;while(lvEnd[lv]!==undefined&&lvEnd[lv]>ax-21)lv++;
-      if(lv>=3){ISSUE_OVERFLOW++;return;}
-      lvEnd[lv]=ax;
-      const top=baseY-27-lv*17;
-      const g=S('g',{class:'isflag'},svg);
-      S('rect',{x:cx(ai)-step/2+1.5,y:baseY-3,width:Math.max((bi-ai+1)*step-3,4),height:3,rx:1.5,fill:FLC,opacity:.55},g);
-      S('line',{x1:ax,x2:ax,y1:baseY,y2:top,stroke:FLC,'stroke-width':1.6},g);
-      S('rect',{x:ax,y:top,width:19,height:13,rx:3,fill:FLC,stroke:'var(--surface)','stroke-width':1},g);
-      const t=S('text',{x:ax+9.5,y:top+9.8,'text-anchor':'middle','font-size':9.5,'font-weight':800,fill:'#fff'},g);
-      t.textContent=String(n+1);
-      S('rect',{x:ax-5,y:top-4,width:29,height:baseY-top+6,fill:'transparent'},g);
-      g.style.cursor='pointer';
-      let hl=null;
+      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e||is.s)-SC.i0;
+      if(!isFinite(a))return;
+      const e2=isFinite(b2)?Math.max(b2,a):a;
+      if(e2<0||a>ds.length-1)return;
+      const ai=Math.max(a,0);
+      if(!groups.has(ai))groups.set(ai,[]);
+      groups.get(ai).push({is,n,ai,bi:Math.min(e2,ds.length-1)});});
+    groups.forEach((list,ai)=>{
+      const x=cx(ai),lv=lineVals&&LYf&&isFinite(lineVals[ai])?LYf(lineVals[ai]):NaN;
+      const y=isFinite(lv)?lv:Math.max(P.t+12,(totals[ai]>0?Y(totals[ai]):Y(0))-12);
+      const g=S('g',{class:'isdot'},svg);
+      const halo=S('circle',{cx:x,cy:y,r:16,fill:FLC,opacity:0,class:'halo'},g);
+      S('circle',{cx:x,cy:y,r:8.5,fill:'var(--surface)',stroke:FLC,'stroke-width':3.4,class:'ring'},g);
+      if(list.length>1){
+        S('circle',{cx:x+9.5,cy:y-9.5,r:7,fill:FLC,stroke:'var(--surface)','stroke-width':1.5},g);
+        const t=S('text',{x:x+9.5,y:y-6.3,'text-anchor':'middle','font-size':9,'font-weight':800,fill:'#fff'},g);
+        t.textContent=String(list.length);}
+      S('circle',{cx:x,cy:y,r:15,fill:'transparent'},g);
+      ISSUE_DRAWN++;
+      let hls=[];
       g.addEventListener('mouseenter',()=>{
-        g.classList.add('on');
-        hl=S('rect',{x:cx(ai)-step/2,y:P.t,width:Math.max((bi-ai+1)*step,step),height:baseY-P.t,
-          fill:FLC,opacity:.09,'pointer-events':'none'});
-        svg.insertBefore(hl,svg.firstChild&&svg.firstChild.nextSibling||null);});
-      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
-        `<div class="t">운영 이슈 ${n+1} · ${esc(is.s)}${is.e&&is.e!==is.s?' ~ '+esc(is.e):''}</div>`
-        +(is.scope||is.type?`<div class="r"><span class="l">${esc(is.scope||'')}</span><b>${esc(is.type||'')}</b></div>`:'')
-        +`<div style="margin-top:6px;opacity:.92;white-space:normal;max-width:280px">${esc(is.txt||'')}</div>`));
-      g.addEventListener('mouseleave',()=>{g.classList.remove('on');if(hl&&hl.parentNode)hl.parentNode.removeChild(hl);hl=null;hideTip();});
+        g.classList.add('on');halo.setAttribute('opacity',.16);
+        list.forEach(it=>{const h=S('rect',{x:cx(it.ai)-step/2,y:P.t,width:Math.max((it.bi-it.ai+1)*step,step),height:PH,
+          fill:FLC,opacity:.08,'pointer-events':'none'});
+          svg.insertBefore(h,svg.firstChild&&svg.firstChild.nextSibling||null);hls.push(h);});});
+      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,list.map((it,k)=>
+        `<div class="t"${k?' style="margin-top:9px"':''}>운영 이슈 ${it.n+1} · ${esc(it.is.s)}${it.is.e&&it.is.e!==it.is.s?' ~ '+esc(it.is.e):''}</div>`
+        +(it.is.scope||it.is.type?`<div class="r"><span class="l">${esc(it.is.scope||'')}</span><b>${esc(it.is.type||'')}</b></div>`:'')
+        +`<div style="margin-top:4px;opacity:.92;white-space:normal;max-width:280px">${esc(it.is.txt||'')}</div>`).join('')));
+      g.addEventListener('mouseleave',()=>{g.classList.remove('on');halo.setAttribute('opacity',0);
+        hls.forEach(h=>h.parentNode&&h.parentNode.removeChild(h));hls=[];hideTip();});
     });
   }
   const lg=$('dailyLegend');lg.innerHTML='';
@@ -6053,6 +6099,9 @@ function renderDaily(){
       +' 높이는 막대에 맞춰 잡습니다. 정확한 금액은 날짜 위에 마우스를 올리면 나옵니다.';
     x.innerHTML=`<span class="dot" style="background:var(--spend);opacity:.55"></span>`
       +`<span style="color:var(--muted)">일별 소진금액 (배경 · 눈금 없음)</span>`;}
+  if(ISSUE_DRAWN){const x=el('span','it',lg);
+    x.title='이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.';
+    x.innerHTML=`<span class="issuekey"></span>운영 이슈`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.18"></span>미집행 구간 예상값 (일할)`;}
 
@@ -13958,7 +14007,7 @@ const SECT_INFO={
    <p>도넛의 <b>붉은 호가 목표 페이스</b>입니다. 달성 호는 살짝 비쳐 있어 페이스보다 앞서 있어도
      목표 지점이 어디인지 보입니다.</p>
    <p>맨 앞 카드는 전체 매체 기준 <b>예산 소진율</b>입니다.</p>`,
-  daily:`<p>막대는 물량, 꺾은선은 단가입니다. 위쪽 말풍선은 그 기간에 있었던 <b>운영 이슈</b>입니다.</p>
+  daily:`<p>막대는 물량, 꺾은선은 단가입니다. 꺾은선 위의 주황 원은 그날 시작된 <b>운영 이슈</b>입니다 — 마우스를 올리면 내용과 기간이 보입니다.</p>
    <p><b>예상 효율선</b>은 캠페인 설정에 넣은 제안값을 일평균으로 편 선입니다.
      실제 선이 그 아래(단가) 또는 위(물량)에 있으면 제안보다 잘 나오고 있다는 뜻입니다.</p>`,
   gantt:`<p>노출이 <b>1회 이상 발생한 날</b>을 게재한 날로 봅니다. 칸 색이 진할수록 그날 값이 큽니다.</p>
@@ -18354,7 +18403,7 @@ function paintOverview(loading){
     const fit=(t,base,w)=>Math.min(base,w/(String(t).replace(/<[^>]+>/g,'').length*.56)).toFixed(1);
     const t3=`${L('집행','Spent')} ${won0(sp)}`;
     const t4=(sb?L(`소진 ${pc1(sp/sb)}`,`${pc1(sp/sb)} spent`)+' · ':'')+L(`캠페인 ${fmt(rows.length)}개`,`${fmt(rows.length)} campaigns`);
-    return `<div class="kdonut2"><svg viewBox="0 0 240 240" width="232" height="232" role="img">
+    return `<div class="kdonut2"><svg viewBox="0 0 240 240" width="246" height="246" role="img">
         <circle r="${R}" cx="${CX}" cy="${CX}" fill="none" stroke="var(--line2)" stroke-width="${SW}"></circle>
         <g transform="rotate(-90 ${CX} ${CX})">${segs}</g>${labs}
         <text x="${CX}" y="${CX-27}" text-anchor="middle" class="dc1">${L('총 광고비','Total ad spend')}</text>
@@ -18362,17 +18411,20 @@ function paintOverview(loading){
         <text x="${CX}" y="${CX+19}" text-anchor="middle" class="dc3" style="font-size:${fit(t3,10.5,140)}px">${t3}</text>
         <text x="${CX}" y="${CX+36}" text-anchor="middle" class="dc4" style="font-size:${fit(t4,10,126)}px">${t4}</text></svg>
       <div class="klegend2">${OV_AREAS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;};
+  /* v86 — 매체 아이콘: 단색 선, 굵게. 디지털은 휴대폰이 모니터 앞에 오고(흰 바탕으로 덮음) 둘 사이에 틈을 둔다 */
   const ICON={
-    digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="9" width="29" height="20" rx="2.5"/><path d="M14 36h11M19.5 29v7"/><rect x="30" y="17" width="13" height="23" rx="3"/><path d="M35 36h3"/></svg>',
-    tv:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="13" width="38" height="25" rx="3.5"/><path d="M17 6l7 7 7-7M16 43h16"/><path d="M36 20v4"/></svg>',
-    ooh:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="22" rx="2.5"/><path d="M15 29v13M33 29v13M9 42h30M12 14h14M12 20h9"/></svg>'};
+    digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="8" width="31" height="21" rx="2.5"/><path d="M14 37h12M20 29v8"/><rect class="cut" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><rect class="fg" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><path d="M34.5 37.2h4"/></svg>',
+    tv:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4.5" y="13" width="39" height="26" rx="3.5"/><path d="M17 5.5l7 7.5 7-7.5M15 43.5h18"/><path d="M37 20v5"/></svg>',
+    ooh:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4.5" y="6.5" width="39" height="23" rx="2.5"/><path d="M15 29.5v13M33 29.5v13M9 42.5h30M11.5 14h15M11.5 21h9"/></svg>'};
   const gauge=(ratio,l1,v1,mid,l2,v2)=>`<div class="kbar">${isFinite(ratio)?`<i style="width:${(Math.min(Math.max(ratio,0),1)*100).toFixed(2)}%"></i>`:''}</div>
     <div class="kfoot"><div class="kf l"><span>${l1}</span><b class="mono">${v1}</b></div>
       <div class="kf r"><span>${l2}</span><b class="mono">${v2}</b></div>${mid?`<div class="kf c">${mid}</div>`:''}</div>`;
-  const areaCard=(x,body)=>`<div class="ovk ov${x.k[0]}"><div class="kt"><div class="ktx"><span class="tt">${x.l}</span>
-        <span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div><span class="kic">${ICON[x.k]}</span></div>
-      <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div>
-      <div class="kfill"></div>${body}</div>`;
+  /* 매체 줄 카드 — [아이콘] [이름 · 비중 / 금액 / 캠페인 수] [막대 + 집행 · 잔여] 가로 한 줄 (좁으면 막대가 아래로) */
+  const rowCard=(x,body)=>`<div class="ovk ovm ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"><div class="ovri">
+      <span class="kic">${ICON[x.k]}</span>
+      <div class="kinfo"><div class="kt"><span class="tt">${x.l}</span><span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div>
+        <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div></div>
+      <div class="kg">${body}</div></div></div>`;
   const spentCard=k=>{const b=tot[k].budget,sv=tot[k].spend;
     return gauge(b?sv/b:NaN,L('집행금액','Spent'),won0(sv),b?L(`소진율 ${pc1(sv/b)}`,`${pc1(sv/b)} spent`):'',L('잔여금액','Remaining'),won0(Math.max(b-sv,0)));};
   /* OOH — 집행 기간 게이지: 가장 이른 시작 ~ 가장 늦은 종료 중 오늘까지 지난 비율 */
@@ -18387,11 +18439,13 @@ function paintOverview(loading){
     return gauge(rt,L('시작일','Start'),s0.replace(/-/g,'.'),
       today<s0?L('집행 전','Not started'):today>e0?L('집행 종료','Ended'):L(`기간 ${pc1(rt)} 경과`,`${pc1(rt)} of flight`),
       L('종료일','End'),e0.replace(/-/g,'.'));};
+  /* 총 광고비 → 디지털 · TV · OOH 로 갈라지는 연결선 (파생 관계) */
+  const tree=`<div class="ovtree" aria-hidden="true"><i class="tin"></i><i class="tv"></i>
+      ${OV_AREAS.map((x,i)=>`<i class="tout t${i} ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"></i>`).join('')}</div>`;
   box.innerHTML=
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
-   +areaCard(OV_AREAS[0],spentCard('digital'))
-   +areaCard(OV_AREAS[1],spentCard('tv'))
-   +areaCard(OV_AREAS[2],oohCard());
+   +tree
+   +`<div class="ovrows">${rowCard(OV_AREAS[0],spentCard('digital'))}${rowCard(OV_AREAS[1],spentCard('tv'))}${rowCard(OV_AREAS[2],oohCard())}</div>`;
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
     el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(x.l)}</div>`
@@ -18399,6 +18453,10 @@ function paintOverview(loading){
       +`<div class="r"><span class="l">${L('비중','Share')}</span><b>${pc1(all?tot[k].budget/all:0)}</b></div>`
       +`<div class="r"><span class="l">${L('캠페인','Campaigns')}</span><b>${fmt(tot[k].n)}</b></div>`));
     el.addEventListener('mouseleave',hideTip);});
+  /* 매체 줄 · 도넛 조각 · 연결선을 함께 강조 */
+  const hl=(k,on)=>box.querySelectorAll(`[data-ovk="${k}"],circle[data-ovpie="${k}"]`).forEach(e=>e.classList.toggle('hl',on));
+  box.querySelectorAll('.ovm[data-ovk],[data-ovpie]').forEach(el=>{const k=el.dataset.ovk||el.dataset.ovpie;
+    el.addEventListener('mouseenter',()=>hl(k,true));el.addEventListener('mouseleave',()=>hl(k,false));});
   const nt=$('ovNote');if(nt)nt.textContent=L('광고비 = 디지털 예산 + TV 계획 금액 + OOH 광고비 · 집행 = 디지털 소진 + TV 방송 광고비','Ad spend = digital budget + TV plan + OOH · Spent = digital spend + TV aired');
   /* 타임라인 */
   const tl=$('ovTimeline');
@@ -18774,6 +18832,12 @@ Object.assign(I18N_EN,{
   "표시할 지표가 없습니다.":"No metrics to show.","예상효율 입력에 목표(예상 노출 · 클릭 · 조회 …)를 넣으면 여기에 지표가 생깁니다.":"Enter goals (expected imps · clicks · views …) in Forecast input and metrics will appear here.",
   "캠페인을 열지 못했습니다.":"Couldn't open the campaign.","잠시 후 다시 시도해 주세요.":"Please try again in a moment.",
   "닫기":"Close","전체 기간":"Overall period","집행 금액":"Spent","계획 GRP":"Plan GRP","실적 GRP":"Actual GRP","종료":"Ended","예정":"Upcoming"});
+/* v86 */
+Object.assign(I18N_EN,{
+  "막대는 물량, 꺾은선은 단가입니다. 꺾은선 위의 주황 원은 그날 시작된":"Bars are volume; lines are unit cost. Orange circles on the line mark",
+  "입니다 — 마우스를 올리면 내용과 기간이 보입니다.":" that started that day — hover to see details and period.",
+  "이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Shown on the line on the day the issue started. Hover a circle to see details and period."
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

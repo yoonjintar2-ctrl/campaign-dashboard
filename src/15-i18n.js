@@ -87,6 +87,12 @@ Object.assign(I18N_EN,{
   "표시할 지표가 없습니다.":"No metrics to show.","예상효율 입력에 목표(예상 노출 · 클릭 · 조회 …)를 넣으면 여기에 지표가 생깁니다.":"Enter goals (expected imps · clicks · views …) in Forecast input and metrics will appear here.",
   "캠페인을 열지 못했습니다.":"Couldn't open the campaign.","잠시 후 다시 시도해 주세요.":"Please try again in a moment.",
   "닫기":"Close","전체 기간":"Overall period","집행 금액":"Spent","계획 GRP":"Plan GRP","실적 GRP":"Actual GRP","종료":"Ended","예정":"Upcoming"});
+/* v86 */
+Object.assign(I18N_EN,{
+  "막대는 물량, 꺾은선은 단가입니다. 꺾은선 위의 주황 원은 그날 시작된":"Bars are volume; lines are unit cost. Orange circles on the line mark",
+  "입니다 — 마우스를 올리면 내용과 기간이 보입니다.":" that started that day — hover to see details and period.",
+  "이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Shown on the line on the day the issue started. Hover a circle to see details and period."
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

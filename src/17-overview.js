@@ -197,7 +197,7 @@ function paintOverview(loading){
     const fit=(t,base,w)=>Math.min(base,w/(String(t).replace(/<[^>]+>/g,'').length*.56)).toFixed(1);
     const t3=`${L('집행','Spent')} ${won0(sp)}`;
     const t4=(sb?L(`소진 ${pc1(sp/sb)}`,`${pc1(sp/sb)} spent`)+' · ':'')+L(`캠페인 ${fmt(rows.length)}개`,`${fmt(rows.length)} campaigns`);
-    return `<div class="kdonut2"><svg viewBox="0 0 240 240" width="232" height="232" role="img">
+    return `<div class="kdonut2"><svg viewBox="0 0 240 240" width="246" height="246" role="img">
         <circle r="${R}" cx="${CX}" cy="${CX}" fill="none" stroke="var(--line2)" stroke-width="${SW}"></circle>
         <g transform="rotate(-90 ${CX} ${CX})">${segs}</g>${labs}
         <text x="${CX}" y="${CX-27}" text-anchor="middle" class="dc1">${L('총 광고비','Total ad spend')}</text>
@@ -205,17 +205,20 @@ function paintOverview(loading){
         <text x="${CX}" y="${CX+19}" text-anchor="middle" class="dc3" style="font-size:${fit(t3,10.5,140)}px">${t3}</text>
         <text x="${CX}" y="${CX+36}" text-anchor="middle" class="dc4" style="font-size:${fit(t4,10,126)}px">${t4}</text></svg>
       <div class="klegend2">${OV_AREAS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;};
+  /* v86 — 매체 아이콘: 단색 선, 굵게. 디지털은 휴대폰이 모니터 앞에 오고(흰 바탕으로 덮음) 둘 사이에 틈을 둔다 */
   const ICON={
-    digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="9" width="29" height="20" rx="2.5"/><path d="M14 36h11M19.5 29v7"/><rect x="30" y="17" width="13" height="23" rx="3"/><path d="M35 36h3"/></svg>',
-    tv:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="13" width="38" height="25" rx="3.5"/><path d="M17 6l7 7 7-7M16 43h16"/><path d="M36 20v4"/></svg>',
-    ooh:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="22" rx="2.5"/><path d="M15 29v13M33 29v13M9 42h30M12 14h14M12 20h9"/></svg>'};
+    digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="8" width="31" height="21" rx="2.5"/><path d="M14 37h12M20 29v8"/><rect class="cut" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><rect class="fg" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><path d="M34.5 37.2h4"/></svg>',
+    tv:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4.5" y="13" width="39" height="26" rx="3.5"/><path d="M17 5.5l7 7.5 7-7.5M15 43.5h18"/><path d="M37 20v5"/></svg>',
+    ooh:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4.5" y="6.5" width="39" height="23" rx="2.5"/><path d="M15 29.5v13M33 29.5v13M9 42.5h30M11.5 14h15M11.5 21h9"/></svg>'};
   const gauge=(ratio,l1,v1,mid,l2,v2)=>`<div class="kbar">${isFinite(ratio)?`<i style="width:${(Math.min(Math.max(ratio,0),1)*100).toFixed(2)}%"></i>`:''}</div>
     <div class="kfoot"><div class="kf l"><span>${l1}</span><b class="mono">${v1}</b></div>
       <div class="kf r"><span>${l2}</span><b class="mono">${v2}</b></div>${mid?`<div class="kf c">${mid}</div>`:''}</div>`;
-  const areaCard=(x,body)=>`<div class="ovk ov${x.k[0]}"><div class="kt"><div class="ktx"><span class="tt">${x.l}</span>
-        <span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div><span class="kic">${ICON[x.k]}</span></div>
-      <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div>
-      <div class="kfill"></div>${body}</div>`;
+  /* 매체 줄 카드 — [아이콘] [이름 · 비중 / 금액 / 캠페인 수] [막대 + 집행 · 잔여] 가로 한 줄 (좁으면 막대가 아래로) */
+  const rowCard=(x,body)=>`<div class="ovk ovm ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"><div class="ovri">
+      <span class="kic">${ICON[x.k]}</span>
+      <div class="kinfo"><div class="kt"><span class="tt">${x.l}</span><span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div>
+        <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div></div>
+      <div class="kg">${body}</div></div></div>`;
   const spentCard=k=>{const b=tot[k].budget,sv=tot[k].spend;
     return gauge(b?sv/b:NaN,L('집행금액','Spent'),won0(sv),b?L(`소진율 ${pc1(sv/b)}`,`${pc1(sv/b)} spent`):'',L('잔여금액','Remaining'),won0(Math.max(b-sv,0)));};
   /* OOH — 집행 기간 게이지: 가장 이른 시작 ~ 가장 늦은 종료 중 오늘까지 지난 비율 */
@@ -230,11 +233,13 @@ function paintOverview(loading){
     return gauge(rt,L('시작일','Start'),s0.replace(/-/g,'.'),
       today<s0?L('집행 전','Not started'):today>e0?L('집행 종료','Ended'):L(`기간 ${pc1(rt)} 경과`,`${pc1(rt)} of flight`),
       L('종료일','End'),e0.replace(/-/g,'.'));};
+  /* 총 광고비 → 디지털 · TV · OOH 로 갈라지는 연결선 (파생 관계) */
+  const tree=`<div class="ovtree" aria-hidden="true"><i class="tin"></i><i class="tv"></i>
+      ${OV_AREAS.map((x,i)=>`<i class="tout t${i} ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"></i>`).join('')}</div>`;
   box.innerHTML=
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
-   +areaCard(OV_AREAS[0],spentCard('digital'))
-   +areaCard(OV_AREAS[1],spentCard('tv'))
-   +areaCard(OV_AREAS[2],oohCard());
+   +tree
+   +`<div class="ovrows">${rowCard(OV_AREAS[0],spentCard('digital'))}${rowCard(OV_AREAS[1],spentCard('tv'))}${rowCard(OV_AREAS[2],oohCard())}</div>`;
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
     el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(x.l)}</div>`
@@ -242,6 +247,10 @@ function paintOverview(loading){
       +`<div class="r"><span class="l">${L('비중','Share')}</span><b>${pc1(all?tot[k].budget/all:0)}</b></div>`
       +`<div class="r"><span class="l">${L('캠페인','Campaigns')}</span><b>${fmt(tot[k].n)}</b></div>`));
     el.addEventListener('mouseleave',hideTip);});
+  /* 매체 줄 · 도넛 조각 · 연결선을 함께 강조 */
+  const hl=(k,on)=>box.querySelectorAll(`[data-ovk="${k}"],circle[data-ovpie="${k}"]`).forEach(e=>e.classList.toggle('hl',on));
+  box.querySelectorAll('.ovm[data-ovk],[data-ovpie]').forEach(el=>{const k=el.dataset.ovk||el.dataset.ovpie;
+    el.addEventListener('mouseenter',()=>hl(k,true));el.addEventListener('mouseleave',()=>hl(k,false));});
   const nt=$('ovNote');if(nt)nt.textContent=L('광고비 = 디지털 예산 + TV 계획 금액 + OOH 광고비 · 집행 = 디지털 소진 + TV 방송 광고비','Ad spend = digital budget + TV plan + OOH · Spent = digital spend + TV aired');
   /* 타임라인 */
   const tl=$('ovTimeline');

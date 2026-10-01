@@ -300,7 +300,7 @@ function renderDaily(){
     if(d.getDate()===1||i===0){
       const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'var(--ink2)','font-weight':600},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
-  let lineVals=null;
+  let lineVals=null,LYf=null;
   if(lk!=='none'){
     lineVals=ds.map((_,i)=>{
       if(i>=EL)return NaN;
@@ -321,6 +321,7 @@ function renderDaily(){
     const lo=lt.lo,hi=lt.hi;
     const lTop=P.t+PH*0.34,lBot=P.t+PH*0.66;
     const LY=v=>lBot-(num(v)-lo)/(hi-lo)*(lBot-lTop);
+    LYf=LY;
     const lfmt=v=>['ctr','vtr','cvr'].includes(lk)?(v*100).toFixed(2)+'%':lk==='roas'?v.toFixed(2)+'x':fmt(v);
     const tickLabels=[];
     lt.ticks.forEach(v=>{const y=LY(v);
@@ -385,39 +386,45 @@ function renderDaily(){
       /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
-  /* 운영 이슈 — 바닥의 작은 깃발 (v78 · 디자인 제언)
-     예전에는 위쪽에 이슈 문구 알약이 최대 5줄로 쌓여 그래프를 가렸다.
-     이제 시작일에 번호 깃발 하나 + 바닥에 기간 띠만 두고, 올리면 그 기간을 옅게 칠하고 내용을 띄운다.
-     깃발 색은 테마와 무관한 호박색(의미 색) — 어두운 막대 위에서도 보이게. 가까이 붙으면 3단까지 위로 쌓는다. */
+  /* 운영 이슈 — 꺾은선 위의 원 (v86)
+     이슈가 시작된 날의 꺾은선 점에 흰 바탕 · 호박색 테두리 원을 찍는다. 그날 꺾은선 값이 없으면
+     (꺾은선 없음 · 집행 공백 · 미집행 구간) 막대 꼭대기 위에. 같은 날 시작한 이슈는 원 하나로 묶고 개수 배지를 단다.
+     올리면 이슈 기간을 옅게 칠하고 내용을 띄운다. 예전의 바닥 깃발 · 기간 띠(v78)는 이것으로 대체 */
+  let ISSUE_DRAWN=0;
   if(SHOW_ISSUES){
-    const baseY=H-P.b,FLC='#e0902f',lvEnd=[];
+    const FLC='#e0902f',groups=new Map();
     ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
-      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e)-SC.i0;
-      if(!(isFinite(a)&&isFinite(b2))||b2<0||a>ds.length-1)return;
-      const ai=Math.max(a,0),bi=Math.min(isFinite(b2)?b2:a,ds.length-1),ax=cx(ai);
-      let lv=0;while(lvEnd[lv]!==undefined&&lvEnd[lv]>ax-21)lv++;
-      if(lv>=3){ISSUE_OVERFLOW++;return;}
-      lvEnd[lv]=ax;
-      const top=baseY-27-lv*17;
-      const g=S('g',{class:'isflag'},svg);
-      S('rect',{x:cx(ai)-step/2+1.5,y:baseY-3,width:Math.max((bi-ai+1)*step-3,4),height:3,rx:1.5,fill:FLC,opacity:.55},g);
-      S('line',{x1:ax,x2:ax,y1:baseY,y2:top,stroke:FLC,'stroke-width':1.6},g);
-      S('rect',{x:ax,y:top,width:19,height:13,rx:3,fill:FLC,stroke:'var(--surface)','stroke-width':1},g);
-      const t=S('text',{x:ax+9.5,y:top+9.8,'text-anchor':'middle','font-size':9.5,'font-weight':800,fill:'#fff'},g);
-      t.textContent=String(n+1);
-      S('rect',{x:ax-5,y:top-4,width:29,height:baseY-top+6,fill:'transparent'},g);
-      g.style.cursor='pointer';
-      let hl=null;
+      const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e||is.s)-SC.i0;
+      if(!isFinite(a))return;
+      const e2=isFinite(b2)?Math.max(b2,a):a;
+      if(e2<0||a>ds.length-1)return;
+      const ai=Math.max(a,0);
+      if(!groups.has(ai))groups.set(ai,[]);
+      groups.get(ai).push({is,n,ai,bi:Math.min(e2,ds.length-1)});});
+    groups.forEach((list,ai)=>{
+      const x=cx(ai),lv=lineVals&&LYf&&isFinite(lineVals[ai])?LYf(lineVals[ai]):NaN;
+      const y=isFinite(lv)?lv:Math.max(P.t+12,(totals[ai]>0?Y(totals[ai]):Y(0))-12);
+      const g=S('g',{class:'isdot'},svg);
+      const halo=S('circle',{cx:x,cy:y,r:16,fill:FLC,opacity:0,class:'halo'},g);
+      S('circle',{cx:x,cy:y,r:8.5,fill:'var(--surface)',stroke:FLC,'stroke-width':3.4,class:'ring'},g);
+      if(list.length>1){
+        S('circle',{cx:x+9.5,cy:y-9.5,r:7,fill:FLC,stroke:'var(--surface)','stroke-width':1.5},g);
+        const t=S('text',{x:x+9.5,y:y-6.3,'text-anchor':'middle','font-size':9,'font-weight':800,fill:'#fff'},g);
+        t.textContent=String(list.length);}
+      S('circle',{cx:x,cy:y,r:15,fill:'transparent'},g);
+      ISSUE_DRAWN++;
+      let hls=[];
       g.addEventListener('mouseenter',()=>{
-        g.classList.add('on');
-        hl=S('rect',{x:cx(ai)-step/2,y:P.t,width:Math.max((bi-ai+1)*step,step),height:baseY-P.t,
-          fill:FLC,opacity:.09,'pointer-events':'none'});
-        svg.insertBefore(hl,svg.firstChild&&svg.firstChild.nextSibling||null);});
-      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
-        `<div class="t">운영 이슈 ${n+1} · ${esc(is.s)}${is.e&&is.e!==is.s?' ~ '+esc(is.e):''}</div>`
-        +(is.scope||is.type?`<div class="r"><span class="l">${esc(is.scope||'')}</span><b>${esc(is.type||'')}</b></div>`:'')
-        +`<div style="margin-top:6px;opacity:.92;white-space:normal;max-width:280px">${esc(is.txt||'')}</div>`));
-      g.addEventListener('mouseleave',()=>{g.classList.remove('on');if(hl&&hl.parentNode)hl.parentNode.removeChild(hl);hl=null;hideTip();});
+        g.classList.add('on');halo.setAttribute('opacity',.16);
+        list.forEach(it=>{const h=S('rect',{x:cx(it.ai)-step/2,y:P.t,width:Math.max((it.bi-it.ai+1)*step,step),height:PH,
+          fill:FLC,opacity:.08,'pointer-events':'none'});
+          svg.insertBefore(h,svg.firstChild&&svg.firstChild.nextSibling||null);hls.push(h);});});
+      g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,list.map((it,k)=>
+        `<div class="t"${k?' style="margin-top:9px"':''}>운영 이슈 ${it.n+1} · ${esc(it.is.s)}${it.is.e&&it.is.e!==it.is.s?' ~ '+esc(it.is.e):''}</div>`
+        +(it.is.scope||it.is.type?`<div class="r"><span class="l">${esc(it.is.scope||'')}</span><b>${esc(it.is.type||'')}</b></div>`:'')
+        +`<div style="margin-top:4px;opacity:.92;white-space:normal;max-width:280px">${esc(it.is.txt||'')}</div>`).join('')));
+      g.addEventListener('mouseleave',()=>{g.classList.remove('on');halo.setAttribute('opacity',0);
+        hls.forEach(h=>h.parentNode&&h.parentNode.removeChild(h));hls=[];hideTip();});
     });
   }
   const lg=$('dailyLegend');lg.innerHTML='';
@@ -433,6 +440,9 @@ function renderDaily(){
       +' 높이는 막대에 맞춰 잡습니다. 정확한 금액은 날짜 위에 마우스를 올리면 나옵니다.';
     x.innerHTML=`<span class="dot" style="background:var(--spend);opacity:.55"></span>`
       +`<span style="color:var(--muted)">일별 소진금액 (배경 · 눈금 없음)</span>`;}
+  if(ISSUE_DRAWN){const x=el('span','it',lg);
+    x.title='이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.';
+    x.innerHTML=`<span class="issuekey"></span>운영 이슈`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.18"></span>미집행 구간 예상값 (일할)`;}
 
