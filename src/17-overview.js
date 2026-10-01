@@ -478,49 +478,43 @@ var OVCOL_LAST=null;
 function paintOvColumns(bx,rows,won0){
   OVCOL_LAST={rows,won0,w:bx.clientWidth};
   if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
+  bx.classList.add('ovfloor');
   const cs=getComputedStyle(bx),pad=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
   const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-pad,300);
-  const YW=52,RP=28,n=rows.length;
-  /* 칸이 너무 좁아지면(84px 미만) 좌우로 스크롤 */
-  const cellW=Math.max(Math.min((W-YW-RP)/n,220),84);
+  /* v87 — 축 · 눈금 · 날짜 줄 없이: 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 입체 막대 → 카드 아래 25% 를 덮는 바닥 */
+  const PX=16,n=rows.length;
+  /* 칸이 너무 좁아지면(92px 미만) 좌우로 스크롤 */
+  const cellW=Math.max(Math.min((W-PX*2)/n,240),92);
   const plotW=cellW*n;
   /* 이름은 두 단 지그재그 — 이름 폭이 좌우 이웃 막대의 줄에 닿지 않도록 2칸 폭 이내, 길면 두 줄까지 */
-  const LV=2,LH=52,labZ=LV*LH+12,plotH=230,DEP=10;
-  /* 바닥판 — 막대가 서 있는 연회색 판(깊이 FD, 앞 두께 SLAB). 막대는 판 깊이의 가운데에 선다.
-     x축 선은 판에서 GAP 만큼 띄워 아래에 */
-  const FD=22,SLAB=4,GAP=12,off=(FD-DEP)/2;
-  const B=labZ+plotH+off,AX=B+SLAB+GAP;
+  const LV=2,LH=66,labZ=LV*LH+8,plotH=220,DEP=10;
+  const Bb=labZ+plotH;                                   /* 막대 앞면 바닥 */
+  /* 바닥 — 카드(이 칸) 높이의 25%. 막대는 바닥 깊이의 42% 지점에 선다 */
+  const padT=parseFloat(cs.paddingTop)||0,SINK=.42;
+  const F=Math.round(.25*(padT+Bb)/(1-.25*(1-SINK)));
+  const Hc=Math.round(Bb+(1-SINK)*F);
   const mx=Math.max(1,...rows.map(r=>r.budget||0));
-  /* 눈금 — 보기 좋은 단위로 4칸 */
-  const raw=mx/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),stp=[1,2,2.5,5,10].map(k=>k*mag).find(v=>v>=raw)||raw;
-  const top=Math.ceil(mx/stp)*stp,ticks=[];for(let v=0;v<=top+1e-6;v+=stp)ticks.push(v);
-  const Y=v=>B-off-v/top*plotH;
+  const Y=v=>Bb-v/mx*plotH;
   const labW=Math.min(2*cellW-12,300);
+  const per=r=>r.start?`${mdy(r.start)} ~ ${mdy(r.end||r.start)}`:'';
   const cols=rows.map((r,i)=>{
-    const cx=YW+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.42,58),14),bl=cx-(bw+DEP)/2;
+    const cx=PX+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.4,58),14),bl=cx-(bw+DEP)/2;
     const segs=OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0);
-    const h=r.budget?Math.max(r.budget/top*plotH,3):0;
+    const h=r.budget?Math.max(r.budget/mx*plotH,3):0;
     const lv=i%LV,lt=lv*LH+2;
     /* 이름은 늘 자기 막대 줄 위 가운데 — 양 끝 캠페인은 폭을 줄여 옆 캠페인의 줄을 덮지 않게 */
-    const hw=Math.min(labW/2,cx,YW+plotW+RP-cx),ll=cx-hw,lw=hw*2;
+    const hw=Math.min(labW/2,cx,PX*2+plotW-cx),ll=cx-hw,lw=hw*2;
     const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
       a:segs.map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
     return `<div class="ocl" style="left:${ll.toFixed(1)}px;top:${lt}px;width:${lw.toFixed(1)}px;height:${LH-8}px" data-oci="${i}">
-        <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span></div>
-      <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Y(r.budget||0)-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
-      <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Y(0)-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
-        ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>
-      <i class="ocxt" style="left:${cx.toFixed(1)}px;top:${AX}px" data-oci="${i}"></i>
-      <div class="ocx mono" style="left:${(cx-cellW/2).toFixed(1)}px;width:${cellW.toFixed(1)}px;top:${AX+8}px" data-oci="${i}">${r.start?mdy(r.start):'–'}</div>`;}).join('');
-  const grid=ticks.map(v=>(v?`<i class="ocg" style="top:${Y(v).toFixed(1)}px;left:${YW}px;width:${plotW.toFixed(1)}px"></i>`:'')
-      +`<span class="ocy mono" style="top:${(Y(v)-7).toFixed(1)}px;width:${YW-8}px">${v?manUnit(v):'0'}</span>`).join('')
-    /* 바닥판(윗면 · 앞 두께 · 옆 두께) + 띄운 x축 */
-    +`<i class="ocf" style="left:${YW}px;top:${(B-FD).toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${FD}px"></i>
-      <i class="ocfs" style="left:${YW}px;top:${B.toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${SLAB}px"></i>
-      <i class="ocfr" style="left:${(YW+plotW).toFixed(1)}px;top:${B.toFixed(1)}px;width:${FD}px;height:${SLAB}px"></i>
-      <i class="ocax" style="left:${YW}px;top:${AX.toFixed(1)}px;width:${plotW.toFixed(1)}px"></i>`;
-  bx.innerHTML=`<div class="ovcols" style="height:${(AX+30).toFixed(0)}px;width:${(YW+plotW+RP).toFixed(1)}px">${grid}${cols}</div>
-    <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}<span class="ocnote">${L('막대 아래 날짜 = 캠페인 시작일','Date under bar = campaign start')}</span></div>`;
+        <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span>${per(r)?`<em class="mono">${per(r)}</em>`:''}</div>
+      <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Bb-h-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
+      <i class="ocsh" style="left:${(bl-8).toFixed(1)}px;width:${(bw+DEP+26).toFixed(1)}px;top:${(Bb-DEP/2-8).toFixed(1)}px"></i>
+      <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Bb-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
+        ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>`;}).join('');
+  bx.style.setProperty('--flh',F+'px');
+  bx.innerHTML=`<div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
+    <div class="ovleg onfloor">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

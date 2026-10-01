@@ -692,40 +692,35 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
   .ovk.ovm::before{content:'';position:absolute;left:-15px;width:14px;top:50%;border-top:2px solid var(--ov-digital);transform:translateY(-1px)}
   .ovk.ovm.ovt::before{border-top-color:var(--ov-tv)}.ovk.ovm.ovo::before{border-top-color:var(--ov-ooh)}
 }
-/* 캠페인별 광고비 — 세로 입체 막대: 위쪽 이름은 지그재그, 줄로 막대와 이어진다 */
+/* 캠페인별 광고비 — 세로 입체 막대 (v87): 축 없이, 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 막대 → 카드 아래 25% 를 덮는 바닥 */
 #ovBars{overflow-x:auto}
-.ovcols{position:relative;margin:2px auto 0}
+#ovBars.ovfloor{position:relative;padding:18px 18px 0;border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+  background:
+    linear-gradient(rgb(var(--accrgb)/.16),rgb(var(--accrgb)/.16)) left 0 bottom var(--flh,90px)/100% 1px no-repeat local,
+    linear-gradient(180deg,rgb(var(--accrgb)/.06),rgb(var(--accrgb)/.16)) left 0 bottom 0/100% var(--flh,90px) no-repeat local}
+.ovcols{position:relative;margin:0 auto}
 .ovcols>*{position:absolute}
-.ocg{height:0;border-top:1px dashed var(--line);pointer-events:none}
-/* 바닥판 — 연회색 윗면 + 조금 진한 앞 · 옆 두께 */
-.ocf{background:linear-gradient(0deg,rgb(var(--accrgb)/.13),rgb(var(--accrgb)/.06));transform:skewX(-45deg);transform-origin:left bottom;pointer-events:none}
-.ocfs{background:rgb(var(--accrgb)/.22);pointer-events:none}
-.ocfr{background:rgb(var(--accrgb)/.3);transform:skewY(-45deg);transform-origin:left top;pointer-events:none}
-/* x축 — 바닥판에서 띄워 아래에, 막대마다 작은 눈금 */
-.ocax{height:0;border-top:1.5px solid var(--gline);pointer-events:none}
-.ocxt{width:0;height:5px;border-left:1.5px solid var(--gline);transform:translateX(-.75px);pointer-events:none}
-.ocxt.hl{border-left-color:var(--acc)}
-.ocy{left:0;text-align:right;font-size:10.5px;font-weight:700;color:var(--muted);line-height:14px}
 .ocl{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;line-height:1.25;cursor:default;min-width:0}
 .ocl b{max-width:100%;font-size:12px;font-weight:800;color:var(--ink);overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.ocl span{font-size:11px;font-weight:700;color:var(--muted);margin-top:1px}
+.ocl span{font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.ocl em{font-style:normal;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;margin-top:1px}
 .ocl.hl b{color:var(--acc)}
-.ocl.hl span{color:var(--ink2)}
 .ocln{width:0;border-left:1px solid var(--gline);transform:translateX(-.5px);pointer-events:none}
 .ocln.hl{border-left-color:var(--acc)}
+/* 막대가 바닥에 드리우는 그림자 */
+.ocsh{height:16px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.2),rgba(0,0,0,0));pointer-events:none}
+[data-theme="dark"] .ocsh{background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .ocbar{display:flex;flex-direction:column;cursor:default;transition:filter .12s}
 .ocbar i{position:relative;display:block;min-height:1px;background:var(--ov-digital)}
 .ocbar i.t{background:var(--ov-tv)}.ocbar i.o{background:var(--ov-ooh)}
 /* 옆면(어둡게) · 윗면(밝게) */
-.ocbar i::after{content:'';position:absolute;left:100%;top:0;width:9px;height:100%;background:inherit;filter:brightness(.72);
+.ocbar i::after{content:'';position:absolute;left:100%;top:0;width:10px;height:100%;background:inherit;filter:brightness(.72);
   transform:skewY(-45deg);transform-origin:left top}
-.ocbar i:first-child::before{content:'';position:absolute;left:0;bottom:100%;width:100%;height:9px;background:inherit;filter:brightness(1.18);
+.ocbar i:first-child::before{content:'';position:absolute;left:0;bottom:100%;width:100%;height:10px;background:inherit;filter:brightness(1.18);
   transform:skewX(-45deg);transform-origin:left bottom}
 .ocbar.hl{filter:brightness(1.08) drop-shadow(0 4px 10px rgba(0,0,0,.18))}
-.ocx{text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
-.ocx.hl{color:var(--ink)}
-.ovleg .ocnote{margin-left:10px;font-weight:600;color:var(--muted)}
+.ovleg.onfloor{position:absolute;right:20px;bottom:12px;margin:0}
 /* 소재 콜라주 */
 #ovCollage{margin-top:2px}
 .ovcol{display:flex;flex-direction:column;gap:5px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -18684,49 +18679,43 @@ var OVCOL_LAST=null;
 function paintOvColumns(bx,rows,won0){
   OVCOL_LAST={rows,won0,w:bx.clientWidth};
   if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
+  bx.classList.add('ovfloor');
   const cs=getComputedStyle(bx),pad=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
   const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-pad,300);
-  const YW=52,RP=28,n=rows.length;
-  /* 칸이 너무 좁아지면(84px 미만) 좌우로 스크롤 */
-  const cellW=Math.max(Math.min((W-YW-RP)/n,220),84);
+  /* v87 — 축 · 눈금 · 날짜 줄 없이: 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 입체 막대 → 카드 아래 25% 를 덮는 바닥 */
+  const PX=16,n=rows.length;
+  /* 칸이 너무 좁아지면(92px 미만) 좌우로 스크롤 */
+  const cellW=Math.max(Math.min((W-PX*2)/n,240),92);
   const plotW=cellW*n;
   /* 이름은 두 단 지그재그 — 이름 폭이 좌우 이웃 막대의 줄에 닿지 않도록 2칸 폭 이내, 길면 두 줄까지 */
-  const LV=2,LH=52,labZ=LV*LH+12,plotH=230,DEP=10;
-  /* 바닥판 — 막대가 서 있는 연회색 판(깊이 FD, 앞 두께 SLAB). 막대는 판 깊이의 가운데에 선다.
-     x축 선은 판에서 GAP 만큼 띄워 아래에 */
-  const FD=22,SLAB=4,GAP=12,off=(FD-DEP)/2;
-  const B=labZ+plotH+off,AX=B+SLAB+GAP;
+  const LV=2,LH=66,labZ=LV*LH+8,plotH=220,DEP=10;
+  const Bb=labZ+plotH;                                   /* 막대 앞면 바닥 */
+  /* 바닥 — 카드(이 칸) 높이의 25%. 막대는 바닥 깊이의 42% 지점에 선다 */
+  const padT=parseFloat(cs.paddingTop)||0,SINK=.42;
+  const F=Math.round(.25*(padT+Bb)/(1-.25*(1-SINK)));
+  const Hc=Math.round(Bb+(1-SINK)*F);
   const mx=Math.max(1,...rows.map(r=>r.budget||0));
-  /* 눈금 — 보기 좋은 단위로 4칸 */
-  const raw=mx/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),stp=[1,2,2.5,5,10].map(k=>k*mag).find(v=>v>=raw)||raw;
-  const top=Math.ceil(mx/stp)*stp,ticks=[];for(let v=0;v<=top+1e-6;v+=stp)ticks.push(v);
-  const Y=v=>B-off-v/top*plotH;
+  const Y=v=>Bb-v/mx*plotH;
   const labW=Math.min(2*cellW-12,300);
+  const per=r=>r.start?`${mdy(r.start)} ~ ${mdy(r.end||r.start)}`:'';
   const cols=rows.map((r,i)=>{
-    const cx=YW+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.42,58),14),bl=cx-(bw+DEP)/2;
+    const cx=PX+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.4,58),14),bl=cx-(bw+DEP)/2;
     const segs=OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0);
-    const h=r.budget?Math.max(r.budget/top*plotH,3):0;
+    const h=r.budget?Math.max(r.budget/mx*plotH,3):0;
     const lv=i%LV,lt=lv*LH+2;
     /* 이름은 늘 자기 막대 줄 위 가운데 — 양 끝 캠페인은 폭을 줄여 옆 캠페인의 줄을 덮지 않게 */
-    const hw=Math.min(labW/2,cx,YW+plotW+RP-cx),ll=cx-hw,lw=hw*2;
+    const hw=Math.min(labW/2,cx,PX*2+plotW-cx),ll=cx-hw,lw=hw*2;
     const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
       a:segs.map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
     return `<div class="ocl" style="left:${ll.toFixed(1)}px;top:${lt}px;width:${lw.toFixed(1)}px;height:${LH-8}px" data-oci="${i}">
-        <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span></div>
-      <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Y(r.budget||0)-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
-      <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Y(0)-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
-        ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>
-      <i class="ocxt" style="left:${cx.toFixed(1)}px;top:${AX}px" data-oci="${i}"></i>
-      <div class="ocx mono" style="left:${(cx-cellW/2).toFixed(1)}px;width:${cellW.toFixed(1)}px;top:${AX+8}px" data-oci="${i}">${r.start?mdy(r.start):'–'}</div>`;}).join('');
-  const grid=ticks.map(v=>(v?`<i class="ocg" style="top:${Y(v).toFixed(1)}px;left:${YW}px;width:${plotW.toFixed(1)}px"></i>`:'')
-      +`<span class="ocy mono" style="top:${(Y(v)-7).toFixed(1)}px;width:${YW-8}px">${v?manUnit(v):'0'}</span>`).join('')
-    /* 바닥판(윗면 · 앞 두께 · 옆 두께) + 띄운 x축 */
-    +`<i class="ocf" style="left:${YW}px;top:${(B-FD).toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${FD}px"></i>
-      <i class="ocfs" style="left:${YW}px;top:${B.toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${SLAB}px"></i>
-      <i class="ocfr" style="left:${(YW+plotW).toFixed(1)}px;top:${B.toFixed(1)}px;width:${FD}px;height:${SLAB}px"></i>
-      <i class="ocax" style="left:${YW}px;top:${AX.toFixed(1)}px;width:${plotW.toFixed(1)}px"></i>`;
-  bx.innerHTML=`<div class="ovcols" style="height:${(AX+30).toFixed(0)}px;width:${(YW+plotW+RP).toFixed(1)}px">${grid}${cols}</div>
-    <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}<span class="ocnote">${L('막대 아래 날짜 = 캠페인 시작일','Date under bar = campaign start')}</span></div>`;
+        <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span>${per(r)?`<em class="mono">${per(r)}</em>`:''}</div>
+      <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Bb-h-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
+      <i class="ocsh" style="left:${(bl-8).toFixed(1)}px;width:${(bw+DEP+26).toFixed(1)}px;top:${(Bb-DEP/2-8).toFixed(1)}px"></i>
+      <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Bb-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
+        ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>`;}).join('');
+  bx.style.setProperty('--flh',F+'px');
+  bx.innerHTML=`<div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
+    <div class="ovleg onfloor">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

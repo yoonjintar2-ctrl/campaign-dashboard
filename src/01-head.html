@@ -692,40 +692,35 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
   .ovk.ovm::before{content:'';position:absolute;left:-15px;width:14px;top:50%;border-top:2px solid var(--ov-digital);transform:translateY(-1px)}
   .ovk.ovm.ovt::before{border-top-color:var(--ov-tv)}.ovk.ovm.ovo::before{border-top-color:var(--ov-ooh)}
 }
-/* 캠페인별 광고비 — 세로 입체 막대: 위쪽 이름은 지그재그, 줄로 막대와 이어진다 */
+/* 캠페인별 광고비 — 세로 입체 막대 (v87): 축 없이, 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 막대 → 카드 아래 25% 를 덮는 바닥 */
 #ovBars{overflow-x:auto}
-.ovcols{position:relative;margin:2px auto 0}
+#ovBars.ovfloor{position:relative;padding:18px 18px 0;border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+  background:
+    linear-gradient(rgb(var(--accrgb)/.16),rgb(var(--accrgb)/.16)) left 0 bottom var(--flh,90px)/100% 1px no-repeat local,
+    linear-gradient(180deg,rgb(var(--accrgb)/.06),rgb(var(--accrgb)/.16)) left 0 bottom 0/100% var(--flh,90px) no-repeat local}
+.ovcols{position:relative;margin:0 auto}
 .ovcols>*{position:absolute}
-.ocg{height:0;border-top:1px dashed var(--line);pointer-events:none}
-/* 바닥판 — 연회색 윗면 + 조금 진한 앞 · 옆 두께 */
-.ocf{background:linear-gradient(0deg,rgb(var(--accrgb)/.13),rgb(var(--accrgb)/.06));transform:skewX(-45deg);transform-origin:left bottom;pointer-events:none}
-.ocfs{background:rgb(var(--accrgb)/.22);pointer-events:none}
-.ocfr{background:rgb(var(--accrgb)/.3);transform:skewY(-45deg);transform-origin:left top;pointer-events:none}
-/* x축 — 바닥판에서 띄워 아래에, 막대마다 작은 눈금 */
-.ocax{height:0;border-top:1.5px solid var(--gline);pointer-events:none}
-.ocxt{width:0;height:5px;border-left:1.5px solid var(--gline);transform:translateX(-.75px);pointer-events:none}
-.ocxt.hl{border-left-color:var(--acc)}
-.ocy{left:0;text-align:right;font-size:10.5px;font-weight:700;color:var(--muted);line-height:14px}
 .ocl{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;line-height:1.25;cursor:default;min-width:0}
 .ocl b{max-width:100%;font-size:12px;font-weight:800;color:var(--ink);overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.ocl span{font-size:11px;font-weight:700;color:var(--muted);margin-top:1px}
+.ocl span{font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.ocl em{font-style:normal;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;margin-top:1px}
 .ocl.hl b{color:var(--acc)}
-.ocl.hl span{color:var(--ink2)}
 .ocln{width:0;border-left:1px solid var(--gline);transform:translateX(-.5px);pointer-events:none}
 .ocln.hl{border-left-color:var(--acc)}
+/* 막대가 바닥에 드리우는 그림자 */
+.ocsh{height:16px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.2),rgba(0,0,0,0));pointer-events:none}
+[data-theme="dark"] .ocsh{background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .ocbar{display:flex;flex-direction:column;cursor:default;transition:filter .12s}
 .ocbar i{position:relative;display:block;min-height:1px;background:var(--ov-digital)}
 .ocbar i.t{background:var(--ov-tv)}.ocbar i.o{background:var(--ov-ooh)}
 /* 옆면(어둡게) · 윗면(밝게) */
-.ocbar i::after{content:'';position:absolute;left:100%;top:0;width:9px;height:100%;background:inherit;filter:brightness(.72);
+.ocbar i::after{content:'';position:absolute;left:100%;top:0;width:10px;height:100%;background:inherit;filter:brightness(.72);
   transform:skewY(-45deg);transform-origin:left top}
-.ocbar i:first-child::before{content:'';position:absolute;left:0;bottom:100%;width:100%;height:9px;background:inherit;filter:brightness(1.18);
+.ocbar i:first-child::before{content:'';position:absolute;left:0;bottom:100%;width:100%;height:10px;background:inherit;filter:brightness(1.18);
   transform:skewX(-45deg);transform-origin:left bottom}
 .ocbar.hl{filter:brightness(1.08) drop-shadow(0 4px 10px rgba(0,0,0,.18))}
-.ocx{text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
-.ocx.hl{color:var(--ink)}
-.ovleg .ocnote{margin-left:10px;font-weight:600;color:var(--muted)}
+.ovleg.onfloor{position:absolute;right:20px;bottom:12px;margin:0}
 /* 소재 콜라주 */
 #ovCollage{margin-top:2px}
 .ovcol{display:flex;flex-direction:column;gap:5px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
