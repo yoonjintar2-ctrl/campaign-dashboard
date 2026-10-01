@@ -1416,6 +1416,7 @@ function applyRole(){
   __lastRole=role;
 }
 setTimeout(applyRole,0);
+{const pb=$('paceCfgBtn');if(pb)pb.onclick=()=>openPaceCfg();}
 $('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});
 $('rawCfgBtn').onclick=()=>openBuilder($('rawCfgBox'),RAW_CFG,{useRows:false,catalog:RAW_CATALOG,onApply:renderRaw});
 $('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,useSub:true,catalog:GANTT_CATALOG,onApply:renderGantt});

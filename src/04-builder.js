@@ -986,10 +986,27 @@ function kpiAchMix(rows){
     :totW?sum(rows.map(r=>safe(r.ach)*safe(r.w)))/totW
     :sum(rows.map(r=>safe(r.ach)))/rows.length;
 }
+/* 캠페인 진행 현황에서 숨긴 지표 (v82) — ⚙ 표시 항목. 캠페인 문서(views.paceHide)에 담긴다 */
+var PACE_HIDE=[];
+function openPaceCfg(){
+  const all=paceKpiRows();
+  if(!all.length){confirmModal('표시할 지표가 없습니다.','예상효율 입력에 목표(예상 노출 · 클릭 · 조회 …)를 넣으면 여기에 지표가 생깁니다.',()=>{},'확인');return;}
+  const box=openModal('캠페인 진행 현황 · 표시 항목',
+    `<div class="hint" style="margin-bottom:10px">${L('체크한 지표만 캠페인 진행 현황에 막대로 보입니다. 광고주(뷰어) 화면에도 똑같이 적용됩니다.',
+      'Only checked metrics appear as bars in Campaign progress — the advertiser (viewer) screen follows the same setting.')}</div>
+     <div class="pacecfg">${all.map(x=>`<label class="pcrow"><input type="checkbox" class="colcfg-chk" data-pk="${x.k}" ${PACE_HIDE.includes(x.k)?'':'checked'}>
+       <b>${esc(KPI_LABEL[x.k]||x.k)}</b><span class="hint">${L('목표','Goal')} <span>${manUnit(x.goal)}</span></span></label>`).join('')}</div>`,
+    '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:420});
+  box.querySelectorAll('[data-pk]').forEach(cb=>cb.onchange=()=>{
+    const k=cb.dataset.pk;PACE_HIDE=PACE_HIDE.filter(x=>x!==k);if(!cb.checked)PACE_HIDE.push(k);
+    try{renderPace();}catch(e){}
+    try{markDirty();saveLocal();}catch(e){}});
+}
 function renderPace(){
   const sc=paceScope();          /* 기간 필터 구간 — 집행 수치와 머리글 */
   const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
-  const rows=paceKpiRows();
+  const all=paceKpiRows();
+  const rows=all.filter(x=>!PACE_HIDE.includes(x.k));
   /* 날짜 칸은 늘 캠페인 전체 일수만큼 그리고, 기간 필터로 고른 날만 색을 채운다.
      (9/1~9/2 를 고르면 30칸 중 2칸만 칠해진다) */
   const cells=[...Array(cs.days)].map((_,i)=>{
@@ -1061,6 +1078,7 @@ function renderPace(){
         <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(cs.end)}(${WD[cs.end.getDay()]})</div></div>
       </div>
       ${rows.map(line).join('')}
+      ${all.length&&!rows.length?`<div class="hint" style="padding:12px 4px">${L('표시할 지표를 모두 숨겼습니다 — ⚙ 표시 항목에서 다시 켤 수 있습니다.','All metrics are hidden — turn them back on in ⚙ Show items.')}</div>`:''}
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
         <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다</span></div>
     </div></div>`;

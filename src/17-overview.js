@@ -52,7 +52,7 @@ function ovRow(p){
   if(!E.length&&ovIso(p.end_date))E.push(p.end_date);
   S.sort();E.sort();
   const budget=sum(OV_AREAS.map(x=>a[x.k].inc?a[x.k].budget:0));
-  return {id:p.id||null,name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
+  return {id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget};}
 /* 지금 캠페인 — 화면의 값 그대로 */
 function ovSelfRow(){
@@ -183,13 +183,19 @@ function paintOverview(loading){
   const Bn=v=>`<b class="mono">${fmt(v)}</b>`,Bw=v=>`<b class="mono">${won0(v)}</b>`;
   const camSp=(n,v)=>L(`캠페인 ${Bn(n)}개 · 집행 ${Bw(v)}`,`${Bn(n)} campaigns · spent ${Bw(v)}`);
   const share=k=>L(`비중 ${pc1(shr(k))}`,`share ${pc1(shr(k))}`);
+  const spent=(a,b)=>b?L(`소진 ${pc1(a/b)}`,`spent ${pc1(a/b)}`):'';
+  /* 게이지는 모든 카드에서 같은 뜻 — **광고비 중 집행한 비율**(소진율) (v82).
+     예전에는 영역 카드의 게이지가 비중이라 한 영역만 쓰는 광고주는 꽉 찬 막대로 보여 헷갈렸다. 비중은 글자로 */
   box.innerHTML=
     card(L('총 광고비','Total ad spend'),won0(all),camSp(rows.length,sp),
-      sb?sp/sb:null,sb?L(`소진 ${pc1(sp/sb)}`,`spent ${pc1(sp/sb)}`):'','ovall')
-   +card(`<i class="ovdot d"></i>${OV_AREAS[0].l}`,won0(tot.digital.budget),camSp(tot.digital.n,tot.digital.spend),shr('digital'),share('digital'),'ovd')
-   +card('<i class="ovdot t"></i>TV',won0(tot.tv.budget),camSp(tot.tv.n,tot.tv.spend),shr('tv'),share('tv'),'ovt')
-   +card('<i class="ovdot o"></i>OOH',won0(tot.ooh.budget),L(`캠페인 ${Bn(tot.ooh.n)}개 · 지면 ${Bn(tot.ooh.slots)}개`,`${Bn(tot.ooh.n)} campaigns · ${Bn(tot.ooh.slots)} placements`),
-      shr('ooh'),share('ooh'),'ovo');
+      sb?sp/sb:null,spent(sp,sb),'ovall')
+   +card(`<i class="ovdot d"></i>${OV_AREAS[0].l}`,won0(tot.digital.budget),camSp(tot.digital.n,tot.digital.spend)+` · ${share('digital')}`,
+      tot.digital.budget?tot.digital.spend/tot.digital.budget:null,spent(tot.digital.spend,tot.digital.budget),'ovd')
+   +card('<i class="ovdot t"></i>TV',won0(tot.tv.budget),camSp(tot.tv.n,tot.tv.spend)+` · ${share('tv')}`,
+      tot.tv.budget?tot.tv.spend/tot.tv.budget:null,spent(tot.tv.spend,tot.tv.budget),'ovt')
+   /* OOH 는 실적(집행) 입력이 없어 게이지를 그리지 않는다 */
+   +card('<i class="ovdot o"></i>OOH',won0(tot.ooh.budget),L(`캠페인 ${Bn(tot.ooh.n)}개 · 지면 ${Bn(tot.ooh.slots)}개`,`${Bn(tot.ooh.n)} campaigns · ${Bn(tot.ooh.slots)} placements`)+` · ${share('ooh')}`,
+      null,'','ovo');
   const nt=$('ovNote');if(nt)nt.textContent=L('광고비 = 디지털 예산 + TV 계획 금액 + OOH 광고비 · 집행 = 디지털 소진 + TV 방송 광고비','Ad spend = digital budget + TV plan + OOH · Spent = digital spend + TV aired');
   /* 타임라인 */
   const tl=$('ovTimeline');
@@ -211,9 +217,7 @@ function paintOverview(loading){
         const lb=(i%step===0)?`<span>${L(first?`${yy}년 ${mo+1}월`:`${mo+1}월`,first?`${MON[mo]} '${yy}`:MON[mo])}</span>`:'';
         return `<i style="left:${l.toFixed(3)}%">${lb}</i>`;}).join('');
       const tx=(today>=iso(a0)&&D(today)<Z)?X(today):NaN;
-      const canOpen=!!(CLOUD&&CLOUD.user&&!CLOUD.shareView);
       const row=r=>{
-        const s=ovStatus(r,today);
         const segs=OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0);
         const bt=sum(segs.map(x=>r.a[x.k].budget));
         let acc=0;const grad=segs.length?segs.map(x=>{const a=acc/bt*100;acc+=r.a[x.k].budget;
@@ -222,10 +226,9 @@ function paintOverview(loading){
         const tags=OV_AREAS.filter(x=>r.a[x.k].inc).map(x=>`<em class="ovtag ${x.k[0]}">${x.l}</em>`).join('');
         const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
           a:OV_AREAS.filter(x=>r.a[x.k].inc).map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
-        const nm=(canOpen&&!r.self&&r.id)?`<button type="button" class="ovname lnk" data-ovopen="${esc(r.id)}" title="${L('이 캠페인 열기','Open this campaign')}">${esc(r.name)}</button>`
-          :`<span class="ovname">${esc(r.name)}</span>`;
-        return `<div class="ovrow${r.self?' self':''}">
-          <div class="ovl">${nm}<div class="ovsub">${r.self?`<em class="ovme">${L('지금 캠페인','Current')}</em>`:''}${tags}${s?`<span class="ost ${s==='live'?'live':s}">${OV_ST[s]}</span>`:''}</div></div>
+        /* v82 — 타임라인은 보기만: 이름은 누를 수 없고, '지금 캠페인' · 진행 상태 표시는 뺐다(날짜 축으로 보인다) */
+        return `<div class="ovrow">
+          <div class="ovl"><span class="ovname">${esc(r.name)}</span><div class="ovsub">${tags}</div></div>
           <div class="ovtrack">${isFinite(l)?`<b class="ovbar" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%;background:linear-gradient(90deg,${grad})" data-ovtip="${tip}"></b>`:''}</div>
           <div class="ovr mono">${r.budget?manUnit(r.budget):'–'}</div></div>`;};
       tl.innerHTML=`<div class="ovtl"><div class="ovrow axis"><div class="ovl"></div><div class="ovtrack ovaxis">${ticks}</div><div class="ovr">${L('광고비','Ad spend')}</div></div>
@@ -239,13 +242,14 @@ function paintOverview(loading){
           +o.a.map(([l,v])=>`<div class="r"><span class="l">${esc(l)}</span><b>${won0(v)}</b></div>`).join('')
           +`<div class="r"><span class="l">${L('합계','Total')}</span><b>${won0(o.t)}</b></div>`));
         b.addEventListener('mouseleave',hideTip);});}}
-  /* 영역별 목록 */
+  /* 매체별 목록 — 캠페인 이름을 누르면 묻고 나서 그 캠페인의 그 매체 서머리로 (v82) */
   const ls=$('ovLists');
   if(ls){
     const per=r=>r.start?`${mdy(r.start)} ~ ${mdy(r.end)}`:'–';
     const stc=r=>{const s=ovStatus(r,today);return s?`<span class="ost ${s}">${OV_ST[s]}</span>`:'–';};
-    const canOpen=!!(CLOUD&&CLOUD.user&&!CLOUD.shareView);
-    const nmc=r=>`<td class="head tl">${(canOpen&&!r.self&&r.id)?`<button type="button" class="ovname lnk" data-ovopen="${esc(r.id)}" title="${L('이 캠페인 열기','Open this campaign')}">${esc(r.name)}</button>`:`<span class="ovname">${esc(r.name)}</span>`}${r.self?` <em class="ovme">${L('지금','Current')}</em>`:''}</td>`;
+    OV_GO.length=0;
+    const nmc=(r,area)=>{const can=ovCanGo(r);let i=-1;if(can){i=OV_GO.length;OV_GO.push({r,area});}
+      return `<td class="head tl">${can?`<button type="button" class="ovname lnk" data-ovgo="${i}" title="${L('눌러서 이 캠페인의 서머리로 이동','Click to go to this campaign\'s summary')}">${esc(r.name)}</button>`:`<span class="ovname">${esc(r.name)}</span>`}${r.self?` <em class="ovme">${L('지금','Current')}</em>`:''}</td>`;};
     const sbar=(a,b)=>{const v=b?a/b:NaN;return `<td class="mono ovpct">${isFinite(v)?`<span class="ovmini"><i style="width:${Math.min(Math.max(v,0),1)*100}%"></i></span>${pc1(v)}`:'–'}</td>`;};
     const n0=v=>v?fmt(v):'–';
     const sect=(x,head,body,foot)=>{const rs=rows.filter(r=>r.a[x.k].inc);
@@ -256,14 +260,14 @@ function paintOverview(loading){
           :`<div class="hint ovnone">${L(`이 광고주의 ${x.l} 캠페인이 아직 없습니다.`,`No ${x.l} campaigns for this advertiser yet.`)}</div>`}</div>`;};
     const showImp=rows.some(r=>r.a.digital.inc&&(r.a.digital.imp||r.a.digital.click||r.a.digital.view));
     const dg=sect(OV_AREAS[0],[['캠페인'],['상태'],['기간'],['예산',1],[L('집행 금액','Spent'),1],['소진율',1]].concat(showImp?[['노출',1],['클릭',1],['조회',1]]:[]),
-      r=>{const d=r.a.digital;return nmc(r)+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:d.start||r.start,end:d.end||r.end})}</td>`
+      r=>{const d=r.a.digital;return nmc(r,'digital')+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:d.start||r.start,end:d.end||r.end})}</td>`
         +`<td class="mono">${won0(d.budget)}</td><td class="mono">${won0(d.spend)}</td>${sbar(d.spend,d.budget)}`
         +(showImp?`<td class="mono">${n0(d.imp)}</td><td class="mono">${n0(d.click)}</td><td class="mono">${n0(d.view)}</td>`:'');},
       rs=>{const b=sum(rs.map(r=>r.a.digital.budget)),s=sum(rs.map(r=>r.a.digital.spend));
         return `<td class="head" colspan="3">TOTAL</td><td class="mono">${won0(b)}</td><td class="mono">${won0(s)}</td>${sbar(s,b)}`
           +(showImp?['imp','click','view'].map(k=>`<td class="mono">${n0(sum(rs.map(r=>r.a.digital[k])))}</td>`).join(''):'');});
     const tv=sect(OV_AREAS[1],[['캠페인'],['상태'],['기간'],['계획 금액',1],['집행 광고비',1],['소진율',1],[L('계획 GRP','Plan GRP'),1],[L('실적 GRP','Actual GRP'),1]],
-      r=>{const t=r.a.tv;return nmc(r)+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:t.start||r.start,end:t.end||r.end})}</td>`
+      r=>{const t=r.a.tv;return nmc(r,'tv')+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:t.start||r.start,end:t.end||r.end})}</td>`
         +`<td class="mono">${won0(t.plan)}</td><td class="mono">${won0(t.spend)}</td>${sbar(t.spend,t.plan)}`
         +`<td class="mono">${t.pgrp?tvFmt1(t.pgrp):'–'}</td><td class="mono">${t.grp?tvFmt1(t.grp):'–'}</td>`;},
       rs=>{const p=sum(rs.map(r=>r.a.tv.plan)),s=sum(rs.map(r=>r.a.tv.spend));
@@ -271,17 +275,39 @@ function paintOverview(loading){
         return `<td class="head" colspan="3">TOTAL</td><td class="mono">${won0(p)}</td><td class="mono">${won0(s)}</td>${sbar(s,p)}`
           +`<td class="mono">${pg?tvFmt1(pg):'–'}</td><td class="mono">${g?tvFmt1(g):'–'}</td>`;});
     const oh=sect(OV_AREAS[2],[['캠페인'],['상태'],['기간'],['광고비',1],['매체',1],[L('지면','Placements'),1]],
-      r=>{const o=r.a.ooh;return nmc(r)+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:o.start||r.start,end:o.end||r.end})}</td>`
+      r=>{const o=r.a.ooh;return nmc(r,'ooh')+`<td>${stc(r)}</td><td class="mono nowrap">${per({start:o.start||r.start,end:o.end||r.end})}</td>`
         +`<td class="mono">${won0(o.budget)}</td><td class="mono">${n0(o.media)}</td><td class="mono">${n0(o.slots)}</td>`;},
       rs=>`<td class="head" colspan="3">TOTAL</td><td class="mono">${won0(sum(rs.map(r=>r.a.ooh.budget)))}</td>`
         +`<td class="mono"></td><td class="mono">${n0(sum(rs.map(r=>r.a.ooh.slots)))}</td>`);
     ls.innerHTML=`<div class="ovlists">${dg}${tv}${oh}</div>`;}
-  /* 캠페인 열기 (시행사) */
-  document.querySelectorAll('#tab-overview [data-ovopen]').forEach(b=>b.onclick=()=>ovOpen(b.dataset.ovopen));
+  document.querySelectorAll('#tab-overview [data-ovgo]').forEach(b=>b.onclick=()=>{const g=OV_GO[+b.dataset.ovgo];if(g)ovGoAsk(g.r,g.area);});
   const rl=$('ovReload');if(rl)rl.onclick=()=>{OV.at=0;renderOverview(true);};
 }
-async function ovOpen(id){
-  if(!id||!CLOUD||!CLOUD.user||(CLOUD.campaign&&CLOUD.campaign.id===id))return;
-  try{if(CLOUD.dirty&&CLOUD.role!=='viewer')await cloudSave(true);}catch(e){}
-  await openCampaign(id);
-  try{if(tabVisible('overview'))switchTab('overview');}catch(e){}}
+/* ---------- 다른 캠페인 · 매체 서머리로 이동 (v82) ---------- */
+var OV_GO=[];
+const OV_SUM={digital:'d_sum',tv:'t_sum',ooh:'o_sum'};
+/* 갈 수 있는가 — 지금 캠페인은 언제나, 다른 캠페인은 시행사(로그인)면 id 로 · 코드로 들어왔으면 그 광고주 코드로 */
+function ovCanGo(r){
+  if(r.self)return true;
+  try{if(CLOUD.user&&!CLOUD.shareView)return !!r.id;
+      if(CLOUD.shareView)return !!r.code;}catch(e){}
+  return false;}
+function ovGoAsk(r,area){
+  const al=(OV_AREAS.find(x=>x.k===area)||{}).l||'';
+  let sub='';
+  if(!r.self){sub=L('다른 캠페인을 엽니다.','This opens another campaign.');
+    try{if(CLOUD.dirty&&CLOUD.user&&CLOUD.role!=='viewer')sub+=' '+L('저장하지 않은 변경은 먼저 저장합니다.','Unsaved changes will be saved first.');}catch(e){}}
+  confirmModal(L(`'${r.name}' ${al} 서머리로 이동할까요?`,`Go to the ${al} summary of '${r.name}'?`),sub,()=>ovGo(r,area),L('이동','Go'));}
+async function ovGo(r,area){
+  const mid=OV_SUM[area];
+  const land=()=>{try{if(!goMenu(mid)){const t=areaHome(area);if(tabVisible(t))switchTab(t);}}catch(e){}};
+  if(r.self){land();return;}
+  if(CLOUD.user&&!CLOUD.shareView&&r.id){
+    try{if(CLOUD.dirty&&CLOUD.role!=='viewer')await cloudSave(true);}catch(e){}
+    await openCampaign(r.id);}
+  else if(CLOUD.shareView&&r.code){
+    startBoot();
+    let ok=false;try{ok=await tryCode(r.code);}catch(e){}
+    if(!ok){endBoot();confirmModal(L('캠페인을 열지 못했습니다.','Couldn\'t open the campaign.'),'',()=>{},L('확인','OK'));return;}}
+  else return;
+  land();}

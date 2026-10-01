@@ -78,6 +78,12 @@ Object.assign(I18N_EN,{
   "OOH 예상효율":"OOH forecast","TV 예상효율":"TV forecast","TV 리포트 데이터":"TV report data","{} 데이터를 모두 지울까요?":"Delete all {} data?",
   "같은 이름의 소재가 이미 있습니다.":"A creative with that name already exists.","지면 표에 적힌 소재 이름은 그대로 남습니다.":"Creative names written in the placement table stay as they are.",
   "합계 · 소계 줄 {}개는 건너뛰었습니다.":"Skipped {} total/subtotal rows.",
+  "는 대시보드 열람과 엑셀 다운로드만 됩니다. 코드 하나로 같은 광고주의 다른 캠페인도 볼 수 있습니다.":" can only view the dashboard and download Excel. One code also opens the advertiser's other campaigns.",
+  "{} 캠페인 현황":"{} campaigns","광고주 캠페인 현황":"Advertiser campaigns","매체별 캠페인":"Campaigns by media",
+  "한 캠페인이 여러 매체를 쓰면 매체마다 한 줄씩 · 캠페인 이름을 누르면 그 매체의 서머리로 이동합니다":"A campaign using several media appears once per medium · click a campaign name to open that medium's summary",
+  "캠페인 진행 현황 · 표시 항목":"Campaign progress · show items","진행 현황에 보일 지표(노출 · 조회 · 클릭 …)를 고릅니다":"Choose which metrics (imps · views · clicks …) appear in progress",
+  "표시할 지표가 없습니다.":"No metrics to show.","예상효율 입력에 목표(예상 노출 · 클릭 · 조회 …)를 넣으면 여기에 지표가 생깁니다.":"Enter goals (expected imps · clicks · views …) in Forecast input and metrics will appear here.",
+  "캠페인을 열지 못했습니다.":"Couldn't open the campaign.","잠시 후 다시 시도해 주세요.":"Please try again in a moment.",
   "닫기":"Close","전체 기간":"Overall period","집행 금액":"Spent","계획 GRP":"Plan GRP","실적 GRP":"Actual GRP","종료":"Ended","예정":"Upcoming"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고

@@ -79,6 +79,11 @@ function paintTabsOn(){
     const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
     if(src!==lb||(!lb&&c.textContent))c.textContent=lb;});
   T.querySelectorAll('.subgrp').forEach(g=>g.classList.toggle('cur',g.dataset.area===area));
+  /* 전체 캠페인 하위 메뉴 이름 = "광고주명 캠페인 현황" (v82) */
+  {const ob=T.querySelector('.megapop [data-tab="overview"]');
+   if(ob){const adv=String(CAMPAIGN.advertiser||'').trim(),lb=adv?`${adv} 캠페인 현황`:'광고주 캠페인 현황';
+     const src=ob.firstChild&&ob.firstChild.__ko!=null?ob.firstChild.__ko:ob.textContent;
+     if(src!==lb)ob.textContent=lb;}}
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 리포트 엑셀은 디지털 영역에서만 */
@@ -117,6 +122,9 @@ function areaClick(b,e){
     const T=$('tabs');if(!T)return;
     /* 메뉴를 고르면 닫는다 (각 단추의 원래 동작은 그대로 돈다) */
     T.addEventListener('click',e=>{if(e.target.closest('.megapop button'))closeAreaPop();});
+    /* 판의 열 제목 = 상위 메뉴 (v82 — 판이 메뉴 줄을 덮으므로) — 누르면 그 영역으로 */
+    T.addEventListener('click',e=>{const st=e.target.closest('.megapop .subttl');if(!st)return;
+      const g=st.closest('.subgrp');closeAreaPop();if(g)switchTab(areaHome(g.dataset.area));});
     document.addEventListener('click',e=>{if(T.dataset.pop&&!e.target.closest('#tabs .arearow'))closeAreaPop();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&T.dataset.pop){closeAreaPop();
       const b=T.querySelector('.area.on');if(b)b.focus();}});
@@ -275,8 +283,9 @@ function openMenuSettings(){
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
       ${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
-  const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea nochk">
-         <b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+  /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
+  const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
+         <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.
       <b>디지털 · TV · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
@@ -291,13 +300,15 @@ function openMenuSettings(){
     '<button class="btn" data-close>취소</button><button class="btn primary" id="medOk">적용</button>',{w:620});
   const paint=()=>{
     box.querySelectorAll('input[data-area]').forEach(cb=>cb.checked=!!st.media[cb.dataset.area]);
+    box.querySelectorAll('input[data-common]').forEach(cb=>cb.checked=MENUS.some(m=>m.area===cb.dataset.common&&st.menus[m.id].on));
     box.querySelectorAll('tr[data-mid]').forEach(tr=>{
       const id=tr.dataset.mid,s=st.menus[id],a=tr.dataset.marea,off=a&&!st.media[a];
       tr.classList.toggle('off',!!off);
       tr.querySelectorAll('input[data-k]').forEach(cb=>{cb.checked=!!s[cb.dataset.k];
         cb.disabled=!!off||(cb.dataset.k==='viewer'&&!s.on);});
       tr.classList.toggle('unused',!s.on);});
-    box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)&&!st.media[g.dataset.area]));};
+    box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)?!st.media[g.dataset.area]
+      :!MENUS.some(m=>m.area===g.dataset.area&&st.menus[m.id].on)));};
   const check=()=>{
     if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OOH must be on.');
     for(const a of MEDIA_AREAS){
@@ -310,6 +321,8 @@ function openMenuSettings(){
     return '';};
   const say=()=>{const m=check();$('medMsg').innerHTML=m?`<span style="color:var(--neg)">${m}</span>`:'';return !m;};
   box.querySelectorAll('input[data-area]').forEach(cb=>cb.onchange=()=>{st.media[cb.dataset.area]=cb.checked;paint();say();});
+  box.querySelectorAll('input[data-common]').forEach(cb=>cb.onchange=()=>{
+    MENUS.filter(m=>m.area===cb.dataset.common).forEach(m=>{st.menus[m.id].on=cb.checked;});paint();say();});
   box.querySelectorAll('tr[data-mid] input[data-k]').forEach(cb=>cb.onchange=()=>{
     const id=cb.closest('tr').dataset.mid;st.menus[id][cb.dataset.k]=cb.checked;paint();say();});
   paint();
