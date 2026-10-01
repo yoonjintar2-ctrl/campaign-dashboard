@@ -162,6 +162,8 @@ Object.assign(I18N_EN,{
   "처음 지표 구성으로 되돌립니다":"Restores the default set of metrics","바꾸는 즉시 카드에 반영됩니다":"Changes apply to the cards right away",
   "빼기":"Remove","눌러서 빼기":"Click to remove","눌러서 넣기":"Click to add"
 });
+/* v98 — 찾아 바꾸기 */
+Object.assign(I18N_EN,{"🔍 찾아 바꾸기":"🔍 Find & replace","표 전체에서 찾아 바꿉니다 (Ctrl+F · Ctrl+H)":"Find and replace across the whole table (Ctrl+F · Ctrl+H)"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

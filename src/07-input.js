@@ -77,10 +77,17 @@ const DIM_CHAIN=['segment','media','product','slot','target','line','landing','c
 /* 이름 비교용 열쇠 — 앞뒤 공백 · 중간 공백 개수 · 영문 대소문자 차이는 같은 이름으로 본다.
    (매체 시트가 "TOSS" 로 내려 주고 예상 효율에는 "Toss" 로 적혀 있어도 붙는다) */
 const dimKey=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' ');
+/* 랜딩 페이지는 띄어쓰기 · 하이픈 · 밑줄까지 무시하고 견준다 (v98) —
+   "modelpage" · "model-page" · "Model Page" 는 같은 페이지다 (사이트 분석 도구는 붙여 쓰는 경우가 많다) */
+const landKey=v=>dimKey(v).replace(/[\s_\-./]+/g,'');
+const dimEq=(k,a,b)=>k==='landing'?landKey(a)===landKey(b):dimKey(a)===dimKey(b);
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
   /* 랜딩 페이지는 라인에 적어 둔 경우에만 맞춰 본다 (v92) — 안 적은 라인은 어떤 랜딩이든 받는다 */
   if(k==='landing'&&!lineLandings(l).length)return true;
+  if(k==='landing'){const set=new Set(lineLandings(l).map(landKey));
+    if(set.has(landKey(v))||landKey(l.landing)===landKey(v))return true;
+    const want=parseMulti(v);return want.length>0&&want.every(x=>set.has(landKey(x)));}
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
   const set=new Set(lineMulti(l,k).map(dimKey));
@@ -412,7 +419,7 @@ function renderSheet(){
         const opts=optsFor(c.k,r);
         /* 대소문자·공백만 다른 이름은 등록된 표기 쪽이 골라진 것으로 본다 */
         const raw=r[c.k]||'';
-        const cur=opts.find(o=>dimKey(o)===dimKey(raw))||raw;
+        const cur=opts.find(o=>dimEq(c.k,o,raw))||raw;
         /* 목록은 **누를 때** 채운다 — 1,400행이면 옵션이 2만 개가 넘어 처음 그릴 때 몇 초씩 걸렸다.
            접혀 있는 동안에는 지금 값 한 줄만 있으면 화면이 똑같다. */
         h+=`<td class="${cls}" data-r="${ri}" data-c="${ci}"${bt}>`

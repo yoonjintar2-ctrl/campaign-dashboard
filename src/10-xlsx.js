@@ -250,7 +250,7 @@ function canonRow(r){
     if(k==='creative'||!r[k])return;
     const want=parseMulti(r[k]);
     if(want.length>1&&want.length===lineMulti(l,k).length){r[k]=l[k];return;}
-    const reg=lineMulti(l,k).find(x=>dimKey(x)===dimKey(r[k]));
+    const reg=lineMulti(l,k).find(x=>dimEq(k,x,r[k]));
     if(reg&&reg!==r[k])r[k]=reg;});
   return r;
 }
