@@ -395,15 +395,19 @@ var OVC={key:'',items:null,busy:false,seq:0};
 const OVC_MAX=48;
 /* 소재 한 벌 → 칸 목록. src = 캠페인 줄(ovRow) */
 function ovcTiles(src,crs,oohcr){
-  const out=[],seen=new Set();
+  const out=[],seen=new Map();
+  /* 같은 이름의 소재는 한 칸 — 여러 라인(매체)에 걸쳐 있으면 매체를 모아 둔다 (팝업에 표시) */
   const add=(c,area)=>{const nm=String(c&&c.name||'').trim();if(!nm)return;
-    const k=area+'\u0001'+nm.toLowerCase();if(seen.has(k))return;seen.add(k);
-    out.push({r:src,area,name:nm,img:c.img||'',yt:c.yt||'',g:c.g||'',media:c.media||''});};
+    const k=area+'\u0001'+nm.toLowerCase(),md=String(c.media||'').trim();
+    const ex=seen.get(k);
+    if(ex){if(md&&!ex.medias.includes(md))ex.medias.push(md);if(!ex.img&&c.img)ex.img=c.img;if(!ex.yt&&c.yt)ex.yt=c.yt;return;}
+    const t={r:src,area,name:nm,img:c.img||'',yt:c.yt||'',g:c.g||'',media:md,medias:md?[md]:[],ratio:c.ratio||'',type:c.type||''};
+    seen.set(k,t);out.push(t);};
   (Array.isArray(crs)?crs:[]).forEach(c=>c&&typeof c==='object'&&add(c,'digital'));
   (Array.isArray(oohcr)?oohcr:[]).forEach(c=>c&&typeof c==='object'&&add(c,'ooh'));
   return out;}
 function ovcSelf(selfRow){
-  return ovcTiles(selfRow,(CREATIVES||[]).map(c=>({name:c.name,img:c.img,yt:c.yt,g:c.g,media:c.media})),
+  return ovcTiles(selfRow,(CREATIVES||[]).map(c=>({name:c.name,img:c.img,yt:c.yt,g:c.g,media:c.media,ratio:c.ratio,type:c.type})),
     campMedia().ooh?(OOH_CR||[]):[]);}
 async function ovcFetch(rows){
   const self=rows.find(r=>r.self),others=rows.filter(r=>!r.self);
@@ -424,6 +428,50 @@ async function ovcFetch(rows){
     const out=[];(data||[]).forEach(d=>{const r=byId.get(d.id);if(r)out.push(...ovcTiles(r,d.crs,(d.media&&d.media.ooh)?d.oohcr:[]));});
     return out;}
   return [];}
+/* 소재 크게 보기 (v90) — 왼쪽 이미지 전체, 오른쪽 캠페인 · 소재 정보. ← → 로 앞뒤 소재, 캠페인 서머리로 이동 단추 */
+function ovcOpen(list,i){
+  const t=list[i];if(!t)return;
+  const al=(OV_AREAS.find(x=>x.k===t.area)||{}).l||'';
+  const r=t.r,today=CAMPAIGN.today||iso(new Date());
+  const st=ovStatus(r,today),can=ovCanGo(r);
+  const ytUrl=t.yt?`https://www.youtube.com/watch?v=${encodeURIComponent(t.yt)}`:'';
+  const src=t.img?(t.img.slice(0,5)==='data:'?t.img:encodeURI(t.img)):(t.yt?ytThumb(t.yt):'');
+  const pic=src?`<img src="${esc(src)}" alt="${esc(t.name)}">`
+    :`<div class="ovlbn" style="background:${crGrad(t)}"><span>${esc(t.name)}</span></div>`;
+  const per=r.start?`${r.start.replace(/-/g,'.')} – ${(r.end||r.start).replace(/-/g,'.')}`:'–';
+  const mds=(t.medias&&t.medias.length?t.medias:(t.media?[t.media]:[]));
+  const row=(l,v)=>`<div class="ovlr"><span>${l}</span><b>${v}</b></div>`;
+  const body=`<div class="ovlb">
+      <div class="ovlpic">${pic}${t.yt?`<a class="ovlyt" href="${esc(ytUrl)}" target="_blank" rel="noopener">▶ ${L('유튜브에서 보기','Watch on YouTube')}</a>`:''}
+        ${list.length>1?`<button type="button" class="ovlnav p" data-ovln="-1" aria-label="${L('이전 소재','Previous')}">‹</button><button type="button" class="ovlnav n" data-ovln="1" aria-label="${L('다음 소재','Next')}">›</button>`:''}</div>
+      <div class="ovlinfo">
+        <div class="ovltag"><i class="ovdot ${t.area[0]}"></i>${esc(al)}${st?` <em class="ovlst ${st}">${OV_ST[st]}</em>`:''}</div>
+        <div class="ovlname">${esc(t.name)}</div>
+        ${row(L('캠페인','Campaign'),esc(r.name))}
+        ${row(L('캠페인 기간','Flight'),esc(per))}
+        ${mds.length?row(L('게재 매체','Media'),esc(mds.join(' · '))):''}
+        ${row(L('캠페인 광고비','Campaign spend'),won(Math.round(r.budget||0)))}
+        ${t.area==='digital'&&r.a&&r.a.digital&&r.a.digital.imp?row(L('캠페인 노출','Campaign impressions'),fmt(r.a.digital.imp)):''}
+        <div class="ovlfill"></div>
+        ${can?`<button type="button" class="btn primary ovlgo">${L(`${al} 서머리로 이동`,`Open ${al} summary`)} →</button>`:''}
+        <div class="ovlcnt">${fmt(i+1)} / ${fmt(list.length)}</div>
+      </div></div>`;
+  closeAllModals();
+  const box=openModal(L('소재 보기','Creative'),body,'',{w:1080});
+  box.classList.add('ovlmodal');
+  /* 이미지를 못 불러오면(유튜브 썸네일 차단 등) 소재 색 칸으로 */
+  const im=box.querySelector('.ovlpic img');
+  if(im)im.onerror=()=>{const d=document.createElement('div');d.className='ovlbn';d.style.background=crGrad(t);
+    d.innerHTML=`<span>${esc(t.name)}</span>`;im.replaceWith(d);};
+  const go=box.querySelector('.ovlgo');
+  if(go)go.onclick=()=>{closeAllModals();ovGo(r,t.area);};
+  box.querySelectorAll('[data-ovln]').forEach(b=>b.onclick=()=>ovcOpen(list,(i+(+b.dataset.ovln)+list.length)%list.length));
+  const key=e=>{if(!document.body.contains(box)){removeEventListener('keydown',key);return;}
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();removeEventListener('keydown',key);
+      ovcOpen(list,(i+(e.key==='ArrowLeft'?-1:1)+list.length)%list.length);}
+    else if(e.key==='Escape'){removeEventListener('keydown',key);closeAllModals();}};
+  if(list.length>1)addEventListener('keydown',key);
+}
 function paintCollage(rows){
   const wrap=$('ovCrWrap'),box=$('ovCollage'),tg=$('ovCrTgl'),nt=$('ovCrNote');if(!wrap||!box)return;
   const client=(typeof isClient==='function'&&isClient());
@@ -442,7 +490,7 @@ function paintCollage(rows){
   const draw=()=>{
     const items=ovcSelf(self).concat(OVC.items||[]);
     const nCamp=new Set(items.map(t=>t.r.name)).size;
-    if(nt)nt.textContent=items.length?L(`소재 ${fmt(items.length)}개 · 캠페인 ${fmt(nCamp)}개 · 누르면 그 캠페인 서머리로 이동`,`${fmt(items.length)} creatives · ${fmt(nCamp)} campaigns · click to open that campaign's summary`):'';
+    if(nt)nt.textContent=items.length?L(`소재 ${fmt(items.length)}개 · 캠페인 ${fmt(nCamp)}개 · 누르면 크게 보기`,`${fmt(items.length)} creatives · ${fmt(nCamp)} campaigns · click to enlarge`):'';
     if(!items.length){
       if(client){wrap.classList.add('hidden');return;}
       box.innerHTML=`<div class="ovcoff">${OVC.busy?L('소재를 불러오는 중…','Loading creatives…')
@@ -473,9 +521,9 @@ function paintCollage(rows){
       el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(t.name)}</div>`
         +`<div class="r"><span class="l">${L('캠페인','Campaign')}</span><b>${esc(t.r.name)}</b></div>`
         +`<div class="r"><span class="l">${L('매체','Media')}</span><b>${esc(al+(t.media&&t.area==='digital'?' · '+t.media:''))}</b></div>`
-        +(can?`<div class="r"><span class="l"></span><b>${L('누르면 서머리로 이동','Click to open summary')}</b></div>`:'')));
+        +`<div class="r"><span class="l"></span><b>${L('누르면 크게 보기','Click to enlarge')}</b></div>`));
       el.addEventListener('mouseleave',hideTip);
-      el.onclick=()=>{hideTip();if(can)ovGoAsk(t.r,t.area);};});};
+      el.onclick=()=>{hideTip();ovcOpen(shown,+el.dataset.oct);};});};
   if(OVC.key!==key&&!OVC.busy){
     OVC.key=key;OVC.items=null;OVC.busy=true;const seq=++OVC.seq;
     draw();
@@ -491,8 +539,10 @@ function paintOvColumns(bx,rows,won0){
   OVCOL_LAST={rows,won0,w:bx.clientWidth};
   if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
   bx.classList.add('ovfloor');
-  const cs=getComputedStyle(bx),pad=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
-  const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-pad,300);
+  /* v90 — 무대(.ovstage) 안에 이름 · 막대를 놓고, 바닥은 카드 가장자리에서 떨어진 둥근 판(.ovfl)으로 —
+     페이지 바탕(회색 테마)과 바닥 색이 비슷해도 카드 흰 테두리가 둘을 갈라 준다. 위쪽 여백을 넓혀 이름이 가운데 쪽에 오게 */
+  const SPX=18,PT=46,BI=14;
+  const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-SPX*2,300);
   /* v87 — 축 · 눈금 · 날짜 줄 없이: 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 입체 막대 → 카드 아래 25% 를 덮는 바닥 */
   const PX=16,n=rows.length;
   /* 칸이 너무 좁아지면(92px 미만) 좌우로 스크롤 */
@@ -502,8 +552,8 @@ function paintOvColumns(bx,rows,won0){
   const LV=2,LH=66,labZ=LV*LH+8,plotH=220,DEP=10;
   const Bb=labZ+plotH;                                   /* 막대 앞면 바닥 */
   /* 바닥 — 카드(이 칸) 높이의 25%. 막대는 바닥 깊이의 42% 지점에 선다 */
-  const padT=parseFloat(cs.paddingTop)||0,SINK=.42;
-  const F=Math.round(.25*(padT+Bb)/(1-.25*(1-SINK)));
+  const SINK=.42;
+  const F=Math.round(.25*(PT+Bb+BI)/(1-.25*(1-SINK)));
   const Hc=Math.round(Bb+(1-SINK)*F);
   const mx=Math.max(1,...rows.map(r=>r.budget||0));
   const Y=v=>Bb-v/mx*plotH;
@@ -524,9 +574,10 @@ function paintOvColumns(bx,rows,won0){
       <i class="ocsh" style="left:${(bl-8).toFixed(1)}px;width:${(bw+DEP+26).toFixed(1)}px;top:${(Bb-DEP/2-8).toFixed(1)}px"></i>
       <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Bb-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
         ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>`;}).join('');
-  bx.style.setProperty('--flh',F+'px');
-  bx.innerHTML=`<div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
-    <div class="ovleg onfloor">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div>`;
+  bx.innerHTML=`<div class="ovstage" style="padding:${PT}px ${SPX}px ${BI}px">
+      <i class="ovfl" style="height:${F}px;bottom:${BI}px"></i>
+      <div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
+      <div class="ovleg onfloor" style="bottom:${BI+12}px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

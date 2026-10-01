@@ -1682,7 +1682,8 @@ function renderGantt(){
      머리 열 하나가 통째로 가져가던 방식(flexlead)을 버렸으므로,
      짧은 캠페인에서 표가 카드보다 좁아 허전해지지 않게 여기서 칸 폭을 키운다.
      모든 날짜 칸에 같은 값을 주므로 폭이 들쭉날쭉해지지 않는다. */
-  const dayBase=RATEM?22:13, dayCap=80;
+  const dayBase=RATEM?22:13, dayCap=160;
+  t.dataset.dbase=dayBase;
   (function fitDays(){
     let w=dayBase;
     try{
@@ -1701,7 +1702,8 @@ function renderGantt(){
   /* 칸에 얹은 작은 숫자는 **그 칸에 실제로 들어가는 것만** 남긴다 (v57).
      열 폭을 넓히지 않는 게 원칙이라, 안 들어가는 값은 잘라 보여 주지 않고 아예 뺀다.
      폭은 한 번만 재고 그 뒤로는 쓰기만 한다 (칸마다 재면 700번씩 레이아웃이 다시 돈다). */
-  if(RATEM)requestAnimationFrame(()=>{try{
+  t.__fitNums=()=>{try{
+    if(!t.classList.contains('wnum'))return;
     const one=t.querySelector('tbody td.day');if(!one)return;
     const w=one.getBoundingClientRect().width-0.5;
     /* 글자 폭은 캔버스로 실제로 잰다 — 눈대중으로 잡으면 세 자리 숫자가 억울하게 빠진다.
@@ -1714,9 +1716,30 @@ function renderGantt(){
       :(memo[v]=cx.measureText(v).width-Math.max(v.length-1,0)*0.4);
     t.querySelectorAll('td.day .vnum').forEach(u=>{
       u.classList.toggle('nofit',wOf(u.textContent)>w);});
-  }catch(e){}});
+  }catch(e){}};
+  if(RATEM)requestAnimationFrame(t.__fitNums);
+  /* 실제 폭으로 한 번 더 맞춘다 — 숨겨진 상태에서 그려졌거나 값 열이 어림보다 넓으면 오른쪽이 비거나 넘쳤다 (v90).
+     표를 감싼 상자의 크기가 바뀔 때마다(탭을 열 때 · 창 크기) 다시 맞춘다 */
+  requestAnimationFrame(ganttRefit);
+  try{const wrap=t.closest('.gantt-wrap');
+    if(wrap&&!wrap.__ro&&typeof ResizeObserver!=='undefined'){wrap.__ro=new ResizeObserver(()=>ganttRefit());wrap.__ro.observe(wrap);}}catch(e){}
   /* 가로 스크롤바 대신 좌우 넘김 단추 (v77) — 왼쪽 소재 열(sticky)은 자동으로 비켜 간다 */
   try{const w=$('ganttTbl')&&$('ganttTbl').closest('.gantt-wrap');if(w)enableHPager(w.closest('.card'),w);}catch(e){}
+}
+/* 날짜 칸 폭을 실제로 남는(모자라는) 가로 폭에 맞춘다 — 모든 날짜 칸이 같은 폭 */
+function ganttRefit(){
+  const t=$('ganttTbl');if(!t||!t.offsetParent)return;
+  const wrap=t.closest('.gantt-wrap');if(!wrap||!wrap.clientWidth)return;
+  const n=t.tHead?t.tHead.querySelectorAll('th.dhd').length:0;if(!n)return;
+  const base=+t.dataset.dbase||13,cur=parseFloat(t.style.getPropertyValue('--gday'))||base;
+  const free=wrap.clientWidth-t.getBoundingClientRect().width;
+  if(Math.abs(free)<2||(free<0&&cur<=base))return;
+  const w=Math.max(base,Math.min(160,Math.floor((cur+free/n)*4)/4));
+  if(Math.abs(w-cur)<0.25)return;
+  t.style.setProperty('--gday',w+'px');
+  t.style.minWidth='';
+  try{if(t.__fitNums)t.__fitNums();}catch(e){}
+  try{if(window.__ganttPlace)window.__ganttPlace();}catch(e){}
 }
 /* ---- 떠 있는 머리글 막대 ----
    게재 히스토리는 세로 스크롤 없이 전체 높이를 보여 주므로(소재 비교가 중요) 표 안에서
