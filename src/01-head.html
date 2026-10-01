@@ -606,6 +606,74 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovleg span{display:inline-flex;align-items:center}
 .ovlists{display:flex;flex-direction:column;gap:14px}
 .ovcard{padding:0;overflow:hidden}
+/* 광고비 현황 — 키가 큰 카드 (v83) */
+.ovkpis{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 4px}
+@media (max-width:1100px){.ovkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.ovkpis{grid-template-columns:minmax(0,1fr)}}
+.ovk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px 18px;min-height:250px;
+  display:flex;flex-direction:column;position:relative}
+.ovk.ovall{background:linear-gradient(165deg,var(--surface) 40%,var(--acc-soft2))}
+.ovk .kh{display:flex;align-items:center;gap:2px;min-height:20px}
+.ovk .kh .tt{font-size:12.5px;font-weight:800;color:var(--ink2)}
+.ovk .kh .kr{margin-left:auto;font-size:12px;font-weight:800;color:var(--acc)}
+.ovk .kv{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.6px;margin:12px 0 4px;white-space:nowrap}
+.ovk .ks{font-size:11.5px;color:var(--muted)}
+.ovk .ks b{color:var(--ink2)}
+.ovk .kfill{flex:1;min-height:14px}
+.ovk .kstat{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--line2);font-size:12px}
+.ovk .kstat span{color:var(--muted);font-weight:700}
+.ovk .kstat b{color:var(--ink);font-weight:800}
+.ovk .kbar{height:8px;border-radius:99px;background:var(--line2);margin-top:10px;overflow:hidden}
+.ovk .kbar i{display:block;height:100%;border-radius:99px;background:var(--acc)}
+.ovk.ovd .kbar i{background:var(--ov-digital)}.ovk.ovt .kbar i{background:var(--ov-tv)}
+.ovk .kbl{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted);font-weight:700}
+.ovk .kbl b{color:var(--ink);font-weight:800}
+.ovk .kbl.muted{justify-content:flex-start;margin-top:12px;font-weight:600}
+.ovk .kdonut{display:flex;align-items:center;gap:16px;margin-top:auto;padding-top:14px}
+.ovk .kdonut svg{flex:none;overflow:visible}
+.ovk .kdonut circle[data-ovpie]{cursor:default;transition:stroke-width .12s}
+.ovk .kdonut circle[data-ovpie]:hover{stroke-width:21}
+.ovk .kdonut .dt{font-size:9.5px;font-weight:700;fill:var(--muted)}
+.ovk .kdonut .dv{font-size:12px;font-weight:800;fill:var(--ink)}
+.ovk .klegend{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ovk .kl{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:4px;font-size:12px}
+.ovk .kl span{color:var(--ink2);font-weight:700}
+.ovk .kl b{font-size:14px;font-weight:800;color:var(--ink);text-align:right}
+.ovk .kl em{grid-column:2 / 4;font-style:normal;font-size:10.5px;color:var(--muted);text-align:right;margin-top:-3px}
+.ovk .kl.zero{opacity:.45}
+/* 캠페인별 광고비 — 한 줄에 캠페인 하나, 막대 하나에 디지털 + TV + OOH */
+.ovbars{display:flex;flex-direction:column;gap:2px}
+.obr{display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr) 128px;align-items:center;gap:14px;padding:7px 2px;border-bottom:1px solid var(--line2)}
+.obr:last-child{border-bottom:0}
+.obn{min-width:0}
+.obn b{display:block;font-size:12.8px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obn span{font-size:10.5px;color:var(--muted);font-weight:600}
+.obt{display:flex;height:18px;border-radius:6px;background:var(--line2);overflow:hidden;cursor:default}
+.obt i{display:block;height:100%;background:var(--ov-digital)}
+.obt i.t{background:var(--ov-tv)}.obt i.o{background:var(--ov-ooh)}
+.obt i+i{box-shadow:inset 1px 0 0 var(--surface)}
+.obv{text-align:right;font-weight:800;color:var(--ink);font-size:12.5px}
+@media (max-width:640px){.obr{grid-template-columns:1fr;gap:6px}.obv{text-align:left}}
+/* 소재 콜라주 */
+#ovCollage{margin-top:2px}
+.ovcol{display:flex;flex-direction:column;gap:5px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.ocrw{display:flex;gap:5px;min-width:0}
+#ovCrWrap>.sec{margin-top:34px}
+.oct{position:relative;border:0;padding:0;margin:0;border-radius:9px;background-size:cover;background-position:center;cursor:pointer;
+  overflow:hidden;font:inherit;text-align:left;transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease;z-index:0}
+.oct{min-width:0;height:100%}
+.ovcol:hover .oct:not(:hover){opacity:.5}
+.oct:hover{transform:scale(1.045);z-index:3;box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 0 3px var(--surface),0 0 0 5px var(--acc)}
+.oct.nogo{cursor:default}
+.oct .ocn{position:absolute;left:10px;right:10px;top:10px;font-size:12.5px;font-weight:800;color:#fff;line-height:1.35;
+  text-shadow:0 1px 3px rgba(0,0,0,.35);word-break:keep-all}
+.oct .ocb{position:absolute;left:0;right:0;bottom:0;padding:16px 9px 7px;font-size:10.5px;font-weight:700;color:#fff;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.55));opacity:0;transition:opacity .16s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oct:hover .ocb{opacity:1}
+.oct.more{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--plane2);cursor:default;color:var(--muted)}
+.oct.more b{font-size:20px;color:var(--ink2)}.oct.more span{font-size:11px}
+.ovcoff{padding:18px;border:1.5px dashed var(--gline);border-radius:14px;color:var(--muted);font-size:12.5px;text-align:center;background:var(--surface)}
+
 /* 카드 안 머리줄(.ovch) 아래에 붙는 표 — 위쪽 모서리를 둥글리지 않는다 (v82) */
 .card.ovcard>.tbl-wrap{border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px)}
 .ovch{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}

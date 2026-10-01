@@ -125,6 +125,8 @@ function serializeDoc(){
            /* 영역 숨김 · 순서 (v49) */
            hidden:(typeof HIDDEN!=='undefined'?[...HIDDEN]:[]),
            sectOrder:(typeof SECT_ORDER!=='undefined'?SECT_ORDER.slice():[]),
+           /* 전체 캠페인 › 소재 콜라주 보이기 (v83) */
+           ovCollage:(typeof OV_COLLAGE!=='undefined'?!!OV_COLLAGE:true),
            /* 캠페인 진행 현황에서 숨긴 지표 (v82) */
            paceHide:(typeof PACE_HIDE!=='undefined'?PACE_HIDE.slice():[]),
            /* 조회 기간 (v71) — 마스터가 고른 기간을 광고주도 그대로 보도록. null 이면 기본 구간 */
@@ -219,6 +221,7 @@ function applyDoc(d,keepToday){
   if(v.rawOrder&&typeof RAW_ORDER!=='undefined')RAW_ORDER=v.rawOrder;
   if(v.rawHide&&typeof RAW_HIDE!=='undefined')RAW_HIDE=v.rawHide;
   if(v.donutHide&&typeof DONUT_HIDE!=='undefined')DONUT_HIDE=v.donutHide;
+  try{OV_COLLAGE=v.ovCollage!==false;if(typeof OVC!=='undefined')OVC.key='';}catch(e){}
   /* 캠페인 진행 현황 숨긴 지표 (v82) — 없던 저장본은 모두 보이게 */
   try{PACE_HIDE=Array.isArray(v.paceHide)?v.paceHide.filter(k=>typeof k==='string'):[];}catch(e){}
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
@@ -1085,6 +1088,7 @@ function resetToBlank(name,advertiser){
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];}catch(e){}
+  try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
   clearWorkState();
   rebuildPeriod();buildFacts();resetDateFilter(true);renderEverything();

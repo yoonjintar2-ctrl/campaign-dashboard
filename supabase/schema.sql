@@ -1000,3 +1000,46 @@ begin
 end $$;
 revoke all on function public.overview_by_code(text) from public;
 grant execute on function public.overview_by_code(text) to anon, authenticated;
+
+-- 전체 캠페인 › 소재 콜라주 (v83) — 같은 광고주 캠페인들의 소재 이름 · 이미지(또는 유튜브 링크)만.
+-- 전체 캠페인 함수와 같은 규칙: 메뉴를 끈 캠페인은 없음, 뷰어 코드는 "광고주에게 보이기" 를 켠 경우에만
+create or replace function public.creatives_by_code(p_code text)
+returns table(id uuid, name text, start_date date, is_self boolean, code text, creatives jsonb, ooh jsonb)
+language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+declare
+  src public.campaigns%rowtype;
+  k text := upper(btrim(coalesce(p_code,'')));
+  staff boolean;
+  m jsonb;
+begin
+  if k = '' then return; end if;
+  select * into src from public.campaigns c
+   where upper(c.share_code) = k or upper(c.staff_code) = k limit 1;
+  if not found then return; end if;
+  staff := upper(coalesce(src.staff_code,'')) = k;
+  m := src.doc->'campaign'->'menus'->'overview';
+  if coalesce(m->>'on','') = 'false' then return; end if;
+  if not staff and coalesce(m->>'viewer','') <> 'true'
+     and not (auth.uid() is not null and (public.is_member(src.id) or public.is_super())) then
+    return;
+  end if;
+  return query
+  select c.id, c.name, c.start_date, c.id = src.id,
+         case when staff then c.staff_code else c.share_code end,
+         coalesce((select jsonb_agg(jsonb_build_object('name',x->'name','img',x->'img','yt',x->'yt','g',x->'g','media',x->'media'))
+                     from jsonb_array_elements(case when jsonb_typeof(c.doc->'creatives')='array'
+                                                    then c.doc->'creatives' else '[]'::jsonb end) x),'[]'::jsonb),
+         case when coalesce((c.doc->'campaign'->'media'->>'ooh')::boolean,false)
+              then coalesce((select jsonb_agg(jsonb_build_object('name',y->'name','img',y->'img'))
+                               from jsonb_array_elements(case when jsonb_typeof(c.doc->'ooh'->'cr')='array'
+                                                              then c.doc->'ooh'->'cr' else '[]'::jsonb end) y),'[]'::jsonb)
+              else '[]'::jsonb end
+    from public.campaigns c
+   where c.id = src.id
+      or (public.adv_key(src.advertiser) is not null
+          and public.adv_key(c.advertiser) = public.adv_key(src.advertiser))
+   order by c.start_date nulls last, c.name;
+end $$;
+revoke all on function public.creatives_by_code(text) from public;
+grant execute on function public.creatives_by_code(text) to anon, authenticated;

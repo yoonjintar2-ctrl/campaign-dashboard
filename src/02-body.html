@@ -490,11 +490,18 @@
   <div id="ovMsg" class="hidden"></div>
   <div class="sec">광고비 현황 <span class="note" id="ovNote"></span>
     <div class="tools"><button class="btn sm" id="ovReload" title="다른 캠페인의 최신 저장 내용을 다시 불러옵니다">↻ 새로 고침</button></div></div>
-  <div class="tvkpis ovkpis" id="ovKpis"></div>
+  <div class="ovkpis" id="ovKpis"></div>
   <div class="sec gap">캠페인 타임라인 <span class="note">막대 색 = 영역별 광고비 비중 · 세로선은 오늘</span></div>
   <div class="card"><div class="bd" id="ovTimeline"></div></div>
   <div class="sec gap">매체별 캠페인 <span class="note">한 캠페인이 여러 매체를 쓰면 매체마다 한 줄씩 · 캠페인 이름을 누르면 그 매체의 서머리로 이동합니다</span></div>
   <div id="ovLists"></div>
+  <div class="sec gap">캠페인별 광고비 <span class="note">캠페인 시작 순 · 막대 하나 = 디지털 + TV + OOH 광고비</span></div>
+  <div class="card"><div class="bd" id="ovBars"></div></div>
+  <div id="ovCrWrap">
+    <div class="sec gap">소재 콜라주 <span class="note" id="ovCrNote"></span>
+      <div class="tools agency-only"><button class="btn sm" id="ovCrTgl" type="button">숨기기</button></div></div>
+    <div id="ovCollage"></div>
+  </div>
 </div>
 
 <div id="tip"></div>
