@@ -162,13 +162,13 @@ function infSankey(host,rows0,T){
     const N=vals.map(v=>{const h=v>0?Math.max(v*k,1):0;const o={y,h,used:0};y+=h+(h>0?SG:0);return o;});
     return {N,k};};
   const leftLabels=(N,x,valTxt)=>{const idx=N.map((n,i)=>n.h?i:-1).filter(i=>i>=0);
-    const sp=spread(idx.map(i=>N[i].y+N[i].h/2),28,TOP+6,TOP+HM-6);
+    const sp=spread(idx.map(i=>N[i].y+N[i].h/2),28,TOP+6,TOP+HM-10);
     const cs=N.map(n=>n.y+n.h/2),ly=[];idx.forEach((i,j)=>ly[i]=sp[j]);let s='';
     rows.forEach((g,i)=>{const y=ly[i];if(!N[i].h)return;
       if(Math.abs(y-cs[i])>2)s+=`<path class="sklead" d="M${x-5},${y} L${x-1},${cs[i]}"></path>`;
       s+=`<text class="sklab" x="${x-8}" y="${y-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,14))}</text>
         <text class="skval" x="${x-8}" y="${y+10}" text-anchor="end">${valTxt(g)}</text>`;});return s;};
-  const svgOf=(W,body)=>`<svg viewBox="0 0 ${W} ${HM+TOP*2}" width="${W}" height="${HM+TOP*2}" class="sksvg">${body}</svg>`;
+  const svgOf=(W,body)=>`<svg viewBox="0 0 ${W} ${HM+TOP*2+8}" width="${W}" height="${HM+TOP*2+8}" class="sksvg">${body}</svg>`;
   /* ①② — 넘어간 몫 + 이탈 */
   ST.forEach((s,p)=>{const box=boxes[p];const W=Math.max(box.clientWidth||380,280);
     const LW=Math.min(112,W*.3),RW=Math.min(122,W*.31),xL=LW,xR=W-RW-NW;
@@ -212,7 +212,7 @@ function infSankey(host,rows0,T){
       R.forEach((r,j)=>{const v=flowTo(g,r);if(!(v>0))return;const h=v*k;
         paths+=`<path class="sklink zf" d="${band(xL+NW,n.y+n.used,h,xR,RN[j].y+RN[j].used,h)}" style="fill:${col}" data-i="${i}" data-j="${j}" data-v="${v}" data-p="2"></path>`;
         n.used+=h;RN[j].used+=h;});});
-    const cs=RN.map(n=>n.y+n.h/2),ly=spread(cs,30,TOP+6,TOP+HM-6);
+    const cs=RN.map(n=>n.y+n.h/2),ly=spread(cs,30,TOP+6,TOP+HM-10);
     R.forEach((r,j)=>{const n=RN[j];
       nodes+=`<rect class="sknode r" x="${xR}" y="${n.y}" width="${NW}" height="${n.h}" rx="2" style="fill:${r.kind==='other'?'var(--gline)':'var(--acc)'}" data-j="${j}"></rect>`;
       labs+=`<text class="sklab" x="${xR+NW+8}" y="${ly[j]-2}" data-j="${j}">${esc(r.l)}</text>
