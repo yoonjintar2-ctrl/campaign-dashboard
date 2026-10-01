@@ -214,11 +214,13 @@ function paintOverview(loading){
     <div class="kfoot"><div class="kf l"><span>${l1}</span><b class="mono">${v1}</b></div>
       <div class="kf r"><span>${l2}</span><b class="mono">${v2}</b></div>${mid?`<div class="kf c">${mid}</div>`:''}</div>`;
   /* 매체 줄 카드 — [아이콘] [이름 · 비중 / 금액 / 캠페인 수] [막대 + 집행 · 잔여] 가로 한 줄 (좁으면 막대가 아래로) */
+  /* 매체 카드(v88 컴팩트) — [아이콘] | 이름 · 비중 / 캠페인 수  ·  금액(오른쪽) / 막대 / 집행 · 소진율 · 잔여 */
   const rowCard=(x,body)=>`<div class="ovk ovm ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"><div class="ovri">
       <span class="kic">${ICON[x.k]}</span>
-      <div class="kinfo"><div class="kt"><span class="tt">${x.l}</span><span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div>
-        <div class="kv mono">${won0(tot[x.k].budget)}</div><div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div></div>
-      <div class="kg">${body}</div></div></div>`;
+      <div class="kmain"><div class="khd"><div class="ktl"><div class="kt"><span class="tt">${x.l}</span><span class="kr">${L(`비중 ${pc1(shr(x.k))}`,`share ${pc1(shr(x.k))}`)}</span></div>
+          <div class="ks">${L(`캠페인 ${Bn(tot[x.k].n)}개`,`${Bn(tot[x.k].n)} campaigns`)}</div></div>
+        <div class="kv mono">${won0(tot[x.k].budget)}</div></div>
+      <div class="kg">${body}</div></div></div></div>`;
   const spentCard=k=>{const b=tot[k].budget,sv=tot[k].spend;
     return gauge(b?sv/b:NaN,L('집행금액','Spent'),won0(sv),b?L(`소진율 ${pc1(sv/b)}`,`${pc1(sv/b)} spent`):'',L('잔여금액','Remaining'),won0(Math.max(b-sv,0)));};
   /* OOH — 집행 기간 게이지: 가장 이른 시작 ~ 가장 늦은 종료 중 오늘까지 지난 비율 */
@@ -233,19 +235,56 @@ function paintOverview(loading){
     return gauge(rt,L('시작일','Start'),s0.replace(/-/g,'.'),
       today<s0?L('집행 전','Not started'):today>e0?L('집행 종료','Ended'):L(`기간 ${pc1(rt)} 경과`,`${pc1(rt)} of flight`),
       L('종료일','End'),e0.replace(/-/g,'.'));};
+  /* v88 — 누적 성과: 이 광고주 캠페인 전체의 디지털 노출 · 클릭 · 조회와 효율, TV GRP, OOH 지면 */
+  const perfPanel=()=>{
+    const dg=rows.filter(r=>r.a.digital.inc),tvr=rows.filter(r=>r.a.tv.inc),oor=rows.filter(r=>r.a.ooh.inc);
+    const b={cost:sum(dg.map(r=>r.a.digital.spend||0)),imp:sum(dg.map(r=>r.a.digital.imp||0)),
+      click:sum(dg.map(r=>r.a.digital.click||0)),view:sum(dg.map(r=>r.a.digital.view||0))};
+    const mv=k=>{const v=METRICS[k].c(b);return isFinite(v)&&v>0?METRICS[k].f(v):'–';};
+    const big=v=>v>0?`<b class="mono" title="${fmt(v)}">${manUnit(v)}</b>`:'<b class="mono na">–</b>';
+    const sub=(l,k)=>`<div class="ps"><span>${l}</span><b class="mono">${mv(k)}</b></div>`;
+    /* 캠페인별 기여 — 그 지표를 캠페인이 얼마씩 만들었는지 한 줄 막대로 (시작 순, 회색 단계) */
+    const RAMP=['var(--b5)','var(--b3)','var(--b1)','var(--b4)','var(--b2)'];
+    const seg=k=>{const tv=b[k];if(!(tv>0))return '';
+      const ss=dg.map((r,i)=>({n:r.name,v:r.a.digital[k]||0,i})).filter(x=>x.v>0);
+      return `<div class="pseg">${ss.map(x=>`<i style="flex:${x.v} 1 0;background:${RAMP[x.i%RAMP.length]}" data-pt="${esc(JSON.stringify({n:x.n,v:x.v,s:x.v/tv}))}"></i>`).join('')}</div>
+        <div class="psegl">${L(`캠페인 ${fmt(ss.length)}개 비중`,`share of ${fmt(ss.length)} campaigns`)}</div>`;};
+    const tile=(l,v,subs,k)=>`<div class="pf"><span class="pl">${l}</span>${big(v)}${seg(k)}<div class="pss">${subs}</div></div>`;
+    const pg=sum(tvr.map(r=>r.a.tv.pgrp||0)),ag=sum(tvr.map(r=>r.a.tv.grp||0)),tsp=sum(tvr.map(r=>r.a.tv.spend||0));
+    const slots=sum(oor.map(r=>r.a.ooh.slots||0));
+    const strip=(k,lab,body)=>`<div class="pfs ov${k[0]}"><span class="pic">${ICON[k]}</span><span class="pfl">${lab}</span>${body}</div>`;
+    const tvStrip=tvr.length&&(pg||ag)?strip('tv','TV',
+      `<div class="pfm"><div class="pfv">${L('GRP 계획','GRP plan')} <b class="mono">${pg?pg.toFixed(1):'–'}</b> · ${L('실적','actual')} <b class="mono">${ag?ag.toFixed(1):'–'}</b>
+         ${ag&&tsp?`<span class="pfc">CPRP <b class="mono">${won(Math.round(tsp/ag))}</b></span>`:''}</div>
+       ${pg?`<div class="pfr"><span class="pfb"><i style="width:${Math.min(ag/pg,1)*100}%"></i></span><span class="pfp mono">${L(`달성 ${pc1(ag/pg)}`,`${pc1(ag/pg)} achieved`)}</span></div>`:''}</div>`):'';
+    const oohStrip=oor.length?strip('ooh','OOH',
+      `<div class="pfm"><div class="pfv">${L('지면','Placements')} <b class="mono">${fmt(slots)}</b>${L('곳','')} · ${L('캠페인','campaigns')} <b class="mono">${fmt(oor.length)}</b>${L('개','')}</div></div>`):'';
+    return `<div class="ovk ovperf"><div class="pfh"><span class="tt">${L('누적 성과','Cumulative results')}</span>
+        <span class="pfn">${dg.length?L(`디지털 캠페인 ${fmt(dg.length)}개 합계`,`Total of ${fmt(dg.length)} digital campaigns`):L('디지털 캠페인 없음','No digital campaigns')}</span></div>
+      <div class="pft">${tile(L('노출','Impressions'),b.imp,sub('CPM','cpm'),'imp')}
+        ${tile(L('클릭','Clicks'),b.click,sub('CTR','ctr')+sub('CPC','cpc'),'click')}
+        ${tile(L('조회','Views'),b.view,sub('VTR','vtr')+sub('CPV','cpv'),'view')}</div>
+      ${tvStrip||oohStrip?`<div class="pfx">${tvStrip}${oohStrip}</div>`:''}</div>`;};
   /* 총 광고비 → 디지털 · TV · OOH 로 갈라지는 연결선 (파생 관계) */
   const tree=`<div class="ovtree" aria-hidden="true"><i class="tin"></i><i class="tv"></i>
       ${OV_AREAS.map((x,i)=>`<i class="tout t${i} ov${x.k[0]}${tot[x.k].budget?'':' zero'}" data-ovk="${x.k}"></i>`).join('')}</div>`;
   box.innerHTML=
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
    +tree
-   +`<div class="ovrows">${rowCard(OV_AREAS[0],spentCard('digital'))}${rowCard(OV_AREAS[1],spentCard('tv'))}${rowCard(OV_AREAS[2],oohCard())}</div>`;
+   +`<div class="ovrows">${rowCard(OV_AREAS[0],spentCard('digital'))}${rowCard(OV_AREAS[1],spentCard('tv'))}${rowCard(OV_AREAS[2],oohCard())}</div>`
+   +perfPanel();
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
     el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(x.l)}</div>`
       +`<div class="r"><span class="l">${L('광고비','Ad spend')}</span><b>${won0(tot[k].budget)}</b></div>`
       +`<div class="r"><span class="l">${L('비중','Share')}</span><b>${pc1(all?tot[k].budget/all:0)}</b></div>`
       +`<div class="r"><span class="l">${L('캠페인','Campaigns')}</span><b>${fmt(tot[k].n)}</b></div>`));
+    el.addEventListener('mouseleave',hideTip);});
+  /* 누적 성과 — 캠페인별 기여 조각 */
+  box.querySelectorAll('.pseg i[data-pt]').forEach(el=>{let o=null;try{o=JSON.parse(el.dataset.pt);}catch(e){return;}
+    el.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o.n)}</div>`
+      +`<div class="r"><span class="l">${esc(el.closest('.pf').querySelector('.pl').textContent)}</span><b>${fmt(o.v)}</b></div>`
+      +`<div class="r"><span class="l">${L('비중','Share')}</span><b>${pc1(o.s)}</b></div>`));
     el.addEventListener('mouseleave',hideTip);});
   /* 매체 줄 · 도넛 조각 · 연결선을 함께 강조 */
   const hl=(k,on)=>box.querySelectorAll(`[data-ovk="${k}"],circle[data-ovpie="${k}"]`).forEach(e=>e.classList.toggle('hl',on));
