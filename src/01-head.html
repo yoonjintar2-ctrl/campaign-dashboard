@@ -397,8 +397,11 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs .subgrp.cur .subttl{color:var(--acc);font-weight:800;box-shadow:inset 0 -2px 0 var(--acc)}
 .tabs .subgrp.cur .subttl .aic{background:var(--acc);color:var(--surface);border-color:var(--acc)}
 
-.tabs .subhd{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.04em;padding:7px 10px 3px}
-.tabs .subhd.subinhd{margin-top:3px}
+/* 묶음 이름(대시보드 · 입력 …) — 누르는 메뉴와 헷갈리지 않게: 작은 회색 글자 + 오른쪽으로 이어지는 가는 줄 (v89) */
+.tabs .subhd{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;
+  padding:9px 10px 4px;cursor:default;user-select:none;pointer-events:none;opacity:.85}
+.tabs .subhd::after{content:'';flex:1;height:1px;background:var(--line)}
+.tabs .subhd.subinhd{margin-top:6px}
 .tabs .subhd:has(+.subbar.menuoff){display:none}
 .tabs .subgrp[data-area="overview"] .subbar button{white-space:normal;max-width:210px;line-height:1.35}
 .tabs .subnote{margin:6px 10px 0;font-size:11px;line-height:1.5;color:var(--muted);max-width:170px;white-space:normal;word-break:keep-all}
@@ -408,7 +411,7 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
 .tabs .subgrp .subbar button{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
   white-space:nowrap;padding:7px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink2);box-shadow:none}
 .tabs .subgrp .subbar button:hover{background:var(--acc-soft);color:var(--ink)}
-.tabs .subgrp .subbar button.on{background:var(--surface);color:var(--acc);font-weight:800;box-shadow:0 0 0 1px var(--line)}
+.tabs .subgrp .subbar button.on{background:transparent;color:var(--acc);font-weight:800;box-shadow:none}   /* v89 — 테두리 없이 글자색 · ✓ 만 */
 .tabs .subgrp .subbar button.on::after{content:'✓';font-size:11px}
 .tabs .subgrp .subbar button.vhide{color:var(--muted)}
 .tabs .subgrp .subbar button.vhide.on{color:var(--acc)}
@@ -677,46 +680,26 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovk .kf b{font-size:min(13px,4.3cqw);font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ovk .kf.r{text-align:right;align-items:flex-end}
 .ovk .kf.c{position:absolute;left:50%;top:0;transform:translateX(-50%);font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap}
-/* 누적 성과 (v88) — 디지털 노출 · 클릭 · 조회 타일 + TV GRP · OOH 지면 줄 */
-.ovk.ovperf{margin-left:14px;padding:16px 20px 16px}
-.ovperf .pfh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
-.ovperf .pfn{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ovperf .pft{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;
-  background:linear-gradient(180deg,var(--surface),var(--acc-soft2));min-height:150px}
-.ovperf .pf{display:flex;flex-direction:column;padding:16px 14px 14px;min-width:0;container-type:inline-size}
-.ovperf .pf+.pf{border-left:1px solid var(--line)}
-.ovperf .pl{font-size:11.5px;font-weight:800;color:var(--ink2)}
-.ovperf .pf>b{font-size:min(30px,24cqw);font-weight:800;color:var(--ink);letter-spacing:-.8px;margin:6px 0 0;line-height:1.1;white-space:nowrap}
-.ovperf .pseg{display:flex;gap:2px;height:7px;margin-top:14px;border-radius:99px;overflow:hidden}
-.ovperf .pseg i{display:block;min-width:2px;cursor:default;transition:filter .12s}
-.ovperf .pseg i:hover{filter:brightness(1.15)}
-.ovperf .psegl{font-size:10px;font-weight:600;color:var(--muted);margin-top:5px}
-.ovperf .pf>b.na{color:var(--gline)}
-.ovperf .pss{display:flex;flex-direction:column;gap:4px;margin-top:auto;padding-top:14px}
-.ovperf .ps{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;padding-top:4px;border-top:1px dashed var(--line)}
-.ovperf .ps span{color:var(--muted);font-weight:700}
-.ovperf .ps b{color:var(--ink);font-weight:800;font-size:12px;white-space:nowrap}
-.ovperf .pfx{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.ovperf .pfs{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink2);min-width:0;
-  padding:9px 12px;border:1px solid var(--line);border-radius:10px}
-.ovperf .pic{display:flex;width:22px;height:22px;color:var(--acc);flex:none}
-.ovperf .pic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.ovperf .pic svg .cut{fill:var(--surface);stroke:var(--surface);stroke-width:7}
-.ovperf .pfl{font-weight:800;color:var(--ink2);min-width:30px;flex:none}
-.ovperf .pfm{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.ovperf .pfv{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 5px}
-.ovperf .pfv b{color:var(--ink);font-weight:800}
-.ovperf .pfc{margin-left:auto;color:var(--muted);font-weight:700}
-.ovperf .pfc b{color:var(--ink)}
-.ovperf .pfr{display:flex;align-items:center;gap:10px}
-.ovperf .pfb{flex:1;height:6px;border-radius:99px;background:var(--line2);overflow:hidden}
-[data-theme="dark"] .ovperf .pfb{background:var(--line)}
-.ovperf .pfb i{display:block;height:100%;border-radius:99px;background:var(--ov-tv)}
-.ovperf .pfp{font-weight:700;color:var(--muted);font-size:10.5px;white-space:nowrap}
+/* 일별 집행 예산 흐름 (v89) — 선 하나 + 그라데이션 면, 축 글자는 달 이름만 */
+.ovk.ovflow{margin-left:14px;padding:16px 18px 12px;--fl-line:var(--acc)}
+.ovflow .flh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}
+.ovflow .fln{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.ovflow .flc{flex:1;min-height:170px;position:relative}
+.ovflow .flc>svg{position:absolute;inset:0;display:block;overflow:visible}
+.ovflow .flempty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
+.ovflow .flline{fill:none;stroke:var(--fl-line);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ovflow .flx{font-size:10.5px;font-weight:600;fill:var(--muted)}
+.ovflow .fltoday{stroke:var(--gline);stroke-width:1;stroke-dasharray:3 3}
+.ovflow .fltd{font-size:9.5px;font-weight:700;fill:var(--muted)}
+.ovflow .flguide{stroke:var(--fl-line);stroke-width:1;stroke-opacity:.35;opacity:0}
+.ovflow .fldot{fill:var(--surface);stroke:var(--fl-line);stroke-width:2.6;opacity:0}
+.ovflow svg.on .flguide,.ovflow svg.on .fldot{opacity:1}
+.ovflow .flhit{fill:transparent;cursor:crosshair}
 /* 가운데 폭 — 누적 성과는 아래 줄로 */
 @media (max-width:1100px){
   .ovkpis{grid-template-columns:288px 44px minmax(0,1fr)}
-  .ovk.ovperf{grid-column:1 / -1;margin:14px 0 0}
+  .ovk.ovflow{grid-column:1 / -1;margin:14px 0 0}
+  .ovflow .flc{min-height:200px}
 }
 /* 좁은 화면 — 위아래로 쌓고, 연결선은 줄 카드 왼쪽의 세로 줄기로 */
 @media (max-width:980px){
@@ -728,13 +711,9 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
   .ovk.ovm:not(:last-child)::after{height:calc(100% + 13px)}
   .ovk.ovm::before{content:'';position:absolute;left:-15px;width:14px;top:50%;border-top:2px solid var(--ov-digital);transform:translateY(-1px)}
   .ovk.ovm.ovt::before{border-top-color:var(--ov-tv)}.ovk.ovm.ovo::before{border-top-color:var(--ov-ooh)}
-  .ovk.ovperf{margin:0}
+  .ovk.ovflow{margin:0}
 }
-@media (max-width:560px){
-  .ovperf .pft{grid-template-columns:minmax(0,1fr)}
-  .ovperf .pf+.pf{border-left:0;border-top:1px solid var(--line)}
-  .ovperf .pf>b{font-size:24px}
-}
+
 /* 캠페인별 광고비 — 세로 입체 막대 (v87): 축 없이, 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 막대 → 카드 아래 25% 를 덮는 바닥 */
 #ovBars{overflow-x:auto}
 #ovBars.ovfloor{position:relative;padding:18px 18px 0;border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);

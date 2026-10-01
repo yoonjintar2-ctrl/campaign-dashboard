@@ -1083,6 +1083,8 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.name=name||'새 캠페인';
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
+  /* 소재 자료함도 비운다 (v89) — 안 비우면 직전에 열어 둔 캠페인의 이미지 · 영상이 새 캠페인 문서에 같이 저장됐다 */
+  try{CR_ASSETS={};}catch(e){}
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
   CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
