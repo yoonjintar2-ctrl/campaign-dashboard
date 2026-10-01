@@ -659,7 +659,14 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovcols{position:relative;margin:2px auto 0}
 .ovcols>*{position:absolute}
 .ocg{height:0;border-top:1px dashed var(--line);pointer-events:none}
-.ocg.z{border-top:1.5px solid var(--gline)}
+/* 바닥판 — 연회색 윗면 + 조금 진한 앞 · 옆 두께 */
+.ocf{background:linear-gradient(0deg,rgb(var(--accrgb)/.13),rgb(var(--accrgb)/.06));transform:skewX(-45deg);transform-origin:left bottom;pointer-events:none}
+.ocfs{background:rgb(var(--accrgb)/.22);pointer-events:none}
+.ocfr{background:rgb(var(--accrgb)/.3);transform:skewY(-45deg);transform-origin:left top;pointer-events:none}
+/* x축 — 바닥판에서 띄워 아래에, 막대마다 작은 눈금 */
+.ocax{height:0;border-top:1.5px solid var(--gline);pointer-events:none}
+.ocxt{width:0;height:5px;border-left:1.5px solid var(--gline);transform:translateX(-.75px);pointer-events:none}
+.ocxt.hl{border-left-color:var(--acc)}
 .ocy{left:0;text-align:right;font-size:10.5px;font-weight:700;color:var(--muted);line-height:14px}
 .ocl{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;line-height:1.25;cursor:default;min-width:0}
 .ocl b{max-width:100%;font-size:12px;font-weight:800;color:var(--ink);overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;

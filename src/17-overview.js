@@ -476,15 +476,19 @@ function paintOvColumns(bx,rows,won0){
   const cellW=Math.max(Math.min((W-YW-RP)/n,220),84);
   const plotW=cellW*n;
   /* 이름은 두 단 지그재그 — 이름 폭이 좌우 이웃 막대의 줄에 닿지 않도록 2칸 폭 이내, 길면 두 줄까지 */
-  const LV=2,LH=52,labZ=LV*LH+12,plotH=230,DEP=9;
+  const LV=2,LH=52,labZ=LV*LH+12,plotH=230,DEP=10;
+  /* 바닥판 — 막대가 서 있는 연회색 판(깊이 FD, 앞 두께 SLAB). 막대는 판 깊이의 가운데에 선다.
+     x축 선은 판에서 GAP 만큼 띄워 아래에 */
+  const FD=22,SLAB=4,GAP=12,off=(FD-DEP)/2;
+  const B=labZ+plotH+off,AX=B+SLAB+GAP;
   const mx=Math.max(1,...rows.map(r=>r.budget||0));
   /* 눈금 — 보기 좋은 단위로 4칸 */
   const raw=mx/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),stp=[1,2,2.5,5,10].map(k=>k*mag).find(v=>v>=raw)||raw;
   const top=Math.ceil(mx/stp)*stp,ticks=[];for(let v=0;v<=top+1e-6;v+=stp)ticks.push(v);
-  const Y=v=>labZ+plotH-v/top*plotH;
+  const Y=v=>B-off-v/top*plotH;
   const labW=Math.min(2*cellW-12,300);
   const cols=rows.map((r,i)=>{
-    const cx=YW+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.42,58),14);
+    const cx=YW+cellW*i+cellW/2,bw=Math.max(Math.min(cellW*.42,58),14),bl=cx-(bw+DEP)/2;
     const segs=OV_AREAS.filter(x=>r.a[x.k].inc&&r.a[x.k].budget>0);
     const h=r.budget?Math.max(r.budget/top*plotH,3):0;
     const lv=i%LV,lt=lv*LH+2;
@@ -495,12 +499,18 @@ function paintOvColumns(bx,rows,won0){
     return `<div class="ocl" style="left:${ll.toFixed(1)}px;top:${lt}px;width:${lw.toFixed(1)}px;height:${LH-8}px" data-oci="${i}">
         <b title="${esc(r.name)}">${esc(r.name)}</b><span class="mono">${r.budget?manUnit(r.budget):'–'}</span></div>
       <i class="ocln" style="left:${cx.toFixed(1)}px;top:${lt+LH-5}px;height:${Math.max(Y(r.budget||0)-DEP-(lt+LH-5)-2,0).toFixed(1)}px" data-oci="${i}"></i>
-      <div class="ocbar" style="left:${(cx-bw/2).toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(labZ+plotH-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
+      <div class="ocbar" style="left:${bl.toFixed(1)}px;width:${bw.toFixed(1)}px;top:${(Y(0)-h).toFixed(1)}px;height:${h.toFixed(1)}px" data-ovtip="${tip}" data-oci="${i}">
         ${segs.slice().reverse().map(x=>`<i class="${x.k[0]}" style="flex:${r.a[x.k].budget} 1 0"></i>`).join('')}</div>
-      <div class="ocx mono" style="left:${(cx-cellW/2).toFixed(1)}px;width:${cellW.toFixed(1)}px;top:${labZ+plotH+7}px" data-oci="${i}">${r.start?mdy(r.start):'–'}</div>`;}).join('');
-  const grid=ticks.map(v=>`<i class="ocg${v?'':' z'}" style="top:${Y(v).toFixed(1)}px;left:${YW}px;width:${plotW.toFixed(1)}px"></i>
-      <span class="ocy mono" style="top:${(Y(v)-7).toFixed(1)}px;width:${YW-8}px">${v?manUnit(v):'0'}</span>`).join('');
-  bx.innerHTML=`<div class="ovcols" style="height:${labZ+plotH+30}px;width:${(YW+plotW+RP).toFixed(1)}px">${grid}${cols}</div>
+      <i class="ocxt" style="left:${cx.toFixed(1)}px;top:${AX}px" data-oci="${i}"></i>
+      <div class="ocx mono" style="left:${(cx-cellW/2).toFixed(1)}px;width:${cellW.toFixed(1)}px;top:${AX+8}px" data-oci="${i}">${r.start?mdy(r.start):'–'}</div>`;}).join('');
+  const grid=ticks.map(v=>(v?`<i class="ocg" style="top:${Y(v).toFixed(1)}px;left:${YW}px;width:${plotW.toFixed(1)}px"></i>`:'')
+      +`<span class="ocy mono" style="top:${(Y(v)-7).toFixed(1)}px;width:${YW-8}px">${v?manUnit(v):'0'}</span>`).join('')
+    /* 바닥판(윗면 · 앞 두께 · 옆 두께) + 띄운 x축 */
+    +`<i class="ocf" style="left:${YW}px;top:${(B-FD).toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${FD}px"></i>
+      <i class="ocfs" style="left:${YW}px;top:${B.toFixed(1)}px;width:${plotW.toFixed(1)}px;height:${SLAB}px"></i>
+      <i class="ocfr" style="left:${(YW+plotW).toFixed(1)}px;top:${B.toFixed(1)}px;width:${FD}px;height:${SLAB}px"></i>
+      <i class="ocax" style="left:${YW}px;top:${AX.toFixed(1)}px;width:${plotW.toFixed(1)}px"></i>`;
+  bx.innerHTML=`<div class="ovcols" style="height:${(AX+30).toFixed(0)}px;width:${(YW+plotW+RP).toFixed(1)}px">${grid}${cols}</div>
     <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}<span class="ocnote">${L('막대 아래 날짜 = 캠페인 시작일','Date under bar = campaign start')}</span></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
