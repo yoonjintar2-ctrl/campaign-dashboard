@@ -81,15 +81,15 @@ function renderInflow(){
       ${kp(L('유입당 단가','Cost per IWV'),won(Math.round(infCpv(A))||0),L(`전체 소진 ${won(Math.round(A.cost))}`,`total spend ${won(Math.round(A.cost))}`))}
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(A)),isFinite(dw30Rate(A))?L(`30초 이상 ${pct(dw30Rate(A),1)}`,`${pct(dw30Rate(A),1)} stay 30s+`):'')}
     </div>
+    <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('단계마다 따로 그린 그래프 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','one chart per step · media color = carried on · gray = dropped · hover for retention')}</span></div>
+      <div class="infsk3" id="infSankey"></div></div>
     <div class="infgrid">
-      <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('노출 → 클릭 → 유입 → 랜딩 페이지 · 단계마다 배율이 달라요 · 띠에 마우스를 올리면 잔존율','impressions → clicks → inflow → landing page · each stage has its own scale · hover a band for retention')}</span></div>
-        <div class="infsk" id="infSankey"></div></div>
       <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 단가 낮음 · 크기 = IWV','right = higher rate · up = cheaper · size = IWV')}</span></div>
         <div class="infmap" id="infMap"></div></div>
+      <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
+          <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
+        <div id="infDwell"></div></div>
     </div>
-    <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
-        <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
-      <div id="infDwell"></div></div>
     <div class="infcell"><div class="infh"><b>${L('유입 효율 상세분석','Inflow efficiency details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
         ${isClient()?'':`<button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
       <div class="hidden" id="infCfgBox"></div>
@@ -111,14 +111,12 @@ function renderInflow(){
       infTable();try{markDirty();saveLocal();}catch(e){}}});};
 }
 
-/* ---------- ① 유입 흐름 (v96 — 4단계 깔때기) ----------
-   노출 → 클릭 → 유입(IWV) → 랜딩 페이지.
-   · 단계마다 숫자 단위가 수백~수천 배씩 차이 나므로 **단계마다 배율을 따로** 잡는다.
-     기둥 길이는 단계 합계의 자릿수(로그)에 맞춰 조금씩 짧아져 깔때기처럼 보이고,
-     기둥 안에서 매체가 차지하는 길이는 그 단계에서의 비중이다.
-   · 매체 색 띠는 단계를 건널 때마다 그 단계 비중만큼 굵어지거나 가늘어진다 —
-     클릭은 많은데 유입이 적은 매체는 띠가 확 가늘어진다
-   · 띠에 마우스를 올리면 그 단계를 넘어간 비율(잔존율 — CTR · 유입률)이 나온다 */
+/* ---------- ① 유입 흐름 (v97 — 단계별 그래프 3개를 나란히) ----------
+   ⓐ 노출 → 클릭   ⓑ 클릭 → 유입(IWV)   ⓒ 유입 → 랜딩 페이지
+   · 그래프마다 **자기 단계의 배율**로 그린다 — 노출 · 클릭 · 유입은 숫자 단위가 수백~수천 배 달라
+     한 그래프에 같은 배율로 그리면 노출밖에 안 보이고, 단계마다 배율을 바꿔 이어 그리면 이탈이 안 보인다.
+   · ⓐ ⓑ 는 매체별로 다음 단계로 넘어간 몫(매체 색)과 이탈(회색)로 갈라진다 — 같은 그래프 안에서는 같은 배율
+   · 띠 · 마디에 마우스 → 잔존율(CTR · 유입률)과 이탈. 한 매체를 가리키면 세 그래프에서 그 매체가 함께 강조된다 */
 function infSankey(host,rows0,T){
   if(!host)return;
   const lands=INF_LAND.filter(x=>rows0.some(g=>(+g.b[x.k]||0)>0));
@@ -126,7 +124,6 @@ function infSankey(host,rows0,T){
   const iwvOf=g=>Math.max(+g.b.iwv||0,landSum(g));
   const clkOf=g=>Math.max(+g.b.click||0,iwvOf(g));
   const impOf=g=>Math.max(+g.b.imp||0,clkOf(g));
-  /* 왼쪽 마디 — 유입 많은 순 9개 + 그 외 */
   let rows=rows0.slice().sort((a,b)=>iwvOf(b)-iwvOf(a)||clkOf(b)-clkOf(a));
   if(rows.length>10){const rest=rows.slice(9),b=aggFacts([]);rest.forEach(g=>{AMET.concat(['cost']).forEach(m=>b[m]+=+g.b[m]||0);});
     rows=rows.slice(0,9).concat([{key:'__etc',lab:L(`그 외 ${rest.length}개`,`${rest.length} more`),sub:'',col:'__etc',b}]);}
@@ -136,105 +133,120 @@ function infSankey(host,rows0,T){
   const otherOf=g=>Math.max((+g.b.iwv||0)-landSum(g),0);
   if(rows.some(g=>otherOf(g)>0))R.push({k:'__other',l:L('랜딩 구분 없음','other landing'),kind:'other'});
   const flowTo=(g,r)=>r.kind==='land'?(+g.b[r.k]||0):otherOf(g);
-  const ST=[{k:'imp',l:L('노출','Impressions'),v:impOf},{k:'click',l:L('클릭','Clicks'),v:clkOf},{k:'iwv',l:L('유입 (IWV)','Inflow (IWV)'),v:iwvOf}];
-  const TOT=ST.map(s=>rows.reduce((a,g)=>a+s.v(g),0));
-  /* ---- 자리 ---- */
-  const W=Math.max(host.clientWidth||720,420);
-  const TOP=44,BOT=24,NW=10,SG=3;
-  const LW=Math.min(150,W*.18),RW=Math.min(140,W*.18);
-  const x3=W-RW-NW,span=(x3-LW)/3;
-  const X=[LW,LW+span,LW+2*span,x3];
-  const HM=Math.max(300,Math.min(480,rows.length*44+60));
-  /* 기둥 길이 — 합계의 자릿수 비율 (노출 기둥 = 1). 너무 짧아지지 않게 아래를 받친다 */
-  const lg=v=>Math.log10(Math.max(v,1));
-  const HK=TOT.map((t,k)=>k?HM*Math.min(1,Math.max(.42,lg(t)/Math.max(lg(TOT[0]),1))):HM);
-  const mid=TOP+HM/2;
-  /* 기둥마다 매체 마디 — 비중대로 나누고 마디 사이 SG 띄움 */
-  const COLS=ST.map((s,k)=>{const vals=rows.map(g=>s.v(g)),n=vals.filter(v=>v>0).length;
-    const avail=HK[k]-SG*Math.max(n-1,0),tot=TOT[k]||1;
-    let y=mid-HK[k]/2;return vals.map(v=>{const h=v>0?Math.max(v/tot*avail,1):0;const o={y,h,used:0};y+=h+(h>0?SG:0);return o;});});
-  /* 랜딩 페이지 기둥 — 유입 기둥과 같은 배율 */
-  const kI=(HK[2]-SG*Math.max(rows.filter(g=>iwvOf(g)>0).length-1,0))/(TOT[2]||1);
-  const rv=R.map(r=>rows.reduce((s,g)=>s+flowTo(g,r),0));
-  const RG=10,rH=rv.reduce((s,v)=>s+Math.max(v*kI,2),0)+RG*Math.max(R.length-1,0);
-  let ry=mid-rH/2;const RN=rv.map(v=>{const h=Math.max(v*kI,2);const o={y:ry,h,used:0};ry+=h+RG;return o;});
+  const sum=f=>rows.reduce((s,g)=>s+f(g),0);
+  const TI=sum(impOf),TC=sum(clkOf),TV=sum(iwvOf);
+  const pf=v=>pct(v,v<.01?2:1);
+  const ST=[
+    {n:'①',la:L('노출','Impressions'),sa:L('노출','imps'),lb:L('클릭','Clicks'),rl:'CTR',a:impOf,b:clkOf,ta:TI,tb:TC},
+    {n:'②',la:L('클릭','Clicks'),sa:L('클릭','clicks'),lb:L('유입 (IWV)','Inflow (IWV)'),rl:L('유입률','Inflow rate'),a:clkOf,b:iwvOf,ta:TC,tb:TV}];
+  host.innerHTML=ST.map((s,p)=>`<div class="skp"><div class="skph"><b>${s.n} ${s.la} → ${s.lb}</b>
+      <span>${s.rl} <b class="mono">${pf(s.ta?s.tb/s.ta:NaN)}</b></span></div><div class="skpb" data-p="${p}"></div></div>`).join('')
+    +`<div class="skp"><div class="skph"><b>③ ${L('유입 → 랜딩 페이지','Inflow → landing page')}</b>
+      <span>${L('유입','inflow')} <b class="mono">${fmt(TV)}</b></span></div><div class="skpb" data-p="2"></div></div>`;
+  const boxes=[...host.querySelectorAll('.skpb')];
+  const HM=Math.max(250,Math.min(420,rows.length*40+50));
+  const TOP=8,NW=9,SG=4;
   const band=(xa,ya,ha,xb,yb,hb)=>{const cx=(xa+xb)/2;
     return `M${xa},${ya} C${cx},${ya} ${cx},${yb} ${xb},${yb} L${xb},${yb+hb} C${cx},${yb+hb} ${cx},${ya+ha} ${xa},${ya+ha} Z`;};
-  let paths='',nodes='',labs='';
-  /* 단계 사이 띠 (매체별) */
-  rows.forEach((g,i)=>{const col=infColor(g);
-    for(let k=0;k<2;k++){const a=COLS[k][i],b=COLS[k+1][i];if(!a.h)continue;
-      const hb=b.h||0.8;
-      paths+=`<path class="sklink fn" d="${band(X[k]+NW,a.y,a.h,X[k+1],b.h?b.y:b.y-0.4,hb)}" style="fill:${col}" data-i="${i}" data-k="${k}"></path>`;}
-    ST.forEach((s,k)=>{const c=COLS[k][i];if(!c.h)return;
-      nodes+=`<rect class="sknode" x="${X[k]}" y="${c.y}" width="${NW}" height="${c.h}" style="fill:${col}" data-i="${i}" data-k="${k}"></rect>`;});});
-  /* 유입 → 랜딩 페이지 */
-  rows.forEach((g,i)=>{const z=COLS[2][i];z.used=0;R.forEach((r,j)=>{const v=flowTo(g,r);if(!(v>0))return;
-    const h=v*kI,a=z.y+z.used,b=RN[j].y+RN[j].used;z.used+=h;RN[j].used+=h;
-    paths+=`<path class="sklink zf" d="${band(X[2]+NW,a,h,X[3],b,h)}" style="fill:${infColor(g)}" data-i="${i}" data-j="${j}" data-v="${v}" data-k="2"></path>`;});});
-  /* 이름표 겹침 피하기 — 가운데 값들을 위아래로 벌려 최소 간격을 지킨다 */
   const spread=(cs,gap,lo,hi)=>{const o=cs.map((c,i)=>({c,i,y:c})).sort((a,b)=>a.c-b.c);
     for(let k=1;k<o.length;k++)if(o[k].y<o[k-1].y+gap)o[k].y=o[k-1].y+gap;
     const over=o.length?o[o.length-1].y-hi:0;if(over>0)o.forEach(x=>x.y-=over);
     for(let k=o.length-2;k>=0;k--)if(o[k].y>o[k+1].y-gap)o[k].y=o[k+1].y-gap;
     const under=o.length?lo-o[0].y:0;if(under>0)o.forEach(x=>x.y+=under);
     const out=[];o.forEach(x=>out[x.i]=x.y);return out;};
-  const rate=(a,b)=>a?b/a:NaN;
-  const pf=v=>pct(v,v<.01?2:1);
-  /* 왼쪽 — 매체 이름 · 노출 */
-  const c0=COLS[0].map(c=>c.y+c.h/2),l0=spread(c0,30,TOP+6,TOP+HM-6);
-  rows.forEach((g,i)=>{const y=l0[i],c=COLS[0][i];
-    if(Math.abs(y-c0[i])>2)labs+=`<path class="sklead" d="M${X[0]-6},${y} L${X[0]-1},${c0[i]}"></path>`;
-    labs+=`<text class="sklab" x="${X[0]-9}" y="${y-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,18))}</text>
-      <text class="skval" x="${X[0]-9}" y="${y+11}" text-anchor="end">${L('노출','imps')} ${fmt(impOf(g))}</text>`;});
-  /* 오른쪽 — 랜딩 페이지 */
-  const c3=RN.map(n=>n.y+n.h/2),l3=spread(c3,30,TOP+6,TOP+HM-6);
-  R.forEach((r,j)=>{const n=RN[j];
-    nodes+=`<rect class="sknode r" x="${X[3]}" y="${n.y}" width="${NW}" height="${n.h}" rx="2" style="fill:${r.kind==='other'?'var(--gline)':'var(--acc)'}" data-j="${j}"></rect>`;
-    const y=l3[j];
-    labs+=`<text class="sklab" x="${X[3]+NW+8}" y="${y-2}" data-j="${j}">${esc(r.l)}</text>
-      <text class="skval" x="${X[3]+NW+8}" y="${y+11}">${fmt(rv[j])} · ${pct(TOT[2]?rv[j]/TOT[2]:NaN,1)}</text>`;});
-  /* 단계 이름 · 합계 · 단계를 넘어간 비율 */
-  const cap=(x,t1,t2,a)=>`<text class="skcap" x="${x}" y="${TOP-24}" text-anchor="${a}">${t1}</text>`
-    +`<text class="skcapv" x="${x}" y="${TOP-10}" text-anchor="${a}">${t2}</text>`;
-  labs+=cap(X[0]+NW/2,L('노출','Impressions'),fmt(TOT[0]),'middle')
-    +cap(X[1]+NW/2,L('클릭','Clicks'),fmt(TOT[1]),'middle')
-    +cap(X[2]+NW/2,L('유입 (IWV)','Inflow (IWV)'),fmt(TOT[2]),'middle')
-    +cap(X[3]+NW/2,L('랜딩 페이지','Landing page'),'','middle');
-  /* 단계 사이 잔존율 배지 (전체) */
-  /* 단계 사이 전체 잔존율 — 기둥 아래(띠 사이 빈 곳)에 */
-  const badge=(xa,xb,t,v)=>`<g class="skrate" data-k="${t}"><text x="${(xa+xb)/2}" y="${TOP+HM+12}" text-anchor="middle"><tspan class="skr1">${t==='0'?'CTR':L('유입률','inflow rate')}</tspan> <tspan class="skr2">${v}</tspan></text></g>`;
-  labs+=badge(X[0]+NW,X[1],'0',pf(rate(TOT[0],TOT[1])))+badge(X[1]+NW,X[2],'1',pf(rate(TOT[1],TOT[2])));
-  const Hh=TOP+HM+BOT;
-  host.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" class="sksvg">${paths}${nodes}${labs}</svg>`;
-  /* ---- 마우스 ---- */
-  const svg=host.querySelector('svg');
-  const hl=fn=>svg.querySelectorAll('.sklink').forEach(p=>p.classList.toggle('dim',!fn(p)));
+  /* 왼쪽 마디(매체) — 값 비중대로 쌓고 이름표는 겹치지 않게 벌린다 */
+  const leftCol=(vals,k0)=>{const tot=vals.reduce((a,v)=>a+v,0)||1,n=vals.filter(v=>v>0).length;
+    const k=k0||(HM-SG*Math.max(n-1,0))/tot;
+    const full=vals.reduce((a,v)=>a+(v>0?Math.max(v*k,1)+SG:0),0)-SG;
+    let y=TOP+Math.max(0,(HM-full)/2);
+    const N=vals.map(v=>{const h=v>0?Math.max(v*k,1):0;const o={y,h,used:0};y+=h+(h>0?SG:0);return o;});
+    return {N,k};};
+  const leftLabels=(N,x,valTxt)=>{const idx=N.map((n,i)=>n.h?i:-1).filter(i=>i>=0);
+    const sp=spread(idx.map(i=>N[i].y+N[i].h/2),28,TOP+6,TOP+HM-6);
+    const cs=N.map(n=>n.y+n.h/2),ly=[];idx.forEach((i,j)=>ly[i]=sp[j]);let s='';
+    rows.forEach((g,i)=>{const y=ly[i];if(!N[i].h)return;
+      if(Math.abs(y-cs[i])>2)s+=`<path class="sklead" d="M${x-5},${y} L${x-1},${cs[i]}"></path>`;
+      s+=`<text class="sklab" x="${x-8}" y="${y-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,14))}</text>
+        <text class="skval" x="${x-8}" y="${y+10}" text-anchor="end">${valTxt(g)}</text>`;});return s;};
+  const svgOf=(W,body)=>`<svg viewBox="0 0 ${W} ${HM+TOP*2}" width="${W}" height="${HM+TOP*2}" class="sksvg">${body}</svg>`;
+  /* ①② — 넘어간 몫 + 이탈 */
+  ST.forEach((s,p)=>{const box=boxes[p];const W=Math.max(box.clientWidth||380,280);
+    const LW=Math.min(112,W*.3),RW=Math.min(122,W*.31),xL=LW,xR=W-RW-NW;
+    const {N,k}=leftCol(rows.map(s.a));
+    const drop=s.ta-s.tb;
+    const hB=Math.max(s.tb*k,3),hD=Math.max(drop*k,0),GP=16;
+    const rTop=TOP+Math.max(0,(HM-(hB+GP+hD))/2);
+    const BN={y:rTop,h:hB,used:0},DN={y:rTop+hB+GP,h:hD,used:0};
+    let paths='',nodes='',labs='';
+    rows.forEach((g,i)=>{const n=N[i];if(!n.h)return;const col=infColor(g);
+      const vb=s.b(g),vd=s.a(g)-vb,hb=vb*k,hd=Math.max(n.h-hb,0);
+      if(vb>0){const h=Math.max(hb,.8);
+        paths+=`<path class="sklink pb" d="${band(xL+NW,n.y,h,xR,BN.y+BN.used,Math.max(hb,.8))}" style="fill:${col}" data-i="${i}" data-p="${p}" data-s="b"></path>`;
+        nodes+=`<rect class="sknode" x="${xR}" y="${BN.y+BN.used}" width="${NW}" height="${Math.max(hb,.8)}" style="fill:${col}" data-i="${i}" data-p="${p}"></rect>`;
+        BN.used+=hb;}
+      if(vd>0&&hd>0){paths+=`<path class="sklink pd" d="${band(xL+NW,n.y+hb,hd,xR,DN.y+DN.used,vd*k)}" style="fill:${col}" data-i="${i}" data-p="${p}" data-s="d"></path>`;DN.used+=vd*k;}
+      nodes+=`<rect class="sknode" x="${xL}" y="${n.y}" width="${NW}" height="${n.h}" style="fill:${col}" data-i="${i}" data-p="${p}"></rect>`;});
+    if(BN.used<hB)nodes+=`<rect class="sknode bn" x="${xR}" y="${BN.y+BN.used}" width="${NW}" height="${hB-BN.used}"></rect>`;
+    if(hD>0)nodes+=`<rect class="sknode dn" x="${xR}" y="${DN.y}" width="${NW}" height="${hD}" data-drop="${p}"></rect>`;
+    labs+=leftLabels(N,xL,g=>`${s.sa} ${fmt(s.a(g))}`);
+    const by=BN.y+hB/2,dy=DN.y+hD/2;
+    const yb=Math.max(TOP+8,Math.min(by,dy-30));
+    labs+=`<text class="sklab" x="${xR+NW+8}" y="${yb-2}">${s.lb}</text>
+      <text class="skval b" x="${xR+NW+8}" y="${yb+11}">${fmt(s.tb)} · ${pf(s.ta?s.tb/s.ta:NaN)}</text>`;
+    if(hD>0)labs+=`<text class="sklab dl" x="${xR+NW+8}" y="${Math.max(dy,yb+30)-2}" data-drop="${p}">${L('이탈','Dropped')}</text>
+      <text class="skval" x="${xR+NW+8}" y="${Math.max(dy,yb+30)+11}">${fmt(drop)} · ${pf(s.ta?drop/s.ta:NaN)}</text>`;
+    box.innerHTML=svgOf(W,paths+nodes+labs);});
+  /* ③ 유입 → 랜딩 페이지 */
+  {const box=boxes[2];const W=Math.max(box.clientWidth||380,280);
+    const LW=Math.min(112,W*.3),RW=Math.min(116,W*.3),xL=LW,xR=W-RW-NW;
+    const rv=R.map(r=>rows.reduce((s,g)=>s+flowTo(g,r),0));
+    const RG=12,nL=rows.filter(g=>iwvOf(g)>0).length;
+    /* 왼쪽 · 오른쪽 모두 같은 배율 — 둘 중 마디 사이 틈이 더 많은 쪽에 맞춘다 */
+    const k3=(HM-Math.max(SG*Math.max(nL-1,0),RG*Math.max(R.length-1,0))-R.length*2)/(TV||1);
+    const {N,k}=leftCol(rows.map(iwvOf),k3);
+    const rH=rv.reduce((s,v)=>s+Math.max(v*k,2),0)+RG*Math.max(R.length-1,0);
+    let ry=TOP+Math.max(0,(HM-rH)/2);const RN=rv.map(v=>{const h=Math.max(v*k,2);const o={y:ry,h,used:0};ry+=h+RG;return o;});
+    let paths='',nodes='',labs='';
+    rows.forEach((g,i)=>{const n=N[i];if(!n.h)return;const col=infColor(g);
+      nodes+=`<rect class="sknode" x="${xL}" y="${n.y}" width="${NW}" height="${n.h}" style="fill:${col}" data-i="${i}" data-p="2"></rect>`;
+      R.forEach((r,j)=>{const v=flowTo(g,r);if(!(v>0))return;const h=v*k;
+        paths+=`<path class="sklink zf" d="${band(xL+NW,n.y+n.used,h,xR,RN[j].y+RN[j].used,h)}" style="fill:${col}" data-i="${i}" data-j="${j}" data-v="${v}" data-p="2"></path>`;
+        n.used+=h;RN[j].used+=h;});});
+    const cs=RN.map(n=>n.y+n.h/2),ly=spread(cs,30,TOP+6,TOP+HM-6);
+    R.forEach((r,j)=>{const n=RN[j];
+      nodes+=`<rect class="sknode r" x="${xR}" y="${n.y}" width="${NW}" height="${n.h}" rx="2" style="fill:${r.kind==='other'?'var(--gline)':'var(--acc)'}" data-j="${j}"></rect>`;
+      labs+=`<text class="sklab" x="${xR+NW+8}" y="${ly[j]-2}" data-j="${j}">${esc(r.l)}</text>
+        <text class="skval" x="${xR+NW+8}" y="${ly[j]+11}">${fmt(rv[j])} · ${pct(TV?rv[j]/TV:NaN,1)}</text>`;});
+    labs+=leftLabels(N,xL,g=>`${L('유입','inflow')} ${fmt(iwvOf(g))}`);
+    box.innerHTML=svgOf(W,paths+nodes+labs);}
+  /* ---- 마우스 — 세 그래프를 함께 ---- */
+  const hl=fn=>host.querySelectorAll('.sklink').forEach(p=>p.classList.toggle('dim',!fn(p)));
   const tr=(l,v)=>`<div class="r"><span class="l">${l}</span><b>${v}</b></div>`;
-  const STEP=[[L('노출 → 클릭','imps → clicks'),'CTR'],[L('클릭 → 유입','clicks → inflow'),L('유입률 (IWV ÷ 클릭)','inflow rate (IWV ÷ clicks)')]];
-  svg.querySelectorAll('.sklink').forEach(p=>{
-    const g=rows[+p.dataset.i],k=+p.dataset.k;
-    p.addEventListener('mousemove',e=>{hl(q=>q===p);let h;
-      if(k<2){const a=ST[k].v(g),b=ST[k+1].v(g);
-        h=`<div class="t">${esc(infName(g))} · ${STEP[k][0]}</div>`+tr(ST[k].l,fmt(a))+tr(ST[k+1].l,fmt(b))
-          +tr(L('잔존율','retained')+' · '+STEP[k][1],pf(rate(a,b)))+tr(L('이탈','dropped'),fmt(a-b));}
+  const stepTip=(g,s)=>{const a=s.a(g),b=s.b(g);return `<div class="t">${esc(infName(g))} · ${s.la} → ${s.lb}</div>`
+    +tr(s.la,fmt(a))+tr(s.lb,fmt(b))+tr(L('잔존율','retained')+` (${s.rl})`,pf(a?b/a:NaN))+tr(L('이탈','dropped'),`${fmt(a-b)} · ${pf(a?(a-b)/a:NaN)}`);};
+  host.querySelectorAll('.sklink').forEach(p=>{
+    const g=rows[+p.dataset.i],pp=+p.dataset.p;
+    p.addEventListener('mousemove',e=>{hl(q=>q.dataset.i===p.dataset.i);
+      let h;
+      if(pp<2)h=stepTip(g,ST[pp]);
       else{const r=R[+p.dataset.j],v=+p.dataset.v;
         h=`<div class="t">${esc(infName(g))} → ${esc(r.l)}</div>`+tr(L('유입','inflow'),fmt(v))
           +tr(L('이 매체 유입 중','of its inflow'),pct(iwvOf(g)?v/iwvOf(g):NaN,1));}
       showTip(e.clientX,e.clientY,h);});
     p.addEventListener('mouseleave',()=>{hl(()=>true);hideTip();});});
-  svg.querySelectorAll('.sknode,.sklab').forEach(n=>{
-    const on=()=>{if(n.dataset.i!=null)hl(p=>p.dataset.i===n.dataset.i);else if(n.dataset.j!=null)hl(p=>p.dataset.j===n.dataset.j);};
+  host.querySelectorAll('.sknode,.sklab').forEach(n=>{
+    const on=()=>{if(n.dataset.i!=null)hl(p=>p.dataset.i===n.dataset.i);
+      else if(n.dataset.j!=null)hl(p=>p.dataset.j===n.dataset.j);
+      else if(n.dataset.drop!=null)hl(p=>p.dataset.p===n.dataset.drop&&p.classList.contains('pd'));};
     n.addEventListener('mouseenter',on);n.addEventListener('mouseleave',()=>{hl(()=>true);hideTip();});
     if(n.dataset.i!=null){const g=rows[+n.dataset.i];
       n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
-        +tr(L('노출','Impressions'),fmt(impOf(g)))+tr(L('클릭','Clicks'),fmt(clkOf(g)))+tr('CTR',pf(rate(impOf(g),clkOf(g))))
-        +tr(L('유입 (IWV)','Inflow (IWV)'),fmt(iwvOf(g)))+tr(L('유입률','Inflow rate'),pf(rate(clkOf(g),iwvOf(g))))));}});
-  /* 단계 사이 전체 잔존율 */
-  svg.querySelectorAll('.skrate').forEach(n=>{const k=+n.dataset.k;
-    n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${L('전체','All')} · ${STEP[k][0]}</div>`
-      +tr(ST[k].l,fmt(TOT[k]))+tr(ST[k+1].l,fmt(TOT[k+1]))+tr(L('잔존율','retained')+' · '+STEP[k][1],pf(rate(TOT[k],TOT[k+1])))));
-    n.addEventListener('mouseleave',hideTip);});
+        +tr(L('노출','Impressions'),fmt(impOf(g)))+tr(L('클릭','Clicks'),fmt(clkOf(g)))+tr('CTR',pf(impOf(g)?clkOf(g)/impOf(g):NaN))
+        +tr(L('유입 (IWV)','Inflow (IWV)'),fmt(iwvOf(g)))+tr(L('유입률','Inflow rate'),pf(clkOf(g)?iwvOf(g)/clkOf(g):NaN))));}
+    if(n.dataset.drop!=null){const s=ST[+n.dataset.drop];
+      n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${L('이탈','Dropped')} · ${s.la} → ${s.lb}</div>`
+        +tr(s.la,fmt(s.ta))+tr(L('이탈','dropped'),`${fmt(s.ta-s.tb)} · ${pf(s.ta?(s.ta-s.tb)/s.ta:NaN)}`)
+        +tr(L('잔존율','retained')+` (${s.rl})`,pf(s.ta?s.tb/s.ta:NaN))));}});
 }
 
 /* ---------- ② 유입 효율 지도 (버블) ---------- */
@@ -242,8 +254,7 @@ function infMap(host,rows0,T){
   if(!host)return;
   const rows=rows0.filter(g=>(g.b.click||0)>0&&(g.b.iwv||0)>0&&(g.b.cost||0)>0);
   if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('클릭 · IWV · 소진금액이 모두 있는 항목이 없어 그릴 수 없습니다.','Needs clicks, IWV and spend.')}</div>`;return;}
-  const sk=document.querySelector('#infSankey svg');
-  const W=Math.max(host.clientWidth||420,300),H=Math.round(Math.min(460,Math.max(320,sk&&innerWidth>1100?+sk.getAttribute('height')||0:0))),P={l:54,r:14,t:30,b:40};
+  const W=Math.max(host.clientWidth||420,300),H=340,P={l:54,r:14,t:30,b:40};
   const RMAX=rows.length>8?18:rows.length>4?23:27;
   const xs=rows.map(g=>infRate(g.b)),ys=rows.map(g=>infCpv(g.b));
   const xMax=Math.max(...xs,infRate(T)||0)*1.08||1;

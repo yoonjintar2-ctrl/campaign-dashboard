@@ -2546,7 +2546,22 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .infk>span{font-size:11.5px;font-weight:700;color:var(--muted)}
 .infk>b{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .infk>em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.infgrid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px}
+.infgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px;align-items:start}
+/* 유입 흐름 — 단계별 그래프 3개 (v97) */
+.infsk3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.skp{min-width:0;border:1px solid var(--line2);border-radius:10px;padding:10px 10px 4px;background:var(--surface)}
+.skph{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}
+.skph>b{font-size:12.5px;font-weight:800;color:var(--ink)}
+.skph>span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.skph>span b{color:var(--acc);font-size:13px;margin-left:2px}
+.skpb{width:100%;overflow:hidden}
+.sklink.pb{fill-opacity:.62}
+.sklink.pd{fill-opacity:.13}
+.sknode.dn{fill:var(--gline)}
+.sknode.bn{fill:var(--acc)}
+.skval.b{font-weight:800;fill:var(--acc)}
+.sklab.dl{fill:var(--ink2)}
+@media (max-width:1100px){.infsk3{grid-template-columns:minmax(0,1fr)}}
 .infcell{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;background:var(--surface);min-width:0;margin-bottom:14px}
 .infgrid .infcell{margin-bottom:14px}
 .infh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
