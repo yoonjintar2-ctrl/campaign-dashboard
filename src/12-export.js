@@ -1312,7 +1312,7 @@ const HUB_MAIN=[
 ];
 const HUB_SUB=[
   {id:'guideBtn',t:'사용 가이드'},
-  {id:'__cols',t:'열 사전'},
+  {id:'__cols',t:'열 설정'},
   {id:'holBtn',t:'공휴일 설정'},
   {id:'campHistBtn',t:'변경 히스토리'}
 ];
@@ -1382,9 +1382,16 @@ const TV_FORMULA={amt:'횟수 × 단가',grp:'횟수 × 시청률(%)',cprp:'금�
 function colInfo(k,label,scope){
   k=String(k||'');
   if(scope==='raw'&&k.includes('|'))k=k.split('|')[1];
+  /* 설정 › 열 설정에서 직접 만든 TV · OOH 열 (v81) */
+  if((scope==='tv'||scope==='ooh')&&/^x_/.test(k))return {desc:'설정 › 열 설정에서 직접 만든 열입니다.',formula:'',note:''};
   if(scope==='tv'){
     const f=TV_FORMULA[k];
     return {desc:TV_DESC[k]||'',formula:f||'',note:k==='cprp'?'낮을수록 효율이 좋습니다.':''};}
+  if(scope==='ooh'){
+    const D=(typeof OOH_DESC!=='undefined')?OOH_DESC:{};
+    const ex={period:'게재 시작일 ~ 종료일입니다.',sched:'캠페인 전체 게재 기간 안에서 이 지면의 게재 구간입니다 — 세로선은 오늘입니다.',
+      st:'오늘 기준 게재 중 · 예정 · 종료입니다.',share:'전체 광고비 중 이 지면이 차지하는 비중입니다.'};
+    return {desc:D[k]||ex[k]||'',formula:{days:'종료일 − 시작일 + 1',share:'광고비 ÷ 전체 광고비'}[k]||'',note:''};}
   if(scope==='mix'&&k==='share')return {desc:'전체 예산 중 이 행이 차지하는 비중입니다.',formula:'예산 ÷ 전체 예산'};
   const out={desc:COL_DESC[k]||'',formula:COL_FORMULA[k]||'',note:''};
   if(!out.desc&&/^e_/.test(k)){const b=(typeof FLD!=='undefined'&&FLD[k.slice(2)])?FLD[k.slice(2)].l:k.slice(2);
@@ -1475,8 +1482,32 @@ function openUserColEdit(col){
     closeModal();openColDict();};
   setTimeout(()=>{const i=$('ucName');if(i){i.focus();i.select();}},40);
 }
-function openColDict(){
+/* ---------- 설정 › 열 설정 (v81 — 예전 "열 사전") ----------
+   디지털 · TV · OOH 를 탭으로 나눠 따로 설정한다.
+   · 디지털 — 예상효율 입력 · 데이터 입력 표의 열 켜기/끄기(기존 열 설정 창) + 열 사전(전체 열과 계산식 · 직접 만든 열)
+   · TV · OOH — 입력 표마다 열 표시 · 이름 · 직접 만든 열(텍스트 · 숫자). 캠페인 문서(doc.tblCols)에 담긴다 */
+let COLSET_TAB='digital';
+function openColDict(){openColSettings('digital');}
+function openColSettings(tab){
+  COLSET_TAB=tab||COLSET_TAB||'digital';
+  const md=(typeof campMedia==='function')?campMedia():{digital:true};
+  const tabs=[{k:'digital',l:'디지털'},{k:'tv',l:'TV'},{k:'ooh',l:'OOH'}];
+  const box=openModal('열 설정',
+    `<div class="cstabs" role="tablist">${tabs.map(t=>`<button type="button" class="cstab" data-cst="${t.k}" role="tab">${t.l}${md[t.k]?'':'<i>이 캠페인에서 끔</i>'}</button>`).join('')}</div>
+     <div id="csBody"></div>`,
+    '<span id="csFoot"></span><div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:980});
+  const draw=()=>{
+    box.querySelectorAll('[data-cst]').forEach(b=>{const on=b.dataset.cst===COLSET_TAB;b.classList.toggle('on',on);b.setAttribute('aria-selected',on?'true':'false');});
+    const bd=box.querySelector('#csBody'),ft=box.querySelector('#csFoot');
+    if(COLSET_TAB==='digital')drawDigitalCols(bd,ft);
+    else drawTblCols(bd,ft,COLSET_TAB);};
+  box.querySelectorAll('[data-cst]').forEach(b=>b.onclick=()=>{COLSET_TAB=b.dataset.cst;draw();});
+  draw();
+}
+/* 디지털 — 입력 표 열 설정 바로 가기 + 열 사전 */
+function drawDigitalCols(bd,ft){
   const KIND={in:'입력',calc:'계산'};
+  const agency=!(typeof isClient==='function'&&isClient());
   const rows=FIELDS.map(f=>({k:f.k,l:f.l,en:f.en,cat:f.cat,kind:f.kind,uc:f.__uc}))
     .concat([{k:'period',l:'기간',en:'period',cat:'기타',kind:'calc'},
              {k:'bid',l:'비드 타입',en:'bid type',cat:'기타',kind:'calc'}]);
@@ -1491,24 +1522,27 @@ function openColDict(){
         &&!['date','start','end','startT','endT','budget','value','feeA','feeR','net'].includes(k))
         w.push('데이터 입력');}
     return w.join(' · ')||'–';};
-  const body=`<div class="hint" style="margin-bottom:10px">
-      화면에 쓸 수 있는 모든 열입니다. <b>계산</b> 열은 아래 식으로 그때그때 만들어지므로 따로 입력하지 않습니다.
-      단가·비율은 모두 <b>소진금액</b> 기준입니다.</div>
+  bd.innerHTML=(agency?`<div class="csjump">
+      <button type="button" class="hubcard" id="csLine"><b>예상효율 입력 표</b><i>예상효율 입력 표에 보일 열을 켜고 끕니다 · 열 이름 바꾸기</i></button>
+      <button type="button" class="hubcard" id="csSheet"><b>데이터 입력 표</b><i>데이터 입력 표에 보일 열을 켜고 끕니다 · 수식 열 만들기</i></button>
+    </div>`:'')
+    +`<div class="cssub"><b>열 사전</b><span class="hint">화면에 쓸 수 있는 모든 열입니다. <b>계산</b> 열은 아래 식으로 그때그때 만들어지므로 따로 입력하지 않습니다.
+      단가·비율은 모두 <b>소진금액</b> 기준입니다.</span></div>
     <div class="fld" style="margin-bottom:10px">
       <input class="txt" id="cdQ" placeholder="이름 · 영문 · 계산식으로 검색" style="width:100%" autocomplete="off"></div>
-    <div class="tbl-wrap" style="max-height:52vh">
+    <div class="tbl-wrap" style="max-height:46vh">
       <table class="tbl lite" id="cdTbl"><thead><tr>
         <th style="min-width:140px">열 이름</th><th style="min-width:110px">영문</th>
         <th style="min-width:66px">구분</th><th style="min-width:74px">분류</th>
         <th style="min-width:230px">계산식 · 설명</th><th style="min-width:130px">쓰이는 곳</th>
         <th style="min-width:76px"></th>
       </tr></thead><tbody></tbody></table></div>`;
-  openModal('열 사전 — 전체 열과 계산식',body,
-    '<button class="btn primary" id="cdAdd">＋ 열 추가</button><div class="spacer"></div>'
-    +'<button class="btn" data-close>닫기</button>',{w:940});
+  ft.innerHTML='<button class="btn" id="cdAdd">＋ 열 추가</button>';
   {const ab=$('cdAdd');if(ab)ab.onclick=()=>openUserColEdit(null);}
-  const tb=document.querySelector('#cdTbl tbody');
-  const draw=q=>{
+  {const b1=$('csLine');if(b1)b1.onclick=()=>openLineColCfg();
+   const b2=$('csSheet');if(b2)b2.onclick=()=>openColCfg();}
+  const tb=bd.querySelector('#cdTbl tbody');
+  const drawT=q=>{
     const s=(q||'').trim().toLowerCase();
     const hit=rows.filter(r=>!s||[r.l,r.en,r.k,r.cat,COL_FORMULA[r.k]||'',COL_NOTE[r.k]||'']
       .join(' ').toLowerCase().includes(s));
@@ -1536,9 +1570,77 @@ function openColDict(){
       confirmModal(`'${c2.l}' 열을 지울까요?`,
         '이 열을 켜 둔 표에서 함께 사라집니다. 입력해 둔 숫자는 그대로 남아 있어, 다시 만들면 되살아납니다.',
         ()=>{applyUserCols(USER_COLS.filter(x=>x.k!==c2.k));closeModal();openColDict();},'지우기');});};
-  draw('');
+  drawT('');
   const q=$('cdQ');
-  if(q){q.oninput=()=>draw(q.value);setTimeout(()=>q.focus(),40);}
+  if(q){q.oninput=()=>drawT(q.value);}
+}
+/* TV · OOH — 입력 표마다 열 표시 · 이름 · 직접 만든 열 */
+function drawTblCols(bd,ft,area){
+  const agency=!(typeof isClient==='function'&&isClient());
+  const keys=area==='tv'?[['plan','TV 예상효율 입력 표','채널 · 프로그램별 계획 — TV › 예상효율 입력'],['spot','TV 데이터 입력 표','방송 실적(스팟) — TV › 데이터 입력']]
+    :[['ooh','OOH 예상효율 입력 표','지면별 계획 — OOH › 예상효율 입력 · OOH 서머리의 게재 지면 표도 이 설정을 따릅니다']];
+  const md=(typeof campMedia==='function')?campMedia():{};
+  const KIND=c=>c.extra?'직접 만든 열':c.type==='calc'?'자동 계산':c.type==='date'?'날짜':c.type==='num'||c.type==='pct'?'숫자':'텍스트';
+  const one=([key,ttl,sub])=>{
+    const cfg=tblCfg(key),fx=TBL_FIXED[key]||[];
+    const cols=tblColsAll(key);
+    const info=c=>{const o=colInfo(c.k,c.l,area==='ooh'?'ooh':'tv');
+      return (o.formula?`<b class="mono">${esc(o.formula)}</b> `:'')+`<span class="hint">${esc(o.desc||'')}</span>`;};
+    return `<div class="cstbl" data-tk="${key}"><div class="cssub"><b>${ttl}</b><span class="hint">${sub}</span>
+        ${agency?`<span class="spacer"></span><button type="button" class="btn sm" data-csreset="${key}" title="표시 · 이름을 기본으로 되돌립니다 (직접 만든 열은 남습니다)">기본으로</button>`:''}</div>
+      <table class="tbl lite csgrid"><thead><tr><th style="width:56px">표시</th><th style="min-width:170px">열 이름</th>
+        <th style="width:110px">기본 이름</th><th style="width:96px">구분</th><th>설명 · 계산식</th><th style="width:60px"></th></tr></thead><tbody>
+      ${cols.map(c=>{const fixed=fx.includes(c.k),on=fixed||!cfg.hide.includes(c.k);
+        return `<tr class="${on?'':'off'}"><td><label class="colcfg-lab" style="justify-content:center"><input type="checkbox" class="colcfg-chk" data-cson="${c.k}" ${on?'checked':''} ${fixed||!agency?'disabled':''}></label></td>
+          <td><input class="txt" data-csl="${c.k}" value="${esc(c.l)}" ${agency?'':'disabled'} placeholder="${esc(c.base||c.l)}"></td>
+          <td class="hint" style="text-align:left">${esc(c.base||c.l)}</td><td>${KIND(c)}${fixed?' <span class="mtag">필수</span>':''}</td>
+          <td style="text-align:left;white-space:normal">${c.extra?'<span class="hint">이 캠페인에서 직접 만든 열입니다.</span>':info(c)}</td>
+          <td>${c.extra&&agency?`<button class="btn sm danger" data-csdel="${c.k}" title="열 삭제">✕</button>`:''}</td></tr>`;}).join('')}
+      </tbody></table>
+      ${agency?`<div class="csadd"><input class="txt" data-csnn="${key}" placeholder="새 열 이름 (예: 타깃 · 편성 · 사이즈)">
+        <select class="ctl" data-csnt="${key}"><option value="text">텍스트</option><option value="num">숫자</option></select>
+        <button type="button" class="btn sm" data-csadd="${key}">＋ 열 추가</button></div>`:''}</div>`;};
+  bd.innerHTML=(md[area]?'':`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>${L(`${area==='tv'?'TV':'OOH'} 영역이 이 캠페인에서 꺼져 있습니다 — 설정은 해 둘 수 있고, <b>설정 › 메뉴 설정</b>에서 켜면 바로 적용됩니다.`,
+      `${area==='tv'?'TV':'OOH'} is turned off for this campaign — you can still set it up here; it applies as soon as you turn it on in <b>Settings › Menu settings</b>.`)}</div></div>`)
+    +`<div class="hint" style="margin-bottom:10px">${L(`체크한 열만 입력 표에 나타납니다. 숨긴 열의 값은 지워지지 않아 다시 켜면 그대로 돌아옵니다.
+      열 이름을 바꾸면 엑셀 불러오기에서도 그 이름의 머리글을 알아봅니다. <b>바꾸는 즉시 반영됩니다.</b>`,
+      `Only checked columns appear in the input table. Values in hidden columns are kept and come back when you turn them on again.
+      Renamed columns are also recognized as headers when importing Excel. <b>Changes apply immediately.</b>`)}</div>`
+    +keys.map(one).join('');
+  ft.innerHTML='';
+  const done=key=>{try{renderTvTable(key);}catch(e){}tblChanged(key);
+    try{if(key==='ooh'&&typeof renderOohDash==='function')renderOohDash();}catch(e){}};
+  const redraw=()=>drawTblCols(bd,ft,area);
+  bd.querySelectorAll('[data-cson]').forEach(cb=>cb.onchange=()=>{
+    const key=cb.closest('[data-tk]').dataset.tk,cfg=tblCfg(key),k=cb.dataset.cson;
+    cfg.hide=cfg.hide.filter(x=>x!==k);if(!cb.checked)cfg.hide.push(k);
+    cb.closest('tr').classList.toggle('off',!cb.checked);done(key);});
+  bd.querySelectorAll('[data-csl]').forEach(inp=>inp.onchange=()=>{
+    const key=inp.closest('[data-tk]').dataset.tk,cfg=tblCfg(key),k=inp.dataset.csl;
+    const ex=cfg.extra.find(x=>x.k===k);
+    const v=inp.value.trim();
+    if(ex){if(v)ex.l=v;delete cfg.label[k];}
+    else{const base=(TV_TBL[key].base.find(x=>x.k===k)||{}).l;
+      if(!v||v===base)delete cfg.label[k];else cfg.label[k]=v;}
+    done(key);redraw();});
+  bd.querySelectorAll('[data-csdel]').forEach(b=>b.onclick=()=>{
+    const key=b.closest('[data-tk]').dataset.tk,cfg=tblCfg(key),k=b.dataset.csdel;
+    const c=cfg.extra.find(x=>x.k===k);if(!c)return;
+    confirmModal(`'${c.l}' 열을 지울까요?`,'이 열에 적어 둔 값도 함께 지워집니다.',()=>{
+      cfg.extra=cfg.extra.filter(x=>x.k!==k);cfg.hide=cfg.hide.filter(x=>x!==k);delete cfg.label[k];
+      TV_TBL[key].rows().forEach(r=>{delete r[k];});
+      done(key);redraw();},'지우기');});
+  bd.querySelectorAll('[data-csadd]').forEach(b=>b.onclick=()=>{
+    const key=b.dataset.csadd,cfg=tblCfg(key);
+    const ni=bd.querySelector(`[data-csnn="${key}"]`),nt=bd.querySelector(`[data-csnt="${key}"]`);
+    const nm=(ni&&ni.value||'').trim();
+    if(!nm){if(ni){ni.focus();ni.classList.add('bad');setTimeout(()=>ni.classList.remove('bad'),900);}return;}
+    if(tblColsAll(key).some(c=>c.l===nm)){confirmModal('같은 이름의 열이 이미 있습니다.','다른 이름을 적어 주세요.',()=>{},'확인');return;}
+    cfg.extra.push({k:'x_'+Math.random().toString(36).slice(2,8),l:nm,type:nt&&nt.value==='num'?'num':'text'});
+    done(key);redraw();});
+  bd.querySelectorAll('[data-csnn]').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){const b=bd.querySelector(`[data-csadd="${inp.dataset.csnn}"]`);if(b)b.click();}});
+  bd.querySelectorAll('[data-csreset]').forEach(b=>b.onclick=()=>{
+    const key=b.dataset.csreset,cfg=tblCfg(key);cfg.hide=[];cfg.label={};done(key);redraw();});
 }
 /* 광고주·캠페인 관리는 **내 계정으로 로그인한 관리자**만.
    공유 링크(운영진 코드)로 들어온 화면에서는 열 수 없다. */
@@ -1575,7 +1677,7 @@ function openSettingsHub(){
   box.querySelectorAll('[data-hub]').forEach(b=>b.onclick=()=>{
     const id=b.dataset.hub;
     if(id==='__adv'){if(typeof openAdvManage==='function')openAdvManage();return;}
-    if(id==='__cols'){openColDict();return;}
+    if(id==='__cols'){openColSettings();return;}
     if(id==='__media'){openMenuSettings();return;}
     const t=$(id);if(t&&t.onclick)t.onclick();});
 }

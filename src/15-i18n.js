@@ -38,6 +38,47 @@ Object.assign(I18N_EN,{
   "시트 {}개 중 일자 · 매체명 같은 머리글이 있는 시트를 찾지 못했습니다. 템플릿을 내려받아 다시 시도해 주세요.":"None of the {} sheets has headers such as Date · Media. Download the template and try again.",
   "시트 {}개 중 매체 · 광고상품 같은 머리글이 있는 시트를 찾지 못했습니다.":"None of the {} sheets has headers such as Media · Ad product."});
 
+/* 사전 보충 (v81 · OOH · 전체 캠페인 · 열 설정) */
+Object.assign(I18N_EN,{
+  "전체 캠페인":"All campaigns","광고주 캠페인 현황":"Advertiser campaigns","같은 광고주의 모든 캠페인을 한눈에":"Every campaign of this advertiser at a glance",
+  "광고주 정보":"Advertiser info","광고비 현황":"Ad spend overview","↻ 새로 고침":"↻ Refresh",
+  "다른 캠페인의 최신 저장 내용을 다시 불러옵니다":"Reload the latest saved data of the other campaigns",
+  "캠페인 타임라인":"Campaign timeline","막대 색 = 영역별 광고비 비중 · 세로선은 오늘":"Bar color = ad spend share by area · vertical line = today",
+  "영역별 캠페인":"Campaigns by area","한 캠페인이 여러 영역을 쓰면 영역마다 한 줄씩":"A campaign that uses several areas appears once in each",
+  "OOH 캠페인 현황":"OOH campaign overview","매체별 광고비":"Ad spend by media","예상효율 입력 기준":"Based on forecast input",
+  "게재 지면":"Placements","매체 › 지면 · 막대는 캠페인 전체 게재 기간 안의 위치 · 세로선은 오늘":"Media › placement · bar = position within the whole flight · vertical line = today",
+  "지면":"Placement","지면 정보":"Placement details","일수":"Days","일수 ƒ":"Days ƒ","일정":"Schedule","비중":"Share","게재 기간":"Flight",
+  "OOH 예상효율":"OOH forecast","+ 소재 추가":"+ Add creative","OOH(옥외) 캠페인 메뉴 — 계획 · 소재만":"OOH (out-of-home) campaign menus — plan · creatives only",
+  "같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록":"All campaigns of the same advertiser — ad spend and Digital · TV · OOH campaign lists",
+  "열 설정":"Column settings","예상효율 입력 표":"Forecast input table","데이터 입력 표":"Data input table",
+  "예상효율 입력 표에 보일 열을 켜고 끕니다 · 열 이름 바꾸기":"Turn columns of the forecast input table on/off · rename columns",
+  "데이터 입력 표에 보일 열을 켜고 끕니다 · 수식 열 만들기":"Turn columns of the data input table on/off · create formula columns",
+  "TV 예상효율 입력 표":"TV forecast input table","채널 · 프로그램별 계획 — TV › 예상효율 입력":"Plan by channel · program — TV › Forecast input",
+  "TV 데이터 입력 표":"TV data input table","방송 실적(스팟) — TV › 데이터 입력":"Airing results (spots) — TV › Data input",
+  "OOH 예상효율 입력 표":"OOH forecast input table",
+  "지면별 계획 — OOH › 예상효율 입력 · OOH 서머리의 게재 지면 표도 이 설정을 따릅니다":"Plan by placement — OOH › Forecast input · the Placements table of the OOH summary follows these settings too",
+  "기본으로":"Reset","설명 · 계산식":"Description · formula","필수":"Required","기본 이름":"Default name","열 이름":"Column name","표시":"Show","구분":"Type",
+  "직접 만든 열":"Custom column","이 캠페인에서 직접 만든 열입니다.":"A custom column created for this campaign.","이 캠페인에서 끔":"off in this campaign",
+  "표시 · 이름을 기본으로 되돌립니다 (직접 만든 열은 남습니다)":"Reset visibility · names to default (custom columns stay)",
+  "새 열 이름 (예: 타깃 · 편성 · 사이즈)":"New column name (e.g. target · daypart · size)","＋ 열 추가":"＋ Add column",
+  "같은 이름의 열이 이미 있습니다.":"A column with that name already exists.","다른 이름을 적어 주세요.":"Please enter a different name.",
+  "이 열에 적어 둔 값도 함께 지워집니다.":"Values entered in this column will be deleted too.",
+  "설정 › 열 설정에서 직접 만든 열입니다.":"A custom column created in Settings › Column settings.",
+  "체크한 열만 입력 표에 나타납니다. 숨긴 열의 값은 지워지지 않아 다시 켜면 그대로 돌아옵니다.":"Only checked columns appear in the input table. Values in hidden columns are kept and come back when you turn them on again.",
+  "열 이름을 바꾸면 엑셀 불러오기에서도 그 이름의 머리글을 알아봅니다.":"Renamed columns are also recognized as headers when importing Excel.",
+  "바꾸는 즉시 반영됩니다.":"Changes apply immediately.",
+  "옥외광고 매체(매체사)입니다.":"The out-of-home media (vendor).","광고가 걸리는 지면(위치 · 구좌)입니다.":"Where the ad runs (location · slot).",
+  "지면의 규격 · 형태 · 노출 시간 같은 상세 정보입니다.":"Details such as size · format · exposure time.","게재 시작일입니다.":"First day of the flight.","게재 종료일입니다.":"Last day of the flight.",
+  "시작일부터 종료일까지 게재 일수입니다.":"Number of days from start to end.","그 지면에 쓰는 광고비입니다.":"Ad spend for that placement.",
+  "그 지면에 거는 소재입니다 — 아래 소재 목록의 이름과 같으면 이미지가 이어집니다.":"The creative for that placement — matching names link to the images in the creative list.",
+  "종료일 − 시작일 + 1":"End − start + 1","광고비 ÷ 전체 광고비":"Ad spend ÷ total ad spend",
+  "게재 시작일 ~ 종료일입니다.":"Flight start ~ end.","오늘 기준 게재 중 · 예정 · 종료입니다.":"Live · upcoming · ended as of today.",
+  "전체 광고비 중 이 지면이 차지하는 비중입니다.":"This placement's share of total ad spend.",
+  "캠페인 전체 게재 기간 안에서 이 지면의 게재 구간입니다 — 세로선은 오늘입니다.":"This placement's flight within the whole campaign flight — the vertical line is today.",
+  "OOH 예상효율":"OOH forecast","TV 예상효율":"TV forecast","TV 리포트 데이터":"TV report data","{} 데이터를 모두 지울까요?":"Delete all {} data?",
+  "같은 이름의 소재가 이미 있습니다.":"A creative with that name already exists.","지면 표에 적힌 소재 이름은 그대로 남습니다.":"Creative names written in the placement table stay as they are.",
+  "합계 · 소계 줄 {}개는 건너뛰었습니다.":"Skipped {} total/subtotal rows.",
+  "닫기":"Close","전체 기간":"Overall period","집행 금액":"Spent","계획 GRP":"Plan GRP","실적 GRP":"Actual GRP","종료":"Ended","예정":"Upcoming"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
@@ -208,7 +249,10 @@ const I18N_HTML={
     +'Drag the dotted handle on the far left to reorder rows.',
   tvPlanNotice:'Per channel · program (or time-grade bundle), enter <b>spots · unit price · expected rating</b> and '
     +'<b>Amount = spots × unit price</b>, <b>Expected GRP = spots × expected rating (%)</b> and <b>Expected CPRP = amount ÷ expected GRP</b> '
-    +'are calculated automatically. They\'re compared side by side with report data (actuals) on the TV Campaign Dashboard.'};
+    +'are calculated automatically. They\'re compared side by side with report data (actuals) on the TV Campaign Dashboard.',
+  oohPlanNotice:'Each row is <b>one placement</b>. Enter media · placement · details (size · format, etc.) · start · end · ad spend and they are gathered in '
+    +'<b>OOH › Summary</b> as ad spend by media and the flight schedule. Write a creative name from the list below in the placement\'s <b>Creative</b> cell to link its image (separate several with commas). '
+    +'You can paste cells copied from Excel into the table; column names and visibility are set in <b>Settings › Column settings › OOH</b>.'};
 function trBlocks(root){
   const list=[];
   if(root.nodeType===1&&root.hasAttribute&&root.hasAttribute('data-i18n'))list.push(root);

@@ -10,7 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src')
 
 PARTS = ['01-head.html', '02-body.html', '03-data.js', '04-builder.js',
-         '05-chart.js', '06-creative.js', '07-input.js', '08-setup.js', '09-cloud.js', '10-xlsx.js', '11-comment.js', '12-export.js', '13-trend.js', '14-tv.js', '15-i18n.js']
+         '05-chart.js', '06-creative.js', '07-input.js', '08-setup.js', '09-cloud.js', '10-xlsx.js', '11-comment.js', '12-export.js', '13-trend.js', '14-tv.js', '16-ooh.js', '17-overview.js', '15-i18n.js']
 
 
 def build(dest):

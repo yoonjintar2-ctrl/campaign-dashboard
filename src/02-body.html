@@ -72,10 +72,19 @@
      data-menu 열쇠로 설정 › 메뉴 설정의 사용 여부 · 뷰어 노출을 따른다 (applyMenus) -->
 <div class="tabs" id="tabs" data-cur="dash">
   <div class="arearow">
+    <button class="area" type="button" data-area="overview" aria-haspopup="menu" aria-expanded="false" data-tab="overview" data-menu="overview"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 3.2h5.8V9H3zM11.2 3.2H17V9h-5.8zM3 11h5.8v5.8H3zM11.2 11H17v5.8h-5.8z"/></svg></span><span class="al">전체 캠페인</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area on" type="button" data-area="digital" aria-haspopup="menu" aria-expanded="false" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area" type="button" data-area="tv" aria-haspopup="menu" aria-expanded="false" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="area" type="button" data-area="ooh" aria-haspopup="menu" aria-expanded="false" data-tab="oohdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 3.2h15.2v8.6H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M6.6 11.8v5.4M13.4 11.8v5.4M4.6 17.2h10.8"/></svg></span><span class="al">OOH</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area" type="button" data-area="trend" aria-haspopup="menu" aria-expanded="false" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="megapop" role="menu">
+    <div class="subgrp" data-area="overview">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 3.2h5.8V9H3zM11.2 3.2H17V9h-5.8zM3 11h5.8v5.8H3zM11.2 11H17v5.8h-5.8z"/></svg></span><span>전체 캠페인</span></div>
+      <div class="subbar">
+        <button type="button" data-tab="overview" data-menu="overview">광고주 캠페인 현황</button>
+      </div>
+      <p class="subnote">같은 광고주의 모든 캠페인을 한눈에</p>
+    </div>
     <div class="subgrp" data-area="digital">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
         <div class="subhd">대시보드</div>
@@ -102,6 +111,17 @@
         <div class="subbar subin">
         <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
         <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
+      </div>
+    </div>
+    <div class="subgrp" data-area="ooh">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 3.2h15.2v8.6H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M6.6 11.8v5.4M13.4 11.8v5.4M4.6 17.2h10.8"/></svg></span><span>OOH</span></div>
+        <div class="subhd">대시보드</div>
+        <div class="subbar" id="oohsubbar">
+        <button type="button" data-tab="oohdash" data-menu="o_sum">서머리</button>
+      </div>
+        <div class="subhd subinhd">입력</div>
+        <div class="subbar subin">
+        <button type="button" data-tab="oohplan" data-menu="o_plan">예상효율 입력</button>
       </div>
     </div>
     <div class="subgrp" data-area="trend">
@@ -396,6 +416,7 @@
 <div class="wrap hidden" id="tab-tvinput">
   <div class="sec">TV 방송 실적 입력 <span class="note" id="tvSpotNote"></span>
     <div class="tools">
+      <button class="btn sm" id="tvSpotCols">⚙ 열 설정</button>
       <button class="btn sm" id="tvSpotAdd">+ 행 추가</button>
       <button class="btn sm" id="tvSpotUp">⤒ 엑셀 불러오기</button>
       <button class="btn sm danger" id="tvSpotWipe">🗑 데이터 모두 삭제</button>
@@ -413,6 +434,7 @@
 <div class="wrap hidden" id="tab-tvplan">
   <div class="sec">TV 예상효율 <span class="note" id="tvPlanNote"></span>
     <div class="tools">
+      <button class="btn sm" id="tvPlanCols">⚙ 열 설정</button>
       <button class="btn sm" id="tvPlanAdd">+ 행 추가</button>
       <button class="btn sm" id="tvPlanUp">⤒ 엑셀 불러오기</button>
       <button class="btn sm danger" id="tvPlanWipe">🗑 데이터 모두 삭제</button>
@@ -425,6 +447,53 @@
     <div data-i18n="tvPlanNotice">채널 · 프로그램(또는 시급 묶음) 단위로 <b>횟수 · 단가 · 예상 시청률</b>을 적으면
       <b>금액 = 횟수 × 단가</b>, <b>예상 GRP = 횟수 × 예상 시청률(%)</b>, <b>예상 CPRP = 금액 ÷ 예상 GRP</b> 가 자동으로 계산됩니다.
       TV캠페인 대시보드에서 리포트 데이터(실적)와 나란히 비교합니다.</div></div>
+</div>
+
+<!-- ================= OOH 캠페인 (v81) — 계획 · 소재만 ================= -->
+<div class="wrap hidden" id="tab-oohdash">
+  <div class="sec">OOH 캠페인 현황 <span class="note" id="oohDashNote"></span></div>
+  <div class="tvkpis" id="oohKpis"></div>
+  <div id="oohEmpty" class="hidden"></div>
+  <div class="sec gap">매체별 광고비 <span class="note">예상효율 입력 기준</span></div>
+  <div class="card"><div class="bd" id="oohMediaBox"></div></div>
+  <div class="sec gap">게재 지면 <span class="note">매체 › 지면 · 막대는 캠페인 전체 게재 기간 안의 위치 · 세로선은 오늘</span></div>
+  <div class="card"><div class="tbl-wrap noy"><table class="tbl lite oohtbl" id="oohTbl"></table></div></div>
+  <div class="sec gap">소재 <span class="note" id="oohCrNote"></span></div>
+  <div class="oohcrs" id="oohCrs"></div>
+</div>
+<div class="wrap hidden" id="tab-oohplan">
+  <div class="sec">OOH 예상효율 <span class="note" id="oohPlanNote"></span>
+    <div class="tools">
+      <button class="btn sm" id="oohPlanCols">⚙ 열 설정</button>
+      <button class="btn sm" id="oohPlanAdd">+ 행 추가</button>
+      <button class="btn sm" id="oohPlanUp">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="oohPlanWipe">🗑 데이터 모두 삭제</button>
+    </div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="oohPlanTbl"></table></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" id="oohPlanAdd2">+ 행 추가</button></div>
+  </div></div>
+  <div class="sec gap">소재 <span class="note" id="oohCrCount"></span>
+    <div class="tools"><button class="btn sm" id="oohCrAdd">+ 소재 추가</button></div></div>
+  <div class="card"><div class="bd" id="oohCrEdit" style="padding:13px"></div></div>
+  <div class="notice" style="margin-top:22px"><span>ⓘ</span>
+    <div data-i18n="oohPlanNotice">한 행은 <b>지면 하나</b>입니다. 매체 · 지면 · 지면 정보(규격 · 형태 등) · 시작일 · 종료일 · 광고비를 적으면
+      <b>OOH › 서머리</b>에 매체별 광고비와 게재 일정으로 모입니다. 지면의 <b>소재</b> 칸에 아래 소재 이름을 적으면 이미지가 이어집니다(여러 개는 쉼표로).
+      엑셀에서 여러 칸을 복사해 표의 칸에 붙여 넣을 수 있고, 열 이름 · 표시는 <b>설정 › 열 설정 › OOH</b>에서 바꿉니다.</div></div>
+</div>
+
+<!-- ================= 전체 캠페인 (v81) — 같은 광고주의 모든 캠페인 ================= -->
+<div class="wrap hidden" id="tab-overview">
+  <div class="barlbl first">광고주 정보</div>
+  <div class="cbar" id="ovBar"></div>
+  <div id="ovMsg" class="hidden"></div>
+  <div class="sec">광고비 현황 <span class="note" id="ovNote"></span>
+    <div class="tools"><button class="btn sm" id="ovReload" title="다른 캠페인의 최신 저장 내용을 다시 불러옵니다">↻ 새로 고침</button></div></div>
+  <div class="tvkpis ovkpis" id="ovKpis"></div>
+  <div class="sec gap">캠페인 타임라인 <span class="note">막대 색 = 영역별 광고비 비중 · 세로선은 오늘</span></div>
+  <div class="card"><div class="bd" id="ovTimeline"></div></div>
+  <div class="sec gap">영역별 캠페인 <span class="note">한 캠페인이 여러 영역을 쓰면 영역마다 한 줄씩</span></div>
+  <div id="ovLists"></div>
 </div>
 
 <div id="tip"></div>

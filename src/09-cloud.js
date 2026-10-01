@@ -57,11 +57,15 @@ function serializeDoc(){
       bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
       agencyLogo:CAMPAIGN.agencyLogo||'',
       /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
-      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false}),
+      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false}),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
       menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{}))},
     /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
     tv:(typeof tvForDoc==='function'?tvForDoc():{plan:[],spots:[]}),
+    /* OOH 캠페인 — 지면 계획(plan) · 소재(cr) (v81) */
+    ooh:(typeof oohForDoc==='function'?oohForDoc():{plan:[],cr:[]}),
+    /* TV · OOH 입력 표의 열 설정 — 숨김 · 이름 · 직접 만든 열 (v81) */
+    tblCols:(typeof tblCfgForDoc==='function'?tblCfgForDoc():{}),
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
     lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;return o;}),
@@ -156,9 +160,13 @@ function applyDoc(d,keepToday){
   CAMPAIGN.agencyLogo=d.campaign?.agencyLogo||'';
   /* 운영 매체 · TV 데이터 (v71) — 예전 저장본은 디지털만 */
   {const m=d.campaign&&d.campaign.media;
-   CAMPAIGN.media=(m&&(m.digital||m.tv))?{digital:!!m.digital,tv:!!m.tv}:{digital:true,tv:false};}
+   CAMPAIGN.media=(m&&(m.digital||m.tv||m.ooh))?{digital:!!m.digital,tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};}
   {const mm=d.campaign&&d.campaign.menus;CAMPAIGN.menus=(mm&&typeof mm==='object')?JSON.parse(JSON.stringify(mm)):{};}
   try{if(typeof tvFromDoc==='function')tvFromDoc(d);}catch(e){}
+  try{if(typeof oohFromDoc==='function')oohFromDoc(d);}catch(e){}
+  try{if(typeof tblCfgFromDoc==='function')tblCfgFromDoc(d);}catch(e){}
+  /* 전체 캠페인 — 다른 캠페인을 열었으니 다시 읽는다 */
+  try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
   /* 문서에 없으면 이 브라우저에 남겨 둔 대행사 로고를 쓴다 */
   try{if(!CAMPAIGN.agencyLogo&&typeof agencyLogo==='function')CAMPAIGN.agencyLogo=agencyLogo();}catch(e){}
   if(typeof applyTheme==='function')applyTheme(d.campaign?.theme||'',true);
@@ -905,7 +913,9 @@ async function cloudSave(silent){
   let upd,error;
   try{({data:upd,error}=await withTimeout(CLOUD.sb.from('campaigns').update({
     name:CAMPAIGN.name,advertiser:CAMPAIGN.advertiser,
-    start_date:campStart(),end_date:campEnd(),
+    /* 디지털 · TV · OOH 를 모두 본 캠페인 기간 (v81 — 예전에는 디지털 라인만 봐서 TV · OOH 만 쓰면 오늘 날짜로 들어갔다) */
+    start_date:(typeof campPeriodAll==='function'?campPeriodAll().start:'')||campStart(),
+    end_date:(typeof campPeriodAll==='function'?campPeriodAll().end:'')||campEnd(),
     doc,updated_at:new Date().toISOString(),updated_by:CLOUD.user.id
   }).eq('id',CLOUD.campaign.id).select('id'),30000,'설정 저장'));
   }catch(e){error={message:String(e&&e.message||e)};}
@@ -1028,8 +1038,10 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.advertiser=advertiser||'';
   LINES=[];CREATIVES=[];ISSUES=[];
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
-  CAMPAIGN.media={digital:true,tv:false};CAMPAIGN.menus={};
+  CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
+  try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
+  try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
   clearWorkState();
   rebuildPeriod();buildFacts();resetDateFilter(true);renderEverything();
 }

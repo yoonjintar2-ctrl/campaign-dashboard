@@ -1303,17 +1303,21 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvdaily','tvmix','tvinput','tvplan'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvmix','tvinput','tvplan','oohdash','oohplan','overview'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
   if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
   if(name==='tvmix'){try{renderTvMix();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
   if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
+  /* OOH · 전체 캠페인 (v81) */
+  if(name==='oohdash'){try{renderOohDash();}catch(e){}}
+  if(name==='oohplan'){try{renderTvTable('ooh');renderOohCrEdit();}catch(e){}}
+  if(name==='overview'){try{renderOverview();}catch(e){}}
   /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
-  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvmix'].includes(name));}
+  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvmix','oohdash','overview'].includes(name));}
   if(name==='dash'){try{ensureDashSub();}catch(e){}}
   try{paintTabsOn();}catch(e){}
   /* 일자별 상세 효율로 돌아왔으면 보던 자리로, 그 밖에는 맨 위로 */
@@ -1585,6 +1589,9 @@ function renderEverything(){
     try{equalizeDuo();renderTreemap();}catch(e){}}
   /* TV 메뉴 · 운영 매체에 따른 탭 (v71) */
   try{if(typeof renderTV==='function')renderTV();}catch(e){}
+  try{if(typeof renderOOH==='function')renderOOH();}catch(e){}
+  /* 전체 캠페인은 보고 있을 때만 다시 그린다 (다른 캠페인을 서버에서 읽어 오므로) */
+  try{const ov=$('tab-overview');if(ov&&!ov.classList.contains('hidden')&&typeof renderOverview==='function')renderOverview();}catch(e){}
   try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   PERF_STALE=false;
 }

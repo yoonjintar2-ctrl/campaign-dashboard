@@ -8,14 +8,15 @@
 
 /* ---------- 운영 영역(매체) ---------- */
 /* 문서에 없으면(예전 캠페인) 디지털만 운영한 것으로 본다 */
+/* v81 — OOH 영역 추가 {digital, tv, ooh} */
 function campMedia(){
   const m=CAMPAIGN.media||{};
-  const d=m.digital!==false, t=!!m.tv;
-  return (d||t)?{digital:d,tv:t}:{digital:true,tv:false};}
+  const d=m.digital!==false, t=!!m.tv, o=!!m.ooh;
+  return (d||t||o)?{digital:d,tv:t,ooh:o}:{digital:true,tv:false,ooh:false};}
 function setCampMedia(m){
-  const d=!!m.digital,t=!!m.tv;
-  if(!d&&!t)return false;                      /* 최소 한 개는 있어야 캠페인이 성립한다 */
-  CAMPAIGN.media={digital:d,tv:t};
+  const d=!!m.digital,t=!!m.tv,o=!!m.ooh;
+  if(!d&&!t&&!o)return false;                  /* 최소 한 개는 있어야 캠페인이 성립한다 */
+  CAMPAIGN.media={digital:d,tv:t,ooh:o};
   return true;}
 
 /* ---------- 메뉴 목록 ----------
@@ -28,12 +29,16 @@ function menuUsed(id){
   const md=campMedia();
   if(m.area==='digital'&&!md.digital)return false;
   if(m.area==='tv'&&!md.tv)return false;
+  if(m.area==='ooh'&&!md.ooh)return false;
   const c=campMenus()[id];return !(c&&c.on===false);}
 /* 광고주(뷰어)에게 보이는가 — 입력 메뉴는 언제나 관리자 전용 */
 function menuViewer(id){
   const m=MENU_BY[id];if(!m||m.kind!=='view')return false;
   if(id==='trend'){try{return trendVisibleToViewer();}catch(e){return true;}}
-  const c=campMenus()[id];return !(c&&c.viewer===false);}
+  const c=campMenus()[id];
+  /* 기본이 '숨김'인 메뉴(전체 캠페인)는 켜 둔 경우에만 보인다 (v81) */
+  if(m.vdef===false)return !!(c&&c.viewer===true);
+  return !(c&&c.viewer===false);}
 function menuVisible(id){
   if(!menuUsed(id))return false;
   let cl=false;try{cl=isClient();}catch(e){}
@@ -44,7 +49,8 @@ function tabVisible(tab){
   return ms.length?ms.some(m=>menuVisible(m.id)):true;}
 /* 보이는 첫 화면 — 대시보드(view) 먼저 */
 function firstDashTab(){
-  const m=MENUS.find(x=>x.kind==='view'&&x.area!=='trend'&&menuVisible(x.id))
+  const m=MENUS.find(x=>x.kind==='view'&&MEDIA_AREAS.includes(x.area)&&menuVisible(x.id))
+    ||MENUS.find(x=>x.kind==='view'&&menuVisible(x.id))
     ||MENUS.find(x=>menuVisible(x.id));
   return m?m.tab:'dash';}
 /* 영역을 누르면 — 디지털은 대시보드(보던 하위 화면 그대로), TV 는 마지막으로 본 TV 대시보드 */
@@ -67,7 +73,7 @@ function paintTabsOn(){
     const c=b.querySelector('.acur');if(!c)return;
     /* 사전 번역이 되도록 한국어 원문(MENUS.l)을 넣는다 — 영어 화면이면 textContent 훅이 옮긴다 */
     let lb='';
-    if(on&&area!=='trend'){
+    if(on&&MEDIA_AREAS.includes(area)){
       const m=name==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===cs):MENUS.find(x=>x.tab===name);
       lb=m?m.l:'';}
     const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
@@ -251,34 +257,38 @@ function fitTop(){
 addEventListener('resize',()=>{clearTimeout(window.__fitTabsT);window.__fitTabsT=setTimeout(()=>{try{fitTabs();}catch(e){}try{fitTop();}catch(e){}},120);});
 
 /* ---------- 설정 › 메뉴 설정 (v72 — 예전 "운영 매체") ----------
-   영역(디지털 · TV) 켜기, 메뉴마다 사용 여부, 광고주(뷰어)에게 보일지. */
+   영역(디지털 · TV · OOH) 켜기, 메뉴마다 사용 여부, 광고주(뷰어)에게 보일지.
+   트렌드 리포트 · 전체 캠페인은 영역이 아니라 공용 메뉴 — 켜고 끄기만 한다 (v81) */
+const AREA_SUB={digital:'디지털 캠페인 메뉴',tv:'TV 캠페인 메뉴',ooh:'OOH(옥외) 캠페인 메뉴 — 계획 · 소재만'};
 function openMenuSettings(){
   const md=campMedia(),cm=campMenus();
   const st={media:{...md},menus:{}};
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
-      :(m.kind==='view'&&c.viewer!==false)};});
-  const row=m=>`<tr data-mid="${m.id}"${m.area!=='trend'?` data-marea="${m.area}"`:''}>
+      :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
+  const row=m=>`<tr data-mid="${m.id}"${MEDIA_AREAS.includes(m.area)?` data-marea="${m.area}"`:''}>
       <td class="mn">${m.l}${m.kind==='edit'?' <span class="mtag">입력</span>':''}</td>
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
-        <b>${AREA_LABEL[a]}</b><i>${a==='digital'?'디지털 캠페인':'TV 캠페인'} 메뉴</i></label></td></tr>
+        <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
       ${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+  const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea nochk">
+         <b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.
-      <b>디지털 · TV 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
+      <b>디지털 · TV · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
       `Choose the menus this campaign uses and whether advertisers (viewers) can see them.
-      <b>At least one of Digital · TV</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
+      <b>At least one of Digital · TV · OOH</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
      <table class="mset"><thead><tr><th>메뉴</th><th>사용</th><th>뷰어에게 보이기</th></tr></thead>
-       ${area('digital')}${area('tv')}
-       <tbody class="mgrp" data-area="trend"><tr class="mhead"><td colspan="3"><label class="marea nochk">
-         <b>${AREA_LABEL.trend}</b><i>모든 캠페인이 함께 쓰는 자료 게시판</i></label></td></tr>${row(MENU_BY.trend)}</tbody>
+       ${MEDIA_AREAS.map(area).join('')}
+       ${common('overview','같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록')}
+       ${common('trend','모든 캠페인이 함께 쓰는 자료 게시판')}
      </table>
      <div class="hint" id="medMsg" style="margin-top:10px;min-height:18px"></div>`,
-    '<button class="btn" data-close>취소</button><button class="btn primary" id="medOk">적용</button>',{w:600});
+    '<button class="btn" data-close>취소</button><button class="btn primary" id="medOk">적용</button>',{w:620});
   const paint=()=>{
     box.querySelectorAll('input[data-area]').forEach(cb=>cb.checked=!!st.media[cb.dataset.area]);
     box.querySelectorAll('tr[data-mid]').forEach(tr=>{
@@ -287,14 +297,14 @@ function openMenuSettings(){
       tr.querySelectorAll('input[data-k]').forEach(cb=>{cb.checked=!!s[cb.dataset.k];
         cb.disabled=!!off||(cb.dataset.k==='viewer'&&!s.on);});
       tr.classList.toggle('unused',!s.on);});
-    box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',g.dataset.area!=='trend'&&!st.media[g.dataset.area]));};
+    box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)&&!st.media[g.dataset.area]));};
   const check=()=>{
-    if(!st.media.digital&&!st.media.tv)return L('디지털 · TV 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV must be on.');
-    for(const a of ['digital','tv']){
+    if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OOH must be on.');
+    for(const a of MEDIA_AREAS){
       if(st.media[a]&&!MENUS.some(m=>m.area===a&&st.menus[m.id].on))
         return L(`<b>${AREA_LABEL[a]}</b> 영역을 쓰려면 메뉴를 <b>한 개 이상</b> 켜 주세요.`,
-          `Turn on <b>at least one</b> menu to use <b>${a==='tv'?'TV':'Digital'}</b>.`);}
-    const viewerAny=MENUS.some(m=>m.kind==='view'&&(m.area==='trend'||st.media[m.area])&&st.menus[m.id].on&&st.menus[m.id].viewer);
+          `Turn on <b>at least one</b> menu to use <b>${a==='tv'?'TV':a==='ooh'?'OOH':'Digital'}</b>.`);}
+    const viewerAny=MENUS.some(m=>m.kind==='view'&&(!MEDIA_AREAS.includes(m.area)||st.media[m.area])&&st.menus[m.id].on&&st.menus[m.id].viewer);
     if(!viewerAny)return L('광고주(뷰어)에게 보일 메뉴가 <b>하나도 없습니다</b>. 한 개 이상 켜 주세요.',
       '<b>No menu</b> is visible to advertisers (viewers). Turn on at least one.');
     return '';};
@@ -310,13 +320,17 @@ function openMenuSettings(){
     const out={};
     MENUS.forEach(m=>{const s=st.menus[m.id],o={};
       if(!s.on)o.on=false;
-      if(m.kind==='view'&&m.id!=='trend'&&!s.viewer)o.viewer=false;
+      /* 기본값과 다른 것만 적는다 — 기본 숨김(vdef:false) 메뉴는 보이게 켠 경우만 */
+      if(m.kind==='view'&&m.id!=='trend'){
+        if(m.vdef===false){if(s.viewer)o.viewer=true;}
+        else if(!s.viewer)o.viewer=false;}
       if(Object.keys(o).length)out[m.id]=o;});
     CAMPAIGN.menus=out;
     try{TREND_VIEWER=!!st.menus.trend.viewer;paintTrendToggle();}catch(e){}
     closeModal();
     try{applyRole();}catch(e){applyMenus();}
     try{if(campMedia().tv)renderTV();}catch(e){}
+    try{if(campMedia().ooh&&typeof renderOOH==='function')renderOOH();}catch(e){}
     try{markDirty();saveLocal();}catch(e){}};
 }
 /* 예전 이름 */
@@ -381,14 +395,46 @@ function tvDate(s){
     return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;}
   return s;}
 
-/* ---------- 입력 표 (예상효율 · 리포트 데이터 공용) ---------- */
+/* ---------- 입력 표 (예상효율 · 리포트 데이터 공용 — v81 부터 OOH 도 이 틀을 쓴다) ----------
+   base: 기본 열 · cols: 지금 보이는 열(설정 › 열 설정을 반영한 getter) · changed: 값이 바뀐 뒤 할 일 */
 const TV_TBL={
-  plan:{id:'tvPlanTbl',rows:()=>TV_PLAN,set:v=>{TV_PLAN=v;},cols:TV_PLAN_COLS,calc:tvPlanCalc,
+  plan:{id:'tvPlanTbl',name:'TV 예상효율',base:TV_PLAN_COLS,get cols(){return tblCols('plan');},
+    rows:()=>TV_PLAN,set:v=>{TV_PLAN=v;},calc:tvPlanCalc,total:rs=>tvPlanTotal(rs),
     blank:()=>({ch:'',prog:'',grade:'',dur:'',cnt:'',price:'',rating:'',note:''}),
-    sum:'tvPlanSum',note:'tvPlanNote'},
-  spot:{id:'tvSpotTbl',rows:()=>TV_SPOTS,set:v=>{TV_SPOTS=v;},cols:TV_SPOT_COLS,calc:tvSpotCalc,
+    sum:'tvPlanSum',note:'tvPlanNote',changed:()=>tvChanged()},
+  spot:{id:'tvSpotTbl',name:'TV 리포트 데이터',base:TV_SPOT_COLS,get cols(){return tblCols('spot');},
+    rows:()=>TV_SPOTS,set:v=>{TV_SPOTS=v;},calc:tvSpotCalc,total:rs=>tvSpotTotal(rs),
     blank:()=>({date:'',time:'',ch:'',prog:'',grade:'',dur:'',cr:'',cnt:'',cost:'',rating:''}),
-    sum:'tvSpotSum',note:'tvSpotNote'}};
+    sum:'tvSpotSum',note:'tvSpotNote',changed:()=>tvChanged()}};
+/* ---------- 입력 표 열 설정 (v81) — 설정 › 열 설정 › TV · OOH ----------
+   표마다 {hide:[열쇠], label:{열쇠:이름}, extra:[{k,l,type:'text'|'num'}]} — 캠페인 문서(doc.tblCols)에 담긴다.
+   숨긴 열의 값은 지우지 않는다(다시 켜면 그대로). 직접 만든 열은 '비고' 앞에 붙는다 */
+var TBL_CFG={};
+const TBL_FIXED={plan:['ch'],spot:['date','ch'],ooh:['media','slot']};
+function tblCfg(key){
+  const c=TBL_CFG[key]||(TBL_CFG[key]={});
+  if(!Array.isArray(c.hide))c.hide=[];
+  if(!c.label||typeof c.label!=='object')c.label={};
+  if(!Array.isArray(c.extra))c.extra=[];
+  return c;}
+function tblColsAll(key){
+  const T=TV_TBL[key],c=tblCfg(key);
+  const base=T.base.map(x=>({...x,l:String(c.label[x.k]||'').trim()||x.l,base:x.l}));
+  const ex=c.extra.map(x=>({k:x.k,l:String(c.label[x.k]||x.l||'').trim()||'새 열',base:x.l||'새 열',
+    type:x.type==='num'?'num':'text',w:x.type==='num'?110:150,extra:true}));
+  const ni=base.findIndex(x=>x.k==='note');
+  return ni<0?base.concat(ex):base.slice(0,ni).concat(ex,base.slice(ni));}
+function tblCols(key){
+  const c=tblCfg(key),fx=TBL_FIXED[key]||[];
+  return tblColsAll(key).filter(x=>fx.includes(x.k)||!c.hide.includes(x.k));}
+function tblChanged(key){const T=TV_TBL[key];(T&&T.changed?T.changed:tvChanged)();}
+function tblCfgForDoc(){
+  const o={};Object.keys(TBL_CFG||{}).forEach(k=>{const c=tblCfg(k);
+    if(c.hide.length||Object.keys(c.label).length||c.extra.length)o[k]=JSON.parse(JSON.stringify(c));});
+  return o;}
+function tblCfgFromDoc(d){
+  TBL_CFG={};const t=d&&d.tblCols;
+  if(t&&typeof t==='object')Object.keys(t).forEach(k=>{if(t[k]&&typeof t[k]==='object')TBL_CFG[k]=JSON.parse(JSON.stringify(t[k]));});}
 /* 칸에 보여 줄 값 */
 function tvCellShow(c,r,cv){
   if(c.type==='calc'){
@@ -406,10 +452,12 @@ function tvCalcCells(key,tr,r){
     const c=T.cols.find(x=>x.k===td.dataset.calc);if(c)td.textContent=tvCellShow(c,r,cv);});}
 function tvFootHTML(key){
   const T=TV_TBL[key],rows=T.rows();
-  const tot=key==='plan'?tvPlanTotal(rows):tvSpotTotal(rows);
+  const tot=T.total(rows);
   return '<tr class="total"><td class="rm"></td>'+T.cols.map((c,i)=>{
     let v='';
     if(i===0)v='TOTAL';
+    else if(c.extra){if(c.type==='num'){const n=sum(rows.map(r=>tvNum(r[c.k])));v=n?fmt(n):'';}}
+    else if(T.foot)v=T.foot(c,tot)||'';
     else if(c.k==='cnt')v=fmt(tot.cnt);
     else if(c.k==='amt')v=fmt(Math.round(tot.amt));
     else if(c.k==='cost')v=fmt(Math.round(tot.cost));
@@ -435,17 +483,17 @@ function renderTvTable(key){
   t.innerHTML=h;
   const n=$(T.note);if(n)n.textContent=rows.length?`${fmt(rows.length)}행`:'';
   tvWire(key);
-  enableRowMove(t,()=>({why:()=>'',apply:(from,to)=>{moveItem(T.rows(),from,to);renderTvTable(key);tvChanged();}}));
+  enableRowMove(t,()=>({why:()=>'',apply:(from,to)=>{moveItem(T.rows(),from,to);renderTvTable(key);tblChanged(key);}}));
   /* 머리글 — 설명 + 정렬 (v72). 입력 표라 정렬하면 **행 순서가 실제로** 그 순서로 바뀐다 */
   const ths=[...t.tHead.rows[0].cells].slice(1);
-  wireHeadPops(T.cols.map((c,i)=>({th:ths[i],k:c.k,label:c.l})),{scope:'tv',
+  wireHeadPops(T.cols.map((c,i)=>({th:ths[i],k:c.k,label:c.l})),{scope:T.scope||'tv',
     onSort:(k,d)=>{if(!d)return;const c=T.cols.find(x=>x.k===k);
       const val=r=>{if(c.type==='calc')return T.calc(r)[k];const v=r[k];
         if(c.type==='num'||c.type==='pct')return v===''||v==null?NaN:tvNum(v);return String(v==null?'':v);};
       const arr=T.rows().slice().sort((a,b)=>{const x=val(a),y=val(b);
         if(typeof x==='string'&&x===''&&y!=='')return 1;if(typeof y==='string'&&y===''&&x!=='')return -1;
         return hpCmp(x,y,d);});
-      T.set(arr);renderTvTable(key);tvChanged();}});
+      T.set(arr);renderTvTable(key);tblChanged(key);}});
 }
 /* 값이 바뀌었을 때 — 대시보드 · 저장 */
 function tvChanged(){
@@ -469,7 +517,7 @@ function tvWire(key){
     inp.value=tvCellShow(c,r,T.calc(r));
     tvCalcCells(key,inp.closest('tr'),r);
     const tf=t.tFoot;if(tf)tf.innerHTML=tvFootHTML(key);
-    tvChanged();});
+    tblChanged(key);});
   /* Enter = 아래 칸으로 (엑셀처럼) */
   t.addEventListener('keydown',e=>{
     const inp=e.target.closest('input[data-k]');if(!inp||e.key!=='Enter')return;
@@ -479,7 +527,7 @@ function tvWire(key){
     inp.blur();if(nx){nx.focus();nx.select();}});
   t.addEventListener('click',e=>{
     const d=e.target.closest('[data-tvdel]');if(!d)return;
-    T.rows().splice(+d.dataset.tvdel,1);renderTvTable(key);tvChanged();});
+    T.rows().splice(+d.dataset.tvdel,1);renderTvTable(key);tblChanged(key);});
   /* 엑셀에서 여러 칸을 복사해 붙이면 그 칸부터 펼친다 (모자라는 행은 새로 만든다) */
   t.addEventListener('paste',e=>{
     const inp=e.target.closest('input[data-k]');if(!inp)return;
@@ -497,17 +545,17 @@ function tvWire(key){
         v=String(v).trim();
         r[c.k]=c.type==='num'?(v===''?'':tvNum(v)):c.type==='pct'?(v===''?'':tvR(tvNum(v),3))
           :c.type==='date'?tvDate(v):v;});});
-    renderTvTable(key);tvChanged();});
+    renderTvTable(key);tblChanged(key);});
 }
 function tvAddRow(key){
   const T=TV_TBL[key];T.rows().push(T.blank());renderTvTable(key);
   const t=$(T.id),last=t&&t.querySelector(`tbody tr[data-rd="${T.rows().length-1}"] input`);
   if(last){last.focus();last.scrollIntoView({block:'nearest'});}
-  tvChanged();}
+  tblChanged(key);}
 function tvWipe(key){
   const T=TV_TBL[key],n=T.rows().length;if(!n)return;
-  confirmModal(`${key==='plan'?'TV 예상효율':'TV 리포트 데이터'}을 모두 지울까요?`,`${fmt(n)}행이 모두 사라집니다.`,
-    ()=>{T.set([]);renderTvTable(key);tvChanged();},'모두 지우기');}
+  confirmModal(`${T.name||'표'} 데이터를 모두 지울까요?`,`${fmt(n)}행이 모두 사라집니다.`,
+    ()=>{T.set([]);renderTvTable(key);tblChanged(key);},'모두 지우기');}
 /* 엑셀 불러오기 — 첫 시트에서 머리글 줄을 찾아 이름으로 열을 맞춘다 (행을 이어 붙인다) */
 const TV_HDR={
   date:['방송일','일자','날짜','방송일자','date'],time:['방송시간','시간','시작','시작시간','time'],
@@ -522,13 +570,13 @@ const tvKey=s=>String(s==null?'':s).replace(/\s+/g,'').toLowerCase();
 function tvFindHeader(grid,want){
   for(let i=0;i<Math.min(grid.length,30);i++){
     const row=grid[i]||[],m={};
-    want.forEach(c=>{const names=(TV_HDR[c.k]||[c.l]).concat([c.l]).map(tvKey);
+    want.forEach(c=>{const names=(c.extra?[]:(TV_HDR[c.k]||[])).concat([c.l,c.base||c.l]).map(tvKey);
       const j=row.findIndex(v=>names.includes(tvKey(v)));if(j>=0&&!Object.values(m).includes(j))m[c.k]=j;});
     if(Object.keys(m).length>=2)return {hi:i,map:m};}
   return null;}
 /* 같은 행인지 가르는 열쇠 — 직접 입력하는 칸 전부(계산 열 제외)를 정리한 값으로 비교한다 */
 function tvRowKey(key,r){
-  return TV_TBL[key].cols.filter(c=>c.type!=='calc').map(c=>{
+  return tblColsAll(key).filter(c=>c.type!=='calc').map(c=>{
     const v=r[c.k];
     if(v===''||v==null)return '';
     if(c.type==='num')return String(tvNum(v));
@@ -536,16 +584,19 @@ function tvRowKey(key,r){
     if(c.type==='date')return tvDate(v);
     return String(v).trim();}).join('\u0001');}
 function tvImport(key,file){
-  const T=TV_TBL[key],want=T.cols.filter(c=>c.type!=='calc');
+  /* 숨긴 열 · 직접 만든 열까지 머리글로 맞춘다 (v81) */
+  const T=TV_TBL[key],want=tblColsAll(key).filter(c=>c.type!=='calc');
   /* 시트가 여러 장이면 머리글이 맞는 첫 시트를 읽는다 */
   const run=f=>readGrid(f,g=>!!tvFindHeader(g,want)).then(grid=>{
     const h=tvFindHeader(grid,want);
     if(!h){confirmModal('머리글을 찾지 못했습니다.',
       `첫 시트에서 ${want.map(c=>c.l).join(' · ')} 같은 머리글 줄을 찾지 못했습니다.`,()=>{},'확인');return;}
     const {hi,map}=h,pct=grid.__pct||new Set();
-    const out=[];
+    const out=[];let tot=0;
     grid.slice(hi+1).forEach((row,di)=>{
       if(!row||!row.some(v=>String(v==null?'':v).trim()!==''))return;
+      /* 합계 · 소계 줄은 행이 아니다 (v81 — OOH 계획표처럼 맨 아래 합계가 있으면 광고비가 두 배가 됐다) */
+      if(typeof isTotalRow==='function'&&isTotalRow(row)){tot++;return;}
       const r=T.blank();
       want.forEach(c=>{if(map[c.k]==null)return;let v=row[map[c.k]];
         /* 엑셀에서 % 서식인 시청률 칸은 0.052 로 들어온다 — 직접 적은 5.2 와 같은 %p 로 맞춘다 (v78) */
@@ -562,9 +613,10 @@ function tvImport(key,file){
     const add=out.filter(r=>{const k=tvRowKey(key,r),n=have.get(k)||0;
       if(n>0){have.set(k,n-1);dup++;return false;}
       return true;});
-    if(add.length){T.rows().push(...add);renderTvTable(key);tvChanged();}
+    if(add.length){T.rows().push(...add);renderTvTable(key);tblChanged(key);}
     const notes=[`맞춘 열: ${want.filter(c=>map[c.k]!=null).map(c=>c.l).join(' · ')}`];
     if(dup)notes.push(`중복 ${fmt(dup)}행은 건너뛰었습니다. 표에 이미 있는 행과 모든 칸이 같습니다.`);
+    if(tot)notes.push(`합계 · 소계 줄 ${fmt(tot)}개는 건너뛰었습니다.`);
     confirmModal(add.length?`${fmt(add.length)}행을 불러왔습니다.`:'새로 불러올 행이 없습니다.',
       notes.concat(gridNotes(grid)).map(esc).join('<br>'),()=>{},'확인',true);
   }).catch(err=>confirmModal('파일을 읽지 못했습니다.',esc(String(err&&err.message||err)),()=>{},'확인'));
@@ -751,6 +803,8 @@ function tvFromDoc(d){
     on('tvPlanAdd2',()=>tvAddRow('plan'));on('tvSpotAdd2',()=>tvAddRow('spot'));
     on('tvPlanWipe',()=>tvWipe('plan'));on('tvSpotWipe',()=>tvWipe('spot'));
     on('tvPlanUp',()=>tvImport('plan'));on('tvSpotUp',()=>tvImport('spot'));
+    /* 열 설정 (v81) — 설정 › 열 설정의 TV 탭 */
+    on('tvPlanCols',()=>openColSettings('tv'));on('tvSpotCols',()=>openColSettings('tv'));
     renderTV();applyMediaTabs();};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();

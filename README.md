@@ -30,7 +30,12 @@ campaign-dashboard/
 │  ├─ 07-input.js              데이터 입력 시트
 │  ├─ 08-setup.js              캠페인 설정 · 예상 효율 · 미디어믹스
 │  ├─ 09-cloud.js              구글 로그인 · 클라우드 저장/불러오기
-│  └─ 10-xlsx.js               엑셀 템플릿 내려받기 · 불러오기
+│  ├─ 10-xlsx.js               엑셀 템플릿 내려받기 · 불러오기
+│  ├─ 11~13 …                  코멘트 · 리포트 엑셀 · 설정(열 설정 등) · 트렌드 리포트
+│  ├─ 14-tv.js                 메뉴 · TV 캠페인 · 입력 표 공용 틀(열 설정)
+│  ├─ 16-ooh.js                OOH 캠페인 — 지면 계획 · 소재 · 서머리 (v81)
+│  ├─ 17-overview.js           전체 캠페인 — 같은 광고주의 모든 캠페인 요약 (v81)
+│  └─ 15-i18n.js               영어 화면 (빌드 순서상 맨 끝)
 ├─ tools/build.py              src/ → index.html 빌드 스크립트
 ├─ supabase/schema.sql         DB 테이블 · 권한(RLS) · 트리거 전체
 └─ .github/workflows/pages.yml push 하면 자동 빌드 & 배포
@@ -81,6 +86,11 @@ python tools/build.py          # → index.html
 1. Supabase 좌측 **SQL Editor → New query**
 2. 이 저장소의 `supabase/schema.sql` 을 **전체 복사해서 붙여넣기**
 3. **Run** (초록색 성공 메시지가 나오면 끝)
+
+> 이미 운영 중인 DB 라면 전체를 다시 돌릴 필요 없이, 새로 생긴 조각만 실행하면 됩니다.
+> - `supabase/2026-09-30_trend_security.sql` — 트렌드 리포트 대외비 보안 (v78)
+> - `supabase/2026-10-01_overview.sql` — **전체 캠페인** 메뉴를 광고주(뷰어 코드) 화면에서도 보이게 하는 함수 (v81).
+>   실행하지 않아도 시행사(로그인) 화면에서는 그대로 동작합니다.
 
 무엇이 만들어지는지:
 

@@ -72,7 +72,8 @@ function todaySeoul(){try{
   if(/^\d{4}-\d{2}-\d{2}$/.test(p))return p;}catch(e){}
   const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 const TODAY_ISO=todaySeoul();
-const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Media Dashboard',today:TODAY_ISO};
+/* 샘플은 '전체 캠페인' 메뉴를 광고주 화면(VIEW-2026)에서도 보이게 둔다 (v81) — 실제 캠페인은 문서의 값을 쓴다 */
+const CAMPAIGN={name:'2026 하반기 브랜드 통합 캠페인',advertiser:'Media Dashboard',today:TODAY_ISO,menus:{overview:{viewer:true}}};
 const KPI_KEYS=['imp','click','view','eng','conv','lead','install'];
 const KPI_LABEL={imp:'노출',click:'클릭',view:'조회',eng:'참여',conv:'전환',lead:'양식제출',install:'설치'};
 const RATE_LABEL={ctr:'CTR',vtr:'VTR',cvr:'CVR',cpm:'CPM',cpc:'CPC',cpv:'CPV',cpa:'CPA',roas:'ROAS'};
@@ -691,11 +692,19 @@ const MENUS=[
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
-  {id:'trend',  area:'trend',  tab:'trend',              l:'트렌드 리포트',kind:'view'}];
+  /* OOH (v81) — 계획(광고비 · 매체 · 지면 · 지면 정보 · 날짜)과 소재만. 실적 입력 없음 */
+  {id:'o_sum',  area:'ooh',    tab:'oohdash',            l:'서머리',       kind:'view'},
+  {id:'o_plan', area:'ooh',    tab:'oohplan',            l:'예상효율 입력',kind:'edit'},
+  {id:'trend',  area:'trend',  tab:'trend',              l:'트렌드 리포트',kind:'view'},
+  /* 전체 캠페인 (v81) — 같은 광고주의 모든 캠페인 요약. 광고주(뷰어)에게는 기본으로 숨긴다(vdef:false) */
+  {id:'overview',area:'overview',tab:'overview',         l:'전체 캠페인',  kind:'view',vdef:false}];
 const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
-  tvdash:'tv',tvdaily:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',trend:'trend'};
-const AREA_LABEL={digital:'디지털',tv:'TV',trend:'트렌드 리포트'};
+  tvdash:'tv',tvdaily:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
+  oohdash:'ooh',oohplan:'ooh',trend:'trend',overview:'overview'};
+const AREA_LABEL={digital:'디지털',tv:'TV',ooh:'OOH',trend:'트렌드 리포트',overview:'전체 캠페인'};
+/* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */
+const MEDIA_AREAS=['digital','tv','ooh'];
 function campMenus(){return (typeof CAMPAIGN!=='undefined'&&CAMPAIGN.menus)||{};}
 let TV_LAST='tvdash';
 let DOC_RANGE=null;
