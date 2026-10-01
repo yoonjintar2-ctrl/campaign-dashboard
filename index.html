@@ -718,13 +718,13 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 #ovBars{overflow-x:auto}
 #ovBars.ovfloor{padding:0}
 .ovstage{position:relative;min-width:100%;width:max-content;box-sizing:border-box}
-/* 바닥 판 — 카드 가장자리에서 떨어진 둥근 판: 위는 옅게, 앞쪽은 진하게 + 앞 두께 · 아래 그림자 */
-.ovfl{position:absolute;left:14px;right:14px;border-radius:16px;pointer-events:none;
-  background:linear-gradient(180deg,rgb(var(--accrgb)/.045) 0%,rgb(var(--accrgb)/.14) 100%);
-  border:1px solid rgb(var(--accrgb)/.12);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -4px 0 rgb(var(--accrgb)/.13),0 10px 22px -12px rgba(20,30,45,.35)}
-[data-theme="dark"] .ovfl{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.085));border-color:rgba(255,255,255,.08);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 -4px 0 rgba(255,255,255,.05),0 10px 22px -12px rgba(0,0,0,.7)}
+/* 바닥 — 카드 좌우 · 아래 끝까지 꽉 차게 (v91). 회색 테마 바탕과 구분되게 옅은 갈색(웜 토프) 톤 + 위쪽 수평선 */
+.ovfl{position:absolute;left:0;right:0;pointer-events:none;
+  border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+  background:linear-gradient(180deg,rgba(158,128,98,.13) 0%,rgba(132,102,72,.27) 100%);
+  box-shadow:inset 0 1px 0 rgba(120,92,64,.30)}
+[data-theme="dark"] .ovfl{background:linear-gradient(180deg,rgba(200,168,136,.07),rgba(200,168,136,.16));
+  box-shadow:inset 0 1px 0 rgba(200,168,136,.22)}
 .ovcols{position:relative;margin:0 auto}
 .ovcols>*{position:absolute}
 .ocl{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;line-height:1.25;cursor:default;min-width:0}
@@ -18815,9 +18815,9 @@ function paintOvColumns(bx,rows,won0){
   OVCOL_LAST={rows,won0,w:bx.clientWidth};
   if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
   bx.classList.add('ovfloor');
-  /* v90 — 무대(.ovstage) 안에 이름 · 막대를 놓고, 바닥은 카드 가장자리에서 떨어진 둥근 판(.ovfl)으로 —
-     페이지 바탕(회색 테마)과 바닥 색이 비슷해도 카드 흰 테두리가 둘을 갈라 준다. 위쪽 여백을 넓혀 이름이 가운데 쪽에 오게 */
-  const SPX=18,PT=46,BI=14;
+  /* v91 — 무대(.ovstage) 안에 이름 · 막대를 놓고, 바닥(.ovfl)은 카드 좌우 · 아래 끝까지 꽉 차게.
+     회색 테마 바탕과 섞이지 않도록 바닥은 옅은 갈색(웜 토프) 톤. 위쪽 여백을 넓혀 이름이 가운데 쪽에 오게 */
+  const SPX=18,PT=46,BI=0;
   const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-SPX*2,300);
   /* v87 — 축 · 눈금 · 날짜 줄 없이: 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 입체 막대 → 카드 아래 25% 를 덮는 바닥 */
   const PX=16,n=rows.length;
@@ -18853,7 +18853,7 @@ function paintOvColumns(bx,rows,won0){
   bx.innerHTML=`<div class="ovstage" style="padding:${PT}px ${SPX}px ${BI}px">
       <i class="ovfl" style="height:${F}px;bottom:${BI}px"></i>
       <div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
-      <div class="ovleg onfloor" style="bottom:${BI+12}px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;
+      <div class="ovleg onfloor" style="bottom:12px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

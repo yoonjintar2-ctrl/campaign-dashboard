@@ -539,9 +539,9 @@ function paintOvColumns(bx,rows,won0){
   OVCOL_LAST={rows,won0,w:bx.clientWidth};
   if(!rows.length){bx.innerHTML=`<div class="hint" style="padding:14px;text-align:center">${L('캠페인이 없습니다.','No campaigns.')}</div>`;return;}
   bx.classList.add('ovfloor');
-  /* v90 — 무대(.ovstage) 안에 이름 · 막대를 놓고, 바닥은 카드 가장자리에서 떨어진 둥근 판(.ovfl)으로 —
-     페이지 바탕(회색 테마)과 바닥 색이 비슷해도 카드 흰 테두리가 둘을 갈라 준다. 위쪽 여백을 넓혀 이름이 가운데 쪽에 오게 */
-  const SPX=18,PT=46,BI=14;
+  /* v91 — 무대(.ovstage) 안에 이름 · 막대를 놓고, 바닥(.ovfl)은 카드 좌우 · 아래 끝까지 꽉 차게.
+     회색 테마 바탕과 섞이지 않도록 바닥은 옅은 갈색(웜 토프) 톤. 위쪽 여백을 넓혀 이름이 가운데 쪽에 오게 */
+  const SPX=18,PT=46,BI=0;
   const W=Math.max((bx.clientWidth||($('tab-overview')||{}).clientWidth||1000)-SPX*2,300);
   /* v87 — 축 · 눈금 · 날짜 줄 없이: 위쪽 이름 상자(이름 · 금액 · 기간) → 줄 → 입체 막대 → 카드 아래 25% 를 덮는 바닥 */
   const PX=16,n=rows.length;
@@ -577,7 +577,7 @@ function paintOvColumns(bx,rows,won0){
   bx.innerHTML=`<div class="ovstage" style="padding:${PT}px ${SPX}px ${BI}px">
       <i class="ovfl" style="height:${F}px;bottom:${BI}px"></i>
       <div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
-      <div class="ovleg onfloor" style="bottom:${BI+12}px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;
+      <div class="ovleg onfloor" style="bottom:12px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.k[0]}"></i>${x.l}</span>`).join('')}</div></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));
