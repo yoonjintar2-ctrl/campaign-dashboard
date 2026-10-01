@@ -2595,6 +2595,15 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
 /* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */
 table.tbl th span.hl{display:block;line-height:1.25}
+/* 유입 상세 표 — 서머리처럼 모서리를 둥글게 (v94) */
+#infTblWrap{border:1px solid var(--line);border-radius:10px}
+/* 꽉 채우는 표 — 머리글은 칸 폭 안에서 줄을 바꾼다 (열 폭을 같게 두기 위해) */
+table.tbl.thwrap thead th{white-space:normal;word-break:keep-all}
+/* 행 머리(가로 고정) 칸의 행 구분선 (v94) — 고정 칸은 따로 그려져서, 화면 배율이 125% 처럼 소수점이면
+   다음 행 칸이 윗칸의 아래 선을 덮어 선이 사라졌다(서머리 · 유입 상세 표).
+   각 칸 바로 위 1px 에 같은 색 그림자를 한 번 더 그린다 — 덮는 칸이 직접 그리므로 사라지지 않고,
+   덮이지 않은 곳에서는 원래 선과 같은 자리 · 같은 색이라 두꺼워지지 않는다 */
+table.tbl tbody tr:not(:first-child):not(.total) td.lfz{box-shadow:0 -1px 0 var(--cell)}
 </style>
 </head>
 <body class="booting">

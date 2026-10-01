@@ -2595,6 +2595,15 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
 /* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */
 table.tbl th span.hl{display:block;line-height:1.25}
+/* 유입 상세 표 — 서머리처럼 모서리를 둥글게 (v94) */
+#infTblWrap{border:1px solid var(--line);border-radius:10px}
+/* 꽉 채우는 표 — 머리글은 칸 폭 안에서 줄을 바꾼다 (열 폭을 같게 두기 위해) */
+table.tbl.thwrap thead th{white-space:normal;word-break:keep-all}
+/* 행 머리(가로 고정) 칸의 행 구분선 (v94) — 고정 칸은 따로 그려져서, 화면 배율이 125% 처럼 소수점이면
+   다음 행 칸이 윗칸의 아래 선을 덮어 선이 사라졌다(서머리 · 유입 상세 표).
+   각 칸 바로 위 1px 에 같은 색 그림자를 한 번 더 그린다 — 덮는 칸이 직접 그리므로 사라지지 않고,
+   덮이지 않은 곳에서는 원래 선과 같은 자리 · 같은 색이라 두꺼워지지 않는다 */
+table.tbl tbody tr:not(:first-child):not(.total) td.lfz{box-shadow:0 -1px 0 var(--cell)}
 </style>
 </head>
 <body class="booting">
@@ -2953,6 +2962,7 @@ table.tbl th span.hl{display:block;line-height:1.25}
       <button class="btn sm" id="colCfgBtn">⚙ 열 설정</button>
       <button class="btn sm" id="histBtn">🕘 입력 히스토리</button>
       <button class="btn sm" id="tplDaily">⤓ 엑셀 템플릿</button>
+      <button class="btn sm" id="dlDaily" title="지금 표에 들어 있는 값을 엑셀로 내려받습니다. 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 그 파일 내용으로 바뀝니다.">⤓ 입력값 내려받기</button>
       <button class="btn sm" id="upDaily">⤒ 엑셀 불러오기</button>
       <button class="btn sm danger" id="sheetWipe" title="입력한 일별 실적을 한 번에 모두 지웁니다">🗑 데이터 모두 삭제</button>
     </div>
@@ -4357,7 +4367,9 @@ function moveItem(arr,from,to){
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
-function applyColWidths(tbl,cfg,cols){
+/* fill = 표를 감싼 상자 폭을 꽉 채운다 (유입 상세 표, v94) — 값 열은 같은 폭이 기본이고
+   글자가 길어 잘릴 열만 그 글자에 맞춰 넓힌다 */
+function applyColWidths(tbl,cfg,cols,fill){
   if(!cols||!cols.length)return;
   const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
   const nCol=leadN+cols.length;
@@ -4379,6 +4391,11 @@ function applyColWidths(tbl,cfg,cols){
   gs.forEach(g=>{
     if(g.solo&&g.cols.length===1)valHs.push(soloThs[si++]);
     else g.cols.forEach(()=>valHs.push(row2[ri++]));});
+  const lenBody=len.slice();
+  /* 머리글의 가장 긴 낱말 — 꽉 채우기(fill)에서는 머리글을 여러 줄로 접을 수 있으므로 낱말 단위로만 잰다 */
+  const hWord=th=>Math.max(0,...String(th.textContent||'').trim().split(/\s+/).map(wOf));
+  const lenWord=len.map(()=>0);
+  valHs.forEach((th,i)=>{if(th&&lenWord[i]!==undefined)lenWord[i]=hWord(th)+.6;});
   /* 두 줄 머리글(.hl)은 긴 줄 하나만 잰다 */
   const thW=th=>{const hl=[...th.querySelectorAll('.hl')];
     return hl.length?Math.max(...hl.map(x=>wOf(x.textContent.trim()))):wOf(th.textContent.trim());};
@@ -4418,6 +4435,32 @@ function applyColWidths(tbl,cfg,cols){
     const heads=tbl.tHead&&tbl.tHead.rows[0]?[...tbl.tHead.rows[0].cells].slice(0,leadN):[];
     heads.forEach((th,i)=>{leadW[i]=Math.max(leadW[i]||0,wOf((th.textContent||'').trim())+.6);});}
   const leadPx=leadW.map(l=>Math.max(78,Math.min(Math.round(l*CH+28),280)));
+  let fits=false;
+  if(fill){
+    const wrap=tbl.parentNode;
+    const leadSum=leadPx.reduce((s2,v,i)=>s2+(savedColW(cfg,'_row'+i)||v),0);
+    const avail=(wrap&&wrap.clientWidth||0)-leadSum-2;
+    if(avail>0){
+      /* 값 · 머리글 낱말 중 긴 쪽 — 머리글은 칸 안에서 줄을 바꿔 접는다(.thwrap) */
+      const need=cols.map((k,i)=>savedColW(cfg,k)||Math.round(Math.max(lenBody[i],lenWord[i])*CH+PAD));
+      const free=cols.map(k=>!savedColW(cfg,k));
+      /* 같은 묶음(IWV 4종 · 체류 구간)은 그중 가장 긴 글자에 맞춰 함께 넓힌다 */
+      EQ_W_SETS.forEach(set=>{const idx=cols.map((k,i)=>set.includes(k)&&free[i]?i:-1).filter(i=>i>=0);
+        if(idx.length<2)return;const mx=Math.max(...idx.map(i=>need[i]));idx.forEach(i=>{need[i]=mx;});});
+      /* 같은 폭 b — 그보다 글자가 긴 열은 제 폭을 갖고, 나머지가 남은 폭을 똑같이 나눈다 */
+      let room=avail-need.reduce((s2,n,i)=>s2+(free[i]?0:n),0);
+      let on=free.map(Boolean),b=0;
+      for(let it=0;it<cols.length+1;it++){
+        const n=on.filter(Boolean).length;if(!n)break;
+        b=room/n;
+        const over=on.map((x,i)=>x&&need[i]>b);
+        if(!over.some(Boolean))break;
+        over.forEach((x,i)=>{if(x){on[i]=false;room-=need[i];}});}
+      b=Math.floor(b);
+      cols.forEach((k,i)=>{finalW[i]=free[i]?Math.max(b,need[i]):need[i];});
+      fits=finalW.reduce((s2,v)=>s2+v,0)<=avail+1;}}
+  tbl.style.width=fits?'100%':'';
+  tbl.classList.toggle('thwrap',!!fill);
   let cg=tbl.querySelector('colgroup');
   if(cg)cg.remove();
   cg=document.createElement('colgroup');
@@ -6538,7 +6581,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
   h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
     +cells(aggFacts(facts),aggExp(opt&&opt.lines?activeLines().filter(l=>LNS.includes(l)):activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
-  applyColWidths(tbl,cfg,cols);
+  applyColWidths(tbl,cfg,cols,!!(opt&&opt.fill));
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);
@@ -13269,8 +13312,8 @@ function buildXlsx(sheetName,rows,widths){
       ? `<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>`
       +`<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>`:'';
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="0">${freeze}</sheetView></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;});
-  /* 0 기본 · 1 제목 · 2 안내 · 3 머리글 · 4 예시 · 5 소제목 · 6 입력칸(테두리만) */
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="${sh.grid?1:0}">${freeze}</sheetView></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;});
+  /* 0 기본 · 1 제목 · 2 안내 · 3 머리글 · 4 예시 · 5 소제목 · 6 입력칸(테두리만) · 7 숫자(#,##0) · 8 숫자(#,##0.00) */
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <fonts count="6">
@@ -13287,7 +13330,7 @@ function buildXlsx(sheetName,rows,widths){
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8DEE6"/></left><right style="thin"><color rgb="FFD8DEE6"/></right><top style="thin"><color rgb="FFD8DEE6"/></top><bottom style="thin"><color rgb="FFD8DEE6"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="7">
+<cellXfs count="9">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
@@ -13295,6 +13338,8 @@ function buildXlsx(sheetName,rows,widths){
 <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
 </cellXfs></styleSheet>`;
   const files=[
     {name:'[Content_Types].xml',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -13410,6 +13455,31 @@ function downloadLineTemplate(){
       {name:'예상 효율',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
       {name:'작성 요령',rows:tplGuideRows('Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE),widths:[120]}]),
     `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
+}
+
+/* ---------- 입력값 내려받기 (v94) ----------
+   지금 '일자별 실적 입력' 표에 들어 있는 값을 그대로 엑셀로 — 컴퓨터에서 고친 뒤 [엑셀 불러오기]로 올리면
+   표 전체가 그 파일로 바뀐다(불러오기는 표를 통째로 갈아 끼운다).
+   · 열 = 지금 켜 둔 입력 열 + 꺼 두었어도 값이 들어 있는 열 (다시 올릴 때 값이 빠지지 않게)
+   · 머리글은 템플릿과 같은 이름이라 그대로 다시 알아본다 · 행 순서도 표 그대로 */
+function downloadDailyData(){
+  const rows=(typeof SHEET!=='undefined'?SHEET:[])||[];
+  if(!rows.length){confirmModal('내려받을 값이 없습니다.','일자별 실적 표가 비어 있습니다. 템플릿을 내려받아 채운 뒤 불러와 주세요.',()=>{},'확인');return;}
+  const has=k=>rows.some(r=>r[k]!==''&&r[k]!=null);
+  const cols=SHEET_COLS.filter(c=>c.type!=='calc'&&(c.on!==false||has(c.k))).map(c=>tplCol(c,TPL_HINT_DAILY));
+  const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
+  const R=[cols.map(c=>({v:c.l,s:3}))];
+  rows.forEach(r=>{R.push(cols.map(c=>{
+    const v=r[c.k];
+    if(v===''||v==null)return null;
+    /* 숫자 열의 숫자는 숫자 칸으로(소수가 있으면 소수 둘째 자리까지 보이게) — 값 자체는 그대로 담는다 */
+    if(numK.has(c.k)&&typeof v==='number'&&isFinite(v))return {v,n:true,s:Number.isInteger(v)?7:8};
+    if(numK.has(c.k)&&typeof v==='string'&&/^-?\d+(\.\d+)?$/.test(v.trim())){const n=+v;return {v:n,n:true,s:Number.isInteger(n)?7:8};}
+    return {v:String(v)};}));});
+  const d=new Date(),ymd=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  saveFile(buildXlsx([{name:'일자별 실적',rows:R,widths:cols.map(c=>c.w),freeze:true,grid:true}]),
+    `일자별_실적_입력값_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}_${ymd}.xlsx`,TPL_MIME);
+  const e=$('saveState');if(e)e.textContent=`입력값 ${rows.length.toLocaleString()}행을 엑셀로 내려받았습니다 · 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 바뀝니다`;
 }
 
 /* ---------- 불러오기 ---------- */
@@ -14062,6 +14132,7 @@ function importLines(f){
   on('tplDaily',downloadDailyTemplate);
   on('upDaily',()=>importDaily());
   on('tplLine',downloadLineTemplate);
+  on('dlDaily',downloadDailyData);
   on('upLine',()=>importLines());
   on('crManageBtn',openCrManage);
 })();
@@ -19482,7 +19553,7 @@ function infTable(){
     const want=INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media;
     if(cfg.rows.map(r=>r.k).join('|')!==want.map(r=>r.k).join('|')){cfg.rows=want.map(r=>({...r}));cfg.order=null;}}
   const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
-    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id))});
+    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id)),fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
 }
@@ -19632,6 +19703,14 @@ Object.assign(I18N_EN,{
 Object.assign(I18N_EN,{
   "랜딩별 IWV":"IWV by landing page","유입 상세":"Inflow details","클릭 · 유입":"Clicks · Inflow",
   "\"KPI 개선 고려\" · \"제안 대비 저조\" 붉은 표시를 함께 끄거나 켭니다.":"Turns the red \"KPI needs attention\" and \"Under proposal\" highlights off or on together."
+});
+/* v94 — 입력값 내려받기 */
+Object.assign(I18N_EN,{
+  "⤓ 입력값 내려받기":"⤓ Download entered data",
+  "지금 표에 들어 있는 값을 엑셀로 내려받습니다. 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 그 파일 내용으로 바뀝니다.":"Downloads the values in this table to Excel. After editing, re-upload with [Import Excel] to replace the whole table with the file.",
+  "내려받을 값이 없습니다.":"Nothing to download.",
+  "일자별 실적 표가 비어 있습니다. 템플릿을 내려받아 채운 뒤 불러와 주세요.":"The daily results table is empty. Download the template, fill it in and import it.",
+  "입력값 {}행을 엑셀로 내려받았습니다 · 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 바뀝니다":"Downloaded {} rows to Excel · edit and re-upload with [Import Excel] to replace the whole table"
 });
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고

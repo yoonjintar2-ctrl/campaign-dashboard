@@ -693,7 +693,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
   h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
     +cells(aggFacts(facts),aggExp(opt&&opt.lines?activeLines().filter(l=>LNS.includes(l)):activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
-  applyColWidths(tbl,cfg,cols);
+  applyColWidths(tbl,cfg,cols,!!(opt&&opt.fill));
   markBlanks(tbl);
   wireGroupRename(tbl,cfg,rerender);
   if(rerender)enableRowDrag(tbl,cfg,rerender);

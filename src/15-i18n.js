@@ -139,6 +139,14 @@ Object.assign(I18N_EN,{
   "랜딩별 IWV":"IWV by landing page","유입 상세":"Inflow details","클릭 · 유입":"Clicks · Inflow",
   "\"KPI 개선 고려\" · \"제안 대비 저조\" 붉은 표시를 함께 끄거나 켭니다.":"Turns the red \"KPI needs attention\" and \"Under proposal\" highlights off or on together."
 });
+/* v94 — 입력값 내려받기 */
+Object.assign(I18N_EN,{
+  "⤓ 입력값 내려받기":"⤓ Download entered data",
+  "지금 표에 들어 있는 값을 엑셀로 내려받습니다. 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 그 파일 내용으로 바뀝니다.":"Downloads the values in this table to Excel. After editing, re-upload with [Import Excel] to replace the whole table with the file.",
+  "내려받을 값이 없습니다.":"Nothing to download.",
+  "일자별 실적 표가 비어 있습니다. 템플릿을 내려받아 채운 뒤 불러와 주세요.":"The daily results table is empty. Download the template, fill it in and import it.",
+  "입력값 {}행을 엑셀로 내려받았습니다 · 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 바뀝니다":"Downloaded {} rows to Excel · edit and re-upload with [Import Excel] to replace the whole table"
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

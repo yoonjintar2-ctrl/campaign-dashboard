@@ -323,7 +323,9 @@ function moveItem(arr,from,to){
 /* 값 열 너비 규칙 —
    자릿수가 큰 열(노출·조회·광고비 등)은 내용에 비례해서 넓게,
    그 외 짧은 열들은 모두 같은 너비로 맞춰 표가 고르게 보이도록 한다. */
-function applyColWidths(tbl,cfg,cols){
+/* fill = 표를 감싼 상자 폭을 꽉 채운다 (유입 상세 표, v94) — 값 열은 같은 폭이 기본이고
+   글자가 길어 잘릴 열만 그 글자에 맞춰 넓힌다 */
+function applyColWidths(tbl,cfg,cols,fill){
   if(!cols||!cols.length)return;
   const leadN=(cfg.rows&&cfg.rows.length?cfg.rows.length:1);
   const nCol=leadN+cols.length;
@@ -345,6 +347,11 @@ function applyColWidths(tbl,cfg,cols){
   gs.forEach(g=>{
     if(g.solo&&g.cols.length===1)valHs.push(soloThs[si++]);
     else g.cols.forEach(()=>valHs.push(row2[ri++]));});
+  const lenBody=len.slice();
+  /* 머리글의 가장 긴 낱말 — 꽉 채우기(fill)에서는 머리글을 여러 줄로 접을 수 있으므로 낱말 단위로만 잰다 */
+  const hWord=th=>Math.max(0,...String(th.textContent||'').trim().split(/\s+/).map(wOf));
+  const lenWord=len.map(()=>0);
+  valHs.forEach((th,i)=>{if(th&&lenWord[i]!==undefined)lenWord[i]=hWord(th)+.6;});
   /* 두 줄 머리글(.hl)은 긴 줄 하나만 잰다 */
   const thW=th=>{const hl=[...th.querySelectorAll('.hl')];
     return hl.length?Math.max(...hl.map(x=>wOf(x.textContent.trim()))):wOf(th.textContent.trim());};
@@ -384,6 +391,32 @@ function applyColWidths(tbl,cfg,cols){
     const heads=tbl.tHead&&tbl.tHead.rows[0]?[...tbl.tHead.rows[0].cells].slice(0,leadN):[];
     heads.forEach((th,i)=>{leadW[i]=Math.max(leadW[i]||0,wOf((th.textContent||'').trim())+.6);});}
   const leadPx=leadW.map(l=>Math.max(78,Math.min(Math.round(l*CH+28),280)));
+  let fits=false;
+  if(fill){
+    const wrap=tbl.parentNode;
+    const leadSum=leadPx.reduce((s2,v,i)=>s2+(savedColW(cfg,'_row'+i)||v),0);
+    const avail=(wrap&&wrap.clientWidth||0)-leadSum-2;
+    if(avail>0){
+      /* 값 · 머리글 낱말 중 긴 쪽 — 머리글은 칸 안에서 줄을 바꿔 접는다(.thwrap) */
+      const need=cols.map((k,i)=>savedColW(cfg,k)||Math.round(Math.max(lenBody[i],lenWord[i])*CH+PAD));
+      const free=cols.map(k=>!savedColW(cfg,k));
+      /* 같은 묶음(IWV 4종 · 체류 구간)은 그중 가장 긴 글자에 맞춰 함께 넓힌다 */
+      EQ_W_SETS.forEach(set=>{const idx=cols.map((k,i)=>set.includes(k)&&free[i]?i:-1).filter(i=>i>=0);
+        if(idx.length<2)return;const mx=Math.max(...idx.map(i=>need[i]));idx.forEach(i=>{need[i]=mx;});});
+      /* 같은 폭 b — 그보다 글자가 긴 열은 제 폭을 갖고, 나머지가 남은 폭을 똑같이 나눈다 */
+      let room=avail-need.reduce((s2,n,i)=>s2+(free[i]?0:n),0);
+      let on=free.map(Boolean),b=0;
+      for(let it=0;it<cols.length+1;it++){
+        const n=on.filter(Boolean).length;if(!n)break;
+        b=room/n;
+        const over=on.map((x,i)=>x&&need[i]>b);
+        if(!over.some(Boolean))break;
+        over.forEach((x,i)=>{if(x){on[i]=false;room-=need[i];}});}
+      b=Math.floor(b);
+      cols.forEach((k,i)=>{finalW[i]=free[i]?Math.max(b,need[i]):need[i];});
+      fits=finalW.reduce((s2,v)=>s2+v,0)<=avail+1;}}
+  tbl.style.width=fits?'100%':'';
+  tbl.classList.toggle('thwrap',!!fill);
   let cg=tbl.querySelector('colgroup');
   if(cg)cg.remove();
   cg=document.createElement('colgroup');

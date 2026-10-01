@@ -299,7 +299,7 @@ function infTable(){
     const want=INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media;
     if(cfg.rows.map(r=>r.k).join('|')!==want.map(r=>r.k).join('|')){cfg.rows=want.map(r=>({...r}));cfg.order=null;}}
   const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
-    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id))});
+    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id)),fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
 }

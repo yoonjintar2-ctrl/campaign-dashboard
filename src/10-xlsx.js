@@ -67,8 +67,8 @@ function buildXlsx(sheetName,rows,widths){
       ? `<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>`
       +`<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>`:'';
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="0">${freeze}</sheetView></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;});
-  /* 0 기본 · 1 제목 · 2 안내 · 3 머리글 · 4 예시 · 5 소제목 · 6 입력칸(테두리만) */
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="${sh.grid?1:0}">${freeze}</sheetView></sheetViews>${cols}<sheetData>${sheetRows}</sheetData></worksheet>`;});
+  /* 0 기본 · 1 제목 · 2 안내 · 3 머리글 · 4 예시 · 5 소제목 · 6 입력칸(테두리만) · 7 숫자(#,##0) · 8 숫자(#,##0.00) */
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <fonts count="6">
@@ -85,7 +85,7 @@ function buildXlsx(sheetName,rows,widths){
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD8DEE6"/></left><right style="thin"><color rgb="FFD8DEE6"/></right><top style="thin"><color rgb="FFD8DEE6"/></top><bottom style="thin"><color rgb="FFD8DEE6"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="7">
+<cellXfs count="9">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
@@ -93,6 +93,8 @@ function buildXlsx(sheetName,rows,widths){
 <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
 </cellXfs></styleSheet>`;
   const files=[
     {name:'[Content_Types].xml',data:enc(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -208,6 +210,31 @@ function downloadLineTemplate(){
       {name:'예상 효율',rows:tplRows(cols),widths:cols.map(c=>c.w),freeze:true},
       {name:'작성 요령',rows:tplGuideRows('Media Dashboard — 예상 효율(미디어믹스) 입력 템플릿',TPL_LINE_GUIDE),widths:[120]}]),
     `예상효율_템플릿_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}.xlsx`,TPL_MIME);
+}
+
+/* ---------- 입력값 내려받기 (v94) ----------
+   지금 '일자별 실적 입력' 표에 들어 있는 값을 그대로 엑셀로 — 컴퓨터에서 고친 뒤 [엑셀 불러오기]로 올리면
+   표 전체가 그 파일로 바뀐다(불러오기는 표를 통째로 갈아 끼운다).
+   · 열 = 지금 켜 둔 입력 열 + 꺼 두었어도 값이 들어 있는 열 (다시 올릴 때 값이 빠지지 않게)
+   · 머리글은 템플릿과 같은 이름이라 그대로 다시 알아본다 · 행 순서도 표 그대로 */
+function downloadDailyData(){
+  const rows=(typeof SHEET!=='undefined'?SHEET:[])||[];
+  if(!rows.length){confirmModal('내려받을 값이 없습니다.','일자별 실적 표가 비어 있습니다. 템플릿을 내려받아 채운 뒤 불러와 주세요.',()=>{},'확인');return;}
+  const has=k=>rows.some(r=>r[k]!==''&&r[k]!=null);
+  const cols=SHEET_COLS.filter(c=>c.type!=='calc'&&(c.on!==false||has(c.k))).map(c=>tplCol(c,TPL_HINT_DAILY));
+  const numK=new Set(SHEET_COLS.filter(c=>c.type==='num').map(c=>c.k));
+  const R=[cols.map(c=>({v:c.l,s:3}))];
+  rows.forEach(r=>{R.push(cols.map(c=>{
+    const v=r[c.k];
+    if(v===''||v==null)return null;
+    /* 숫자 열의 숫자는 숫자 칸으로(소수가 있으면 소수 둘째 자리까지 보이게) — 값 자체는 그대로 담는다 */
+    if(numK.has(c.k)&&typeof v==='number'&&isFinite(v))return {v,n:true,s:Number.isInteger(v)?7:8};
+    if(numK.has(c.k)&&typeof v==='string'&&/^-?\d+(\.\d+)?$/.test(v.trim())){const n=+v;return {v:n,n:true,s:Number.isInteger(n)?7:8};}
+    return {v:String(v)};}));});
+  const d=new Date(),ymd=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  saveFile(buildXlsx([{name:'일자별 실적',rows:R,widths:cols.map(c=>c.w),freeze:true,grid:true}]),
+    `일자별_실적_입력값_${CAMPAIGN.name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')}_${ymd}.xlsx`,TPL_MIME);
+  const e=$('saveState');if(e)e.textContent=`입력값 ${rows.length.toLocaleString()}행을 엑셀로 내려받았습니다 · 고친 뒤 [엑셀 불러오기]로 올리면 표 전체가 바뀝니다`;
 }
 
 /* ---------- 불러오기 ---------- */
@@ -860,6 +887,7 @@ function importLines(f){
   on('tplDaily',downloadDailyTemplate);
   on('upDaily',()=>importDaily());
   on('tplLine',downloadLineTemplate);
+  on('dlDaily',downloadDailyData);
   on('upLine',()=>importLines());
   on('crManageBtn',openCrManage);
 })();
