@@ -570,11 +570,13 @@ function rowKpi(ls,cols){
   return {...d,kpi:k};}
 const gauge=v=>!isFinite(v)?'<span class="na">–</span>'
   :`<span class="gauge"><b class="mono">${pct(v)}</b><span class="track"><i style="width:${Math.min(v,1)*100}%"></i></span></span>`;
-function buildPivot(tbl,cfg,cdef,cellDef,rerender){
+/* opt = {facts, lines} — 표에 쓸 팩트 · 라인을 따로 줄 때 (유입 분석 상세 표: 추적되는 라인만, v93) */
+function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
   const rows=cfg.rows.length?cfg.rows:[{k:'media',sub:false}];
   const dims=rows.map(r=>r.k),noExp=dims.some(d=>NO_EXP_DIMS.includes(d));
   const cols=cfgCols(cfg),seps=gsepSet(cfg);
-  const facts=factFilter();
+  const facts=opt&&opt.facts?opt.facts:factFilter();
+  const LNS=opt&&opt.lines?opt.lines:LINES;
   const map=new Map();
   facts.forEach(f=>{const key=dims.map(d=>f[d]).join(SEP);
     if(!map.has(key))map.set(key,[]);map.get(key).push(f);});
@@ -582,7 +584,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
      지면을 안 적은 라인(slot 없음)도 '' 로 맞춰야 예산 · 목표 · 달성률이 붙는다 (v78) */
   const lv=(l,d)=>l[d]==null?'':l[d];
   /* 기본 정렬 — 예산(Gross)이 큰 순서. 같으면 이름순. (사용자가 끌어서 바꾼 순서가 있으면 그게 우선) */
-  const budgetOf=vals=>sum(LINES.filter(l=>vals.every((v,i)=>
+  const budgetOf=vals=>sum(LNS.filter(l=>vals.every((v,i)=>
       NO_EXP_DIMS.includes(dims[i])||lv(l,dims[i])===v)).map(lineGross));
   let entries=[...map.entries()].sort((a,b)=>{
     const av=a[0].split(SEP),bv=b[0].split(SEP);
@@ -599,7 +601,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
   const expIdx=dims.map((d,i)=>NO_EXP_DIMS.includes(d)?-1:i).filter(i=>i>=0);
   const finer=expIdx.length<dims.length;                 /* 라인보다 잘게 나뉘었는가 */
   const expKey=vals=>expIdx.map(i=>vals[i]).join(SEP);
-  const expFor=vals=>aggExp(LINES.filter(l=>expIdx.every(i=>i>=vals.length||lv(l,dims[i])===vals[i])));
+  const expFor=vals=>aggExp(LNS.filter(l=>expIdx.every(i=>i>=vals.length||lv(l,dims[i])===vals[i])));
   /* 머리글 정렬 (v72) — 화면에서만. 같은 부모 안에서 그 열 값으로 형제끼리 줄 세운다 */
   const hpKey='piv:'+(cfg.id||'mix');
   const srt=HP_SORT[hpKey];
@@ -628,7 +630,8 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       const act=src[kpi.b]?src.cost/src[kpi.b]*kpi.m:NaN;
       const goal=(ex.budget&&ex[kpi.b])?ex.budget/ex[kpi.b]*kpi.m:NaN;
       /* 1원 미만 차이는 사실상 같은 값 — 붉게 칠하지 않는다 */
-      if(kpiWorse(act,goal))kc+=' kpibad';
+      /* 저조 표시를 숨긴 서머리는 KPI 개선 고려(붉은 칸)도 함께 숨긴다 (v93) — 굵은 KPI 열 표시는 남긴다 */
+      if(!cfg.noCostBad&&kpiWorse(act,goal))kc+=' kpibad';
       tip=kpiTip(kpi,src,ex);
     }else if(!cfg.noCostBad){
       /* KPI 가 아닌 단가 열도 제안(목표)보다 비싸면 은은하게 (v53).
@@ -674,7 +677,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
         /* 상위 계층 셀을 잡고 끌면 그 그룹 전체가 같은 부모 안에서 이동한다 */
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
           +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
-      const rls=LINES.filter(l=>expIdx.every(i2=>i2>=vals.length||lv(l,dims[i2])===vals[i2]));
+      const rls=LNS.filter(l=>expIdx.every(i2=>i2>=vals.length||lv(l,dims[i2])===vals[i2]));
       h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols))+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
@@ -688,7 +691,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender){
       h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
     }});
   h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
-    +cells(aggFacts(facts),aggExp(activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
+    +cells(aggFacts(facts),aggExp(opt&&opt.lines?activeLines().filter(l=>LNS.includes(l)):activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
   tbl.innerHTML=h;
   applyColWidths(tbl,cfg,cols);
   markBlanks(tbl);
@@ -867,17 +870,17 @@ function renderSummaries(){
     sec.innerHTML=`<span data-nm="${i}" style="cursor:${isClient()?'default':'pointer'}">${esc(s.name)}</span>`;
     const tools=el('div','tools',sec);
     /* 붉게 칠한 칸이 무슨 뜻인지 표 옆에 바로 적어 둔다 */
-    tools.innerHTML=`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
-      +`<i></i>KPI 개선 고려</span>`
-      +(s.noCostBad?''
-      :`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
+    tools.innerHTML=(s.noCostBad?''
+      :`<span class="kpilgd" title="그 라인의 KPI 지표 단가가 목표 단가보다 비싼 칸입니다">`
+        +`<i></i>KPI 개선 고려</span>`
+        +`<span class="kpilgd soft" title="KPI 는 아니지만 제안(목표) 단가보다 비싼 칸입니다">`
         +`<i></i>제안 대비 저조</span>`)
       +(isClient()?''
       :`<button class="btn sm" data-hide="${i}" title="이 서머리 숨기기">숨기기</button>`)
       +(isClient()?'':`<button class="btn sm${s.noGauge?'':' on'}" data-gauge="${i}"
           title="달성률 막대(게이지)를 숨기거나 다시 표시합니다">${s.noGauge?'게이지 표시':'게이지 숨김'}</button>
       <button class="btn sm${s.noCostBad?'':' on'}" data-costbad="${i}"
-          title="KPI 가 아닌 단가 열의 &quot;제안 대비 저조&quot; 붉은 표시를 끄거나 켭니다. KPI 지표 표시는 그대로 남습니다.">${s.noCostBad?'저조 표시':'저조 표시 숨김'}</button>
+          title="&quot;KPI 개선 고려&quot; · &quot;제안 대비 저조&quot; 붉은 표시를 함께 끄거나 켭니다.">${s.noCostBad?'저조 표시':'저조 표시 숨김'}</button>
       <button class="btn sm" data-cfg="${i}">⚙ 헤더 편집</button>
       <button class="btn sm danger" data-del="${i}">서머리 삭제</button>`);
     if(typeof attachInfo==='function')attachInfo(tools,SUM_INFO(),s.name);

@@ -30,8 +30,11 @@ let SHEET_COLS=sheetColsDefault();
 /* 예산 · 소진비용 열 이름에서 "Gross" 를 뗀다 (v79) — 수수료 · Net 개념을 뺀 뒤(v72)로는
    금액 기준이 하나뿐이라 "Gross 예산" · "소진비용 (Gross)" 가 헷갈리기만 한다. 이름은 "예산" · "소진비용" 으로 통일.
    예전 저장본 · 계정 설정에 남아 있는 옛 이름도 여기서 바꿔 읽는다 */
+/* v92 의 처음 이름 — 저장본에 남아 있으면 지금 이름으로 바꾼다 (v93: 띄어쓰기 · 대문자 · '유입당 단가') */
+const OLD_COL_LABEL={iwv:'IWV(all)',iwv_mh:'IWV(mobilityhub)',iwv_mp:'IWV(modelpage)',iwv_tda:'IWV(tda)',cpiwv:'유입 단가'};
 function fixColLabel(k,l,def){
   if((k==='budget'||k==='cost')&&/gross|그로스/i.test(String(l||'')))return def;
+  if(OLD_COL_LABEL[k]&&l===OLD_COL_LABEL[k])return def;
   return l||def;}
 /* 예전 저장본(net 기준·소재 열 없음)을 지금 열 구성에 맞춰 얹는다 */
 function mergeCols(saved,def){

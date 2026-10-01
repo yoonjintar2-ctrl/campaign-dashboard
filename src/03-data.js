@@ -498,12 +498,12 @@ const FIELDS=[
 
   /* 유입 (v92) — IWV = Interacting Visits: 유입(Visit) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용
      ③ 페이지 20초 이상 유지 중 하나를 충족한 방문. all = 랜딩 구분 없는 합계, 나머지는 첫 방문(랜딩) 페이지 기준이라 서로 겹치지 않는다 */
-  ['iwv','IWV(all)','IWV (all)','유입','in',0,0,0,1],
-  ['iwv_mh','IWV(mobilityhub)','IWV (mobility hub)','유입','in',0,0,0,1],
-  ['iwv_mp','IWV(modelpage)','IWV (model page)','유입','in',0,0,0,1],
-  ['iwv_tda','IWV(tda)','IWV (TDA)','유입','in',0,0,0,1],
+  ['iwv','IWV (All)','IWV (All)','유입','in',0,0,0,1],
+  ['iwv_mh','IWV (Mobility Hub)','IWV (Mobility Hub)','유입','in',0,0,0,1],
+  ['iwv_mp','IWV (Model Page)','IWV (Model Page)','유입','in',0,0,0,1],
+  ['iwv_tda','IWV (TDA)','IWV (TDA)','유입','in',0,0,0,1],
   ['iwvr','유입률','inflow rate','유입','calc',0,0,0,1],
-  ['cpiwv','유입 단가','cost per IWV','유입','calc',0,0,0,1],
+  ['cpiwv','유입당 단가','cost per IWV','유입','calc',0,0,0,1],
   /* 체류시간 (v92) — 방문을 체류시간 구간별로 센 값 */
   ['dw15','체류 15초 미만','time <15s','체류시간','in',0,0,0,1],
   ['dw30','체류 15~29초','time 15–29s','체류시간','in',0,0,0,1],
@@ -675,10 +675,10 @@ const METRICS={
   v3:{l:'3초 조회',f:fmt,kind:'abs'},v15:{l:'15초 조회',f:fmt,kind:'abs'},v30:{l:'30초 조회',f:fmt,kind:'abs'},
   roas:{l:'ROAS',f:v=>(!isFinite(v)?'–':v.toFixed(2)+'x'),kind:'rate',c:d=>d.rev/d.cost},
   /* 유입 · 체류시간 (v92) */
-  iwv:{l:'IWV(all)',f:fmt,kind:'abs'},iwv_mh:{l:'IWV(mobilityhub)',f:fmt,kind:'abs'},
-  iwv_mp:{l:'IWV(modelpage)',f:fmt,kind:'abs'},iwv_tda:{l:'IWV(tda)',f:fmt,kind:'abs'},
+  iwv:{l:'IWV (All)',f:fmt,kind:'abs'},iwv_mh:{l:'IWV (Mobility Hub)',f:fmt,kind:'abs'},
+  iwv_mp:{l:'IWV (Model Page)',f:fmt,kind:'abs'},iwv_tda:{l:'IWV (TDA)',f:fmt,kind:'abs'},
   iwvr:{l:'유입률',f:v=>pct(v),kind:'rate',c:d=>d.iwv/d.click},
-  cpiwv:{l:'유입 단가',f:won,kind:'rate',c:d=>d.cost/d.iwv},
+  cpiwv:{l:'유입당 단가',f:won,kind:'rate',c:d=>d.cost/d.iwv},
   dwv:{l:'체류 방문수',f:fmt,kind:'rate',c:d=>dwSum(d)||NaN},
   dwavg:{l:'평균 체류시간',f:fmtDur,kind:'rate',c:d=>dwAvg(d)},
   dw30r:{l:'30초 이상 체류율',f:v=>pct(v),kind:'rate',c:d=>dw30Rate(d)}

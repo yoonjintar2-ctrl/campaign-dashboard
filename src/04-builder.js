@@ -1,16 +1,23 @@
 /* ===== 3. 공용 구성 빌더 (그룹형) ===== */
 const cfgCols=cfg=>cfg.groups.flatMap(g=>g.cols);
+/* 머리글 이름 — "IWV (Mobility Hub)" 처럼 괄호가 붙은 긴 이름은 괄호 앞에서 두 줄로 (v93).
+   열 너비는 긴 줄 하나만 재므로(applyColWidths) 열이 쓸데없이 넓어지지 않는다 */
+const hdrLabelHTML=l=>{l=String(l==null?'':l);const m=/^(.+?)\s+(\([^()]+\))$/.exec(l);
+  return m&&l.length>12?`<span class="hl">${esc(m[1])}</span> <span class="hl">${esc(m[2])}</span>`:esc(l);};
+/* 너비를 같게 맞추는 열 묶음 — 같은 성격의 열(IWV 4종 · 체류 구간)이 나란히 있을 때 들쭉날쭉하지 않게 */
+const EQ_W_SETS=[['iwv','iwv_mh','iwv_mp','iwv_tda'],
+  ['dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p']];
 function groupHeaderHTML(cfg,cdef,leadCols){
   const gs=cfg.groups.filter(g=>g.cols.length);
   /* solo 그룹(열 1개)은 헤더 두 줄을 합쳐 열 이름만 한 번 표시 */
   const isSolo=g=>!!g.solo&&g.cols.length===1;
   const g1=gs.map((g,i)=>isSolo(g)
-    ? `<th class="g solo${i>0?' gsep':''}" rowspan="2">${esc(cdef[g.cols[0]]?cdef[g.cols[0]].l:g.name)}</th>`
+    ? `<th class="g solo${i>0?' gsep':''}" rowspan="2">${hdrLabelHTML(cdef[g.cols[0]]?cdef[g.cols[0]].l:g.name)}</th>`
     : `<th class="g${i>0?' gsep':''}" colspan="${g.cols.length}">${esc(g.name)}</th>`).join('');
   let g2='';
   gs.forEach((g,gi)=>{if(isSolo(g))return;
     g.cols.forEach((k,ci)=>{
-      g2+=`<th class="${gi>0&&ci===0?'gsep':''}">${cdef[k]?cdef[k].l:k}</th>`;});});
+      g2+=`<th class="${gi>0&&ci===0?'gsep':''}">${cdef[k]?hdrLabelHTML(cdef[k].l):esc(k)}</th>`;});});
   return `<tr>${leadCols.join('')}${g1}</tr><tr>${g2}</tr>`;
 }
 const gsepSet=cfg=>{const s=new Set();let i=0;
@@ -338,7 +345,10 @@ function applyColWidths(tbl,cfg,cols){
   gs.forEach(g=>{
     if(g.solo&&g.cols.length===1)valHs.push(soloThs[si++]);
     else g.cols.forEach(()=>valHs.push(row2[ri++]));});
-  valHs.forEach((th,i)=>{if(th&&len[i]!==undefined)len[i]=Math.max(len[i],wOf(th.textContent.trim())+.6);});
+  /* 두 줄 머리글(.hl)은 긴 줄 하나만 잰다 */
+  const thW=th=>{const hl=[...th.querySelectorAll('.hl')];
+    return hl.length?Math.max(...hl.map(x=>wOf(x.textContent.trim()))):wOf(th.textContent.trim());};
+  valHs.forEach((th,i)=>{if(th&&len[i]!==undefined)len[i]=Math.max(len[i],thW(th)+.6);});
   const CH=7.15,PAD=22;
   const px=len.map(l=>Math.round(l*CH+PAD));
   const BIG=96;                                   /* 이보다 넓으면 "큰 값" 열 */
@@ -350,6 +360,12 @@ function applyColWidths(tbl,cfg,cols){
     const sw=savedColW(cfg,cols[i]);
     if(sw)return sw;
     return wide.has(cols[i])?0:(v<BIG?uni:v);});
+  /* 같은 묶음(EQ_W_SETS)의 열은 그중 가장 넓은 폭으로 맞춘다 — 사용자가 직접 정한 폭은 그대로 */
+  EQ_W_SETS.forEach(set=>{
+    const idx=cols.map((k,i)=>set.includes(k)&&!savedColW(cfg,k)?i:-1).filter(i=>i>=0);
+    if(idx.length<2)return;
+    const mx=Math.max(...idx.map(i=>finalW[i]||0));
+    idx.forEach(i=>{finalW[i]=mx;});});
   /* 행 머리 열(매체·광고상품 등) — 글자 길이에 비례한 기본 폭.
      여러 항목이 세로로 나열된 칸은 가장 긴 한 줄만 재서 지나치게 넓어지지 않게 한다. */
   const leadW=[];

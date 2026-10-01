@@ -95,14 +95,14 @@ Object.assign(I18N_EN,{
 });
 /* v92 — 유입 · 체류시간 · 랜딩 페이지 · 유입 분석 */
 Object.assign(I18N_EN,{
-  "유입":"Inflow","체류시간":"Time on site","랜딩 페이지":"Landing page","유입률":"Inflow rate","유입 단가":"Cost per IWV",
+  "유입":"Inflow","체류시간":"Time on site","랜딩 페이지":"Landing page","유입률":"Inflow rate","유입당 단가":"Cost per IWV",
   "체류 15초 미만":"Time <15s","체류 15~29초":"Time 15–29s","체류 30~59초":"Time 30–59s","체류 1~3분":"Time 1–3m",
   "체류 3~5분":"Time 3–5m","체류 5~10분":"Time 5–10m","체류 10~15분":"Time 10–15m","체류 15~20분":"Time 15–20m",
   "체류 20~30분":"Time 20–30m","체류 30분 이상":"Time 30m+","체류 방문수":"Visits (time on site)",
   "평균 체류시간":"Avg. time on site","30초 이상 체류율":"30s+ stay rate",
   "그 라인에 적어 둔 랜딩 페이지가 아닙니다":"Not one of the landing pages set on that line",
   "예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)":"One of the line's landing pages in Forecast (anything if the line has none)",
-  "IWV(all) ÷ 클릭":"IWV(all) ÷ clicks","소진금액 ÷ IWV(all)":"Spend ÷ IWV(all)","체류시간 구간 방문수의 합":"Sum of visits across time-on-site bands",
+  "IWV (All) ÷ 클릭":"IWV (All) ÷ clicks","소진금액 ÷ IWV (All)":"Spend ÷ IWV (All)","체류시간 구간 방문수의 합":"Sum of visits across time-on-site bands",
   "구간별 방문수 × 구간 중앙값(15초 미만 7.5초 · 1~3분 2분 …) ÷ 체류 방문수":"Visits per band × band midpoint (<15s = 7.5s · 1–3m = 2m …) ÷ visits",
   "30초 이상 구간 방문수 ÷ 체류 방문수":"Visits in 30s+ bands ÷ visits",
   "광고를 누르면 넘어가는 랜딩 페이지입니다.":"The landing page the ad leads to.",
@@ -127,12 +127,17 @@ Object.assign(I18N_EN,{
   "IWV(인터랙팅 방문)":"IWV (interacting visits)",
   "— 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다. 매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.":"— site visits that viewed 2+ pages, used a feature, or stayed 20s+. This section links clicks from media reports with visits from site analytics (Adobe Analytics etc.).",
   "유입 흐름":"Inflow flow",
-  "— 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다. IWV(all) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.":"— band width shows how clicks on the left (media · product · creative) flowed to landing pages on the right (IWV by entry page). IWV(all) without a landing breakdown is ‘other landing’; clicks that didn't become IWV are the hatched ‘dropped’ band.",
+  "— 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.":"— band width shows how clicks on the left (media · product · creative) flowed to landing pages on the right (IWV by entry page). IWV (All) without a landing breakdown is ‘other landing’; clicks that didn't become IWV are the hatched ‘dropped’ band.",
   "유입 효율 지도":"Inflow efficiency map",
-  "— 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입 단가(소진금액 ÷ IWV)가 쌉니다. 점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.":"— further right = higher inflow rate (IWV ÷ clicks); higher up = lower cost per IWV (spend ÷ IWV). Dashed lines are the overall average, so the top-right quadrant is the most efficient. Circle size = IWV.",
+  "— 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입당 단가(소진금액 ÷ IWV)가 쌉니다. 점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.":"— further right = higher inflow rate (IWV ÷ clicks); higher up = lower cost per IWV (spend ÷ IWV). Dashed lines are the overall average, so the top-right quadrant is the most efficient. Circle size = IWV.",
   "체류시간 분포":"Time on site",
   "— 방문을 머문 시간 구간으로 나눈 비율입니다. 평균 체류시간은 구간 가운데 값으로 어림한 값입니다.":"— share of visits by time-on-site band. Average time is estimated from band midpoints.",
   "사이트 데이터는 매체 리포트와 집계 기준이 달라 IWV 가 클릭보다 많을 수도 있습니다(조회 후 방문 등).":"Site data is counted differently from media reports, so IWV can exceed clicks (e.g. view-through visits)."
+});
+/* v93 */
+Object.assign(I18N_EN,{
+  "랜딩별 IWV":"IWV by landing page","유입 상세":"Inflow details","클릭 · 유입":"Clicks · Inflow",
+  "\"KPI 개선 고려\" · \"제안 대비 저조\" 붉은 표시를 함께 끄거나 켭니다.":"Turns the red \"KPI needs attention\" and \"Under proposal\" highlights off or on together."
 });
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고

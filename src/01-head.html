@@ -2586,14 +2586,15 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
 .dwr b{font-size:13px;font-weight:800;color:var(--ink)}
 .dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
-table.tbl.inftbl td.l,table.tbl.inftbl th.l{text-align:left}
-table.tbl.inftbl td.l em{font-style:normal;font-size:11px;color:var(--muted);margin-left:4px}
-table.tbl.inftbl td.strong{font-weight:800}
+.infh .infcfg{margin-left:auto}
+#infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
 .infempty{padding:22px 6px}
 @media (max-width:1100px){.infgrid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
+/* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */
+table.tbl th span.hl{display:block;line-height:1.25}
 </style>
 </head>
 <body class="booting">

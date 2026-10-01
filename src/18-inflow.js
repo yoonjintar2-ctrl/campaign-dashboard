@@ -2,15 +2,15 @@
    사이트 분석 도구(Adobe Analytics 등)에서 받은 IWV(인터랙팅 방문) · 랜딩별 IWV · 체류시간 구간 값을
    매체 · 광고상품 · 소재별로 모아 본다. 디지털 서머리 맨 아래 영역.
    ① 유입 흐름 (Sankey) — 클릭이 어느 랜딩 페이지로 들어왔는지, 얼마나 IWV 로 이어지지 않았는지
-   ② 유입 효율 지도 (버블) — 가로 = 클릭 대비 유입률, 세로 = 유입 단가(위로 갈수록 저렴), 크기 = IWV, 색 = 평균 체류시간
+   ② 유입 효율 지도 (버블) — 가로 = 클릭 대비 유입률, 세로 = 유입당 단가(위로 갈수록 저렴), 크기 = IWV
    ③ 체류시간 분포 — 100% 막대(짧게 머문 방문 → 오래 머문 방문), 평균 체류시간 순
-   ④ 상세 표
+   ④ 상세 표 — 매체 서머리와 같은 표(헤더 편집 · 머리글 설명 · 정렬 · 열 너비). 행 머리는 '묶음' 을 따르다가 헤더 편집에서 바꾸면 그대로 둔다 (v93)
    데이터가 전혀 없는 캠페인에서는 영역 자체를 감춘다. */
 var INF={dim:'media',leak:false};
 /* IWV 가 이보다 적은 라인은 추적이 빠진 것으로 보고 분석에서 뺀다 — 클릭은 많은데 IWV 가 한두 건이면
-   유입률 · 유입 단가가 0% · 수천만 원으로 튀어 다른 매체가 묻힌다 (표 아래 안내로 알려 준다) */
+   유입률 · 유입당 단가가 0% · 수천만 원으로 튀어 다른 매체가 묻힌다 (표 아래 안내로 알려 준다) */
 const INF_MIN=10;
-const INF_LAND=[{k:'iwv_tda',l:'tda'},{k:'iwv_mh',l:'mobilityhub'},{k:'iwv_mp',l:'modelpage'}];
+const INF_LAND=[{k:'iwv_tda',l:'TDA'},{k:'iwv_mh',l:'Mobility Hub'},{k:'iwv_mp',l:'Model Page'}];
 /* 체류시간 10구간 → 화면에서는 5묶음 */
 const INF_BANDS=[
   {l:'15초 미만',en:'<15s',ks:['dw15']},
@@ -55,7 +55,8 @@ function renderInflow(){
   const dim=INF.dim||'media';
   /* 머리 단추 */
   const seg=$('infDim');
-  if(seg){seg.value=dim;seg.onchange=e=>{INF.dim=e.target.value;renderInflow();};}
+  if(seg){seg.value=dim;seg.onchange=e=>{INF.dim=e.target.value;infTbl().follow=true;renderInflow();
+    try{if(!isClient()){markDirty();saveLocal();}}catch(x){}};}
   const lk=$('infLeak');
   if(lk){lk.classList.toggle('on',!!INF.leak);lk.onclick=()=>{INF.leak=!INF.leak;renderInflow();};}
   /* 추적되는 라인만 — IWV(또는 체류시간) 가 INF_MIN 이상인 라인 */
@@ -74,27 +75,39 @@ function renderInflow(){
   const miss=[...missM].map(([m,v])=>v?`${m} (IWV ${fmt(v)})`:m);
   const kp=(l,v,s)=>`<div class="infk"><span>${l}</span><b class="mono">${v}</b>${s?`<em>${s}</em>`:''}</div>`;
   body.innerHTML=`<div class="infkpis">
-      ${kp('IWV(all)',fmt(T.iwv),L(`클릭 ${fmt(T.click)}`,`${fmt(T.click)} clicks`))}
+      ${kp('IWV (All)',fmt(T.iwv),L(`클릭 ${fmt(T.click)}`,`${fmt(T.click)} clicks`))}
       ${kp(L('클릭 대비 유입률','Inflow / click'),pct(infRate(T)),L('IWV ÷ 클릭','IWV ÷ clicks'))}
-      ${kp(L('유입 단가','Cost per IWV'),won(Math.round(infCpv(T))||0),L(`소진 ${won(Math.round(T.cost))}`,`spent ${won(Math.round(T.cost))}`))}
+      ${kp(L('유입당 단가','Cost per IWV'),won(Math.round(infCpv(T))||0),L(`소진 ${won(Math.round(T.cost))}`,`spent ${won(Math.round(T.cost))}`))}
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(T)),isFinite(dw30Rate(T))?L(`30초 이상 ${pct(dw30Rate(T),1)}`,`${pct(dw30Rate(T),1)} stay 30s+`):'')}
     </div>
     <div class="infgrid">
       <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${INF.leak?L('클릭이 어느 랜딩 페이지로 들어왔는지 · 굵기 = 수 · 빗금 = 클릭했지만 IWV 로 이어지지 않음','Where clicks landed · width = count · hatched = clicked but no IWV'):L('IWV 가 어디서 와서 어느 랜딩 페이지로 들어왔는지 · 굵기 = IWV','Where IWV came from and which landing page it entered · width = IWV')}</span></div>
         <div class="infsk" id="infSankey"></div></div>
-      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 유입 단가 낮음 · 원 크기 = IWV · 점선 = 전체 평균','right = higher inflow rate · up = cheaper per IWV · size = IWV · dashed = overall average')}</span></div>
+      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 유입당 단가 낮음 · 원 크기 = IWV · 점선 = 전체 평균','right = higher inflow rate · up = cheaper per IWV · size = IWV · dashed = overall average')}</span></div>
         <div class="infmap" id="infMap"></div></div>
     </div>
     <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
         <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
       <div id="infDwell"></div></div>
-    <div class="infcell"><div class="infh"><b>${L('상세','Details')}</b><span>${L('IWV 많은 순','by IWV')}</span></div>
-      <div class="tbl-wrap"><table class="tbl lite inftbl" id="infTbl"></table></div></div>
+    <div class="infcell"><div class="infh"><b>${L('상세','Details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
+        ${isClient()?'':`<button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
+      <div class="hidden" id="infCfgBox"></div>
+      <div class="tbl-wrap noy" id="infTblWrap"><table class="tbl gln fit cmpt inftbl" id="infTbl"></table></div></div>
     ${miss.length?`<div class="hint infmiss">${L(`IWV 가 없거나 ${INF_MIN}건 미만이라 분석에서 뺀 매체`,`Excluded (no IWV or fewer than ${INF_MIN})`)}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
   try{infSankey($('infSankey'),rows,T);}catch(e){console.warn(e);}
   try{infMap($('infMap'),rows,T);}catch(e){console.warn(e);}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
-  try{infTable($('infTbl'),rows,T,dim);}catch(e){console.warn(e);}
+  INF_OK=okSet;
+  try{infTable();}catch(e){console.warn(e);}
+  const cb=$('infCfgBtn');
+  if(cb)cb.onclick=()=>{const box=$('infCfgBox');if(!box)return;
+    if(!box.classList.contains('hidden')&&box.firstChild){box.classList.add('hidden');box.innerHTML='';return;}
+    const cfg=infTbl();
+    openBuilder(box,cfg,{rowFields:DIMS,catalog:SUM_CATALOG,onApply:()=>{
+      /* 행 머리를 바꾸면 그때부터는 '묶음' 을 따르지 않는다 (묶음을 다시 고르면 다시 따른다) */
+      const want=(INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media).map(r=>r.k).join('|');
+      if(cfg.rows.map(r=>r.k).join('|')!==want)cfg.follow=false;
+      infTable();try{markDirty();saveLocal();}catch(e){}}});};
 }
 
 /* ---------- ① 유입 흐름 (Sankey) ---------- */
@@ -106,7 +119,7 @@ function infSankey(host,rows0,T){
   let rows=rows0.slice().sort((a,b)=>sk(b)-sk(a));
   if(rows.length>10){const rest=rows.slice(9),b=aggFacts([]);rest.forEach(g=>{AMET.concat(['cost']).forEach(m=>b[m]+=+g.b[m]||0);});
     rows=rows.slice(0,9).concat([{key:'__etc',lab:L(`그 외 ${rest.length}개`,`${rest.length} more`),sub:'',col:'__etc',b}]);}
-  /* 오른쪽 마디 — 랜딩별 IWV, IWV(all) 중 랜딩 구분이 없는 몫, 클릭 이탈 */
+  /* 오른쪽 마디 — 랜딩별 IWV, IWV (All) 중 랜딩 구분이 없는 몫, 클릭 이탈 */
   const lands=INF_LAND.filter(x=>rows.some(g=>(+g.b[x.k]||0)>0));
   const R=lands.map(x=>({k:x.k,l:x.l,kind:'land'}));
   const otherOf=g=>Math.max((+g.b.iwv||0)-lands.reduce((s,x)=>s+(+g.b[x.k]||0),0),0);
@@ -176,7 +189,7 @@ function infSankey(host,rows0,T){
     if(n.dataset.i!=null){const g=rows[+n.dataset.i];
       n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
         +`<div class="r"><span class="l">${L('클릭','Clicks')}</span><b>${fmt(g.b.click||0)}</b></div>`
-        +`<div class="r"><span class="l">IWV(all)</span><b>${fmt(g.b.iwv||0)}</b></div>`
+        +`<div class="r"><span class="l">IWV (All)</span><b>${fmt(g.b.iwv||0)}</b></div>`
         +`<div class="r"><span class="l">${L('유입률','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`));
       n.addEventListener('mouseleave',hideTip);}});
 }
@@ -191,7 +204,7 @@ function infMap(host,rows0,T){
   const RMAX=rows.length>8?18:rows.length>4?23:27;
   const xs=rows.map(g=>infRate(g.b)),ys=rows.map(g=>infCpv(g.b));
   const xMax=Math.max(...xs,infRate(T)||0)*1.08||1;
-  /* 유입 단가는 몇 백 원 ~ 몇 만 원으로 벌어지므로 로그 눈금 · 위로 갈수록 저렴 */
+  /* 유입당 단가는 몇 백 원 ~ 몇 만 원으로 벌어지므로 로그 눈금 · 위로 갈수록 저렴 */
   const yl=ys.map(v=>Math.log10(v));let ylo=Math.min(...yl),yhi=Math.max(...yl);
   if(yhi-ylo<.3){const m=(ylo+yhi)/2;ylo=m-.15;yhi=m+.15;}
   /* 원이 그림 밖으로 나가지 않게 데이터 자리는 안쪽으로 원 반지름만큼 줄인다 */
@@ -235,12 +248,12 @@ function infMap(host,rows0,T){
     return `<g class="mdot" data-i="${i}"><circle cx="${cx}" cy="${cy}" r="${r}" class="mc" style="fill:${col};stroke:${col}"></circle></g>`;}).join('');
   host.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="msvg">${ax}${mid}${dots}${order.map(i=>labs[i]||'').join('')}
       <text class="maxl" x="${(P.l+W-P.r)/2}" y="${H-4}" text-anchor="middle">${L('클릭 대비 유입률 (IWV ÷ 클릭) →','Inflow rate (IWV ÷ clicks) →')}</text>
-      <text class="maxl" transform="translate(12 ${(P.t+H-P.b)/2}) rotate(-90)" text-anchor="middle">${L('유입 단가 · 위로 갈수록 저렴','Cost per IWV · cheaper upward')}</text></svg>`;
+      <text class="maxl" transform="translate(12 ${(P.t+H-P.b)/2}) rotate(-90)" text-anchor="middle">${L('유입당 단가 · 위로 갈수록 저렴','Cost per IWV · cheaper upward')}</text></svg>`;
   host.querySelectorAll('.mdot').forEach(n=>{const g=rows[+n.dataset.i];
     n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
       +`<div class="r"><span class="l">${L('클릭 대비 유입률','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`
-      +`<div class="r"><span class="l">${L('유입 단가','Cost per IWV')}</span><b>${won(Math.round(infCpv(g.b)))}</b></div>`
-      +`<div class="r"><span class="l">IWV(all)</span><b>${fmt(g.b.iwv)}</b></div>`
+      +`<div class="r"><span class="l">${L('유입당 단가','Cost per IWV')}</span><b>${won(Math.round(infCpv(g.b)))}</b></div>`
+      +`<div class="r"><span class="l">IWV (All)</span><b>${fmt(g.b.iwv)}</b></div>`
       +`<div class="r"><span class="l">${L('평균 체류시간','Avg. time')}</span><b>${fmtDur(dwAvg(g.b))}</b></div>`));
     n.addEventListener('mouseleave',hideTip);});
 }
@@ -263,21 +276,32 @@ function infDwell(host,rows0){
     seg.addEventListener('mouseleave',hideTip);});
 }
 
-/* ---------- ④ 상세 표 ---------- */
-function infTable(t,rows,T,dim){
-  if(!t)return;
-  const lands=INF_LAND.filter(x=>rows.some(g=>(+g.b[x.k]||0)>0));
-  const dl={media:L('매체','Media'),product:L('광고상품','Product'),creative:L('소재','Creative')}[dim];
-  const cell=b=>`<td class="mono">${fmt(b.click||0)}</td><td class="mono strong">${fmt(b.iwv||0)}</td>
-    <td class="mono">${pct(infRate(b))}</td><td class="mono">${won(Math.round(b.cost||0))}</td>
-    <td class="mono">${b.iwv?won(Math.round(infCpv(b))):'–'}</td>
-    ${lands.map(x=>`<td class="mono">${(+b[x.k]||0)?fmt(b[x.k]):'–'}</td>`).join('')}
-    <td class="mono">${fmtDur(dwAvg(b))}</td><td class="mono">${isFinite(dw30Rate(b))?pct(dw30Rate(b),1):'–'}</td>`;
-  t.innerHTML=`<thead><tr><th class="l">${dl}</th><th>${L('클릭','Clicks')}</th><th>IWV(all)</th><th>${L('유입률','Inflow rate')}</th>
-      <th>${L('소진금액','Spend')}</th><th>${L('유입 단가','Cost / IWV')}</th>${lands.map(x=>`<th>IWV(${x.l})</th>`).join('')}
-      <th>${L('평균 체류','Avg. time')}</th><th>${L('30초 이상','30s+')}</th></tr></thead>
-    <tbody>${rows.map(g=>`<tr><td class="l"><span class="ovdot" style="background:${infColor(g)}"></span>${esc(g.lab)}${g.sub?` <em>${esc(g.sub)}</em>`:''}</td>${cell(g.b)}</tr>`).join('')}
-      <tr class="total"><td class="l">TOTAL</td>${cell(T)}</tr></tbody>`;
+/* ---------- ④ 상세 표 (v93 — 매체 서머리와 같은 표) ----------
+   헤더 편집 · 머리글 설명/정렬 · 열 너비 · 행 끌어 옮기기가 서머리와 똑같이 된다.
+   추적되는 라인(INF_OK)의 실적만 담는다 — 위 숫자 · 그래프의 TOTAL 과 같은 범위 */
+var INF_OK=new Set();
+var INF_TBL=null;
+const INF_DIM_ROWS={media:[{k:'media',sub:false}],
+  product:[{k:'media',sub:false},{k:'product',sub:false}],
+  creative:[{k:'creative',sub:false}]};
+function infTblDefault(){
+  const g=(name,cols)=>({id:uid(),name,cols:cols.filter(k=>SUM_CELL[k])});
+  return {id:'inflow',name:'유입 상세',follow:true,rows:INF_DIM_ROWS.media.map(r=>({...r})),order:null,
+    groups:[g('클릭 · 유입',['click','iwv','iwvr']),g('비용',['cost','cpiwv']),
+      g('랜딩별 IWV',['iwv_tda','iwv_mh','iwv_mp']),g('체류시간',['dwavg','dw30r'])]};}
+const infTbl=()=>INF_TBL||(INF_TBL=infTblDefault());
+/* 처음 정렬 — IWV 많은 순 (머리글에서 바꾸거나 풀 수 있다) */
+try{if(!HP_SORT['piv:inflow'])HP_SORT['piv:inflow']={k:'iwv',dir:-1};}catch(e){}
+function infTable(){
+  const tbl=$('infTbl');if(!tbl)return;
+  const cfg=infTbl();
+  if(cfg.follow!==false){
+    const want=INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media;
+    if(cfg.rows.map(r=>r.k).join('|')!==want.map(r=>r.k).join('|')){cfg.rows=want.map(r=>({...r}));cfg.order=null;}}
+  const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
+    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id))});
+  draw();
+  try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
 }
 
 /* 효율 버블이 다시 그려질 때(데이터 · 필터 · 기간이 바뀔 때) 함께 그린다 */
