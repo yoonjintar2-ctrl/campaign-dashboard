@@ -2546,7 +2546,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .infk>span{font-size:11.5px;font-weight:700;color:var(--muted)}
 .infk>b{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .infk>em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.infgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.infgrid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px}
 .infcell{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;background:var(--surface);min-width:0;margin-bottom:14px}
 .infgrid .infcell{margin-bottom:14px}
 .infh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
@@ -2559,6 +2559,16 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .sksvg,.msvg{display:block;max-width:100%;height:auto}
 .sklink{fill-opacity:.36;transition:fill-opacity .12s,opacity .12s;cursor:default}
 .sklink.leak{fill-opacity:.9}
+.sklink.iw{fill-opacity:.75}
+.sklink.lk{fill-opacity:1}
+.sklink.zf{fill-opacity:.42}
+.sknode.iwn{fill:var(--acc)}
+.skzoom{pointer-events:none}
+.skcap{font-size:11px;font-weight:700;fill:var(--muted)}
+.skzl{font-size:10.5px;font-weight:700;fill:var(--muted)}
+.skzl.b{font-size:12px;fill:var(--ink2)}
+.sklab.lk{fill:var(--ink2)}
+.skhalo{paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
 .sklink:hover{fill-opacity:.62}
 .sklink.dim{opacity:.13}
 .sknode{stroke:var(--surface);stroke-width:1}
@@ -2575,12 +2585,12 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .mdot{cursor:default}
 .mdot:hover .mc{stroke-width:2.5}
 .maxl{font-size:11px;font-weight:700;fill:var(--ink2)}
-.infdw{display:flex;flex-direction:column;gap:7px}
-.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 150px;gap:12px;align-items:center}
+.infdw{display:flex;flex-direction:column;gap:12px}
+.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 96px;gap:12px;align-items:center}
 .dwl{min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .dwl b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dwl span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dwbar{display:flex;gap:2px;height:20px;border-radius:5px;overflow:hidden}
+.dwbar{display:flex;gap:2px;height:32px;border-radius:6px;overflow:hidden}
 .dwbar i{display:block;min-width:2px;background:rgb(var(--accrgb)/var(--op))}
 .dwbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
 .dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
@@ -2592,7 +2602,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .infempty{padding:22px 6px}
 @media (max-width:1100px){.infgrid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 92px;gap:8px}}
+  .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 80px;gap:8px}}
 /* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */
 table.tbl th span.hl{display:block;line-height:1.25}
 /* 유입 상세 표 — 서머리처럼 모서리를 둥글게 (v94) */
@@ -2604,6 +2614,10 @@ table.tbl.thwrap thead th{white-space:normal;word-break:keep-all}
    각 칸 바로 위 1px 에 같은 색 그림자를 한 번 더 그린다 — 덮는 칸이 직접 그리므로 사라지지 않고,
    덮이지 않은 곳에서는 원래 선과 같은 자리 · 같은 색이라 두꺼워지지 않는다 */
 table.tbl tbody tr:not(:first-child):not(.total) td.lfz{box-shadow:0 -1px 0 var(--cell)}
+/* 주요 지표 고르기 (v95) — 고른 지표는 진하게(✓) · 누르면 넣고 뺀다 */
+.statpick .catitems .cb.pick{cursor:pointer}
+.statpick .catitems .cb.pick.on{background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:700}
+.statpick .bkey .bhint{display:block;font-weight:500;font-size:10.5px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body class="booting">

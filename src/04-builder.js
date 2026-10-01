@@ -1684,6 +1684,58 @@ const STAT_DEF_OUT=['rev'],STAT_DEF_IN=['conv'];
 let STAT_CFG={rows:[],groups:[{id:uid(),name:'기본',
   cols:fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in'&&!STAT_DEF_OUT.includes(k))
     .concat(STAT_DEF_IN.filter(k=>METRICS[k]))}]};
+/* 주요 지표 고르기 (v95) — 카드는 한 줄로 늘어서므로 열 그룹이 필요 없다.
+   "보여 줄 지표" 를 누르거나 끌어 순서만 정하고, 아래 목록에서 눌러 넣고 뺀다.
+   저장 모양은 예전과 같다(그룹 하나) — 리포트 엑셀 등이 그대로 읽는다 */
+const statDefaultCols=()=>fieldDefaults('dash').filter(k=>METRICS[k]&&FLD[k].kind==='in'&&!STAT_DEF_OUT.includes(k))
+  .concat(STAT_DEF_IN.filter(k=>METRICS[k]));
+function openStatPicker(host){
+  if(!host)return;
+  if(!host.classList.contains('hidden')&&host.firstChild){host.classList.add('hidden');host.innerHTML='';return;}
+  const cdef={};STAT_CATALOG.forEach(c=>c.cols.forEach(x=>cdef[x.k]={...x,cat:c.g}));
+  let list=cfgCols(STAT_CFG).filter(k=>cdef[k]||METRICS[k]);
+  const save=()=>{STAT_CFG={rows:[],groups:[{id:(STAT_CFG.groups[0]&&STAT_CFG.groups[0].id)||uid(),name:'기본',cols:list.slice()}]};
+    try{renderStrip();}catch(e){}try{markDirty();saveLocal();}catch(e){}};
+  const lab=k=>(cdef[k]||{l:(METRICS[k]||{l:k}).l}).l;
+  host.innerHTML='';host.classList.remove('hidden');
+  const b=el('div','builder statpick',host);
+  let drag=-1;
+  const draw=()=>{
+    b.innerHTML='';
+    const r1=el('div','brow',b);r1.innerHTML='<div class="bkey">보여 줄 지표<span class="bhint">끌어서 순서 변경</span></div>';
+    const z=el('div','zone',r1);
+    if(!list.length)z.innerHTML='<span class="ph">아래 목록에서 지표를 눌러 넣으세요</span>';
+    list.forEach((k,i)=>{
+      const c=el('span','chip on',z);c.draggable=true;
+      c.innerHTML=`<span class="ord">${i+1}</span>${esc(lab(k))} <span class="x" title="빼기">✕</span>`;
+      c.querySelector('.x').onclick=e=>{e.stopPropagation();list.splice(i,1);save();draw();};
+      c.ondragstart=e=>{drag=i;c.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','s');};
+      c.ondragend=()=>{drag=-1;c.classList.remove('dragging');z.querySelectorAll('.chip').forEach(x=>x.classList.remove('ins-l','ins-r'));};
+      c.ondragover=e=>{if(drag<0)return;e.preventDefault();const r=c.getBoundingClientRect(),left=e.clientX<r.left+r.width/2;
+        z.querySelectorAll('.chip').forEach(x=>x.classList.remove('ins-l','ins-r'));c.classList.add(left?'ins-l':'ins-r');};
+      c.ondrop=e=>{if(drag<0)return;e.preventDefault();const left=c.classList.contains('ins-l');
+        const it=list.splice(drag,1)[0];let to=list.indexOf(k);if(to<0)to=list.length;list.splice(left?to:to+1,0,it);drag=-1;save();draw();};});
+    const r2=el('div','brow',b);r2.innerHTML='<div class="bkey">지표 목록<span class="bhint">눌러서 넣기 · 빼기</span></div>';
+    const pool=el('div','pool col',r2);
+    const tabs=el('div','cattabs',pool),items=el('div','catitems',pool);
+    const cats=STAT_CATALOG.filter(c=>c.cols.length);
+    if(CAT_SEL!=='*'&&!cats.some(c=>c.g===CAT_SEL))CAT_SEL='*';
+    [{g:'*',l:'전체'}].concat(cats.map(c=>({g:c.g,l:c.g.replace(/\s*관련$/,'')}))).forEach(t=>{
+      const btn=el('button','ctab'+(CAT_SEL===t.g?' on':''),tabs);btn.type='button';btn.textContent=t.l;
+      btn.onclick=()=>{CAT_SEL=t.g;draw();};});
+    (CAT_SEL==='*'?cats:cats.filter(c=>c.g===CAT_SEL)).forEach(cat=>cat.cols.forEach(x=>{
+      const on=list.includes(x.k);
+      const a=el('span','cb pick'+(on?' on':''),items);
+      a.textContent=(on?'✓ ':'')+x.l;a.title=(CAT_SEL==='*'?cat.g+' · ':'')+(on?'눌러서 빼기':'눌러서 넣기');
+      a.onclick=()=>{if(on)list=list.filter(k=>k!==x.k);else list.push(x.k);save();draw();};}));
+    const ft=el('div','bfoot',b);
+    ft.innerHTML='<button class="btn sm" data-a="def" title="처음 지표 구성으로 되돌립니다">기본값으로</button>'
+      +'<span class="hint">바꾸는 즉시 카드에 반영됩니다</span><span class="spacer"></span>'
+      +'<button class="btn sm primary" data-a="close">닫기</button>';
+    ft.querySelector('[data-a=def]').onclick=()=>{list=statDefaultCols();save();draw();};
+    ft.querySelector('[data-a=close]').onclick=()=>{host.classList.add('hidden');host.innerHTML='';};};
+  draw();
+}
 /* 지표별 일자 시계열 — 진행 스코프 안에서, 집행이 끝난 날까지만 값을 만든다.
    (남은 집행일은 값 없이 비워 둔다 = 오른쪽이 비는 이유) */
 function dailySeries(k){

@@ -1429,7 +1429,8 @@ function applyRole(){
 }
 setTimeout(applyRole,0);
 {const pb=$('paceCfgBtn');if(pb)pb.onclick=()=>openPaceCfg();}
-$('statCfgBtn').onclick=()=>openBuilder($('statCfgBox'),STAT_CFG,{useRows:false,catalog:STAT_CATALOG,onApply:renderStrip});
+/* 주요 지표 — 그룹 없이 보여 줄 지표만 고른다 (v95) */
+$('statCfgBtn').onclick=()=>openStatPicker($('statCfgBox'));
 $('rawCfgBtn').onclick=()=>openBuilder($('rawCfgBox'),RAW_CFG,{useRows:false,catalog:RAW_CATALOG,onApply:renderRaw});
 $('ganttCfgBtn').onclick=()=>openBuilder($('ganttCfgBox'),GANTT,{rowFields:DIMS,useSub:true,catalog:GANTT_CATALOG,onApply:renderGantt});
 /* 소재 카드의 표시 항목은 소재 팝업 안에서 설정한다 (별도 "표시 항목" 버튼 없음) */

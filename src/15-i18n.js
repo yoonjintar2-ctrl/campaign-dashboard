@@ -155,6 +155,13 @@ Object.assign(I18N_EN,{
   "[새로고침]으로 최신 내용을 받은 뒤 다시 고쳐 주세요. 이 화면에서 고친 내용을 꼭 남겨야 하면 [덮어쓰기]를 누릅니다.":"Use [Reload] to get the latest version and redo your edits. If you must keep the edits on this page, choose [Overwrite].",
   "덮어쓰기":"Overwrite","새로고침":"Reload"
 });
+/* v95 — 주요 지표 고르기 */
+Object.assign(I18N_EN,{
+  "보여 줄 지표":"Metrics shown","끌어서 순서 변경":"drag to reorder","아래 목록에서 지표를 눌러 넣으세요":"Click metrics below to add them",
+  "지표 목록":"All metrics","눌러서 넣기 · 빼기":"click to add · remove","기본값으로":"Reset to default",
+  "처음 지표 구성으로 되돌립니다":"Restores the default set of metrics","바꾸는 즉시 카드에 반영됩니다":"Changes apply to the cards right away",
+  "빼기":"Remove","눌러서 빼기":"Click to remove","눌러서 넣기":"Click to add"
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
