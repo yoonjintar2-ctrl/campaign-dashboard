@@ -200,23 +200,28 @@ function infFlowLayout(M,v,W,HM){
     const N=vals.map(()=>({y:0,h:0,used:0}));
     vis.forEach((i,p)=>{y+=gap[p];const h=Math.max(vals[i]*k,1);N[i]={y,h,used:0};y+=h;});
     return {N,k};};
-  /* 매체 이름표 — 기둥 왼쪽(오른쪽 끝 맞춤), 겹치지 않게 벌리고 벌어진 만큼 짧은 선 */
-  const rowLabels=(N,x,valTxt)=>{const idx=N.map((n,i)=>n.h?i:-1).filter(i=>i>=0);
-    const sp=spread(idx.map(i=>N[i].y+N[i].h/2),30,TOP+6,TOP+HM-10);
-    const cs=N.map(n=>n.y+n.h/2),ly=[];idx.forEach((i,j)=>ly[i]=sp[j]);let s='';
+  /* 매체 이름표 자리 — 마디 가운데에서 시작해 겹치지 않게 벌린다 (이름표 · 구분 괄호가 같이 쓴다) */
+  const labelYs=N=>{const idx=N.map((n,i)=>n.h?i:-1).filter(i=>i>=0);
+    const sp=spread(idx.map(i=>N[i].y+N[i].h/2),30,TOP+6,TOP+HM-10);const ly=[];idx.forEach((i,j)=>ly[i]=sp[j]);return ly;};
+  /* 매체 이름표 — 기둥 왼쪽(오른쪽 끝 맞춤), 벌어진 만큼 짧은 선 */
+  const rowLabels=(N,x,valTxt,ly)=>{const cs=N.map(n=>n.y+n.h/2);let s='';
     rows.forEach((g,i)=>{const y=ly[i];if(!N[i].h)return;
       if(Math.abs(y-cs[i])>2)s+=`<path class="sklead" d="M${x-5},${y} L${x-1},${cs[i]}"></path>`;
       s+=`<text class="sklab" x="${x-8}" y="${y-2}" text-anchor="end" data-i="${i}">${esc(infClip(g.lab,clipN))}</text>
         <text class="skval" x="${x-8}" y="${y+11}" text-anchor="end">${valTxt(g)}</text>`;});
     return s;};
-  /* 구분 머리 — 맨 왼쪽 칸에 구분 이름 + 그 구분 매체들을 감싸는 세로 괄호선. 구분 자체의 숫자는 그리지 않는다 */
-  const segHeads=(N)=>{if(!M.useSeg)return '';
-    const grp=[];rows.forEach((g,i)=>{if(!N[i].h)return;const l=grp[grp.length-1];
-      if(l&&l.s===g.seg){l.b=N[i].y+N[i].h;}else grp.push({s:g.seg,t:N[i].y,b:N[i].y+N[i].h});});
-    const ys=spread(grp.map(x=>(x.t+x.b)/2),18,TOP+6,TOP+HM-4);let s='';
-    grp.forEach((x,k)=>{const t=Math.min(x.t,ys[k]-6),b=Math.max(x.b,ys[k]+6);
-      s+=`<path class="sksgl" d="M${SW-6},${t} L${SW-10},${t} L${SW-10},${b} L${SW-6},${b}"></path>
-        <text class="sksg" x="${SW-16}" y="${ys[k]+4}" text-anchor="end">${esc(infClip(infSegLab(x.s),narrow?8:11))}</text>`;});
+  /* 구분 머리 — 맨 왼쪽 칸에 구분 이름 + 그 구분 매체들(마디와 이름표 모두)을 감싸는 세로 괄호선.
+     구분 자체의 숫자는 그리지 않는다 */
+  const segHeads=(N,ly)=>{if(!M.useSeg)return '';
+    const grp=[];rows.forEach((g,i)=>{if(!N[i].h)return;
+      const t=Math.min(N[i].y,ly[i]-12),b=Math.max(N[i].y+N[i].h,ly[i]+14),l=grp[grp.length-1];
+      if(l&&l.s===g.seg){l.t=Math.min(l.t,t);l.b=Math.max(l.b,b);}else grp.push({s:g.seg,t,b});});
+    /* 이웃 괄호가 겹치면 가운데에서 나눈다 */
+    for(let k=1;k<grp.length;k++)if(grp[k].t<grp[k-1].b+6){const m=(grp[k].t+grp[k-1].b)/2;grp[k-1].b=m-3;grp[k].t=m+3;}
+    let s='';
+    grp.forEach(x=>{const cy=(x.t+x.b)/2;
+      s+=`<path class="sksgl" d="M${SW-6},${x.t} L${SW-10},${x.t} L${SW-10},${x.b} L${SW-6},${x.b}"></path>
+        <text class="sksg" x="${SW-16}" y="${cy+4}" text-anchor="end">${esc(infClip(infSegLab(x.s),narrow?8:11))}</text>`;});
     return s;};
   if(v<2){
     /* ①② — 다음 단계로 넘어간 몫(오른쪽 위 기둥, 매체별로 쌓임) + 이탈(오른쪽 아래 회색) */
@@ -236,7 +241,7 @@ function infFlowLayout(M,v,W,HM){
       out.nodes.push({id:`${s.ka}:${g.key}`,cls:'sknode',x:xL,y:n.y,w:NW,h:n.h,fill:col,at:{i,p:v}});});
     if(bu<hB)out.nodes.push({id:`${s.kb}:__rest`,cls:'sknode bn',x:xR,y:rTop+bu,w:NW,h:hB-bu});
     if(hD>0)out.nodes.push({id:`drop${v}`,cls:'sknode dn',x:xR,y:dTop,w:NW,h:hD,at:{drop:v}});
-    out.labs+=segHeads(N)+rowLabels(N,xL,g=>`${s.sa} ${fmt(s.a(g))}`);
+    {const ly=labelYs(N);out.labs+=segHeads(N,ly)+rowLabels(N,xL,g=>`${s.sa} ${fmt(s.a(g))}`,ly);}
     const by=rTop+hB/2,dy=dTop+hD/2;
     const yb=Math.max(TOP+8,Math.min(by,dy-34));
     out.labs+=`<text class="sklab big" x="${xR+NW+8}" y="${yb-2}">${s.lb}</text>
@@ -264,7 +269,7 @@ function infFlowLayout(M,v,W,HM){
     out.nodes.push({id:`land:${r.k}`,cls:'sknode r',x:xR,y:n.y,w:NW,h:n.h,rx:2,fill:r.kind==='other'?'var(--gline)':'var(--acc)',at:{j}});
     out.labs+=`<text class="sklab" x="${xR+NW+8}" y="${ly[j]-2}" data-j="${j}">${esc(r.l)}</text>
       <text class="skval" x="${xR+NW+8}" y="${ly[j]+11}">${fmt(rv[j])} · ${pct(M.TV?rv[j]/M.TV:NaN,1)}</text>`;});
-  out.labs+=segHeads(N)+rowLabels(N,xL,g=>`${L('유입','inflow')} ${fmt(M.iwvOf(g))}`);
+  {const ly=labelYs(N);out.labs+=segHeads(N,ly)+rowLabels(N,xL,g=>`${L('유입','inflow')} ${fmt(M.iwvOf(g))}`,ly);}
   return out;}
 const infFlowNames=()=>[L('노출 → 클릭','Impressions → clicks'),L('클릭 → 유입','Clicks → inflow'),L('유입 → 랜딩 페이지','Inflow → landing page')];
 const infFlowShort=()=>[L('노출 → 클릭','Imps → clicks'),L('클릭 → 유입','Clicks → inflow'),L('유입 → 랜딩','Inflow → landing')];
