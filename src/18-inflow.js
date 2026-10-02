@@ -6,7 +6,7 @@
    ③ 체류시간 분포 — 100% 막대(짧게 머문 방문 → 오래 머문 방문), 평균 체류시간 순
    ④ 상세 표 — 매체 서머리와 같은 표(헤더 편집 · 머리글 설명 · 정렬 · 열 너비). 행 머리는 '묶음' 을 따르다가 헤더 편집에서 바꾸면 그대로 둔다 (v93)
    데이터가 전혀 없는 캠페인에서는 영역 자체를 감춘다. */
-var INF={dim:'media'};
+var INF={dim:'media',mapSeg:''};
 /* IWV 가 이보다 적은 라인은 추적이 빠진 것으로 보고 분석에서 뺀다 — 클릭은 많은데 IWV 가 한두 건이면
    유입률 · 유입당 단가가 0% · 수천만 원으로 튀어 다른 매체가 묻힌다 (표 아래 안내로 알려 준다) */
 const INF_MIN=10;
@@ -33,10 +33,11 @@ function infLineStat(){
     out.push({lid,l,b,ok:(+b.iwv||0)>=INF_MIN||(!(+b.iwv)&&dwSum(b)>=INF_MIN)});});
   return out;}
 /* seg — 구분으로 나누기 (v102): 같은 매체라도 구분이 다르면 다른 줄. 구분은 줄을 묶는 머리일 뿐 따로 그리지 않는다 */
-function infGroups(dim,okSet,seg){
+function infGroups(dim,okSet,seg,onlySeg){
   const map=new Map();
   factFilter().forEach(f=>{
     if(okSet&&!okSet.has(f.lid))return;
+    if(onlySeg!=null&&(f.segment||'')!==onlySeg)return;
     let key,lab,sub,col;
     if(dim==='product'){key=f.media+'\u0001'+f.product;lab=f.product||'–';sub=f.media;col=f.media;}
     else if(dim==='creative'){key=f.creative;lab=f.creative||'–';sub='';col=f.creative;}
@@ -67,7 +68,8 @@ function renderInflow(){
   const LS=infLineStat();
   const okSet=new Set(LS.filter(x=>x.ok).map(x=>x.lid));
   /* 구분으로 나누기 (v102) — 머리의 체크. 유입 데이터에 구분이 둘 이상일 때만 보인다 */
-  const segOK=infSegList(okSet).length>=2;
+  const rkS=infSegRank(),segList=infSegList(okSet).sort((a,b)=>rkS(a)-rkS(b));
+  const segOK=segList.length>=2;
   const useSeg=!!INF.seg&&segOK;
   {const lb=$('infSegLbl'),sc=$('infSegChk');
     if(lb)lb.classList.toggle('hidden',!segOK);
@@ -98,7 +100,8 @@ function renderInflow(){
     <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
       <div id="infSankey"></div></div>
     <div class="infgrid">
-      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span></div>
+      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span>
+          ${segOK?`<select class="ctl sm infmapseg" id="infMapSeg" title="${L('구분 하나만 골라 보기','Show one segment only')}"><option value="">${L('전체 (구분 없이)','All (no segment)')}</option>${segList.map(x=>`<option value="${esc(x)}"${INF.mapSeg===x?' selected':''}>${esc(infSegLab(x))}</option>`).join('')}</select>`:''}</div>
         <div class="infmap" id="infMap"></div></div>
       <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
           <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
@@ -112,7 +115,11 @@ function renderInflow(){
   try{infSankey($('infSankey'),rows,T,useSeg);}catch(e){console.warn(e);}
   /* 지도 높이 = 옆 체류시간 분포의 막대 영역 높이 — 두 카드 높이를 맞춘다 */
   const dwR=rows.filter(g=>dwSum(g.b)>0),nDw=dwR.length,nSh=useSeg?new Set(dwR.map(g=>g.seg)).size:0;
-  try{infMap($('infMap'),rows,T,nDw?nDw*44+nSh*28+26:340);}catch(e){console.warn(e);}
+  /* 효율 지도는 구분으로 나누지 않는다(원이 너무 작아진다) — 전체, 또는 머리에서 고른 구분 하나만 (v103) */
+  const mapRows=()=>infGroups(dim,okSet,false,segOK&&INF.mapSeg!=null&&INF.mapSeg!==''&&segList.includes(INF.mapSeg)?INF.mapSeg:null).filter(g=>infHas(g.b));
+  const mapH=nDw?nDw*44+(useSeg?nSh*16:0)+26:340;
+  try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}
+  {const ms=$('infMapSeg');if(ms)ms.onchange=()=>{INF.mapSeg=ms.value;try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}};}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
   INF_OK=okSet;
   try{infTable();}catch(e){console.warn(e);}
@@ -450,17 +457,21 @@ function infMap(host,rows0,T,hH){
 /* ---------- ③ 체류시간 분포 ---------- */
 function infDwell(host,rows0){
   if(!host)return;
-  /* 구분으로 나눴으면 구분 순서대로 묶고 그 안에서 평균 체류시간 순 — 구분마다 머리 줄 (v102) */
+  /* 구분으로 나눴으면 구분 순서대로 묶고 그 안에서 평균 체류시간 순 */
   const sg=rows0.some(g=>g.seg!=null),rk=infSegRank();
   const rows=rows0.filter(g=>dwSum(g.b)>0).sort((a,b)=>(sg?rk(a.seg)-rk(b.seg):0)||(dwAvg(b.b)||0)-(dwAvg(a.b)||0));
   if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('체류시간 구간 데이터가 없습니다.','No time-on-site data.')}</div>`;return;}
-  host.innerHTML=`<div class="infdw">${rows.map((g,i)=>{const n=dwSum(g.b);
-      const head=sg&&(i===0||rows[i-1].seg!==g.seg)?`<div class="dwseg">${esc(infSegLab(g.seg))}</div>`:'';
+  const rowHTML=(g,i)=>{const n=dwSum(g.b);
       const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
-      return `${head}<div class="dwrow" data-i="${i}">
+      return `<div class="dwrow" data-i="${i}">
         <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
         <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}" data-b="${s.bi}" data-v="${s.v}"></i>`).join('')}</div>
-        <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;}).join('')}</div>`;
+        <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+  /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
+  if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
+    host.innerHTML=`<div class="infdw sg">${grp.map(x=>`<div class="dwgrp"><div class="dwsegc"><b>${esc(infSegLab(x.s))}</b></div>
+        <div class="dwrows">${x.idx.map(i=>rowHTML(rows[i],i)).join('')}</div></div>`).join('')}</div>`;}
+  else host.innerHTML=`<div class="infdw">${rows.map(rowHTML).join('')}</div>`;
   host.querySelectorAll('.dwbar i').forEach(seg=>{const g=rows[+seg.closest('.dwrow').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))} · ${L(b.l,b.en)}</div>`
       +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`

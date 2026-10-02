@@ -1723,7 +1723,20 @@ table.tbl.fit{width:auto}
 .isdot .ring{transition:stroke-width .12s}
 .isdot.on .ring{stroke-width:4.4}
 .isdot .halo{transition:opacity .12s}
-.issuekey{display:inline-block;width:8px;height:8px;border-radius:50%;border:2.5px solid #e0902f;background:var(--surface);margin-right:6px;vertical-align:-1px}
+.issuekey{display:inline-block;width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);margin-right:6px;vertical-align:-1px}
+/* 일자별 효율 비교 — 입체 (v103): 그래프가 카드 좌우 끝까지, 아래는 바닥(웜 토프)이 범례까지 이어진다 */
+.card[data-sect="daily"]>.bd{padding-bottom:0}
+#chartDaily{margin:0 -18px}
+#chartDaily svg.chart.d3{display:block}
+#dailyLegend{margin:0 -18px;padding:2px 22px 14px;justify-content:flex-end;gap:16px;
+  background:rgba(150,120,90,.28);border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px)}
+[data-theme="dark"] #dailyLegend{background:rgba(200,168,136,.16)}
+#dailyLegend .it{color:#6e655c;font-weight:700}
+[data-theme="dark"] #dailyLegend .it{color:#b8ab9c}
+.linekey.d3{width:20px;height:4px;border-radius:3px;background:rgba(16,18,22,.42)}
+[data-theme="dark"] .linekey.d3{background:rgba(255,255,255,.55)}
+.hillkey{display:inline-block;width:22px;height:10px;margin-right:2px;
+  background:linear-gradient(180deg,rgba(150,120,90,.35),rgba(150,120,90,.6));clip-path:path('M0 10 C5 2 9 2 12 5 S18 3 22 1 L22 10 Z')}
 
 /* ---------- tables ---------- */
 .tbl-wrap{overflow:auto;max-height:74vh}
@@ -2649,8 +2662,14 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .mdot:hover .mc{stroke-width:2.5}
 .maxl{font-size:11px;font-weight:700;fill:var(--ink2)}
 .infdw{display:flex;flex-direction:column;gap:12px}
-.dwseg{font-size:11px;font-weight:800;color:var(--ink2);padding:4px 0 0;margin-bottom:-4px;border-top:1px dashed var(--line);letter-spacing:.01em}
-.infdw>.dwseg:first-child{border-top:0;padding-top:0}
+/* 체류시간 분포 — 구분 괄호 (v103, 유입 흐름과 같은 모양) */
+.infdw.sg{gap:16px}
+.dwgrp{display:grid;grid-template-columns:78px minmax(0,1fr);gap:0 10px;align-items:stretch}
+.dwsegc{position:relative;display:flex;align-items:center;justify-content:flex-end;padding-right:14px;min-width:0}
+.dwsegc b{font-size:10.5px;font-weight:800;color:var(--ink2);text-align:right;line-height:1.2;overflow-wrap:anywhere}
+.dwsegc::after{content:'';position:absolute;right:2px;top:2px;bottom:2px;width:4px;border:1.4px solid var(--gline);border-right:0;border-radius:2px 0 0 2px}
+.dwrows{display:flex;flex-direction:column;gap:12px;min-width:0}
+.infh .infmapseg{margin-left:auto;max-width:170px}
 .dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 96px;gap:12px;align-items:center}
 .dwl{min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .dwl b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

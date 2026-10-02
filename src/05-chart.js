@@ -175,10 +175,20 @@ function renderDaily(){
      9/1~9/2 를 골랐으면 9/2 까지만 진하고 9/3 부터 옅은 음영이 깔린다. */
   const lastOn=Math.min(PS.i1,dIdx(YESTERDAY));
   const EL=Math.max(0,Math.min(lastOn+1-SC.i0,ds.length));
-  const W=1680,H=480,P={l:82,r:lk==='none'?22:96,t:16,b:36};
-  const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,class:'chart'},host);
-  svg.style.height=H+'px';
-  const X0=P.l,XW=W-P.l-P.r,PH=H-P.t-P.b,step=XW/ds.length,cx=i=>X0+step*i+step/2;
+  /* ===== v103 — 입체(3D) =====
+     y축 없이 좌우를 꽉 채우고, 카드 아래는 바닥(웜 토프 — 전체 캠페인 › 캠페인별 광고비와 같은 결).
+     바닥이 막대 뒤로 이어지며 그대로 **일별 소진금액 언덕**이 된다(테두리 없이, 0원부터 같은 눈금).
+     막대는 반투명 입체(앞 · 옆 · 윗면), 그림자도 캠페인별 광고비와 같은 크기 · 자리.
+     꺾은선은 평범한 선(굵고 반투명한 검정 · 부드러운 곡선), 눈금 대신 처음 · 최고 · 최저 · 마지막 값.
+     운영 이슈는 흰 바탕 · 검은 테두리의 번호 원 */
+  const DARK=document.documentElement.getAttribute('data-theme')==='dark';
+  const W=Math.max(Math.round(host.clientWidth)||1200,560),H=500;
+  DAILY_W=W;
+  const SXp=Math.round(Math.max(14,Math.min(28,W*.018)));
+  const floorH=132,Ftop=H-floorH,BASE=Ftop+Math.round(floorH*.42);
+  const P={l:SXp,r:SXp,t:16};
+  const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,class:'chart d3'},host);
+  const X0=P.l,XW=W-P.l-P.r,step=XW/ds.length,cx=i=>X0+step*i+step/2;
   const pal=pickRamp(seriesKeys.length);
   const remainDays=Math.max(ds.length-EL,0);
   const expOf=key=>{                                   /* 시리즈별 캠페인 예상 총량 */
@@ -195,112 +205,83 @@ function renderDaily(){
     const perDay=remainDays?left/remainDays:0;
     const fvals=ds.map((_,i)=>i>=EL?perDay:0);
     return {key,vals,fvals};});
-  const totals=ds.map((_,i)=>sum(series.map(s=>i>=EL?s.fvals[i]:s.vals[i])));
-  /* 막대 축 — 눈금을 큰 단위로 끊고, 막대는 플롯의 약 53%까지만 */
-  const barTop=(Math.max(...totals)||1)*1.87;
-  const bt=niceTicks(0,barTop,3,true);
-  const yMax=bt.hi;
-  const Y=v=>P.t+PH*(1-v/yMax);
-  /* ---------- 일별 소진금액 — 막대 뒤에 깔리는 영역 (v62 · v63 에서 크게) ----------
-     y축을 따로 두지 않는다. **가장 높은 막대 꼭대기**를 기준 삼은 "가상 축"이라
-     눈금 없이 흐름만 읽는 용도다. 선은 그리지 않고 면만 채운다.
-     맨 앞에 그리므로 막대·꺾은선·이슈 라벨이 모두 이 위에 얹힌다 —
-     운영 이슈 말풍선 줄까지 올라가도 글자는 그 위에 그려져 그대로 읽힌다 (v63).
-
-     바닥값(lo) — 0 원부터 재면 가장 적게 쓴 날도 이미 봉우리의 3~4할 높이를 차지해
-     등락이 밋밋해진다. 그래서 바닥을 **최솟값보다 조금 아래**로 끌어올려
-     골짜기가 깊게 파이도록 했다 (v63). 대신 면적이 금액에 비례하지는 않으므로
-     범례에 "눈금 없음"이라고 적어 두고, 정확한 금액은 툴팁으로 읽게 한다. */
-  const SPEND_K=2.4;                       /* 가장 높은 막대 대비 몇 배까지 올릴지 */
-  const SPEND_PAD=0.45;                    /* 바닥을 최솟값 아래 몇 만큼에 둘지 (등락 폭) */
-  /* 윗선 — 막대가 높아 2.4 배가 플롯을 넘어서는 캠페인에서는 여기서 멈춘다.
-     플롯 맨 위에 딱 붙이면 꼭대기가 잘린 것처럼 보여서 위쪽에 숨 쉴 틈을 남긴다 (v63). */
-  const SPEND_CEIL=P.t+PH*0.06;
+  const vOf=(si,i)=>i>=EL?(SHOW_FORECAST?series[si].fvals[i]:0):series[si].vals[i];
+  const totals=ds.map((_,i)=>sum(series.map((s,si)=>vOf(si,i))));
+  /* 막대 — 가장 높은 날이 바닥에서 위로 절반쯤 */
+  const barMaxH=(BASE-P.t)*.5,mxT=Math.max(...totals)||1;
+  const BH=v=>v/mxT*barMaxH;
+  const bw=Math.min(step*.54,26),DEP=Math.max(4,Math.min(9,step*.22));
+  /* 색 — 바닥 · 글자 */
+  const FLC=DARK?[200,168,136]:[150,120,90];
+  const FLO=DARK?[.04,.09,.16]:[.08,.17,.28];
+  const INK=DARK?'#e8e8e8':'#24262a',INK2=DARK?'#b8ab9c':'#8a7f75',HALO=cssVar('--surface')||(DARK?'#1e1e1e':'#fff');
+  const rgbOf=c=>{c=String(c||'').trim();const m=/^rgba?\(([^)]+)\)/.exec(c);
+    if(m)return m[1].split(',').slice(0,3).map(x=>+x);
+    try{return hex2rgb(c);}catch(e){return [120,124,130];}};
+  const rgba=(c,a,k=1)=>`rgba(${c.map(v=>Math.round(Math.max(0,Math.min(255,v*k)))).join(',')},${a})`;
+  /* ---------- 바닥 + 일별 소진금액 언덕 ---------- */
   const spend=ds.map((_,i)=>i>=EL?NaN:sum(fs.filter(f=>f.d===SC.i0+i).map(f=>f.cost)));
   let SPEND_ON=false;
-  (function drawSpend(){
-    if(EL<2)return;
-    const got=spend.filter(isFinite);
-    const sMax=Math.max(0,...got);
-    if(!(sMax>0))return;
-    SPEND_ON=true;
-    const sMin=Math.min(...got),span=sMax-sMin;
-    const lo=span>0?Math.max(0,sMin-span*SPEND_PAD):0;
-    const base=P.t+PH;
-    const peakY=Math.max(SPEND_CEIL,base-(base-Y(Math.max(...totals)||0))*SPEND_K);
-    const SY=v=>Math.min(base,base-((v-lo)/(sMax-lo||1))*(base-peakY));
-    const pts=spend.map((v,i)=>isFinite(v)?[cx(i),SY(v)]:null).filter(Boolean);
-    if(pts.length<2)return;
-    /* 양 끝은 **바닥에서 비스듬히 올라오고 비스듬히 내려간다** (v65).
-       예전에는 첫 점의 높이 그대로 왼쪽 가장자리까지 수평으로 뻗었는데,
-       첫날이 가장 많이 쓴 날이면 그 수평선이 윗선에 딱 붙어
-       "천장을 뚫고 잘린 것"처럼 보였다. 이제 평평한 윗면 자체가 생기지 않는다. */
-    const xL=X0,xR=X0+step*EL,sm=smoothPath(pts),ci=sm.indexOf(' C');
-    if(ci<0)return;
-    const d=`M${xL} ${base} L${pts[0][0]} ${pts[0][1]}`+sm.slice(ci)+` L${xR} ${base} Z`;
-    const gid='spGrad'+uid();
-    const lg=S('linearGradient',{id:gid,x1:'0',y1:'0',x2:'0',y2:'1'},svg);
-    S('stop',{offset:'0%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o1)'},lg);
-    S('stop',{offset:'100%','stop-color':'var(--spend)','stop-opacity':'var(--spend-o2)'},lg);
-    const ar=S('path',{d,fill:`url(#${gid})`,stroke:'none','pointer-events':'none',class:'spendArea'},svg);
-    /* 부드러운 곡선은 꼭짓점 **위로** 부푼다 (스플라인 오버슛) — 가장 많이 쓴 날보다
-       면이 더 높이 올라가서, 윗선에 닿았을 때 잘린 것처럼 보인다.
-       그래서 천장을 넘을 때만이 아니라 **늘** 실제로 그려진 높이를 재서 윗선에 맞춘다.
-       바닥선을 축으로 세로만 줄이므로 가로 위치·바닥은 그대로다. (v63) */
-    try{
-      const t=ar.getBBox().y;
-      if(t<peakY-0.5&&base>t)
-        ar.setAttribute('transform',
-          `translate(0 ${base}) scale(1 ${(base-peakY)/(base-t)}) translate(0 ${-base})`);
-    }catch(e){}
-  })();
-  const txt=(x,y,s,anchor)=>{const t=S('text',{x,y,'text-anchor':anchor||'end','font-size':AXIS.size,
-    fill:AXIS.fill,'font-weight':AXIS.weight},svg);t.textContent=s;return t;};
-  const bigNum=v=>{
-    if(bk==='cost')return v>=1e8?(v/1e8).toFixed(v%1e8?1:0)+'억':fmt(v/1e4)+'만';
-    if(v>=1e8)return (v/1e8).toFixed(v%1e8?1:0)+'억';
-    if(v>=1e4)return (v/1e4).toFixed(v%1e4?1:0)+'만';
-    return fmt(v);};
-  /* 주 눈금 단위가 커서 값을 읽기 어려우므로 보조 눈금(minor tick)을 함께 그린다 */
-  const majStep=bt.ticks.length>1?bt.ticks[1]-bt.ticks[0]:yMax;
-  const minorDiv=(()=>{const m=majStep/Math.pow(10,Math.floor(Math.log10(majStep||1)));
-    return Math.abs(m-2)<1e-6?4:Math.abs(m-2.5)<1e-6?5:5;})();
-  const minStep=majStep/minorDiv;
-  /* 가로 눈금선은 그리지 않는다 — 축 옆 숫자와 짧은 눈금만 남긴다 */
-  for(let v=minStep;v<yMax-1e-6;v+=minStep){
-    if(Math.abs(v/majStep-Math.round(v/majStep))<1e-6)continue;
-    const y=P.t+PH*(1-v/yMax);
-    const t=S('text',{x:P.l-9,y:y+3,'text-anchor':'end','font-size':8.5,fill:'var(--muted)','font-weight':500,
-      opacity:.7},svg);
-    t.textContent=bigNum(+v.toFixed(6));}
-  bt.ticks.forEach(v=>{
-    const y=P.t+PH*(1-v/yMax);
-    if(v===0)S('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
-    S('line',{x1:P.l-5,x2:P.l,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
-    txt(P.l-9,y+3.5,bigNum(v));});
-  /* 막대 사이 간격을 좁혀 그래프 폭을 줄인다 (남는 폭은 페이지 좌우 여백으로) */
-  const bw=Math.min(step-2,26);
-  /* 미집행 구간 음영 */
-  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:PH,fill:'var(--acc-soft2)'},svg);
+  {const got=spend.filter(isFinite),sMax=Math.max(0,...got);
+    const BK=14,HH=barMaxH*.95;
+    let hill='';
+    if(EL>=2&&sMax>0){
+      SPEND_ON=true;
+      const pts=[];for(let i=0;i<EL;i++)pts.push([cx(i)+BK,Math.min(Ftop,BASE-BK-(num(spend[i])/sMax)*HH)]);
+      const sm=smoothPath(pts),ci=sm.indexOf(' C');
+      hill=`M0 ${H} L0 ${pts[0][1]} L${pts[0][0]} ${pts[0][1]}`+(ci>=0?sm.slice(ci):'');
+      const last=pts[pts.length-1];
+      /* 집행이 끝난 뒤(미집행 구간)는 비스듬히 바닥 높이로 내려온다 */
+      if(EL<ds.length){const xe=Math.min(W,last[0]+step*1.2);
+        hill+=` C${last[0]+step*.5} ${last[1]} ${xe-step*.5} ${Ftop} ${xe} ${Ftop} L${W} ${Ftop}`;}
+      else hill+=` L${W} ${last[1]}`;
+      hill+=` L${W} ${H} Z`;}
+    else hill=`M0 ${H} L0 ${Ftop} L${W} ${Ftop} L${W} ${H} Z`;
+    const hTop=Math.min(Ftop,...(SPEND_ON?spend.filter(isFinite).map(v=>BASE-BK-(v/sMax)*HH):[Ftop]))-6;
+    const gid='dfl'+uid();
+    const lg=S('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:0,y1:hTop,x2:0,y2:H},svg);
+    S('stop',{offset:0,'stop-color':`rgb(${FLC})`,'stop-opacity':FLO[0]},lg);
+    S('stop',{offset:Math.max(.05,Math.min(.95,(BASE-hTop)/(H-hTop))).toFixed(3),'stop-color':`rgb(${FLC})`,'stop-opacity':FLO[1]},lg);
+    S('stop',{offset:1,'stop-color':`rgb(${FLC})`,'stop-opacity':FLO[2]},lg);
+    S('path',{d:hill,fill:`url(#${gid})`,stroke:'none','pointer-events':'none',class:'dground'},svg);
+    /* 언덕 위 금액 — 처음 · 가장 많이 쓴 날 · 마지막 날만 */
+    if(SPEND_ON){const iC=spend.indexOf(Math.max(...spend.filter(isFinite)));
+      [...new Set([iC,EL-1])].forEach(i=>{if(!isFinite(spend[i]))return;
+        const x=cx(i)+BK,y=BASE-BK-(spend[i]/sMax)*HH;
+        const an=i===0?'start':i===EL-1?'end':'middle';
+        const t=S('text',{x:an==='start'?x-6:an==='end'?x+8:x,y:y-7,'text-anchor':an,'font-size':10.5,'font-weight':700,
+          fill:INK2,'paint-order':'stroke',stroke:HALO,'stroke-width':3,'pointer-events':'none',class:'dspl'},svg);
+        t.textContent=spend[i]>=1e8?(spend[i]/1e8).toFixed(1)+'억':spend[i]>=1e4?fmt(Math.round(spend[i]/1e4))+'만':fmt(spend[i]);});}}
+  /* 미집행 구간 — 옅게 덮는다 */
+  if(EL<ds.length)S('rect',{x:X0+step*EL,y:P.t,width:XW-step*EL,height:BASE-P.t,fill:HALO,opacity:.45,'pointer-events':'none'},svg);
+  /* ---------- 막대 그림자 + 반투명 입체 막대 ---------- */
+  const shg='dsh'+uid();
+  {const rg=S('radialGradient',{id:shg},svg);
+    S('stop',{offset:0,'stop-color':'#000','stop-opacity':DARK?.5:.2},rg);S('stop',{offset:1,'stop-color':'#000','stop-opacity':0},rg);}
+  const PRGB=pal.map(rgbOf);
+  ds.forEach((d,i)=>{if(!(totals[i]>0))return;
+    const bl=cx(i)-(bw+DEP)/2,w=bw+DEP+26;
+    S('ellipse',{cx:bl-8+w/2,cy:BASE-DEP/2,rx:w/2,ry:8,fill:`url(#${shg})`,opacity:i>=EL?.3:1,'pointer-events':'none'},svg);});
   ds.forEach((d,i)=>{
-    let base=Y(0);const future=i>=EL;
-    /* 값이 0인 계열은 건너뛰므로, 맨 위에 실제로 그려지는 칸을 먼저 찾아 거기에만 둥근 모서리를 준다
-       (그렇지 않으면 날짜마다 맨 윗칸이 둥글기도, 각지기도 한다) */
-    const vOf=si=>future?(SHOW_FORECAST?series[si].fvals[i]:0):series[si].vals[i];
-    let topIdx=-1;
-    for(let si=series.length-1;si>=0;si--){if(vOf(si)>0){topIdx=si;break;}}
-    series.forEach((s,si)=>{const v=vOf(si);if(v<=0)return;
-      const h=PH*(v/yMax),y=base-h;
-      S('path',{d:roundRect(cx(i)-bw/2,y,bw,Math.max(h-2,1),si===topIdx?4:0),
-        fill:pal[si],opacity:future?.18:1},svg);
-      base=y;});
+    const future=i>=EL,bl=cx(i)-(bw+DEP)/2;let y=BASE;
+    let topIdx=-1;for(let si=series.length-1;si>=0;si--){if(vOf(si,i)>0){topIdx=si;break;}}
+    const g=S('g',{opacity:future?.22:1,'pointer-events':'none'},svg);
+    series.forEach((s,si)=>{const v=vOf(si,i);if(v<=0)return;
+      const h=Math.max(BH(v),1),top=y-h,c=PRGB[si];
+      S('rect',{x:bl.toFixed(1),y:top.toFixed(1),width:bw.toFixed(1),height:h.toFixed(1),fill:rgba(c,.8)},g);
+      S('path',{d:`M${(bl+bw).toFixed(1)} ${top.toFixed(1)} l${DEP.toFixed(1)} ${(-DEP).toFixed(1)} v${h.toFixed(1)} l${(-DEP).toFixed(1)} ${DEP.toFixed(1)} Z`,fill:rgba(c,.8,.72)},g);
+      if(si===topIdx)S('path',{d:`M${bl.toFixed(1)} ${top.toFixed(1)} l${DEP.toFixed(1)} ${(-DEP).toFixed(1)} h${bw.toFixed(1)} l${(-DEP).toFixed(1)} ${DEP.toFixed(1)} Z`,fill:rgba(c,.85,1.18)},g);
+      y=top;});
     const rest=isRest(d);
-    const t=S('text',{x:cx(i),y:H-P.b+15,'text-anchor':'middle','font-size':9,
-      fill:rest?'var(--hol)':AXIS.fill,opacity:rest?.8:1},svg);t.textContent=d.getDate();
+    const t=S('text',{x:cx(i),y:BASE+21,'text-anchor':'middle','font-size':10.5,'font-weight':700,
+      fill:rest?'var(--hol)':INK2,opacity:rest?.85:1},svg);t.textContent=d.getDate();
     if(d.getDate()===1||i===0){
-      const m=S('text',{x:cx(i),y:H-P.b+27,'text-anchor':'middle','font-size':9.5,fill:'var(--ink2)','font-weight':600},svg);
+      const m=S('text',{x:cx(i),y:BASE+35,'text-anchor':'middle','font-size':10,'font-weight':800,fill:INK2},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
-  let lineVals=null,LYf=null;
+  svg.querySelectorAll('text.dspl').forEach(t=>svg.appendChild(t));
+  /* ---------- 꺾은선 ---------- */
+  let lineVals=null,LYf=null;DAILY_LY=null;
+  const lTop=P.t+30,lBot=Math.max(lTop+70,BASE-barMaxH-DEP-26);
   if(lk!=='none'){
     lineVals=ds.map((_,i)=>{
       if(i>=EL)return NaN;
@@ -308,91 +289,74 @@ function renderDaily(){
       fs.filter(f=>f.d===SC.i0+i).forEach(f=>{AMET.forEach(m=>b[m]+=f[m]);b.cost+=f.cost;});
       return METRICS[lk].c(b);});
     const ok=lineVals.filter(isFinite);
-    /* 예상 효율선도 그래프 필터를 따른다 (v54) — 안 그러면 좁혀 본 실적과 기준선이 따로 논다 */
+    /* 예상 효율선도 그래프 필터를 따른다 (v54) */
     const benchV=METRICS[lk].c(aggExp(dailyLines()));
     const useBench=SHOW_BENCH&&isFinite(benchV);
     const dom=useBench?ok.concat([benchV]):ok;
-    /* 꺾은선에 쓸 값도 예상 기준선도 없으면 눈금이 NaN 이 된다 → 꺾은선 없이 그린다 (v78) */
     if(!dom.length){lineVals=null;}else{
     const mn=Math.min(...dom),mx=Math.max(...dom);
     const rg=(mx-mn)||mx*.2||1;
-    /* 비율 · 단가는 음수가 될 수 없다 — 여백 때문에 축이 −1.00% 까지 내려가지 않게 (v79) */
-    const lt=niceTicks(mn>=0?Math.max(0,mn-rg*.12):mn-rg*.12,mx+rg*.12,3,false);
-    const lo=lt.lo,hi=lt.hi;
-    const lTop=P.t+PH*0.34,lBot=P.t+PH*0.66;
-    const LY=v=>lBot-(num(v)-lo)/(hi-lo)*(lBot-lTop);
+    /* 위아래 여백을 넉넉히 — 하루 이틀 튄 날 때문에 선이 휙휙 꺾여 보이지 않게 */
+    const lo=mn>=0?Math.max(0,mn-rg*.8):mn-rg*.8,hi=mx+rg*.8;
+    const LY=v=>lBot-(num(v)-lo)/((hi-lo)||1)*(lBot-lTop);
     LYf=LY;
-    const lfmt=v=>['ctr','vtr','cvr'].includes(lk)?(v*100).toFixed(2)+'%':lk==='roas'?v.toFixed(2)+'x':fmt(v);
-    const tickLabels=[];
-    lt.ticks.forEach(v=>{const y=LY(v);
-      S('line',{x1:W-P.r,x2:W-P.r+5,y1:y,y2:y,stroke:'var(--gline)','stroke-width':1},svg);
-      tickLabels.push({y,el:txt(W-P.r+9,y+3.5,lfmt(v),'start')});});
-    const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(v),i]:null).filter(Boolean);
-    /* 값이 없는 날(집행 공백)에서 선을 끊는다 (v79).
-       예전에는 빈 날을 건너뛰어 한 줄로 이었더니, 1차(6월)와 2차(9월) 사이 3개월을
-       대각선으로 가로지르고 곡선 보정이 튀어 9/1 근처에 고리가 생겼다 */
+    /* 선은 이웃한 날과 1:2:1 로 살짝 고른 높이로 그린다 — 하루하루 튀는 값 때문에 휙휙 꺾이지 않게.
+       (이름표 · 툴팁의 숫자는 그날 실제 값) */
+    const sv=lineVals.map((v,i)=>{if(!isFinite(v))return NaN;const a=lineVals[i-1],c=lineVals[i+1];
+      let s2=2*v,w=2;if(isFinite(a)){s2+=a;w++;}if(isFinite(c)){s2+=c;w++;}return s2/w;});
+    const pts=lineVals.map((v,i)=>isFinite(v)?[cx(i),LY(sv[i]),i]:null).filter(Boolean);
+    const SY_=new Map(pts.map(p=>[p[2],p[1]]));
+    /* 값이 없는 날(집행 공백)에서 선을 끊는다 (v79) */
     const runs=[];pts.forEach(p=>{const r=runs[runs.length-1];
       if(r&&p[2]===r[r.length-1][2]+1)r.push(p);else runs.push([p]);});
-    if(!pts.length){lineVals=null;}                    /* 계산할 값이 없으면 꺾은선은 그리지 않는다 */
+    if(!pts.length){lineVals=null;}
     else{
-    /* 꺾은선 — 굵게, 왼쪽에서 오른쪽으로 갈수록 진해지는 한 계열의 그라데이션 */
-    /* 꺾은선 — 테마 강조색으로, 밝은 띠가 좌우로 흐른다 */
-    const gid2='lineGrad'+uid();
-    const lg2=S('linearGradient',{id:gid2,x1:'0',y1:'0',x2:'1',y2:'0'},svg);
-    S('stop',{offset:'0%','stop-color':'var(--acc-lt)'},lg2);
-    const mid2=S('stop',{offset:'50%','stop-color':'var(--acc-d)'},lg2);
-    S('stop',{offset:'100%','stop-color':'var(--acc-lt)'},lg2);
-    /* 동작 줄이기 설정이면 흐르는 띠를 멈춘다 (v78 — 가만히 있어도 CPU 를 쓰던 원인) */
-    let rm=false;try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
-    if(!rm)S('animate',{attributeName:'offset',values:'0.04;0.96;0.04',dur:'6.4s',
-      repeatCount:'indefinite',calcMode:'spline',
-      keySplines:'.42 0 .58 1;.42 0 .58 1',keyTimes:'0;.5;1'},mid2);
-    /* 그라데이션은 그래프 전체 폭 기준 — 끊긴 조각마다 색이 다시 시작하지 않게 */
-    lg2.setAttribute('gradientUnits','userSpaceOnUse');
-    lg2.setAttribute('x1',X0);lg2.setAttribute('x2',W-P.r);lg2.setAttribute('y1',0);lg2.setAttribute('y2',0);
+    const LC=DARK?'rgba(255,255,255,.6)':'rgba(16,18,22,.55)';
+    DAILY_LY=SY_;
+    /* 예상 효율 기준선 — 점선 + 오른쪽 끝 이름표 */
+    if(useBench){const y=LY(benchV);
+      S('line',{x1:X0,x2:W-P.r,y1:y,y2:y,stroke:INK,'stroke-width':1.2,opacity:.35,'stroke-dasharray':'4 5','pointer-events':'none'},svg);
+      const t=S('text',{x:W-P.r,y:y+15,'text-anchor':'end','font-size':10.5,'font-weight':700,fill:INK,opacity:.62,
+        'paint-order':'stroke',stroke:HALO,'stroke-width':3,'pointer-events':'none'},svg);
+      t.textContent=`예상 ${METRICS[lk].f(benchV)}`;}
     runs.forEach(r=>{
-      /* 하루짜리 조각은 곡선을 만들 수 없으니 점 하나로 */
-      if(r.length<2){S('circle',{cx:r[0][0],cy:r[0][1],r:2.6,fill:`url(#${gid2})`},svg);return;}
-      S('path',{d:smoothPath(r),fill:'none',stroke:`url(#${gid2})`,'stroke-width':4.6,opacity:1,
-        'stroke-linecap':'round','stroke-linejoin':'round'},svg);});
-    /* 선 위의 점은 그리지 않는다 — 값은 끝의 레이블과 툴팁으로 읽는다 */
-    const li=pts.length-1;
-    const lb=S('text',{x:pts[li][0]+9,y:pts[li][1]-11,'text-anchor':'start','font-size':12,'font-weight':700,fill:LINE_TONE},svg);
-    /* 레이블은 선이 끝난 자리의 값 — 마지막 날이 비어 있으면 '–' 가 찍히던 것 (v79) */
-    lb.textContent=METRICS[lk].f(lineVals[pts[li][2]]);
-    /* 예상 효율 기준선 — 데이터 레이블은 우측 보조축 자리에 (눈금과 겹치면 그 눈금은 숨김) */
-    if(useBench){
-      const ev=benchV,y=LY(ev);
-      S('line',{x1:X0,x2:W-P.r,y1:y,y2:y,stroke:ACC2,'stroke-width':9,opacity:.15,'stroke-linecap':'round'},svg);
-      S('line',{x1:X0,x2:W-P.r,y1:y,y2:y,stroke:ACC2,'stroke-width':1.5,opacity:.5,'stroke-dasharray':'6 4'},svg);
-      tickLabels.forEach(t=>{if(Math.abs(t.y-y)<13&&t.el.parentNode)t.el.parentNode.removeChild(t.el);});
-      const bx=W-P.r+6;
-      S('rect',{x:bx-2,y:y-9.5,width:P.r-9,height:19,rx:5,fill:'var(--acc-soft)',stroke:ACC2,'stroke-opacity':.35},svg);
-      const t2=S('text',{x:bx+3,y:y+3.6,'font-size':10,'font-weight':700,fill:ACC2},svg);
-      t2.textContent=`예상 ${METRICS[lk].f(ev)}`;}
+      if(r.length<2){S('circle',{cx:r[0][0],cy:r[0][1],r:3,fill:LC},svg);return;}
+      S('path',{d:smoothPath(r),fill:'none',stroke:LC,'stroke-width':4.2,
+        'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},svg);});
+    /* 값 이름표 — 처음 · 최고 · 최저 · 마지막 (겹치면 하나만) */
+    const vs=pts.map(p=>lineVals[p[2]]);
+    const iMx=pts[vs.indexOf(Math.max(...vs))],iMn=pts[vs.indexOf(Math.min(...vs))];
+    const marks=[[pts[0],'start',-1],[iMx,'middle',-1],[iMn,'middle',1],[pts[pts.length-1],'end',-1]];
+    const used=[];
+    marks.forEach(([p,an,dir])=>{if(!p||used.some(u=>Math.abs(u[0]-p[0])<44&&Math.abs(u[1]-p[1])<16))return;
+      const y=dir<0?p[1]-12:p[1]+19;used.push([p[0],y]);
+      const t=S('text',{x:an==='start'?p[0]-4:an==='end'?p[0]+4:p[0],y,'text-anchor':an,'font-size':12,'font-weight':800,
+        fill:INK,'paint-order':'stroke',stroke:HALO,'stroke-width':3.2,'pointer-events':'none'},svg);
+      t.textContent=METRICS[lk].f(lineVals[p[2]]);});
+    {const p=pts[0],t=S('text',{x:p[0]-4,y:p[1]-30,'text-anchor':'start','font-size':10.5,'font-weight':800,fill:INK2,'pointer-events':'none'},svg);
+      t.textContent=METRICS[lk].l;}
     }
     }
   }
+  /* ---------- 날짜별 툴팁 (막대 · 날짜 자리) ---------- */
   ISSUE_OVERFLOW=0;
   if(typeof renderIssueAlert==='function')renderIssueAlert();
   ds.forEach((d,i)=>{
     if(i>=EL)return;
-    const hit=S('rect',{x:X0+step*i,y:P.t+PH*0.70,width:step,height:PH*0.30,fill:'transparent'},svg);
+    const hit=S('rect',{x:X0+step*i,y:lBot+6,width:step,height:BASE+28-(lBot+6),fill:'transparent'},svg);
     hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
       `<div class="t">${dFull(d)} (${WD[d.getDay()]})${holName(d)?' · '+holName(d):''}</div>`+
       series.map((s,si)=>`<div class="r"><span class="l"><span style="width:8px;height:8px;border-radius:2px;background:${pal[si]};display:inline-block"></span>${esc(s.key)}</span><b>${METRICS[bk].f(s.vals[i])}</b></div>`).join('')+
       `<div class="r" style="border-top:1px solid rgba(255,255,255,.2);margin-top:6px;padding-top:5px"><span class="l">${METRICS[bk].l} 합계</span><b>${METRICS[bk].f(totals[i])}</b></div>`+
       (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')+
-      /* 소진금액은 막대에서 뺐으므로(v62) 정확한 값은 여기서 읽는다 */
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);});
-  /* 운영 이슈 — 꺾은선 위의 원 (v86)
-     이슈가 시작된 날의 꺾은선 점에 흰 바탕 · 호박색 테두리 원을 찍는다. 그날 꺾은선 값이 없으면
-     (꺾은선 없음 · 집행 공백 · 미집행 구간) 막대 꼭대기 위에. 같은 날 시작한 이슈는 원 하나로 묶고 개수 배지를 단다.
-     올리면 이슈 기간을 옅게 칠하고 내용을 띄운다. 예전의 바닥 깃발 · 기간 띠(v78)는 이것으로 대체 */
+  /* ---------- 운영 이슈 — 흰 바탕 · 검은 테두리 번호 원 (v103) ----------
+     이슈가 시작된 날의 꺾은선 위에. 그날 꺾은선 값이 없으면 막대 위에. 같은 날 시작한 이슈는 원 하나 + 개수 배지.
+     올리면 이슈 기간을 옅게 칠하고 내용을 띄운다 */
   let ISSUE_DRAWN=0;
   if(SHOW_ISSUES){
-    const FLC='#e0902f',groups=new Map();
+    const groups=new Map();
     ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
       const a=dIdx(is.s)-SC.i0,b2=dIdx(is.e||is.s)-SC.i0;
       if(!isFinite(a))return;
@@ -402,22 +366,24 @@ function renderDaily(){
       if(!groups.has(ai))groups.set(ai,[]);
       groups.get(ai).push({is,n,ai,bi:Math.min(e2,ds.length-1)});});
     groups.forEach((list,ai)=>{
-      const x=cx(ai),lv=lineVals&&LYf&&isFinite(lineVals[ai])?LYf(lineVals[ai]):NaN;
-      const y=isFinite(lv)?lv:Math.max(P.t+12,(totals[ai]>0?Y(totals[ai]):Y(0))-12);
+      const x=cx(ai),lv=lineVals&&DAILY_LY&&DAILY_LY.has(ai)?DAILY_LY.get(ai):NaN;
+      const y=isFinite(lv)?lv:Math.max(P.t+12,BASE-BH(totals[ai]||0)-DEP-14);
       const g=S('g',{class:'isdot'},svg);
-      const halo=S('circle',{cx:x,cy:y,r:16,fill:FLC,opacity:0,class:'halo'},g);
-      S('circle',{cx:x,cy:y,r:8.5,fill:'var(--surface)',stroke:FLC,'stroke-width':3.4,class:'ring'},g);
+      const halo=S('circle',{cx:x,cy:y,r:15,fill:INK,opacity:0,class:'halo'},g);
+      S('circle',{cx:x,cy:y,r:8.5,fill:HALO,stroke:INK,'stroke-width':2,class:'ring'},g);
+      const nt=S('text',{x,y:y+3.5,'text-anchor':'middle','font-size':9.5,'font-weight':900,fill:INK,'pointer-events':'none'},g);
+      nt.textContent=String(list[0].n+1);
       if(list.length>1){
-        S('circle',{cx:x+9.5,cy:y-9.5,r:7,fill:FLC,stroke:'var(--surface)','stroke-width':1.5},g);
-        const t=S('text',{x:x+9.5,y:y-6.3,'text-anchor':'middle','font-size':9,'font-weight':800,fill:'#fff'},g);
+        S('circle',{cx:x+9.5,cy:y-9.5,r:6.5,fill:INK,stroke:HALO,'stroke-width':1.5},g);
+        const t=S('text',{x:x+9.5,y:y-6.4,'text-anchor':'middle','font-size':8.5,'font-weight':800,fill:HALO},g);
         t.textContent=String(list.length);}
       S('circle',{cx:x,cy:y,r:15,fill:'transparent'},g);
       ISSUE_DRAWN++;
       let hls=[];
       g.addEventListener('mouseenter',()=>{
-        g.classList.add('on');halo.setAttribute('opacity',.16);
-        list.forEach(it=>{const h=S('rect',{x:cx(it.ai)-step/2,y:P.t,width:Math.max((it.bi-it.ai+1)*step,step),height:PH,
-          fill:FLC,opacity:.08,'pointer-events':'none'});
+        g.classList.add('on');halo.setAttribute('opacity',.1);
+        list.forEach(it=>{const h=S('rect',{x:cx(it.ai)-step/2,y:P.t,width:Math.max((it.bi-it.ai+1)*step,step),height:BASE-P.t,
+          fill:INK,opacity:.05,'pointer-events':'none'});
           svg.insertBefore(h,svg.firstChild&&svg.firstChild.nextSibling||null);hls.push(h);});});
       g.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,list.map((it,k)=>
         `<div class="t"${k?' style="margin-top:9px"':''}>운영 이슈 ${it.n+1} · ${esc(it.is.s)}${it.is.e&&it.is.e!==it.is.s?' ~ '+esc(it.is.e):''}</div>`
@@ -427,26 +393,30 @@ function renderDaily(){
         hls.forEach(h=>h.parentNode&&h.parentNode.removeChild(h));hls=[];hideTip();});
     });
   }
+  /* ---------- 범례 — 바닥 위(카드 아래 끝) ---------- */
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it drag',lg);
     x.draggable=true;x.dataset.k=s.key;
     x.title='끌어서 순서를 바꿀 수 있습니다 (기본은 예산 큰 순)';
-    x.innerHTML=`<span class="dot" style="background:${pal[i]}"></span>${esc(s.key)}`;});
+    x.innerHTML=`<span class="dot" style="background:${rgba(PRGB[i],.85)}"></span>${esc(s.key)}`;});
   wireDailyLegendDrag(lg,seriesKeys);
-  if(lk!=='none'){const x=el('span','it',lg);
-    x.innerHTML=`<span class="linekey"></span><span style="color:var(--acc2);font-weight:700">${METRICS[lk].l}</span> <span style="color:var(--muted)">(우측 축)</span>`;}
-  if(SPEND_ON){const x=el('span','it',lg);
-    x.title='막대 뒤에 옅게 깔린 회색 면입니다. 눈금 없이 하루하루 얼마를 썼는지 흐름만 보는 용도라,'
-      +' 높이는 막대에 맞춰 잡습니다. 정확한 금액은 날짜 위에 마우스를 올리면 나옵니다.';
-    x.innerHTML=`<span class="dot" style="background:var(--spend);opacity:.55"></span>`
-      +`<span style="color:var(--muted)">일별 소진금액 (배경 · 눈금 없음)</span>`;}
+  if(lineVals){const x=el('span','it',lg);
+    x.innerHTML=`<span class="linekey d3"></span>${METRICS[lk].l}`;}
   if(ISSUE_DRAWN){const x=el('span','it',lg);
-    x.title='이슈가 시작된 날의 꺾은선 위에 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.';
+    x.title='이슈가 시작된 날의 꺾은선 위에 번호로 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.';
     x.innerHTML=`<span class="issuekey"></span>운영 이슈`;}
+  if(SPEND_ON){const x=el('span','it',lg);
+    x.title='막대 뒤로 이어지는 땅의 높이가 그날의 소진금액입니다(0원부터 같은 눈금). 정확한 금액은 날짜에 마우스를 올리면 나옵니다.';
+    x.innerHTML=`<span class="hillkey"></span>일별 소진금액 (뒤 언덕)`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
-    x.innerHTML=`<span class="dot" style="background:${pal[0]};opacity:.18"></span>미집행 구간 예상값 (일할)`;}
-
+    x.innerHTML=`<span class="dot" style="background:${rgba(PRGB[0]||[120,124,130],.22)}"></span>미집행 구간 예상값 (일할)`;}
+  /* 폭이 바뀌면 다시 그린다 (탭이 처음 열릴 때 폭 0 → 실제 폭 포함) */
+  if(!host.__ro&&typeof ResizeObserver!=='undefined'){
+    let t=0;host.__ro=new ResizeObserver(()=>{const w=Math.round(host.clientWidth);
+      if(!w||Math.abs(w-(DAILY_W||0))<4)return;clearTimeout(t);t=setTimeout(()=>{try{renderDaily();}catch(e){}},120);});
+    host.__ro.observe(host);}
 }
+var DAILY_W=0,DAILY_LY=null;
 
 /* ===== 6. 서머리 ===== */
 /* ===== 서머리 열 — 항목 사전(열설정북)에서 생성 ===== */

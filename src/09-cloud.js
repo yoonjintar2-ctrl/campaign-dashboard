@@ -221,7 +221,7 @@ function applyDoc(d,keepToday){
   /* 유입 분석 상세 표 (v93) — 없던 저장본은 기본 구성으로 (다른 캠페인 구성이 남지 않게) */
   try{INF_TBL=v.inflow&&Array.isArray(v.inflow.groups)?dropCfg(v.inflow):null;
     INF.dim=['media','product','creative'].includes(v.inflowDim)?v.inflowDim:'media';
-    INF.seg=!!v.inflowSeg;INF.step=2;}catch(e){}
+    INF.seg=!!v.inflowSeg;INF.step=2;INF.mapSeg='';}catch(e){}
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
@@ -1128,7 +1128,7 @@ function resetToBlank(name,advertiser){
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];}catch(e){}
-  try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;}catch(e){}
+  try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}
   try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
   clearWorkState();
