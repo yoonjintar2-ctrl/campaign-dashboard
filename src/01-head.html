@@ -2559,6 +2559,36 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .skph>span{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .skph>span b{color:var(--acc);font-size:13px;margin-left:2px}
 .skpb{width:100%;overflow:hidden}
+/* 유입 흐름 — 한 단계씩 크게, 양옆 ‹ › 로 넘긴다 (v100) */
+.skstage{display:grid;grid-template-columns:84px minmax(0,1fr) 84px;gap:8px;align-items:center}
+.sknav{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}
+.sknav>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.3;min-height:2.6em;cursor:pointer;max-width:84px}
+.sknav>span:empty{cursor:default}
+.skarr{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font-size:24px;font-weight:700;line-height:1;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+  padding:0 0 3px;font-family:inherit;transition:background .15s,color .15s,border-color .15s,transform .15s}
+.skarr:hover:not(:disabled){background:var(--acc);color:var(--surface);border-color:var(--acc);transform:scale(1.06)}
+.skarr:disabled{visibility:hidden}
+.skview{min-width:0;display:flex;flex-direction:column;align-items:center}
+.skhead{text-align:center;display:flex;flex-direction:column;gap:3px;align-items:center}
+.sktitle{font-size:15.5px;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+.sksub{font-size:12px;color:var(--muted)}
+.sksub b{color:var(--acc);font-weight:800;font-size:13px}
+.skdots{display:flex;gap:6px;margin:9px 0 4px}
+.skdots button{width:8px;height:8px;border-radius:4px;border:0;padding:0;background:var(--gline);cursor:pointer;transition:width .2s,background .2s}
+.skdots button.on{background:var(--acc);width:22px}
+.skbox{width:100%;max-width:1100px;overflow:hidden}
+.skfade{animation:skfade .5s ease}
+@keyframes skfade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.sklab.big{font-size:13px;font-weight:800}
+.sklab.halo,.skval.halo{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-linejoin:round}
+.sknode.sgn{fill:var(--acc)}
+.sklink.sg{fill-opacity:.3}
+.skanim .sklink{transition:none}
+.infopt{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.infopt input{margin:0;accent-color:var(--acc)}
+@media (max-width:760px){.skstage{grid-template-columns:40px minmax(0,1fr) 40px;gap:4px}
+  .skarr{width:34px;height:34px;font-size:19px}.sknav>span{display:none}}
 .sklink.pb{fill-opacity:.62}
 .sklink.pd{fill-opacity:.13}
 .sknode.dn{fill:var(--gline)}

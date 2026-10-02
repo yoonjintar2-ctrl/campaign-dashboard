@@ -92,6 +92,7 @@ function serializeDoc(){
     views:{summaries:SUMMARIES,mix:MIX_CFG,raw:RAW_CFG,rawSeg:RAW_SEG,rawHSeg:RAW_HSEG,
            /* 유입 분석 — 상세 표 구성 · 묶음 (v93) */
            inflow:(typeof INF_TBL!=='undefined'?INF_TBL:null),inflowDim:(typeof INF!=='undefined'?INF.dim:'media'),
+           inflowSeg:(typeof INF!=='undefined'?!!INF.seg:false),   /* 유입 흐름 — 구분 포함 (v100) */
            gantt:GANTT,creative:CR_CFG,stat:STAT_CFG,bub:BUB,bubColors:BUB_COLORS,
            perfOrder:(typeof PERF_ORDER!=='undefined'?PERF_ORDER:'sum'),
            donutOrder:(typeof DONUT_ORDER!=='undefined'?DONUT_ORDER:{}),
@@ -219,7 +220,8 @@ function applyDoc(d,keepToday){
   if(v.mix)MIX_CFG=dropCfg(v.mix);
   /* 유입 분석 상세 표 (v93) — 없던 저장본은 기본 구성으로 (다른 캠페인 구성이 남지 않게) */
   try{INF_TBL=v.inflow&&Array.isArray(v.inflow.groups)?dropCfg(v.inflow):null;
-    INF.dim=['media','product','creative'].includes(v.inflowDim)?v.inflowDim:'media';}catch(e){}
+    INF.dim=['media','product','creative'].includes(v.inflowDim)?v.inflowDim:'media';
+    INF.seg=!!v.inflowSeg;INF.step=2;}catch(e){}
   if(v.raw)RAW_CFG=v.raw;
   if(v.rawSeg)RAW_SEG=v.rawSeg;
   if(v.rawHSeg)RAW_HSEG=v.rawHSeg;
@@ -1126,7 +1128,7 @@ function resetToBlank(name,advertiser){
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];}catch(e){}
-  try{INF_TBL=null;INF.dim='media';}catch(e){}
+  try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;}catch(e){}
   try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
   clearWorkState();

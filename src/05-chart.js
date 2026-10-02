@@ -616,7 +616,13 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
   const EXPCOL=cellDef.__exp||new Set();
   const lead=rows.map(r=>`<th rowspan="2">${(DIMS.find(d=>d.k===r.k)||{l:r.k}).l}</th>`);
   let h='<thead>'+groupHeaderHTML(cfg,cdef,lead)+'</thead><tbody>';
-  const cells=(a,e,x,merge,kpi)=>cols.map((k,i)=>{
+  /* 체류시간 구간 칸 (v100) — 그 행 체류 방문 중 이 구간 비율만큼 칠한다(데이터 행만).
+     짧은 구간에 방문이 몰려 있어도 뒤 구간의 옅은 차이가 보이도록 √ 로 펼친다 */
+  const DWSET=new Set(DW_KEYS);
+  const dwShade=(k,src)=>{const n=dwSum(src),v=+src[k]||0;if(!n||!v)return '';
+    const p=v/n;return {bg:`background:rgb(var(--accrgb)/${(Math.sqrt(p)*.55).toFixed(3)})`,
+      tip:L(`체류 방문 ${fmt(n)} 중 ${pct(p,1)}`,`${pct(p,1)} of ${fmt(n)} visits`)};};
+  const cells=(a,e,x,merge,kpi,isData)=>cols.map((k,i)=>{
     const isExp=EXPCOL.has(k);
     if(merge&&isExp&&merge.skip)return '';               /* 병합된 구간의 두 번째 행부터는 셀 자체를 그리지 않음 */
     const src=(merge&&isExp)?merge.agg:a, ex=(merge&&isExp)?merge.exp:e;
@@ -640,7 +646,9 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       if(ck){
         const pr=costPair(ck,src,ex);
         if(pr&&kpiWorse(pr.act,pr.goal)){kc=' costbad';tip=costTip(ck,pr);}}}
-    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${tip?` title="${esc(tip)}"`:''}>`
+    let st='';
+    if(isData&&DWSET.has(k)){const d=dwShade(k,src);if(d){st=` style="${d.bg}"`;kc+=' dwsh';tip=tip||d.tip;}}
+    return `<td class="mono${seps.has(i)?' gsep':''}${kc}"${rs}${st}${tip?` title="${esc(tip)}"`:''}>`
       +`${g!==undefined?gauge(g):txt}</td>`;}).join('');
   const costTip=(ck,pr)=>{
     const nm=(METRICS[ck]||{l:ck}).l;
@@ -678,7 +686,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
           +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       const rls=LNS.filter(l=>expIdx.every(i2=>i2>=vals.length||lv(l,dims[i2])===vals[i2]));
-      h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols))+'</tr>';
+      h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols),true)+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
