@@ -620,7 +620,8 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
      짧은 구간에 방문이 몰려 있어도 뒤 구간의 옅은 차이가 보이도록 √ 로 펼친다 */
   const DWSET=new Set(DW_KEYS);
   const dwShade=(k,src)=>{const n=dwSum(src),v=+src[k]||0;if(!n||!v)return '';
-    const p=v/n;return {bg:`background:rgb(var(--accrgb)/${(Math.sqrt(p)*.55).toFixed(3)})`,
+    /* v102 — 녹색 한 가지 톤(일자별 · 소재 효율 히트맵의 '좋음' 색). 붉은색은 쓰지 않는다 */
+    const p=v/n;return {bg:`background:rgba(86,162,116,${(Math.sqrt(p)*.5).toFixed(3)})`,
       tip:L(`체류 방문 ${fmt(n)} 중 ${pct(p,1)}`,`${pct(p,1)} of ${fmt(n)} visits`)};};
   const cells=(a,e,x,merge,kpi,isData)=>cols.map((k,i)=>{
     const isExp=EXPCOL.has(k);

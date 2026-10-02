@@ -1042,14 +1042,23 @@ function kpiAchMix(rows){
 }
 /* 캠페인 진행 현황에서 숨긴 지표 (v82) — ⚙ 표시 항목. 캠페인 문서(views.paceHide)에 담긴다 */
 var PACE_HIDE=[];
+/* 유입 (IWV) 줄 (v102) — 매체가 약속한 목표가 없는 지표라 달성률 · 페이스를 낼 수 없다.
+   막대는 늘 100% 로 꽉 채우고 매체별 비중만 보여 준다. 오른쪽은 유입 합계 · 유입률(유입 ÷ 클릭) */
+function paceIwvRow(){
+  const m=new Map();let act=0,clk=0;
+  activeLines().forEach(l=>{const v=paceSum(l.daily&&l.daily.iwv)||0;if(!v)return;
+    act+=v;clk+=paceSum(l.daily&&l.daily.click)||0;m.set(l.media,(m.get(l.media)||0)+v);});
+  if(!(act>0))return null;
+  return {k:'iwv',act,clk,media:[...m.entries()].map(([k,v])=>({m:k,v})).filter(y=>y.v>0).sort((a,b)=>b.v-a.v)};}
 function openPaceCfg(){
   const all=paceKpiRows();
+  const iw=paceIwvRow();if(iw)all.push({k:'iwv',goal:0,iwv:iw.act});
   if(!all.length){confirmModal('표시할 지표가 없습니다.','예상효율 입력에 목표(예상 노출 · 클릭 · 조회 …)를 넣으면 여기에 지표가 생깁니다.',()=>{},'확인');return;}
   const box=openModal('캠페인 진행 현황 · 표시 항목',
     `<div class="hint" style="margin-bottom:10px">${L('체크한 지표만 캠페인 진행 현황에 막대로 보입니다. 광고주(뷰어) 화면에도 똑같이 적용됩니다.',
       'Only checked metrics appear as bars in Campaign progress — the advertiser (viewer) screen follows the same setting.')}</div>
      <div class="pacecfg">${all.map(x=>`<label class="pcrow"><input type="checkbox" class="colcfg-chk" data-pk="${x.k}" ${PACE_HIDE.includes(x.k)?'':'checked'}>
-       <b>${esc(KPI_LABEL[x.k]||x.k)}</b><span class="hint">${L('목표','Goal')} <span>${manUnit(x.goal)}</span></span></label>`).join('')}</div>`,
+       <b>${x.k==='iwv'?L('유입 (IWV)','Inflow (IWV)'):esc(KPI_LABEL[x.k]||x.k)}</b><span class="hint">${x.k==='iwv'?`${L('목표 없음 · 집행','no goal · actual')} <span>${manUnit(x.iwv)}</span>`:`${L('목표','Goal')} <span>${manUnit(x.goal)}</span>`}</span></label>`).join('')}</div>`,
     '<div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:420});
   box.querySelectorAll('[data-pk]').forEach(cb=>cb.onchange=()=>{
     const k=cb.dataset.pk;PACE_HIDE=PACE_HIDE.filter(x=>x!==k);if(!cb.checked)PACE_HIDE.push(k);
@@ -1061,6 +1070,7 @@ function renderPace(){
   const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
   const all=paceKpiRows();
   const rows=all.filter(x=>!PACE_HIDE.includes(x.k));
+  const iw=paceIwvRow(),iwOn=!!iw&&!PACE_HIDE.includes('iwv');
   /* 날짜 칸은 늘 캠페인 전체 일수만큼 그리고, 기간 필터로 고른 날만 색을 채운다.
      (9/1~9/2 를 고르면 30칸 중 2칸만 칠해진다) */
   const cells=[...Array(cs.days)].map((_,i)=>{
@@ -1113,6 +1123,18 @@ function renderPace(){
       </div>
       <div class="pside r"><div class="nm1">${pct(r,1)}</div><div class="sub1">목표 ${manUnit(x.goal)}</div></div>
     </div>`;};
+  /* 유입 줄 — 늘 100% · 페이스 점 없음 · 무채색 */
+  const iwLine=x=>{
+    const bg='linear-gradient(150deg,#a3a8ae,#80868d)';
+    const segs=x.media.map((y,si)=>`<i style="width:${(y.v/x.act*100).toFixed(4)}%" data-m="${esc(y.m)}" data-si="${si}">`
+      +`<span class="nm">${esc(y.m)}</span><span class="pc">${pct(y.v/x.act,1)}</span></i>`).join('');
+    return `<div class="pline piwv">
+      <div class="pside"><div class="nm1">${L('유입 (IWV)','Inflow (IWV)')}</div><div class="sub1">${L('목표 없음 · 매체 비중','no goal · media share')}</div></div>
+      <div class="pmid"><div class="pdotrow"></div>
+        <div class="pbar" data-itip="${esc(JSON.stringify({act:x.act,clk:x.clk,media:x.media}))}">
+          <div class="mstack" style="width:100%;--segbg:${bg};--ambc:transparent;--ambrgb:0 0 0;--amba:0">${segs}</div>
+          <div class="sheen" style="width:100%"></div></div></div>
+      <div class="pside r"><div class="nm1">${fmt(Math.round(x.act))}</div><div class="sub1">${L('유입률','Inflow rate')} ${x.clk?pct(x.act/x.clk,2):'–'}</div></div></div>`;};
   /* 머리글 — **총 일수는 언제나 캠페인 전체 일수**.
      조회 기간을 좁혀도 "총 N일" 이 그 구간 길이로 줄어들면 캠페인이 짧아진 것처럼 보인다.
      좁혀 본 경우에는 그 구간을 따로 덧붙여 알려 준다. */
@@ -1132,7 +1154,8 @@ function renderPace(){
         <div class="pside r"><div class="nm1">종료일</div><div class="sub1">${dFull(cs.end)}(${WD[cs.end.getDay()]})</div></div>
       </div>
       ${rows.map(line).join('')}
-      ${all.length&&!rows.length?`<div class="hint" style="padding:12px 4px">${L('표시할 지표를 모두 숨겼습니다 — ⚙ 표시 항목에서 다시 켤 수 있습니다.','All metrics are hidden — turn them back on in ⚙ Show items.')}</div>`:''}
+      ${iwOn?iwLine(iw):''}
+      ${all.length&&!rows.length&&!iwOn?`<div class="hint" style="padding:12px 4px">${L('표시할 지표를 모두 숨겼습니다 — ⚙ 표시 항목에서 다시 켤 수 있습니다.','All metrics are hidden — turn them back on in ⚙ Show items.')}</div>`:''}
       <div class="pfoot"><i></i>막대 위의 점 = <b>목표 페이스</b>
         <span>라인별 집행 기간을 반영해 오늘까지 채웠어야 할 수준입니다 · 막대 색은 페이스보다 앞서면 초록, 뒤처지면 붉은색으로 은은하게 물듭니다</span></div>
     </div></div>`;
@@ -1190,6 +1213,16 @@ function fitPaceLabels(){
     if(nm.scrollWidth>nm.clientWidth+1){seg.classList.add('nolb');return;}
     if(pc&&pc.scrollWidth>pc.clientWidth+1)seg.classList.add('nopc');});
   wirePaceTip();
+  /* 유입 줄 툴팁 — 합계 · 유입률, 매체 구간에 올리면 그 매체 몫 */
+  document.querySelectorAll('#paceBox .pbar[data-itip]').forEach(bar=>{
+    if(bar.__tip)return;bar.__tip=1;
+    let d=null;try{d=JSON.parse(bar.dataset.itip);}catch(e){return;}
+    const head=`<div class="t">${L('유입 (IWV)','Inflow (IWV)')} · ${L('목표 없음','no goal')}</div>`
+      +`<div class="r"><span class="l">${L('유입 합계','Total')}</span><b>${fmt(Math.round(d.act))}</b></div>`
+      +`<div class="r"><span class="l">${L('유입률 (유입/클릭)','Inflow rate')}</span><b>${d.clk?pct(d.act/d.clk,2):'–'}</b></div>`;
+    const list=d.media.map(y=>`<div class="r"><span class="l">${esc(y.m)}</span><b>${fmt(Math.round(y.v))} · ${pct(y.v/d.act,1)}</b></div>`).join('');
+    bar.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,head+list));
+    bar.addEventListener('mouseleave',hideTip);});
   startAmb();
 }
 /* 막대에 마우스를 올리면 그 지표의 색과 함께 페이스 대비 차이를 알려준다 */

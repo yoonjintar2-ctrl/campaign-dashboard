@@ -178,6 +178,9 @@ Object.assign(I18N_EN,{
   "(랜딩 미입력)":"(no landing)",
   "자유 입력 · 사이트 분석 도구의 랜딩(첫 방문) 페이지 · 띄어쓰기 · 대소문자가 달라도 같은 페이지로 묶임":"Free text · the landing (first) page from your site analytics · spacing/case differences are merged",
   "일자별 실적 입력에 적은 랜딩(첫 방문) 페이지입니다. 행에 적지 않은 몫은 (랜딩 미입력)으로 묶입니다.":"The landing (first) page entered in daily results. Rows without one are grouped as (no landing)."});
+/* v102 — 구분으로 나누기 */
+Object.assign(I18N_EN,{"구분으로 나누기":"Split by segment",
+  "같은 매체라도 구분이 다르면 나눠서 봅니다 (유입 흐름 · 효율 지도 · 체류시간)":"Show the same media separately per segment (inflow flow · efficiency map · time on site)"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
