@@ -475,7 +475,7 @@ function infDwell(host,rows0){
       const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
       return `<div class="dwrow" data-i="${i}">
         <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
-        <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}" data-b="${s.bi}" data-v="${s.v}"></i>`).join('')}</div>
+        <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}"><em>${pct(s.v/n,0)}</em></i>`).join('')}</div>
         <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
   if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
@@ -491,7 +491,8 @@ function infDwell(host,rows0){
 
 /* ---------- ③-1 랜딩 페이지별 체류시간 (v106) ----------
    랜딩 페이지가 어디냐에 따라 머무는 시간이 크게 다르다 — 매체별 막대와 따로, 랜딩마다 세로 100% 기둥 하나.
-   아래 = 짧게 머문 방문(옅게) → 위 = 오래 머문 방문(진하게). 위에 평균 체류시간, 아래에 이름 · 방문 수.
+   v106.2 — 위에 랜딩 이름, 기둥은 위 = 짧게 머문 방문(옅게) → 아래 = 오래 머문 방문(진하게), 아래에 평균 체류시간 · 방문 수.
+   이름 · 기둥 · 평균 세 줄은 subgrid 로 기둥끼리 높이를 맞춘다(이름이 두 줄이 돼도 기둥 위끝이 가지런하게).
    구간 범례는 바로 옆 매체별 분포 머리의 것을 같이 쓴다(칸이 좁아 따로 두지 않는다).
    지금 조회 기간 · 필터, 분석 대상 라인(INF_MIN 이상)만. 랜딩을 안 적은 몫은 '(랜딩 미입력)' 기둥(맨 뒤) */
 const infDimLab=d=>d==='product'?L('광고상품별','by product'):d==='creative'?L('소재별','by creative'):L('매체별','by media');
@@ -516,10 +517,10 @@ function infLandDwell(host,rows0){
   const col=(g,i)=>{const n=dwSum(g.b);
     const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
     return `<div class="ldcol" data-i="${i}">
-      <div class="ldtop"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b></div>
+      <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b></div>
       <div class="ldbar">${segs.map(s=>{const p=s.v/n;
         return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
-      <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+      <div class="ldavg"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`

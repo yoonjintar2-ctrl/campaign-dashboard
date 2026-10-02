@@ -2709,25 +2709,28 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 @media (max-width:1360px){.infgrid.ld3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.infgrid.ld3>.infdwc{grid-column:1/-1}}
 .infgrid>.infcell>#infLand{flex:1;display:flex;flex-direction:column}
 .infld{flex:1;display:flex;gap:14px;min-height:250px;padding:2px 2px 0}
-.ldcols{flex:1;display:flex;justify-content:space-around;gap:10px;min-width:0}
-.ldcol{flex:1 1 0;max-width:112px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px}
-.ldtop{display:flex;flex-direction:column;align-items:center;line-height:1.2}
-.ldtop b{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap}
-.infld.many .ldtop{min-height:31px;justify-content:flex-end}
-.infld.many .ldtop b{font-size:12px;text-align:center;line-height:1.15}
-.infld.many .ldcols{gap:6px}
-.ldtop span{font-size:10.5px;color:var(--muted);white-space:nowrap}
-.ldbar{flex:1;width:100%;max-width:60px;min-height:150px;display:flex;flex-direction:column-reverse;gap:2px;border-radius:6px;overflow:hidden}
+.ldcols{flex:1;min-width:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,112px);
+  grid-template-rows:auto minmax(150px,1fr) auto;justify-content:space-around;column-gap:10px;row-gap:7px}
+.ldcol{grid-row:1/-1;display:grid;grid-template-rows:subgrid;justify-items:center;min-width:0}
+.ldname{align-self:end;width:100%;text-align:center;line-height:1.25;min-width:0}
+.ldname b{font-size:12px;font-weight:700;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word}
+.infld.many .ldname b{font-size:10.5px}
+.ldbar{width:100%;max-width:60px;min-height:150px;display:flex;flex-direction:column;gap:2px;border-radius:6px;overflow:hidden}
 .ldbar i{display:flex;align-items:center;justify-content:center;min-height:2px;overflow:hidden;background:rgb(var(--accrgb)/var(--op))}
 .ldbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
-.ldbar em{font-style:normal;font-size:10px;font-weight:700;color:var(--ink2);pointer-events:none}
-.ldbar i.dk em{color:#fff}
-[data-theme="dark"] .ldbar em{color:var(--ink)}
-[data-theme="dark"] .ldbar i.hi em{color:rgba(0,0,0,.8)}
-.ldname{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.25;min-width:0;width:100%}
-.ldname b{font-size:12px;font-weight:700;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;width:100%}
-.infld.many .ldname b{font-size:10.5px}
-.ldname span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.ldbar em,.dwbar em{font-style:normal;font-size:10px;font-weight:700;color:var(--ink2);pointer-events:none;white-space:nowrap}
+.ldbar i.dk em,.dwbar i.dk em{color:#fff}
+[data-theme="dark"] .ldbar em,[data-theme="dark"] .dwbar em{color:var(--ink)}
+[data-theme="dark"] .ldbar i.hi em,[data-theme="dark"] .dwbar i.hi em{color:rgba(0,0,0,.8)}
+.ldavg{align-self:start;display:flex;flex-direction:column;align-items:center;line-height:1.2;text-align:center}
+.ldavg b{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap}
+.infld.many .ldavg b{font-size:12px;line-height:1.15}
+.infld.many .ldcols{column-gap:6px}
+.ldavg span{font-size:10.5px;color:var(--muted);white-space:nowrap;margin-top:1px}
+/* 매체별 체류시간 막대 비율 (v106.2) — 막대 칸이 넉넉할 때만(34px 이상) 숫자를 보인다 */
+.dwbar i{container-type:inline-size;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dwbar em{display:none}
+@container (min-width:34px){.dwbar em{display:block}}
 @media (max-width:1100px){.infgrid,.infgrid.ld3{grid-template-columns:minmax(0,1fr)}.infgrid.ld3>.infdwc{grid-column:auto}}
 @media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 80px;gap:8px}}
@@ -20059,7 +20062,7 @@ function infDwell(host,rows0){
       const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
       return `<div class="dwrow" data-i="${i}">
         <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
-        <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}" data-b="${s.bi}" data-v="${s.v}"></i>`).join('')}</div>
+        <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}"><em>${pct(s.v/n,0)}</em></i>`).join('')}</div>
         <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
   if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
@@ -20075,7 +20078,8 @@ function infDwell(host,rows0){
 
 /* ---------- ③-1 랜딩 페이지별 체류시간 (v106) ----------
    랜딩 페이지가 어디냐에 따라 머무는 시간이 크게 다르다 — 매체별 막대와 따로, 랜딩마다 세로 100% 기둥 하나.
-   아래 = 짧게 머문 방문(옅게) → 위 = 오래 머문 방문(진하게). 위에 평균 체류시간, 아래에 이름 · 방문 수.
+   v106.2 — 위에 랜딩 이름, 기둥은 위 = 짧게 머문 방문(옅게) → 아래 = 오래 머문 방문(진하게), 아래에 평균 체류시간 · 방문 수.
+   이름 · 기둥 · 평균 세 줄은 subgrid 로 기둥끼리 높이를 맞춘다(이름이 두 줄이 돼도 기둥 위끝이 가지런하게).
    구간 범례는 바로 옆 매체별 분포 머리의 것을 같이 쓴다(칸이 좁아 따로 두지 않는다).
    지금 조회 기간 · 필터, 분석 대상 라인(INF_MIN 이상)만. 랜딩을 안 적은 몫은 '(랜딩 미입력)' 기둥(맨 뒤) */
 const infDimLab=d=>d==='product'?L('광고상품별','by product'):d==='creative'?L('소재별','by creative'):L('매체별','by media');
@@ -20100,10 +20104,10 @@ function infLandDwell(host,rows0){
   const col=(g,i)=>{const n=dwSum(g.b);
     const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
     return `<div class="ldcol" data-i="${i}">
-      <div class="ldtop"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b></div>
+      <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b></div>
       <div class="ldbar">${segs.map(s=>{const p=s.v/n;
         return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
-      <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+      <div class="ldavg"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`
