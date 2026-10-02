@@ -25,7 +25,6 @@ const LINE_FIXED=[
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
-  {k:'landing',l:'랜딩 페이지',w:160,type:'chips',on:false},   /* v92 — 광고를 누르면 넘어가는 페이지(여러 개면 칩) */
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
   {k:'sec',l:'소재 초수',w:74,type:'num',on:false},
   {k:'bid',l:'비드 타입',w:84,type:'bid',on:true,g:'집행 조건'},
@@ -648,7 +647,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','slot','target','landing','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');

@@ -10,7 +10,8 @@ const SHEET_DIMS=[
   {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
-  {k:'landing',l:'랜딩 페이지',w:130,type:'dim',rule:'예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)',lock:1,on:false},
+  /* v101 — 랜딩 페이지는 예상 효율에 없고 여기서만 자유롭게 적는다. 라인을 찾는 데는 쓰지 않는다 */
+  {k:'landing',l:'랜딩 페이지',w:130,type:'text',rule:'자유 입력 · 사이트 분석 도구의 랜딩(첫 방문) 페이지 · 띄어쓰기 · 대소문자가 달라도 같은 페이지로 묶임',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
 const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
@@ -41,6 +42,8 @@ function mergeCols(saved,def){
   if(!Array.isArray(saved)||!saved.length)return def;
   /* v72 — 수수료 · Net 열은 저장본에 남아 있어도 버린다 */
   saved=saved.filter(c=>c&&!DROP_COLS.has(c.k));
+  /* v101 — 예상 효율(라인 표)에서 랜딩 페이지 열을 뺐다. 저장본에 남아 있어도 버린다 */
+  if(!def.some(d=>d.k==='landing'))saved=saved.filter(c=>c.k!=='landing');
   const by={};saved.forEach(c=>by[c.k]=c);
   const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
     .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:fixColLabel(c.k,c.l,d.l),w:c.w,on:c.on}:c;});
@@ -70,7 +73,7 @@ let SHEET=LINES.flatMap(l=>{
     const r={...base,creative:c.name,cost:Math.round(c.daily.cost[idx]||0)};
     AMET.forEach(m=>{if(m!=='net')r[m]=c.daily[m][idx]||0;});
     return r;});});
-const DIM_CHAIN=['segment','media','product','slot','target','line','landing','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
    조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
@@ -83,11 +86,8 @@ const landKey=v=>dimKey(v).replace(/[\s_\-./]+/g,'');
 const dimEq=(k,a,b)=>k==='landing'?landKey(a)===landKey(b):dimKey(a)===dimKey(b);
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
-  /* 랜딩 페이지는 라인에 적어 둔 경우에만 맞춰 본다 (v92) — 안 적은 라인은 어떤 랜딩이든 받는다 */
-  if(k==='landing'&&!lineLandings(l).length)return true;
-  if(k==='landing'){const set=new Set(lineLandings(l).map(landKey));
-    if(set.has(landKey(v))||landKey(l.landing)===landKey(v))return true;
-    const want=parseMulti(v);return want.length>0&&want.every(x=>set.has(landKey(x)));}
+  /* 랜딩 페이지는 라인(예상 효율)과 맞춰 보지 않는다 (v101) — 행에만 적는 값 */
+  if(k==='landing')return true;
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
   const set=new Set(lineMulti(l,k).map(dimKey));
@@ -113,7 +113,7 @@ function rowLine(r){return rowLineCands(r)[0]||null;}
    ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
    그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
 function rowLineCands(r){
-  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
   let pool=LINES.filter(ok);
@@ -148,7 +148,7 @@ function rowNumBad(r){
   return out;}
 function rowCellIssues(r){
   const nb=rowNumBad(r);
-  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};
   let pool=LINES,bad=[];
   DIM_CHAIN.forEach(k=>{
@@ -612,7 +612,7 @@ function setCell(i,k,raw){
   const ix=DIM_CHAIN.indexOf(k);
   if(ix>=0)DIM_CHAIN.slice(ix+1).forEach(p=>{if(r[p]&&!dimOpts(p,r).includes(r[p]))r[p]='';});}
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
-const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
+const blankRow=()=>{const o={date:YESTERDAY,landing:''};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
 const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());
   renderSheet();
@@ -790,6 +790,11 @@ function applySheet(){
   /* 랜딩 페이지별 몫 (v99) — 라인 × 날짜 × (소재 | '*'=라인 전체) × 랜딩.
      행마다 랜딩이 적혀 있으면 대시보드에서 랜딩 페이지로 나눠 볼 수 있다 (buildFacts 가 이 비율로 쪼갠다) */
   const lbucket=new Map();
+  /* 랜딩 표기 통일 (v101) — 띄어쓰기 · 대소문자 · 하이픈만 다른 표기는 표에서 가장 많이 쓴 표기 하나로 */
+  const LAND_CANON=new Map();{const cnt=new Map();
+    SHEET.forEach(r=>{const t=String(r.landing==null?'':r.landing).trim();if(!t)return;const k=landKey(t);
+      let m=cnt.get(k);if(!m){m=new Map();cnt.set(k,m);}m.set(t,(m.get(t)||0)+1);});
+    cnt.forEach((m,k)=>{let best='',bv=-1;m.forEach((v,t)=>{if(v>bv){bv=v;best=t;}});LAND_CANON.set(k,best);});}
   const addL=(l,i,ck,ln,r,fee,w)=>{const k=l.id+'\u0001'+i+'\u0001'+ck;let b=lbucket.get(k);
     if(!b){b={l,i,ck,m:new Map()};lbucket.set(k,b);}
     let v=b.m.get(ln);if(!v){v=zeroV();b.m.set(ln,v);}addV(v,r,fee,w);};
@@ -810,7 +815,7 @@ function applySheet(){
        라인 합계를 소재 비율대로 다시 나눠 담으므로 숫자가 사라지지는 않는다 */
     const cn=String(r.creative==null?'':r.creative).trim();
     const lnRaw=String(r.landing==null?'':r.landing).trim();
-    const ln=lnRaw?(lineLandings(l).find(x=>landKey(x)===landKey(lnRaw))||lnRaw):'';
+    const ln=lnRaw?(LAND_CANON.get(landKey(lnRaw))||lnRaw):'';
     addL(l,i,'*',ln,r,fee,1);
     if(!cn)return;
     /* 한 칸에 여러 소재를 몰아 적었으면(등록된 이름들의 조합) 고르게 나눈다 */

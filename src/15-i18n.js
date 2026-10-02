@@ -171,6 +171,13 @@ Object.assign(I18N_EN,{
 /* v99 — 체류시간 머리글 두 줄(체류 / 구간) */
 Object.assign(I18N_EN,{"체류":"Time","15초 미만":"<15s","15~29초":"15–29s","30~59초":"30–59s","1~3분":"1–3m","3~5분":"3–5m",
   "5~10분":"5–10m","10~15분":"10–15m","15~20분":"15–20m","20~30분":"20–30m","30분 이상":"30m+","방문수":"visits"});
+/* v100 — 유입 흐름 단계 넘기기 · 체류 칸 색 / v101 — 랜딩은 일자별 실적에만 */
+Object.assign(I18N_EN,{
+  "— 처음에는 유입 → 랜딩 페이지(첫 방문 페이지 기준 IWV)를 보여 줍니다. 양옆 ‹ › 로 클릭 → 유입, 노출 → 클릭 단계로 넘겨 볼 수 있고, 넘길 때 겹치는 기둥(예: 클릭)이 커지며 다음 그래프의 축이 됩니다. 그래프마다 자기 단계의 배율로 그립니다. 매체 색 = 다음 단계로 넘어간 몫, 회색 = 이탈, 마우스를 올리면 잔존율이 보입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’입니다. ‘구분 포함’ 을 켜면 구분 → 매체 → 랜딩 페이지 세 단으로 봅니다.":"— starts with inflow → landing page (IWV by first page). Use ‹ › on either side to step back to clicks → inflow and impressions → clicks; when you switch, the shared column (e.g. clicks) grows and becomes the axis of the next chart. Each chart uses its own scale. Media color = carried to the next step, gray = dropped; hover for retention. IWV (All) with no landing is ‘other landing’. Turn on ‘Show segments’ to see segment → media → landing page.",
+  "칸 색이 진할수록 그 행의 체류 방문 중 이 구간 비율이 큽니다(합계 · 소계 행 제외). 칸에 마우스를 올리면 비율이 보입니다.":"The darker the cell, the larger this range's share of the row's visits (not on total/subtotal rows). Hover a cell for the share.",
+  "(랜딩 미입력)":"(no landing)",
+  "자유 입력 · 사이트 분석 도구의 랜딩(첫 방문) 페이지 · 띄어쓰기 · 대소문자가 달라도 같은 페이지로 묶임":"Free text · the landing (first) page from your site analytics · spacing/case differences are merged",
+  "일자별 실적 입력에 적은 랜딩(첫 방문) 페이지입니다. 행에 적지 않은 몫은 (랜딩 미입력)으로 묶입니다.":"The landing (first) page entered in daily results. Rows without one are grouped as (no landing)."});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

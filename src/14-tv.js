@@ -274,27 +274,37 @@ function openMenuSettings(){
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
       :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
+  /* 순서 · 이름은 실제 메뉴 줄과 같게 (v101) — 영역은 메뉴 줄의 순서(전체 캠페인 · 디지털 · TV · OOH · 트렌드),
+     하위 메뉴는 그 영역 펼침판의 순서와 글자 그대로 */
+  const T=$('tabs');
+  const siteAreas=T?[...T.querySelectorAll('.arearow .area[data-area]')].map(b=>b.dataset.area):[];
+  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'trend'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'trend'];
+  const siteBtn=id=>T&&T.querySelector(`.subgrp [data-menu="${id}"]`);
+  const menusOf=a=>{const ms=MENUS.filter(m=>m.area===a);
+    const pos=m=>{const b=siteBtn(m.id);if(!b)return 999;return [...T.querySelectorAll(`.subgrp[data-area="${a}"] [data-menu]`)].indexOf(b);};
+    return ms.slice().sort((x,y)=>pos(x)-pos(y));};
+  const lab=m=>{const b=siteBtn(m.id);const t=b&&b.textContent.trim();return t?esc(t):m.l;};
   const row=m=>`<tr data-mid="${m.id}"${MEDIA_AREAS.includes(m.area)?` data-marea="${m.area}"`:''}>
-      <td class="mn">${m.l}${m.kind==='edit'?' <span class="mtag">입력</span>':''}</td>
+      <td class="mn">${lab(m)}${m.kind==='edit'?' <span class="mtag">입력</span>':''}</td>
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
-      ${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+      ${menusOf(a).map(row).join('')}</tbody>`;
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
-         <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+         <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
+  const COMMON_SUB={overview:'같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록',trend:'모든 캠페인이 함께 쓰는 자료 게시판'};
+  const groups=areaOrder.map(a=>MEDIA_AREAS.includes(a)?area(a):common(a,COMMON_SUB[a]||'')).join('');
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.
       <b>디지털 · TV · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
       `Choose the menus this campaign uses and whether advertisers (viewers) can see them.
       <b>At least one of Digital · TV · OOH</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
      <table class="mset"><thead><tr><th>메뉴</th><th>사용</th><th>뷰어에게 보이기</th></tr></thead>
-       ${MEDIA_AREAS.map(area).join('')}
-       ${common('overview','같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록')}
-       ${common('trend','모든 캠페인이 함께 쓰는 자료 게시판')}
+       ${groups}
      </table>
      <div class="hint" id="medMsg" style="margin-top:10px;min-height:18px"></div>`,
     '<button class="btn" data-close>취소</button><button class="btn primary" id="medOk">적용</button>',{w:620});

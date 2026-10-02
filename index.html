@@ -3591,7 +3591,9 @@ const lastDataIso=()=>{
 /* 랜딩 페이지로 쪼개기 (v99) — 시트 행마다 랜딩이 적혀 있으면 그 날 · 그 소재의 값을 랜딩별 비중으로 나눈다.
    지표마다 따로 나누고(유입은 유입 행의 랜딩대로, 노출은 노출 행의 랜딩대로),
    그 지표에 랜딩별 숫자가 없으면 노출(없으면 Net · 클릭) 비중을 따른다. 나눈 합 = 원래 값 */
-const landNone=l=>lineLandings(l).length>1?'(랜딩 미구분)':(l.landing||'');
+/* v101 — 랜딩 페이지는 일자별 실적 입력에만 적는다(예상 효율에는 없음). 행에 안 적은 몫은 '(랜딩 미입력)' */
+const LAND_NONE='(랜딩 미입력)';
+const landNone=()=>LAND_NONE;
 function pushLandSplit(l,i,ck,base,vals){
   const mp=l.lsplit&&(l.lsplit.get(i+'\u0001'+ck)||l.lsplit.get(i+'\u0001*'));
   if(!mp){FACTS.push(Object.assign(base,vals));return;}
@@ -3622,7 +3624,7 @@ function buildFacts(){
          (예전에는 이런 라인의 숫자가 대시보드에서 통째로 사라졌다) */
       if(!cs.length){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
-          target:l.target,line:l.line,landing:l.landing||'',creative:'(소재 미등록)',
+          target:l.target,line:l.line,landing:LAND_NONE,creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
         const v0={};AMET.forEach(m=>v0[m]=RD[m][i]);
         v0.cost=toGross(v0.net,feeOf(l));
@@ -3639,7 +3641,7 @@ function buildFacts(){
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
-          line:l.line,landing:l.landing||'',creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+          line:l.line,landing:LAND_NONE,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         const v0={};AMET.forEach(m=>v0[m]=part[m][ci]);
         v0.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(v0[m]));c.daily.cost.push(v0.cost);
@@ -3649,7 +3651,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=l.landing||'';});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=LAND_NONE;});
 }
 buildFacts();
 
@@ -9253,7 +9255,8 @@ const SHEET_DIMS=[
   {k:'slot',l:'광고 지면',w:140,type:'dim',rule:'상위 선택에 매칭 · 조합 또는 개별 항목',lock:1,on:false},
   {k:'target',l:'타겟팅 그룹명',w:150,type:'dim',rule:'상위 선택에 매칭',lock:1,on:true},
   {k:'line',l:'제품',w:100,type:'dim',rule:'상위 선택에 매칭',lock:1,on:false},
-  {k:'landing',l:'랜딩 페이지',w:130,type:'dim',rule:'예상 효율의 랜딩 페이지 중 하나 (라인에 랜딩을 안 적었으면 무엇이든)',lock:1,on:false},
+  /* v101 — 랜딩 페이지는 예상 효율에 없고 여기서만 자유롭게 적는다. 라인을 찾는 데는 쓰지 않는다 */
+  {k:'landing',l:'랜딩 페이지',w:130,type:'text',rule:'자유 입력 · 사이트 분석 도구의 랜딩(첫 방문) 페이지 · 띄어쓰기 · 대소문자가 달라도 같은 페이지로 묶임',lock:1,on:false},
   {k:'creative',l:'소재',w:150,type:'dim',rule:'상위 선택에 매칭 · 소재 목록',lock:1,on:true}
 ];
 const SHEET_W={date:112,imp:96,click:84,view:92,rev:108,net:112,cost:130};
@@ -9284,6 +9287,8 @@ function mergeCols(saved,def){
   if(!Array.isArray(saved)||!saved.length)return def;
   /* v72 — 수수료 · Net 열은 저장본에 남아 있어도 버린다 */
   saved=saved.filter(c=>c&&!DROP_COLS.has(c.k));
+  /* v101 — 예상 효율(라인 표)에서 랜딩 페이지 열을 뺐다. 저장본에 남아 있어도 버린다 */
+  if(!def.some(d=>d.k==='landing'))saved=saved.filter(c=>c.k!=='landing');
   const by={};saved.forEach(c=>by[c.k]=c);
   const kept=saved.filter(c=>def.some(d=>d.k===c.k)||!c.lock)
     .map(c=>{const d=def.find(x=>x.k===c.k);return d?{...d,l:fixColLabel(c.k,c.l,d.l),w:c.w,on:c.on}:c;});
@@ -9313,7 +9318,7 @@ let SHEET=LINES.flatMap(l=>{
     const r={...base,creative:c.name,cost:Math.round(c.daily.cost[idx]||0)};
     AMET.forEach(m=>{if(m!=='net')r[m]=c.daily[m][idx]||0;});
     return r;});});
-const DIM_CHAIN=['segment','media','product','slot','target','line','landing','creative'];
+const DIM_CHAIN=['segment','media','product','slot','target','line','creative'];
 /* 상위 차원이 정해졌으면 그 조건에 맞는 라인만 남긴다.
    여러 항목이 들어가는 차원(광고상품·지면·타겟팅·소재)은 "포함"으로 본다 —
    조합 전체(예상효율에 등록한 그대로)로 골라도 되고, 그 안의 한 항목만 골라도 된다. */
@@ -9326,11 +9331,8 @@ const landKey=v=>dimKey(v).replace(/[\s_\-./]+/g,'');
 const dimEq=(k,a,b)=>k==='landing'?landKey(a)===landKey(b):dimKey(a)===dimKey(b);
 const dimMatch=(l,k,v)=>{
   if(!v)return true;
-  /* 랜딩 페이지는 라인에 적어 둔 경우에만 맞춰 본다 (v92) — 안 적은 라인은 어떤 랜딩이든 받는다 */
-  if(k==='landing'&&!lineLandings(l).length)return true;
-  if(k==='landing'){const set=new Set(lineLandings(l).map(landKey));
-    if(set.has(landKey(v))||landKey(l.landing)===landKey(v))return true;
-    const want=parseMulti(v);return want.length>0&&want.every(x=>set.has(landKey(x)));}
+  /* 랜딩 페이지는 라인(예상 효율)과 맞춰 보지 않는다 (v101) — 행에만 적는 값 */
+  if(k==='landing')return true;
   if(!MULTI_DIMS.includes(k))return dimKey(l[k])===dimKey(v);
   if(dimKey(l[k])===dimKey(v))return true;
   const set=new Set(lineMulti(l,k).map(dimKey));
@@ -9356,7 +9358,7 @@ function rowLine(r){return rowLineCands(r)[0]||null;}
    ① 조합이 정확히 같은 라인 ② 그 소재가 등록된 라인 ③ 그 날짜가 집행 기간 안인 라인 순으로 좁힌다.
    그래도 둘 이상이면 첫 라인에 담되 rowCellIssues 가 'ambig' 로 표시한다. */
 function rowLineCands(r){
-  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return [];
   const ok=l=>keys.every(k=>dimMatch(l,k,r[k]));
   let pool=LINES.filter(ok);
@@ -9391,7 +9393,7 @@ function rowNumBad(r){
   return out;}
 function rowCellIssues(r){
   const nb=rowNumBad(r);
-  const keys=['segment','media','product','slot','target','line','landing'].filter(k=>r[k]);
+  const keys=['segment','media','product','slot','target','line'].filter(k=>r[k]);
   if(!keys.length)return nb.length?{kind:'num',cells:nb}:{kind:'',cells:[]};
   let pool=LINES,bad=[];
   DIM_CHAIN.forEach(k=>{
@@ -9855,7 +9857,7 @@ function setCell(i,k,raw){
   const ix=DIM_CHAIN.indexOf(k);
   if(ix>=0)DIM_CHAIN.slice(ix+1).forEach(p=>{if(r[p]&&!dimOpts(p,r).includes(r[p]))r[p]='';});}
 /* 숫자 칸은 0이 아니라 빈칸으로 시작한다 (0과 미입력을 구분) */
-const blankRow=()=>{const o={date:YESTERDAY};DIM_CHAIN.forEach(k=>o[k]='');
+const blankRow=()=>{const o={date:YESTERDAY,landing:''};DIM_CHAIN.forEach(k=>o[k]='');
   numKeys().forEach(k=>o[k]='');return o;};
 const addRow=n=>{pushUndo();for(let i=0;i<(n||1);i++)SHEET.push(blankRow());
   renderSheet();
@@ -10033,6 +10035,11 @@ function applySheet(){
   /* 랜딩 페이지별 몫 (v99) — 라인 × 날짜 × (소재 | '*'=라인 전체) × 랜딩.
      행마다 랜딩이 적혀 있으면 대시보드에서 랜딩 페이지로 나눠 볼 수 있다 (buildFacts 가 이 비율로 쪼갠다) */
   const lbucket=new Map();
+  /* 랜딩 표기 통일 (v101) — 띄어쓰기 · 대소문자 · 하이픈만 다른 표기는 표에서 가장 많이 쓴 표기 하나로 */
+  const LAND_CANON=new Map();{const cnt=new Map();
+    SHEET.forEach(r=>{const t=String(r.landing==null?'':r.landing).trim();if(!t)return;const k=landKey(t);
+      let m=cnt.get(k);if(!m){m=new Map();cnt.set(k,m);}m.set(t,(m.get(t)||0)+1);});
+    cnt.forEach((m,k)=>{let best='',bv=-1;m.forEach((v,t)=>{if(v>bv){bv=v;best=t;}});LAND_CANON.set(k,best);});}
   const addL=(l,i,ck,ln,r,fee,w)=>{const k=l.id+'\u0001'+i+'\u0001'+ck;let b=lbucket.get(k);
     if(!b){b={l,i,ck,m:new Map()};lbucket.set(k,b);}
     let v=b.m.get(ln);if(!v){v=zeroV();b.m.set(ln,v);}addV(v,r,fee,w);};
@@ -10053,7 +10060,7 @@ function applySheet(){
        라인 합계를 소재 비율대로 다시 나눠 담으므로 숫자가 사라지지는 않는다 */
     const cn=String(r.creative==null?'':r.creative).trim();
     const lnRaw=String(r.landing==null?'':r.landing).trim();
-    const ln=lnRaw?(lineLandings(l).find(x=>landKey(x)===landKey(lnRaw))||lnRaw):'';
+    const ln=lnRaw?(LAND_CANON.get(landKey(lnRaw))||lnRaw):'';
     addL(l,i,'*',ln,r,fee,1);
     if(!cn)return;
     /* 한 칸에 여러 소재를 몰아 적었으면(등록된 이름들의 조합) 고르게 나눈다 */
@@ -10352,7 +10359,6 @@ const LINE_FIXED=[
   {k:'target',l:'타겟팅 그룹',w:164,type:'chips',on:true},
   {k:'creative',l:'소재',w:180,type:'chips',on:true},
   {k:'line',l:'제품',w:96,type:'auto',on:false},
-  {k:'landing',l:'랜딩 페이지',w:160,type:'chips',on:false},   /* v92 — 광고를 누르면 넘어가는 페이지(여러 개면 칩) */
   {k:'device',l:'디바이스',w:118,type:'dev',on:false},
   {k:'sec',l:'소재 초수',w:74,type:'num',on:false},
   {k:'bid',l:'비드 타입',w:84,type:'bid',on:true,g:'집행 조건'},
@@ -10975,7 +10981,7 @@ function openLineHistory(){
       ()=>{LUNDO.push(snapLines());LREDO.length=0;applyLineSnap(hs.snap);
         const e=$('lineSaveState');if(e)e.textContent=`${hhmm(hs.t)} 시점으로 복원됨`;},'되돌리기');});}
 /* --- 중복 라인 검사 · 합산 --- */
-const DUP_KEYS=['segment','media','product','slot','target','landing','start','end'];
+const DUP_KEYS=['segment','media','product','slot','target','start','end'];
 function dupGroups(){
   const key=l=>DUP_KEYS.map(k=>String(l[k]||'')).join(SEP)
     +SEP+lineCreatives(l).slice().sort().join(',');
@@ -13710,7 +13716,8 @@ function canonRow(r){
   ['segment','media','line'].forEach(k=>{
     if(r[k]&&l[k]&&r[k]!==l[k]&&dimKey(r[k])===dimKey(l[k]))r[k]=l[k];});
   MULTI_DIMS.forEach(k=>{
-    if(k==='creative'||!r[k])return;
+    /* 랜딩은 라인에 없는 값 (v101) — 적힌 그대로 둔다(표기 통일은 집계 때) */
+    if(k==='creative'||k==='landing'||!r[k])return;
     const want=parseMulti(r[k]);
     if(want.length>1&&want.length===lineMulti(l,k).length){r[k]=l[k];return;}
     const reg=lineMulti(l,k).find(x=>dimEq(k,x,r[k]));
@@ -13782,7 +13789,6 @@ const HDR_ALIAS={
     media:['매체','매체명','media','채널'],
     product:['광고상품','광고 상품','상품','상품명','광고상품명','광고 유형','product'],
     slot:['광고 지면','지면','노출 지면','placement'],
-    landing:['랜딩 페이지','랜딩페이지','랜딩 url','설정 랜딩','landing page','landing url'],
     target:['타겟팅 그룹','타겟팅','타겟','타깃','타깃팅','타겟팅 가이드','타겟팅 그룹명','광고그룹','광고 그룹','target','targeting'],
     creative:['소재','소재명','광고 소재','creative'],
     line:['제품','제품명'],
@@ -14541,10 +14547,7 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
 const SECT_INFO={
   inflow:`<p><b>IWV(인터랙팅 방문)</b> — 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다.
      매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.</p>
-   <p><b>유입 흐름</b> — 처음에는 <b>유입 → 랜딩 페이지</b>(첫 방문 페이지 기준 IWV)를 보여 줍니다. 양옆 ‹ › 로
-     <b>클릭 → 유입</b>, <b>노출 → 클릭</b> 단계로 넘겨 볼 수 있고, 넘길 때 겹치는 기둥(예: 클릭)이 커지며 다음 그래프의 축이 됩니다.
-     그래프마다 자기 단계의 배율로 그립니다. 매체 색 = 다음 단계로 넘어간 몫, 회색 = 이탈, 마우스를 올리면 잔존율이 보입니다.
-     IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’입니다. ‘구분 포함’ 을 켜면 구분 → 매체 → 랜딩 페이지 세 단으로 봅니다.</p>
+   <p><b>유입 흐름</b> — 처음에는 유입 → 랜딩 페이지(첫 방문 페이지 기준 IWV)를 보여 줍니다. 양옆 ‹ › 로 클릭 → 유입, 노출 → 클릭 단계로 넘겨 볼 수 있고, 넘길 때 겹치는 기둥(예: 클릭)이 커지며 다음 그래프의 축이 됩니다. 그래프마다 자기 단계의 배율로 그립니다. 매체 색 = 다음 단계로 넘어간 몫, 회색 = 이탈, 마우스를 올리면 잔존율이 보입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’입니다. ‘구분 포함’ 을 켜면 구분 → 매체 → 랜딩 페이지 세 단으로 봅니다.</p>
    <p><b>유입 효율 지도</b> — 위로 갈수록 유입률(유입 ÷ 클릭)이 높고, 오른쪽으로 갈수록 유입 비용 효율이 좋습니다(유입당 단가 = 소진금액 ÷ 유입 이 낮음).
      오른쪽 위에 있을수록 효율적입니다. 원 크기 = 유입 수입니다.</p>
    <p><b>체류시간 분포</b> — 방문을 머문 시간 구간으로 나눈 비율입니다. 평균 체류시간은 구간 가운데 값으로 어림한 값입니다.</p>
@@ -16330,7 +16333,7 @@ const COL_DESC={
   startT:'집행 시작 시간입니다.',endT:'집행 종료 시간입니다.',sub:'KPI 와 함께 보조로 보는 지표입니다.',
   spend_r:'예산 중 얼마나 썼는지입니다.',progress:'캠페인 기간이 얼마나 지났는지입니다 — 목표 페이스의 기준입니다.',
   bonusRate:'예산 대비 보너스 밸류의 비율입니다.',roas:'광고비 1원당 매출입니다.',
-  landing:'광고를 누르면 넘어가는 랜딩 페이지입니다.',
+  landing:'일자별 실적 입력에 적은 랜딩(첫 방문) 페이지입니다. 행에 적지 않은 몫은 (랜딩 미입력)으로 묶입니다.',
   iwv:'인터랙팅 방문(IWV) — 유입(방문) 중 ① 2페이지 이상 방문 ② 홈페이지 내 특정 기능 활용 ③ 페이지에 20초 이상 머묾 중 하나를 충족한 방문입니다. 랜딩 구분 없는 합계입니다.',
   iwv_mh:'첫 방문 페이지가 모빌리티 허브인 인터랙팅 방문입니다.',
   iwv_mp:'첫 방문 페이지가 모델 페이지인 인터랙팅 방문입니다.',
@@ -17970,27 +17973,37 @@ function openMenuSettings(){
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
       :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
+  /* 순서 · 이름은 실제 메뉴 줄과 같게 (v101) — 영역은 메뉴 줄의 순서(전체 캠페인 · 디지털 · TV · OOH · 트렌드),
+     하위 메뉴는 그 영역 펼침판의 순서와 글자 그대로 */
+  const T=$('tabs');
+  const siteAreas=T?[...T.querySelectorAll('.arearow .area[data-area]')].map(b=>b.dataset.area):[];
+  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'trend'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'trend'];
+  const siteBtn=id=>T&&T.querySelector(`.subgrp [data-menu="${id}"]`);
+  const menusOf=a=>{const ms=MENUS.filter(m=>m.area===a);
+    const pos=m=>{const b=siteBtn(m.id);if(!b)return 999;return [...T.querySelectorAll(`.subgrp[data-area="${a}"] [data-menu]`)].indexOf(b);};
+    return ms.slice().sort((x,y)=>pos(x)-pos(y));};
+  const lab=m=>{const b=siteBtn(m.id);const t=b&&b.textContent.trim();return t?esc(t):m.l;};
   const row=m=>`<tr data-mid="${m.id}"${MEDIA_AREAS.includes(m.area)?` data-marea="${m.area}"`:''}>
-      <td class="mn">${m.l}${m.kind==='edit'?' <span class="mtag">입력</span>':''}</td>
+      <td class="mn">${lab(m)}${m.kind==='edit'?' <span class="mtag">입력</span>':''}</td>
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
-      ${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+      ${menusOf(a).map(row).join('')}</tbody>`;
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
-         <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${MENUS.filter(m=>m.area===a).map(row).join('')}</tbody>`;
+         <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
+  const COMMON_SUB={overview:'같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록',trend:'모든 캠페인이 함께 쓰는 자료 게시판'};
+  const groups=areaOrder.map(a=>MEDIA_AREAS.includes(a)?area(a):common(a,COMMON_SUB[a]||'')).join('');
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.
       <b>디지털 · TV · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
       `Choose the menus this campaign uses and whether advertisers (viewers) can see them.
       <b>At least one of Digital · TV · OOH</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
      <table class="mset"><thead><tr><th>메뉴</th><th>사용</th><th>뷰어에게 보이기</th></tr></thead>
-       ${MEDIA_AREAS.map(area).join('')}
-       ${common('overview','같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록')}
-       ${common('trend','모든 캠페인이 함께 쓰는 자료 게시판')}
+       ${groups}
      </table>
      <div class="hint" id="medMsg" style="margin-top:10px;min-height:18px"></div>`,
     '<button class="btn" data-close>취소</button><button class="btn primary" id="medOk">적용</button>',{w:620});
@@ -20324,6 +20337,13 @@ Object.assign(I18N_EN,{
 /* v99 — 체류시간 머리글 두 줄(체류 / 구간) */
 Object.assign(I18N_EN,{"체류":"Time","15초 미만":"<15s","15~29초":"15–29s","30~59초":"30–59s","1~3분":"1–3m","3~5분":"3–5m",
   "5~10분":"5–10m","10~15분":"10–15m","15~20분":"15–20m","20~30분":"20–30m","30분 이상":"30m+","방문수":"visits"});
+/* v100 — 유입 흐름 단계 넘기기 · 체류 칸 색 / v101 — 랜딩은 일자별 실적에만 */
+Object.assign(I18N_EN,{
+  "— 처음에는 유입 → 랜딩 페이지(첫 방문 페이지 기준 IWV)를 보여 줍니다. 양옆 ‹ › 로 클릭 → 유입, 노출 → 클릭 단계로 넘겨 볼 수 있고, 넘길 때 겹치는 기둥(예: 클릭)이 커지며 다음 그래프의 축이 됩니다. 그래프마다 자기 단계의 배율로 그립니다. 매체 색 = 다음 단계로 넘어간 몫, 회색 = 이탈, 마우스를 올리면 잔존율이 보입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’입니다. ‘구분 포함’ 을 켜면 구분 → 매체 → 랜딩 페이지 세 단으로 봅니다.":"— starts with inflow → landing page (IWV by first page). Use ‹ › on either side to step back to clicks → inflow and impressions → clicks; when you switch, the shared column (e.g. clicks) grows and becomes the axis of the next chart. Each chart uses its own scale. Media color = carried to the next step, gray = dropped; hover for retention. IWV (All) with no landing is ‘other landing’. Turn on ‘Show segments’ to see segment → media → landing page.",
+  "칸 색이 진할수록 그 행의 체류 방문 중 이 구간 비율이 큽니다(합계 · 소계 행 제외). 칸에 마우스를 올리면 비율이 보입니다.":"The darker the cell, the larger this range's share of the row's visits (not on total/subtotal rows). Hover a cell for the share.",
+  "(랜딩 미입력)":"(no landing)",
+  "자유 입력 · 사이트 분석 도구의 랜딩(첫 방문) 페이지 · 띄어쓰기 · 대소문자가 달라도 같은 페이지로 묶임":"Free text · the landing (first) page from your site analytics · spacing/case differences are merged",
+  "일자별 실적 입력에 적은 랜딩(첫 방문) 페이지입니다. 행에 적지 않은 몫은 (랜딩 미입력)으로 묶입니다.":"The landing (first) page entered in daily results. Rows without one are grouped as (no landing)."});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

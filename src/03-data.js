@@ -361,7 +361,9 @@ const lastDataIso=()=>{
 /* 랜딩 페이지로 쪼개기 (v99) — 시트 행마다 랜딩이 적혀 있으면 그 날 · 그 소재의 값을 랜딩별 비중으로 나눈다.
    지표마다 따로 나누고(유입은 유입 행의 랜딩대로, 노출은 노출 행의 랜딩대로),
    그 지표에 랜딩별 숫자가 없으면 노출(없으면 Net · 클릭) 비중을 따른다. 나눈 합 = 원래 값 */
-const landNone=l=>lineLandings(l).length>1?'(랜딩 미구분)':(l.landing||'');
+/* v101 — 랜딩 페이지는 일자별 실적 입력에만 적는다(예상 효율에는 없음). 행에 안 적은 몫은 '(랜딩 미입력)' */
+const LAND_NONE='(랜딩 미입력)';
+const landNone=()=>LAND_NONE;
 function pushLandSplit(l,i,ck,base,vals){
   const mp=l.lsplit&&(l.lsplit.get(i+'\u0001'+ck)||l.lsplit.get(i+'\u0001*'));
   if(!mp){FACTS.push(Object.assign(base,vals));return;}
@@ -392,7 +394,7 @@ function buildFacts(){
          (예전에는 이런 라인의 숫자가 대시보드에서 통째로 사라졌다) */
       if(!cs.length){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
-          target:l.target,line:l.line,landing:l.landing||'',creative:'(소재 미등록)',
+          target:l.target,line:l.line,landing:LAND_NONE,creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
         const v0={};AMET.forEach(m=>v0[m]=RD[m][i]);
         v0.cost=toGross(v0.net,feeOf(l));
@@ -409,7 +411,7 @@ function buildFacts(){
       cs.forEach((c,ci)=>{
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
-          line:l.line,landing:l.landing||'',creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+          line:l.line,landing:LAND_NONE,creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
         const v0={};AMET.forEach(m=>v0[m]=part[m][ci]);
         v0.cost=part.cost[ci];
         AMET.forEach(m=>c.daily[m].push(v0[m]));c.daily.cost.push(v0.cost);
@@ -419,7 +421,7 @@ function buildFacts(){
   });
   CREATIVES.forEach(c=>{AMET.concat(['cost']).forEach(m=>c['t_'+m]=sum(c.daily[m]));
     const l=LINES.find(x=>x.id===c.lid)||{};
-    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=l.landing||'';});
+    c.segment=l.segment;c.media=l.media;c.product=l.product;c.slot=l.slot||'';c.target=l.target;c.line=l.line;c.landing=LAND_NONE;});
 }
 buildFacts();
 

@@ -247,7 +247,8 @@ function canonRow(r){
   ['segment','media','line'].forEach(k=>{
     if(r[k]&&l[k]&&r[k]!==l[k]&&dimKey(r[k])===dimKey(l[k]))r[k]=l[k];});
   MULTI_DIMS.forEach(k=>{
-    if(k==='creative'||!r[k])return;
+    /* 랜딩은 라인에 없는 값 (v101) — 적힌 그대로 둔다(표기 통일은 집계 때) */
+    if(k==='creative'||k==='landing'||!r[k])return;
     const want=parseMulti(r[k]);
     if(want.length>1&&want.length===lineMulti(l,k).length){r[k]=l[k];return;}
     const reg=lineMulti(l,k).find(x=>dimEq(k,x,r[k]));
@@ -319,7 +320,6 @@ const HDR_ALIAS={
     media:['매체','매체명','media','채널'],
     product:['광고상품','광고 상품','상품','상품명','광고상품명','광고 유형','product'],
     slot:['광고 지면','지면','노출 지면','placement'],
-    landing:['랜딩 페이지','랜딩페이지','랜딩 url','설정 랜딩','landing page','landing url'],
     target:['타겟팅 그룹','타겟팅','타겟','타깃','타깃팅','타겟팅 가이드','타겟팅 그룹명','광고그룹','광고 그룹','target','targeting'],
     creative:['소재','소재명','광고 소재','creative'],
     line:['제품','제품명'],
