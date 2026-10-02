@@ -13,13 +13,23 @@ const CC_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAA
 function ccAdd(){
   const root=$('tab-dash');if(!root)return;
   root.querySelectorAll('.card').forEach(card=>{
-    if(card.querySelector(':scope>.cardcopy'))return;
-    const b=document.createElement('button');
-    b.type='button';b.className='cardcopy';b.innerHTML=CC_ICON;
-    b.title=L('이 영역을 그림으로 복사','Copy this card as an image');
-    b.setAttribute('aria-label',b.title);
-    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();ccCopy(card,b);});
-    card.classList.add('hascopy');card.appendChild(b);});}
+    if(!card.querySelector(':scope>.cardcopy')){
+      const b=document.createElement('button');
+      b.type='button';b.className='cardcopy';b.innerHTML=CC_ICON;
+      b.title=L('이 영역을 그림으로 복사','Copy this card as an image');
+      b.setAttribute('aria-label',b.title);
+      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();ccCopy(card,b);});
+      card.classList.add('hascopy');card.appendChild(b);}
+    /* 표가 있는 카드에는 그 옆에 엑셀 단추 (v108 · 21-tblxlsx.js) — 표가 사라지면 단추도 뗀다 */
+    const has=!!card.querySelector('table'),xb=card.querySelector(':scope>.cardxl');
+    if(has&&!xb&&typeof txClick==='function'){
+      const b=document.createElement('button');
+      b.type='button';b.className='cardxl';b.innerHTML=TX_ICON;
+      b.title=L('이 표를 엑셀로 내려받기','Download this table as Excel');
+      b.setAttribute('aria-label',b.title);
+      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();txClick(card,b);});
+      card.appendChild(b);}
+    else if(!has&&xb)xb.remove();});}
 /* ---- 카드 → PNG (외부 라이브러리 없이) ----
    ① 카드를 통째로 복제(cloneNode) — 화면의 카드는 그대로 둔다
    ② 원본과 복제본을 나란히 훑으며, 화면에 실제로 적용된 스타일(getComputedStyle)을 복제본에 인라인으로 옮긴다
@@ -115,7 +125,7 @@ async function ccRender(card){
   const [EX,EY]=walk(card,clone);
   await Promise.all(jobs);
   /* 복사 단추 · 좌우 넘김 단추는 그림에서 뺀다 */
-  clone.querySelectorAll('.cardcopy,.hpbtn').forEach(n=>n.remove());
+  clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn').forEach(n=>n.remove());
   const W2=W+Math.round(EX),H2=H+Math.round(EY);
   clone.style.margin='0';clone.style.width=W2+'px';clone.style.height=H2+'px';clone.style.maxWidth='none';clone.style.maxHeight='none';
   /* 표의 data-key 등에 들어 있는 제어문자(구분자 U+0001)는 XML 에 넣을 수 없다 — 지운다 */

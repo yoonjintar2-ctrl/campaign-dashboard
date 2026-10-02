@@ -1736,7 +1736,18 @@ table.tbl.fit{width:auto}
 .cardcopy.ok{opacity:1;color:#2f8a55;border-color:#9fcfb1;transform:scale(1.06)}
 .cardcopy.ng{opacity:1;color:var(--neg);border-color:var(--neg)}
 @media (hover:none){.cardcopy{opacity:.6}}
-@media print{.cardcopy{display:none!important}}
+/* 표 엑셀 단추 (v108) — 복사 단추 바로 왼쪽, 같은 크기 · 같은 동작(마우스를 올렸을 때만) */
+.cardxl{position:absolute;top:7px;right:37px;z-index:8;width:26px;height:26px;padding:0;border-radius:7px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cardxl svg{display:block}
+.card.hascopy:hover>.cardxl,.cardxl:focus-visible{opacity:.92}
+.cardxl:hover{opacity:1;border-color:var(--gline)}
+.cardxl.busy{opacity:1;animation:ccbusy .9s ease-in-out infinite}
+.cardxl.ok{opacity:1;color:#2f8a55;border-color:#9fcfb1;transform:scale(1.06)}
+.cardxl.ng{opacity:1;color:var(--neg);border-color:var(--neg)}
+@media (hover:none){.cardxl{opacity:.6}}
+@media print{.cardcopy,.cardxl{display:none!important}}
 /* 일자별 효율 비교 — 입체 (v103): 그래프가 카드 좌우 끝까지, 아래는 바닥(웜 토프)이 범례까지 이어진다 */
 .card[data-sect="daily"]>.bd{padding-bottom:0}
 #chartDaily{margin:0 -18px}
