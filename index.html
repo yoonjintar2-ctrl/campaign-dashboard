@@ -2479,7 +2479,10 @@ table.sheet th.thsf .colgrip{cursor:col-resize}
 .thpop .thform b{font-weight:700;color:var(--ink)}
 .thpop .thi.on{color:var(--acc);font-weight:800}
 th.thpk{cursor:pointer}
-th.thpk:hover{color:var(--acc)}
+/* v104 — 마우스를 올리면 글자색을 바꾸던 것(어두운 머리글에서는 배경과 비슷해 안 보였다) 대신
+   글자는 그대로 두고 밑줄 + 배경을 살짝 밝게 */
+th.thpk:hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;
+  background-image:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.1))}
 th.srt-a::after,th.srt-d::after{font-size:9px;margin-left:4px;color:var(--acc);font-weight:800}
 th.srt-a::after{content:'▲'}
 th.srt-d::after{content:'▼'}
@@ -2690,7 +2693,12 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 /* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */
 table.tbl th span.hl{display:block;line-height:1.25}
 /* 유입 상세 표 — 서머리처럼 모서리를 둥글게 (v94) */
-#infTblWrap{border:1px solid var(--line);border-radius:10px}
+/* v104 — 바깥 테두리를 한 겹 더 두르던 것을 없애고 모서리만 둥글게 */
+#infTblWrap{border:0;border-radius:10px}
+/* 유입 효율 상세분석 — 정렬 세모는 표시하지 않는다(머리글 글자가 가운데에서 밀리던 원인) */
+#infTbl th.srt-a::after,#infTbl th.srt-d::after{content:none}
+.infh .switch{margin-left:auto}
+.infh .switch+.infcfg{margin-left:10px}
 /* 꽉 채우는 표 — 머리글은 칸 폭 안에서 줄을 바꾼다 (열 폭을 같게 두기 위해) */
 table.tbl.thwrap thead th{white-space:normal;word-break:keep-all}
 /* 행 머리(가로 고정) 칸의 행 구분선 (v94) — 고정 칸은 따로 그려져서, 화면 배율이 125% 처럼 소수점이면
@@ -19642,6 +19650,7 @@ function renderInflow(){
         <div id="infDwell"></div></div>
     </div>
     <div class="infcell"><div class="infh"><b>${L('유입 효율 상세분석','Inflow efficiency details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
+        <span class="switch${infTbl().allMedia?'':' on'}" id="infOnlySw" title="${L('끄면 유입 데이터가 없는 매체까지 모두 보여 줍니다','Turn off to show media without inflow data too')}"><i></i> ${L('유입 발생 매체만','Only media with inflow')}</span>
         ${isClient()?'':`<button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
       <div class="hidden" id="infCfgBox"></div>
       <div class="tbl-wrap noy" id="infTblWrap"><table class="tbl gln fit cmpt inftbl" id="infTbl"></table></div></div>
@@ -19657,6 +19666,8 @@ function renderInflow(){
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
   INF_OK=okSet;
   try{infTable();}catch(e){console.warn(e);}
+  {const sw=$('infOnlySw');if(sw)sw.onclick=()=>{const c=infTbl();c.allMedia=!c.allMedia;sw.classList.toggle('on',!c.allMedia);
+    infTable();try{if(!isClient()){markDirty();saveLocal();}}catch(e){}};}
   const cb=$('infCfgBtn');
   if(cb)cb.onclick=()=>{const box=$('infCfgBox');if(!box)return;
     if(!box.classList.contains('hidden')&&box.firstChild){box.classList.add('hidden');box.innerHTML='';return;}
@@ -20047,8 +20058,10 @@ function infTable(){
   if(cfg.follow!==false){
     const want=INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media;
     if(cfg.rows.map(r=>r.k).join('|')!==want.map(r=>r.k).join('|')){cfg.rows=want.map(r=>({...r}));cfg.order=null;}}
+  /* 유입 발생 매체만 (v104, 기본 켬) — 끄면 유입 데이터가 없는 매체(라인)까지 모두 */
+  const only=!cfg.allMedia;
   const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
-    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id)),fill:true});
+    facts:only?factFilter().filter(f=>INF_OK.has(f.lid)):factFilter(),lines:only?LINES.filter(l=>INF_OK.has(l.id)):LINES,fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
 }
@@ -20391,6 +20404,8 @@ Object.assign(I18N_EN,{"구분으로 나누기":"Split by segment",
 Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill behind)",
   "막대 뒤로 이어지는 땅의 높이가 그날의 소진금액입니다(0원부터 같은 눈금). 정확한 금액은 날짜에 마우스를 올리면 나옵니다.":"The height of the ground behind the bars is that day's spend (same scale from 0). Hover a date for the exact amount.",
   "이슈가 시작된 날의 꺾은선 위에 번호로 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Numbered on the line at the day the issue started. Hover the circle for details and period."});
+/* v104 */
+Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

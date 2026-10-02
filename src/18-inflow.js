@@ -108,6 +108,7 @@ function renderInflow(){
         <div id="infDwell"></div></div>
     </div>
     <div class="infcell"><div class="infh"><b>${L('유입 효율 상세분석','Inflow efficiency details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
+        <span class="switch${infTbl().allMedia?'':' on'}" id="infOnlySw" title="${L('끄면 유입 데이터가 없는 매체까지 모두 보여 줍니다','Turn off to show media without inflow data too')}"><i></i> ${L('유입 발생 매체만','Only media with inflow')}</span>
         ${isClient()?'':`<button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
       <div class="hidden" id="infCfgBox"></div>
       <div class="tbl-wrap noy" id="infTblWrap"><table class="tbl gln fit cmpt inftbl" id="infTbl"></table></div></div>
@@ -123,6 +124,8 @@ function renderInflow(){
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
   INF_OK=okSet;
   try{infTable();}catch(e){console.warn(e);}
+  {const sw=$('infOnlySw');if(sw)sw.onclick=()=>{const c=infTbl();c.allMedia=!c.allMedia;sw.classList.toggle('on',!c.allMedia);
+    infTable();try{if(!isClient()){markDirty();saveLocal();}}catch(e){}};}
   const cb=$('infCfgBtn');
   if(cb)cb.onclick=()=>{const box=$('infCfgBox');if(!box)return;
     if(!box.classList.contains('hidden')&&box.firstChild){box.classList.add('hidden');box.innerHTML='';return;}
@@ -513,8 +516,10 @@ function infTable(){
   if(cfg.follow!==false){
     const want=INF_DIM_ROWS[INF.dim]||INF_DIM_ROWS.media;
     if(cfg.rows.map(r=>r.k).join('|')!==want.map(r=>r.k).join('|')){cfg.rows=want.map(r=>({...r}));cfg.order=null;}}
+  /* 유입 발생 매체만 (v104, 기본 켬) — 끄면 유입 데이터가 없는 매체(라인)까지 모두 */
+  const only=!cfg.allMedia;
   const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
-    facts:factFilter().filter(f=>INF_OK.has(f.lid)),lines:LINES.filter(l=>INF_OK.has(l.id)),fill:true});
+    facts:only?factFilter().filter(f=>INF_OK.has(f.lid)):factFilter(),lines:only?LINES.filter(l=>INF_OK.has(l.id)):LINES,fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
 }

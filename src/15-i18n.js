@@ -185,6 +185,8 @@ Object.assign(I18N_EN,{"구분으로 나누기":"Split by segment",
 Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill behind)",
   "막대 뒤로 이어지는 땅의 높이가 그날의 소진금액입니다(0원부터 같은 눈금). 정확한 금액은 날짜에 마우스를 올리면 나옵니다.":"The height of the ground behind the bars is that day's spend (same scale from 0). Hover a date for the exact amount.",
   "이슈가 시작된 날의 꺾은선 위에 번호로 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Numbered on the line at the day the issue started. Hover the circle for details and period."});
+/* v104 */
+Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
