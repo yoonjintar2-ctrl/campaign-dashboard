@@ -72,7 +72,7 @@ function serializeDoc(){
     tblCols:(typeof tblCfgForDoc==='function'?tblCfgForDoc():{}),
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
-    lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;delete o.lsplit;return o;}),
+    lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;delete o.lsplit;delete o.ldays;delete o.landDom;return o;}),
     creatives:CREATIVES.map(stripCr),
     /* 소재 자료함 — 예상 효율을 지웠다 다시 넣어도 이미지가 살아 있게 (이름이 열쇠) */
     crAssets:(typeof crAssetsForSave==='function'?crAssetsForSave():{}),

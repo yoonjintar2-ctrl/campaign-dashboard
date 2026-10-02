@@ -790,6 +790,7 @@ function applySheet(){
   /* 랜딩 페이지별 몫 (v99) — 라인 × 날짜 × (소재 | '*'=라인 전체) × 랜딩.
      행마다 랜딩이 적혀 있으면 대시보드에서 랜딩 페이지로 나눠 볼 수 있다 (buildFacts 가 이 비율로 쪼갠다) */
   const lbucket=new Map();
+  const ldays=new Map(),lcnt=new Map();
   /* 랜딩 표기 통일 (v101) — 띄어쓰기 · 대소문자 · 하이픈만 다른 표기는 표에서 가장 많이 쓴 표기 하나로 */
   const LAND_CANON=new Map();{const cnt=new Map();
     SHEET.forEach(r=>{const t=String(r.landing==null?'':r.landing).trim();if(!t)return;const k=landKey(t);
@@ -817,6 +818,10 @@ function applySheet(){
     const lnRaw=String(r.landing==null?'':r.landing).trim();
     const ln=lnRaw?(LAND_CANON.get(landKey(lnRaw))||lnRaw):'';
     addL(l,i,'*',ln,r,fee,1);
+    /* 이 라인에 행이 있는 날 · 가장 많이 적힌 랜딩 (v103.1) — 행이 하나도 없는 날(집행 전 · 후)의 0 실적이
+       '(랜딩 미입력)' 줄로 따로 보이지 않게, 그런 날은 이 라인의 주 랜딩으로 둔다 */
+    if(!ldays.has(l.id))ldays.set(l.id,new Set());ldays.get(l.id).add(i);
+    if(ln){let m=lcnt.get(l.id);if(!m){m=new Map();lcnt.set(l.id,m);}m.set(ln,(m.get(ln)||0)+1);}
     if(!cn)return;
     /* 한 칸에 여러 소재를 몰아 적었으면(등록된 이름들의 조합) 고르게 나눈다 */
     let names=[cn];
@@ -857,7 +862,9 @@ function applySheet(){
      ② 시트에 소재가 하나만 적혀 있어도 등록된 소재 수만큼 쪼개졌다
         (크리테오 키비주얼 1개가 3개로 보이던 문제)
      이제는 적힌 숫자를 그대로 날짜별로 들고 있다가 buildFacts 에서 지표마다 따로 쓴다. */
-  LINES.forEach(l=>{l.cdaily=null;l.cdet=null;l.lsplit=null;});
+  LINES.forEach(l=>{l.cdaily=null;l.cdet=null;l.lsplit=null;
+    l.ldays=ldays.get(l.id)||null;
+    let best='',bv=0;(lcnt.get(l.id)||new Map()).forEach((v,k)=>{if(v>bv){bv=v;best=k;}});l.landDom=best;});
   /* 랜딩이 하나도 안 적힌 묶음은 나누지 않는다 (라인에 적어 둔 랜딩 그대로) */
   lbucket.forEach(b=>{if(b.m.size===1&&b.m.has(''))return;
     if(!b.l.lsplit)b.l.lsplit=new Map();b.l.lsplit.set(b.i+'\u0001'+b.ck,b.m);});

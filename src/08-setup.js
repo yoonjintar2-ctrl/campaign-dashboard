@@ -593,7 +593,7 @@ function linePaste(txt){
 }
 /* --- 실행 취소 / 다시 실행 --- */
 const LUNDO=[],LREDO=[],LUNDO_MAX=60;
-const snapLines=()=>JSON.stringify(LINES.map(l=>{const o={...l};delete o.daily;return o;}));
+const snapLines=()=>JSON.stringify(LINES.map(l=>{const o={...l};delete o.daily;delete o.ldays;return o;}));
 function pushLineUndo(){LUNDO.push(snapLines());if(LUNDO.length>LUNDO_MAX)LUNDO.shift();
   LREDO.length=0;markLineDirty();}
 function applyLineSnap(s){

@@ -366,7 +366,10 @@ const LAND_NONE='(랜딩 미입력)';
 const landNone=()=>LAND_NONE;
 function pushLandSplit(l,i,ck,base,vals){
   const mp=l.lsplit&&(l.lsplit.get(i+'\u0001'+ck)||l.lsplit.get(i+'\u0001*'));
-  if(!mp){FACTS.push(Object.assign(base,vals));return;}
+  /* 나눌 몫이 없다 — 그날 행이 있었는데 랜딩을 안 적었으면 '(랜딩 미입력)',
+     그날 행이 아예 없으면(집행 전 · 후의 0 실적) 이 라인에 가장 많이 적힌 랜딩으로 (v103.1) */
+  if(!mp){if(base.landing===LAND_NONE&&l.landDom&&!(l.ldays instanceof Set&&l.ldays.has(i)))base.landing=l.landDom;
+    FACTS.push(Object.assign(base,vals));return;}
   const lns=[...mp.keys()];
   const w=m=>{const a=lns.map(ln=>+mp.get(ln)[m]||0);return sum(a)>0?a:null;};
   const bw=w('imp')||w('net')||w('click')||AMET.map(w).find(Boolean)||lns.map(()=>1);
