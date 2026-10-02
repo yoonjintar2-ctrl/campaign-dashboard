@@ -1740,7 +1740,18 @@ table.tbl.fit{width:auto}
 /* 일자별 효율 비교 — 입체 (v103): 그래프가 카드 좌우 끝까지, 아래는 바닥(웜 토프)이 범례까지 이어진다 */
 .card[data-sect="daily"]>.bd{padding-bottom:0}
 #chartDaily{margin:0 -18px}
-#chartDaily svg.chart.d3{display:block}
+#chartDaily svg.chart.d3{display:block;width:auto;max-width:none}
+/* 한 달이 넘으면 가로로 넘겨 본다 (v107 · enableHPager) */
+#chartDaily{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain}
+@media print{#chartDaily{overflow:visible}#chartDaily svg.chart.d3{width:100%;height:auto}}
+/* 날짜에 마우스를 올리면 그 막대만 진하고 크게 — 바닥 가운데를 축으로 살짝 튀어 오른다 (v107) */
+.chart.d3 .dbar{transform-box:fill-box;transform-origin:50% 100%;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1),filter .22s,opacity .22s}
+.chart.d3 .dbar.on{transform:scale(1.16,1.07);filter:saturate(1.5) brightness(.82)}
+[data-theme="dark"] .chart.d3 .dbar.on{filter:saturate(1.4) brightness(1.18)}
+.chart.d3.hov .dbar:not(.on):not(.fut){opacity:.62}
+.chart.d3 text.ddate{transition:fill .15s}
+.chart.d3 text.ddate.on{fill:var(--ink);font-weight:900}
 #dailyLegend{margin:0 -18px;padding:2px 22px 14px;justify-content:flex-end;gap:16px;
   background:rgba(150,120,90,.28);border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px)}
 [data-theme="dark"] #dailyLegend{background:rgba(200,168,136,.16)}
@@ -2713,8 +2724,8 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
   grid-template-rows:auto minmax(150px,1fr) auto;justify-content:space-around;column-gap:10px;row-gap:7px}
 .ldcol{grid-row:1/-1;display:grid;grid-template-rows:subgrid;justify-items:center;min-width:0}
 .ldname{align-self:end;width:100%;text-align:center;line-height:1.25;min-width:0}
-.ldname b{font-size:12px;font-weight:700;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word}
-.infld.many .ldname b{font-size:10.5px}
+.ldname b{font-size:13.5px;font-weight:800;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word}
+.infld.many .ldname b{font-size:11.5px}
 .ldbar{width:100%;max-width:60px;min-height:150px;display:flex;flex-direction:column;gap:2px;border-radius:6px;overflow:hidden}
 .ldbar i{display:flex;align-items:center;justify-content:center;min-height:2px;overflow:hidden;background:rgb(var(--accrgb)/var(--op))}
 .ldbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
@@ -2723,8 +2734,8 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 [data-theme="dark"] .ldbar em,[data-theme="dark"] .dwbar em{color:var(--ink)}
 [data-theme="dark"] .ldbar i.hi em,[data-theme="dark"] .dwbar i.hi em{color:rgba(0,0,0,.8)}
 .ldavg{align-self:start;display:flex;flex-direction:column;align-items:center;line-height:1.2;text-align:center}
-.ldavg b{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap}
-.infld.many .ldavg b{font-size:12px;line-height:1.15}
+.ldavg b{font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap}
+.infld.many .ldavg b{font-size:11.5px;line-height:1.15}
 .infld.many .ldcols{column-gap:6px}
 .ldavg span{font-size:10.5px;color:var(--muted);white-space:nowrap;margin-top:1px}
 /* 매체별 체류시간 막대 비율 (v106.2) — 막대 칸이 넉넉할 때만(34px 이상) 숫자를 보인다 */

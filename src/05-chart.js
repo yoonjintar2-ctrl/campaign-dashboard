@@ -140,7 +140,10 @@ function openDailyFilt(btn){
     document.addEventListener('mousedown',off);},0);
 }
 function renderDaily(){
-  const host=$('chartDaily');host.innerHTML='';
+  const host=$('chartDaily');
+  /* 다시 그리기 전 가로 위치 — 지표만 바꿔 다시 그릴 때 보던 자리를 지킨다 (v107) */
+  const prevSL=host.scrollLeft;
+  host.innerHTML='';
   paintDailyFiltBtn();
   const bk=$('barSel').value||BAR_METRIC||'imp', lk=$('lineSel').value||LINE_METRIC||'ctr';
   /* 그래프 전용 필터(v54)를 여기서 한 번 걸어 두면 계열·예상값·범례가 모두 같이 좁혀진다 */
@@ -182,9 +185,13 @@ function renderDaily(){
      꺾은선은 평범한 선(굵고 반투명한 검정 · 부드러운 곡선), 눈금 대신 처음 · 최고 · 최저 · 마지막 값.
      운영 이슈는 흰 바탕 · 검은 테두리의 번호 원 */
   const DARK=document.documentElement.getAttribute('data-theme')==='dark';
-  const W=Math.max(Math.round(host.clientWidth)||1200,560),H=500;
-  DAILY_W=W;
-  const SXp=Math.round(Math.max(14,Math.min(28,W*.018)));
+  const Wv=Math.max(Math.round(host.clientWidth)||1200,560),H=500;
+  DAILY_W=Wv;
+  const SXp=Math.round(Math.max(14,Math.min(28,Wv*.018)));
+  /* v107 — 한 달(31일)이 넘는 캠페인은 한 화면에 31일 폭으로 그리고 나머지는 가로로 넘겨 본다
+     (서머리 표처럼 좌우 ‹ › 단추 · 트랙패드/Shift+휠 가로 스크롤) */
+  const DAYS_VIS=31;
+  const W=ds.length>DAYS_VIS?Math.round(SXp*2+(Wv-SXp*2)/DAYS_VIS*ds.length):Wv;
   const floorH=132,Ftop=H-floorH,BASE=Ftop+Math.round(floorH*.42);
   const P={l:SXp,r:SXp,t:16};
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,class:'chart d3'},host);
@@ -259,13 +266,15 @@ function renderDaily(){
   {const rg=S('radialGradient',{id:shg},svg);
     S('stop',{offset:0,'stop-color':'#000','stop-opacity':DARK?.5:.2},rg);S('stop',{offset:1,'stop-color':'#000','stop-opacity':0},rg);}
   const PRGB=pal.map(rgbOf);
+  /* 막대 · 날짜 글자 — 날짜에 마우스를 올리면 그 막대만 진하고 크게(v107) */
+  const BARS=[],DTXT=[];
   ds.forEach((d,i)=>{if(!(totals[i]>0))return;
     const bl=cx(i)-(bw+DEP)/2,w=bw+DEP+26;
     S('ellipse',{cx:bl-8+w/2,cy:BASE-DEP/2,rx:w/2,ry:8,fill:`url(#${shg})`,opacity:i>=EL?.3:1,'pointer-events':'none'},svg);});
   ds.forEach((d,i)=>{
     const future=i>=EL,bl=cx(i)-(bw+DEP)/2;let y=BASE;
     let topIdx=-1;for(let si=series.length-1;si>=0;si--){if(vOf(si,i)>0){topIdx=si;break;}}
-    const g=S('g',{opacity:future?.22:1,'pointer-events':'none'},svg);
+    const g=S('g',{opacity:future?.22:1,'pointer-events':'none',class:future?'dbar fut':'dbar'},svg);BARS[i]=g;
     series.forEach((s,si)=>{const v=vOf(si,i);if(v<=0)return;
       const h=Math.max(BH(v),1),top=y-h,c=PRGB[si];
       S('rect',{x:bl.toFixed(1),y:top.toFixed(1),width:bw.toFixed(1),height:h.toFixed(1),fill:rgba(c,.8)},g);
@@ -274,7 +283,7 @@ function renderDaily(){
       y=top;});
     const rest=isRest(d);
     const t=S('text',{x:cx(i),y:BASE+21,'text-anchor':'middle','font-size':10.5,'font-weight':700,
-      fill:rest?'var(--hol)':INK2,opacity:rest?.85:1},svg);t.textContent=d.getDate();
+      fill:rest?'var(--hol)':INK2,opacity:rest?.85:1,class:'ddate'},svg);t.textContent=d.getDate();DTXT[i]=t;
     if(d.getDate()===1||i===0){
       const m=S('text',{x:cx(i),y:BASE+35,'text-anchor':'middle','font-size':10,'font-weight':800,fill:INK2},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
@@ -350,7 +359,8 @@ function renderDaily(){
       `<div class="r" style="border-top:1px solid rgba(255,255,255,.2);margin-top:6px;padding-top:5px"><span class="l">${METRICS[bk].l} 합계</span><b>${METRICS[bk].f(totals[i])}</b></div>`+
       (lineVals?`<div class="r"><span class="l"><span class="linekey"></span>${METRICS[lk].l}</span><b>${METRICS[lk].f(lineVals[i])}</b></div>`:'')+
       (SPEND_ON&&isFinite(spend[i])?`<div class="r"><span class="l">소진금액</span><b>${won(spend[i])}</b></div>`:'')));
-    hit.addEventListener('mouseleave',hideTip);});
+    hit.addEventListener('mouseenter',()=>{if(BARS[i])BARS[i].classList.add('on');if(DTXT[i])DTXT[i].classList.add('on');svg.classList.add('hov');});
+    hit.addEventListener('mouseleave',()=>{if(BARS[i])BARS[i].classList.remove('on');if(DTXT[i])DTXT[i].classList.remove('on');svg.classList.remove('hov');hideTip();});});
   /* ---------- 운영 이슈 — 흰 바탕 · 검은 테두리 번호 원 (v103) ----------
      이슈가 시작된 날의 꺾은선 위에. 그날 꺾은선 값이 없으면 막대 위에. 같은 날 시작한 이슈는 원 하나 + 개수 배지.
      올리면 이슈 기간을 옅게 칠하고 내용을 띄운다 */
@@ -410,6 +420,17 @@ function renderDaily(){
     x.innerHTML=`<span class="hillkey"></span>일별 소진금액 (뒤 언덕)`;}
   if(SHOW_FORECAST&&remainDays){const x=el('span','it',lg);
     x.innerHTML=`<span class="dot" style="background:${rgba(PRGB[0]||[120,124,130],.22)}"></span>미집행 구간 예상값 (일할)`;}
+  /* 가로 넘김 (v107) — 한 달이 넘을 때만 단추가 보인다. 처음엔 최근(마지막 집행일 쪽), 다시 그릴 땐 보던 자리 */
+  {const card=host.closest('.card');
+    if(W>Wv){const key=[CAMPAIGN.name,SC.i0,ds.length,W].join('|');
+      host.scrollLeft=host.__slKey===key?prevSL:Math.max(0,Math.min(W-Wv,cx(Math.max(EL-1,0))+step*3-Wv));
+      host.__slKey=key;}
+    else host.__slKey='';
+    try{enableHPager(card,host,{frozen:()=>0,go:dir=>{
+      /* 한 번에 화면의 85% 쯤 — 날짜 칸 경계에 맞춰 멈춘다 */
+      const n=Math.max(1,Math.floor(host.clientWidth*.85/step));
+      const to=Math.max(0,Math.min(host.scrollWidth-host.clientWidth,Math.round((host.scrollLeft+dir*n*step)/step)*step));
+      host.scrollTo({left:to,behavior:'smooth'});}});}catch(e){}}
   /* 폭이 바뀌면 다시 그린다 (탭이 처음 열릴 때 폭 0 → 실제 폭 포함) */
   if(!host.__ro&&typeof ResizeObserver!=='undefined'){
     let t=0;host.__ro=new ResizeObserver(()=>{const w=Math.round(host.clientWidth);
