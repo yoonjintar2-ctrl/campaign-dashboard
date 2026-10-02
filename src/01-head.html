@@ -2546,7 +2546,11 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .infk>span{font-size:11.5px;font-weight:700;color:var(--muted)}
 .infk>b{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .infk>em{font-style:normal;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.infgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px;align-items:start}
+.infgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px;align-items:stretch;margin-bottom:14px}
+/* 한 줄의 두 카드(지도 · 체류시간) 높이를 맞춘다 — 남는 높이는 체류시간 막대 사이로 고르게 (v99) */
+.infgrid>.infcell{display:flex;flex-direction:column;margin-bottom:0}
+.infgrid>.infcell>.infmap,.infgrid>.infcell>#infDwell{flex:1;display:flex;flex-direction:column;justify-content:center}
+#infDwell>.infdw{flex:1;justify-content:space-around}
 /* 유입 흐름 — 단계별 그래프 3개 (v97) */
 .infsk3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .skp{min-width:0;border:1px solid var(--line2);border-radius:10px;padding:10px 10px 4px;background:var(--surface)}
@@ -2563,7 +2567,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .sklab.dl{fill:var(--ink2)}
 @media (max-width:1100px){.infsk3{grid-template-columns:minmax(0,1fr)}}
 .infcell{border:1px solid var(--line);border-radius:12px;padding:12px 14px 10px;background:var(--surface);min-width:0;margin-bottom:14px}
-.infgrid .infcell{margin-bottom:14px}
+
 .infh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
 .infh>b{font-size:13px;font-weight:800;color:var(--ink)}
 .infh>span{font-size:11.5px;color:var(--muted)}

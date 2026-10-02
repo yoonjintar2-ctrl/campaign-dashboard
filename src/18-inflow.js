@@ -77,14 +77,14 @@ function renderInflow(){
   const A=aggFacts(factFilter());
   body.innerHTML=`<div class="infkpis">
       ${kp('IWV (All)',fmt(A.iwv),L(`전체 클릭 ${fmt(A.click)}`,`${fmt(A.click)} clicks in total`))}
-      ${kp(L('클릭 대비 유입률','Inflow / click'),pct(infRate(A)),L('IWV ÷ 캠페인 전체 클릭','IWV ÷ all campaign clicks'))}
+      ${kp(L('유입률 (유입/클릭)','Inflow rate (inflow/clicks)'),pct(infRate(A)),L('캠페인 전체 클릭 기준','based on all campaign clicks'))}
       ${kp(L('유입당 단가','Cost per IWV'),won(Math.round(infCpv(A))||0),L(`전체 소진 ${won(Math.round(A.cost))}`,`total spend ${won(Math.round(A.cost))}`))}
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(A)),isFinite(dw30Rate(A))?L(`30초 이상 ${pct(dw30Rate(A),1)}`,`${pct(dw30Rate(A),1)} stay 30s+`):'')}
     </div>
     <div class="infcell"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('단계마다 따로 그린 그래프 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','one chart per step · media color = carried on · gray = dropped · hover for retention')}</span></div>
       <div class="infsk3" id="infSankey"></div></div>
     <div class="infgrid">
-      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('오른쪽 = 유입률 높음 · 위 = 단가 낮음 · 크기 = IWV','right = higher rate · up = cheaper · size = IWV')}</span></div>
+      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span></div>
         <div class="infmap" id="infMap"></div></div>
       <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
           <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
@@ -96,7 +96,9 @@ function renderInflow(){
       <div class="tbl-wrap noy" id="infTblWrap"><table class="tbl gln fit cmpt inftbl" id="infTbl"></table></div></div>
     ${miss.length?`<div class="hint infmiss">${L(`IWV 가 없거나 ${INF_MIN}건 미만이라 분석에서 뺀 매체`,`Excluded (no IWV or fewer than ${INF_MIN})`)}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
   try{infSankey($('infSankey'),rows,T);}catch(e){console.warn(e);}
-  try{infMap($('infMap'),rows,T);}catch(e){console.warn(e);}
+  /* 지도 높이 = 옆 체류시간 분포의 막대 영역 높이 — 두 카드 높이를 맞춘다 */
+  const nDw=rows.filter(g=>dwSum(g.b)>0).length;
+  try{infMap($('infMap'),rows,T,nDw?nDw*44+26:340);}catch(e){console.warn(e);}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
   INF_OK=okSet;
   try{infTable();}catch(e){console.warn(e);}
@@ -250,47 +252,42 @@ function infSankey(host,rows0,T){
 }
 
 /* ---------- ② 유입 효율 지도 (버블) ---------- */
-function infMap(host,rows0,T){
+function infMap(host,rows0,T,hH){
   if(!host)return;
   const rows=rows0.filter(g=>(g.b.click||0)>0&&(g.b.iwv||0)>0&&(g.b.cost||0)>0);
   if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('클릭 · IWV · 소진금액이 모두 있는 항목이 없어 그릴 수 없습니다.','Needs clicks, IWV and spend.')}</div>`;return;}
-  const W=Math.max(host.clientWidth||420,300),H=340,P={l:54,r:14,t:30,b:40};
+  /* v99 — 가로 = 유입 비용 효율(유입당 단가, 오른쪽일수록 저렴) · 세로 = 유입률(위가 높음).
+     예전처럼 단가를 세로에 두면 "위 = 비싸다" 로 읽혀서 축을 바꿨다. 평균 점선은 없앴다 */
+  const W=Math.max(host.clientWidth||420,300),H=Math.max(300,Math.min(560,hH||340)),P={l:50,r:16,t:26,b:42};
   const RMAX=rows.length>8?18:rows.length>4?23:27;
-  const xs=rows.map(g=>infRate(g.b)),ys=rows.map(g=>infCpv(g.b));
-  const xMax=Math.max(...xs,infRate(T)||0)*1.08||1;
-  /* 유입당 단가는 몇 백 원 ~ 몇 만 원으로 벌어지므로 로그 눈금 · 위로 갈수록 저렴 */
-  const yl=ys.map(v=>Math.log10(v));let ylo=Math.min(...yl),yhi=Math.max(...yl);
-  if(yhi-ylo<.3){const m=(ylo+yhi)/2;ylo=m-.15;yhi=m+.15;}
+  const cs=rows.map(g=>infCpv(g.b)),rs=rows.map(g=>infRate(g.b));
+  const yMax=Math.max(...rs)*1.1||1;
+  /* 유입당 단가는 몇 백 원 ~ 몇 만 원으로 벌어지므로 로그 눈금 */
+  const cl=cs.map(v=>Math.log10(v));let clo=Math.min(...cl),chi=Math.max(...cl);
+  if(chi-clo<.3){const m=(clo+chi)/2;clo=m-.15;chi=m+.15;}
   /* 원이 그림 밖으로 나가지 않게 데이터 자리는 안쪽으로 원 반지름만큼 줄인다 */
-  const ix0=P.l+10,ix1=W-P.r-RMAX,iy0=P.t+RMAX,iy1=H-P.b-10;
-  const X=v=>ix0+v/xMax*(ix1-ix0);
-  const Y=v=>iy0+(Math.log10(v)-ylo)/((yhi-ylo)||1)*(iy1-iy0);   /* 낮은 단가가 위 */
+  const ix0=P.l+RMAX,ix1=W-P.r-RMAX,iy0=P.t+RMAX,iy1=H-P.b-10;
+  const X=v=>ix0+(chi-Math.log10(v))/((chi-clo)||1)*(ix1-ix0);   /* 싼 쪽이 오른쪽 */
+  const Y=v=>iy1-v/yMax*(iy1-iy0);
+  const xs=cs.map(X),ys=rs.map(Y);
   const maxI=Math.max(...rows.map(g=>g.b.iwv));
   const Rr=v=>4+Math.sqrt(v/maxI)*(RMAX-4);
   /* 눈금 */
-  const xt=[];{const st=niceStep(xMax,4);for(let v=0;v<=xMax+1e-9;v+=st)xt.push(v);}
-  const yv=v=>{const y=Y(v);return y>=P.t-1&&y<=H-P.b+1;};
-  const yt=[];for(let e=Math.floor(ylo)-1;e<=Math.ceil(yhi)+1;e++){[1,2,5].forEach(m=>{const v=m*Math.pow(10,e);if(yv(v))yt.push(v);});}
-  const yLab=v=>v>=10000?(LANG==='en'?fmt(v/1000)+'k':(v/10000)+'만'):fmt(v);
-  const ax=xt.map(v=>`<line class="mgrid" x1="${X(v)}" x2="${X(v)}" y1="${P.t}" y2="${H-P.b}"></line><text class="mtick" x="${X(v)}" y="${H-P.b+15}" text-anchor="middle">${(v*100).toFixed((v*100)%1?1:0)}%</text>`).join('')
-    +yt.map(v=>`<line class="mgrid" x1="${P.l}" x2="${W-P.r}" y1="${Y(v)}" y2="${Y(v)}"></line><text class="mtick" x="${P.l-6}" y="${Y(v)+3}" text-anchor="end">${yLab(v)}</text>`).join('');
-  /* 기준선 = 전체 평균 — 오른쪽 위 칸(유입 잘 되고 저렴)을 옅게 칠한다 */
-  const ax0=infRate(T),ay0=infCpv(T);
-  let mid='';
-  if(isFinite(ax0)&&isFinite(ay0)){const qx=Math.min(Math.max(X(ax0),P.l),W-P.r),qy=Math.min(Math.max(Y(ay0),P.t),H-P.b);
-    mid=`<rect class="mqbg" x="${qx}" y="${P.t}" width="${W-P.r-qx}" height="${qy-P.t}"></rect>
-    <line class="mavg" x1="${qx}" x2="${qx}" y1="${P.t}" y2="${H-P.b}"></line>
-    <line class="mavg" x1="${P.l}" x2="${W-P.r}" y1="${qy}" y2="${qy}"></line>
-    <text class="mq" x="${W-P.r}" y="${P.t-9}" text-anchor="end">${L('↗ 유입 잘 되고 저렴','↗ high rate · cheap')}</text>
-    <text class="mq lo" x="${qx+4}" y="${H-P.b-5}">${L('평균','avg')}</text>`;}
+  const xv=v=>{const x=X(v);return x>=P.l-1&&x<=W-P.r+1;};
+  const xt=[];for(let e=Math.floor(clo)-1;e<=Math.ceil(chi)+1;e++){[1,2,5].forEach(m=>{const v=m*Math.pow(10,e);if(xv(v))xt.push(v);});}
+  const yt=[];{const st=niceStep(yMax,4);for(let v=0;v<=yMax+1e-9;v+=st)yt.push(v);}
+  const cLab=v=>'₩'+(v>=10000?(LANG==='en'?fmt(v/1000)+'k':(v/10000)+'만'):fmt(v));
+  const ax=xt.map(v=>`<line class="mgrid" x1="${X(v)}" x2="${X(v)}" y1="${P.t}" y2="${H-P.b}"></line><text class="mtick" x="${X(v)}" y="${H-P.b+15}" text-anchor="middle">${cLab(v)}</text>`).join('')
+    +yt.map(v=>`<line class="mgrid" x1="${P.l}" x2="${W-P.r}" y1="${Y(v)}" y2="${Y(v)}"></line><text class="mtick" x="${P.l-6}" y="${Y(v)+3}" text-anchor="end">${(v*100).toFixed((v*100)%1?1:0)}%</text>`).join('');
+  const mid=`<text class="mq" x="${W-P.r}" y="${P.t-9}" text-anchor="end">${L('↗ 효율 좋음','↗ more efficient')}</text>`;
   const order=rows.map((g,i)=>i).sort((a,b)=>rows[b].b.iwv-rows[a].b.iwv);   /* 큰 원을 먼저(뒤에) 깐다 */
   /* 이름표 — 큰 원부터 위 · 아래 · 오른쪽 · 왼쪽 중 겹치지 않는 자리에. 자리가 없으면 생략(툴팁으로 확인) */
   const boxes=[];const hit=(a)=>boxes.some(b=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y)
     ||a.x<P.l||a.x+a.w>W-P.r+6||a.y<P.t-2||a.y+a.h>H-P.b;
   const tw=t=>[...t].reduce((s,c)=>s+(c.charCodeAt(0)>255?11:6.4),0);
-  rows.forEach((g,i)=>{const r=Rr(g.b.iwv);boxes.push({x:X(xs[i])-r*.7,y:Y(ys[i])-r*.7,w:r*1.4,h:r*1.4,dot:1});});
+  rows.forEach((g,i)=>{const r=Rr(g.b.iwv);boxes.push({x:xs[i]-r*.7,y:ys[i]-r*.7,w:r*1.4,h:r*1.4,dot:1});});
   const labs={};
-  order.forEach(i=>{const g=rows[i],cx=X(xs[i]),cy=Y(ys[i]),r=Rr(g.b.iwv),t=infClip(g.lab,14),w=tw(t),h=13;
+  order.forEach(i=>{const g=rows[i],cx=xs[i],cy=ys[i],r=Rr(g.b.iwv),t=infClip(g.lab,14),w=tw(t),h=13;
     const cand=[{x:cx-w/2,y:cy-r-3-h,a:'middle',tx:cx,ty:cy-r-5},{x:cx-w/2,y:cy+r+3,a:'middle',tx:cx,ty:cy+r+13},
       {x:cx+r+4,y:cy-h/2,a:'start',tx:cx+r+4,ty:cy+4},{x:cx-r-4-w,y:cy-h/2,a:'end',tx:cx-r-4,ty:cy+4}];
     const own=boxes.findIndex(b=>b.dot&&Math.abs(b.x+b.w/2-cx)<.01&&Math.abs(b.y+b.h/2-cy)<.01);
@@ -298,14 +295,14 @@ function infMap(host,rows0,T){
     const c=cand.find(c=>!hit({x:c.x,y:c.y,w,h}));
     if(saved)boxes.push(saved);
     if(c){boxes.push({x:c.x,y:c.y,w,h});labs[i]=`<text class="mlab" x="${c.tx}" y="${c.ty}" text-anchor="${c.a}">${esc(t)}</text>`;}});
-  const dots=order.map(i=>{const g=rows[i],cx=X(xs[i]),cy=Y(ys[i]),r=Rr(g.b.iwv),col=infColor(g);
+  const dots=order.map(i=>{const g=rows[i],cx=xs[i],cy=ys[i],r=Rr(g.b.iwv),col=infColor(g);
     return `<g class="mdot" data-i="${i}"><circle cx="${cx}" cy="${cy}" r="${r}" class="mc" style="fill:${col};stroke:${col}"></circle></g>`;}).join('');
   host.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="msvg">${ax}${mid}${dots}${order.map(i=>labs[i]||'').join('')}
-      <text class="maxl" x="${(P.l+W-P.r)/2}" y="${H-4}" text-anchor="middle">${L('클릭 대비 유입률 (IWV ÷ 클릭) →','Inflow rate (IWV ÷ clicks) →')}</text>
-      <text class="maxl" transform="translate(12 ${(P.t+H-P.b)/2}) rotate(-90)" text-anchor="middle">${L('유입당 단가 · 위로 갈수록 저렴','Cost per IWV · cheaper upward')}</text></svg>`;
+      <text class="maxl" x="${(P.l+W-P.r)/2}" y="${H-4}" text-anchor="middle">${L('유입 비용 효율 →','Cost efficiency →')}</text>
+      <text class="maxl" transform="translate(12 ${(P.t+H-P.b)/2}) rotate(-90)" text-anchor="middle">${L('유입률 (유입/클릭) →','Inflow rate (inflow/clicks) →')}</text></svg>`;
   host.querySelectorAll('.mdot').forEach(n=>{const g=rows[+n.dataset.i];
     n.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))}</div>`
-      +`<div class="r"><span class="l">${L('클릭 대비 유입률','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`
+      +`<div class="r"><span class="l">${L('유입률 (유입/클릭)','Inflow rate')}</span><b>${pct(infRate(g.b))}</b></div>`
       +`<div class="r"><span class="l">${L('유입당 단가','Cost per IWV')}</span><b>${won(Math.round(infCpv(g.b)))}</b></div>`
       +`<div class="r"><span class="l">IWV (All)</span><b>${fmt(g.b.iwv)}</b></div>`
       +`<div class="r"><span class="l">${L('평균 체류시간','Avg. time')}</span><b>${fmtDur(dwAvg(g.b))}</b></div>`));

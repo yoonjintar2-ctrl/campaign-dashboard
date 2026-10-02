@@ -164,6 +164,10 @@ Object.assign(I18N_EN,{
 });
 /* v98 — 찾아 바꾸기 */
 Object.assign(I18N_EN,{"🔍 찾아 바꾸기":"🔍 Find & replace","표 전체에서 찾아 바꿉니다 (Ctrl+F · Ctrl+H)":"Find and replace across the whole table (Ctrl+F · Ctrl+H)"});
+/* v99 — 유입 효율 지도 축 바꿈 */
+Object.assign(I18N_EN,{
+  "— 위로 갈수록 유입률(유입 ÷ 클릭)이 높고, 오른쪽으로 갈수록 유입 비용 효율이 좋습니다(유입당 단가 = 소진금액 ÷ 유입 이 낮음). 오른쪽 위에 있을수록 효율적입니다. 원 크기 = 유입 수입니다.":"— higher up = higher inflow rate (inflow ÷ clicks); further right = better cost efficiency (lower cost per inflow = spend ÷ inflow). The top-right is the most efficient. Circle size = inflow."
+});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.
