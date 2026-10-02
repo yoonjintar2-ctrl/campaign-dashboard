@@ -1724,6 +1724,19 @@ table.tbl.fit{width:auto}
 .isdot.on .ring{stroke-width:4.4}
 .isdot .halo{transition:opacity .12s}
 .issuekey{display:inline-block;width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);margin-right:6px;vertical-align:-1px}
+/* 카드 그림 복사 단추 (v105) — 카드 오른쪽 위, 카드에 마우스를 올렸을 때만 보인다 */
+.card.hascopy{position:relative}
+.cardcopy{position:absolute;top:7px;right:7px;z-index:8;width:26px;height:26px;padding:0;border-radius:7px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card.hascopy:hover>.cardcopy,.cardcopy:focus-visible{opacity:.92}
+.cardcopy:hover{opacity:1;color:var(--ink);border-color:var(--gline)}
+.cardcopy.busy{opacity:1;animation:ccbusy .9s ease-in-out infinite}
+@keyframes ccbusy{50%{opacity:.45}}
+.cardcopy.ok{opacity:1;color:#2f8a55;border-color:#9fcfb1;transform:scale(1.06)}
+.cardcopy.ng{opacity:1;color:var(--neg);border-color:var(--neg)}
+@media (hover:none){.cardcopy{opacity:.6}}
+@media print{.cardcopy{display:none!important}}
 /* 일자별 효율 비교 — 입체 (v103): 그래프가 카드 좌우 끝까지, 아래는 바닥(웜 토프)이 범례까지 이어진다 */
 .card[data-sect="daily"]>.bd{padding-bottom:0}
 #chartDaily{margin:0 -18px}
