@@ -787,6 +787,12 @@ function applySheet(){
   const cbucket=new Map();
   const crName=new Map();                 /* 소재 열쇠 → 시트에 적힌 표기 */
   const zeroV=()=>{const v={};AMET.forEach(m=>v[m]=0);return v;};
+  /* 랜딩 페이지별 몫 (v99) — 라인 × 날짜 × (소재 | '*'=라인 전체) × 랜딩.
+     행마다 랜딩이 적혀 있으면 대시보드에서 랜딩 페이지로 나눠 볼 수 있다 (buildFacts 가 이 비율로 쪼갠다) */
+  const lbucket=new Map();
+  const addL=(l,i,ck,ln,r,fee,w)=>{const k=l.id+'\u0001'+i+'\u0001'+ck;let b=lbucket.get(k);
+    if(!b){b={l,i,ck,m:new Map()};lbucket.set(k,b);}
+    let v=b.m.get(ln);if(!v){v=zeroV();b.m.set(ln,v);}addV(v,r,fee,w);};
   const addV=(v,r,fee,w)=>{AMET.forEach(m=>{
     let x=+r[m]||0;
     /* Gross 소진비용 → Net */
@@ -803,6 +809,9 @@ function applySheet(){
     /* 소재 칸이 비어 있는 행은 소재별 집계에서 뺀다 — 그 날 다른 행에 소재가 적혀 있으면
        라인 합계를 소재 비율대로 다시 나눠 담으므로 숫자가 사라지지는 않는다 */
     const cn=String(r.creative==null?'':r.creative).trim();
+    const lnRaw=String(r.landing==null?'':r.landing).trim();
+    const ln=lnRaw?(lineLandings(l).find(x=>landKey(x)===landKey(lnRaw))||lnRaw):'';
+    addL(l,i,'*',ln,r,fee,1);
     if(!cn)return;
     /* 한 칸에 여러 소재를 몰아 적었으면(등록된 이름들의 조합) 고르게 나눈다 */
     let names=[cn];
@@ -816,7 +825,8 @@ function applySheet(){
       const k2=k+'\u0001'+ck;
       let b2=cbucket.get(k2);
       if(!b2){b2={l,i,ck,v:zeroV()};cbucket.set(k2,b2);}
-      addV(b2.v,r,fee,1/names.length);});});
+      addV(b2.v,r,fee,1/names.length);
+      addL(l,i,ck,ln,r,fee,1/names.length);});});
   const touched=new Set();
   /* ⚠ 지난번 시트가 채웠던 칸을 먼저 비운다 (v78).
      예전에는 지금 시트에 있는 칸만 덮어써서, 행을 지우거나 「모두 지우기」 해도 대시보드 숫자가 그대로 남았다
@@ -842,7 +852,10 @@ function applySheet(){
      ② 시트에 소재가 하나만 적혀 있어도 등록된 소재 수만큼 쪼개졌다
         (크리테오 키비주얼 1개가 3개로 보이던 문제)
      이제는 적힌 숫자를 그대로 날짜별로 들고 있다가 buildFacts 에서 지표마다 따로 쓴다. */
-  LINES.forEach(l=>{l.cdaily=null;l.cdet=null;});
+  LINES.forEach(l=>{l.cdaily=null;l.cdet=null;l.lsplit=null;});
+  /* 랜딩이 하나도 안 적힌 묶음은 나누지 않는다 (라인에 적어 둔 랜딩 그대로) */
+  lbucket.forEach(b=>{if(b.m.size===1&&b.m.has(''))return;
+    if(!b.l.lsplit)b.l.lsplit=new Map();b.l.lsplit.set(b.i+'\u0001'+b.ck,b.m);});
   cbucket.forEach(b=>{
     const l=b.l;
     if(!l.cdaily){l.cdaily={};l.cdet=new Array(TOTAL_DAYS).fill(false);}

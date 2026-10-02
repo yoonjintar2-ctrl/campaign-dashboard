@@ -358,6 +358,21 @@ function calcLastDataIdx(){
 const lastDataIso=()=>{
   const i=LAST_DATA_I;
   return (i>=0&&ALLDATES[i])?iso(ALLDATES[i]):YESTERDAY;};
+/* 랜딩 페이지로 쪼개기 (v99) — 시트 행마다 랜딩이 적혀 있으면 그 날 · 그 소재의 값을 랜딩별 비중으로 나눈다.
+   지표마다 따로 나누고(유입은 유입 행의 랜딩대로, 노출은 노출 행의 랜딩대로),
+   그 지표에 랜딩별 숫자가 없으면 노출(없으면 Net · 클릭) 비중을 따른다. 나눈 합 = 원래 값 */
+const landNone=l=>lineLandings(l).length>1?'(랜딩 미구분)':(l.landing||'');
+function pushLandSplit(l,i,ck,base,vals){
+  const mp=l.lsplit&&(l.lsplit.get(i+'\u0001'+ck)||l.lsplit.get(i+'\u0001*'));
+  if(!mp){FACTS.push(Object.assign(base,vals));return;}
+  const lns=[...mp.keys()];
+  const w=m=>{const a=lns.map(ln=>+mp.get(ln)[m]||0);return sum(a)>0?a:null;};
+  const bw=w('imp')||w('net')||w('click')||AMET.map(w).find(Boolean)||lns.map(()=>1);
+  const nz=a=>{const t=sum(a)||1;return a.map(v=>v/t);};
+  const out=lns.map(ln=>Object.assign({},base,{landing:ln||landNone(l)}));
+  AMET.forEach(m=>{const sp=splitExact(vals[m],nz(w(m)||bw));out.forEach((f,j)=>{f[m]=sp[j];});});
+  const sc=splitExact(vals.cost,nz(w('net')||bw));out.forEach((f,j)=>{f.cost=sc[j];});
+  out.forEach(f=>FACTS.push(f));}
 function buildFacts(){
   FACTS=[];
   /* 조회 기간 기본 종료일에 쓸 "실적이 들어온 마지막 날" 을 다시 잡는다 (v59) */
@@ -379,9 +394,9 @@ function buildFacts(){
         const f={d:i,lid:l.id,cid:'',segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',
           target:l.target,line:l.line,landing:l.landing||'',creative:'(소재 미등록)',
           month:`${d0i.getFullYear()}-${String(d0i.getMonth()+1).padStart(2,'0')}`};
-        AMET.forEach(m=>f[m]=RD[m][i]);
-        f.cost=toGross(f.net,feeOf(l));
-        FACTS.push(f);
+        const v0={};AMET.forEach(m=>v0[m]=RD[m][i]);
+        v0.cost=toGross(v0.net,feeOf(l));
+        pushLandSplit(l,i,'*',f,v0);
         continue;}
       const wt=crWeights(l,cs,i);
       /* 가중치를 합 1 로 맞춘 뒤, 나눈 값의 합이 라인 값과 정확히 같도록 splitExact 로 배분한다.
@@ -395,10 +410,10 @@ function buildFacts(){
         const d=ALLDATES[i];
         const f={d:i,lid:l.id,cid:c.id,segment:l.segment,media:l.media,product:l.product,slot:l.slot||'',target:l.target,
           line:l.line,landing:l.landing||'',creative:c.name,month:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
-        AMET.forEach(m=>f[m]=part[m][ci]);
-        f.cost=part.cost[ci];
-        AMET.forEach(m=>c.daily[m].push(f[m]));c.daily.cost.push(f.cost);
-        FACTS.push(f);
+        const v0={};AMET.forEach(m=>v0[m]=part[m][ci]);
+        v0.cost=part.cost[ci];
+        AMET.forEach(m=>c.daily[m].push(v0[m]));c.daily.cost.push(v0.cost);
+        pushLandSplit(l,i,CKEY(c.name),f,v0);
       });
     }
   });
@@ -712,7 +727,8 @@ const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
 const DIMS=[{k:'segment',l:'구분'},{k:'media',l:'매체'},{k:'product',l:'광고상품'},{k:'slot',l:'광고 지면'},
   {k:'target',l:'타겟팅 그룹'},
   {k:'line',l:'제품'},{k:'landing',l:'랜딩 페이지'},{k:'creative',l:'소재'},{k:'month',l:'월'}];
-const NO_EXP_DIMS=['creative','month'];
+/* 라인보다 잘게 나뉘는 차원 — 예상값(예산 · 목표)은 라인 단위로 합쳐 한 번만 보인다. 랜딩은 행마다 적히면 라인보다 잘게 나뉜다 (v99) */
+const NO_EXP_DIMS=['creative','month','landing'];
 /* from/to = 사용자가 달력으로 직접 고른 시작·종료일 (비우면 자동) */
 let FILTER={segment:'all',media:'all',line:'all',from:'',to:''};
 /* 기간 기본값 — 시작일은 캠페인 첫날, 종료일은 **실적이 들어온 마지막 날** (v59).
