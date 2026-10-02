@@ -168,6 +168,9 @@ Object.assign(I18N_EN,{"🔍 찾아 바꾸기":"🔍 Find & replace","표 전체
 Object.assign(I18N_EN,{
   "— 위로 갈수록 유입률(유입 ÷ 클릭)이 높고, 오른쪽으로 갈수록 유입 비용 효율이 좋습니다(유입당 단가 = 소진금액 ÷ 유입 이 낮음). 오른쪽 위에 있을수록 효율적입니다. 원 크기 = 유입 수입니다.":"— higher up = higher inflow rate (inflow ÷ clicks); further right = better cost efficiency (lower cost per inflow = spend ÷ inflow). The top-right is the most efficient. Circle size = inflow."
 });
+/* v99 — 체류시간 머리글 두 줄(체류 / 구간) */
+Object.assign(I18N_EN,{"체류":"Time","15초 미만":"<15s","15~29초":"15–29s","30~59초":"30–59s","1~3분":"1–3m","3~5분":"3–5m",
+  "5~10분":"5–10m","10~15분":"10–15m","15~20분":"15–20m","20~30분":"20–30m","30분 이상":"30m+","방문수":"visits"});
 /* ===== 15. 영어 화면 (v71) =====
    화면 전체를 영어로 바꾸는 번역기. 한국어 문자열을 코드 곳곳에서 일일이 바꾸지 않고
    **그려진 결과(DOM)** 를 사전으로 옮긴다.

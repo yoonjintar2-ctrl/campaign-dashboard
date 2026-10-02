@@ -2,7 +2,12 @@
 const cfgCols=cfg=>cfg.groups.flatMap(g=>g.cols);
 /* 머리글 이름 — "IWV (Mobility Hub)" 처럼 괄호가 붙은 긴 이름은 괄호 앞에서 두 줄로 (v93).
    열 너비는 긴 줄 하나만 재므로(applyColWidths) 열이 쓸데없이 넓어지지 않는다 */
-const hdrLabelHTML=l=>{l=String(l==null?'':l);const m=/^(.+?)\s+(\([^()]+\))$/.exec(l);
+/* 체류시간 열(체류 15초 미만 · 체류 1~3분 …)은 늘 "체류" / 나머지 두 줄로 — 줄 바뀌는 자리가 열마다 달라 들쭉날쭉했다 (v99) */
+const HDR_SPLIT_FIRST=new Set(['dw15','dw30','dw60','dw3m','dw5m','dw10m','dw15m','dw20m','dw30m','dw30p','dwv']);
+const hdrLabelHTML=(l,k)=>{l=String(l==null?'':l);
+  if(k&&HDR_SPLIT_FIRST.has(k)){const f=/^(\S+)\s+(.+)$/.exec(l);
+    if(f)return `<span class="hl">${esc(f[1])}</span> <span class="hl">${esc(f[2])}</span>`;}
+  const m=/^(.+?)\s+(\([^()]+\))$/.exec(l);
   return m&&l.length>12?`<span class="hl">${esc(m[1])}</span> <span class="hl">${esc(m[2])}</span>`:esc(l);};
 /* 너비를 같게 맞추는 열 묶음 — 같은 성격의 열(IWV 4종 · 체류 구간)이 나란히 있을 때 들쭉날쭉하지 않게 */
 const EQ_W_SETS=[['iwv','iwv_mh','iwv_mp','iwv_tda'],
@@ -12,12 +17,12 @@ function groupHeaderHTML(cfg,cdef,leadCols){
   /* solo 그룹(열 1개)은 헤더 두 줄을 합쳐 열 이름만 한 번 표시 */
   const isSolo=g=>!!g.solo&&g.cols.length===1;
   const g1=gs.map((g,i)=>isSolo(g)
-    ? `<th class="g solo${i>0?' gsep':''}" rowspan="2">${hdrLabelHTML(cdef[g.cols[0]]?cdef[g.cols[0]].l:g.name)}</th>`
+    ? `<th class="g solo${i>0?' gsep':''}" rowspan="2">${hdrLabelHTML(cdef[g.cols[0]]?cdef[g.cols[0]].l:g.name,cdef[g.cols[0]]?g.cols[0]:'')}</th>`
     : `<th class="g${i>0?' gsep':''}" colspan="${g.cols.length}">${esc(g.name)}</th>`).join('');
   let g2='';
   gs.forEach((g,gi)=>{if(isSolo(g))return;
     g.cols.forEach((k,ci)=>{
-      g2+=`<th class="${gi>0&&ci===0?'gsep':''}">${cdef[k]?hdrLabelHTML(cdef[k].l):esc(k)}</th>`;});});
+      g2+=`<th class="${gi>0&&ci===0?'gsep':''}">${cdef[k]?hdrLabelHTML(cdef[k].l,k):esc(k)}</th>`;});});
   return `<tr>${leadCols.join('')}${g1}</tr><tr>${g2}</tr>`;
 }
 const gsepSet=cfg=>{const s=new Set();let i=0;
