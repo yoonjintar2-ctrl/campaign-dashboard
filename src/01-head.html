@@ -2700,7 +2700,35 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 #infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
 .infempty{padding:22px 6px}
-@media (max-width:1100px){.infgrid{grid-template-columns:minmax(0,1fr)}}
+/* 랜딩 페이지별 체류시간이 있으면 한 줄에 셋 — 지도(좁게) · 랜딩별 · 매체별 (v106).
+   화면이 좁으면 지도 · 랜딩별 두 칸 + 매체별은 아래 한 줄 전체 */
+.infgrid.ld3{grid-template-columns:minmax(0,.95fr) minmax(0,.8fr) minmax(0,1.25fr)}
+@media (min-width:1361px){
+  .infgrid.ld3 .dwrow{grid-template-columns:minmax(72px,124px) minmax(0,1fr) 74px;gap:10px}
+  .infgrid.ld3 .dwgrp{grid-template-columns:70px minmax(0,1fr);gap:0 8px}}
+@media (max-width:1360px){.infgrid.ld3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.infgrid.ld3>.infdwc{grid-column:1/-1}}
+.infgrid>.infcell>#infLand{flex:1;display:flex;flex-direction:column}
+.infld{flex:1;display:flex;gap:14px;min-height:250px;padding:2px 2px 0}
+.ldcols{flex:1;display:flex;justify-content:space-around;gap:10px;min-width:0}
+.ldcol{flex:1 1 0;max-width:112px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px}
+.ldtop{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.ldtop b{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap}
+.infld.many .ldtop{min-height:31px;justify-content:flex-end}
+.infld.many .ldtop b{font-size:12px;text-align:center;line-height:1.15}
+.infld.many .ldcols{gap:6px}
+.ldtop span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.ldbar{flex:1;width:100%;max-width:60px;min-height:150px;display:flex;flex-direction:column-reverse;gap:2px;border-radius:6px;overflow:hidden}
+.ldbar i{display:flex;align-items:center;justify-content:center;min-height:2px;overflow:hidden;background:rgb(var(--accrgb)/var(--op))}
+.ldbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
+.ldbar em{font-style:normal;font-size:10px;font-weight:700;color:var(--ink2);pointer-events:none}
+.ldbar i.dk em{color:#fff}
+[data-theme="dark"] .ldbar em{color:var(--ink)}
+[data-theme="dark"] .ldbar i.hi em{color:rgba(0,0,0,.8)}
+.ldname{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.25;min-width:0;width:100%}
+.ldname b{font-size:12px;font-weight:700;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;width:100%}
+.infld.many .ldname b{font-size:10.5px}
+.ldname span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+@media (max-width:1100px){.infgrid,.infgrid.ld3{grid-template-columns:minmax(0,1fr)}.infgrid.ld3>.infdwc{grid-column:auto}}
 @media (max-width:760px){.infkpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dwrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 80px;gap:8px}}
 /* 두 줄 머리글 (v93) — "IWV (Mobility Hub)" 를 괄호 앞에서 끊는다 */

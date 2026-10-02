@@ -4,6 +4,8 @@
    ① 유입 흐름 (Sankey) — 처음엔 유입 → 랜딩 페이지 하나만 크게, ‹ › 로 클릭 → 유입 · 노출 → 클릭 단계로 넘겨 본다 (v100)
    ② 유입 효율 지도 (버블) — 가로 = 클릭 대비 유입률, 세로 = 유입당 단가(위로 갈수록 저렴), 크기 = IWV
    ③ 체류시간 분포 — 100% 막대(짧게 머문 방문 → 오래 머문 방문), 평균 체류시간 순
+      · 랜딩 페이지별 (v106) — 지도 옆, 랜딩 페이지마다 세로 100% 기둥(아래 = 짧게 · 위 = 오래). 랜딩이 적힌 체류 데이터가 있을 때만
+      · 매체별(묶음별) — 가로 막대, 구분으로 나누기를 따른다
    ④ 상세 표 — 매체 서머리와 같은 표(헤더 편집 · 머리글 설명 · 정렬 · 열 너비). 행 머리는 '묶음' 을 따르다가 헤더 편집에서 바꾸면 그대로 둔다 (v93)
    데이터가 전혀 없는 캠페인에서는 영역 자체를 감춘다. */
 var INF={dim:'media',mapSeg:''};
@@ -91,6 +93,8 @@ function renderInflow(){
   /* 맨 위 숫자 4개는 **캠페인 전체 기준** (v95) — 유입 데이터가 없는 매체의 클릭 · 소진금액까지 넣는다.
      (아래 그래프 · 표는 유입을 추적하는 매체만) */
   const A=aggFacts(factFilter());
+  /* 랜딩 페이지별 체류시간 (v106) — 랜딩이 적힌 체류 데이터가 하나라도 있으면 지도 옆에 */
+  const LD=infLandGroups(okSet),ldOK=LD.some(g=>g.key!==LAND_NONE);
   body.innerHTML=`<div class="infkpis">
       ${kp('IWV (All)',fmt(A.iwv),L(`전체 클릭 ${fmt(A.click)}`,`${fmt(A.click)} clicks in total`))}
       ${kp(L('유입률 (유입/클릭)','Inflow rate (inflow/clicks)'),pct(infRate(A)),L('캠페인 전체 클릭 기준','based on all campaign clicks'))}
@@ -99,11 +103,13 @@ function renderInflow(){
     </div>
     <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
       <div id="infSankey"></div></div>
-    <div class="infgrid">
-      <div class="infcell"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span>
+    <div class="infgrid${ldOK?' ld3':''}">
+      <div class="infcell infmapc"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${ldOK?L('원 크기 = 유입','size = inflow'):L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span>
           ${segOK?`<select class="ctl sm infmapseg" id="infMapSeg" title="${L('구분 하나만 골라 보기','Show one segment only')}"><option value="">${L('전체 (구분 없이)','All (no segment)')}</option>${segList.map(x=>`<option value="${esc(x)}"${INF.mapSeg===x?' selected':''}>${esc(infSegLab(x))}</option>`).join('')}</select>`:''}</div>
         <div class="infmap" id="infMap"></div></div>
-      <div class="infcell"><div class="infh"><b>${L('체류시간 분포','Time on site')}</b><span>${L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
+      ${ldOK?`<div class="infcell infldc"><div class="infh"><b>${L('체류시간 분포 · 랜딩 페이지별','Time on site · by landing page')}</b><span>${L('평균 체류시간 순','by average')}</span></div>
+        <div id="infLand"></div></div>`:''}
+      <div class="infcell infdwc"><div class="infh"><b>${ldOK?L('체류시간 분포 · ','Time on site · ')+infDimLab(dim):L('체류시간 분포','Time on site')}</b><span>${ldOK?L('평균 체류시간 순','by average'):L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
           <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
         <div id="infDwell"></div></div>
     </div>
@@ -122,6 +128,7 @@ function renderInflow(){
   try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}
   {const ms=$('infMapSeg');if(ms)ms.onchange=()=>{INF.mapSeg=ms.value;try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}};}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
+  if(ldOK)try{infLandDwell($('infLand'),LD);}catch(e){console.warn(e);}
   INF_OK=okSet;
   try{infTable();}catch(e){console.warn(e);}
   {const sw=$('infOnlySw');if(sw)sw.onclick=()=>{const c=infTbl();c.allMedia=!c.allMedia;sw.classList.toggle('on',!c.allMedia);
@@ -479,6 +486,47 @@ function infDwell(host,rows0){
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))} · ${L(b.l,b.en)}</div>`
       +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
       +`<div class="r"><span class="l">${L('비율','Share')}</span><b>${pct(v/dwSum(g.b),1)}</b></div>`));
+    seg.addEventListener('mouseleave',hideTip);});
+}
+
+/* ---------- ③-1 랜딩 페이지별 체류시간 (v106) ----------
+   랜딩 페이지가 어디냐에 따라 머무는 시간이 크게 다르다 — 매체별 막대와 따로, 랜딩마다 세로 100% 기둥 하나.
+   아래 = 짧게 머문 방문(옅게) → 위 = 오래 머문 방문(진하게). 위에 평균 체류시간, 아래에 이름 · 방문 수.
+   구간 범례는 바로 옆 매체별 분포 머리의 것을 같이 쓴다(칸이 좁아 따로 두지 않는다).
+   지금 조회 기간 · 필터, 분석 대상 라인(INF_MIN 이상)만. 랜딩을 안 적은 몫은 '(랜딩 미입력)' 기둥(맨 뒤) */
+const infDimLab=d=>d==='product'?L('광고상품별','by product'):d==='creative'?L('소재별','by creative'):L('매체별','by media');
+function infLandGroups(okSet){
+  const m=new Map();
+  factFilter().forEach(f=>{if(okSet&&!okSet.has(f.lid))return;if(!dwSum(f))return;
+    const k=f.landing||LAND_NONE;let a=m.get(k);if(!a){a=[];m.set(k,a);}a.push(f);});
+  return [...m].map(([k,fs])=>({key:k,lab:k===LAND_NONE?L('(랜딩 미입력)','(no landing)'):k,fs,b:aggFacts(fs)}));}
+const INF_LD_MAX=6;
+function infLandDwell(host,rows0){
+  if(!host)return;
+  let rows=rows0.filter(g=>dwSum(g.b)>0);
+  /* 랜딩이 많으면 방문 많은 순으로 몇 개만, 나머지는 '그 외' 하나로 */
+  if(rows.length>INF_LD_MAX){const keep=new Set(rows.slice().sort((a,b)=>dwSum(b.b)-dwSum(a.b)).slice(0,INF_LD_MAX-1).map(g=>g.key));
+    const etc=rows.filter(g=>!keep.has(g.key)).flatMap(g=>g.fs);
+    rows=rows.filter(g=>keep.has(g.key)).concat([{key:'__etc',lab:L('그 외','Others'),fs:etc,b:aggFacts(etc)}]);}
+  const last=g=>g.key===LAND_NONE||g.key==='__etc'?1:0;
+  rows.sort((a,b)=>last(a)-last(b)||(dwAvg(b.b)||0)-(dwAvg(a.b)||0));
+  if(!rows.length){host.innerHTML=`<div class="hint infempty">${L('체류시간 구간 데이터가 없습니다.','No time-on-site data.')}</div>`;return;}
+  /* 기둥이 많으면(5개 이상) 글자를 줄이고 방문 수는 숫자만 */
+  const many=rows.length>4;
+  const col=(g,i)=>{const n=dwSum(g.b);
+    const segs=INF_BANDS.map((x,bi)=>({bi,v:x.ks.reduce((s,k)=>s+(+g.b[k]||0),0)})).filter(s=>s.v>0);
+    return `<div class="ldcol" data-i="${i}">
+      <div class="ldtop"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b></div>
+      <div class="ldbar">${segs.map(s=>{const p=s.v/n;
+        return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
+      <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+  host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
+  host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
+    seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`
+      +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
+      +`<div class="r"><span class="l">${L('비율','Share')}</span><b>${pct(v/dwSum(g.b),1)}</b></div>`
+      +`<div class="r"><span class="l">${L('평균 체류시간','Avg. time')}</span><b>${fmtDur(dwAvg(g.b))}</b></div>`
+      +(isFinite(dw30Rate(g.b))?`<div class="r"><span class="l">${L('30초 이상 체류율','Stayed 30s+')}</span><b>${pct(dw30Rate(g.b),1)}</b></div>`:'')));
     seg.addEventListener('mouseleave',hideTip);});
 }
 
