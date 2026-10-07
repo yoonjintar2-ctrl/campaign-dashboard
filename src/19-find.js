@@ -29,7 +29,9 @@ function findCompute(){
   const view=(typeof SHEET_VIEW!=='undefined'&&SHEET_VIEW.length)?SHEET_VIEW:SHEET.map((_,i)=>i);
   const cs=FIND.cs,q=cs?FIND.q:FIND.q.toLowerCase(),whole=FIND.whole,numQ=/[,.]/.test(FIND.q);
   const test=t=>{if(!cs)t=t.toLowerCase();return whole?t===q:t.includes(q);};
-  const use=[];cols.forEach((c,ci)=>{if(fc.has(c.k))use.push([c,ci]);});
+  /* 찾는 말에 숫자가 하나도 없으면 숫자 칸은 볼 필요가 없다(실데이터 6천 행 × 24열에서 200ms → 수십 ms) */
+  const hasDigit=/\d/.test(FIND.q);
+  const use=[];cols.forEach((c,ci)=>{if(fc.has(c.k)&&(hasDigit||c.type!=='num'))use.push([c,ci]);});
   const out=FIND.hits;
   for(let i=0;i<view.length;i++){const ri=view[i],r=SHEET[ri];if(!r)continue;
     for(let j=0;j<use.length;j++){const c=use[j][0],v=r[c.k];
@@ -136,6 +138,27 @@ function findGo(d){
   if(!FIND.hits.length){findCompute();}
   if(!FIND.hits.length){FIND.note='';findPaint(false);return;}
   FIND.note='';FIND.cur=(FIND.cur+d+FIND.hits.length)%FIND.hits.length;findPaint(true);}
+/* 지금 쪽에 그려진 그 칸 하나만 새 값으로 — 칸 모양(입력칸 · 목록 · 날짜)과 붉은 표시(매칭 안 됨)까지 */
+function findPatchCell(h){
+  try{
+    const cols=sheetCols();if(cols.some(c=>c.type==='calc'))return false;   /* 계산 열이 있으면 줄 전체를 다시 */
+    const tb=$('sheet')&&$('sheet').tBodies[0];if(!tb)return false;
+    const tr=tb.querySelector(`tr[data-ri="${h.ri}"]`);if(!tr)return true;   /* 이 쪽에 없는 줄 — 그릴 것 없음 */
+    const r=SHEET[h.ri],c=cols[h.ci];if(!r||!c)return false;
+    const td=tr.querySelector(`td[data-c="${h.ci}"]`);if(!td)return false;
+    if(c.type==='dim'){const sel=td.querySelector('select');if(!sel)return false;
+      const v=r[c.k]||'';sel.innerHTML=`<option value="${esc(v)}" selected>${v?esc(v):'선택'}</option>`;sel.dataset.lazy='1';}
+    else if(c.k==='date'){const inp=td.querySelector('input.dtxt');if(!inp)return false;inp.value=r.date||'';
+      const dn=td.querySelector('input.dnative');if(dn)dn.value=/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')?r.date:'';}
+    else{const inp=td.querySelector('input');if(!inp)return false;
+      inp.value=c.type==='num'?(numBad(r[c.k])?String(r[c.k]):(+r[c.k]?fmt(r[c.k]):'')):(r[c.k]||'');}
+    const iss=rowCellIssues(r),bad=new Set(iss.cells);
+    tr.querySelectorAll('td[data-c]').forEach(t=>{const cc=cols[+t.dataset.c];if(!cc)return;
+      const b=bad.has(cc.k);t.classList.toggle('badcell',b);
+      if(b)t.title=(cc.type==='num'?ROW_ISSUE_LABEL.num:CELL_ISSUE_LABEL[cc.k])||ROW_ISSUE_LABEL[iss.kind]||'';
+      else t.removeAttribute('title');});
+    return true;
+  }catch(e){console.warn('찾아 바꾸기 칸 고치기',e);return false;}}
 /* 바꾸기 결과는 찾기 줄의 글자만으로는 눈에 잘 안 띈다 — 화면 아래 알림으로도 띄운다 (v113) */
 function findToast(n,left){
   if(typeof showToast!=='function')return;
@@ -149,7 +172,9 @@ function findOne(){
   const h=FIND.hits[FIND.cur<0?0:FIND.cur];if(!h){findPaint(false);findToast(0);return;}
   pushUndo();findApply(h);
   const at=FIND.cur<0?0:FIND.cur;
-  FIND.painting=1;try{renderSheet();}finally{FIND.painting=0;}syncSheet();
+  /* 한 칸만 바뀌었으니 그 칸만 고친다 — 표 전체를 다시 그리면 실데이터에서 2초 가까이 걸렸다 */
+  if(!findPatchCell(h)){FIND.painting=1;try{renderSheet();}finally{FIND.painting=0;}}
+  syncSheet();
   findCompute();FIND.cur=FIND.hits.length?Math.min(at,FIND.hits.length-1):-1;
   FIND.note=L(`1칸을 바꿨습니다`,`Replaced 1 cell`)+(FIND.hits.length?L(` · 남은 ${fmt(FIND.hits.length)}개`,` · ${fmt(FIND.hits.length)} left`):'');
   findPaint(true);findToast(1,FIND.hits.length);}
