@@ -46,7 +46,7 @@ function psLayout(r,m,d,span){
   const bs=getComputedStyle(document.body);
   const bg=(bs.backgroundColor&&bs.backgroundColor!=='rgba(0, 0, 0, 0)')?bs.backgroundColor:(cssVar('--bg')||'#fff');
   const top=PS_PAD+PS_HEAD;
-  return {img:r.img,sx,W,H:r.H,bg,top,pad:PS_PAD,
+  return {img:r.img,z:r.z||1,sx,W,H:r.H,bg,top,pad:PS_PAD,
     Wt:W+PS_PAD*2,Ht:top+r.H+PS_PAD,
     font:bs.fontFamily||'sans-serif',
     ink:cssVar('--ink')||'#1e2a38',muted:cssVar('--muted')||'#8b98a7',line:cssVar('--line')||'#e4e8ee',
@@ -76,16 +76,58 @@ function psPaint(cv,P,y0,h,pr){
   ctx.save();ctx.scale(pr,pr);ctx.translate(0,-y0);
   if(y0<P.top)psHead(ctx,P);
   const a=Math.max(y0,P.top),b=Math.min(y0+h,P.top+P.H);
-  if(b>a)ctx.drawImage(P.img,P.sx,a-P.top,P.W,b-a,P.pad,a,P.W,b-a);
+  /* 원본(SVG) 좌표는 화면 px × z (그림 안 배율) */
+  if(b>a)ctx.drawImage(P.img,P.sx*P.z,(a-P.top)*P.z,P.W*P.z,(b-a)*P.z,P.pad,a,P.W,b-a);
   ctx.restore();}
 const psBlob=(cv,type,q)=>new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('그림을 만들지 못했습니다')),type,q));
-/* 긴 PNG 한 장 — 캔버스 한도(한 변 32,767 · 넓이 2.5억 픽셀 남짓) 안에서 되도록 2배 */
-async function psPng(P){
-  const pr=Math.min(2,32000/P.Ht,32000/P.Wt,Math.sqrt(2.4e8/(P.Wt*P.Ht)));
-  const cv=document.createElement('canvas');
-  cv.width=Math.round(P.Wt*pr);cv.height=Math.round(P.Ht*pr);
-  psPaint(cv,P,0,P.Ht,pr);
-  return psBlob(cv,'image/png');}
+/* 긴 PNG 한 장 — 캔버스 한 장(한 변 32,767px 한도)에 들어가면 브라우저 PNG 로,
+   더 길면(넓은 표를 나눠 쌓은 일자별 효율 등) 조각마다 그려서 PNG 를 직접 엮는다(psPngBig) — 그래야 길어도 선명하다 */
+async function psPng(P,onStep){
+  if(P.Ht*2<=32000&&P.Wt*2<=32000){
+    const pr=Math.min(2,Math.sqrt(2.4e8/(P.Wt*P.Ht)));
+    const cv=document.createElement('canvas');
+    cv.width=Math.round(P.Wt*pr);cv.height=Math.round(P.Ht*pr);
+    psPaint(cv,P,0,P.Ht,pr);
+    return psBlob(cv,'image/png');}
+  return psPngBig(P,P.Ht>40000?1.5:2,onStep);}
+/* PNG 직접 엮기 — 행마다 Sub 필터 + 브라우저 내장 deflate(CompressionStream = zlib 형식, PNG IDAT 그대로) */
+const PS_CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function psCrc(parts){let c=0xffffffff;for(const b of parts)for(let i=0;i<b.length;i++)c=PS_CRC[(c^b[i])&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+function psChunk(type,data){
+  const t=new TextEncoder().encode(type),len=new Uint8Array(4),crc=new Uint8Array(4);
+  new DataView(len.buffer).setUint32(0,data.length);
+  new DataView(crc.buffer).setUint32(0,psCrc([t,data]));
+  return [len,t,data,crc];}
+async function psPngBig(P,pr,onStep){
+  if(typeof CompressionStream==='undefined')throw new Error('CompressionStream 없음');
+  const Wp=Math.round(P.Wt*pr),Hp=Math.round(P.Ht*pr);
+  const cs=new CompressionStream('deflate'),wr=cs.writable.getWriter(),rd=cs.readable.getReader(),out=[];
+  const pump=(async()=>{for(;;){const {value,done}=await rd.read();if(done)break;out.push(value);}})();
+  /* 조각 높이는 pr 를 곱해 정수가 되게(1.5배면 짝수) — 이음매가 반 픽셀 어긋나지 않게 */
+  const SL=4000;let n=Math.ceil(P.Ht/SL),k=0;
+  for(let y=0;y<P.Ht;y+=SL,k++){
+    const h=Math.min(SL,P.Ht-y),y0=Math.round(y*pr),y1=Math.min(Hp,Math.round((y+h)*pr)),hp=y1-y0;
+    if(hp<=0)break;
+    const cv=document.createElement('canvas');cv.width=Wp;cv.height=hp;
+    psPaint(cv,P,y,h,pr);
+    const d=cv.getContext('2d').getImageData(0,0,Wp,hp).data;
+    const RW=Wp*3+1,buf=new Uint8Array(RW*hp);
+    for(let r=0;r<hp;r++){let o=r*RW,i=r*Wp*4,pR=0,pG=0,pB=0;buf[o++]=1;
+      for(let x=0;x<Wp;x++,i+=4){const R=d[i],G=d[i+1],B=d[i+2];
+        buf[o++]=(R-pR)&255;buf[o++]=(G-pG)&255;buf[o++]=(B-pB)&255;pR=R;pG=G;pB=B;}}
+    cv.width=cv.height=0;
+    await wr.write(buf);
+    if(onStep)await onStep(k+1,n);}
+  await wr.close();await pump;
+  const ih=new Uint8Array(13),dv=new DataView(ih.buffer);
+  dv.setUint32(0,Wp);dv.setUint32(4,Hp);ih[8]=8;ih[9]=2;ih[10]=0;ih[11]=0;ih[12]=0;
+  /* 압축된 내용을 1MB 씩 IDAT 여러 개로 */
+  let all=0;out.forEach(b=>all+=b.length);
+  const z=new Uint8Array(all);{let o=0;out.forEach(b=>{z.set(b,o);o+=b.length;});}
+  const parts=[new Uint8Array([137,80,78,71,13,10,26,10]),...psChunk('IHDR',ih)];
+  for(let o=0;o<z.length;o+=1<<20)parts.push(...psChunk('IDAT',z.subarray(o,Math.min(z.length,o+(1<<20)))));
+  parts.push(...psChunk('IEND',new Uint8Array(0)));
+  return new Blob(parts,{type:'image/png'});}
 /* ---------- 아주 작은 PDF 작성기 ----------
    한 쪽(page)에 JPEG 여러 장을 위에서 아래로 붙인다. 쪽 크기는 화면 1px = 0.75pt(96dpi)이고,
    PDF 한 변 한도(14,400pt)를 넘는 긴 화면은 쪽 전체를 그만큼 줄인다(그림 해상도는 그대로 — 확대하면 선명하다) */
@@ -125,7 +167,7 @@ function psPdfBytes(P,slices){
   const out=new Uint8Array(len);let o=0;for(const b of parts){out.set(b,o);o+=b.length;}
   return out;}
 async function psPdf(P,onStep){
-  const pr=2,slices=[];
+  const pr=P.Ht>40000?1.5:2,slices=[];
   const n=Math.ceil(P.Ht/PS_SLICE);
   for(let k=0;k<n;k++){
     const y=k*PS_SLICE,h=Math.min(PS_SLICE,P.Ht-y);
@@ -141,16 +183,30 @@ async function pageSave(kind){
   const btns=[$('pageImgBtn'),$('pagePdfBtn')].filter(Boolean);
   btns.forEach(b=>b.disabled=true);
   const d=new Date(),{cur,m}=psMenu();
+  let dailySL=-1;
   const tgt=$('tab-'+cur);
   progOpen(kind==='pdf'?L('페이지를 PDF로 저장하는 중','Saving the page as PDF'):L('페이지를 이미지로 저장하는 중','Saving the page as an image'));
   progSet(null,L('화면을 그림으로 옮기는 중… (긴 화면은 10초 넘게 걸릴 수 있습니다)','Capturing the page… (long pages can take over 10 seconds)'));
   document.body.classList.add('pssave');
   try{
     if(!tgt||tgt.classList.contains('hidden')||!tgt.offsetHeight)throw new Error('no page');
+    /* 일자별 캠페인 효율 비교 — 한 달이 넘으면 화면에서는 옆으로 넘겨 보지만, 저장할 때는 전체 기간을 한 폭에 */
+    const dh=cur==='dash'?$('chartDaily'):null;
+    if(dh&&dh.getClientRects().length&&dh.scrollWidth>dh.clientWidth+1){
+      dailySL=dh.scrollLeft;window.__DAILY_FIT=1;try{renderDaily();}catch(e){console.warn(e);}}
+    /* 필터 줄 — 고른 값이 있는(전체가 아닌) 드롭다운은 이름표와 함께 남기고, 전부 '전체' 면 그 줄을 뺀다 */
+    tgt.querySelectorAll('.filters').forEach(f=>{
+      f.querySelectorAll('select').forEach(sel=>{const on=sel.value&&sel.value!=='all';
+        sel.classList.toggle('pskeep',!!on);
+        const lb=sel.previousElementSibling;if(lb&&lb.classList.contains('lbl'))lb.classList.toggle('pskeep',!!on);});
+      f.classList.toggle('psnone',!f.querySelector('.pskeep,input[type=date]'));});
+    /* 운영 코멘트가 비어 있으면 그 영역은 통째로 뺀다(입력 안내 문구가 찍히지 않게) */
+    {const cb=$('cmtBody'),blk=$('cmtBlock');if(blk)blk.classList.toggle('psempty',!!cb&&!cb.textContent.trim());}
     await uiTick();await uiTick();
     const span=psSpan(tgt);
-    const r=await ccRender(tgt,{noX:true,dropHidden:true,raw:true});
+    const r=await ccRender(tgt,{noX:true,split:true,dropHidden:true,raw:true});
     document.body.classList.remove('pssave');
+    if(dailySL>=0){window.__DAILY_FIT=0;try{renderDaily();const dh=$('chartDaily');if(dh)dh.scrollLeft=dailySL;}catch(e){}dailySL=-1;}
     const P=psLayout(r,m,d,span);
     if(kind==='pdf'){
       progSet(40,L('PDF 만드는 중…','Building the PDF…'));await uiTick();
@@ -158,7 +214,7 @@ async function pageSave(kind){
       saveFile(bytes,psFileName(m,'pdf',d),'application/pdf');}
     else{
       progSet(50,L('PNG 파일 만드는 중…','Building the PNG…'));await uiTick();
-      saveFile(await psPng(P),psFileName(m,'png',d),'image/png');}
+      saveFile(await psPng(P,async(k,n)=>{progSet(50+45*k/n);await uiTick();}),psFileName(m,'png',d),'image/png');}
     progSet(100);
   }catch(e){
     console.warn('페이지 저장',e);
@@ -169,6 +225,9 @@ async function pageSave(kind){
       `<button class="btn" data-close>${esc(L('닫기','Close'))}</button>`,{w:460});
   }finally{
     document.body.classList.remove('pssave');
+    {const blk=$('cmtBlock');if(blk)blk.classList.remove('psempty');}
+    document.querySelectorAll('.pskeep,.psnone').forEach(x=>x.classList.remove('pskeep','psnone'));
+    if(dailySL>=0){window.__DAILY_FIT=0;try{renderDaily();const dh=$('chartDaily');if(dh)dh.scrollLeft=dailySL;}catch(e){}}
     progClose();
     btns.forEach(b=>b.disabled=false);
     PS_BUSY=false;}}

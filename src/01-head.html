@@ -1347,9 +1347,17 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 body.pssave .agency-only,body.pssave .agency-only *,body.pssave .sec .tools .btn,body.pssave .infcfg,body.pssave [id$="CfgBtn"],
 body.pssave .hidebtn,body.pssave .infowrap,body.pssave .infowrap *,body.pssave .cardcopy,body.pssave .cardxl,body.pssave .hpbtn,
 body.pssave .colgrip{visibility:hidden!important}
-body.pssave #hiddenBar{display:none!important}
+/* v112.1 — 토글 · 드롭다운 · 체크 같은 고르기 메뉴도 뺀다(그 앞 '데이터 · 막대 값' 같은 이름표까지). 범례는 남긴다 */
+body.pssave .wrap .switch,body.pssave .wrap .switch *,body.pssave .wrap select:not(.pskeep),
+body.pssave .wrap .filters .lbl:not(.pskeep),
+body.pssave .wrap .tools .hint,body.pssave .wrap .tools label,body.pssave .wrap .tools label *,body.pssave .wrap .tools button,
+body.pssave .wrap .tools .ctl,body.pssave .wrap .tools .ctl *,body.pssave .wrap .infh .btn,body.pssave .wrap .infh button,
+body.pssave .wrap .daterange .btn,body.pssave .wrap .sknav,body.pssave .wrap .sknav *,
+body.pssave .wrap .skdots,body.pssave .wrap .skdots *,body.pssave .wrap .pen{visibility:hidden!important}
+body.pssave #hiddenBar,body.pssave #cmtBar,body.pssave #cmtState,body.pssave #cmtBlock.psempty,
+body.pssave .wrap .filters.psnone{display:none!important}
 /* 감추는 순간 바로 감춰지게 — 전환 효과(transition)가 있으면 그리는 동안 아직 보인다 */
-body.pssave .wrap *{transition:none!important}
+body.pssave .wrap *,body.pssave .wrap *::before,body.pssave .wrap *::after{transition:none!important}
 
 /* ===== 인쇄(PDF 저장) =====
    화면을 그대로 인쇄하지 않고, JS 가 만들어 둔 인쇄 전용 문서(#printdoc)만 찍는다.
@@ -1782,6 +1790,23 @@ table.tbl.fit{width:auto}
 [data-theme="dark"] #dailyLegend{background:rgba(200,168,136,.16)}
 #dailyLegend .it{color:#6e655c;font-weight:700}
 [data-theme="dark"] #dailyLegend .it{color:#b8ab9c}
+/* 운영 이슈 목록 (v112.1) — 화면에서는 숨기고, 페이지 저장 · 인쇄 때만 범례 아래 바닥에 이어서 보인다 */
+#dailyIssues{display:none;margin:0 -18px;padding:4px 22px 16px;background:rgba(150,120,90,.28);
+  border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);
+  grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:7px 26px}
+[data-theme="dark"] #dailyIssues{background:rgba(200,168,136,.16)}
+body.pssave #dailyIssues:not(:empty){display:grid}
+body.pssave #dailyLegend:has(+#dailyIssues:not(:empty)){border-radius:0}
+.disit{display:flex;align-items:baseline;gap:8px;font-size:12px;line-height:1.45;color:#4f4740;min-width:0}
+[data-theme="dark"] .disit{color:#d6cabd}
+.disno{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
+  border:2px solid var(--ink);background:var(--surface);color:var(--ink);font-size:10px;font-weight:900;box-sizing:border-box;
+  transform:translateY(3px)}
+.disper{flex:none;font-weight:800;font-variant-numeric:tabular-nums;color:#6e655c;min-width:76px}
+[data-theme="dark"] .disper{color:#b8ab9c}
+.distx{min-width:0}
+.distx b{font-weight:800}
+@media print{#dailyIssues:not(:empty){display:grid}#dailyLegend:has(+#dailyIssues:not(:empty)){border-radius:0}}
 .linekey.d3{width:20px;height:4px;border-radius:3px;background:rgba(16,18,22,.42)}
 [data-theme="dark"] .linekey.d3{background:rgba(255,255,255,.55)}
 .hillkey{display:inline-block;width:22px;height:10px;margin-right:2px;

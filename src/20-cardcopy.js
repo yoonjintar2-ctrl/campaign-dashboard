@@ -92,13 +92,62 @@ const ccScrolls=v=>v==='auto'||v==='scroll'||v==='overlay';
    · noX — 옆으로 넘치는 상자를 펼치지 않는다(화면에 보이는 폭 그대로). 표가 없는 상자(일자별 효율 그래프)는 지금 넘겨 본 자리를 지킨다
    · clean(clone) — 그리기 전에 복제본에서 뺄 것(버튼 등)을 뺀다
    · dropHidden — 숨은 상자(display:none)는 복제본에서 아예 뺀다(긴 페이지에서 그림 문서가 덜 무거워진다)
-   · raw — PNG 대신 {img(SVG 그림), W, H} 를 돌려준다. 받는 쪽이 잘라서 여러 캔버스에 나눠 그린다 */
+   · raw — PNG 대신 {img(SVG 그림), W, H, z} 를 돌려준다. 받는 쪽이 잘라서 여러 캔버스에 나눠 그린다(원본 좌표 = 화면 px × z)
+   · split — 옆으로 넘치는 표는 펼치지 않고 화면 폭으로 잘라 여러 덩어리를 위아래로 쌓는다(고정 열 · 행 머리는 덩어리마다 다시)
+   · zoom — 그림 안 배율. 기본 = 화면 배율(devicePixelRatio). 화면이 125% 면 글자 폭도 125% 크기에서 잰 값으로 배치되므로,
+     그림도 같은 배율로 배치해야 줄바꿈 · 겹침이 화면과 같다(v112.1 — 100% 로 배치하니 딱 맞춰 둔 칸에서 글자가 넘쳐 줄이 바뀌었다) */
+/* 옆으로 넘치는 상자를 화면 폭 덩어리로 나눌 자리 (v112.1 · 페이지 저장)
+   · 표: 표 x 좌표(왼쪽 끝 0) 기준. F = 고정 열(position:sticky) 오른쪽 끝, V = 보이는 폭.
+     덩어리 k = [고정 열] + 표의 [s_k, c_k) 구간. 자르는 자리는 맨 윗줄 머리(묶음) 경계를 먼저 — 묶음 이름이 반으로 갈리지 않게.
+     묶음이 너무 크면 칸 경계에서
+   · 카드 줄(주요 지표 · KPI 달성 현황처럼 옆으로 넘기는 flex 줄): 카드 경계에서 자른다(고정 열 없음)
+   돌려주는 값: [{off, w}] — off = 내용을 왼쪽으로 밀 만큼, w = 그 덩어리 상자의 폭 */
+function ccSplitPlan(o,tb){
+  const sl=o.scrollLeft;if(sl)o.scrollLeft=0;
+  try{
+    const ocs=getComputedStyle(o),boxW=parseFloat(ocs.width)||o.offsetWidth;
+    let V,L0,T,F=0,L=[],TP=[],CELLS=null;
+    if(tb){
+      const tr=tb.getBoundingClientRect();L0=tr.left;T=tr.width;V=o.clientWidth;
+      if(!(T>V+1))return null;
+      const rows=[...tb.rows];
+      rows.slice(0,60).forEach(r=>{for(const cell of r.cells){const c2=getComputedStyle(cell);
+        if(c2.position==='sticky'&&c2.left!=='auto'){const rr=cell.getBoundingClientRect();F=Math.max(F,rr.right-L0);}}});
+      if(F>V*0.6)F=0;   /* 고정 열이 너무 넓으면 고정 없이 자른다 */
+      const lefts=new Set(),tops=new Set();
+      rows.forEach((r,ri)=>{for(const cell of r.cells){const x=Math.round(cell.getBoundingClientRect().left-L0);
+        if(x>F+1){lefts.add(x);if(ri===0)tops.add(x);}}});
+      L=[...lefts].sort((a,b)=>a-b);TP=[...tops].sort((a,b)=>a-b);
+      /* 칸마다 가로 자리 — 덩어리마다 보이지 않는 칸은 내용을 비워 그림 문서를 가볍게 (긴 표는 5~6벌로 늘어난다) */
+      CELLS=[...tb.querySelectorAll('td,th')].map(cell=>{const rr=cell.getBoundingClientRect();return [rr.left-L0,rr.right-L0];});
+    }else{
+      const kids=[...o.children].filter(k=>k.getClientRects().length&&!/absolute|fixed/.test(getComputedStyle(k).position));
+      if(kids.length<2)return null;
+      /* 기준 = 첫 카드 왼쪽 끝 — 다음 덩어리의 첫 카드도 그 자리에 오게 */
+      const pr=parseFloat(ocs.paddingRight)||0,or=o.getBoundingClientRect();
+      L0=kids[0].getBoundingClientRect().left;V=o.clientWidth-(L0-or.left-o.clientLeft)-pr;
+      T=Math.max(...kids.map(k=>k.getBoundingClientRect().right-L0));
+      if(!(T>V+1))return null;
+      L=kids.map(k=>Math.round(k.getBoundingClientRect().left-L0)).filter(x=>x>1).sort((a,b)=>a-b);TP=L;}
+    const extra=Math.max(0,boxW-V);   /* 안쪽 여백 · 테두리 · 스크롤바 */
+    const room=V-F,out=[];let s=F;
+    for(let guard=0;guard<200&&s<T-1;guard++){
+      const end=s+room;
+      if(end>=T-1){out.push({off:s-F,w:Math.ceil(F+(T-s)+extra),s,c:T+1});break;}
+      const pick=arr=>{let c=0;for(const x of arr){if(x>s+1&&x<=end)c=x;}return c;};
+      let c=pick(TP);if(!c||c-s<room*0.35)c=pick(L);if(!c||c<=s)c=Math.floor(end);
+      out.push({off:s-F,w:Math.ceil(F+(c-s)+extra),s,c});s=c;}
+    if(out.length<2)return null;
+    out.F=F;out.cells=CELLS;
+    return out;
+  }finally{if(sl)o.scrollLeft=sl;}}
 async function ccRender(card,opts){
   opts=opts||{};
   try{hideTip();}catch(e){}
   const W=Math.ceil(card.offsetWidth)||1,H=Math.ceil(card.offsetHeight)||1;
   const clone=card.cloneNode(true);
-  const jobs=[];
+  const jobs=[],SPLITS=[];
+  const Z=Math.max(1,Math.min(4,+opts.zoom||window.devicePixelRatio||1));
   /* 모양 → 클래스 이름 (같은 모양은 같은 클래스) */
   const SM=new Map();
   const put=(c,rest,geo)=>{
@@ -122,15 +171,25 @@ async function ccRender(card,opts){
     let st=geo;
     /* 자식들이 펼쳐지는 만큼 — 가로로 나란한 상자(flex 가로줄)는 가로는 더하고 세로는 큰 쪽, 아래로 쌓이는 상자는 그 반대 */
     const row=/flex/.test(cs.display)&&/^row/.test(cs.flexDirection);
-    let ex=0,ey=0;
+    let ex=0,ey=0,eyS=0;
     const oc=[...o.children],ccn=[...c.children];
     for(let i=0;i<oc.length;i++){const [x,y]=walk(oc[i],ccn[i]);
       if(row){ex+=x;ey=Math.max(ey,y);}else{ex=Math.max(ex,x);ey+=y;}}
     /* 스크롤 상자 — 숨은 칸까지 펼친다 */
-    if(!opts.noX&&ccScrolls(cs.overflowX)&&o.scrollWidth>o.clientWidth+1)ex+=o.scrollWidth-o.clientWidth;
-    if(opts.noX&&ccScrolls(cs.overflowX)&&o.scrollLeft>0&&!o.querySelector('table')){
+    const xs=ccScrolls(cs.overflowX)&&o.scrollWidth>o.clientWidth+1;
+    const plan=xs&&opts.split?ccSplitPlan(o,o.querySelector('table')):null;
+    if(!opts.noX&&!plan&&xs)ex+=o.scrollWidth-o.clientWidth;
+    if(opts.noX&&!plan&&ccScrolls(cs.overflowX)&&o.scrollLeft>0&&!o.querySelector('table')){
       const f=c.firstElementChild;if(f)f.style.marginLeft=(-o.scrollLeft)+'px';}
     if(ccScrolls(cs.overflowY)&&o.scrollHeight>o.clientHeight+1)ey+=o.scrollHeight-o.clientHeight;
+    /* 넘치는 표를 나눠 쌓기 — 복제는 그림 · 배경을 data URL 로 바꾼 뒤(jobs 다음)에 한다. 높이는 지금 늘려 둔다 */
+    if(plan){const GAP=14,hc=o.getBoundingClientRect().height+ey;
+      /* 카드 줄은 첫 카드를 밀고(margin-left), 표는 표를 민다 */
+      let first=null,ml=0;
+      if(!o.querySelector('table')){const k0=[...o.children].find(k=>k.getClientRects().length&&!/absolute|fixed/.test(getComputedStyle(k).position));
+        if(k0){first=ccn[oc.indexOf(k0)]||null;ml=parseFloat(getComputedStyle(k0).marginLeft)||0;}}
+      SPLITS.push({c,plan,gap:GAP,mt:cs.marginTop,mb:cs.marginBottom,w:parseFloat(cs.width),first,ml});
+      eyS=(plan.length-1)*(hc+GAP);}   /* 나눠 쌓아 늘어난 높이는 둘레 상자에만 보탠다(덩어리 하나의 높이는 그대로) */
     /* 스크롤바는 그리지 않는다 — 펼친 뒤엔 넘칠 것이 없다 */
     if(ccScrolls(cs.overflowX))st+='overflow-x:hidden;';
     if(ccScrolls(cs.overflowY))st+='overflow-y:hidden;';
@@ -151,7 +210,7 @@ async function ccRender(card,opts){
     if(o.tagName==='SELECT'){const k0=o.selectedIndex;[...c.options].forEach((op,k)=>{if(k===k0)op.setAttribute('selected','');else op.removeAttribute('selected');});}
     if(o.tagName==='IMG'){const src=o.currentSrc||o.src;jobs.push(ccDataURL(src).then(d=>{c.setAttribute('src',d);c.removeAttribute('srcset');}));}
     if(o.tagName==='CANVAS'){try{const img=document.createElement('img');img.src=o.toDataURL();img.setAttribute('style',rest+st);c.replaceWith(img);}catch(e){}
-      return flow?[ex,ey]:[0,0];}
+      return flow?[ex,ey+eyS]:[0,0];}
     /* ::before / ::after — 실제 요소로 */
     for(const ps of ['::before','::after']){const pcs=getComputedStyle(o,ps),ct=pcs.content;
       if(!ct||ct==='none'||ct==='normal')continue;
@@ -160,9 +219,27 @@ async function ccRender(card,opts){
       const m=/^["'](.*)["']$/.exec(ct);sp.textContent=m?m[1].replace(/\\"/g,'"'):'';
       if(ps==='::before')c.insertBefore(sp,c.firstChild);else c.appendChild(sp);}
     /* 떠 있는 상자(absolute)는 둘레 상자 크기에 보태지 않는다 */
-    return flow?[ex,ey]:[0,0];};
+    return flow?[ex,ey+eyS]:[0,0];};
   const [EX,EY]=walk(card,clone);
   await Promise.all(jobs);
+  /* 넘치는 표 → 덩어리마다 상자를 하나씩 복제해, 표를 왼쪽으로 밀어(margin-left) 그 구간만 보이게.
+     고정 열은 position:sticky 라 상자 왼쪽 끝에 그대로 붙어 있다(화면에서 옆으로 넘겨 본 모습과 같다) */
+  SPLITS.forEach(({c,plan,gap,mt,mb,w,first,ml})=>{
+    if(!c.parentNode)return;
+    const fi=first?[...c.children].indexOf(first):-1;
+    const wrap=document.createElement('div');
+    wrap.setAttribute('style',`display:flex;flex-direction:column;align-items:flex-start;row-gap:${gap}px;margin:${mt} 0 ${mb} 0;width:${w}px;flex:none`);
+    plan.forEach(p=>{const cp=c.cloneNode(true);
+      cp.style.width=p.w+'px';cp.style.margin='0';cp.style.maxWidth='none';cp.style.flex='none';
+      if(fi>=0){const f=cp.children[fi];if(f)f.style.marginLeft=(ml-p.off)+'px';}
+      else{const t=cp.querySelector('table');if(t)t.style.marginLeft=(-p.off)+'px';
+        /* 이 덩어리에서 안 보이는 칸(고정 열 · [s,c) 구간 밖)은 내용을 비운다 — 칸 폭 · 줄 높이는 인라인으로 고정돼 있어 배치는 그대로 */
+        const CL=plan.cells,cl=t?t.querySelectorAll('td,th'):[];
+        if(CL&&cl.length===CL.length)for(let i=0;i<cl.length;i++){const [a,b]=CL[i];
+          if(a<plan.F-1)continue;if(b>p.s+1&&a<p.c-1)continue;
+          if(cl[i].firstChild)cl[i].replaceChildren();}}
+      wrap.appendChild(cp);});
+    c.replaceWith(wrap);});
   /* 복사 단추 · 좌우 넘김 단추는 그림에서 뺀다 */
   clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn').forEach(n=>n.remove());
   if(opts.clean)try{opts.clean(clone);}catch(e){console.warn(e);}
@@ -175,13 +252,15 @@ async function ccRender(card,opts){
    clone.insertBefore(sx,clone.firstChild);}
   const W2=W+Math.round(EX),H2=H+Math.round(EY);
   clone.style.margin='0';clone.style.width=W2+'px';clone.style.height=H2+'px';clone.style.maxWidth='none';clone.style.maxHeight='none';
+  if(Z!==1)clone.style.zoom=String(Z);
   /* 표의 data-key 등에 들어 있는 제어문자(구분자 U+0001)는 XML 에 넣을 수 없다 — 지운다 */
   const html=new XMLSerializer().serializeToString(clone).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W2}" height="${H2}" viewBox="0 0 ${W2} ${H2}"><foreignObject x="0" y="0" width="100%" height="100%">${html}</foreignObject></svg>`;
+  const ZW=Math.ceil(W2*Z),ZH=Math.ceil(H2*Z);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${ZW}" height="${ZH}" viewBox="0 0 ${ZW} ${ZH}"><foreignObject x="0" y="0" width="100%" height="100%">${html}</foreignObject></svg>`;
   const img=new Image();img.decoding='sync';
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
   await img.decode();
-  if(opts.raw)return {img,W:W2,H:H2};
+  if(opts.raw)return {img,W:W2,H:H2,z:Z};
   /* 2배로 선명하게 — 아주 큰 표는 캔버스 한도(한 변 3만 픽셀 남짓) 안으로 줄인다 */
   const pr=Math.min(2,16000/H2,16000/W2);
   const cv=document.createElement('canvas');cv.width=Math.round(W2*pr);cv.height=Math.round(H2*pr);

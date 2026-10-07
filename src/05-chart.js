@@ -191,7 +191,8 @@ function renderDaily(){
   /* v107 — 한 달(31일)이 넘는 캠페인은 한 화면에 31일 폭으로 그리고 나머지는 가로로 넘겨 본다
      (서머리 표처럼 좌우 ‹ › 단추 · 트랙패드/Shift+휠 가로 스크롤) */
   const DAYS_VIS=31;
-  const W=ds.length>DAYS_VIS?Math.round(SXp*2+(Wv-SXp*2)/DAYS_VIS*ds.length):Wv;
+  /* 페이지 저장(v112.1) 동안에는 전체 기간을 한 화면 폭에 담는다(window.__DAILY_FIT) */
+  const W=ds.length>DAYS_VIS&&!window.__DAILY_FIT?Math.round(SXp*2+(Wv-SXp*2)/DAYS_VIS*ds.length):Wv;
   const floorH=132,Ftop=H-floorH,BASE=Ftop+Math.round(floorH*.42);
   const P={l:SXp,r:SXp,t:16};
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,class:'chart d3'},host);
@@ -364,7 +365,7 @@ function renderDaily(){
   /* ---------- 운영 이슈 — 흰 바탕 · 검은 테두리 번호 원 (v103) ----------
      이슈가 시작된 날의 꺾은선 위에. 그날 꺾은선 값이 없으면 막대 위에. 같은 날 시작한 이슈는 원 하나 + 개수 배지.
      올리면 이슈 기간을 옅게 칠하고 내용을 띄운다 */
-  let ISSUE_DRAWN=0;
+  let ISSUE_DRAWN=0;const ISSUE_LIST=[];
   if(SHOW_ISSUES){
     const groups=new Map();
     ISSUES.slice().sort((a,b)=>dIdx(a.s)-dIdx(b.s)).forEach((is,n)=>{
@@ -388,7 +389,7 @@ function renderDaily(){
         const t=S('text',{x:x+9.5,y:y-6.4,'text-anchor':'middle','font-size':8.5,'font-weight':800,fill:HALO},g);
         t.textContent=String(list.length);}
       S('circle',{cx:x,cy:y,r:15,fill:'transparent'},g);
-      ISSUE_DRAWN++;
+      ISSUE_DRAWN++;list.forEach(it=>ISSUE_LIST.push(it));
       let hls=[];
       g.addEventListener('mouseenter',()=>{
         g.classList.add('on');halo.setAttribute('opacity',.1);
@@ -403,6 +404,15 @@ function renderDaily(){
         hls.forEach(h=>h.parentNode&&h.parentNode.removeChild(h));hls=[];hideTip();});
     });
   }
+  /* 운영 이슈 목록 (v112.1) — 화면에서는 숨겨 두고, 페이지 저장 · 인쇄 때만 그래프 아래에 번호 · 기간 · 내용을 적는다
+     (번호 원만으로는 그림에서 무슨 이슈인지 알 수 없다) */
+  {const box=$('dailyIssues');
+   if(box){const md=iso=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');return m?`${+m[2]}/${+m[3]}`:esc(iso||'');};
+     box.innerHTML=ISSUE_LIST.sort((a,b)=>a.n-b.n).map(it=>{const is=it.is;
+       const per=md(is.s)+(is.e&&is.e!==is.s?' ~ '+md(is.e):'');
+       const tag=[is.scope,is.type].filter(Boolean).map(esc).join(' · ');
+       return `<div class="disit"><span class="disno">${it.n+1}</span><span class="disper">${per}</span>`
+         +`<span class="distx">${tag?`<b>${tag}</b> `:''}${esc(is.txt||'')}</span></div>`;}).join('');}}
   /* ---------- 범례 — 바닥 위(카드 아래 끝) ---------- */
   const lg=$('dailyLegend');lg.innerHTML='';
   series.forEach((s,i)=>{const x=el('span','it drag',lg);
