@@ -1605,6 +1605,14 @@ function renderGantt(){
     const wOf=s=>{const v=String(s==null?'':s);
       if(!cx)return v.length*7.4;
       try{return cx.measureText(v).width;}catch(e){return v.length*7.4;}};
+    /* 화면에 실제로 찍힐 글자로 잰다 — 영어 화면이면 머리글 · 「소계」 꼬리표가 영어로 바뀌어 더 길다 (v111).
+       예전에는 한국어 글자로 재서 "Video (VA) subtotal" 이 칸을 넘쳤다 */
+    const shown=v=>{try{return (typeof LANG!=='undefined'&&LANG==='en'&&typeof trText==='function')?trText(String(v),false):String(v);}catch(e){return String(v);}};
+    /* 소계 줄은 굵은 글씨(800 · 11.5px)라 따로 잰다 */
+    let cxB=null;
+    try{const probe=t.querySelector('td.lead')||t;const cs=getComputedStyle(probe);
+      cxB=document.createElement('canvas').getContext('2d');cxB.font=`800 11.5px ${cs.fontFamily||'sans-serif'}`;}catch(e){}
+    const wOfB=s=>{const v=String(s==null?'':s);if(!cxB)return v.length*8;try{return cxB.measureText(v).width;}catch(e){return v.length*8;}};
     /* 소계 문구가 **한 열에만** 들어가는 경우 그 열도 문구를 담을 만해야 한다.
        두 열 이상에 걸쳐 있으면 합이 넉넉하므로 따지지 않는다. */
     const subText={};
@@ -1614,15 +1622,15 @@ function renderGantt(){
         const L=r.level, li=Math.min(L+1,dims.length-1);
         const nCol=Math.max(dims.length-(L+1),1);
         if(nCol!==1)return;
-        const s=`${dimDisp(dims[L],r.vals[L])} 소계`;
-        subText[dims[li]]=Math.max(subText[dims[li]]||0,wOf(s)*1.06);});
+        const s=shown(`${dimDisp(dims[L],r.vals[L])} 소계`);
+        subText[dims[li]]=Math.max(subText[dims[li]]||0,wOfB(s)*1.04);});
     }catch(e){}
     const out={};
     dims.forEach((d,i)=>{
-      const hd=(DIMS.find(x=>x.k===d)||{l:d}).l;
+      const hd=shown((DIMS.find(x=>x.k===d)||{l:d}).l);
       let w=wOf(hd)*1.14;                      /* 머리글은 굵은 글씨라 조금 넉넉히 */
       rowsData.forEach(r=>{const v=r.vals[i];
-        if(v!=null&&v!=='')w=Math.max(w,wOf(v));});
+        if(v!=null&&v!=='')w=Math.max(w,wOf(shown(v)));});
       /* 안쪽 여백 9+9 와 여유 6 · 소재 열은 썸네일(34)과 사이 여백(8)까지 */
       const padBase=24, thumb=(d==='creative')?42:0;
       let need=w+padBase+thumb;

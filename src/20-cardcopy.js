@@ -10,26 +10,36 @@ const CC_ICON='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true
 const CC_OK='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8.4l3.1 3.1 6.5-6.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CC_NG='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
 const CC_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+/* 여러 그래프 · 표가 모인 카드(유입 분석)는 카드 전체가 아니라 **그래프 · 표 하나하나**에 단추를 단다 (v111).
+   전체 복사는 쓸 일이 없어 그런 카드에는 카드 단추를 달지 않는다 */
+const CC_SPLIT='.infk,.infcell';
+function ccButtons(host){
+  if(!host.querySelector(':scope>.cardcopy')){
+    const b=document.createElement('button');
+    b.type='button';b.className='cardcopy';b.innerHTML=CC_ICON;
+    b.title=L('이 영역을 그림으로 복사','Copy this card as an image');
+    b.setAttribute('aria-label',b.title);
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();ccCopy(host,b);});
+    host.classList.add('hascopy');host.appendChild(b);}
+  /* 표가 있으면 그 옆에 엑셀 단추 (v108 · 21-tblxlsx.js) — 표가 사라지면 단추도 뗀다 */
+  const has=!!host.querySelector('table'),xb=host.querySelector(':scope>.cardxl');
+  if(has&&!xb&&typeof txClick==='function'){
+    const b=document.createElement('button');
+    b.type='button';b.className='cardxl';b.innerHTML=TX_ICON;
+    b.title=L('이 표를 엑셀로 내려받기','Download this table as Excel');
+    b.setAttribute('aria-label',b.title);
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();txClick(host,b);});
+    host.appendChild(b);}
+  else if(!has&&xb)xb.remove();}
 function ccAdd(){
   const root=$('tab-dash');if(!root)return;
   root.querySelectorAll('.card').forEach(card=>{
-    if(!card.querySelector(':scope>.cardcopy')){
-      const b=document.createElement('button');
-      b.type='button';b.className='cardcopy';b.innerHTML=CC_ICON;
-      b.title=L('이 영역을 그림으로 복사','Copy this card as an image');
-      b.setAttribute('aria-label',b.title);
-      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();ccCopy(card,b);});
-      card.classList.add('hascopy');card.appendChild(b);}
-    /* 표가 있는 카드에는 그 옆에 엑셀 단추 (v108 · 21-tblxlsx.js) — 표가 사라지면 단추도 뗀다 */
-    const has=!!card.querySelector('table'),xb=card.querySelector(':scope>.cardxl');
-    if(has&&!xb&&typeof txClick==='function'){
-      const b=document.createElement('button');
-      b.type='button';b.className='cardxl';b.innerHTML=TX_ICON;
-      b.title=L('이 표를 엑셀로 내려받기','Download this table as Excel');
-      b.setAttribute('aria-label',b.title);
-      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();txClick(card,b);});
-      card.appendChild(b);}
-    else if(!has&&xb)xb.remove();});}
+    const parts=card.querySelectorAll(CC_SPLIT);
+    if(parts.length){
+      card.querySelectorAll(':scope>.cardcopy,:scope>.cardxl').forEach(n=>n.remove());
+      card.classList.remove('hascopy');
+      parts.forEach(ccButtons);return;}
+    ccButtons(card);});}
 /* ---- 카드 → PNG (외부 라이브러리 없이) ----
    ① 카드를 통째로 복제(cloneNode) — 화면의 카드는 그대로 둔다
    ② 원본과 복제본을 나란히 훑으며, 화면에 실제로 적용된 스타일(getComputedStyle)을 복제본에 인라인으로 옮긴다
@@ -145,7 +155,8 @@ async function ccRender(card){
   if(!blob)throw new Error('그림을 만들지 못했습니다');
   return blob;}
 function ccDownload(blob,card){
-  const sec=card.getAttribute('data-sect')||'card';
+  const nm=card.querySelector('.infh>b,.infk>span');
+  const sec=(nm&&nm.textContent.trim())||card.getAttribute('data-sect')||'card';
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`${(typeof CAMPAIGN!=='undefined'&&CAMPAIGN.name||'dashboard').replace(/[\\/:*?"<>|]/g,'')}_${sec}.png`;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);}

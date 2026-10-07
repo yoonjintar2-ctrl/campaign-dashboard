@@ -253,6 +253,44 @@ function i18nShort(v){
 function i18nFill(en,groups){
   let i=0;
   return en.replace(/\{(\d*)\}/g,(m,d)=>{const g=d!==''?groups[+d]:groups[i++];return g==null?'':g;});}
+/* ---------- 사용자가 입력한 값은 옮기지 않는다 (v111) ----------
+   매체 · 광고상품 · 소재 · 타겟팅 · 구분 · 랜딩 페이지 · 캠페인명 · TV/OOH 입력값처럼 사용자가 적은 이름은
+   사전에 같은 낱말이 있어도(예: 영상 → Video, 카카오 → Kakao) 영어 화면에서 그대로 둔다 —
+   입력값과 화면 글자가 달라 헷갈렸다(실제로 "Video (VA)" 라는 소재와 "영상" 소재가 같이 있었다).
+   「X 소계」 처럼 틀에 끼워진 경우에도 X 는 그대로, 틀 글자만 옮긴다(X subtotal).
+   UI 에도 흔히 쓰는 낱말(전체 · 기타 …)은 예외로 계속 옮긴다.
+   ⚠ 아래 훅(innerHTML 등)이 이 파일의 다른 값보다 먼저 불릴 수 있어 var · function 으로 둔다 (TDZ) */
+var I18N_UI_COMMON=new Set(['전체','기타','합계','소계','없음','미지정','(미지정)','(빈칸)']);
+var I18N_USER=new Set(),I18N_UBYF=new Map(),I18N_USER_AT=0,I18N_USER_STAMP='',I18N_WREST='';
+function i18nUserVals(){
+  let stamp='';
+  try{stamp=[typeof LINES!=='undefined'?LINES.length:0,typeof CREATIVES!=='undefined'?CREATIVES.length:0,
+    typeof SHEET!=='undefined'&&SHEET?SHEET.length:0,typeof CAMPAIGN!=='undefined'?CAMPAIGN.name:'',
+    typeof TV_PLAN!=='undefined'?TV_PLAN.length+TV_SPOTS.length:0,typeof OOH_PLAN!=='undefined'?OOH_PLAN.length+OOH_CR.length:0].join('|');}catch(e){}
+  const now=Date.now();
+  if(stamp===I18N_USER_STAMP&&now-I18N_USER_AT<1500)return I18N_USER;
+  I18N_USER_STAMP=stamp;I18N_USER_AT=now;
+  const S=new Set();
+  const add1=t=>{t=t.replace(/\s+/g,' ').trim();if(t&&I18N_HANGUL.test(t)&&!I18N_UI_COMMON.has(t)&&t.length<60)S.add(t);};
+  const add=v=>{if(v==null||typeof v==='object')return;const t=String(v);if(!I18N_HANGUL.test(t))return;
+    add1(t);if(/[,，\n]/.test(t))t.split(/[,，\n]/).forEach(add1);};
+  try{
+    const ks=['segment','media','product','target','line','slot','landing','creative','name','landDom'];
+    if(typeof LINES!=='undefined')LINES.forEach(l=>ks.forEach(k=>add(l[k])));
+    if(typeof CREATIVES!=='undefined')CREATIVES.forEach(c=>add(c.name));
+    if(typeof CR_ASSETS!=='undefined')Object.keys(CR_ASSETS).forEach(add);
+    if(typeof SHEET!=='undefined'&&Array.isArray(SHEET))SHEET.forEach(r=>{if(r){add(r.landing);add(r.creative);}});
+    if(typeof CAMPAIGN!=='undefined'){add(CAMPAIGN.name);add(CAMPAIGN.advertiser);}
+    if(typeof CLOUD!=='undefined'&&CLOUD&&Array.isArray(CLOUD.list))CLOUD.list.forEach(c=>c&&add(c.name));
+    const rowsOf=a=>{if(Array.isArray(a))a.forEach(r=>{if(r&&typeof r==='object')Object.values(r).forEach(add);});};
+    if(typeof TV_PLAN!=='undefined'){rowsOf(TV_PLAN);rowsOf(TV_SPOTS);}
+    if(typeof OOH_PLAN!=='undefined'){rowsOf(OOH_PLAN);(OOH_CR||[]).forEach(c=>add(c&&c.name));}
+  }catch(e){}
+  const B=new Map();
+  S.forEach(t=>{const f=t[0];if(!B.has(f))B.set(f,[]);B.get(f).push(t);});
+  B.forEach(a=>a.sort((x,y)=>y.length-x.length));
+  I18N_USER=S;I18N_UBYF=B;return S;}
+function i18nIsUser(t){try{return i18nUserVals().has(t);}catch(e){return false;}}
 /* 문장 하나 옮기기. allowWords=false 면 ③(낱말 대체)을 하지 않는다 */
 function trText(s,allowWords,depth){
   if(s==null)return s;
@@ -262,6 +300,7 @@ function trText(s,allowWords,depth){
   const m0=/^(\s*)([\s\S]*?)(\s*)$/.exec(s);
   const lead=m0[1],trail=m0[3];
   const core=m0[2].replace(/\s+/g,' ');
+  if(i18nIsUser(core))return s;                        /* 사용자가 입력한 값 (v111) */
   const hit=I18N_EXACT.get(core);
   if(hit!=null)return lead+hit+trail;
   for(const [re,fn] of I18N_RULES){const m=re.exec(core);if(m)return lead+fn(...m)+trail;}
@@ -288,7 +327,8 @@ function trText(s,allowWords,depth){
   if(allowWords===false)return s;
   /* ③ 낱말 대체는 **전부 옮겨질 때만** 쓴다 — 한글이 섞여 남으면(사용자 데이터 · 모르는 문장) 원문 그대로 둔다 */
   const w=i18nWords(core);
-  if(w===core||I18N_HANGUL.test(w))return s;
+  /* 남은 한글이 사용자 입력값뿐이면 옮긴 것으로 친다 (v111) */
+  if(w===core||I18N_HANGUL.test(I18N_WREST))return s;
   return lead+w+trail;}
 function i18nSplitJoin(core,allowWords,depth){
   const toks=core.split(/( · | › | \/ | — )/);           /* [조각, 구분자, 조각, …] */
@@ -300,6 +340,8 @@ function i18nSplitJoin(core,allowWords,depth){
     for(let j=parts.length;j>i;j--){
       let cand=parts[i];for(let k=i+1;k<j;k++)cand+=seps[k-1]+parts[k];
       if(!I18N_HANGUL.test(cand)){if(j===i+1){out.push(cand);i=j;done=true;break;}continue;}
+      /* 사용자 입력값 조각은 그대로 두고 나머지 조각만 옮긴다 (v111) */
+      if(i18nIsUser(cand)){out.push(cand);i=j;done=true;break;}
       const t=trText(cand,false,depth+1);
       if(t!==cand&&!I18N_HANGUL.test(t)){out.push(t);i=j;done=true;any=true;break;}}
     if(!done)return null;
@@ -307,11 +349,20 @@ function i18nSplitJoin(core,allowWords,depth){
   return any?out.join(''):null;}
 /* 아는 낱말 · 구절만 바꾼다 — 앞뒤가 한글이면(단어 중간) 건드리지 않는다 */
 function i18nWords(s){
-  let out='',i=0;const n=s.length;
+  let out='',rest='',i=0;const n=s.length;
+  try{i18nUserVals();}catch(e){}
   while(i<n){
     const c=s[i];
     const cands=I18N_BYFIRST.get(c)||null;
     let done=false;
+    /* 사용자 입력값(매체 · 소재 이름 …)은 그대로 옮겨 적는다 — 낱말 경계에서만 (v111) */
+    const us=I18N_UBYF.get(c);
+    if(us&&!(i>0&&I18N_HANGUL.test(s[i-1])))for(const u of us){
+      if(!s.startsWith(u,i))continue;
+      const nxt=s[i+u.length];if(nxt&&I18N_HANGUL.test(nxt)&&!I18N_PARTICLE.test(s.slice(i+u.length)))continue;
+      if(out&&/[A-Za-z0-9)]$/.test(out))out+=' ';
+      out+=u;i+=u.length;done=true;break;}
+    if(done)continue;
     if(cands){
       const prevH=i>0&&I18N_HANGUL.test(s[i-1])&&I18N_HANGUL.test(c);
       for(const k of cands){
@@ -322,11 +373,12 @@ function i18nWords(s){
         let v=I18N_EXACT.get(k);
         /* 영어 낱말이 앞뒤 글자에 붙지 않게 */
         if(out&&/[A-Za-z0-9)]$/.test(out)&&/^[A-Za-z(]/.test(v))v=' '+v;
-        out+=v;i+=k.length;done=true;break;}}
+        out+=v;rest+=v;i+=k.length;done=true;break;}}
     if(!done){
       let ch=c;
       if(/[A-Za-z(]/.test(ch)&&out&&/[a-z]$/.test(out)&&I18N_HANGUL.test(s[i-1]||''))ch=' '+ch;
-      out+=ch;i++;}}
+      out+=ch;rest+=ch;i++;}}
+  I18N_WREST=rest;
   return out.replace(/ {2,}/g,' ');}
 /* ---------- 문단 통째로 (data-i18n="키") ----------
    <b> 로 끊긴 긴 안내문은 조각마다 옮기면 어순이 어색하다 → 영어 문단을 통째로 갈아 끼운다 */

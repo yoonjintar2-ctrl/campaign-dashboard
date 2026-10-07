@@ -1725,11 +1725,15 @@ table.tbl.fit{width:auto}
 .isdot .halo{transition:opacity .12s}
 .issuekey{display:inline-block;width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);margin-right:6px;vertical-align:-1px}
 /* 카드 그림 복사 단추 (v105) — 카드 오른쪽 위, 카드에 마우스를 올렸을 때만 보인다 */
-.card.hascopy{position:relative}
+.hascopy{position:relative}
+/* 유입 분석처럼 그래프 · 표마다 단추를 단 경우 — 머리 오른쪽 조작(구분 고르기 · 스위치 · 헤더 편집)을 단추가 가리지 않게 비켜 둔다 (v111) */
+.infcell.hascopy>.infh{padding-right:34px}
+.infcell.hascopy:has(>.cardxl)>.infh{padding-right:64px}
+.infk.hascopy{padding-right:38px}
 .cardcopy{position:absolute;top:7px;right:7px;z-index:8;width:26px;height:26px;padding:0;border-radius:7px;
   border:1px solid var(--line);background:var(--surface);color:var(--ink2);display:flex;align-items:center;justify-content:center;
   cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.card.hascopy:hover>.cardcopy,.cardcopy:focus-visible{opacity:.92}
+.hascopy:hover>.cardcopy,.cardcopy:focus-visible{opacity:.92}
 .cardcopy:hover{opacity:1;color:var(--ink);border-color:var(--gline)}
 .cardcopy.busy{opacity:1;animation:ccbusy .9s ease-in-out infinite}
 @keyframes ccbusy{50%{opacity:.45}}
@@ -1741,7 +1745,7 @@ table.tbl.fit{width:auto}
   border:1px solid var(--line);background:var(--surface);color:var(--ink2);display:flex;align-items:center;justify-content:center;
   cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .cardxl svg{display:block}
-.card.hascopy:hover>.cardxl,.cardxl:focus-visible{opacity:.92}
+.hascopy:hover>.cardxl,.cardxl:focus-visible{opacity:.92}
 .cardxl:hover{opacity:1;border-color:var(--gline)}
 .cardxl.busy{opacity:1;animation:ccbusy .9s ease-in-out infinite}
 .cardxl.ok{opacity:1;color:#2f8a55;border-color:#9fcfb1;transform:scale(1.06)}
@@ -2164,7 +2168,7 @@ table.gantt td.day .vnum.nofit{display:none}
 /* (폭 고정은 위에서 함께 처리한다) */
 /* 그룹 소계 줄 (v57) — 소재 줄과 헷갈리지 않게 한 톤 진하게 */
 table.gantt tr.gsub>td{background:var(--sub1);font-weight:800}
-table.gantt tr.gsub>td.lead.sublab{text-align:center}
+table.gantt tr.gsub>td.lead.sublab{text-align:center;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
 table.gantt tr.gsub>td.lead{background:var(--sub0);text-align:left;color:var(--ink);
   font-size:11.5px;letter-spacing:-.2px}
 table.gantt tr.gsub>td.lead i{font-style:normal;font-weight:600;color:var(--muted);margin-left:5px;font-size:10.5px}
