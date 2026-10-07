@@ -124,10 +124,45 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 /* ===== 첫 화면 가림막 =====
    예전에는 접속 화면이 반투명이라 뒤에 깔린 **예시(샘플) 데이터가 잠깐 비쳐 보였다**.
    자기 캠페인을 열기 전까지는 대시보드를 아예 보여 주지 않는다. */
-.bootveil{position:fixed;inset:0;z-index:950;display:grid;place-items:center;
+.bootveil{position:fixed;inset:0;z-index:950;display:block;overflow:hidden;
   background:var(--plane);transition:opacity .35s ease}
-.bootveil .bootlogo{font-size:15px;font-weight:800;color:var(--acc);letter-spacing:-.3px;opacity:.55;
+.bootveil .bootlogo{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:2;
+  padding:8px 16px;border-radius:99px;background:var(--surface);box-shadow:0 6px 20px rgba(20,24,30,.10);
+  font-size:12.5px;font-weight:800;color:var(--acc);letter-spacing:-.2px;opacity:.55;
   animation:bootpulse 1.4s ease-in-out infinite alternate}
+/* 로딩 틀(스켈레톤) — v114. 실제 대시보드와 같은 자리 · 크기의 빈 칸이 한 줄기 빛으로 반짝인다 */
+.sk{--skA:rgba(30,40,55,.065);--skB:rgba(30,40,55,.13);height:100%;display:flex;flex-direction:column}
+[data-theme="dark"] .sk{--skA:rgba(255,255,255,.055);--skB:rgba(255,255,255,.12)}
+.skb{display:block;flex:none;height:12px;border-radius:7px;
+  background:linear-gradient(100deg,var(--skA) 35%,var(--skB) 50%,var(--skA) 65%) var(--skA);
+  background-size:200vw 100%;background-attachment:fixed;animation:skShim 1.5s linear infinite}
+@keyframes skShim{from{background-position:100vw 0}to{background-position:-100vw 0}}
+.skb.sm{height:10px}.skb.lt{height:14px}.skb.mid{height:14px;margin:0 auto 6px}
+.skb.lg{height:26px;border-radius:9px}.skb.h{height:18px;border-radius:8px}
+.skb.pill{height:26px;border-radius:99px}.skb.sq{height:30px;border-radius:9px}
+.sk-sp{flex:1}
+.sk-top,.sk-tabs,.sk-wrap{flex:none}
+.sk-top{display:flex;align-items:center;gap:12px;height:56px;padding:0 152px;background:var(--surface);border-bottom:1px solid var(--line)}
+.sk-tabs{display:flex;align-items:center;gap:10px;height:46px;padding:0 152px;background:var(--surface);border-bottom:1px solid var(--line)}
+.sk-wrap{padding:18px 152px 0;display:flex;flex-direction:column;gap:12px;max-width:2040px;width:100%;margin:0 auto;box-sizing:border-box}
+.sk-info{display:flex;gap:18px;margin-bottom:10px}
+.sk-h{margin-top:16px}
+.sk-card{background:var(--surface);border-radius:var(--radius,16px);box-shadow:0 1px 2px rgba(20,24,30,.04);border:1px solid var(--line)}
+.sk-pace{padding:22px 26px;display:flex;flex-direction:column;gap:20px}
+.sk-prow{display:flex;align-items:center;gap:18px}
+.sk-bar{flex:1;height:40px;border-radius:9px;max-width:var(--w)}
+.sk-row{display:flex;gap:13px;overflow:hidden}
+.sk-stat{flex:0 0 295px;height:258px;padding:18px 18px 0;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;overflow:hidden}
+.sk-spark{margin-top:auto;height:86px;border-radius:12px 12px 0 0}
+.sk-don{flex:0 0 295px;height:300px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:22px;box-sizing:border-box}
+.sk-don>.skb.sm:first-child{align-self:flex-start}
+.sk-ring{width:180px;height:180px;border-radius:50%;
+  -webkit-mask:radial-gradient(circle,transparent 61%,#000 62%);mask:radial-gradient(circle,transparent 61%,#000 62%)}
+@media (max-width:1700px){.sk-top,.sk-tabs{padding:0 40px}.sk-wrap{padding-left:72px;padding-right:72px}}
+@media (max-width:1200px){.sk-wrap{padding-left:32px;padding-right:32px}}
+@media (max-width:760px){.sk-top,.sk-tabs{padding:0 16px}.sk-wrap{padding-left:16px;padding-right:16px}}
+@media (prefers-reduced-motion:reduce){.skb{animation:none}}
+body:not(.booting) .skb{animation:none}
 @keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
 body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
 /* 부팅이 끝나면 맥박 애니메이션도 멈춘다 — 보이지 않는데 무한 반복하고 있었다 (v56) */
@@ -1365,6 +1400,23 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 @keyframes axUp{from{transform:translateY(12px);opacity:0}}
 @keyframes axRise{from{transform:translateY(22px);opacity:0}}
 @keyframes axFade{from{opacity:0}}
+/* 변화량 배지(v114) — 숫자 옆에 잠깐. 색은 방향만(파랑 ▲ · 주황 ▼) */
+.axhasdelta{position:relative;width:fit-content;max-width:none}
+.axdelta{position:absolute;left:100%;top:50%;margin-left:8px;transform:translateY(-50%);white-space:nowrap;pointer-events:auto;
+  font-size:11px;font-weight:800;line-height:1;letter-spacing:-.1px;padding:4px 7px 4px 6px;border-radius:99px;
+  animation:axDelta 4.6s ease-out var(--axd,0ms) both;z-index:3;font-variant-numeric:tabular-nums}
+.axdelta.up{color:#2c66a6;background:rgba(44,102,166,.11);box-shadow:inset 0 0 0 1px rgba(44,102,166,.18)}
+.axdelta.dn{color:#b4512f;background:rgba(180,81,47,.10);box-shadow:inset 0 0 0 1px rgba(180,81,47,.18)}
+[data-theme="dark"] .axdelta.up{color:#8fb9e6;background:rgba(143,185,230,.14)}
+[data-theme="dark"] .axdelta.dn{color:#f0a98a;background:rgba(240,169,138,.13)}
+/* 도넛 가운데 · 진행 현황 오른쪽 숫자는 자리가 좁다 — 아래 / 왼쪽에 */
+.ctr .axdelta{left:50%;top:100%;margin:4px 0 0;transform:translateX(-50%)}
+.pside.r .axdelta{left:auto;right:100%;margin:0 8px 0 0}
+.ax-wait .axdelta{animation-play-state:paused}
+@keyframes axDelta{0%{opacity:0;filter:blur(2px)}7%{opacity:1;filter:none}82%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.axdelta{animation-duration:4.6s;animation-timing-function:steps(1,end)}}
+@media print{.axdelta{display:none!important}}
+body.pssave .axdelta{display:none!important}
 /* 지표 · 도넛 카드 — 마우스를 올리면 살짝 떠오른다 */
 .strip>.stat,#donuts>.donut{transition:transform .22s cubic-bezier(.2,.9,.3,1.2),box-shadow .22s}
 .strip>.stat:hover,#donuts>.donut:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(20,24,30,.10),0 2px 6px rgba(20,24,30,.06)}
@@ -1376,6 +1428,29 @@ body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
 @media (prefers-reduced-motion:reduce){.ax,.wrap:not(.hidden){animation:none!important}}
 .ax-none .ax,.ax-none .wrap:not(.hidden){animation:none!important}
 @media print{.ax,.wrap{animation:none!important}}
+
+/* ===== 영역 바로가기 — v114 (24-secnav.js) =====
+   오른쪽 가장자리 점 목록. 마우스를 올리면 이름이 펼쳐진다 · 지금 영역은 길쭉한 점 */
+.secnav{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
+  align-items:flex-end;gap:2px;padding:8px 4px;border-radius:14px;transition:background .2s,box-shadow .2s}
+.secnav.on{display:flex}
+.secnav button{display:flex;align-items:center;justify-content:flex-end;gap:10px;border:0;background:none;cursor:pointer;
+  padding:4px 4px;font-family:inherit;color:var(--ink2)}
+.secnav button i{flex:none;display:block;width:7px;height:7px;border-radius:99px;background:var(--gline);
+  transition:height .28s cubic-bezier(.2,.9,.3,1.25),background .2s,transform .2s}
+.secnav button:hover i{background:var(--ink2);transform:scale(1.25)}
+.secnav button.cur i{height:20px;background:var(--ink)}
+.secnav .snl{font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:-.2px;opacity:0;transform:translateX(8px);
+  pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.2);max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.secnav button.cur .snl{color:var(--ink);font-weight:800}
+.secnav:hover{background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 10px 30px rgba(20,24,30,.14),0 1px 3px rgba(20,24,30,.08);
+  backdrop-filter:blur(6px)}
+.secnav:hover .snl{opacity:1;transform:none;pointer-events:auto}
+.secnav:hover button:hover .snl{color:var(--ink)}
+[data-theme="dark"] .secnav:hover{box-shadow:0 10px 30px rgba(0,0,0,.5)}
+body.booting .secnav,body.pssave .secnav{display:none!important}
+@media (max-width:899px){.secnav{display:none!important}}
+@media print{.secnav{display:none!important}}
 
 /* ===== 알림(토스트) — v113 ===== */
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,24px);opacity:0;pointer-events:none;
@@ -1418,6 +1493,8 @@ body.pssave .wrap .tools .hint,body.pssave .wrap .tools label,body.pssave .wrap 
 body.pssave .wrap .tools .ctl,body.pssave .wrap .tools .ctl *,body.pssave .wrap .infh .btn,body.pssave .wrap .infh button,
 body.pssave .wrap .daterange .btn,body.pssave .wrap .sknav,body.pssave .wrap .sknav *,
 body.pssave .wrap .skdots,body.pssave .wrap .skdots *,body.pssave .wrap .pen{visibility:hidden!important}
+/* 저장 기준 폭(v114) — 저장하는 동안 1440px 화면처럼 배치 */
+html.psview body{width:1440px!important;min-width:1440px!important;max-width:1440px!important}
 body.pssave #hiddenBar,body.pssave #cmtBar,body.pssave #cmtState,body.pssave #cmtBlock.psempty,
 body.pssave .wrap .filters.psnone{display:none!important}
 /* 감추는 순간 바로 감춰지게 — 전환 효과(transition)가 있으면 그리는 동안 아직 보인다 */

@@ -108,9 +108,26 @@ function axCount(el,root,delay,key){
   const c={tn,root,pre:m[1],suf:m[3],dec:(m[2].split('.')[1]||'').length,comma:m[2].includes(','),
     from,target,final:txt,delay,dur:from?800:1100,t0:0};
   tn.nodeValue=axFmt(c,from);
+  if(from)axDelta(el,c,delay);
   AX_COUNTS.add(c);
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
   axTick();return true;}
+/* ---------- 변화량 배지 (v114) ----------
+   필터 · 기간 등을 바꿔 숫자가 달라지면 숫자 옆에 지난 값 대비 ▲▼ 를 4초쯤 띄운다.
+   % 로 끝나는 숫자(달성률 · 소진율 등)는 차이(%p), 나머지는 몇 % 늘고 줄었는지. 색은 좋고 나쁨이 아니라 방향만(단가는 오르면 나쁘다) */
+function axDelta(el,c,delay){
+  const diff=c.target-c.from;if(!diff)return;
+  const pct=/^\s*%/.test(c.suf);
+  let v;
+  if(pct){v=Math.abs(diff);if(v<0.05)return;v=v.toFixed(v>=10?0:1)+'%p';}
+  else{if(!c.from)return;v=Math.abs(diff/c.from)*100;if(v<0.05)return;v=(v>=100?v.toFixed(0):v.toFixed(1))+'%';}
+  el.querySelectorAll(':scope>.axdelta').forEach(n=>n.remove());
+  const b=document.createElement('span');
+  b.className='axdelta '+(diff>0?'up':'dn');
+  b.textContent=(diff>0?'▲ ':'▼ ')+v;
+  b.title=L(`이전 ${axFmt(c,c.from)} → 지금 ${c.final.trim()}`,`Was ${axFmt(c,c.from)} → now ${c.final.trim()}`);
+  if(delay)b.style.setProperty('--axd',delay+'ms');
+  el.classList.add('axhasdelta');el.appendChild(b);}
 /* ⚠ requestAnimationFrame 대신 setTimeout(16ms) — 배포 전 검사(헤드리스 크롬 · 가상 시간)는 rAF 가 계속 걸려 있으면
    시간이 흐르지 않아 숫자가 끝나지 않고 검사가 멈췄다(v113 첫 배포). 타이머는 가상 시간이 건너뛰어 준다 */
 function axTick(){
@@ -155,7 +172,12 @@ function axScan(nodes){
       if(gap==='row'){const tr=el.closest('tr');d+=Math.min(900,(tr?tr.sectionRowIndex:0)*22);}
       else if(gap==='di'){const td=el.closest('td');d+=Math.min(700,(+(td&&td.dataset.di)||0)*9);}
       else d+=Math.min(1100,i*(gap||0));
-      if(kind==='count'){axCount(el,r,d,CAMPAIGN&&(CAMPAIGN.id||CAMPAIGN.name)+'|'+sel+'|'+i);return;}
+      if(kind==='count'){
+        /* 지난 값을 찾는 열쇠 — 캠페인 · 자리 · 이름표(노출 · 클릭 …). 이름표가 없으면 순서 */
+        const box=el.closest('.pline,.stat,.donut,.infk,.tvkpi,.ovk');
+        const lb=box&&box.querySelector('.k,.dhd,.pside .nm1,.tt,span');
+        const lab=lb?lb.textContent.trim().slice(0,40):'';
+        axCount(el,r,d,(CAMPAIGN&&(CAMPAIGN.id||CAMPAIGN.name))+'|'+sel+'|'+(lab||i));return;}
       if(kind==='draw'){try{el.setAttribute('pathLength','1');}catch(e){}}
       if(d)el.style.setProperty('--axd',d+'ms');
       el.classList.add('ax','ax-'+kind);});}}
@@ -166,11 +188,14 @@ function axFinish(root){
   try{list=root.getAnimations?root.getAnimations({subtree:true}):document.getAnimations();}catch(e){try{list=document.getAnimations();}catch(x){}}
   list.forEach(a=>{if(a.animationName&&/^ax/.test(a.animationName)){try{a.finish();}catch(e){}}});
   AX_COUNTS.forEach(c=>{if(root.contains(c.tn)){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);}});
+  root.querySelectorAll('.axdelta').forEach(n=>{const p=n.parentElement;n.remove();if(p)p.classList.remove('axhasdelta');});
   root.querySelectorAll('.ax-wait').forEach(r=>{r.classList.remove('ax-wait');if(AX_IO)AX_IO.unobserve(r);});
   if(root.classList&&root.classList.contains('ax-wait'))root.classList.remove('ax-wait');}
 /* 끝나면 클래스를 뗀다 — 마우스 오버 효과와 부딪치지 않게, 탭을 다시 열 때 또 돌지 않게 */
 document.addEventListener('animationend',e=>{
   if(!/^ax/.test(e.animationName))return;
+  if(e.target.classList&&e.target.classList.contains('axdelta')){const p=e.target.parentElement;e.target.remove();
+    if(p&&!p.querySelector('.axdelta'))p.classList.remove('axhasdelta');return;}
   const t=e.target;if(!t.classList||!t.classList.contains('ax'))return;
   t.classList.forEach(k=>{if(/^ax-(?!wait)/.test(k))t.classList.remove(k);});
   t.classList.remove('ax');t.style.removeProperty('--axd');

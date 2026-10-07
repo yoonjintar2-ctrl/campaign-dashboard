@@ -187,6 +187,8 @@ Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill beh
   "이슈가 시작된 날의 꺾은선 위에 번호로 표시합니다. 원에 마우스를 올리면 내용과 기간이 보입니다.":"Numbered on the line at the day the issue started. Hover the circle for details and period."});
 /* v104 */
 Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
+/* v114 */
+Object.assign(I18N_EN,{"영역 바로가기":"Jump to section"});
 /* v112 — 페이지 저장 */
 Object.assign(I18N_EN,{"⤓ 페이지 저장":"⤓ Save page",
   "지금 화면을 위에서 아래까지 한 장으로 저장합니다":"Saves the current page, top to bottom, as one file",

@@ -10,6 +10,33 @@
    · 맨 위에 캠페인 이름 · 메뉴 · 저장 시각 한 줄. */
 const PS_PAD=28,PS_HEAD=50,PS_SLICE=4000;
 let PS_BUSY=false;
+/* ---------- 저장 기준 화면 폭 (v114) ----------
+   좁은 모니터에서 저장하면 그 폭대로 배치돼 칸이 좁고 줄이 많이 바뀌었다 → 저장하는 동안만 1440px 화면처럼 다시 배치한다.
+   · 몸통(body) 폭을 1440px 로 못 박고
+   · 화면 폭에 따라 바뀌는 CSS(@media max-width / min-width)를 '1440px 화면이면 걸리는가'로 잠시 바꿔 둔다
+   · 폭을 재서 그리는 그래프(일자별 비교 · 지형도 · 유입 흐름 · 전체 캠페인 …)는 다시 그린다
+   찍고 나면 모두 되돌린다. 넓은 모니터에서도 같은 폭으로 — 누가 저장해도 같은 모양 */
+const PS_VIEW=1440;
+let PS_MQ=null;
+function psMediaWalk(rules,out){
+  for(const r of rules){
+    if(typeof CSSMediaRule!=='undefined'&&r instanceof CSSMediaRule){
+      const t=r.media.mediaText;
+      if(/width/.test(t)&&!/print|prefers|hover|orientation/.test(t)){
+        const ok=t.split(',').some(q=>q.split(/\band\b/i).every(f=>{
+          const m=/(max|min)-width\s*:\s*([\d.]+)px/.exec(f);if(!m)return true;
+          return m[1]==='max'?PS_VIEW<=+m[2]:PS_VIEW>=+m[2];}));
+        out.push([r,t]);try{r.media.mediaText=ok?'all':'not all';}catch(e){}}
+      try{psMediaWalk(r.cssRules,out);}catch(e){}}}}
+function psViewSet(on){
+  if(on){if(PS_MQ)return;PS_MQ=[];
+    for(const sh of document.styleSheets){let rs=null;try{rs=sh.cssRules;}catch(e){}if(rs)psMediaWalk(rs,PS_MQ);}
+    document.documentElement.classList.add('psview');}
+  else{if(!PS_MQ)return;
+    PS_MQ.forEach(([r,t])=>{try{r.media.mediaText=t;}catch(e){}});PS_MQ=null;
+    document.documentElement.classList.remove('psview');}
+  /* 폭이 바뀐 것을 그래프들이 알아채게(창 크기 바뀜 신호) — 그리고 대시보드는 바로 다시 그린다 */
+  try{dispatchEvent(new Event('resize'));}catch(e){}}
 function psMenu(){
   const T=$('tabs'),cur=(T&&T.dataset.cur)||'dash';
   const m=cur==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===curDashSub()):MENUS.find(x=>x.tab===cur);
@@ -186,13 +213,26 @@ async function pageSave(kind){
   const btns=[$('pageImgBtn'),$('pagePdfBtn')].filter(Boolean);
   btns.forEach(b=>b.disabled=true);
   const d=new Date(),{cur,m}=psMenu();
-  let dailySL=-1;
+  let dailySL=-1,viewSL=null;
+  /* 되돌리기 — 성공 · 실패 어느 쪽이든 한 번만 */
+  const restore=()=>{
+    if(dailySL>=0)window.__DAILY_FIT=0;
+    if(PS_MQ){psViewSet(false);if(cur==='dash'){try{renderAll();}catch(e){}}}
+    else if(dailySL>=0){try{renderDaily();}catch(e){}}
+    if(dailySL>=0){const sl=dailySL;dailySL=-1;
+      /* 다시 그린 뒤(창 크기 신호로 한 번 더 그려질 수 있다) 보던 자리로 */
+      const back=()=>{const dh=$('chartDaily');if(dh)dh.scrollLeft=sl;};back();setTimeout(back,300);}
+    if(viewSL){const v=viewSL;viewSL=null;scrollTo(v[0],v[1]);}};
   const tgt=$('tab-'+cur);
   progOpen(kind==='pdf'?L('페이지를 PDF로 저장하는 중','Saving the page as PDF'):L('페이지를 이미지로 저장하는 중','Saving the page as an image'));
   progSet(null,L('화면을 그림으로 옮기는 중… (긴 화면은 10초 넘게 걸릴 수 있습니다)','Capturing the page… (long pages can take over 10 seconds)'));
   document.body.classList.add('pssave');
   try{
     if(!tgt||tgt.classList.contains('hidden')||!tgt.offsetHeight)throw new Error('no page');
+    /* 1440px 화면처럼 다시 배치하고 그래프를 그 폭으로 다시 그린다 */
+    viewSL=[scrollX,scrollY];psViewSet(true);
+    if(cur==='dash'){try{renderAll();}catch(e){console.warn(e);}}
+    await new Promise(r=>setTimeout(r,480));await uiTick();
     /* 일자별 캠페인 효율 비교 — 한 달이 넘으면 화면에서는 옆으로 넘겨 보지만, 저장할 때는 전체 기간을 한 폭에 */
     const dh=cur==='dash'?$('chartDaily'):null;
     if(dh&&dh.getClientRects().length&&dh.scrollWidth>dh.clientWidth+1){
@@ -209,7 +249,7 @@ async function pageSave(kind){
     const span=psSpan(tgt);
     const r=await ccRender(tgt,{noX:true,split:true,dropHidden:true,raw:true});
     document.body.classList.remove('pssave');
-    if(dailySL>=0){window.__DAILY_FIT=0;try{renderDaily();const dh=$('chartDaily');if(dh)dh.scrollLeft=dailySL;}catch(e){}dailySL=-1;}
+    restore();
     const P=psLayout(r,m,d,span);
     if(kind==='pdf'){
       progSet(40,L('PDF 만드는 중…','Building the PDF…'));await uiTick();
@@ -230,10 +270,11 @@ async function pageSave(kind){
     document.body.classList.remove('pssave');
     {const blk=$('cmtBlock');if(blk)blk.classList.remove('psempty');}
     document.querySelectorAll('.pskeep,.psnone').forEach(x=>x.classList.remove('pskeep','psnone'));
-    if(dailySL>=0){window.__DAILY_FIT=0;try{renderDaily();const dh=$('chartDaily');if(dh)dh.scrollLeft=dailySL;}catch(e){}}
+    restore();
     progClose();
     btns.forEach(b=>b.disabled=false);
-    setTimeout(()=>{window.__axHold=Math.max(0,(window.__axHold||1)-1);},0);
+    /* 되돌리며 늦게 다시 그려지는 그래프(창 크기 신호)도 애니메이션 없이 */
+    setTimeout(()=>{window.__axHold=Math.max(0,(window.__axHold||1)-1);},900);
     PS_BUSY=false;}}
 (function(){
   const a=$('pageImgBtn'),b=$('pagePdfBtn');
