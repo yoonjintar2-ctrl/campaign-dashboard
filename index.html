@@ -12134,6 +12134,19 @@ function cloudStateDone(){
     if(!e||/(중…|…)\s*$/.test(e.textContent||''))cloudStateIdle();}catch(x){}
 }
 
+/* ---------- 저장 이력에 담을 문서 (v109) ----------
+   소재 이미지 · 미리보기 영상은 최신 문서(campaigns.doc)에만 두고 이력에는 담지 않는다.
+   이력은 입력 시트 · 라인 · 설정 복구용이라 그림이 필요 없고, 그림(JPEG data URL)은 DB 가 거의 압축하지 못해
+   저장할 때마다 한 벌씩 쌓이는 이력 용량의 대부분이었다(iX3 한 벌 5.5MB 중 1.9MB).
+   이력으로 되돌릴 때는 그림을 최신 문서에서 가져와야 한다(noMedia 표시).
+   이미 쌓인 이력은 supabase/2026-10-07_history_strip_images.sql 로 같은 모양으로 비웠다. */
+function histDoc(doc){
+  const noImg=o=>{if(!o||typeof o!=='object')return o;const x={...o};delete x.img;delete x.clip;return x;};
+  const out={...doc,noMedia:1};
+  if(Array.isArray(doc.creatives))out.creatives=doc.creatives.map(noImg);
+  if(doc.crAssets&&typeof doc.crAssets==='object'){out.crAssets={};for(const k in doc.crAssets)out.crAssets[k]=noImg(doc.crAssets[k]);}
+  if(doc.ooh&&Array.isArray(doc.ooh.cr))out.ooh={...doc.ooh,cr:doc.ooh.cr.map(noImg)};
+  return out;}
 /* ---------- 직렬화 ----------
    캠페인 설정·소재·이슈·화면 구성은 JSON 문서 한 덩어리(campaigns.doc),
    일별 실적만 별도 정규화 테이블(daily_stats)에 넣는다. */
@@ -13113,7 +13126,7 @@ async function cloudSave(silent,force){
     }catch(e){e2={message:String(e&&e.message||e)};}
     if(e2){cloudState('일별 실적 저장 실패: '+e2.message);return;}}
   try{await withTimeout(CLOUD.sb.from('campaign_history').insert({
-    campaign_id:CLOUD.campaign.id,kind:'setup',doc,note:'저장',created_by:CLOUD.user.id}),
+    campaign_id:CLOUD.campaign.id,kind:'setup',doc:histDoc(doc),note:'저장',created_by:CLOUD.user.id}),
     15000,'히스토리 기록');}catch(e){}
   CLOUD.savedAt=new Date();
   CLOUD.dirty=false;
