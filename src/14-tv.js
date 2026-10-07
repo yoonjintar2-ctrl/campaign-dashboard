@@ -86,9 +86,10 @@ function paintTabsOn(){
      if(src!==lb)ob.textContent=lb;}}
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
-  /* 도구 — 영역 관리는 디지털 대시보드에서만, 리포트 엑셀은 디지털 영역에서만 */
+  /* 도구 — 영역 관리는 디지털 대시보드에서만, 페이지 저장(v112)은 보기 메뉴(대시보드 · 전체 캠페인 · 트렌드)에서만 — 입력 화면은 빼고 */
   const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash');
-  const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',area!=='digital');
+  {const mk=name==='dash'?'view':((MENUS.find(x=>x.tab===name)||{}).kind||'');
+   const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',mk!=='view');}
   /* "지금 메뉴" 글자 길이가 바뀌면 줄이 넘칠 수 있다 — 한 번 더 잰다 */
   cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});
   syncUrl();}

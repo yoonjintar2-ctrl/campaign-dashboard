@@ -53,7 +53,7 @@ const CC_HTML_PROPS=['display','position','top','right','bottom','left','z-index
   'border-top-style','border-right-style','border-bottom-style','border-left-style',
   'border-top-color','border-right-color','border-bottom-color','border-left-color',
   'border-top-left-radius','border-top-right-radius','border-bottom-right-radius','border-bottom-left-radius',
-  'overflow-x','overflow-y','color','background-color','background-image','background-size','background-position',
+  'overflow-x','overflow-y','color','background-color','background-image','background-size','background-position-x','background-position-y',
   'background-repeat','background-clip','background-origin','opacity','visibility','box-shadow',
   'font-family','font-size','font-weight','font-style','font-variant-numeric','line-height','letter-spacing','word-spacing',
   'text-align','text-decoration-line','text-decoration-color','text-decoration-style','text-decoration-thickness',
@@ -71,6 +71,16 @@ const CC_SVG_PROPS=['display','visibility','opacity','fill','fill-opacity','fill
   'text-decoration-line','filter','clip-path','mask','mix-blend-mode','transform-origin','vector-effect','shape-rendering'];
 const CC_SVG_NS='http://www.w3.org/2000/svg';
 const ccCss=(cs,props)=>{let t='';for(const p of props){const v=cs.getPropertyValue(p);if(v!=='')t+=p+':'+v+';';}return t;};
+/* v112 — 스타일을 [모양(글꼴 · 색 · 테두리 …), 자리(폭 · 높이 · 위치)] 두 갈래로.
+   모양은 같은 것끼리 클래스 하나로 묶어 <style> 에 한 번만 적고, 자리만 요소마다 인라인으로 적는다.
+   예전엔 요소마다 속성 100여 개를 통째로 적어서, 긴 페이지(요소 5만 개)는 그림 문서가 100MB 를 넘었다 */
+const CC_GEOM=new Set(['width','height','top','right','bottom','left','transform-origin']);
+const ccCss2=(cs,props)=>{let r='',g='';
+  for(const p of props){const v=cs.getPropertyValue(p);if(v==='')continue;
+    if(CC_GEOM.has(p)){if(p==='transform-origin'&&cs.transform==='none')continue;
+      if(v==='auto'&&p!=='width'&&p!=='height')continue;g+=p+':'+v+';';}
+    else r+=p+':'+v+';';}
+  return [r,g];};
 const ccDataURL=(()=>{const memo=new Map();
   return url=>{if(!url||/^data:/i.test(url))return Promise.resolve(url);
     if(!memo.has(url))memo.set(url,fetch(url,{mode:'cors',cache:'force-cache'}).then(r=>{if(!r.ok)throw 0;return r.blob();})
@@ -78,11 +88,23 @@ const ccDataURL=(()=>{const memo=new Map();
       .catch(()=>CC_BLANK));
     return memo.get(url);};})();
 const ccScrolls=v=>v==='auto'||v==='scroll'||v==='overlay';
-async function ccRender(card){
+/* opts (v112 · 페이지 저장에서 쓴다)
+   · noX — 옆으로 넘치는 상자를 펼치지 않는다(화면에 보이는 폭 그대로). 표가 없는 상자(일자별 효율 그래프)는 지금 넘겨 본 자리를 지킨다
+   · clean(clone) — 그리기 전에 복제본에서 뺄 것(버튼 등)을 뺀다
+   · dropHidden — 숨은 상자(display:none)는 복제본에서 아예 뺀다(긴 페이지에서 그림 문서가 덜 무거워진다)
+   · raw — PNG 대신 {img(SVG 그림), W, H} 를 돌려준다. 받는 쪽이 잘라서 여러 캔버스에 나눠 그린다 */
+async function ccRender(card,opts){
+  opts=opts||{};
   try{hideTip();}catch(e){}
   const W=Math.ceil(card.offsetWidth)||1,H=Math.ceil(card.offsetHeight)||1;
   const clone=card.cloneNode(true);
   const jobs=[];
+  /* 모양 → 클래스 이름 (같은 모양은 같은 클래스) */
+  const SM=new Map();
+  const put=(c,rest,geo)=>{
+    if(rest){let k=SM.get(rest);if(!k){k='__cc'+SM.size;SM.set(rest,k);}
+      const o=c.getAttribute('class');c.setAttribute('class',o?o+' '+k:k);}
+    if(geo)c.setAttribute('style',geo);else c.removeAttribute('style');};
   /* 원본 · 복제본을 같은 순서로 훑는다 — 복제본은 처음엔 원본과 구조가 똑같으므로 자식 순서로 짝을 맞춘다.
      ::before/::after 는 자식을 다 훑은 뒤에 끼워 넣어 짝이 어긋나지 않게.
      돌려주는 값 [ex,ey] = 그 상자 안에서 스크롤로 숨어 있던 만큼(펼치면 그만큼 넓어지고 길어진다) */
@@ -90,9 +112,14 @@ async function ccRender(card){
     if(o.nodeType!==1||!c||c.nodeType!==1)return [0,0];
     const isSvg=o.namespaceURI===CC_SVG_NS&&o.tagName.toLowerCase()!=='svg';
     const cs=getComputedStyle(o);
-    let st=ccCss(cs,isSvg?CC_SVG_PROPS:CC_HTML_PROPS);
-    if(isSvg){c.setAttribute('style',st);return [0,0];}
-    if(cs.display==='none'){c.setAttribute('style',st);return [0,0];}
+    const [rest,geo]=ccCss2(cs,isSvg?CC_SVG_PROPS:CC_HTML_PROPS);
+    /* SVG 안쪽 — 묶음(<g>) 속 도형까지 훑는다. 예전엔 바로 아래 자식만 칠해서, <g> 안 도형의
+       stroke="var(--…)" 같은 속성 값이 그림 안에서 풀리지 않아 빠졌다(전체 캠페인 도넛) (v112) */
+    if(isSvg){put(c,rest,geo);
+      const oc=o.children,ccn=[...c.children];for(let i=0;i<oc.length;i++)walk(oc[i],ccn[i]);
+      return [0,0];}
+    if(cs.display==='none'){if(opts.dropHidden&&o!==card)c.remove();else put(c,rest,geo);return [0,0];}
+    let st=geo;
     /* 자식들이 펼쳐지는 만큼 — 가로로 나란한 상자(flex 가로줄)는 가로는 더하고 세로는 큰 쪽, 아래로 쌓이는 상자는 그 반대 */
     const row=/flex/.test(cs.display)&&/^row/.test(cs.flexDirection);
     let ex=0,ey=0;
@@ -100,7 +127,9 @@ async function ccRender(card){
     for(let i=0;i<oc.length;i++){const [x,y]=walk(oc[i],ccn[i]);
       if(row){ex+=x;ey=Math.max(ey,y);}else{ex=Math.max(ex,x);ey+=y;}}
     /* 스크롤 상자 — 숨은 칸까지 펼친다 */
-    if(ccScrolls(cs.overflowX)&&o.scrollWidth>o.clientWidth+1)ex+=o.scrollWidth-o.clientWidth;
+    if(!opts.noX&&ccScrolls(cs.overflowX)&&o.scrollWidth>o.clientWidth+1)ex+=o.scrollWidth-o.clientWidth;
+    if(opts.noX&&ccScrolls(cs.overflowX)&&o.scrollLeft>0&&!o.querySelector('table')){
+      const f=c.firstElementChild;if(f)f.style.marginLeft=(-o.scrollLeft)+'px';}
     if(ccScrolls(cs.overflowY)&&o.scrollHeight>o.clientHeight+1)ey+=o.scrollHeight-o.clientHeight;
     /* 스크롤바는 그리지 않는다 — 펼친 뒤엔 넘칠 것이 없다 */
     if(ccScrolls(cs.overflowX))st+='overflow-x:hidden;';
@@ -112,7 +141,7 @@ async function ccRender(card){
       st+='width:'+(parseFloat(cs.width)+ex)+'px;'+(ex?'max-width:none;':'');
     if(ey&&!tbl&&cs.display!=='inline'&&cs.display!=='contents')
       st+='height:'+(parseFloat(cs.height)+ey)+'px;max-height:none;';
-    c.setAttribute('style',st);
+    put(c,rest,st);
     /* 배경 그림(url) — data URL 로 */
     const bi=cs.backgroundImage;
     if(bi&&bi.includes('url(')&&!bi.includes('data:'))
@@ -121,7 +150,7 @@ async function ccRender(card){
     if(o.tagName==='INPUT'){c.setAttribute('value',o.value);if(o.checked)c.setAttribute('checked','');else c.removeAttribute('checked');}
     if(o.tagName==='SELECT'){const k0=o.selectedIndex;[...c.options].forEach((op,k)=>{if(k===k0)op.setAttribute('selected','');else op.removeAttribute('selected');});}
     if(o.tagName==='IMG'){const src=o.currentSrc||o.src;jobs.push(ccDataURL(src).then(d=>{c.setAttribute('src',d);c.removeAttribute('srcset');}));}
-    if(o.tagName==='CANVAS'){try{const img=document.createElement('img');img.src=o.toDataURL();img.setAttribute('style',st);c.replaceWith(img);}catch(e){}
+    if(o.tagName==='CANVAS'){try{const img=document.createElement('img');img.src=o.toDataURL();img.setAttribute('style',rest+st);c.replaceWith(img);}catch(e){}
       return flow?[ex,ey]:[0,0];}
     /* ::before / ::after — 실제 요소로 */
     for(const ps of ['::before','::after']){const pcs=getComputedStyle(o,ps),ct=pcs.content;
@@ -136,6 +165,14 @@ async function ccRender(card){
   await Promise.all(jobs);
   /* 복사 단추 · 좌우 넘김 단추는 그림에서 뺀다 */
   clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn').forEach(n=>n.remove());
+  if(opts.clean)try{opts.clean(clone);}catch(e){console.warn(e);}
+  /* 날짜 칸의 브라우저 기본 달력 단추 — 화면에서는 투명하게 덮어 두었는데(01-head), 의사 요소라 인라인 스타일로 옮길 수 없다.
+     그림 안에서도 같은 규칙이 걸리게 작은 style 하나를 넣는다 (v112) */
+  {const sx=document.createElement('style');
+   let css='input[type=date]::-webkit-calendar-picker-indicator{opacity:0;margin:0;padding:0;position:absolute;right:0;top:0;bottom:0;width:30px;height:auto}';
+   SM.forEach((k,rest)=>{css+='.'+k+'{'+rest+'}';});
+   sx.textContent=css;
+   clone.insertBefore(sx,clone.firstChild);}
   const W2=W+Math.round(EX),H2=H+Math.round(EY);
   clone.style.margin='0';clone.style.width=W2+'px';clone.style.height=H2+'px';clone.style.maxWidth='none';clone.style.maxHeight='none';
   /* 표의 data-key 등에 들어 있는 제어문자(구분자 U+0001)는 XML 에 넣을 수 없다 — 지운다 */
@@ -144,6 +181,7 @@ async function ccRender(card){
   const img=new Image();img.decoding='sync';
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
   await img.decode();
+  if(opts.raw)return {img,W:W2,H:H2};
   /* 2배로 선명하게 — 아주 큰 표는 캔버스 한도(한 변 3만 픽셀 남짓) 안으로 줄인다 */
   const pr=Math.min(2,16000/H2,16000/W2);
   const cv=document.createElement('canvas');cv.width=Math.round(W2*pr);cv.height=Math.round(H2*pr);

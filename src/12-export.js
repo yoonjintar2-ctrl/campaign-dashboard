@@ -660,7 +660,7 @@ function clearPrintDoc(){const h=$('printdoc');if(h)h.innerHTML='';}
 addEventListener('beforeprint',()=>{try{buildPrintDoc();}catch(e){}});
 addEventListener('afterprint',()=>{setTimeout(clearPrintDoc,300);});
 /* PDF 내려받기 버튼은 없앴다 — 브라우저 인쇄(Ctrl+P)는 그대로 쓸 수 있다 */
-(function(){const b=$('reportBtn');if(b)b.onclick=exportDashboard;})();
+/* v112 — 상단 「⤓ 리포트 · 엑셀」 단추는 「⤓ 페이지 저장 (이미지 · PDF)」 로 바뀌었다(22-pagesave). exportDashboard 는 부르는 곳 없이 남겨 둔다 */
 
 /* =========================================================================
    테마 색상 · 광고주 브랜딩
