@@ -8493,6 +8493,33 @@ function ganttRank(dim,val,c){
   if(dim==='product'||dim==='segment'||dim==='target'||dim==='line')
     return sum(LINES.filter(l=>l[dim]===val).map(lineGross));
   return null;}
+/* 앞 단계 값이 같은 줄끼리 반드시 붙여 놓는다 (v110) — 단계마다 처음 나온 순서를 지키며 묶는다.
+   어떤 정렬(예산 · 머리글 · 끌어 옮긴 순서)을 거쳐도 같은 소재(매체 …)가 흩어져 소계가 여러 번 나오지 않게 */
+function ganttContig(rows,dims,valsOf){
+  const go=(list,i)=>{
+    if(i>=dims.length||list.length<2)return list;
+    const m=new Map();
+    list.forEach(r=>{const v=String(valsOf(r)[i]);if(!m.has(v))m.set(v,[]);m.get(v).push(r);});
+    return [...m.values()].flatMap(g=>go(g,i+1));};
+  return go(rows,0);}
+/* 예산 큰 순 (v110) — 단계마다 **그 묶음 전체**(앞 단계까지 같은 줄들)의 예산으로 견준다.
+   예전에는 소재 단계에서 줄마다 자기 예산으로 견줘서, 소재 › 매체 순서로 머리글을 세우면
+   같은 소재가 매체별로 흩어지고 소재 소계가 여러 번 나왔다 */
+function ganttBudgetSort(rows,dims,valsOf,cOf){
+  const rank=new Map();
+  const keyOf=(r,i)=>valsOf(r).slice(0,i+1).map(String).join('\u0001');
+  dims.forEach((d,i)=>rows.forEach(r=>{const k=keyOf(r,i);
+    if(d==='creative')rank.set(k,(rank.get(k)||0)+creativeBudget(cOf(r)));
+    else if(!rank.has(k))rank.set(k,ganttRank(d,valsOf(r)[i],cOf(r)));}));
+  rows.sort((a,b)=>{
+    const A=valsOf(a),B=valsOf(b);
+    for(let i=0;i<dims.length;i++){
+      if(String(A[i])===String(B[i]))continue;
+      const ra=rank.get(keyOf(a,i)),rb=rank.get(keyOf(b,i));
+      if(ra!=null&&rb!=null&&ra!==rb)return rb-ra;
+      return String(A[i]).localeCompare(String(B[i]),'ko');}
+    return 0;});
+  return ganttContig(rows,dims,valsOf);}
 /* 값 비율(0~1)을 연한 남색 → 짙은 남색으로 보간 */
 /* 단일 붉은색 톤 — 값이 낮으면 아주 연한 빨강, 높을수록 진한 빨강.
    농도 기준은 "그 행(소재)의 최댓값"이므로 행마다 독립적으로 읽는다. */
@@ -8612,8 +8639,9 @@ function renderGantt(){
   const dims=GANTT.rows.map(r=>r.k),cols=cfgCols(GANTT),seps=gsepSet(GANTT);
   let rowsData=list.map(c=>({c,key:dims.map(d=>d==='creative'?c.name:c[d]).join(SEP),
     vals:dims.map(d=>d==='creative'?c.name:c[d])}));
-  /* 예산이 큰 순서로 (같으면 이름순) — 차원 순서대로 비교 */
-  rowsData.sort((a,b)=>{
+  /* 예산이 큰 순서로 (같으면 이름순) — 단계마다 묶음 전체의 예산으로 (v110) */
+  if(GANTT_SORT==='budget')rowsData=ganttBudgetSort(rowsData,dims,r=>r.vals,r=>r.c);
+  else rowsData.sort((a,b)=>{
     for(let i=0;i<dims.length;i++){
       /* 소재 열에 오면 사용자가 고른 정렬 기준을 적용한다 (같은 매체·같은 그룹 안에서만) */
       if(dims[i]==='creative'&&GANTT_SORT!=='budget'){
@@ -8628,6 +8656,25 @@ function renderGantt(){
     return 0;});
   if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
+  /* 머리글로 고른 정렬 (v110) — 서머리와 같은 규칙: 같은 부모 안에서 형제끼리 그 열 값으로.
+     묶음(소계) 단위는 묶음 합계로, 맨 아래 줄은 줄 값으로. 행 머리 열을 고르면 그 단계만 이름순 */
+  const HS=HP_SORT.gantt;
+  if(HS&&HS.dir){
+    const di=dims.indexOf(HS.k),memo=new Map();
+    const gv=pre=>{const key=pre.join('\u0001');if(memo.has(key))return memo.get(key);
+      const cs=rowsData.filter(r=>pre.every((v,j)=>String(r.vals[j])===v)).map(r=>r.c);
+      const o=cs.length===1?cs[0]:ganttGroupTotal(cs,'hs|'+key);
+      const v=HS.k==='days'?((o.daily.imp||[]).filter(x=>x>0).length):hpVal(crVal(o,HS.k));
+      memo.set(key,v);return v;};
+    rowsData.sort((a,b)=>{
+      for(let i=0;i<dims.length;i++){
+        const av=String(a.vals[i]),bv=String(b.vals[i]);
+        if(av===bv)continue;
+        if(di>=0)return i===di?hpCmp(av,bv,HS.dir):0;
+        return hpCmp(gv(a.vals.slice(0,i+1).map(String)),gv(b.vals.slice(0,i+1).map(String)),HS.dir);}
+      return 0;});}
+  /* 어떤 순서든 같은 묶음 줄은 붙여 둔다 (v110) */
+  rowsData=ganttContig(rowsData,dims,r=>r.vals);
   /* 소계를 끼워 넣은 뒤의 행 목록과 병합 폭 — **서머리와 똑같은 계산기**를 쓴다 (v59).
      예전에는 소계 줄만 colspan 한 칸으로 따로 그려서, 머리글 기준이 둘 이상이면
      그 줄부터 열이 통째로 밀렸다. 이제 소계 줄도 자기 계층까지는 위 줄과 병합된다. */
@@ -8795,6 +8842,12 @@ function renderGantt(){
     t.style.minWidth=(leadTotal+VD.length*w)+'px';
   })();
   enableRowDrag(t,GANTT,renderGantt);
+  /* 머리글을 누르면 설명 + 그 열 기준 정렬 (v110 — 다른 표와 같은 팝업). 날짜 칸은 정렬하지 않는다 */
+  try{const r0=t.tHead&&t.tHead.rows[0]?[...t.tHead.rows[0].cells].slice(0,dims.length):[];
+    const r1=t.tHead&&t.tHead.rows[1]?[...t.tHead.rows[1].cells].filter(th=>th.classList.contains('mcol')):[];
+    wireHeadPops(r0.map((th,i)=>({th,k:dims[i],label:th.textContent.trim()}))
+      .concat(r1.map((th,i)=>({th,k:cols[i],label:th.textContent.trim()}))),
+      {cur:HP_SORT.gantt,scope:'sum',onSort:(k,d)=>{HP_SORT.gantt=d?{k,dir:d}:null;renderGantt();}});}catch(e){console.warn(e);}
   wireGanttHover(t,SC,rowsData.map(r=>r.c),subs);
   mountGanttHead(t);
   /* 칸에 얹은 작은 숫자는 **그 칸에 실제로 들어가는 것만** 남긴다 (v57).
@@ -15596,13 +15649,8 @@ async function exportDashboard(){
         .concat(mcols.map(k=>T(GANTT_DEF[k].l,XS.hdr)))
         .concat([T('온에어 기간',XS.hdr)]));
       /* 화면과 같은 순서 — 예산이 큰 매체·소재가 위로 */
-      const sorted=crs.slice().sort((a,b)=>{
-        for(let i=0;i<dims.length;i++){
-          const va=dims[i]==='creative'?a.name:a[dims[i]],vb=dims[i]==='creative'?b.name:b[dims[i]];
-          const ra=ganttRank(dims[i],va,a),rb=ganttRank(dims[i],vb,b);
-          if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
-          if(va!==vb)return String(va).localeCompare(String(vb),'ko');}
-        return 0;});
+      /* 단계마다 묶음 전체의 예산으로 · 같은 묶음 줄은 붙여서 (v110 — 화면과 같은 계산기) */
+      const sorted=ganttBudgetSort(crs.slice(),dims,c=>dims.map(k=>k==='creative'?c.name:c[k]),c=>c);
       /* 매체·광고상품처럼 같은 값이 이어지는 앞쪽 열은 세로로 병합한다 */
       const keys=sorted.map(c=>dims.map(k=>String(k==='creative'?c.name:(c[k]||''))));
       const span=mergeSpans(keys,dims.length);

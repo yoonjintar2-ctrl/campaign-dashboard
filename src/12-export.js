@@ -480,13 +480,8 @@ async function exportDashboard(){
         .concat(mcols.map(k=>T(GANTT_DEF[k].l,XS.hdr)))
         .concat([T('온에어 기간',XS.hdr)]));
       /* 화면과 같은 순서 — 예산이 큰 매체·소재가 위로 */
-      const sorted=crs.slice().sort((a,b)=>{
-        for(let i=0;i<dims.length;i++){
-          const va=dims[i]==='creative'?a.name:a[dims[i]],vb=dims[i]==='creative'?b.name:b[dims[i]];
-          const ra=ganttRank(dims[i],va,a),rb=ganttRank(dims[i],vb,b);
-          if(ra!==null&&rb!==null&&ra!==rb)return rb-ra;
-          if(va!==vb)return String(va).localeCompare(String(vb),'ko');}
-        return 0;});
+      /* 단계마다 묶음 전체의 예산으로 · 같은 묶음 줄은 붙여서 (v110 — 화면과 같은 계산기) */
+      const sorted=ganttBudgetSort(crs.slice(),dims,c=>dims.map(k=>k==='creative'?c.name:c[k]),c=>c);
       /* 매체·광고상품처럼 같은 값이 이어지는 앞쪽 열은 세로로 병합한다 */
       const keys=sorted.map(c=>dims.map(k=>String(k==='creative'?c.name:(c[k]||''))));
       const span=mergeSpans(keys,dims.length);
