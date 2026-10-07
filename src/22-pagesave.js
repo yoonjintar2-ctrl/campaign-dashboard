@@ -182,6 +182,7 @@ async function psPdf(P,onStep){
   return psPdfBytes(P,slices);}
 async function pageSave(kind){
   if(PS_BUSY)return;PS_BUSY=true;
+  window.__axHold=(window.__axHold||0)+1;   /* 저장하며 다시 그리는 그래프(일자별 비교)는 등장 애니메이션 없이 (v113) */
   const btns=[$('pageImgBtn'),$('pagePdfBtn')].filter(Boolean);
   btns.forEach(b=>b.disabled=true);
   const d=new Date(),{cur,m}=psMenu();
@@ -232,6 +233,7 @@ async function pageSave(kind){
     if(dailySL>=0){window.__DAILY_FIT=0;try{renderDaily();const dh=$('chartDaily');if(dh)dh.scrollLeft=dailySL;}catch(e){}}
     progClose();
     btns.forEach(b=>b.disabled=false);
+    setTimeout(()=>{window.__axHold=Math.max(0,(window.__axHold||1)-1);},0);
     PS_BUSY=false;}}
 (function(){
   const a=$('pageImgBtn'),b=$('pagePdfBtn');

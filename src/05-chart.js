@@ -332,7 +332,7 @@ function renderDaily(){
     runs.forEach(r=>{
       if(r.length<2){S('circle',{cx:r[0][0],cy:r[0][1],r:3,fill:LC},svg);return;}
       S('path',{d:smoothPath(r),fill:'none',stroke:LC,'stroke-width':4.2,
-        'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},svg);});
+        'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none',class:'dline'},svg);});
     /* 값 이름표 — 처음 · 최고 · 최저 · 마지막 (겹치면 하나만) */
     const vs=pts.map(p=>lineVals[p[2]]);
     const iMx=pts[vs.indexOf(Math.max(...vs))],iMn=pts[vs.indexOf(Math.min(...vs))];

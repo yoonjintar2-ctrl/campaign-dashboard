@@ -1168,6 +1168,21 @@ function progSet(pct,label){
   if(label!=null)PROG.sub.textContent=label;}
 function progTitle(t){if(PROG)PROG.t.textContent=t;}
 function progClose(){if(PROG&&PROG.w.parentNode)PROG.w.remove();PROG=null;resetZ();}
+/* ---------- 알림(토스트) (v113) ----------
+   화면 아래 가운데에 잠깐 떴다 사라지는 알림 — 찾아 바꾸기 결과 등. 같은 자리에 하나만(새 알림이 앞의 것을 바꾼다).
+   kind: ok(초록 ✓) · warn(주황 !) · 없음(중립) */
+function showToast(title,sub,opts){
+  opts=opts||{};
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');document.body.appendChild(t);}
+  const kind=opts.kind||'';
+  t.className='toast '+kind;
+  t.innerHTML=`<span class="ti">${kind==='ok'?'✓':kind==='warn'?'!':'i'}</span><span class="tt"><b></b>${sub?'<small></small>':''}</span>`;
+  t.querySelector('b').textContent=title||'';if(sub)t.querySelector('small').textContent=sub;
+  t.style.zIndex=999999;
+  /* 다시 띄우면 처음부터 — 애니메이션을 새로 걸려면 한 번 빼고 다시 넣는다 */
+  t.classList.remove('show');void t.offsetWidth;t.classList.add('show');
+  clearTimeout(t.__h);t.__h=setTimeout(()=>t.classList.remove('show'),opts.ms||3200);}
 /* 화면이 실제로 다시 그려질 때까지 한 번 쉬어 준다 */
 /* 화면이 한 번 그려질 틈을 준다. **탭이 뒤에 가 있으면 requestAnimationFrame 이 멈추므로**
    (브라우저 규칙) 기다리지 않고 바로 넘어간다 — 예전에는 다른 탭을 보는 동안 불러오기가 멈춰 있었다 (v79).

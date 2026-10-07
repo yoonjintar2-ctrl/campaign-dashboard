@@ -18,14 +18,25 @@ function findMatch(text){
   if(FIND.whole)return FIND.cs?text===FIND.q:text.toLowerCase()===FIND.q.toLowerCase();
   return FIND.cs?text.includes(FIND.q):text.toLowerCase().includes(FIND.q.toLowerCase());}
 function findCols(){return sheetCols().filter(c=>c.type!=='calc'&&(FIND.col==='*'||c.k===FIND.col));}
+/* v113 — 6,000행 표에서 한 글자 칠 때마다 3~16초 멈추던 것.
+   ① 찾는 말은 한 번만 소문자로 ② 숫자 칸의 화면 표기(콤마)는 찾는 말에 콤마 · 점이 있거나 소수일 때만 만든다
+   ③ 칠하기는 지금 쪽(500행)의 칸만 훑는다(예전엔 찾은 칸마다 표 전체에서 querySelector — 1만 2천 번)
+   ④ 입력은 잠깐 모아서(0.18초) 한 번에 찾는다 */
 function findCompute(){
   FIND.hits=[];
   if(!FIND.q){FIND.cur=-1;return;}
   const cols=sheetCols(),fc=new Set(findCols().map(c=>c.k));
   const view=(typeof SHEET_VIEW!=='undefined'&&SHEET_VIEW.length)?SHEET_VIEW:SHEET.map((_,i)=>i);
-  view.forEach(ri=>{const r=SHEET[ri];if(!r)return;
-    cols.forEach((c,ci)=>{if(!fc.has(c.k))return;
-      if(findCellTexts(r,c).some(findMatch))FIND.hits.push({ri,ci,k:c.k});});});
+  const cs=FIND.cs,q=cs?FIND.q:FIND.q.toLowerCase(),whole=FIND.whole,numQ=/[,.]/.test(FIND.q);
+  const test=t=>{if(!cs)t=t.toLowerCase();return whole?t===q:t.includes(q);};
+  const use=[];cols.forEach((c,ci)=>{if(fc.has(c.k))use.push([c,ci]);});
+  const out=FIND.hits;
+  for(let i=0;i<view.length;i++){const ri=view[i],r=SHEET[ri];if(!r)continue;
+    for(let j=0;j<use.length;j++){const c=use[j][0],v=r[c.k];
+      if(v===''||v==null)continue;
+      let hit=test(String(v));
+      if(!hit&&c.type==='num'&&typeof v==='number'&&(numQ||v%1!==0))hit=test(fmt(v));
+      if(hit)out.push({ri,ci:use[j][1],k:c.k});}}
   if(FIND.cur>=FIND.hits.length)FIND.cur=FIND.hits.length?0:-1;}
 /* 바꾼 글자 — 칸 전체 일치면 통째로, 아니면 들어 있는 곳을 모두 */
 function findReplaced(text){
@@ -64,12 +75,19 @@ function openSheetFind(focusReplace){
     /* 찾기 줄 안의 키는 표(Ctrl+Z · 방향키 등)로 넘기지 않는다 */
     bar.addEventListener('keydown',e=>{
       e.stopPropagation();
-      if(e.key==='Enter'){e.preventDefault();findGo(e.shiftKey?-1:1);}
+      if(e.key==='Enter'){e.preventDefault();
+        if(FIND.t&&FIND.re){FIND.re();return;}   /* 모아 둔 검색이 있으면 먼저 찾고 첫 칸으로 */
+        findGo(e.shiftKey?-1:1);}
       else if(e.key==='Escape'){e.preventDefault();closeSheetFind();}});
-    const re=()=>{FIND.q=$('fdQ').value;FIND.r=$('fdR').value;FIND.col=$('fdCol').value;
+    const re=()=>{clearTimeout(FIND.t);FIND.t=0;
+      FIND.q=$('fdQ').value;FIND.r=$('fdR').value;FIND.col=$('fdCol').value;
       FIND.cs=$('fdCase').checked;FIND.whole=$('fdWhole').checked;FIND.note='';
       FIND.cur=-1;findCompute();if(FIND.hits.length)FIND.cur=0;findPaint(true);};
-    $('fdQ').oninput=re;$('fdR').oninput=()=>{FIND.r=$('fdR').value;};
+    FIND.re=re;
+    /* 타이핑 중에는 잠깐 모았다가 한 번에 — 칠 때마다 표 전체를 훑지 않는다 */
+    $('fdQ').oninput=()=>{clearTimeout(FIND.t);const info=$('fdInfo');if(info&&$('fdQ').value)info.textContent=L('찾는 중…','Searching…');
+      FIND.t=setTimeout(re,180);};
+    $('fdR').oninput=()=>{FIND.r=$('fdR').value;};
     $('fdCol').onchange=re;$('fdCase').onchange=re;$('fdWhole').onchange=re;
     $('fdPrev').onclick=()=>findGo(-1);$('fdNext').onclick=()=>findGo(1);
     $('fdOne').onclick=findOne;$('fdAll').onclick=findAll;$('fdClose').onclick=closeSheetFind;}
@@ -101,40 +119,54 @@ function findPaint(jump){
     :FIND.hits.length?L(`${fmt(FIND.hits.length)}개 중 ${FIND.cur+1}번째`,`${FIND.cur+1} of ${fmt(FIND.hits.length)}`)
     :L('찾는 내용이 없습니다','No matches');
   const h=FIND.hits[FIND.cur];
-  /* 다른 쪽(500행 단위)에 있으면 그 쪽으로 넘긴 뒤 이어서 칠한다 */
-  if(jump&&h)sheetShowRow(h.ri);
+  /* 다른 쪽(500행 단위)에 있으면 그 쪽으로 넘긴 뒤 이어서 칠한다(표를 다시 그릴 때 끼어드는 칠하기는 건너뛴다) */
+  if(jump&&h){FIND.painting=1;try{sheetShowRow(h.ri);}finally{FIND.painting=0;}}
   const tb=$('sheet')&&$('sheet').tBodies[0];if(!tb)return;
-  FIND.hits.forEach((x,i)=>{const td=tb.querySelector(`tr[data-ri="${x.ri}"] td[data-c="${x.ci}"]`);
-    if(td)td.classList.add(i===FIND.cur?'findcur':'findhit');});
-  if(jump&&h){const td=tb.querySelector(`tr[data-ri="${h.ri}"] td[data-c="${h.ci}"]`);
-    if(td){SEL={r1:h.ri,c1:h.ci,r2:h.ri,c2:h.ci};try{paintSel();}catch(e){}
-      td.scrollIntoView({block:'center',inline:'nearest'});}}}
+  /* 지금 쪽에 그려진 줄만 — 줄 번호 → 찾은 칸 번호들 */
+  const byRow=new Map();
+  FIND.hits.forEach((x,i)=>{let a=byRow.get(x.ri);if(!a){a=[];byRow.set(x.ri,a);}a.push([x.ci,i]);});
+  let curTd=null;
+  for(const tr of tb.rows){const a=byRow.get(+tr.dataset.ri);if(!a)continue;
+    const tds={};tr.querySelectorAll('td[data-c]').forEach(td=>{tds[td.dataset.c]=td;});
+    for(const [ci,i] of a){const td=tds[ci];if(!td)continue;
+      td.classList.add(i===FIND.cur?'findcur':'findhit');if(i===FIND.cur)curTd=td;}}
+  if(jump&&h&&curTd){SEL={r1:h.ri,c1:h.ci,r2:h.ri,c2:h.ci};try{paintSel();}catch(e){}
+    curTd.scrollIntoView({block:'center',inline:'nearest'});}}
 function findGo(d){
   if(!FIND.hits.length){findCompute();}
   if(!FIND.hits.length){FIND.note='';findPaint(false);return;}
   FIND.note='';FIND.cur=(FIND.cur+d+FIND.hits.length)%FIND.hits.length;findPaint(true);}
+/* 바꾸기 결과는 찾기 줄의 글자만으로는 눈에 잘 안 띈다 — 화면 아래 알림으로도 띄운다 (v113) */
+function findToast(n,left){
+  if(typeof showToast!=='function')return;
+  if(!n){showToast(L('바꿀 내용이 없습니다','Nothing to replace'),'',{kind:'warn'});return;}
+  showToast(L(`${fmt(n)}칸을 바꿨습니다`,`Replaced ${fmt(n)} cell${n>1?'s':''}`),
+    (left!=null&&left>0?L(`남은 ${fmt(left)}개 · `,`${fmt(left)} left · `):'')+L('되돌리려면 Ctrl+Z','Ctrl+Z to undo'),{kind:'ok'});}
 function findOne(){
+  if(FIND.t&&FIND.re)FIND.re();
   if(!FIND.q)return;
   findCompute();
-  const h=FIND.hits[FIND.cur<0?0:FIND.cur];if(!h){findPaint(false);return;}
+  const h=FIND.hits[FIND.cur<0?0:FIND.cur];if(!h){findPaint(false);findToast(0);return;}
   pushUndo();findApply(h);
   const at=FIND.cur<0?0:FIND.cur;
-  renderSheet();syncSheet();
+  FIND.painting=1;try{renderSheet();}finally{FIND.painting=0;}syncSheet();
   findCompute();FIND.cur=FIND.hits.length?Math.min(at,FIND.hits.length-1):-1;
-  FIND.note='';findPaint(true);}
+  FIND.note=L(`1칸을 바꿨습니다`,`Replaced 1 cell`)+(FIND.hits.length?L(` · 남은 ${fmt(FIND.hits.length)}개`,` · ${fmt(FIND.hits.length)} left`):'');
+  findPaint(true);findToast(1,FIND.hits.length);}
 function findAll(){
+  if(FIND.t&&FIND.re)FIND.re();
   if(!FIND.q)return;
   findCompute();
-  const n=FIND.hits.length;if(!n){findPaint(false);return;}
+  const n=FIND.hits.length;if(!n){findPaint(false);findToast(0);return;}
   pushUndo();
   FIND.hits.forEach(findApply);
-  renderSheet();syncSheet();
+  FIND.painting=1;try{renderSheet();}finally{FIND.painting=0;}syncSheet();
   findCompute();FIND.cur=FIND.hits.length?0:-1;
-  FIND.note=L(`${fmt(n)}칸을 바꿨습니다 · 되돌리려면 Ctrl+Z`,`Replaced ${fmt(n)} cells · Ctrl+Z to undo`);
-  findPaint(false);}
+  FIND.note=L(`✓ ${fmt(n)}칸을 바꿨습니다 · 되돌리려면 Ctrl+Z`,`✓ Replaced ${fmt(n)} cells · Ctrl+Z to undo`);
+  findPaint(false);findToast(n);}
 /* 표를 다시 그릴 때마다(쪽 넘김 · 입력 · 정렬) 찾은 칸을 다시 칠한다 */
 (function(){try{const orig=renderSheet;renderSheet=function(){const r=orig.apply(this,arguments);
-  try{if(FIND.open){findCompute();findPaint(false);}}catch(e){}return r;};}catch(e){}})();
+  try{if(FIND.open&&!FIND.painting){findCompute();findPaint(false);}}catch(e){}return r;};}catch(e){}})();
 /* 단추 · 단축키 */
 {const b=$('sheetFindBtn');if(b)b.onclick=()=>FIND.open?closeSheetFind():openSheetFind(false);}
 document.addEventListener('keydown',e=>{

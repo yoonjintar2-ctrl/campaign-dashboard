@@ -144,6 +144,8 @@ function ccSplitPlan(o,tb){
 async function ccRender(card,opts){
   opts=opts||{};
   try{hideTip();}catch(e){}
+  /* 등장 애니메이션(23-anim) 중이면 끝 모습으로 — 막대가 반쯤 자란 채로 찍히지 않게 (v113) */
+  try{if(typeof axFinish==='function')axFinish(card);}catch(e){}
   const W=Math.ceil(card.offsetWidth)||1,H=Math.ceil(card.offsetHeight)||1;
   const clone=card.cloneNode(true);
   const jobs=[],SPLITS=[];

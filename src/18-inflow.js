@@ -338,7 +338,7 @@ function infFlowGo(host,M,to){
   const dir=to>from?1:-1,nx=from+dir;
   const box=host.querySelector('.skbox');if(!box)return;
   /* 넘기는 동안 영역이 다시 그려졌으면(자동 저장 · 필터 등) 지금 화면의 흐름 그래프에 이어서 그린다 */
-  const fin=()=>{INF.step=nx;INF.anim=false;
+  const fin=()=>{INF.step=nx;INF.anim=false;INF.stepped=performance.now();   /* 등장 애니메이션(23-anim)은 이번 다시 그리기를 건너뛴다 */
     const h=host.isConnected?host:$('infSankey');if(!h)return;const m=h===host?M:(h.__M||M);
     infFlowDraw(h,m);if(nx!==to)setTimeout(()=>infFlowGo(h,m,to),30);};
   let reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}

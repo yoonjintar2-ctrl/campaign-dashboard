@@ -1333,6 +1333,69 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pfoot span{color:var(--muted);font-weight:500}
 .delta{font-weight:700}.delta.up{color:var(--acc)}.delta.down{color:var(--neg)}
 
+/* ===== 그래프 등장 애니메이션 — v113 (23-anim.js 가 클래스를 붙이고, 끝나면 뗀다) =====
+   키프레임은 시작 모습만(from) — 끝 모습은 원래 모습. backwards 라 시작 전(지연 · 화면 밖 대기)에도 시작 모습으로 서 있다 */
+.ax{animation-duration:.95s;animation-timing-function:cubic-bezier(.22,1,.36,1);animation-fill-mode:backwards;
+  animation-delay:var(--axd,0ms)}
+.ax-wait .ax,.ax-wait.ax{animation-play-state:paused!important}
+.ax-growx{animation-name:axGrowX;transform-origin:0 50%}
+.ax-growy{animation-name:axGrowY;transform-origin:50% 100%;transform-box:fill-box}
+.ax-clipx{animation-name:axClipX;animation-duration:1.15s}
+.ax-clipy{animation-name:axClipY;animation-duration:1.05s}
+.ax-dash{animation-name:axDash;animation-duration:1.35s;animation-timing-function:cubic-bezier(.33,1,.42,1)}
+.ax-spin{animation-name:axSpin;animation-duration:1.35s;transform-origin:50% 50%;transform-box:fill-box}
+.ax-draw{animation-name:axDraw;animation-duration:1.4s;stroke-dasharray:1 1;animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+.ax-pop{animation-name:axPop;animation-duration:.55s;transform-origin:50% 50%;transform-box:fill-box;
+  animation-timing-function:cubic-bezier(.2,.9,.3,1.35)}
+.ax-zoom{animation-name:axZoom;animation-duration:.6s}
+.ax-up{animation-name:axUp;animation-duration:.6s}
+.ax-rise{animation-name:axRise;animation-duration:1.2s}
+.ax-fade{animation-name:axFade;animation-duration:.5s}
+/* 진행 현황의 은은한 빛(sheen)은 원래 애니메이션(pacedrift)을 함께 건다 — 한쪽이 다른 쪽을 지우지 않게 */
+.pbar .sheen.ax-clipx{animation:axClipX 1.15s cubic-bezier(.22,1,.36,1) var(--axd,0ms) backwards,pacedrift 22s ease-in-out infinite alternate}
+@keyframes axGrowX{from{transform:scaleX(0)}}
+@keyframes axGrowY{from{transform:scaleY(0)}}
+@keyframes axClipX{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes axClipY{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes axDash{from{stroke-dasharray:0 9999}}
+@keyframes axSpin{from{transform:rotate(-150deg) scale(.82);opacity:.15}}
+@keyframes axDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes axPop{0%{transform:scale(0);opacity:0}60%{opacity:1}}
+@keyframes axZoom{from{transform:scale(.9);opacity:0}}
+@keyframes axUp{from{transform:translateY(12px);opacity:0}}
+@keyframes axRise{from{transform:translateY(22px);opacity:0}}
+@keyframes axFade{from{opacity:0}}
+/* 지표 · 도넛 카드 — 마우스를 올리면 살짝 떠오른다 */
+.strip>.stat,#donuts>.donut{transition:transform .22s cubic-bezier(.2,.9,.3,1.2),box-shadow .22s}
+.strip>.stat:hover,#donuts>.donut:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(20,24,30,.10),0 2px 6px rgba(20,24,30,.06)}
+[data-theme="dark"] .strip>.stat:hover,[data-theme="dark"] #donuts>.donut:hover{box-shadow:0 10px 26px rgba(0,0,0,.45)}
+body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
+/* 메뉴를 옮길 때 화면이 살짝 떠오르며 들어온다(불투명도만 — transform 은 안쪽 fixed 상자 위치를 흔든다) */
+.wrap:not(.hidden){animation:axPage .32s ease-out}
+@keyframes axPage{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ax,.wrap:not(.hidden){animation:none!important}}
+@media print{.ax,.wrap{animation:none!important}}
+
+/* ===== 알림(토스트) — v113 ===== */
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,24px);opacity:0;pointer-events:none;
+  display:flex;align-items:center;gap:11px;padding:11px 18px 11px 12px;border-radius:14px;
+  background:#1f2328;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.18);
+  transition:transform .32s cubic-bezier(.2,.9,.3,1.25),opacity .22s;max-width:min(560px,92vw)}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast .ti{flex:none;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:14px;background:rgba(255,255,255,.14)}
+.toast.ok .ti{background:#3f9b6a}
+.toast.warn .ti{background:#c9822b}
+.toast .tt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.toast .tt b{font-size:13.5px;font-weight:800;letter-spacing:-.2px}
+.toast .tt small{font-size:11.5px;color:rgba(255,255,255,.72);font-weight:600}
+.toast.show .ti{animation:toastPop .45s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes toastPop{from{transform:scale(.4) rotate(-30deg)}to{transform:none}}
+[data-theme="dark"] .toast{background:#f1f1f1;color:#1d1d1d}
+[data-theme="dark"] .toast .tt small{color:rgba(0,0,0,.6)}
+@media (prefers-reduced-motion:reduce){.toast{transition:opacity .15s}.toast.show .ti{animation:none}}
+@media print{.toast{display:none!important}}
+
 /* ===== 페이지 저장 (이미지 · PDF) — v112 · 예전 리포트 엑셀 자리 ===== */
 .dlgrp{display:inline-flex;align-items:center;gap:6px}
 .dlgrp .lb{font-size:12px;font-weight:700;color:var(--ink2);white-space:nowrap}
