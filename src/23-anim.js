@@ -62,8 +62,12 @@ const AX_COUNTS=new Set();
 const AX_LAST=new Map();
 let AX_IO=null;
 window.__axHold=window.__axHold||0;
+/* 자동 검사용 헤드리스 크롬(배포 전 검사 · 시험 스크립트)에서는 끈다 — 가상 시간으로 도는 검사가 애니메이션을 기다리다 멈추지 않게.
+   시험할 때 켜려면 주소에 &anim=1 */
+const AX_HEADLESS=/HeadlessChrome/.test(navigator.userAgent)&&!/[?&]anim=1(&|$)/.test(location.search);
+if(AX_HEADLESS)document.documentElement.classList.add('ax-none');
 function axOff(){
-  if(window.__axHold>0)return true;
+  if(AX_HEADLESS||window.__axHold>0)return true;
   try{return typeof reduceMotion==='function'?reduceMotion():matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}}
 /* 그래프 하나의 바깥 상자 — 화면에 들어왔는지 이 상자로 본다 */
 function axRootOf(el){
@@ -107,17 +111,20 @@ function axCount(el,root,delay,key){
   AX_COUNTS.add(c);
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
   axTick();return true;}
+/* ⚠ requestAnimationFrame 대신 setTimeout(16ms) — 배포 전 검사(헤드리스 크롬 · 가상 시간)는 rAF 가 계속 걸려 있으면
+   시간이 흐르지 않아 숫자가 끝나지 않고 검사가 멈췄다(v113 첫 배포). 타이머는 가상 시간이 건너뛰어 준다 */
 function axTick(){
   if(AX_RAF)return;
-  AX_RAF=requestAnimationFrame(function step(now){
+  AX_RAF=setTimeout(function step(){
     AX_RAF=0;
+    const now=performance.now();
     AX_COUNTS.forEach(c=>{
       if(!c.tn.isConnected){AX_COUNTS.delete(c);return;}
       if(!c.t0||now<c.t0)return;
       const t=Math.min(1,(now-c.t0)/c.dur);
-      if(t>=1){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
+      if(t>=1||now-c.t0>c.dur+4000){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
       c.tn.nodeValue=axFmt(c,c.from+(c.target-c.from)*axEase(t));});
-    if([...AX_COUNTS].some(c=>c.t0))AX_RAF=requestAnimationFrame(step);});}
+    if([...AX_COUNTS].some(c=>c.t0))AX_RAF=setTimeout(step,16);},16);}
 /* ---------- 새로 그려진 조각에 클래스 붙이기 ---------- */
 /* nodes — 한 번에 새로 들어온 조각들(카드를 하나씩 붙여도 한 묶음으로 받아 차례 지연이 이어지게) */
 function axScan(nodes){

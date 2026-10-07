@@ -42,9 +42,10 @@ jobs:
       - name: Smoke test (headless Chrome)
         run: |
           # 샘플 캠페인을 열어 로딩 가림막이 걷히고 주요 지표 카드가 그려지는지 본다 — 부팅 오류면 배포하지 않는다
+          # (2분 안에 안 끝나면 실패 — 예전엔 페이지가 시간을 멈추게 하면 몇 시간씩 걸려 있었다)
           CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
           if [ -z "$CHROME" ]; then echo "::warning::Chrome not found - smoke test skipped"; exit 0; fi
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$PWD/dist/index.html?code=DEMO-2026&lang=ko" > dom.html 2>/dev/null || true
+          timeout 120 "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$PWD/dist/index.html?code=DEMO-2026&lang=ko" > dom.html 2>/dev/null || true
           if grep -q '<body[^>]*class="[^"]*booting' dom.html; then echo "::error::page stuck on the loading veil (boot error)"; exit 1; fi
           if ! grep -q 'class="card stat' dom.html; then echo "::error::dashboard did not render"; exit 1; fi
           echo "smoke ok"
