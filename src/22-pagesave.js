@@ -82,8 +82,10 @@ function psPaint(cv,P,y0,h,pr){
 const psBlob=(cv,type,q)=>new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('그림을 만들지 못했습니다')),type,q));
 /* 긴 PNG 한 장 — 캔버스 한 장(한 변 32,767px 한도)에 들어가면 브라우저 PNG 로,
    더 길면(넓은 표를 나눠 쌓은 일자별 효율 등) 조각마다 그려서 PNG 를 직접 엮는다(psPngBig) — 그래야 길어도 선명하다 */
+/* ⚠ 실제 크롬(그래픽 가속)에서는 SVG 그림을 높이 1만 6천 px 가 넘는 캔버스에 한 번에 그리면 아무것도 안 그려진다
+   (헤드리스에서는 그려져서 놓쳤다 — v112.1). 그래서 8천 css px(2배 = 1만 6천 px) 넘는 화면은 늘 조각으로 */
 async function psPng(P,onStep){
-  if(P.Ht*2<=32000&&P.Wt*2<=32000){
+  if(P.Ht*2<=16000&&P.Wt*2<=16000){
     const pr=Math.min(2,Math.sqrt(2.4e8/(P.Wt*P.Ht)));
     const cv=document.createElement('canvas');
     cv.width=Math.round(P.Wt*pr);cv.height=Math.round(P.Ht*pr);
