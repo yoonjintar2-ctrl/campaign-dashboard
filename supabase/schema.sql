@@ -95,6 +95,17 @@ create table if not exists public.campaign_history(
   created_at  timestamptz not null default now()
 );
 create index if not exists campaign_history_idx on public.campaign_history(campaign_id, created_at desc);
+-- 이력은 최근 7일만 (2026-10-07) — 한 벌이 쌓일 때마다 7일 지난 것을 지운다.
+-- 클라이언트에는 삭제 권한(RLS)이 없어 security definer 로 지운다
+create or replace function public.prune_campaign_history()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.campaign_history where created_at < now() - interval '7 days';
+  return null;
+end $$;
+drop trigger if exists campaign_history_prune on public.campaign_history;
+create trigger campaign_history_prune after insert on public.campaign_history
+  for each statement execute function public.prune_campaign_history();
 
 -- ---------------------------------------------------------------------
 -- 2. 권한 판정 함수 (RLS 안에서 재귀가 생기지 않도록 security definer)
