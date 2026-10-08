@@ -238,7 +238,26 @@ const TU_INS={
     let best=null;
     labs.forEach((l,j)=>{if(!/달성|achv|achiev/i.test(l))return;
       det.forEach(x=>{const v=tuNum(tuTx(x.vals[j]));if(isFinite(v)&&(!best||v>best.v))best={x,j,v,l,vt:tuTx(x.vals[j])};});});
-    if(!best)return totBits.length?{t:sl.label,s:tuJoin(totBits)}:null;
+    if(!best){
+      /* 목표 · 달성률 열이 없는 표(매체별 효율 비교 등) — KPI 열(없으면 첫 단가 열)에서 가장 좋은 라인, 비율 열(CTR · 유입률 …)에서 가장 높은 라인 */
+      const pct=j=>det.some(x=>/%\s*$/.test(tuTx(x.vals[j])));
+      const colBest=(j,low)=>{let b=null;det.forEach(x=>{const v=tuNum(tuTx(x.vals[j]));if(!isFinite(v)||v<=0)return;
+        if(!b||(low?v<b.v:v>b.v))b={x,j,v,vt:tuTx(x.vals[j]),l:labs[j]};});return b;};
+      const cnt=new Map();det.forEach(x=>x.vals.forEach((c,j)=>{if(c.classList.contains('kpicol'))cnt.set(j,(cnt.get(j)||0)+1);}));
+      let j0=[...cnt].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0];
+      if(j0==null)j0=labs.findIndex((l,j)=>tuCost(l)&&!pct(j));
+      if(j0==null||j0<0)j0=labs.findIndex((l,j)=>pct(j));
+      if(j0==null||j0<0||det.length<2)return totBits.length?{t:sl.label,s:tuJoin(totBits)}:null;
+      const low=tuCost(labs[j0])&&!pct(j0),b0=colBest(j0,low);
+      if(!b0)return null;
+      h(b0.x.vals[j0],`${b0.l} ${b0.vt}`);
+      [...b0.x.r.cells].filter(c=>c.classList.contains('head')).forEach(c=>c.setAttribute('data-tukeep',''));
+      const j1=labs.findIndex((l,j)=>j!==j0&&pct(j)&&/유입률|CTR|VTR|inflow|rate/i.test(l));
+      const b1=j1>=0?colBest(j1,false):null;
+      return {t:low?L(`${b0.l} 최저 — ${b0.x.name} ${E(b0.vt)}`,`Lowest ${b0.l}: ${b0.x.name} at ${E(b0.vt)}`)
+                   :L(`${b0.l} 최고 — ${b0.x.name} ${E(b0.vt)}`,`Highest ${b0.l}: ${b0.x.name} at ${E(b0.vt)}`),
+        s:tuJoin([b1&&L(`${b1.l} 최고 ${b1.x.name} ${b1.vt}`,`highest ${b1.l}: ${b1.x.name} ${b1.vt}`),
+          L(`비교 라인 ${det.length}개`,`${det.length} lines compared`)].concat(totBits))};}
     h(best.x.vals[best.j],best.vt);
     [...best.x.r.cells].filter(c=>c.classList.contains('head')).forEach(c=>c.setAttribute('data-tukeep',''));
     return {t:L(`${best.x.name} ${best.l} ${E(best.vt)}로 최고`,`${best.x.name} tops ${best.l} at ${E(best.vt)}`),s:tuJoin(totBits)};},
@@ -446,7 +465,7 @@ function tuLayout(node,sl){
     src.style.width=Math.round(Math.max(sl.W,Math.min(full,sw/s)))+'px';
     const h=src.offsetHeight;if(h*s>sh)s=sh/h;
     s=Math.min(s,sw/src.offsetWidth);}
-  else{src.style.width=sl.W+'px';s=Math.min(1.25,sw/src.offsetWidth,sh/src.offsetHeight);}
+  else{src.style.width=sl.W+'px';s=tuWrap(src,sl,sw,sh,1.25);}
   s=Math.max(.2,s);
   const w=src.offsetWidth,h=src.offsetHeight;
   src.style.transform=`scale(${s})`;
@@ -454,6 +473,21 @@ function tuLayout(node,sl){
   /* 남는 세로 여백은 위 30% · 아래 70% — 제목과 가깝게 */
   node.querySelector('.tu-in').style.marginTop=sl.kind==='body'?Math.max(0,Math.round((sh-h*s)*.3))+'px':'';
   node.__s=s;}
+/* 카드 줄(지표 · KPI 도넛)이 길어 한 줄이면 너무 작아질 때 — 2~4줄로 접어 가장 크게 보이는 쪽을 고른다 */
+function tuWrap(src,sl,sw,sh,cap){
+  src.classList.remove('tu-wrapx');src.style.width=sl.W+'px';
+  const fitS=()=>Math.min(cap,sw/src.offsetWidth,sh/src.offsetHeight);
+  let best={s:fitS(),w:sl.W,wrap:false};
+  const xp=src.querySelector('.tu-xp');
+  const kids=xp?[...xp.children].filter(k=>k.offsetWidth>0):[];
+  if(kids.length>2&&best.s<.92){
+    const step=kids[1].offsetLeft-kids[0].offsetLeft,n=kids.length;
+    if(step>0){src.classList.add('tu-wrapx');
+      for(let r=2;r<=4;r++){const c=Math.ceil(n/r);if(c<2)break;
+        const w=Math.round(sl.W-(n-c)*step);src.style.width=w+'px';
+        const s2=fitS();if(s2>best.s*1.08)best={s:s2,w,wrap:true};}
+      src.classList.toggle('tu-wrapx',best.wrap);src.style.width=best.w+'px';}}
+  return best.s;}
 /* 그래프 채우기 — 23-anim 규칙을 복제본에 처음부터(0 에서) */
 function tuAnimate(root,base){
   if(TU.rm||typeof AX_RULES==='undefined')return;
@@ -522,6 +556,8 @@ function tuSpot(node){
       let n=0;
       const wait=()=>{if(Math.abs(sc.scrollLeft-to)<2||n>30)return tuSpot(node);n++;tuLater(wait,100);};
       tuLater(wait,TU.rm?40:250);return;}}
+  /* 그래프가 아직 자라는 중이면(느린 컴퓨터 · 뒤에 있던 탭) 끝 모습으로 맞춘 뒤 잰다 */
+  try{if(typeof axFinish==='function')axFinish(src);}catch(e){}
   const fr=fit.getBoundingClientRect(),kx=fit.offsetWidth/(fr.width||1),ky=fit.offsetHeight/(fr.height||1);
   const FW=fit.offsetWidth,FH=fit.offsetHeight,P=7;
   const rects=hls.map(e=>{
@@ -714,19 +750,22 @@ function tuLoadPptx(){
     TU_PPTX=null;throw last||new Error('PptxGenJS');})();
   TU_PPTX.catch(()=>{});
   return TU_PPTX;}
-const tuB64=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).replace(/^data:/,''));r.onerror=rej;r.readAsDataURL(blob);});
+/* 화면 갱신 틈 — 탭이 뒤에 있으면 타이머가 1분 단위로 묶이므로(크롬) 메시지로 넘긴다 */
+const tuYield=()=>new Promise(r=>{if(document.visibilityState==='visible')setTimeout(r,16);
+  else{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);}});
 /* 장면의 그래프 → 바탕 없는 PNG + 강조할 곳(그림 안 좌표) */
 async function tuShot(sl){
   const hold=document.createElement('div');hold.className='tu-shot';
   const src=sl.src.cloneNode(true);src.style.width=sl.W+'px';src.style.transform='none';
   hold.appendChild(src);TU.el.appendChild(hold);
   try{
+    if(!sl.tblX)tuWrap(src,sl,1213,470,Infinity);
     const R=src.getBoundingClientRect();
     const hl=[...src.querySelectorAll('[data-tuhl]')].map(e=>{const r=e.getBoundingClientRect();
       return {x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,chip:sl.chips[+e.getAttribute('data-tuhl')]||''};}).filter(r=>r.w>2&&r.h>2);
     const strip=e=>{e.style.setProperty('background','transparent','important');e.style.setProperty('box-shadow','none','important');
       e.style.setProperty('border-color','transparent','important');};
-    const out=await ccRender(src,{zoom:2,transparent:true,meta:true,
+    const out=await ccRender(src,{zoom:2,transparent:true,meta:true,dataUrl:true,
       clean:c=>{strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
     return {...out,hl};
   }finally{hold.remove();}}
@@ -764,7 +803,7 @@ async function tuPpt(btn){
     /* 장면마다 — 편집 가능한 글 + 누끼 그래프 + 강조 테두리(도형) */
     for(let k=0;k<body.length;k++){
       const sl=body[k];say(L(`PPT 만드는 중 ${k+1}/${body.length}`,`Building PPT ${k+1}/${body.length}`));
-      await new Promise(r=>setTimeout(r,16));
+      await tuYield();
       const s=addSlide();
       s.addText(`${String(k+1).padStart(2,'0')}   ${sl.label}`,{x:.6,y:.42,w:12.1,h:.3,fontFace:FF,fontSize:11,bold:true,color:MUT,margin:0});
       /* 제목 길이 — 두 줄이면 아래를 내린다 */
@@ -780,7 +819,7 @@ async function tuPpt(btn){
         const AX=.6,AY=sy+(sl.s?.66:.2),AW=12.13,AH=6.92-AY;
         const a=shot.W/shot.H;let w=AW,h=w/a;if(h>AH){h=AH;w=h*a;}
         const x=AX+(AW-w)/2,y=AY+Math.max(0,(AH-h)/2)*.4,f=w/shot.W;
-        s.addImage({data:await tuB64(shot.blob),x,y,w,h});
+        s.addImage({data:shot.data.replace(/^data:/,''),x,y,w,h});
         shot.hl.forEach(r=>{const p=4*f;
           s.addShape(px.ShapeType.roundRect,{x:x+r.x*f-p,y:y+r.y*f-p,w:r.w*f+p*2,h:r.h*f+p*2,rectRadius:.06,
             fill:{color:ACC,transparency:100},line:{color:ACC,width:2}});

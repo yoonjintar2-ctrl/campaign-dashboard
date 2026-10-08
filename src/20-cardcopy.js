@@ -271,6 +271,8 @@ async function ccRender(card,opts){
   if(!opts.transparent){const bg=getComputedStyle(card).backgroundColor;
     ctx.fillStyle=bg&&bg!=='rgba(0, 0, 0, 0)'?bg:(cssVar('--surface')||'#fff');ctx.fillRect(0,0,cv.width,cv.height);}
   ctx.scale(pr,pr);ctx.drawImage(img,0,0,W2,H2);
+  /* opts.dataUrl — 바로 data URL 로(동기). 뒤에 있는 탭에서는 toBlob 콜백이 한참 미뤄져 PPT 만들기가 멈춰 있었다(v116.1) */
+  if(opts.dataUrl){const d=cv.toDataURL('image/png');return opts.meta?{data:d,W:W2,H:H2}:d;}
   const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
   if(!blob)throw new Error('그림을 만들지 못했습니다');
   if(opts.meta)return {blob,W:W2,H:H2};
