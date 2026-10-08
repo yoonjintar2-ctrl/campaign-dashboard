@@ -1,0 +1,214 @@
+<title>대시보드 로딩 화면</title>
+<style>
+/* 로딩 화면 샘플 — 대시보드에서 실제로 쓰는 그래프(일자별 3D 막대 · 소진 언덕 · KPI 도넛 · 진행 현황 막대 ·
+   게재 히스토리 칸 · 지형도 · 버블 · 유입 흐름)를 밝은 회색 아이소메트릭 무대 위에 올리고 계속 움직이게 한다.
+   레이아웃: 가운데 문구, 둘레에 바닥판(마름모) 한 장 — 바닥판은 천천히 좌우로 각도를 바꾼다 */
+:root{
+  --plane:#eef0f1; --floor:#f8f9f9; --grid:#e6e8ea; --ink:#24262a; --ink2:#61656b; --muted:#909499;
+  --t1:#fdfdfd; --f1:#e3e5e8; --l1:#d1d4d8;           /* 밝은 면 — 윗면 · 앞면 · 옆면 */
+  --t2:#c3c6c9; --f2:#a4a8ac; --l2:#8f9398;           /* 진한 면(쌓인 막대 아래 칸) */
+  --pace:#96635e; --pace-lt:#c2a5a2;
+  --font:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--font);overflow:hidden}
+
+/* ===== 무대 ===== */
+@property --rx{syntax:'<angle>';inherits:true;initial-value:57deg}
+@property --rz{syntax:'<angle>';inherits:true;initial-value:-42deg}
+@property --z{syntax:'<length>';inherits:false;initial-value:0px}
+.ld{position:fixed;inset:0;overflow:hidden;
+  background:radial-gradient(ellipse 70% 60% at 50% 46%,#f7f8f8 0%,var(--plane) 70%)}
+.ld-stage{position:absolute;left:50%;top:50%;width:0;height:0;perspective:2200px;transform:scale(var(--k,1))}
+.ld-floor{position:absolute;left:-490px;top:-340px;width:980px;height:680px;transform-style:preserve-3d;
+  transform:translateY(6px) rotateX(var(--rx)) rotateZ(var(--rz));
+  animation:ldSway 18s ease-in-out infinite alternate}
+@keyframes ldSway{0%{--rx:58deg;--rz:-47deg}50%{--rx:54deg;--rz:-40deg}100%{--rx:59deg;--rz:-33deg}}
+.ld-plate{position:absolute;inset:0;border-radius:30px;background:
+  linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
+  linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--floor);
+  box-shadow:0 0 0 1px #e1e3e5,0 40px 80px rgba(40,46,54,.10)}
+.ld *{box-sizing:border-box}
+.p3{position:absolute;transform-style:preserve-3d}
+
+/* ===== 상자 — 윗면 · 앞면(y 끝) · 왼쪽 면(x 처음). 보는 사람은 바닥판의 왼쪽 아래 모서리 쪽 ===== */
+.bx{position:absolute;transform-style:preserve-3d;transform-origin:50% 50% 0}
+.bx>i{position:absolute;display:block}
+.bx>.t{inset:0;transform:translateZ(var(--h));background:var(--t1);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.04)}
+.bx>.f{left:0;top:100%;width:100%;height:var(--h);transform-origin:top;transform:rotateX(90deg);background:var(--f1)}
+.bx>.l{right:100%;top:0;width:var(--h);height:100%;transform-origin:right;transform:rotateY(90deg);background:var(--l1)}
+/* 쌓인 막대 — 아래 칸은 진하게 */
+.bx.stk>.f{background:linear-gradient(to bottom,var(--f2) 0 var(--p),var(--f1) var(--p) 100%)}
+.bx.stk>.l{background:linear-gradient(to left,var(--l2) 0 var(--p),var(--l1) var(--p) 100%)}
+.bx.dk>.t{background:var(--t2)}.bx.dk>.f{background:var(--f2)}.bx.dk>.l{background:var(--l2)}
+.bx.md>.t{background:#eceef0}.bx.md>.f{background:#d3d6da}.bx.md>.l{background:#c0c4c9}
+
+/* 일자별 캠페인 효율 비교 — 3D 막대가 물결처럼 자라고 줄어든다 */
+.dbar{animation:ldGrow 2.6s cubic-bezier(.45,.05,.3,1) infinite alternate;animation-delay:var(--d)}
+@keyframes ldGrow{from{transform:scaleZ(.22)}to{transform:scaleZ(1)}}
+.shadow{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(40,46,54,.16),rgba(40,46,54,0))}
+
+/* 소진 언덕 + CTR 꺾은선 벽 (뒤쪽 왼편) */
+.wall{position:absolute;transform-origin:0 100%;transform:rotateX(-90deg)}
+.wall svg{display:block;width:100%;height:100%;overflow:visible}
+.ctr{fill:none;stroke:#3d4146;stroke-width:4;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;
+  animation:ldDraw 5.2s cubic-bezier(.45,.05,.3,1) infinite}
+@keyframes ldDraw{0%{stroke-dashoffset:1}45%,82%{stroke-dashoffset:0}100%{stroke-dashoffset:-1}}
+.iss{fill:#fff;stroke:var(--ink);stroke-width:2.4;transform-box:fill-box;transform-origin:center;
+  animation:ldIss 5.2s ease-in-out infinite both;animation-delay:var(--d)}
+@keyframes ldIss{0%,20%{transform:scale(0)}30%,82%{transform:scale(1)}92%,100%{transform:scale(0)}}
+
+/* 유입 흐름 벽 (뒤쪽 오른편) — 띠 위로 빛이 흐른다 */
+.wall.r{transform:rotateZ(90deg) rotateX(-90deg)}
+.flow{fill:none;stroke-linecap:butt}
+.flow.pulse{stroke:rgba(255,255,255,.75);stroke-dasharray:60 340;animation:ldFlow 3.4s linear infinite;animation-delay:var(--d)}
+@keyframes ldFlow{from{stroke-dashoffset:400}to{stroke-dashoffset:0}}
+
+/* KPI 도넛 — 떠 있는 두꺼운 고리가 돌면서 호가 차오른다 */
+.don{position:absolute;transform-style:preserve-3d;animation:ldSpin 14s linear infinite}
+@keyframes ldSpin{to{transform:rotateZ(360deg)}}
+.don svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.don .arc{fill:none;stroke-linecap:round;stroke-dasharray:0 1000;animation:ldArc 4.8s cubic-bezier(.45,.05,.3,1) infinite;animation-delay:var(--d)}
+@keyframes ldArc{0%{stroke-dasharray:0 1000}55%,80%{stroke-dasharray:var(--len) 1000}100%{stroke-dasharray:0 1000}}
+
+/* 캠페인 진행 현황 — 바닥에 누운 막대가 왼쪽부터 차오른다 */
+.track{position:absolute;border-radius:8px;background:#eceef0;box-shadow:inset 0 0 0 1px #e1e3e6}
+.slab{transform-origin:0 50% 0;animation:ldSlab 3.6s cubic-bezier(.45,.05,.3,1) infinite alternate;animation-delay:var(--d)}
+@keyframes ldSlab{from{transform:scaleX(.18)}to{transform:scaleX(1)}}
+.slab>.t{background:linear-gradient(90deg,#b9bdc1 0 46%,#fff 46% 46.6%,#c9cccf 46.6% 71%,#fff 71% 71.6%,#d6d8db 71.6% 86%,#fff 86% 86.6%,#e1e3e5 86.6%)}
+.slab>.f{background:linear-gradient(90deg,#a2a6ab 0 46%,#b4b8bc 46% 71%,#c2c5c9 71% 86%,#ced1d4 86%)}
+
+/* 공(버블 · 페이스 점) — 늘 보는 사람을 향하도록 바닥 회전을 되돌린다 */
+.ball{position:absolute;border-radius:50%;
+  transform:translateZ(var(--z)) rotateZ(calc(-1*var(--rz))) rotateX(calc(-1*var(--rx)));transform-origin:50% 100%;
+  background:radial-gradient(circle at 34% 30%,#fff 0,#e6e8ea 32%,#b7bbc0 72%,#9a9fa5 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset;animation:ldBob 3.2s ease-in-out infinite alternate;animation-delay:var(--d)}
+.ball.pace{background:radial-gradient(circle at 34% 30%,#fff 0,var(--pace-lt) 40%,var(--pace) 100%);animation-duration:1.6s}
+@keyframes ldBob{from{--z:var(--z0)}to{--z:var(--z1)}}
+
+/* 게재 히스토리 · 히트맵 칸 — 대각선으로 물결 */
+.cells{position:absolute;display:grid;gap:4px;transform-style:preserve-3d}
+.cells>i{display:block;border-radius:3px;background:#e7e9eb;animation:ldCell 3s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes ldCell{0%,100%{background:#e7e9eb;transform:translateZ(0)}40%{background:#9da2a8;transform:translateZ(10px)}}
+
+/* 지형도 블록 — 차례로 솟았다 내려온다 */
+.tm{animation:ldTm 3.8s cubic-bezier(.45,.05,.3,1) infinite;animation-delay:var(--d)}
+@keyframes ldTm{0%,100%{transform:scaleZ(.15)}35%,70%{transform:scaleZ(1)}}
+
+/* ===== 가운데 문구 ===== */
+.ld-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;text-align:center;
+  padding:22px 34px 20px;border-radius:22px;background:rgba(248,249,249,.78);
+  backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);
+  box-shadow:0 18px 50px rgba(40,46,54,.12),0 0 0 1px rgba(255,255,255,.9) inset,0 0 0 1px rgba(40,46,54,.05)}
+.ld-eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.ld-title{margin-top:6px;font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--ink);white-space:nowrap}
+.ld-title .dots{display:inline-flex;gap:4px;margin-left:6px;vertical-align:.12em}
+.ld-title .dots i{display:block;width:6px;height:6px;border-radius:50%;background:var(--ink);animation:ldDot 1.4s ease-in-out infinite}
+.ld-title .dots i:nth-child(2){animation-delay:.18s}.ld-title .dots i:nth-child(3){animation-delay:.36s}
+@keyframes ldDot{0%,60%,100%{opacity:.18;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.ld-sub{margin-top:6px;font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.ld-bar{position:relative;margin:16px auto 0;width:180px;height:4px;border-radius:99px;background:#e1e3e5;overflow:hidden}
+.ld-bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:99px;background:linear-gradient(90deg,#9da2a8,var(--ink));
+  animation:ldBar 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes ldBar{from{left:-40%}to{left:100%}}
+
+.note{position:fixed;left:16px;bottom:14px;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:-.01em}
+@media (max-width:560px){.ld-title{font-size:23px}.ld-sub{font-size:12px}.ld-msg{padding:16px 22px 15px}.note{right:16px}}
+@media (prefers-reduced-motion:reduce){.ld *,.ld-floor{animation:none!important}.ctr{stroke-dashoffset:0}.don .arc{stroke-dasharray:var(--len) 1000}.iss{transform:none}}
+</style>
+
+<div class="ld" id="ld">
+  <div class="ld-stage" id="ldStage">
+    <div class="ld-floor" id="ldFloor">
+      <div class="ld-plate"></div>
+    </div>
+  </div>
+  <div class="ld-msg" role="status" aria-live="polite">
+    <div class="ld-eyebrow">Media Dashboard</div>
+    <div class="ld-title">대시보드 로딩 중<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <div class="ld-sub">캠페인 데이터를 불러오고 있습니다</div>
+    <div class="ld-bar"><i></i></div>
+  </div>
+</div>
+<div class="note">로딩 화면 샘플 · 대시보드 첫 화면 · 캠페인을 바꿀 때 나옵니다</div>
+
+<script>
+(function(){
+  const F=document.getElementById('ldFloor');
+  const add=(html)=>{F.insertAdjacentHTML('beforeend',html);};
+  const box=(x,y,w,d,h,cls,style)=>`<div class="bx ${cls||''}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;--h:${h}px;${style||''}"><i class="l"></i><i class="f"></i><i class="t"></i></div>`;
+  const sh=(x,y,w,d)=>`<div class="shadow" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px"></div>`;
+
+  /* 1) 소진 언덕 + CTR 꺾은선 벽 — 뒤쪽 왼편(y≈36 줄에 세운다) */
+  {const L=640,H=176,x0=150,y0=30;
+   const hillA='M0 176 L0 112 C60 88 110 120 170 98 S290 66 350 84 S470 120 530 76 S610 58 640 70 L640 176 Z';
+   const hillB='M0 176 L0 96 C60 120 120 80 180 92 S300 112 360 70 S480 92 540 98 S610 74 640 88 L640 176 Z';
+   const line='M10 52 C70 40 120 66 180 46 S300 30 360 56 S480 70 540 38 S610 34 632 42';
+   add(`<div class="wall" style="left:${x0}px;top:${y0-H}px;width:${L}px;height:${H}px">
+     <svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none">
+       <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd2d5"/><stop offset="1" stop-color="#eef0f1" stop-opacity=".3"/></linearGradient></defs>
+       <path fill="url(#hg)" d="${hillA}"><animate attributeName="d" dur="7s" repeatCount="indefinite" values="${hillA};${hillB};${hillA}" calcMode="spline" keySplines=".45 .05 .3 1;.45 .05 .3 1"/></path>
+       <path class="ctr" pathLength="1" d="${line}"/>
+       <circle class="iss" cx="180" cy="46" r="7" style="--d:.9s"/><circle class="iss" cx="360" cy="56" r="7" style="--d:1.4s"/><circle class="iss" cx="540" cy="38" r="7" style="--d:1.9s"/>
+     </svg></div>`);}
+
+  /* 2) 일자별 3D 막대 — 벽 앞 한 줄 */
+  {const hs=[96,120,82,140,128,110,152,136,98,164,144,122,158];
+   hs.forEach((h,i)=>{const x=172+i*45,y=70;
+     add(sh(x-10,y+18,48,28));
+     add(box(x,y,26,26,h,'stk dbar',`--p:${(38+(i*7)%20)}%;--d:${(-i*.22).toFixed(2)}s`));});}
+
+  /* 3) 유입 흐름 벽 — 뒤쪽 오른편(x≈948 줄에 세운다) */
+  {const L=330,H=160,x0=948,y0=110;
+   const bands=[['M0 30 C110 30 160 60 330 54',22,'#c5c8cc'],['M0 70 C120 70 170 98 330 100',30,'#b2b6bb'],['M0 112 C130 112 180 64 330 66',16,'#d2d5d8'],['M0 138 C120 138 190 140 330 136',12,'#dcdee1']];
+   add(`<div class="wall r" style="left:${x0}px;top:${y0-H}px;width:${L}px;height:${H}px">
+     <svg viewBox="0 0 ${L} ${H}">
+       <rect x="0" y="0" width="${L}" height="${H}" rx="14" fill="#f3f4f5" stroke="#e1e3e5"/>
+       ${bands.map(([d,w,c],i)=>`<path class="flow" d="${d}" stroke="${c}" stroke-width="${w}"/><path class="flow pulse" d="${d}" stroke-width="${w}" style="--d:${-i*.8}s"/>`).join('')}
+       <rect x="0" y="16" width="8" height="134" rx="3" fill="#7c8085"/><rect x="${L-8}" y="34" width="8" height="112" rx="3" fill="#4d5257"/>
+     </svg></div>`);}
+
+  /* 4) KPI 도넛 두 개 — 떠 있는 두꺼운 고리 */
+  {const don=(cx,cy,S,len,d,lift)=>{
+     const r=S/2-16,C=2*Math.PI*r,layers=[0,3,6,9];
+     let h=`<div class="shadow" style="left:${cx-S*.6}px;top:${cy-S*.5}px;width:${S*1.2}px;height:${S*1.2}px"></div>`;
+     h+=`<div class="don" style="left:${cx-S/2}px;top:${cy-S/2}px;width:${S}px;height:${S}px;transform-origin:50% 50%;animation-delay:${d}">`;
+     layers.forEach((z,k)=>{const top=k===layers.length-1;
+       h+=`<svg viewBox="0 0 ${S} ${S}" style="transform:translateZ(${lift+z}px)">
+         <circle cx="${S/2}" cy="${S/2}" r="${r}" fill="none" stroke="${top?'#eceef0':'#d6d9dc'}" stroke-width="22"/>
+         ${top?`<circle class="arc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#55595e" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>
+         <circle class="arc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="var(--pace)" stroke-width="9" style="--len:${(C*.08).toFixed(1)};--d:${d}" transform="rotate(${-90+360*len} ${S/2} ${S/2})"/>`
+         :`<circle class="arc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#3a3e43" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>`}
+       </svg>`;});
+     return h+'</div>';};
+   add(don(796,252,200,.78,'0s',18));
+   add(don(424,604,118,.56,'-1.6s',10));}
+
+  /* 5) 진행 현황 막대 — 앞 왼편, 바닥에 누워 차오른다 */
+  {const LEN=290;[[466,0],[528,-.6],[590,-1.2]].forEach(([y,d],i)=>{
+     add(`<div class="track" style="left:40px;top:${y}px;width:${LEN}px;height:34px"></div>`);
+     add(box(40,y,LEN*(i===1?.86:i===2?.72:1),34,16,'slab',`--d:${d}s`));
+     add(`<div class="ball pace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--z0:26px;--z1:34px;--d:${d}s"></div>`);});}
+
+  /* 6) 게재 히스토리 · 히트맵 칸 — 왼쪽 가운데 */
+  {const C=8,R=9;let h=`<div class="cells" style="left:40px;top:150px;width:${C*24}px;grid-template-columns:repeat(${C},20px);grid-auto-rows:20px">`;
+   for(let r=0;r<R;r++)for(let c=0;c<C;c++)h+=`<i style="--d:${((r+c)*.12).toFixed(2)}s"></i>`;
+   add(h+'</div>');}
+
+  /* 7) 지형도(트리맵) 블록 — 앞 가운데 */
+  {const X=590,Y=570,tiles=[[0,0,84,58,58],[84,0,52,58,44],[136,0,38,58,30],[0,58,58,50,38],[58,58,48,50,28],[106,58,34,50,22],[140,58,34,50,16]];
+   add(sh(X-20,Y-16,216,150));
+   tiles.forEach(([x,y,w,d,h],i)=>add(box(X+x,Y+y,w-4,d-4,h,'tm'+(i%3===1?' md':''),`--d:${(-i*.4).toFixed(2)}s`)));}
+
+  /* 8) 버블 — 앞 오른편, 둥실둥실 */
+  {[[820,470,52,30,62,'0s'],[880,546,64,44,86,'-.8s'],[812,560,34,22,46,'-1.6s'],[896,450,38,36,66,'-2.2s']].forEach(([x,y,S,z0,z1,d])=>{
+     add(sh(x-S*.3,y-S*.1,S*1.3,S*.8));
+     add(`<div class="ball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--z0:${z0}px;--z1:${z1}px;--d:${d}"></div>`);});}
+
+  /* 화면 크기에 맞춰 무대 크기 */
+  const fit=()=>{const k=Math.max(.46,Math.min(innerWidth/1320,innerHeight/900,1.25));
+    document.getElementById('ldStage').style.setProperty('--k',k.toFixed(3));};
+  fit();addEventListener('resize',fit);
+})();
+</script>
