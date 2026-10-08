@@ -750,6 +750,15 @@ function tuLoadPptx(){
     TU_PPTX=null;throw last||new Error('PptxGenJS');})();
   TU_PPTX.catch(()=>{});
   return TU_PPTX;}
+/* PPT 파일 묶기(JSZip)는 setTimeout(0) 을 수백 번 이어 부른다 — 탭이 뒤에 있으면 크롬이 이어진 타이머를 1초~1분 간격으로 묶어
+   '파일 저장 중…'에서 멈춘 것처럼 보였다. 묶는 동안만 0ms 타이머를 메시지 채널로 바로 돌린다(앞에 있어도 더 빠름) */
+async function tuFast(job){
+  const ST=window.setTimeout,ch=new MessageChannel(),q=[];
+  ch.port1.onmessage=()=>{const f=q.shift();if(f)try{f();}catch(e){ST(()=>{throw e;},0);}};
+  window.setTimeout=function(fn,ms){
+    if(!ms&&typeof fn==='function'){const a=[].slice.call(arguments,2);q.push(()=>fn.apply(window,a));ch.port2.postMessage(0);return 0;}
+    return ST.apply(window,arguments);};
+  try{return await job();}finally{window.setTimeout=ST;}}
 /* 화면 갱신 틈 — 탭이 뒤에 있으면 타이머가 1분 단위로 묶이므로(크롬) 메시지로 넘긴다 */
 const tuYield=()=>new Promise(r=>{if(document.visibilityState==='visible')setTimeout(r,16);
   else{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);}});
@@ -839,7 +848,7 @@ async function tuPpt(btn){
           {x,y,w:cw,h:Math.min(.78,5.3/per),fontFace:FF,fontSize:13,margin:0,valign:'top',fit:'shrink'});});
       foot(s,body.length+2);}
     say(L('파일 저장 중…','Saving…'));
-    const buf=await px.write({outputType:'arraybuffer'});
+    const buf=await tuFast(()=>px.write({outputType:'arraybuffer'}));
     const clean=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s*[·›]\s*/g,' ').trim().replace(/\s+/g,'_');
     const fn=`${clean(nm)||'dashboard'}_${L('데이터투어','DataTour')}_${psDay(new Date())}.pptx`;
     saveFile(buf,fn,'application/vnd.openxmlformats-officedocument.presentationml.presentation');
