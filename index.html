@@ -2257,7 +2257,8 @@ table.tbl.lite th.g input.ghdr{border-color:var(--acc);background:var(--surface)
 table.tbl td.gt{color:var(--acc);font-weight:800}
 table.tbl td.hl{color:var(--acc);font-weight:800}
 .gauge{display:inline-flex;flex-direction:column;align-items:center;gap:5px;min-width:64px;font-size:inherit}
-.gauge .track{width:58px;height:5px;border-radius:3px;background:var(--sub1);overflow:hidden}
+.gauge .track{width:58px;height:5px;border-radius:3px;background:rgba(27,31,36,.1);overflow:hidden}
+[data-theme="dark"] .gauge .track{background:rgba(255,255,255,.14)}
 .gauge .track i{display:block;height:100%;border-radius:3px;background:var(--acc)}
 tr.total .gauge .track{background:rgba(255,255,255,.3)}
 tr.total .gauge .track i{background:var(--surface)}
@@ -3258,30 +3259,47 @@ html.tu-on .secnav{display:none!important}
   background:radial-gradient(closest-side,rgba(20,26,34,.15),rgba(20,26,34,0))}
 .tu-cover .tu-in::after,.tu-end .tu-in::after{display:none}
 .tu-fit{position:relative}
-.tu-fit>.tu-src{position:absolute;left:0;top:0;transform-origin:0 0}
+.tu-fit>.tu-src{position:absolute;left:0;top:0;transform-origin:0 0;z-index:0}   /* 표의 고정 칸(z-index) 이 강조 표시 위로 올라오지 않게 — 따로 쌓기 */
 .tu-shot{position:absolute;left:0;top:0;opacity:0;pointer-events:none;z-index:-1}
 /* 복제한 그래프 — 조작 단추 · 고르기 메뉴는 감춘다(자리는 그대로) */
 .tu-src .agency-only,.tu-src .agency-only *,.tu-src .cardcopy,.tu-src .cardxl,.tu-src .hpbtn,.tu-src .hidebtn,.tu-src .infowrap,.tu-src .infowrap *,
 .tu-src .infcfg,.tu-src [id$="CfgBtn"],.tu-src .switch,.tu-src .switch *,.tu-src select,.tu-src .sknav,.tu-src .sknav *,.tu-src .skdots,.tu-src .skdots *,
 .tu-src .pen,.tu-src .colgrip,.tu-src .infh .btn,.tu-src .infh button{visibility:hidden!important}
 .tu-src .cmtbar{display:none!important}
-/* 일자별 — 운영 이슈(① ② ③) 목록을 그래프 아래에 작게 (v119 · 화면에서는 숨겨 둔 목록) */
-.tu-src #dailyIssues:not(:empty){display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:4px 26px;padding:2px 22px 14px}
-.tu-src #dailyLegend:has(+#dailyIssues:not(:empty)){border-radius:0}
-.tu-src #dailyIssues .disit{font-size:11px;line-height:1.4;opacity:.85}
+/* 일자별 — 운영 이슈(① ② ③)를 그래프 카드 바깥 아래에 한 건에 한 줄씩 (v123) */
+.tu-src .tu-iss{margin-top:16px;padding:0 8px;display:flex;flex-direction:column;gap:6px}
+.tu-src .tu-issh{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.02em}
+.tu-src .tu-isr{display:grid;grid-template-columns:20px 100px minmax(0,1fr);align-items:center;gap:8px;font-size:12px;line-height:1.4;color:var(--ink2)}
+.tu-src .tu-isr .disno{transform:none}
+.tu-src .tu-isr .disper{min-width:0}
+.tu-src .tu-isr .distx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tu-src .tu-xp{overflow:visible!important}
 .tu-src.tu-wrapx .tu-xp{flex-wrap:wrap!important;row-gap:16px}
 .tu-src [data-tip],.tu-src .drag,.tu-src .bdrag{cursor:default}
-/* 강조 (v119) — 테두리 없이, 강조할 곳 말고 나머지를 조금 투명하게 → 상대적으로 진하게. 차례가 바뀌면 부드럽게 옮겨 간다 */
-.tu-src .tu-ft{transition:opacity .9s ease,box-shadow .9s ease,color .9s ease}
-.tu-src .tu-fade{opacity:.3!important}
-.tu-src .tu-fadeS{box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--surface) 70%,transparent)!important;color:color-mix(in srgb,currentColor 30%,transparent)!important}
-.tu-shot .tu-ft{transition:none!important}
-.tu-chip{position:absolute;z-index:4;padding:6px 12px;border-radius:999px;background:var(--tu-acc);color:#fff;font-size:13px;font-weight:800;
-  letter-spacing:-.01em;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgb(var(--tu-accrgb) / .32);
-  transform:translate(-100%,var(--ty,-70%)) scale(.6);opacity:0;transform-origin:100% 100%}
-.tu-chip.on{animation:tuChip .6s cubic-bezier(.34,1.56,.64,1) calc(var(--k,0)*120ms + .3s) forwards}
-@keyframes tuChip{to{opacity:1;transform:translate(-100%,var(--ty,-70%)) scale(1)}}
+/* 강조 (v123) — 흐리게 하지 않는다. 형광펜(곱하기로 섞어 아래 글자 · 그림이 그대로) · 가리키는 손가락 · 이름표(빈자리에만) */
+.tu-mk{position:absolute;z-index:4;pointer-events:none;border-radius:8px;background:rgb(var(--tu-accrgb) / .24);mix-blend-mode:multiply;
+  animation:tuMk .6s cubic-bezier(.65,0,.25,1) calc(var(--k,0)*120ms) both}
+.tu-mk.big{background:rgb(var(--tu-accrgb) / .1)}
+.tu-mk.rd{border-radius:50%}
+[data-theme="dark"] .tu-mk{mix-blend-mode:screen;background:rgb(var(--tu-accrgb) / .34)}
+[data-theme="dark"] .tu-mk.big{background:rgb(var(--tu-accrgb) / .16)}
+@keyframes tuMk{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.tu-src .tu-mksvg,.tu-shot .tu-mksvg{fill:rgb(var(--tu-accrgb) / .42)!important;stroke:none!important;mix-blend-mode:multiply;pointer-events:none;
+  animation:tuMkS .55s ease calc(var(--k,0)*120ms) both}
+[data-theme="dark"] .tu-src .tu-mksvg,[data-theme="dark"] .tu-shot .tu-mksvg{mix-blend-mode:screen;fill:rgb(var(--tu-accrgb) / .5)!important}
+.tu-shot .tu-mksvg{animation:none}
+@keyframes tuMkS{from{opacity:0}}
+.tu-pt{position:absolute;z-index:6;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(20,24,30,.28));
+  animation:tuPtIn .45s cubic-bezier(.34,1.56,.64,1) calc(var(--k,0)*120ms + .3s) both}
+.tu-pt>i{display:block;width:100%;height:100%;animation:tuTap 1.4s ease-in-out calc(var(--k,0)*120ms + .8s) infinite}
+.tu-pt svg{display:block;width:100%;height:100%}
+@keyframes tuPtIn{from{opacity:0;scale:.6}}
+@keyframes tuTap{50%{transform:translateY(-12%)}}
+.tu-chip{position:absolute;z-index:5;display:flex;align-items:center;padding:0 12px;border-radius:999px;background:var(--tu-acc);color:#fff;
+  font-size:13px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgb(var(--tu-accrgb) / .3);
+  animation:tuChipIn .5s cubic-bezier(.34,1.56,.64,1) calc(var(--k,0)*120ms + .45s) both}
+@keyframes tuChipIn{from{opacity:0;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){.tu-mk,.tu-pt,.tu-chip{animation-duration:.01s}.tu-pt>i{animation:none}}
 /* 좌우 넘김 */
 .tu-nav{position:absolute;top:56%;z-index:6;width:clamp(46px,3.7vw,62px);height:clamp(46px,3.7vw,62px);transform:translateY(-50%);
   border-radius:50%;border:1px solid var(--tu-line);background:var(--tu-glass);color:var(--tu-ink);display:grid;place-items:center;cursor:pointer;padding:0;
@@ -3307,8 +3325,9 @@ html.tu-on .secnav{display:none!important}
   white-space:nowrap}
 .tu-tile .s{margin-top:6px;font-size:12px;font-weight:600;color:var(--tu-ink2)}
 /* 마무리 — 핵심 요약(갈래별 카드) · PPT 저장 (v119) */
-.tu-cats{display:grid;grid-template-columns:repeat(var(--nc,3),minmax(0,1fr));gap:16px;max-width:1320px;margin:0 auto;align-items:start}
-.tu-cat{padding:14px 12px 10px;border-radius:18px;background:var(--tu-glass);border:1px solid var(--tu-line);box-shadow:0 14px 34px rgba(27,31,36,.07)}
+.tu-cats{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:1320px;margin:0 auto}
+.tu-cat{flex:0 0 calc((100% - (var(--nc,3) - 1) * 16px) / var(--nc,3));box-sizing:border-box;padding:14px 12px 10px;border-radius:18px;
+  background:var(--tu-glass);border:1px solid var(--tu-line);box-shadow:0 14px 34px rgba(27,31,36,.07)}
 .tu-cath{display:flex;align-items:center;gap:8px;padding:0 6px 8px;font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--tu-ink)}
 .tu-cath .d{width:7px;height:7px;border-radius:50%;background:var(--tu-acc);flex:none}
 .tu-cath .c{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--tu-mut);font-variant-numeric:tabular-nums}
@@ -3332,7 +3351,7 @@ html.tu-on .secnav{display:none!important}
 .tu-btn.busy svg{animation:tuBusy 1s ease-in-out infinite}
 @keyframes tuBusy{50%{transform:translateY(-3px)}}
 @media (max-width:760px){.tu-top{padding:12px 14px 0}.tu-head{padding:0 6vw}.tu-nav{top:auto;bottom:14px;transform:none}.tu-nav:hover{transform:scale(1.06)}
-  .tu-hint{display:none}.tu-cats{grid-template-columns:minmax(0,1fr)}.tu-edbar .tip{display:none}.tu-dlm{right:-44px}}
+  .tu-hint{display:none}.tu-cat{flex-basis:100%}.tu-edbar .tip{display:none}.tu-dlm{right:-44px}}
 @media (prefers-reduced-motion:reduce){.tu-floor{transition:none}}
 /* 위쪽 — 문구 편집 · 다운로드 메뉴 (v119) */
 .tu-dlw{position:relative;display:inline-flex}
@@ -22375,7 +22394,8 @@ function snLater(){clearTimeout(SN.t);SN.t=setTimeout(snBuild,250);}
    ■ 장면 — 표지 → 화면에 보이는 영역(숨긴 영역 · 숨긴 서머리는 빠짐) 하나씩 → 마무리(핵심 요약 · PPT 저장)
      유입 분석은 세 장(흐름 · 랜딩/체류 · 상세 표)으로 나눈다
    ■ 위쪽 제목 · 부제목 = 그 영역에서 자동으로 뽑은 시사점(한/영). 제목 속 숫자는 강조색
-   ■ 그래프는 화면 가운데에서 떠오르며 채워지고(23-anim 규칙 그대로) · 눈에 띄는 곳을 강조(나머지를 조금 투명하게 · 이름표, v119 테두리 없앰)
+   ■ 그래프는 화면 가운데에서 떠오르며 채워지고(23-anim 규칙 그대로) · 눈에 띄는 곳을 강조 — (v123) 흐리게 하지 않고 형광펜(곱하기로 덧칠) +
+     가리키는 손가락 + 이름표. 손가락 · 이름표는 원본 글자 · 막대 · 점을 가리지 않는 빈자리를 찾아 놓는다
      차례가 여럿이면(유입 분석의 그래프 세 개) 하나씩 넘어가며 강조하고 끝나면 모두 다시 진하게
    ■ 제목 = 전체 효과(합계 · 평균 · 몇 개 중 몇 개), 부제목 = 눈에 띄는 것(가장 높은 · 낮은 곳) (v119)
    ■ 위 오른쪽 — 문구 편집(E · 그 자리에서 고쳐 쓰기 · Ctrl+B 강조) · 다운로드(PPT · 파일) · 자동 재생 · 닫기 (v119)
@@ -22500,7 +22520,13 @@ function tuBuild(){
             [...b.children].filter((c,i)=>!ks.has(body.children[i])).forEach(c=>c.remove());});
           if(sl)out.push(sl);});
         return;}}
-    const sl=tuMk(key,label,g.els);
+    /* 일자별 — 운영 이슈(그래프의 ① ② ③)를 그래프 카드 바깥 아래에 한 건에 한 줄씩 (v123) */
+    const keep=key==='daily'?src=>{const is=src.querySelector('#dailyIssues');if(!is)return;
+      const its=[...is.querySelectorAll('.disit')];is.remove();if(!its.length)return;
+      const box=document.createElement('div');box.className='tu-iss';
+      box.innerHTML=`<div class="tu-issh">${esc(L('운영 이슈','Operational issues'))}</div>`+its.map(x=>`<div class="tu-isr">${x.innerHTML}</div>`).join('');
+      src.appendChild(box);}:null;
+    const sl=tuMk(key,label,g.els,keep);
     if(sl)out.push(sl);});
   return out;}
 
@@ -22514,6 +22540,18 @@ const tuMean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
 /* 큰 금액 · 수 글자 → 짧게(₩249,866,835 → ₩2.5억 / 8,644만) · % 는 그대로 */
 const tuShortTx=v=>{const t=String(v||'').trim();if(/%\s*$/.test(t))return t;const n=tuNum(t);if(!isFinite(n))return t;
   const pre=/^₩/.test(t)?'₩':'';return Math.abs(n)>=1e4?tuBig(n,x=>pre+Math.round(x).toLocaleString('en-US')):t;};
+/* 받침에 따라 을/를 · 이/가 */
+const tuJosa=(w,a,b)=>{const c=String(w||'').trim().slice(-1).charCodeAt(0);
+  return c>=0xAC00&&c<=0xD7A3?((c-0xAC00)%28?a:b):`${a}(${b})`;};
+/* 유입 분석 화면과 같은 묶음 · 흐름 모형(18-inflow 와 같은 순서) — 매체 → 랜딩 유입, 매체별 효율 */
+function tuInfModel(){
+  if(typeof infLineStat!=='function')return null;
+  try{
+    const LS=infLineStat(),ok=new Set(LS.filter(x=>x.ok).map(x=>x.lid)),dim=(typeof INF!=='undefined'&&INF.dim)||'media';
+    const segOK=infSegList(ok).length>=2,useSeg=!!(typeof INF!=='undefined'&&INF.seg)&&segOK,rk=infSegRank();
+    const rows=infGroups(dim,ok,useSeg).filter(g=>infHas(g.b)).sort((a,b)=>(useSeg?rk(a.seg)-rk(b.seg):0)||(b.b.iwv||0)-(a.b.iwv||0)||(b.b.click||0)-(a.b.click||0));
+    return {rows,M:rows.length?infFlowModel(rows,useSeg):null,A:aggFacts(factFilter()),dim};
+  }catch(e){console.warn('tour inflow',e);return null;}}
 const TU_INS={
   /* 캠페인 구조 (v119 마인드맵) — 구성 개수 · 구분별 예산 비중 */
   struct(sl){
@@ -22525,24 +22563,32 @@ const TU_INS={
     return {t:cs.map(x=>`${x.l} ${E(x.n)}`).join(' · '),
       s:tuJoin([bud&&L(`총 예산 ${tuShortTx(tuTx(bud.querySelector('.v')).split(' ')[0])}`,`Total budget ${tuShortTx(tuTx(bud.querySelector('.v')).split(' ')[0])}`),
         seg.length?L(`예산 비중 ${seg.join(' · ')}`,`budget split ${seg.join(' · ')}`):''])};},
-  /* 캠페인 진행 현황 — 목표 페이스를 넘은 지표 수 / 가장 앞선 · 더딘 지표 */
+  /* 캠페인 진행 현황 (v123) — 제목 = 캠페인 KPI(예산이 가장 큰 KPI 묶음의 지표) 목표 대비 실적,
+     부제목 = 그 실적을 이끈 매체(몇 회 · 몇 %) · 다음 매체들 · 다른 지표 달성률. 강조 = KPI 줄에서 1위 매체 구간 */
   pace(sl,h){
     const rows=[...sl.src.querySelectorAll('.pline')].map(line=>{
       const b=line.querySelector('.pbar[data-tip]');let d=null;
       try{d=b&&JSON.parse(b.getAttribute('data-tip'));}catch(e){}
-      return d&&d.goal>0&&isFinite(d.pr)?{line,pr:d.pr,l:tuTx(line.querySelector('.pside .nm1'))||d.l}:null;}).filter(Boolean);
+      return d&&d.goal>0?{line,d,l:tuTx(line.querySelector('.pside .nm1'))||d.l}:null;}).filter(Boolean);
     if(!rows.length)return null;
-    const n=rows.length,okR=rows.filter(x=>x.pr>=0.995),ok=okR.length,avg=tuMean(rows.map(x=>x.pr));
-    const best=rows.reduce((a,b)=>b.pr>a.pr?b:a),worst=rows.reduce((a,b)=>b.pr<a.pr?b:a);
-    const m=/(\d+(?:\.\d+)?)\s*%/.exec(tuTx(sl.src.querySelector('.phead'))),el=m?m[1]+'%':'';
-    h(best.line,L(`최고 ${tuPc(best.pr)}`,`Top ${tuPc(best.pr)}`));
-    if(worst!==best)h(worst.line,L(`최저 ${tuPc(worst.pr)}`,`Low ${tuPc(worst.pr)}`));
-    const t=ok===n?L(`주요 지표 ${E(n+'개')} 모두 목표 페이스 달성`,`All ${E(n)} key metrics on target pace`)
-      :ok?L(`주요 지표 ${n}개 중 ${E(ok+'개')} 목표 페이스 달성`,`${E(ok)} of ${n} key metrics on target pace`)
-      :L(`주요 지표 평균 페이스 ${E(tuPc(avg))}`,`Key metrics at ${E(tuPc(avg))} of pace on average`);
-    return {t,s:tuJoin([el&&L(`캠페인 ${el} 경과`,`${el} of the flight elapsed`),
-      L(`가장 앞선 ${best.l} ${tuPc(best.pr)}`,`ahead: ${best.l} ${tuPc(best.pr)}`),
-      worst!==best&&L(`가장 더딘 ${worst.l} ${tuPc(worst.pr)}`,`slowest: ${worst.l} ${tuPc(worst.pr)}`)])};},
+    let kk=null;try{const kr=kpiAchRows(activeLines());if(kr.length)kk=kr[0].k;}catch(e){}
+    const main=(kk&&rows.find(x=>x.d.l===((typeof KPI_LABEL!=='undefined'&&KPI_LABEL[kk])||kk)))||rows[0];
+    const d=main.d,lab=main.l,fk=v=>tuBig(v),pr=d.act/d.goal;
+    const media=(d.media||[]).filter(y=>y.v>0&&y.m&&y.m!=='–').sort((a,b)=>b.v-a.v);
+    const top=media[0],sh=v=>tuPc(v/(d.act||1),0);
+    if(top){const seg=[...main.line.querySelectorAll('.mstack i[data-m]')].find(i=>i.getAttribute('data-m')===top.m);
+      h(seg||main.line,L(`${top.m} ${fk(top.v)} 회`,`${top.m} ${fk(top.v)}`));}
+    const m=/(\d+(?:\.\d+)?)\s*%/.exec(tuTx(sl.src.querySelector('.phead'))),el=m?+m[1]:100;
+    const t=L(`목표 ${lab} ${fk(d.goal)} 대비 ${E(fk(d.act))} ${lab} · ${E(tuPc(pr))} 달성`,
+      `${E(fk(d.act))} ${lab} vs a ${fk(d.goal)} target · ${E(tuPc(pr))} achieved`);
+    const bits=[];
+    if(el<99.5&&d.due>0)bits.push(L(`캠페인 ${el}% 경과 · 페이스 대비 ${tuPc(d.act/d.due)}`,`${el}% of the flight · ${tuPc(d.act/d.due)} of pace`));
+    if(top)bits.push(L(`${lab}${tuJosa(lab,'을','를')} 이끈 매체 ${top.m} ${fk(top.v)} 회(${sh(top.v)})`,`led by ${top.m} with ${fk(top.v)} (${sh(top.v)})`));
+    if(media[1])bits.push(media.slice(1,3).map(y=>L(`${y.m} ${fk(y.v)} 회(${sh(y.v)})`,`${y.m} ${fk(y.v)} (${sh(y.v)})`)).join(' · '));
+    /* 다른 지표는 둘까지만(길면 뺀다) */
+    const others=rows.filter(x=>x!==main).map(x=>`${x.l} ${tuPc(x.d.act/x.d.goal)}`);
+    if(others.length&&others.length<=2)bits.push(L(`다른 지표 ${others.join(' · ')} 달성`,`other metrics: ${others.join(' · ')}`));
+    return {t,s:tuJoin(bits.slice(0,3))};},
   /* 주요 지표 — 합계 숫자 / 페이스 대비 가장 앞선 · 뒤처진 지표 */
   stat(sl,h){
     const pp=s=>{const m=/[+−-]\s?\d[\d.,]*\s?%p?/.exec(s||'');return m?m[0].replace(/\s/g,''):'';};
@@ -22644,13 +22690,33 @@ const TU_INS={
       const a=ks[0],b=ks[1],tg=tuNum(tuTx(x.vals[a])),ac=tuNum(tuTx(x.vals[b]));
       if(!(tg>0&&ac>0))return;
       const cost=tuCost(labs[b]);
-      kp.push({x,j:b,m:labs[b],cost,tgt:tuTx(x.vals[a]),act:tuTx(x.vals[b]),g:cost?(tg-ac)/tg:(ac-tg)/tg});});
+      kp.push({x,a,j:b,m:labs[b],cost,tgt:tuTx(x.vals[a]),act:tuTx(x.vals[b]),g:cost?(tg-ac)/tg:(ac-tg)/tg});});
     if(kp.length){
+      /* (v123) 몇 라인이 맞췄는지보다 TOTAL 이 KPI 를 맞췄는지가 먼저 — 라인 KPI 로 가장 많이 쓴 지표(목표 · 실적 열 쌍)의 TOTAL 값 */
       const met=kp.filter(z=>z.g>=0).length;
       const best=kp.reduce((a,b)=>b.g>a.g?b:a),worst=kp.reduce((a,b)=>b.g<a.g?b:a);
-      const say=z=>{const pr=Math.abs(z.g*100).toFixed(1)+'%';
-        return z.g>=0?L(`${z.x.name} ${z.m} ${z.act}(목표 대비 ${pr} ${z.cost?'절감':'초과'})`,`${z.x.name} ${z.m} ${z.act} (${pr} ${z.cost?'under':'over'} target)`)
-          :L(`${z.x.name} ${z.m} ${z.act}(목표 대비 ${pr} ${z.cost?'높음':'미달'})`,`${z.x.name} ${z.m} ${z.act} (${pr} ${z.cost?'over':'short of'} target)`);};
+      const pr=z=>Math.abs(z*100).toFixed(1)+'%';
+      const say=z=>z.g>=0?L(`${z.x.name} ${z.m} ${z.act}(${pr(z.g)} ${z.cost?'절감':'초과'})`,`${z.x.name} ${z.m} ${z.act} (${pr(z.g)} ${z.cost?'under':'over'})`)
+        :L(`${z.x.name} ${z.m} ${z.act}(${pr(z.g)} ${z.cost?'높음':'미달'})`,`${z.x.name} ${z.m} ${z.act} (${pr(z.g)} ${z.cost?'over':'short'})`);
+      const cnt=new Map();kp.forEach(z=>{const k=z.a+'|'+z.j;cnt.set(k,(cnt.get(k)||0)+1);});
+      const pairs=[...cnt].sort((a,b)=>b[1]-a[1]).map(([k])=>k.split('|').map(Number));
+      const totK=([ja,jb])=>{if(!tot)return null;const tg=tuNum(tuTx(tot.vals[ja])),ac=tuNum(tuTx(tot.vals[jb]));if(!(tg>0&&ac>0))return null;
+        const m=labs[jb],cost=tuCost(m);return {ja,jb,m,cost,tgt:tuTx(tot.vals[ja]),act:tuTx(tot.vals[jb]),g:cost?(tg-ac)/tg:(ac-tg)/tg};};
+      const T=pairs.map(totK).filter(Boolean),T0=T[0];
+      if(T0){
+        h(tot.vals[T0.jb],L(`TOTAL 목표 ${T0.tgt} → ${T0.act}`,`TOTAL ${T0.tgt} → ${T0.act}`));keepRow(tot);
+        h(best.x.vals[best.j],L(`최고 ${best.act}`,`Best ${best.act}`));keepRow(best.x);
+        const t=T0.g>=0?L(`TOTAL ${T0.m} ${E(T0.act)} — 목표 ${T0.tgt} 대비 ${E(pr(T0.g))} ${T0.cost?'절감':'초과 달성'}`,
+                            `TOTAL ${T0.m} ${E(T0.act)} — ${E(pr(T0.g))} ${T0.cost?'under':'over'} the ${T0.tgt} target`)
+                       :L(`TOTAL ${T0.m} ${E(T0.act)} — 목표 ${T0.tgt} 대비 ${E(pr(T0.g))} ${T0.cost?'높음':'미달'}`,
+                            `TOTAL ${T0.m} ${E(T0.act)} — ${E(pr(T0.g))} ${T0.cost?'over':'short of'} the ${T0.tgt} target`);
+        const bits=[];
+        if(T[1])bits.push(L(`TOTAL ${T[1].m} ${T[1].act}(목표 대비 ${pr(T[1].g)} ${T[1].g>=0?(T[1].cost?'절감':'초과'):(T[1].cost?'높음':'미달')})`,
+          `TOTAL ${T[1].m} ${T[1].act} (${pr(T[1].g)} ${T[1].g>=0?(T[1].cost?'under':'over'):(T[1].cost?'over':'short')})`));
+        bits.push(L(`라인 ${kp.length}개 중 ${met}개 KPI 달성`,`${met} of ${kp.length} lines on KPI target`));
+        bits.push(L(`가장 좋은 ${say(best)}`,`best: ${say(best)}`));
+        if(worst!==best&&worst.g<0&&bits.length<3)bits.push(L(`가장 아쉬운 ${say(worst)}`,`weakest: ${say(worst)}`));
+        return {t,s:tuJoin(bits.slice(0,3))};}
       h(best.x.vals[best.j],L(`목표 ${best.tgt} → ${best.act}`,`Target ${best.tgt} → ${best.act}`));keepRow(best.x);
       if(worst!==best&&worst.g<0){h(worst.x.vals[worst.j],L(`목표 ${worst.tgt} → ${worst.act}`,`Target ${worst.tgt} → ${worst.act}`));keepRow(worst.x);}
       return {t:met===kp.length?L(`${E(kp.length+'개')} 라인 모두 KPI 목표 달성`,`All ${E(kp.length)} lines on KPI target`)
@@ -22691,28 +22757,65 @@ const TU_INS={
     const leaf=[...c.querySelectorAll('*')].filter(e=>!e.querySelector('div,p,li')).map(tuTx).filter(x=>x.length>=8);
     const first=(leaf.find(x=>x.length>=14)||leaf[0]||tx);
     return {t:L('이번 기간 운영 포인트','Key notes from this period'),s:first.length>120?first.slice(0,118)+'…':first};},
-  /* 소재 × 일자 — 게재 소재 수 · 기준 지표 합계 / 1위 · 가장 오래 게재 */
+  /* 소재 × 일자 (v123) — 제목 = 게재가 이어지며 소재 효율이 어떻게 바뀌었나(첫 며칠 vs 마지막 며칠, 캠페인 KPI 단가),
+     부제목 = 흐름과 다른 소재(오히려 나빠짐 · 크게 좋아짐) · 늦게 들어와 좋았던 소재. 강조 = 부제목에 나온 소재 줄 */
   gantt(sl,h){
-    const t=sl.src.querySelector('table.gantt')||sl.src.querySelector('table');if(!t||!t.tBodies.length)return null;
-    const hr=t.tHead?[...t.tHead.rows]:[];
-    const ml=hr.length?[...hr[hr.length-1].cells].filter(c=>c.classList.contains('mcol')).map(tuTx):[];
-    const rows=[...t.tBodies[0].rows].map(r=>{const nm=r.querySelector('td.nm');if(!nm)return null;
-      const ms=[...r.querySelectorAll('td.mcol')];
-      return {r,nm:tuTx(nm),ms,hi:ms.findIndex(c=>c.classList.contains('hl')),days:r.querySelectorAll('td.day>.b').length};}).filter(Boolean);
-    if(!rows.length)return null;
-    const j=Math.max(0,rows[0].hi),lab=ml[j]||'',cost=tuCost(lab);
-    const v=x=>tuNum(tuTx(x.ms[j]));
-    const ok=rows.filter(x=>x.ms[j]&&isFinite(v(x))&&v(x)>0);
-    const long=rows.reduce((a,b)=>b.days>a.days?b:a);
-    if(!ok.length){h(long.r,L(`${long.days}일 게재`,`${long.days} days`));
-      return {t:L(`소재 ${E(rows.length+'개')} 게재`,`${E(rows.length)} creatives ran`),s:L(`가장 오래 게재 ${long.nm} ${long.days}일`,`longest: ${long.nm}, ${long.days} days`)};}
-    const top=ok.reduce((a,b)=>(cost?v(b)<v(a):v(b)>v(a))?b:a),vt=tuShortTx(tuTx(top.ms[j]));
-    h(top.r,`${lab} ${vt}`);
-    const sum=ok.reduce((a,x)=>a+v(x),0);
-    return {t:cost?L(`소재 ${E(rows.length+'개')} 게재`,`${E(rows.length)} creatives ran`)
-                  :L(`소재 ${E(rows.length+'개')} · ${lab} 합계 ${E(tuBig(sum))}`,`${E(rows.length)} creatives · ${lab} ${E(tuBig(sum))} in total`),
-      s:tuJoin([cost?L(`${lab} 최저 ${top.nm} ${vt}`,`lowest ${lab}: ${top.nm} ${vt}`):L(`${lab} 최다 ${top.nm} ${vt}`,`most ${lab}: ${top.nm} ${vt}`),
-        L(`가장 오래 게재 ${long.nm} ${long.days}일`,`longest: ${long.nm}, ${long.days} days`)])};},
+    const tb=sl.src.querySelector('table.gantt')||sl.src.querySelector('table');if(!tb||!tb.tBodies.length)return null;
+    const trs=[...tb.tBodies[0].rows].map(r=>{const nm=r.querySelector('td.nm');return nm?{r,nm:tuTx(nm)}:null;}).filter(Boolean);
+    if(!trs.length)return null;
+    let list=[];try{list=ganttCreatives().filter(c=>(c.daily.imp||[]).some(v=>v>0));}catch(e){}
+    const BASE={cpm:'imp',cpc:'click',cpv:'view',cpa:'conv',cpe:'eng',cpi:'install'};
+    const unitOf=c=>{try{const l=LINES.find(x=>x.id===((c.lids&&c.lids[0])||c.lid));return KPI_UNIT[kpiOf(l)]||'cpm';}catch(e){return 'cpm';}};
+    const wt=new Map();list.forEach(c=>{const u=unitOf(c);wt.set(u,(wt.get(u)||0)+(c.daily.cost||[]).reduce((a,v)=>a+(+v||0),0));});
+    const U=[...wt].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0],bk=BASE[U]||'imp';
+    const val=(c,b)=>b>0?(U==='cpm'?c/b*1000:c/b):NaN;
+    const f=v=>typeof METRICS!=='undefined'&&METRICS[U]?METRICS[U].f(v):'₩'+Math.round(v).toLocaleString('en-US');
+    const pool=list.filter(c=>unitOf(c)===U);
+    let SC=null;try{SC=GANTT_RANGE==='view'?viewScope():mkScope(campStart(),campEnd());}catch(e){}
+    const i0=SC?SC.i0:0,i1=Math.min(SC?SC.i1:1e9,(typeof ELAPSED!=='undefined'?ELAPSED:1e9)-1);
+    const dayOf=(cs,i)=>{let c=0,b=0;cs.forEach(x=>{c+=+((x.daily.cost||[])[i])||0;b+=+((x.daily[bk]||[])[i])||0;});return {i,c,b};};
+    const span=cs=>{const a=[];for(let i=i0;i<=i1;i++){const d=dayOf(cs,i);if(d.c>0&&d.b>0)a.push(d);}return a;};
+    const agg=a=>val(a.reduce((x,d)=>x+d.c,0),a.reduce((x,d)=>x+d.b,0));
+    const days=pool.length?span(pool):[];
+    const n=trs.length,lab=String(U||'').toUpperCase();
+    if(days.length<4){
+      return {t:L(`소재 ${E(n+'개')} 게재`,`${E(n)} creatives ran`),s:''};}
+    const W=Math.max(2,Math.min(7,Math.floor(days.length/3)));
+    const v1=agg(days.slice(0,W)),v2=agg(days.slice(-W)),g=(v1-v2)/v1;       /* 단가 — 내려가면 좋아진 것 */
+    const pc=x=>Math.abs(x*100).toFixed(1)+'%';
+    const t=Math.abs(g)<.03?L(`게재 내내 ${lab} ${E(f(v2))} 안팎으로 고르게 유지`,`${lab} held steady around ${E(f(v2))}`)
+      :g>0?L(`게재가 이어지며 ${lab} ${f(v1)} → ${E(f(v2))}, ${E(pc(g)+' 개선')}`,`${lab} improved ${E(pc(g))} over the flight — ${f(v1)} → ${E(f(v2))}`)
+      :L(`게재가 이어지며 ${lab} ${f(v1)} → ${E(f(v2))}, ${E(pc(g))} 상승`,`${lab} rose ${E(pc(g))} over the flight — ${f(v1)} → ${E(f(v2))}`);
+    /* 소재마다 — 첫 · 마지막 며칠, 들어온 날, 전체 단가 */
+    const avg=agg(days),bits=[];
+    pool.forEach(c=>{const a=span([c]);if(a.length<4)return;const w=Math.max(2,Math.min(7,Math.floor(a.length/3)));
+      const c1=agg(a.slice(0,w)),c2=agg(a.slice(-w)),gc=(c1-c2)/c1,va=agg(a),nm=c.name||'';
+      if(!nm||!isFinite(gc))return;
+      /* 흐름과 반대 */
+      if(Math.abs(gc)>=.15&&Math.sign(gc)!==Math.sign(g||1))bits.push({c,sc:Math.abs(gc)+.2,
+        tx:gc<0?L(`${nm}는 오히려 ${lab} ${pc(gc)} 상승(${f(c1)} → ${f(c2)})`,`${nm}: ${lab} up ${pc(gc)} instead (${f(c1)} → ${f(c2)})`)
+               :L(`${nm}는 홀로 ${lab} ${pc(gc)} 개선(${f(c1)} → ${f(c2)})`,`${nm}: ${lab} improved ${pc(gc)} against the trend`),
+        chip:L(`${lab} ${gc<0?'+':'−'}${pc(gc)}`,`${lab} ${gc<0?'+':'−'}${pc(gc)}`)});
+      else if(Math.abs(gc)>=.2)bits.push({c,sc:Math.abs(gc)*.8,same:gc>0?'down':'up',
+        tx:gc>0?L(`${nm} ${f(c1)} → ${f(c2)}(−${pc(gc)})`,`${nm} ${f(c1)} → ${f(c2)} (−${pc(gc)})`)
+               :L(`${nm} ${f(c1)} → ${f(c2)}(+${pc(gc)})`,`${nm} ${f(c1)} → ${f(c2)} (+${pc(gc)})`),
+        chip:L(`${lab} ${gc>0?'−':'+'}${pc(gc)}`,`${lab} ${gc>0?'−':'+'}${pc(gc)}`)});
+      bits.push({c,sc:.01+(avg-va)/avg*.01,tx:L(`가장 효율 좋은 소재 ${nm} ${lab} ${f(va)}`,`most efficient: ${nm} ${lab} ${f(va)}`),chip:L(`${lab} ${f(va)}`,`${lab} ${f(va)}`),best:1,va});
+      /* 늦게 들어와 좋았던 소재 */
+      const late=a[0].i-days[0].i;
+      if(late>=Math.max(3,days.length*.2)&&va<avg*.85)bits.push({c,sc:(1-va/avg)+.1,
+        tx:L(`${tuDay(ALLDATES[a[0].i])} 투입된 ${nm} ${lab} ${f(va)} — 평균보다 ${pc(1-va/avg)} 낮음`,`${nm}, added ${tuDay(ALLDATES[a[0].i])}: ${lab} ${f(va)}, ${pc(1-va/avg)} below average`),
+        chip:L(`${tuDay(ALLDATES[a[0].i])} 투입`,`Added ${tuDay(ALLDATES[a[0].i])}`)});});
+    /* '가장 효율 좋은 소재'는 단가가 가장 낮은 하나만 후보로 */
+    const bestOnly=bits.filter(b=>b.best).sort((a,b)=>a.va-b.va)[0];
+    const cands=bits.filter(b=>!b.best).concat(bestOnly?[bestOnly]:[]);
+    const pick=[];cands.sort((a,b)=>b.sc-a.sc).forEach(b=>{if(pick.length<2&&!pick.some(x=>x.c===b.c))pick.push(b);});
+    pick.forEach(b=>{const tr=trs.find(x=>x.nm===b.c.name)||trs.find(x=>x.nm.startsWith(b.c.name));if(tr)h(tr.r,b.chip);});
+    /* 같은 방향으로 크게 움직인 소재는 머리말을 한 번만 — '상승 폭이 큰 소재 A … · B …' */
+    let said=false;
+    const sub=pick.map(b=>{if(!b.same)return b.tx;const pre=said?'':(b.same==='up'?L(`${lab} 상승 폭이 큰 소재 `,`${lab} rose most: `):L(`${lab} 개선 폭이 큰 소재 `,`${lab} improved most: `));said=true;return pre+b.tx;});
+    if(!sub.length)sub.push(L(`소재 ${n}개 · 기간 평균 ${lab} ${f(avg)}`,`${n} creatives · ${lab} ${f(avg)} on average`));
+    return {t,s:tuJoin(sub)};},
   /* 효율 우수 소재 — 기준별 1위 모아 보기 */
   creative(sl,h){
     const cols=[...sl.src.querySelectorAll('.crcol')].map(c=>{const ld=c.querySelector('.cr.lead')||c.querySelector('.cr');
@@ -22781,46 +22884,71 @@ const TU_INS={
     return {t:both.length?L(`${cs.length}개 중 ${E(both.length+'개')}가 두 효율 모두 상위권`,`${E(both.length)} of ${cs.length} lead on both efficiency axes`)
                          :L(`${cs.length}개 중 효율 1위 ${E(nm(b))}`,`Most efficient of ${cs.length}: ${E(nm(b))}`),
       s:tuJoin([L(`가장 앞선 ${nm(b)}`,`best: ${nm(b)}`),ax[0]&&`${ax[0]} ${b.getAttribute('data-xf')||''}`,ax[1]&&`${ax[1]} ${b.getAttribute('data-yf')||''}`])};},
-  /* 유입 ① — 유입당 단가(IWV 단가)가 제목, 유입률 · 체류는 부제목 (유입률은 보통 아주 낮게 나온다) */
+  /* 유입 ① (v123) — 제목 = IWV 단가 + 어느 매체에서 어느 랜딩으로 가장 많이 들어왔나, 부제목 = 그 양 · 2위 길 · 랜딩 비중.
+     강조 = 유입 흐름의 1위 띠 · IWV 단가 칸 */
   infA(sl,h){
     const ks=[...sl.src.querySelectorAll('.infk')].map(k=>({k:tuTx(k.querySelector('span')).replace(/\s*\([^)]*\)\s*$/,''),v:tuTx(k.querySelector('b')),el:k}))
       .filter(x=>x.k&&x.v);
     if(!ks.length)return null;
-    const cp=ks.find(x=>/유입당 단가|단가|cost per/i.test(x.k)),iw=ks.find(x=>/IWV/i.test(x.k));
-    if(cp)h(cp.el,'');if(iw)h(iw.el,'');
-    /* 사람들이 부르는 이름 그대로 — 'IWV 단가' */
-    const head=[cp&&L(`IWV 단가 ${E(cp.v)}`,`Cost per IWV ${E(cp.v)}`),iw&&L(`IWV ${E(iw.v)}`,`${E(iw.v)} IWV`)].filter(Boolean);
-    return {t:head.length?head.join(' · '):`${ks[0].k} ${E(ks[0].v)}`,s:tuJoin(ks.filter(x=>x!==cp&&x!==iw).map(x=>`${x.k} ${x.v}`))};},
-  /* 유입 ② — 그래프 세 개(효율 지도 · 랜딩별 체류 · 매체별 체류)를 하나씩 차례로 강조 */
+    const cp=ks.find(x=>/유입당 단가|단가|cost per/i.test(x.k)),iw=ks.find(x=>/IWV/i.test(x.k)),rt=ks.find(x=>/유입률|inflow rate/i.test(x.k));
+    const md=tuInfModel(),M=md&&md.M;
+    let fl=[];
+    if(M)M.rows.forEach((g,i)=>M.R.forEach((r,j)=>{const v=M.flowTo(g,r);if(v>0)fl.push({i,j,v,m:infName(g),p:r.l,other:r.kind==='other'});}));
+    fl.sort((a,b)=>b.v-a.v);
+    const TV=M?M.TV:0,top=fl.find(x=>!x.other)||null,second=top?fl.find(x=>x!==top&&!x.other):null;
+    const pc=v=>TV?tuPc(v/TV,0):'';
+    if(top){const p=sl.src.querySelector(`path.sklink.zf[data-i="${top.i}"][data-j="${top.j}"]`);
+      h(p||null,`${top.m} → ${top.p} ${fmt(top.v)}`);}
+    if(cp)h(cp.el,'');
+    const lands=M?M.R.map((r,j)=>({p:r.l,v:fl.filter(x=>x.j===j).reduce((a,x)=>a+x.v,0),other:r.kind==='other'})).filter(x=>x.v>0&&!x.other).sort((a,b)=>b.v-a.v):[];
+    if(!top){const head=[cp&&L(`IWV 단가 ${E(cp.v)}`,`Cost per IWV ${E(cp.v)}`),iw&&L(`IWV ${E(iw.v)}`,`${E(iw.v)} IWV`)].filter(Boolean);
+      return {t:head.length?head.join(' · '):`${ks[0].k} ${E(ks[0].v)}`,s:tuJoin(ks.filter(x=>x!==cp&&x!==iw).map(x=>`${x.k} ${x.v}`))};}
+    const path=`${top.m} → ${top.p}`;
+    const t=cp?L(`IWV 단가 ${E(cp.v)} — ${E(path)} 유입이 가장 많아요`,`Cost per IWV ${E(cp.v)} — most inflow came via ${E(path)}`)
+      :L(`${E(path)} 유입이 가장 많아요`,`Most inflow came via ${E(path)}`);
+    return {t,s:tuJoin([L(`${path} ${fmt(top.v)}회(전체의 ${pc(top.v)})`,`${path}: ${fmt(top.v)} (${pc(top.v)} of all)`),
+      second&&L(`2위 ${second.m} → ${second.p} ${fmt(second.v)}회`,`#2 ${second.m} → ${second.p} ${fmt(second.v)}`),
+      lands.length>1?L(`랜딩 비중 ${lands.slice(0,3).map(x=>`${x.p} ${pc(x.v)}`).join(' · ')}`,`landing share ${lands.slice(0,3).map(x=>`${x.p} ${pc(x.v)}`).join(' · ')}`)
+        :rt&&`${rt.k} ${rt.v}`])};},
+  /* 유입 ② (v123) — 제목 = 전체 유입 효율(유입률 · 평균 체류 · 30초 이상), 부제목 = 매체마다 특히 좋았던 부분
+     (IWV 단가 최저 · 유입률 최고 · 체류 최장). 강조 = 그래프 세 개를 차례로 — 지도의 그 매체 원 · 가장 오래 머문 랜딩 · 가장 오래 머문 매체 */
   infB(sl,h){
-    const cells=[...sl.src.querySelectorAll('.infgrid>.infcell')];
-    const bits=[];
-    /* 효율 지도 — 오른쪽 위(단가 낮고 유입률 높음)에 가장 가까운 원 */
-    const mp=cells.find(c=>c.classList.contains('infmapc'));
-    if(mp){const dots=[...mp.querySelectorAll('circle.mc')],labs=[...mp.querySelectorAll('text.mlab')];
-      const sv=mp.querySelector('svg'),vb=sv&&sv.viewBox&&sv.viewBox.baseVal;
-      let best=null;dots.forEach(c=>{const x=+c.getAttribute('cx'),y=+c.getAttribute('cy'),sc=x-(vb?y*vb.width/vb.height:y);if(!best||sc>best.sc)best={c,x,y,sc};});
-      let nm='';if(best&&labs.length){const near=labs.map(t=>({t,d:Math.hypot(+t.getAttribute('x')-best.x,+t.getAttribute('y')-best.y)})).sort((a,b)=>a.d-b.d)[0];nm=near?tuTx(near.t):'';}
-      h(mp,nm?L(`효율 최고 ${nm}`,`Best: ${nm}`):L('유입 효율 지도','Efficiency map'),0);if(nm)bits.push(L(`유입 효율 최고 ${nm}`,`most efficient: ${nm}`));}
-    /* 랜딩별 체류 — 가장 긴 랜딩 */
-    const ld=cells.find(c=>c.classList.contains('infldc'));
+    const cells=[...sl.src.querySelectorAll('.infgrid>.infcell')];if(!cells.length)return null;
+    const md=tuInfModel(),A=md&&md.A;
+    const rows=md?md.rows.filter(g=>(+g.b.iwv||0)>=(typeof INF_MIN!=='undefined'?INF_MIN:10)&&g.key!=='__etc'):[];
+    const by=(fn,low)=>{let b=null;rows.forEach(g=>{const v=fn(g.b);if(!isFinite(v)||v<=0)return;if(!b||(low?v<b.v:v>b.v))b={g,v,nm:infName(g)};});return b;};
+    const bC=by(infCpv,true),bR=by(infRate),bD=by(b=>dwSum(b)>=10?dwAvg(b):NaN);
     const dur=t=>{const m=/(\d+)\s*(?:분|m)/.exec(t),s=/(\d+)\s*(?:초|s)/.exec(t);return (m?+m[1]*60:0)+(s?+s[1]:0);};
     const txt=b=>b?[...b.childNodes].filter(n=>n.nodeType===3).map(n=>n.nodeValue.trim()).filter(Boolean).join(' '):'';
-    if(ld){const ls=[...ld.querySelectorAll('.ldcol')].map(c=>({nm:tuTx(c.querySelector('.ldname')),t:txt(c.querySelector('.ldavg b'))})).filter(x=>x.nm&&dur(x.t)>0);
-      const b=ls.length?ls.reduce((a,x)=>dur(x.t)>dur(a.t)?x:a):null;
-      h(ld,b?`${b.nm} ${b.t}`:L('랜딩별 체류','Time by landing'),1);if(b)bits.push(L(`가장 오래 머문 랜딩 ${b.nm} ${b.t}`,`longest landing: ${b.nm} ${b.t}`));}
-    /* 매체별 체류 — 가장 긴 매체 */
+    /* ① 지도 — IWV 단가가 가장 낮은 매체의 원(이름표로 찾는다) */
+    const mp=cells.find(c=>c.classList.contains('infmapc'));
+    if(mp){const who=bC||bR;let circ=null;
+      if(who){const labs=[...mp.querySelectorAll('text.mlab')],t=labs.find(x=>{const s=tuTx(x).replace(/…$/,'');return s&&(who.nm===s||who.nm.endsWith(s)||who.nm.startsWith(s)||s.endsWith(who.g.lab));});
+        if(t){const tx=+t.getAttribute('x'),ty=+t.getAttribute('y');
+          circ=[...mp.querySelectorAll('circle.mc')].map(c=>({c,d:Math.hypot(+c.getAttribute('cx')-tx,+c.getAttribute('cy')-ty)})).sort((a,b)=>a.d-b.d)[0];circ=circ&&circ.c;}}
+      h(circ||mp,who?(who===bC?L(`IWV 단가 최저 ${who.nm}`,`Lowest cost per IWV: ${who.nm}`):L(`유입률 최고 ${who.nm}`,`Top inflow rate: ${who.nm}`)):L('유입 효율 지도','Efficiency map'),0);}
+    /* ② 랜딩별 체류 — 가장 긴 랜딩 */
+    const ld=cells.find(c=>c.classList.contains('infldc'));let bl=null;
+    if(ld){const ls=[...ld.querySelectorAll('.ldcol')].map(c=>({c,nm:tuTx(c.querySelector('.ldname')),t:txt(c.querySelector('.ldavg b'))})).filter(x=>x.nm&&dur(x.t)>0);
+      bl=ls.length?ls.reduce((a,x)=>dur(x.t)>dur(a.t)?x:a):null;
+      h(bl?bl.c:ld,bl?L(`가장 오래 머문 랜딩 ${bl.t}`,`Longest stay ${bl.t}`):L('랜딩별 체류','Time by landing'),1);}
+    /* ③ 매체별 체류 — 가장 긴 매체 */
     const dw=cells.find(c=>c.classList.contains('infdwc'));
-    if(dw){const rs=[...dw.querySelectorAll('.dwrow')].map(r=>({nm:tuTx(r.querySelector('.dwl b')),t:txt(r.querySelector('.dwr b'))})).filter(x=>dur(x.t)>0);
+    if(dw){const rs=[...dw.querySelectorAll('.dwrow')].map(r=>({r,nm:tuTx(r.querySelector('.dwl b')),t:txt(r.querySelector('.dwr b'))})).filter(x=>dur(x.t)>0);
       const b=rs.length?rs.reduce((a,x)=>dur(x.t)>dur(a.t)?x:a):null;
-      h(dw,b?`${b.nm} ${b.t}`.trim():L('매체별 체류','Time by media'),2);
-      if(b&&b.nm)bits.push(L(`가장 오래 머문 매체 ${b.nm} ${b.t}`,`longest media: ${b.nm} ${b.t}`));}
-    if(!cells.length)return null;
-    /* 제목 — 전체 평균 체류(원래 화면의 유입 지표 칸) */
-    const ks=[...document.querySelectorAll('#infBody .infk')].map(k=>({k:tuTx(k.querySelector('span')),v:tuTx(k.querySelector('b')),e:tuTx(k.querySelector('em'))}));
-    const dk=ks.find(x=>/체류|time on site|dwell/i.test(x.k));
-    return {t:dk?L(`평균 체류 ${E(dk.v)}${dk.e?' · '+dk.e:''}`,`Avg. time on site ${E(dk.v)}${dk.e?' · '+dk.e:''}`):L('유입 효율 · 랜딩 · 체류','Efficiency, landing and time on site'),
-      s:tuJoin(bits)};},
+      h(b?b.r:dw,b?L(`체류 최장 ${b.t}`,`Longest stay ${b.t}`):L('매체별 체류','Time by media'),2);}
+    const rate=A?infRate(A):NaN,dwa=A?dwAvg(A):NaN,d30=A&&typeof dw30Rate==='function'?dw30Rate(A):NaN;
+    const head=[isFinite(rate)&&L(`유입률 ${E(pct(rate,2))}`,`Inflow rate ${E(pct(rate,2))}`),isFinite(dwa)&&L(`평균 체류 ${E(fmtDur(dwa))}`,`avg. time on site ${E(fmtDur(dwa))}`),
+      isFinite(d30)&&L(`30초 이상 ${pct(d30,1)}`,`${pct(d30,1)} stay 30s+`)].filter(Boolean);
+    /* 같은 매체가 여러 부분에서 1위면 한 번에 */
+    const wins=new Map();
+    [[bC,L('IWV 단가','cost per IWV'),L('최저','lowest'),v=>won(Math.round(v))],[bR,L('유입률','inflow rate'),L('최고','top'),v=>pct(v,2)],
+     [bD,L('체류','time on site'),L('최장','longest'),v=>fmtDur(v)]].forEach(([b,an,w,fv])=>{if(!b)return;
+      if(!wins.has(b.nm))wins.set(b.nm,[]);wins.get(b.nm).push({an,w,v:fv(b.v)});});
+    const sub=[...wins].map(([nm,a])=>a.length>1?L(`${nm} — ${a.map(x=>`${x.an} ${x.v}`).join(' · ')} 모두 1위`,`${nm} leads on ${a.map(x=>`${x.an} ${x.v}`).join(' · ')}`)
+      :L(`${a[0].an} ${a[0].w} ${nm} ${a[0].v}`,`${a[0].w} ${a[0].an}: ${nm} ${a[0].v}`));
+    if(bl&&sub.length<3)sub.push(L(`가장 오래 머문 랜딩 ${bl.nm} ${bl.t}`,`longest landing: ${bl.nm} ${bl.t}`));
+    return {t:head.length?head.join(' · '):L('유입 효율 · 랜딩 · 체류','Efficiency, landing and time on site'),s:tuJoin(sub.slice(0,3))};},
   /* 유입 ③ — 상세 표 */
   infC(sl){
     if(!sl.src.querySelector('table'))return null;
@@ -22948,9 +23076,12 @@ function tuLayout(node,sl){
   stage.style.top=top+'px';
   const sw=Math.max(200,stage.clientWidth),sh=Math.max(160,stage.clientHeight);
   let s;
-  src.style.transform='none';
+  src.style.transform='none';src.style.zoom='';
   if(sl.kind!=='body'){
     src.style.width=Math.round(sw)+'px';
+    /* 핵심 요약 — 갈래 카드를 모두 같은 크기로(가장 큰 카드에 맞춘다) */
+    const cs=[...src.querySelectorAll('.tu-cat')];
+    if(cs.length){cs.forEach(c=>c.style.height='');const mh=Math.max(...cs.map(c=>c.offsetHeight));cs.forEach(c=>c.style.height=mh+'px');}
     s=Math.min(1,sh/src.offsetHeight);}
   else if(sl.tblX>0){
     const full=sl.W+sl.tblX;
@@ -22961,7 +23092,8 @@ function tuLayout(node,sl){
   else{src.style.width=sl.W+'px';s=tuWrap(src,sl,sw,sh,1.25);}
   s=Math.max(.2,s);
   const w=src.offsetWidth,h=src.offsetHeight;
-  src.style.transform=`scale(${s})`;
+  /* (v123) transform 으로 줄이면 표의 1px 선이 화소 사이에 걸려 굵기 · 진하기가 줄마다 달라 보였다 — zoom 은 다시 배치해서 선 · 글자가 또렷하다 */
+  src.style.zoom=String(s);
   fit.style.width=Math.round(w*s)+'px';fit.style.height=Math.round(h*s)+'px';
   /* 남는 세로 여백은 위 30% · 아래 70% — 제목과 가깝게 */
   node.querySelector('.tu-in').style.marginTop=sl.kind==='body'?Math.max(0,Math.round((sh-h*s)*.3))+'px':'';
@@ -23036,27 +23168,118 @@ const tuStepOf=e=>+(e.getAttribute('data-tust')||0);
 const tuSteps=src=>[...new Set([...src.querySelectorAll('[data-tuhl]')].map(tuStepOf))].sort((a,b)=>a-b);
 function tuDur(sl){if(!sl||!sl.src)return TU_PLAY;const n=tuSteps(sl.src).length;
   return n>1?Math.max(TU_PLAY,tuSlow(sl.src)+n*TU_STEP+1800):TU_PLAY;}
-/* ---------- 5. 강조 — 강조할 곳은 그대로 두고 나머지를 조금 투명하게(상대적으로 진하게 보이게) · 이름표 (v119: 테두리 없앰) ---------- */
+/* ---------- 5. 강조 (v123) — 흐리게 하지 않는다. 형광펜(뒤 글자가 그대로 비치는 색 덧칠) + 가리키는 손가락 + 이름표 ----------
+   손가락 · 이름표는 원본 데이터(글자 · 막대 · 점)를 가리지 않는 빈자리를 찾아 놓는다(위 → 오른쪽 → 왼쪽 → 아래, 칸 안 여백까지).
+   이름표까지 놓을 빈자리가 없으면 손가락만, 손가락도 놓을 곳이 없으면 가장 덜 겹치는 곳에 */
 function tuScroller(el,root){
   for(let p=el.parentElement;p&&p!==root;p=p.parentElement){
     const cs=getComputedStyle(p);if(/auto|scroll/.test(cs.overflowX)&&p.scrollWidth>p.clientWidth+1)return p;}
   return null;}
-/* 옅게 하기 — 강조할 곳까지 이어지는 줄기는 그대로 두고, 그 형제들만 흐리게(덮개 상자를 씌우지 않아 배경 결이 그대로).
-   표 — 줄(tr)을 통째로 흐리면 줄마다 겹 하나가 생겨, 여러 줄에 걸친 고정 칸(rowspan) 위로 옆 칸이 비쳐 보인다.
-   칸마다 흐리고, 고정 칸(sticky)은 바탕을 덮는 방식(.tu-fadeS)으로. hls 가 비면 모두 다시 진하게 */
-function tuFade(src,hls){
-  src.querySelectorAll('.tu-fade,.tu-fadeS').forEach(n=>n.classList.remove('tu-fade','tu-fadeS'));
-  if(!hls.length)return;
-  const keep=new Set();hls.concat([...src.querySelectorAll('[data-tukeep]')]).forEach(e=>{for(let p=e;p&&p!==src;p=p.parentElement)keep.add(p);});
-  const fade=new Set();
-  keep.forEach(p=>{const par=p.parentElement;if(!par)return;
-    for(const c of par.children)if(!keep.has(c)&&!/^(defs|style|linearGradient|radialGradient|clipPath|mask)$/i.test(c.tagName))fade.add(c);});
-  const add=(c,sticky)=>{c.classList.add('tu-ft',sticky?'tu-fadeS':'tu-fade');};
-  fade.forEach(c=>{
-    if(/^(TR|THEAD|TBODY|TFOOT)$/.test(c.tagName)){
-      c.querySelectorAll('td,th').forEach(td=>{if(!keep.has(td))add(td,getComputedStyle(td).position==='sticky');});
-      return;}
-    add(c,/^(TD|TH)$/.test(c.tagName)&&getComputedStyle(c).position==='sticky');});}
+/* 손가락 — 위를 가리키는 손(끝 = 8,2 / 24). 흰 손 · 강조색 테두리 */
+const TU_HAND=(acc,fill)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4a2 2 0 0 1 4 0v5.2a2 2 0 0 1 4 0v1.4a2 2 0 0 1 4 0V12a2 2 0 0 1 4 0v3a7.5 7.5 0 0 1-7.5 7.5h-1.9c-2.5 0-4-.8-5.4-2.2l-4-4a1.9 1.9 0 0 1 2.7-2.7l.1.1z" fill="${fill||'#fff'}" stroke="${acc}" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 9.2v3.4M14 10.6v2.6M18 12v2.2" stroke="${acc}" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+/* 가리면 안 되는 것들(화면 좌표) — 글자, SVG 의 점 · 막대 · 띠, 작은 색 막대(HTML) */
+function tuObst(root){
+  const out=[],rg=document.createRange(),seen=new Map();
+  const vis=el=>{if(seen.has(el))return seen.get(el);const cs=getComputedStyle(el);
+    const v=cs.visibility!=='hidden'&&cs.display!=='none';seen.set(el,v);return v;};
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  for(let n=tw.nextNode();n;n=tw.nextNode()){
+    if(!/\S/.test(n.nodeValue))continue;const p=n.parentElement;if(!p||!vis(p)||p.closest('defs,style,script,title'))continue;
+    rg.selectNodeContents(n);for(const r of rg.getClientRects())if(r.width>.5&&r.height>.5)out.push({left:r.left,top:r.top,width:r.width,height:r.height,el:p,tx:1});}
+  const RR=root.getBoundingClientRect(),RA=RR.width*RR.height;
+  root.querySelectorAll('*').forEach(e=>{
+    const tag=e.tagName.toLowerCase();
+    if(e instanceof SVGElement){
+      if(!/^(circle|ellipse|rect|path|polygon|image)$/.test(tag)||e.closest('defs,clipPath,mask,pattern,marker'))return;
+      const r=e.getBoundingClientRect();if(r.width<2||r.height<2)return;
+      const cs=getComputedStyle(e);if(cs.visibility==='hidden'||cs.display==='none'||+cs.opacity<.05)return;
+      const fill=cs.fill!=='none'&&+cs.fillOpacity>.05,stroke=cs.stroke!=='none'&&parseFloat(cs.strokeWidth)>=2;
+      const o={left:r.left,top:r.top,width:r.width,height:r.height,el:e,tx:0};
+      if(tag==='circle'||tag==='ellipse'){if(fill||stroke)out.push(o);return;}
+      if(!fill&&tag!=='image')return;
+      const s=e.ownerSVGElement&&e.ownerSVGElement.getBoundingClientRect(),sa=s?s.width*s.height:Infinity;
+      if(r.width*r.height>sa*.6)return;                                 /* 바탕 · 언덕 같은 큰 면은 빼고 */
+      if(tag==='path'&&r.width*r.height>sa*.03)return;                  /* 흐름 띠처럼 비스듬한 큰 면 — 상자로 재면 주변이 다 막힌다 */
+      out.push(o);return;}
+    if(/^(td|th|tr|table|tbody|thead|tfoot|colgroup|col)$/.test(tag))return;
+    if(tag==='img'||tag==='canvas'){const r=e.getBoundingClientRect();out.push({left:r.left,top:r.top,width:r.width,height:r.height,el:e,tx:0});return;}
+    const r=e.getBoundingClientRect();if(r.width<1||r.height<1)return;
+    if(Math.min(r.width,r.height)>64||r.width*r.height>RA*.04)return;   /* 카드 같은 큰 상자는 빼고 작은 색 막대만 */
+    const cs=getComputedStyle(e);if(cs.visibility==='hidden')return;
+    const m=/rgba?\(([^)]+)\)/.exec(cs.backgroundColor),a=m?m[1].split(/[\s,/]+/).filter(Boolean)[3]:null;
+    if((m&&(a==null||+a>.05))||cs.backgroundImage!=='none')out.push({left:r.left,top:r.top,width:r.width,height:r.height,el:e,tx:0});});
+  return out;}
+/* 이름표 너비 */
+let TU_CV=null;
+function tuTextW(t,px){TU_CV=TU_CV||document.createElement('canvas');const c=TU_CV.getContext('2d');
+  c.font=`800 ${px||13}px 'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR',sans-serif`;return c.measureText(t).width;}
+/* 놓기 — items: {r:대상 상자, t:대상 글자 상자(없으면 null), pw · ph:이름표 크기(없으면 0), finger}
+   좌표는 모두 같은 평면(무대 또는 그림). B = 놓아도 되는 범위. F = 손가락 크기 */
+function tuPlace(items,obst,B,F,C){
+  const G=Math.max(3,F*.12),placed=[];
+  const inter=(a,b)=>{const w=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),h=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);return w>0&&h>0?w*h:0;};
+  let pan=[];
+  let own=null;
+  const cost=bx=>{let c=0;for(const o of obst){if(own&&!o.tx&&o.el&&(o.el===own||own.contains(o.el)))continue;c+=inter(bx,o);}
+    for(const o of pan)c+=inter(bx,o)*.5;for(const p of placed)c+=inter(bx,p)*3;
+    const ox=Math.max(0,B.x0-bx.x)+Math.max(0,bx.x+bx.w-B.x1),oy=Math.max(0,B.y0-bx.y)+Math.max(0,bx.y+bx.h-B.y1);
+    return c+(ox*bx.h+oy*bx.w)*6;};
+  const fbox=(ax,ay,rot)=>{const th=rot*Math.PI/180,s=F/24,dx=-4,dy=-10;
+    const cx=ax-(dx*Math.cos(th)-dy*Math.sin(th))*s,cy=ay-(dx*Math.sin(th)+dy*Math.cos(th))*s;
+    return {x:cx-F/2,y:cy-F/2,w:F,h:F,cx,cy,rot};};
+  const around=(R,list)=>{const cx=R.x+R.w/2,cy=R.y+R.h/2;
+    return list.map(s=>s==='top'?fbox(cx,R.y-G,180):s==='bottom'?fbox(cx,R.y+R.h+G,0):s==='left'?fbox(R.x-G,cy,90):fbox(R.x+R.w+G,cy,270));};
+  const pills=(fb,pw,ph)=>fb.rot===90?[{x:fb.x-4-pw,y:fb.cy-ph/2,w:pw,h:ph,side:'l'}]:fb.rot===270?[{x:fb.x+fb.w+4,y:fb.cy-ph/2,w:pw,h:ph,side:'r'}]
+    :[{x:fb.x+fb.w+4,y:fb.cy-ph/2,w:pw,h:ph,side:'r'},{x:fb.x-4-pw,y:fb.cy-ph/2,w:pw,h:ph,side:'l'}];
+  return items.map(it=>{
+    if(!it.finger)return null;
+    pan=it.pan||[];own=it.el||null;
+    const R=it.f||it.r;
+    /* 대상 둘레 → 대상 글자 둘레(칸 안 여백) → 그래프 묶음 바깥 위 · 아래(멀리서 가리킨다) */
+    const cand=around(R,['top','right','left','bottom']).concat(it.t?around(it.t,['left','right','top','bottom']):[])
+      .concat(C?[fbox(R.x+R.w/2,C.y-G,180),fbox(R.x+R.w/2,C.y+C.h+G,0)]:[]);
+    let best=null;
+    if(it.pw)for(const fb of cand){const fc=cost(fb);if(fc>=1)continue;
+      const pb=pills(fb,it.pw,it.ph).find(p=>cost(p)<1);if(pb){best={f:fb,p:pb};break;}}
+    if(!best){let bc=Infinity;for(const fb of cand){const c=cost(fb);if(c<bc-.5){bc=c;best={f:fb,p:null};}if(c<1)break;}}
+    if(best){placed.push(best.f);if(best.p)placed.push(best.p);}
+    return best;});}
+/* 대상의 글자 상자(칸 안 여백을 쓰려고) — 글자가 상자보다 충분히 작을 때만 */
+function tuTextRect(e){
+  if(e instanceof SVGElement)return null;
+  const rg=document.createRange();rg.selectNodeContents(e);const r=rg.getBoundingClientRect(),R=e.getBoundingClientRect();
+  return r.width>1&&r.height>1&&(r.width<R.width-20||r.height<R.height-20)?r:null;}
+/* 강조할 것들 → 놓을 재료. toP = 화면 좌표 → 놓는 평면 좌표, mw = 이름표 너비 재기
+   r = 형광펜 상자(넘치면 잘리는 조상 상자 안으로 자른다), f = 손가락이 가리킬 곳(흐름 띠는 띠 한가운데), pan = 다른 카드들(손가락이 덜 덮게) */
+const TU_PANEL='.card,.infcell,.donut,.stat,.cr,.tile,.infk,.hpbox';
+function tuItems(src,hls,chips,toP,PX,mw){
+  const any=hls.some(e=>chips[+e.getAttribute('data-tuhl')]);
+  const panels=[...src.querySelectorAll(TU_PANEL)].filter(tuVis);
+  return hls.map((e,k)=>{
+    let r=e.getBoundingClientRect();r={left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+    for(let p=e.parentElement;p&&p!==src.parentElement;p=p.parentElement){
+      if(p instanceof SVGElement&&p.tagName.toLowerCase()!=='svg')continue;
+      const cs=getComputedStyle(p);
+      if(cs.overflowX!=='visible'||cs.overflowY!=='visible'){const c=p.getBoundingClientRect();
+        r={left:Math.max(r.left,c.left),right:Math.min(r.right,c.right),top:Math.max(r.top,c.top),bottom:Math.min(r.bottom,c.bottom)};}}
+    r.width=r.right-r.left;r.height=r.bottom-r.top;
+    if(!(r.width>3&&r.height>3))return null;
+    let f=null;
+    if(/^(path|polygon)$/i.test(e.tagName)&&e.getTotalLength){try{
+      const L=e.getTotalLength(),m=e.getScreenCTM(),P=q=>({x:q.x*m.a+q.y*m.c+m.e,y:q.x*m.b+q.y*m.d+m.f});
+      const A=P(e.getPointAtLength(L*.25)),Bp=P(e.getPointAtLength(L*.75)),cx=(A.x+Bp.x)/2,cy=(A.y+Bp.y)/2,hh=Math.max(5,Math.abs(A.y-Bp.y)/2);
+      if(cx>=r.left-2&&cx<=r.right+2&&cy>=r.top-2&&cy<=r.bottom+2)f=toP({left:cx-6,top:cy-hh,width:12,height:hh*2});}catch(x){}}
+    const chip=chips[+e.getAttribute('data-tuhl')]||'';
+    const tr=tuTextRect(e);
+    const pan=panels.filter(p=>!p.contains(e)&&!e.contains(p)).map(p=>toP(p.getBoundingClientRect()));
+    return {el:e,r:toP(r),f,t:tr?toP(tr):null,pan,chip,round:/^(circle|ellipse)$/i.test(e.tagName),svg:e instanceof SVGGeometryElement,
+      finger:any?!!chip:k===0,pw:chip?Math.ceil(mw?mw(chip):tuTextW(chip,PX)+24):0,ph:chip?Math.round(PX*2.15):0};}).filter(Boolean);}
+/* SVG 도형(흐름 띠 · 원)의 형광펜 — 같은 모양을 바로 위에 겹쳐 곱하기로 물들인다(상자로 덮지 않게) */
+function tuSvgMark(el,round){
+  const c=el.cloneNode(false);['data-tuhl','data-tust','id','data-tip','pathLength'].forEach(a=>c.removeAttribute(a));
+  c.setAttribute('class','tu-mksvg');c.removeAttribute('style');
+  if(round){const r0=+c.getAttribute('r');if(r0)c.setAttribute('r',String(r0+2.5));}
+  el.after(c);return c;}
 /* step — 몇 번째 차례를 강조할지(-1 이면 강조를 거둔다) */
 function tuSpot(node,step){
   if(!node.isConnected)return;
@@ -23065,14 +23288,14 @@ function tuSpot(node,step){
   const all=[...src.querySelectorAll('[data-tuhl]')];if(!all.length)return;
   if(step==null)step=tuSteps(src)[0];
   node.__step=step;
-  const old=[...fit.querySelectorAll('.tu-chip')];
-  const drop=()=>old.forEach(c=>{const a=tuAnim(c,[{opacity:getComputedStyle(c).opacity},{opacity:0}],{duration:TU.rm?60:260,fill:'forwards'});
+  const old=[...fit.querySelectorAll('.tu-mk,.tu-mksvg,.tu-pt,.tu-chip')];
+  const drop=()=>old.forEach(c=>{const a=tuAnim(c,[{opacity:getComputedStyle(c).opacity},{opacity:0}],{duration:TU.rm?60:300,fill:'forwards'});
     if(a)a.onfinish=()=>c.remove();else c.remove();});
   const hls=all.filter(e=>tuStepOf(e)===step);
-  if(!hls.length){drop();tuFade(src,[]);return;}
+  if(!hls.length){drop();return;}
   /* 장면 들어오기 · 그래프 채우기가 아직 덜 끝났으면(느린 컴퓨터 · 뒤에 있던 탭) 끝 모습으로 맞춘 뒤 잰다 — 반복 효과는 그대로 */
-  try{node.getAnimations({subtree:true}).forEach(a=>{try{const it=a.effect&&a.effect.getTiming().iterations;
-    if(it!==Infinity&&!(a.effect.target&&a.effect.target.classList&&a.effect.target.classList.contains('tu-chip')))a.finish();}catch(e){}});}catch(e){}
+  try{node.getAnimations({subtree:true}).forEach(a=>{try{const it=a.effect&&a.effect.getTiming().iterations;const tg=a.effect&&a.effect.target;
+    if(it!==Infinity&&!(tg&&tg.classList&&(tg.classList.contains('tu-mk')||tg.classList.contains('tu-pt')||tg.classList.contains('tu-chip'))))a.finish();}catch(e){}});}catch(e){}
   try{if(typeof axFinish==='function')axFinish(src);}catch(e){}
   /* 표 — 강조할 칸이 가려져 있으면 그쪽으로 부드럽게 옮긴 뒤 */
   const sc=tuScroller(hls[0],src);
@@ -23091,25 +23314,31 @@ function tuSpot(node,step){
       const wait=()=>{if(Math.abs(sc.scrollLeft-to)<2||n>30)return tuSpot(node,step);n++;tuLater(wait,100);};
       tuLater(wait,TU.rm?40:250);return;}}
   drop();
-  tuFade(src,hls);
-  /* 이름표 — 강조할 곳의 오른쪽 위 모서리 */
+  /* 무대(.tu-fit) 좌표 — 들어오는 효과 중이면(바깥 확대 · 축소) 그만큼 되돌린다 */
   const fr=fit.getBoundingClientRect(),kx=fit.offsetWidth/(fr.width||1),ky=fit.offsetHeight/(fr.height||1);
-  const FW=fit.offsetWidth,FH=fit.offsetHeight;
-  const hd=node.querySelector('.tu-head'),hb=hd?hd.getBoundingClientRect().bottom:0;
-  hls.forEach((e,k)=>{
-    const chip=node.__chips?node.__chips[+e.getAttribute('data-tuhl')]:'';if(!chip)return;
-    let r=e.getBoundingClientRect();
-    /* 넘겨 보는 상자 밖으로 나간 부분은 자른다 */
-    const s2=tuScroller(e,src);
-    if(s2){const c=s2.getBoundingClientRect();r={left:Math.max(r.left,c.left),right:Math.min(r.right,c.right),top:Math.max(r.top,c.top),bottom:Math.min(r.bottom,c.bottom)};}
-    const x=(r.left-fr.left)*kx,y=(r.top-fr.top)*ky,w=(r.right-r.left)*kx,h=(r.bottom-r.top)*ky;
-    if(!(w>4&&h>4&&x<FW&&y<FH))return;
-    const c=document.createElement('div');c.className='tu-chip tu-ch';c.setAttribute('data-noi18n','');c.textContent=chip;
-    /* 위에 붙일 자리(부제목과 겹치지 않게)가 있으면 위, 없으면 아래 — 강조한 글자를 가리지 않게 바깥에 */
-    const above=r.top-38>hb;
-    c.style.left=Math.min(FW,Math.max(0,x+w))+'px';c.style.top=(above?y:y+h)+'px';
-    c.style.setProperty('--ty',above?'calc(-100% - 5px)':'5px');c.style.setProperty('--k',k);
-    fit.appendChild(c);void c.offsetWidth;c.classList.add('on');});}
+  const toP=r=>({x:(r.left-fr.left)*kx,y:(r.top-fr.top)*ky,w:r.width*kx,h:r.height*ky,el:r.el,tx:r.tx});
+  const hd=node.querySelector('.tu-head').getBoundingClientRect();
+  const B={x0:(8-fr.left)*kx,y0:(hd.bottom+8-fr.top)*ky,x1:(innerWidth-8-fr.left)*kx,y1:(innerHeight-10-fr.top)*ky};
+  const obst=tuObst(src).map(toP);
+  TU.el.querySelectorAll('.tu-nav:not([disabled]),.tu-hint:not(.off)').forEach(n=>obst.push(toP(n.getBoundingClientRect())));
+  const meas=document.createElement('div');meas.className='tu-chip tu-ch';meas.style.cssText='visibility:hidden;animation:none;left:0;top:0';fit.appendChild(meas);
+  const its=tuItems(src,hls,node.__chips||[],toP,13,t=>{meas.textContent=t;return meas.offsetWidth+2;});
+  meas.remove();
+  const plan=tuPlace(its,obst,B,34,toP(src.getBoundingClientRect()));
+  const acc=getComputedStyle(TU.el).getPropertyValue('--tu-acc').trim()||'#e4573d';
+  its.forEach((it,k)=>{
+    /* 형광펜 — 대상 위에 색을 덧칠하되 곱하기(어두운 화면은 더하기)로 섞어 아래 글자 · 그림이 그대로 보인다 */
+    if(it.svg)tuSvgMark(it.el,it.round).style.setProperty('--k',k);
+    else{const P=4,big=it.r.w*it.r.h>36000,m=document.createElement('div');
+      m.className='tu-mk'+(big?' big':'');
+      Object.assign(m.style,{left:(it.r.x-P)+'px',top:(it.r.y-P)+'px',width:(it.r.w+P*2)+'px',height:(it.r.h+P*2)+'px'});
+      m.style.setProperty('--k',k);fit.appendChild(m);}
+    const pl=plan[k];if(!pl)return;
+    const f=document.createElement('div');f.className='tu-pt';
+    Object.assign(f.style,{left:pl.f.x+'px',top:pl.f.y+'px',width:pl.f.w+'px',height:pl.f.h+'px',transform:`rotate(${pl.f.rot}deg)`});
+    f.style.setProperty('--k',k);f.innerHTML=`<i>${TU_HAND(acc)}</i>`;fit.appendChild(f);
+    if(pl.p){const c=document.createElement('div');c.className='tu-chip tu-ch';c.setAttribute('data-noi18n','');c.textContent=it.chip;
+      Object.assign(c.style,{left:pl.p.x+'px',top:pl.p.y+'px',height:pl.p.h+'px'});c.style.setProperty('--k',k);fit.appendChild(c);}});}
 /* ---------- 6. 넘기기 ---------- */
 function tuGo(i,dir){
   if(!TU.el||i<0||i>=TU.slides.length||i===TU.i)return;
@@ -23230,8 +23459,7 @@ function tuKey(e){
   if(k==='m'||k==='M'){stop();tuSound();return;}}
 /* 크기가 바뀌거나 제목 줄 수가 바뀌면 — 다시 맞추고 지금 차례의 강조를 다시 */
 function tuRelayout(n,sl){
-  n.querySelectorAll('.tu-chip').forEach(x=>x.remove());
-  n.querySelectorAll('.tu-fade,.tu-fadeS').forEach(x=>x.classList.remove('tu-fade','tu-fadeS'));
+  n.querySelectorAll('.tu-chip,.tu-mk,.tu-mksvg,.tu-pt').forEach(x=>x.remove());
   tuLayout(n,sl);
   if(n.classList.contains('hl')&&n.__step!=null&&n.__step>=0)tuSpot(n,n.__step);}
 function tuResize(){
@@ -23395,28 +23623,48 @@ async function tuFast(job){
 /* 화면 갱신 틈 — 탭이 뒤에 있으면 타이머가 1분 단위로 묶이므로(크롬) 메시지로 넘긴다 */
 const tuYield=()=>new Promise(r=>{if(document.visibilityState==='visible')setTimeout(r,16);
   else{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);}});
-/* 장면의 그래프 → 바탕 없는 PNG + 강조할 곳(그림 안 좌표) */
-/* o.cards — 카드 바탕은 남긴다(HTML 파일 · 투어 화면처럼). 기본은 PPT 용 누끼(카드 바탕까지 뺀다) */
-/* o.fade — 강조할 곳 말고는 조금 투명하게(투어 화면과 같은 모습)를 그림에 담는다(PPT · 차례가 하나뿐인 장면) */
+/* 장면의 그래프 → 그림(PNG) + 강조 표시(형광펜 · 손가락 · 이름표 — 그림 밖 도형으로, 고치고 지울 수 있게).
+   o.cards — 카드 바탕은 남긴다(HTML 파일). 기본은 PPT 용 누끼(카드 바탕까지 뺀다).
+   표는 가로로 넘겨 보던 칸까지 펼쳐서 찍는다(그림 · 표시 좌표가 같게) */
 async function tuShot(sl,o){
   o=o||{};
-  const key=(o.cards?'__shotH':'__shotP')+(o.fade?'f':'');
+  const key=o.cards?'__shotH':'__shotP';
   if(sl[key])return sl[key];                  /* 한 번 만든 그림은 다시 쓴다(PPT · HTML 둘 다 저장할 때) */
   const hold=document.createElement('div');hold.className='tu-shot';
-  const src=sl.src.cloneNode(true);src.style.width=sl.W+'px';src.style.transform='none';
+  const src=sl.src.cloneNode(true);src.style.width=(sl.W+(sl.tblX||0))+'px';src.style.transform='none';
   hold.appendChild(src);TU.el.appendChild(hold);
   try{
     if(!sl.tblX)tuWrap(src,sl,o.cards?1700:1213,o.cards?620:470,Infinity);
-    if(o.fade)tuFade(src,[...src.querySelectorAll('[data-tuhl]')]);
     const R=src.getBoundingClientRect();
-    const hl=[...src.querySelectorAll('[data-tuhl]')].map(e=>{const r=e.getBoundingClientRect();
-      return {x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,st:tuStepOf(e),chip:sl.chips[+e.getAttribute('data-tuhl')]||''};}).filter(r=>r.w>2&&r.h>2);
+    const toP=r=>({x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,el:r.el,tx:r.tx});
+    const M=44,B={x0:-M,y0:-M,x1:R.width+M,y1:R.height+M};
+    const obst=tuObst(src).map(toP),marks=[],steps=tuSteps(src),bake=[];
+    steps.forEach(st=>{
+      const hls=[...src.querySelectorAll('[data-tuhl]')].filter(e=>tuStepOf(e)===st);
+      const its=tuItems(src,hls,sl.chips,toP,13),plan=tuPlace(its,obst,B,30,toP(R));
+      /* SVG 도형은 차례가 하나뿐이면 그림에 같은 모양 덧칠로 담는다(상자보다 정확) */
+      its.forEach((it,k)=>{const baked=it.svg&&steps.length===1;if(baked)bake.push(it);
+        marks.push({st,r:it.r,round:it.round,baked,big:it.r.w*it.r.h>36000,chip:it.chip,f:plan[k]?plan[k].f:null,p:plan[k]?plan[k].p:null});});});
+    bake.forEach(it=>{const c=tuSvgMark(it.el,it.round);c.style.mixBlendMode='multiply';});
     const strip=e=>{e.style.setProperty('background','transparent','important');e.style.setProperty('box-shadow','none','important');
       e.style.setProperty('border-color','transparent','important');};
     const out=await ccRender(src,{zoom:2,transparent:true,meta:true,dataUrl:true,
       clean:c=>{if(o.cards)return;strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
-    return (sl[key]={...out,hl});
+    /* 그림 + 표시를 모두 담는 상자(U) — 손가락 · 이름표가 그림 밖으로 조금 나갈 수 있다 */
+    const U={x0:0,y0:0,x1:out.W,y1:out.H};
+    marks.forEach(m=>[m.f,m.p].filter(Boolean).forEach(b=>{U.x0=Math.min(U.x0,b.x);U.y0=Math.min(U.y0,b.y);U.x1=Math.max(U.x1,b.x+b.w);U.y1=Math.max(U.y1,b.y+b.h);}));
+    return (sl[key]={...out,marks,U});
   }finally{hold.remove();}}
+/* PPT 용 손가락 그림(PNG) — 한 번만 그린다 */
+let TU_HANDPNG=null;
+function tuHandPng(acc){
+  if(TU_HANDPNG)return TU_HANDPNG;
+  TU_HANDPNG=new Promise(res=>{const im=new Image();
+    im.onload=()=>{try{const c=document.createElement('canvas');c.width=c.height=144;const x=c.getContext('2d');
+      x.shadowColor='rgba(20,24,30,.28)';x.shadowBlur=8;x.shadowOffsetY=3;x.drawImage(im,12,12,120,120);res(c.toDataURL('image/png'));}catch(e){res(null);}};
+    im.onerror=()=>res(null);
+    im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(TU_HAND(acc).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" '));});
+  return TU_HANDPNG;}
 /* 저장 단추(마지막 장 · 위쪽 다운로드 메뉴) — 글자로 진행 상황, 다운로드 단추도 함께 바쁨 표시 */
 function tuBusy(btn,on){btn.disabled=on;btn.classList.toggle('busy',on);
   const d=TU.el&&TU.el.querySelector('.tu-dl');if(d)d.classList.toggle('busy',on);}
@@ -23452,7 +23700,7 @@ async function tuPpt(btn){
         s.addText(t.k,{x:x+.22,y:y+.18,w:tw-.44,h:.3,fontFace:FF,fontSize:10.5,bold:true,color:MUT,margin:0});
         s.addText(t.v,{x:x+.22,y:y+.52,w:tw-.44,h:.5,fontFace:FF,fontSize:t.v.length>14?15:20,bold:true,color:INK,margin:0,fit:'shrink'});});
       foot(s,0);}
-    /* 장면마다 — 편집 가능한 글 + 누끼 그래프 + 강조 테두리(도형) */
+    /* 장면마다 — 편집 가능한 글 + 누끼 그래프 + 강조 표시(도형) */
     for(let k=0;k<body.length;k++){
       const sl=body[k];say(L(`PPT 만드는 중 ${k+1}/${body.length}`,`Building PPT ${k+1}/${body.length}`));
       await tuYield();
@@ -23465,19 +23713,28 @@ async function tuPpt(btn){
       const sy=ty+th+.1;
       if(sl.s)s.addText(sl.s,{x:.6,y:sy,w:12.13,h:.5,fontFace:FF,fontSize:14,color:INK2,margin:0,valign:'top',fit:'shrink'});
       s.addNotes([sl.label,tuPlain(sl.t),sl.s].filter(Boolean).join('\n'));
-      /* 강조 — 나머지를 조금 투명하게 한 모습을 그림에 담는다(차례가 여럿인 장면은 그대로 · 이름표만) */
+      /* 그림 + 강조 표시(형광펜 = 반투명 도형 · 손가락 = 그림 · 이름표 = 글상자) — 모두 따로 고치고 지울 수 있다.
+         차례가 여럿인 장면(유입 분석 ②)은 모든 차례를 한 장에 */
       let shot=null;
-      try{shot=await tuShot(sl,{fade:tuSteps(sl.src).length===1});}catch(e){console.warn('tour shot',e);}
+      try{shot=await tuShot(sl);}catch(e){console.warn('tour shot',e);}
       if(shot){
+        const U=shot.U,UW=U.x1-U.x0,UH=U.y1-U.y0;
         const AX=.6,AY=sy+(sl.s?.66:.2),AW=12.13,AH=6.92-AY;
-        const a=shot.W/shot.H;let w=AW,h=w/a;if(h>AH){h=AH;w=h*a;}
-        const x=AX+(AW-w)/2,y=AY+Math.max(0,(AH-h)/2)*.4,f=w/shot.W;
+        let f=Math.min(AW/UW,AH/UH);
+        const ux=AX+(AW-UW*f)/2,uy=AY+Math.max(0,(AH-UH*f)/2)*.4;
+        const x=ux-U.x0*f,y=uy-U.y0*f,w=shot.W*f,h=shot.H*f;
         s.addImage({data:shot.data.replace(/^data:/,''),x,y,w,h});
-        shot.hl.forEach(r=>{
-          if(r.chip){const cw=Math.min(3.6,.32+[...r.chip].reduce((a,ch)=>a+(/[가-힣]/.test(ch)?.15:.085),0));
-            const cx=Math.min(x+w,x+(r.x+r.w)*f)-cw,cy=y+r.y*f-.24;
-            s.addText(r.chip,{x:Math.max(.3,cx),y:Math.max(.3,cy),w:cw,h:.3,fontFace:FF,fontSize:10.5,bold:true,color:'FFFFFF',
-              fill:{color:ACC},align:'center',valign:'middle',margin:0,rectRadius:.15,shape:px.ShapeType.roundRect});}});}
+        const hand=shot.marks.some(m=>m.f)?await tuHandPng('#'+ACC):null;
+        shot.marks.forEach(m=>{const P=3;if(m.baked)return;
+          s.addShape(m.round?px.ShapeType.ellipse:px.ShapeType.roundRect,{x:x+(m.r.x-P)*f,y:y+(m.r.y-P)*f,w:(m.r.w+P*2)*f,h:(m.r.h+P*2)*f,
+            rectRadius:.05,fill:{color:ACC,transparency:m.big?90:78},line:{type:'none'}});});
+        shot.marks.forEach(m=>{
+          if(m.f&&hand){const g=m.f.w*f*.1;s.addImage({data:hand.replace(/^data:/,''),x:x+m.f.x*f-g,y:y+m.f.y*f-g,w:m.f.w*f*1.2,h:m.f.h*f*1.2,rotate:m.f.rot});}
+          /* 이름표 — 글자 크기는 그대로(10.5pt)라 너비는 글자 수로 잰다. 손가락 왼쪽에 놓인 것은 오른쪽 끝을 맞춘다 */
+          if(m.p&&m.chip){const pw=.36+1.08*[...m.chip].reduce((a,ch)=>a+(/[가-힣]/.test(ch)?.148:/\s/.test(ch)?.045:/[A-Z₩%→]/.test(ch)?.1:.08),0);
+            const px0=m.p.side==='l'?x+(m.p.x+m.p.w)*f-pw:x+m.p.x*f,py0=y+(m.p.y+m.p.h/2)*f-.14;
+            s.addText(m.chip,{x:Math.max(.2,Math.min(13.13-pw,px0)),y:Math.max(.2,py0),w:pw,h:.28,fontFace:FF,fontSize:10.5,bold:true,color:'FFFFFF',
+              fill:{color:ACC},align:'center',valign:'middle',margin:0,rectRadius:.14,shape:px.ShapeType.roundRect});}});}
       foot(s,k+2);}
     /* 핵심 요약 — 갈래별 묶음(투어 마지막 장과 같게). 갈래는 세로 칸에 차례로, 가장 짧은 칸부터 채운다 */
     {const s=addSlide(),endSl=TU.slides.find(x=>x.kind==='end');
@@ -23485,14 +23742,14 @@ async function tuPpt(btn){
       const cats=tuCats(body),nc=cats.length<=3?cats.length:cats.length===4?2:3,G=.24,cw=(12.13-(nc-1)*G)/nc;
       const est=t=>[...t].reduce((a,ch)=>a+(/[가-힣ㄱ-ㅎ]/.test(ch)?1:/[A-Z0-9₩%]/.test(ch)?.62:.52),0);
       const lines=(t,fs)=>Math.max(1,Math.ceil(est(t)*fs/72/(cw-.62)));
-      const plan=fs=>{const col=Array(nc).fill(0),out=[];
-        cats.forEach(c=>{const ih=c.items.map(it=>lines((it.lab?it.s.label+'  ':'')+tuPlain(it.s.t),fs)*fs*1.32/72+fs*.5/72);
-          const h=.5+ih.reduce((a,b)=>a+b,0)+.18,k=col.indexOf(Math.min(...col));
-          out.push({c,k,y:col[k],h});col[k]+=h+.18;});
-        return {out,H:Math.max(...col)-.18};};
+      /* (v123) 카드는 모두 같은 크기 — 줄마다 nc 개, 마지막 줄은 가운데 */
+      const rowsN=Math.ceil(cats.length/nc);
+      const plan=fs=>{const hs=cats.map(c=>.5+c.items.map(it=>lines((it.lab?it.s.label+'  ':'')+tuPlain(it.s.t),fs)*fs*1.32/72+fs*.5/72).reduce((a,b)=>a+b,0)+.18);
+        const h=Math.max(...hs);return {h,H:rowsN*h+(rowsN-1)*.2};};
       let fs=12,P=plan(fs);
       while(P.H>5.35&&fs>8.5){fs-=.5;P=plan(fs);}
-      P.out.forEach(({c,k,y,h})=>{const x=.6+k*(cw+G),Y=1.38+y;
+      cats.forEach((c,ci)=>{const r=Math.floor(ci/nc),inRow=Math.min(nc,cats.length-r*nc),k=ci-r*nc,h=P.h;
+        const x=.6+(12.13-(inRow*cw+(inRow-1)*G))/2+k*(cw+G),Y=1.38+r*(h+.2);
         s.addShape(px.ShapeType.roundRect,{x,y:Y,w:cw,h,rectRadius:.1,fill:{color:DK?'2A2E34':'F4F5F7'},line:{color:DK?'3A3F46':'E6E8EB',width:.75}});
         s.addShape(px.ShapeType.ellipse,{x:x+.2,y:Y+.2,w:.09,h:.09,fill:{color:ACC},line:{color:ACC,width:0}});
         s.addText([{text:c.n,options:{bold:true,color:INK}},{text:'  '+c.items.length,options:{bold:true,color:MUT}}],
@@ -23535,15 +23792,16 @@ async function tuHtml(btn){
         await tuYield();
         let sh=null;try{sh=await tuShot(sl,{cards:true});}catch(e){console.warn('tour html shot',e);}
         out.push({k:'body',eye:`<span class="no">${String(k+1).padStart(2,'0')}</span>${esc(sl.label)}`,t:tuWords(sl.t),s:sl.s,
-          img:sh?sh.data:'',w:sh?sh.W:0,h:sh?sh.H:0,
-          hl:sh?sh.hl.map(r=>({x:r.x/sh.W,y:r.y/sh.H,w:r.w/sh.W,h:r.h/sh.H,c:r.chip||'',st:r.st||0})):[]});}
+          img:sh?sh.data:'',w:sh?sh.W:0,h:sh?sh.H:0,u:sh?[sh.U.x0,sh.U.y0,sh.U.x1,sh.U.y1].map(v=>Math.round(v*10)/10):[0,0,0,0],
+          mk:sh?sh.marks.map(m=>({st:m.st,r:[m.r.x,m.r.y,m.r.w,m.r.h],rd:m.round?1:0,big:m.big?1:0,bk:m.baked?1:0,c:m.p?m.chip:'',
+            f:m.f?[m.f.x,m.f.y,m.f.w,m.f.rot]:null,p:m.p?[m.p.x,m.p.y,m.p.w,m.p.h,m.p.side==='l'?1:0]:null})):[]});}
       else if(sl.kind==='cover')
         out.push({k:'cover',eye:`<span class="no">▶</span>DATA TOUR`,t:tuWords(sl.t),s:sl.s,tiles:(sl.tiles||[]).map(x=>({k:x.k,v:x.v,s:x.s||''}))});
       else out.push({k:'end',eye:`<span class="no">✓</span>${esc(sl.label)}`,t:tuWords(sl.t),s:sl.s,
         cats:tuCats(body).map(c=>({n:c.n,items:c.items.map(x=>({n:String(x.k+1).padStart(2,'0'),t:tuWords(x.s.t),l:x.lab?x.s.label:'',tl:x.s.label,go:x.go}))}))});}
     say(L('파일 저장 중…','Saving…'));
     const D={name:nm,lang:LANG,dark:document.documentElement.getAttribute('data-theme')==='dark',
-      made:new Date().toISOString().slice(0,10),
+      made:new Date().toISOString().slice(0,10),hand:TU_HAND('#e4573d'),
       ui:{prev:L('이전','Previous'),next:L('다음','Next'),play:L('자동 재생 (P)','Autoplay (P)'),fs:L('전체 화면 (F)','Full screen (F)'),
         hint:L('← → 넘기기 · P 자동 재생 · M 배경음 · F 전체 화면','← → to move · P autoplay · M music · F full screen'),again:L('처음부터','From the start'),
         sndOn:L('배경음 끄기 (M)','Mute music (M)'),sndOff:L('배경음 켜기 (M)','Play music (M)')},slides:out};
@@ -23602,20 +23860,25 @@ body{font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto 
 .cover .hd{top:24vh}.cover .tt{font-size:clamp(34px,4.3vw,80px);margin-top:18px}
 .st{position:absolute;left:4.5vw;right:4.5vw;bottom:5vh;display:flex;justify-content:center;align-items:flex-start;z-index:1}
 .in{position:relative;transform-origin:50% 100%}
-.fig{position:relative}.fig svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.fig .base{transition:opacity .9s ease}.fig.fd .base{opacity:.3}
-.fig .hs{opacity:0;transition:opacity .9s ease}.fig .hs.on{opacity:1}
-.chip{position:absolute;z-index:4;padding:6px 12px;border-radius:999px;background:var(--acc);color:#fff;font-size:13px;font-weight:800;white-space:nowrap;pointer-events:none;
-  box-shadow:0 8px 20px rgb(var(--accrgb) / .32);transform:translate(-100%,var(--ty,-70%)) scale(.6);opacity:0;transform-origin:100% 100%}
-.chip.on{animation:cp .6s cubic-bezier(.34,1.56,.64,1) .3s forwards}@keyframes cp{to{opacity:1;transform:translate(-100%,var(--ty,-70%)) scale(1)}}
+.fig{position:relative}.fig .base{position:absolute;display:block;max-width:none}
+.mk{position:absolute;border-radius:8px;background:rgb(var(--accrgb) / .24);mix-blend-mode:multiply;opacity:0;clip-path:inset(0 100% 0 0);pointer-events:none}
+.mk.big{background:rgb(var(--accrgb) / .1)}.mk.rd{border-radius:50%}
+html.dk .mk{mix-blend-mode:screen;background:rgb(var(--accrgb) / .34)}html.dk .mk.big{background:rgb(var(--accrgb) / .16)}
+.mk.on{opacity:1;animation:mk .6s cubic-bezier(.65,0,.25,1) forwards}@keyframes mk{to{clip-path:inset(0)}}
+.pt{position:absolute;aspect-ratio:1;opacity:0;pointer-events:none;filter:drop-shadow(0 3px 5px rgba(20,24,30,.28));transition:opacity .3s}
+.pt.on{opacity:1;transition:opacity .4s .3s}.pt>i{display:block;width:100%;height:100%}.pt.on>i{animation:tap 1.4s ease-in-out .7s infinite}
+.pt svg{display:block;width:100%;height:100%}@keyframes tap{50%{transform:translateY(-12%)}}
+.chip{position:absolute;display:flex;align-items:center;padding:0 calc(12px * var(--k,1));border-radius:999px;background:var(--acc);color:#fff;font-size:calc(13px * var(--k,1));
+  font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgb(var(--accrgb) / .3);opacity:0;transform:scale(.7);transition:opacity .2s}
+.chip.on{opacity:1;transform:none;transition:opacity .3s .45s,transform .5s cubic-bezier(.34,1.56,.64,1) .45s}
 .tiles{display:flex;justify-content:center;gap:clamp(12px,1.3vw,22px);flex-wrap:wrap;padding-top:4vh}
 .tile{min-width:clamp(190px,15.5vw,290px);padding:clamp(16px,1.4vw,24px) clamp(18px,1.5vw,26px);border-radius:20px;text-align:left;background:var(--glass);
   border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 22px 44px rgba(27,31,36,.10)}
 html.dk .tile{border-color:rgba(255,255,255,.08)}
 .tile .k{font-size:clamp(11.5px,.82vw,14px);font-weight:700;color:var(--mut)}.tile .v{margin-top:10px;font-size:clamp(19px,1.65vw,30px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
 .tile .s{margin-top:6px;font-size:12px;font-weight:600;color:var(--ink2)}
-.cats{display:grid;grid-template-columns:repeat(var(--nc,3),minmax(0,1fr));gap:16px;max-width:1320px;margin:0 auto;align-items:start}
-.cat{padding:14px 12px 10px;border-radius:18px;background:var(--glass);border:1px solid var(--line);box-shadow:0 14px 34px rgba(27,31,36,.07)}
+.cats{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:1320px;margin:0 auto}
+.cat{flex:0 0 calc((100% - (var(--nc,3) - 1) * 16px) / var(--nc,3));box-sizing:border-box;padding:14px 12px 10px;border-radius:18px;background:var(--glass);border:1px solid var(--line);box-shadow:0 14px 34px rgba(27,31,36,.07)}
 .cath{display:flex;align-items:center;gap:8px;padding:0 6px 8px;font-size:13px;font-weight:800;color:var(--ink)}
 .cath .d{width:7px;height:7px;border-radius:50%;background:var(--acc)}.cath .c{margin-left:auto;font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}
 .cat button{display:flex;gap:11px;align-items:flex-start;width:100%;padding:8px 8px;border-radius:11px;text-align:left;cursor:pointer;font:inherit;border:0;background:transparent;color:var(--ink)}
@@ -23628,7 +23891,7 @@ html.dk .tile{border-color:rgba(255,255,255,.08)}
 .nv svg{width:42%;height:42%}.nv.p{left:1.4vw}.nv.n{right:1.4vw}.nv:hover{transform:translateY(-50%) scale(1.08)}.nv[disabled]{opacity:0;pointer-events:none}
 .hn{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;font-size:12px;font-weight:600;color:var(--mut);padding:6px 14px;border-radius:999px;
   background:var(--glass);border:1px solid var(--line);transition:opacity .8s}.hn.off{opacity:0}
-@media (max-width:760px){.top{padding:12px 14px 0}.hd{padding:0 6vw}.nv{top:auto;bottom:14px;transform:none}.hn{display:none}.cats{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.top{padding:12px 14px 0}.hd{padding:0 6vw}.nv{top:auto;bottom:14px;transform:none}.hn{display:none}.cat{flex-basis:100%}}
 @media print{.top,.nv,.hn{display:none}}`;
   const js=`
 const D=JSON.parse(document.getElementById('tud').textContent);
@@ -23651,21 +23914,21 @@ function bodyHtml(s){
     +c.items.map(r=>'<button data-go="'+r.go+'" title="'+esc(r.tl)+'"><span class="n">'+r.n+'</span><span class="x">'+(r.l?'<span class="l">'+esc(r.l)+'</span>':'')+'<span class="t">'+r.t+'</span></span></button>').join('')+'</div>').join('')
     +'</div><div class="ag"><button data-go="0">↺ '+esc(D.ui.again)+'</button></div>';
   if(!s.img)return '';
-  /* 강조 — 그림을 조금 투명하게 깔고, 강조할 곳만 원래 진하기로(차례가 여럿이면 차례마다 한 겹) */
-  const W=s.w,H=s.h,id='c'+Math.random().toString(36).slice(2,7),rr=(w,h)=>Math.min(14,w/2,h/2),P=6;
-  const R=s.hl.map(r=>({x:r.x*W-P,y:r.y*H-P,w:r.w*W+P*2,h:r.h*H+P*2,c:r.c,st:r.st||0,cx:(r.x+r.w)*W,cy:r.y*H,ch:r.h*H}));
-  const st=[...new Set(R.map(r=>r.st))].sort((a,b)=>a-b);
-  return '<div class="fig"><svg viewBox="0 0 '+W+' '+H+'"><defs>'+st.map(k=>'<clipPath id="'+id+k+'">'+R.filter(r=>r.st===k).map(r=>'<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'"/>').join('')+'</clipPath>').join('')+'</defs>'
-    +'<image class="base" href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'"/>'
-    +st.map(k=>'<image class="hs" data-st="'+k+'" href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'" clip-path="url(#'+id+k+')"/>').join('')
-    +'</svg>'+R.filter(r=>r.c).map(r=>'<div class="chip" data-st="'+r.st+'" style="left:'+(r.cx/W*100)+'%;top:'+((r.cy>40?r.cy:r.cy+r.ch)/H*100)+'%;--ty:'+(r.cy>40?'calc(-100% - 5px)':'5px')+'">'+esc(r.c)+'</div>').join('')+'</div>';}
+  /* 강조 — 형광펜(곱하기로 섞여 아래가 그대로 보인다) · 손가락 · 이름표. 위치는 그림 + 표시를 담은 상자(u) 기준 % */
+  const x0=s.u[0],y0=s.u[1],UW=s.u[2]-s.u[0],UH=s.u[3]-s.u[1],X=v=>((v-x0)/UW*100)+'%',Y=v=>((v-y0)/UH*100)+'%',WW=v=>(v/UW*100)+'%',HH=v=>(v/UH*100)+'%';
+  return '<div class="fig"><img class="base" alt="" src="'+s.img+'" style="left:'+X(0)+';top:'+Y(0)+';width:'+WW(s.w)+';height:'+HH(s.h)+'">'
+    +s.mk.map(m=>{const P=4;
+      return (m.bk?'':'<i class="mk'+(m.rd?' rd':'')+(m.big?' big':'')+'" data-st="'+m.st+'" style="left:'+X(m.r[0]-P)+';top:'+Y(m.r[1]-P)+';width:'+WW(m.r[2]+P*2)+';height:'+HH(m.r[3]+P*2)+'"></i>')
+        +(m.f?'<i class="pt" data-st="'+m.st+'" style="left:'+X(m.f[0])+';top:'+Y(m.f[1])+';width:'+WW(m.f[2])+';transform:rotate('+m.f[3]+'deg)"><i>'+D.hand+'</i></i>':'')
+        +(m.p&&m.c?'<span class="chip" data-st="'+m.st+'" style="'+(m.p[4]?'right:'+(((s.u[2]-m.p[0]-m.p[2])/UW)*100)+'%':'left:'+X(m.p[0]))+';top:'+Y(m.p[1])+';height:'+HH(m.p[3])+'">'+esc(m.c)+'</span>':'');}).join('')+'</div>';}
 function layout(n,s){
   const hd=n.querySelector('.hd'),st=n.querySelector('.st'),fig=n.querySelector('.fig');
   st.style.top=(hd.offsetTop+hd.offsetHeight+Math.max(14,innerHeight*.028))+'px';
+  const cs=[...n.querySelectorAll('.cat')];if(cs.length){cs.forEach(c=>c.style.height='');const mh=Math.max(...cs.map(c=>c.offsetHeight));cs.forEach(c=>c.style.height=mh+'px');}
   if(!fig)return;
-  const sw=st.clientWidth,sh=st.clientHeight,w=s.w,h=s.h;   /* s.w · s.h = 화면 크기(그림 파일은 그 2배 해상도) */
+  const sw=st.clientWidth,sh=st.clientHeight,w=s.u[2]-s.u[0],h=s.u[3]-s.u[1];   /* 그림 + 강조 표시를 담은 상자(화면 크기 · 그림 파일은 2배 해상도) */
   const k=Math.max(.2,Math.min(1.25,sw/w,sh/h));
-  fig.style.width=Math.round(w*k)+'px';fig.style.height=Math.round(h*k)+'px';
+  fig.style.width=Math.round(w*k)+'px';fig.style.height=Math.round(h*k)+'px';fig.style.setProperty('--k',k);
   n.querySelector('.in').style.marginTop=Math.max(0,Math.round((sh-h*k)*.3))+'px';}
 function mount(i){
   const s=D.slides[i],n=document.createElement('section');n.className='sl '+s.k;
@@ -23685,19 +23948,16 @@ function go(i,dir){
   an(node.querySelector('.sb'),[{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:760,delay:RM?0:520+ws.length*45,easing:E,fill:'backwards'});
   an(node.querySelector('.in'),[{opacity:0,transform:'translateY(56px) scale(.95)'},{opacity:1,transform:'none'}],{duration:RM?150:1150,delay:RM?0:330,easing:E,fill:'backwards'});
   /* 그래프는 왼쪽부터 드러난다 */
-  an(node.querySelector('.fig svg'),[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:RM?150:1300,delay:RM?0:500,easing:'cubic-bezier(.45,0,.2,1)',fill:'backwards'});
+  an(node.querySelector('.fig .base'),[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:RM?150:1300,delay:RM?0:500,easing:'cubic-bezier(.45,0,.2,1)',fill:'backwards'});
   node.querySelectorAll('.tile,.cat,.ag button').forEach((t,k)=>an(t,[{opacity:0,transform:'translateY(26px)'},{opacity:1,transform:'none'}],{duration:RM?150:760,delay:RM?0:480+k*70,easing:E,fill:'backwards'}));
-  const n=node,f=n.querySelector('.fig'),sts=f?[...new Set([...f.querySelectorAll('.hs')].map(x=>+x.dataset.st))]:[];
-  const spot=k=>{if(!n.isConnected)return;n.classList.add('hl');if(!f||!sts.length)return;
-    f.classList.toggle('fd',k>=0);
-    f.querySelectorAll('.hs').forEach(x=>x.classList.toggle('on',+x.dataset.st===k));
-    f.querySelectorAll('.chip').forEach(x=>{const on=+x.dataset.st===k;if(on&&!x.classList.contains('on')){x.classList.remove('on');void x.offsetWidth;}x.classList.toggle('on',on);});};
+  const n=node,f=n.querySelector('.fig'),mk=f?[...f.querySelectorAll('[data-st]')]:[],sts=[...new Set(mk.map(x=>+x.dataset.st))].sort((a,b)=>a-b);
+  const spot=k=>{if(!n.isConnected)return;n.classList.add('hl');mk.forEach(x=>x.classList.toggle('on',+x.dataset.st===k));};
   const T0=RM?200:1900;
   tm.push(setTimeout(()=>spot(sts.length?sts[0]:-1),T0));
   if(sts.length>1){sts.slice(1).forEach((k,j)=>tm.push(setTimeout(()=>spot(k),T0+(j+1)*3000)));tm.push(setTimeout(()=>spot(-1),T0+sts.length*3000));}
   if(play)pt=setTimeout(()=>{I<N-1?go(I+1,1):setPlay(false);},dur(I));
   paint();}
-function dur(i){const f=node&&node.querySelector('.fig'),n=f?new Set([...f.querySelectorAll('.hs')].map(x=>x.dataset.st)).size:0;return n>1?Math.max(9000,1900+n*3000+1800):9000;}
+function dur(i){const f=node&&node.querySelector('.fig'),n=f?new Set([...f.querySelectorAll('[data-st]')].map(x=>x.dataset.st)).size:0;return n>1?Math.max(9000,1900+n*3000+1800):9000;}
 function paint(){
   document.querySelectorAll('.pg i').forEach((s,k)=>{s.classList.toggle('on',k<=I);s.classList.toggle('cur',k===I);s.classList.toggle('play',k===I&&play);if(k===I)s.style.setProperty('--dur',dur(I)+'ms');});
   $('.ct').textContent=String(I+1).padStart(2,'0')+' / '+String(N).padStart(2,'0');
