@@ -2247,7 +2247,8 @@ function renderBubble(){
     /* 데이터 투어(25-tour)용 — 이름 · 두 축 값 · 오른쪽 위로 갈수록 큰 점수(0~2) */
     c.setAttribute('data-nm',p.name||'');c.setAttribute('data-md',[p.media,p.product].filter(Boolean).join(' · '));
     c.setAttribute('data-xf',METRICS[xd.k].f(p.xv));c.setAttribute('data-yf',METRICS[yd.k].f(p.yv));
-    c.setAttribute('data-g',((X(p.xv)-P.l)/PW+(P.t+PH-Y(p.yv))/PH).toFixed(4));
+    const gx=(X(p.xv)-P.l)/PW,gy=(P.t+PH-Y(p.yv))/PH;
+    c.setAttribute('data-g',(gx+gy).toFixed(4));c.setAttribute('data-gx',gx.toFixed(4));c.setAttribute('data-gy',gy.toFixed(4));
     c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
       `<div class="t">${esc(p.name||'(미지정)')}${p.on?'':' · 현재 OFF'}</div>`
       +`<div class="r"><span class="l">매체 · 상품</span><b>${esc(p.media)} · ${esc(p.product)}</b></div>`

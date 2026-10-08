@@ -3083,7 +3083,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwsegc::after{content:'';position:absolute;right:2px;top:2px;bottom:2px;width:4px;border:1.4px solid var(--gline);border-right:0;border-radius:2px 0 0 2px}
 .dwrows{display:flex;flex-direction:column;gap:12px;min-width:0}
 .infh .infmapseg{margin-left:auto;max-width:170px}
-.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 96px;gap:12px;align-items:center}
+.dwrow{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 112px;gap:12px;align-items:center}
 .dwl{min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .dwl b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dwl span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3091,7 +3091,7 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwbar i{display:block;min-width:2px;background:rgb(var(--accrgb)/var(--op))}
 .dwbar i:hover{outline:2px solid var(--ink);outline-offset:-2px}
 .dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
-.dwr b{font-size:13px;font-weight:800;color:var(--ink)}
+.dwr b{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap}
 .dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
 /* (v118) 오른쪽 숫자가 평균이라는 표시 */
 .avgk{font-style:normal;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.01em}
@@ -3265,28 +3265,23 @@ html.tu-on .secnav{display:none!important}
 .tu-src .infcfg,.tu-src [id$="CfgBtn"],.tu-src .switch,.tu-src .switch *,.tu-src select,.tu-src .sknav,.tu-src .sknav *,.tu-src .skdots,.tu-src .skdots *,
 .tu-src .pen,.tu-src .colgrip,.tu-src .infh .btn,.tu-src .infh button{visibility:hidden!important}
 .tu-src .cmtbar{display:none!important}
+/* 일자별 — 운영 이슈(① ② ③) 목록을 그래프 아래에 작게 (v119 · 화면에서는 숨겨 둔 목록) */
+.tu-src #dailyIssues:not(:empty){display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:4px 26px;padding:2px 22px 14px}
+.tu-src #dailyLegend:has(+#dailyIssues:not(:empty)){border-radius:0}
+.tu-src #dailyIssues .disit{font-size:11px;line-height:1.4;opacity:.85}
 .tu-src .tu-xp{overflow:visible!important}
 .tu-src.tu-wrapx .tu-xp{flex-wrap:wrap!important;row-gap:16px}
 .tu-src [data-tip],.tu-src .drag,.tu-src .bdrag{cursor:default}
-/* 강조 */
-.tu-spot{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:3}
-.tu-src .tu-fade{opacity:.26!important;transition:opacity 1s ease}
-.tu-src .tu-fadeS{box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--surface) 74%,transparent)!important;color:color-mix(in srgb,currentColor 32%,transparent)!important;transition:box-shadow 1s ease,color 1s ease}
-.tu-spot .sheen{opacity:0;transform-box:view-box}
-.tu-spot.on .sheen{animation:tuSheen 4.8s cubic-bezier(.45,0,.2,1) calc(var(--k,0)*140ms + 1.5s) infinite}
-@keyframes tuSheen{0%{opacity:0;transform:translateX(0)}6%{opacity:1}32%{opacity:1;transform:translateX(var(--sw))}34%,100%{opacity:0;transform:translateX(var(--sw))}}
-.tu-spot .ring{fill:none;stroke:var(--tu-acc);stroke-width:2.5;stroke-linejoin:round;stroke-dasharray:var(--len) var(--len);stroke-dashoffset:var(--len)}
-.tu-spot.on .ring{animation:tuRing 1.15s cubic-bezier(.65,0,.25,1) calc(var(--k,0)*140ms + .15s) forwards,tuBreath 3s ease-in-out calc(var(--k,0)*140ms + 1.4s) infinite}
-.tu-spot .halo{fill:none;stroke:rgb(var(--tu-accrgb) / .3);stroke-width:10;opacity:0;filter:blur(6px)}
-.tu-spot.on .halo{animation:tuHalo 3s ease-in-out calc(var(--k,0)*140ms + 1.1s) infinite}
-@keyframes tuRing{to{stroke-dashoffset:0}}
-@keyframes tuBreath{0%,100%{stroke-opacity:1}50%{stroke-opacity:.5}}
-@keyframes tuHalo{0%,100%{opacity:.25}50%{opacity:1}}
+/* 강조 (v119) — 테두리 없이, 강조할 곳 말고 나머지를 조금 투명하게 → 상대적으로 진하게. 차례가 바뀌면 부드럽게 옮겨 간다 */
+.tu-src .tu-ft{transition:opacity .9s ease,box-shadow .9s ease,color .9s ease}
+.tu-src .tu-fade{opacity:.3!important}
+.tu-src .tu-fadeS{box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--surface) 70%,transparent)!important;color:color-mix(in srgb,currentColor 30%,transparent)!important}
+.tu-shot .tu-ft{transition:none!important}
 .tu-chip{position:absolute;z-index:4;padding:6px 12px;border-radius:999px;background:var(--tu-acc);color:#fff;font-size:13px;font-weight:800;
   letter-spacing:-.01em;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgb(var(--tu-accrgb) / .32);
-  transform:translate(-100%,var(--ty,-100%)) scale(.6);opacity:0;transform-origin:100% 100%}
-.tu-chip.on{animation:tuChip .65s cubic-bezier(.34,1.56,.64,1) calc(var(--k,0)*140ms + .9s) forwards}
-@keyframes tuChip{to{opacity:1;transform:translate(-100%,var(--ty,-100%)) scale(1)}}
+  transform:translate(-100%,var(--ty,-70%)) scale(.6);opacity:0;transform-origin:100% 100%}
+.tu-chip.on{animation:tuChip .6s cubic-bezier(.34,1.56,.64,1) calc(var(--k,0)*120ms + .3s) forwards}
+@keyframes tuChip{to{opacity:1;transform:translate(-100%,var(--ty,-70%)) scale(1)}}
 /* 좌우 넘김 */
 .tu-nav{position:absolute;top:56%;z-index:6;width:clamp(46px,3.7vw,62px);height:clamp(46px,3.7vw,62px);transform:translateY(-50%);
   border-radius:50%;border:1px solid var(--tu-line);background:var(--tu-glass);color:var(--tu-ink);display:grid;place-items:center;cursor:pointer;padding:0;
@@ -3311,16 +3306,19 @@ html.tu-on .secnav{display:none!important}
 .tu-tile .v{margin-top:10px;font-size:clamp(19px,1.65vw,30px);font-weight:800;letter-spacing:-.03em;color:var(--tu-ink);font-variant-numeric:tabular-nums;
   white-space:nowrap}
 .tu-tile .s{margin-top:6px;font-size:12px;font-weight:600;color:var(--tu-ink2)}
-/* 마무리 — 핵심 요약 · PPT 저장 */
-.tu-recap{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;max-width:760px;margin:0 auto}
-.tu-recap.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:1240px;gap:9px 18px}
-.tu-rc{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-radius:14px;text-align:left;cursor:pointer;font-family:inherit;
-  border:1px solid var(--tu-line);background:var(--tu-glass);color:var(--tu-ink);transition:transform .18s,background .18s,box-shadow .18s}
-.tu-rc:hover{transform:translateY(-2px);background:var(--tu-bg1);box-shadow:0 10px 24px rgba(27,31,36,.08)}
-.tu-rc .n{font-size:13px;font-weight:900;color:var(--tu-acc);font-variant-numeric:tabular-nums;padding-top:1px}
-.tu-rc .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
-.tu-rc .t{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.35;word-break:keep-all}
-.tu-rc .l{font-size:11.5px;font-weight:600;color:var(--tu-mut)}
+/* 마무리 — 핵심 요약(갈래별 카드) · PPT 저장 (v119) */
+.tu-cats{display:grid;grid-template-columns:repeat(var(--nc,3),minmax(0,1fr));gap:16px;max-width:1320px;margin:0 auto;align-items:start}
+.tu-cat{padding:14px 12px 10px;border-radius:18px;background:var(--tu-glass);border:1px solid var(--tu-line);box-shadow:0 14px 34px rgba(27,31,36,.07)}
+.tu-cath{display:flex;align-items:center;gap:8px;padding:0 6px 8px;font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--tu-ink)}
+.tu-cath .d{width:7px;height:7px;border-radius:50%;background:var(--tu-acc);flex:none}
+.tu-cath .c{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--tu-mut);font-variant-numeric:tabular-nums}
+.tu-rc{display:flex;gap:11px;align-items:flex-start;width:100%;padding:8px;border:0;border-radius:11px;text-align:left;cursor:pointer;font-family:inherit;
+  background:transparent;color:var(--tu-ink);transition:background .18s,transform .18s}
+.tu-rc:hover{background:var(--tu-bg1);transform:translateX(2px)}
+.tu-rc .n{font-size:12px;font-weight:900;color:var(--tu-acc);font-variant-numeric:tabular-nums;padding-top:2px}
+.tu-rc .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tu-rc .t{font-size:14px;font-weight:700;letter-spacing:-.02em;line-height:1.38;word-break:keep-all}
+.tu-rc .l{font-size:11px;font-weight:700;color:var(--tu-mut)}
 .tu-rc em{font-style:normal;color:var(--tu-acc)}
 .tu-rc .w{display:inline}
 .tu-acts{display:flex;justify-content:center;gap:10px;margin-top:26px;flex-wrap:wrap}
@@ -3334,8 +3332,49 @@ html.tu-on .secnav{display:none!important}
 .tu-btn.busy svg{animation:tuBusy 1s ease-in-out infinite}
 @keyframes tuBusy{50%{transform:translateY(-3px)}}
 @media (max-width:760px){.tu-top{padding:12px 14px 0}.tu-head{padding:0 6vw}.tu-nav{top:auto;bottom:14px;transform:none}.tu-nav:hover{transform:scale(1.06)}
-  .tu-hint{display:none}.tu-recap.two{grid-template-columns:minmax(0,1fr)}}
-@media (prefers-reduced-motion:reduce){.tu-spot.on .ring,.tu-spot.on .halo,.tu-spot.on .sheen{animation:none;stroke-dashoffset:0}.tu-floor{transition:none}}
+  .tu-hint{display:none}.tu-cats{grid-template-columns:minmax(0,1fr)}.tu-edbar .tip{display:none}.tu-dlm{right:-44px}}
+@media (prefers-reduced-motion:reduce){.tu-floor{transition:none}}
+/* 위쪽 — 문구 편집 · 다운로드 메뉴 (v119) */
+.tu-dlw{position:relative;display:inline-flex}
+.tu-dlm{position:absolute;right:0;top:calc(100% + 8px);min-width:320px;padding:6px;border-radius:16px;background:var(--tu-bg1);border:1px solid var(--tu-line);
+  box-shadow:0 20px 48px rgba(27,31,36,.18),0 2px 6px rgba(27,31,36,.06);display:flex;flex-direction:column;gap:2px;z-index:8;
+  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:100% 0;pointer-events:none;visibility:hidden;transition:opacity .18s,transform .18s,visibility 0s .18s}
+.tu-dlw.open .tu-dlm{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .18s,transform .18s}
+.tu-mi{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:11px;background:transparent;color:var(--tu-ink);
+  font-family:inherit;text-align:left;cursor:pointer}
+.tu-mi:hover,.tu-mi:focus-visible{background:var(--tu-bg2);outline:none}
+.tu-mi .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--tu-bg2);flex:none;color:var(--tu-ink)}
+.tu-mi:hover .ic{background:var(--tu-bg1)}
+.tu-mi .ic svg{width:18px;height:18px;display:block}
+.tu-mi .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tu-mi b{font-size:13.5px;font-weight:800;letter-spacing:-.01em}
+.tu-mi small{font-size:11.5px;font-weight:600;color:var(--tu-mut)}
+.tu-mi[disabled]{cursor:progress;opacity:.8}
+.tu-mi.busy .ic svg{animation:tuBusy 1s ease-in-out infinite}
+.tu-ib.busy svg{animation:tuBusy 1s ease-in-out infinite}
+.tu-sl.editing .tu-title,.tu-sl.editing .tu-sub{outline:2px dashed rgb(var(--tu-accrgb) / .45);outline-offset:8px;border-radius:8px;cursor:text;caret-color:var(--tu-acc)}
+.tu-sl.editing .tu-title:focus,.tu-sl.editing .tu-sub:focus{outline-style:solid;outline-color:rgb(var(--tu-accrgb) / .75);background:rgb(var(--tu-accrgb) / .05)}
+.tu-sl.editing .tu-sub{min-height:1.5em;min-width:12em}
+.tu-sl.editing .tu-sub:empty::before{content:attr(data-ph);color:var(--tu-mut);opacity:.75}
+.tu-sl.editing .tu-title em::after{transform:scaleX(1)}
+.tu-edbar{position:absolute;left:50%;top:calc(100% + 20px);transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px 6px 6px 16px;
+  border-radius:999px;background:var(--tu-bg1);border:1px solid var(--tu-line);box-shadow:0 16px 38px rgba(27,31,36,.16);white-space:nowrap;z-index:5;
+  font-size:12.5px;font-weight:700;color:var(--tu-ink2);animation:tuEdIn .32s cubic-bezier(.16,1,.3,1)}
+@keyframes tuEdIn{from{opacity:0;transform:translate(-50%,-8px)}}
+.tu-edbar .tip{margin-right:6px}
+.tu-eb{height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--tu-line);background:transparent;color:var(--tu-ink);font-family:inherit;
+  font-size:12.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .15s}
+.tu-eb:hover{background:var(--tu-bg2)}
+.tu-eb.em b{color:var(--tu-acc)}
+.tu-eb.pri{background:var(--tu-ink);color:var(--tu-bg1);border-color:transparent}
+.tu-eb kbd{font-family:inherit;font-size:10.5px;font-weight:700;opacity:.55}
+.tu.editing .tu-nav{opacity:.3}
+/* 배경음 단추 — 켜져 있으면 소리 물결이 천천히 숨쉰다(채운 단추 모양은 쓰지 않는다) */
+.tu-ib.tu-snd[aria-pressed]{background:var(--tu-glass);color:var(--tu-ink);border-color:var(--tu-line)}
+.tu-ib.tu-snd[aria-pressed="false"]{color:var(--tu-mut)}
+.tu-snd .wv{animation:tuWave 2.4s ease-in-out infinite}
+@keyframes tuWave{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.tu-snd .wv{animation:none}}
 
 /* ===== 캠페인 구조 (v119 · 27-struct.js) — v120 부터 디지털 대시보드 첫 메뉴(#sub-struct) ===== */
 #csSec{margin-top:22px}
