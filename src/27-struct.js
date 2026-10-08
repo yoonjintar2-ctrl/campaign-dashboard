@@ -19,14 +19,18 @@ var CS_SMIN=.7;
 /* 배치 간격 — 보통(시안 A-4 그대로) · 촘촘(화면 맞춤) */
 var CS_P={loose:{fit:false,gRoot:28,gSeg:6,padN:8,padS:20,minPad:10,top:8,bot:16,rootMin:150},
   tight:{fit:true,gRoot:12,gSeg:2,padN:3,padS:8,minPad:4,top:4,bot:6,rootMin:118}};
-CS={order:'media',depth:5,flow:true,fit:true,collapsed:{},expanded:{},W:0,vh:0,scale:1,sig:'',agg:null,N:null,ro:null,io:null,t:0,hov:-1};
+/* 가지 순서 (v120.3) — 캠페인마다 다르다(예: 테슬라어택은 광고상품이 타깃보다 위). 마지막 단 아래에 소재 칩 */
+var CS_ORDERS={media:['seg','media','target','product'],product:['seg','media','product','target'],target:['seg','target','media','product']};
+CS={ovr:null,depth:5,flow:true,fit:true,collapsed:{},expanded:{},W:0,vh:0,scale:1,sig:'',agg:null,N:null,ro:null,io:null,t:0,hov:-1};
 (function(){try{const s=JSON.parse(localStorage.getItem('dmd:cs')||'{}');
-  if(s.order==='target')CS.order='target';
   if(s.depth>=2&&s.depth<=5)CS.depth=s.depth|0;
   if(s.flow===false)CS.flow=false;
   if(s.fit===false)CS.fit=false;}catch(e){}})();
-function csSave(){try{localStorage.setItem('dmd:cs',JSON.stringify({order:CS.order,depth:CS.depth,flow:CS.flow,fit:CS.fit}));}catch(e){}}
-function csDims(){return CS.order==='target'?['seg','target','media','product']:['seg','media','target','product'];}
+function csSave(){try{localStorage.setItem('dmd:cs',JSON.stringify({depth:CS.depth,flow:CS.flow,fit:CS.fit}));}catch(e){}}
+/* 가지 순서 = 캠페인 문서의 기본(CAMPAIGN.csOrder — 시행사가 고르면 저장) · 저장할 수 없는 화면(광고주)에서 바꾼 것은 이 캠페인 · 이 화면에서만(CS.ovr) */
+function csCampKey(){try{return (CLOUD.campaign&&CLOUD.campaign.id)||CAMPAIGN.name||'';}catch(e){return CAMPAIGN.name||'';}}
+function csOrder(){const o=(CS.ovr&&CS.ovr.k===csCampKey()&&CS.ovr.o)||CAMPAIGN.csOrder||'media';return CS_ORDERS[o]?o:'media';}
+function csDims(){return CS_ORDERS[csOrder()];}
 function csDimName(d){return {seg:L('구분','Segment'),media:L('매체','Media'),target:L('타깃','Target'),
   product:L('광고상품','Product'),creative:L('소재','Creative')}[d]||d;}
 function csHex(c){c=String(c||'').trim();
@@ -137,7 +141,8 @@ function renderStruct(){
   CS.W=W;CS.vh=innerHeight;CS.drawnAt=Date.now();
   csWire();
   if(CS.depth<csMinDepth())CS.depth=csMinDepth();
-  if(CS.lang!==LANG){CS.lang=LANG;csPaintCtl();}   /* 언어를 바꾸면 펼침 · 가지 순서 목록 글자도 */
+  /* 언어를 바꾸거나 다른 캠페인을 열어 가지 순서가 바뀌면 펼침 · 가지 순서 목록도 다시 */
+  if(CS.lang!==LANG||CS.pOrd!==csOrder()){if(CS.pOrd&&CS.pOrd!==csOrder()){CS.collapsed={};CS.expanded={};}CS.lang=LANG;csPaintCtl();}
   hideTip&&hideTip();
   /* 지난 배율을 걷어 내고 잰다 — 줄인 채로 재면 getBoundingClientRect 가 줄어든 크기를 돌려준다 */
   map.style.transform='';map.style.transformOrigin='';wrap.style.height='';wrap.classList.remove('cs-scaled');
@@ -207,7 +212,8 @@ function csCols(Wl,P,C){
   const map=$('csMap'),{rows,root}=C;
   const dims=csDims();
   const kidsOn=n=>n.kids.length>0&&!CS.collapsed[n.i+'|'+n.label]&&(n.depth<CS.depth||!!CS.expanded[n.i+'|'+n.label]);
-  const chipsOn=n=>n.dim==='product'&&!CS.collapsed[n.i+'|'+n.label]&&(CS.depth>=5||!!CS.expanded[n.i+'|'+n.label]);
+  /* 소재 칩은 마지막 단(depth 4 — 광고상품, 순서에 따라 타깃) 아래 */
+  const chipsOn=n=>n.depth===4&&!CS.collapsed[n.i+'|'+n.label]&&(CS.depth>=5||!!CS.expanded[n.i+'|'+n.label]);
   const vis=[];const walk=n=>{vis.push(n);if(kidsOn(n))n.kids.forEach(walk);};walk(root);
   /* 보이는 가장 깊은 칸 — 0 캠페인 · 1 구분 · 2/3 매체·타깃 · 4 광고상품 · 5 소재 */
   let dv=0;vis.forEach(n=>{if(n.depth>dv)dv=n.depth;});
@@ -228,14 +234,15 @@ function csCols(Wl,P,C){
     let mN=0,pN=0,cN=0;
     vis.forEach(n=>{
       if(n.dim==='media'){const t=mTag(n);mN=Math.max(mN,csTextW(n.label,'700 12.5px')+22,t?csTextW(t,'700 10px')+22:0);}
-      else if(n.dim==='product'){pN=Math.max(pN,csTextW(n.label,'400 11px')+20);
-        if(chipsOn(n)&&n.cr&&n.cr.length){let w=0;n.cr.slice(0,4).forEach((c,j)=>{w+=Math.min(140,Math.ceil(csTextW(c.n,'700 10px')+16))+(j?4:0);});
-          if(n.cr.length>4)w+=34;cN=Math.max(cN,w);}}});
+      else if(n.dim==='product')pN=Math.max(pN,csTextW(n.label,'400 11px')+20);
+      if(chipsOn(n)&&n.cr&&n.cr.length){let w=0;n.cr.slice(0,4).forEach((c,j)=>{w+=Math.min(140,Math.ceil(csTextW(c.n,'700 10px')+16))+(j?4:0);});
+        if(n.cr.length>4)w+=34;cN=Math.max(cN,w);}});
     MEDW=Math.max(90,Math.min(150,Math.ceil(mN)||124));
     PRODW=Math.max(110,Math.min(270,Math.ceil(pN)||164));
     CHIPW=Math.max(60,Math.min(300,cN?Math.ceil(cN)+6:60));}
   const tD=dims.indexOf('target')+1,tOn=tD<=dv;
-  const wOf=(d,TW)=>d===0?ROOTW:d===1?SEGW:d===4?PRODW:d===5?CHIPW:(dims[d-1]==='target'?TW:MEDW);
+  const wOf=(d,TW)=>{if(d===0)return ROOTW;if(d===1)return SEGW;if(d===5)return CHIPW;
+    const k=dims[d-1];return k==='target'?TW:k==='product'?PRODW:MEDW;};
   const base=[140,78,70,60,20],mins=P.fit?[48,26,24,22,8]:[72,34,30,28,10];
   const act=i=>i<dv;
   const bs=base.reduce((a,x,i)=>a+(act(i)?x:0),0)||1,ms=mins.reduce((a,x,i)=>a+(act(i)?x:0),0);
@@ -257,7 +264,7 @@ function csCols(Wl,P,C){
   /* 폭은 감싼 칸을 1px 도 넘지 않게(소수점 올림으로 넘치면 스크롤바가 생겼다 없어졌다 한다) */
   const MW=total<=Wl+.5?Math.floor(Math.min(total,Wl)):Math.ceil(total);
   const colW={media:MEDW,target:TW||200,product:PRODW};
-  const chipX=X[4]+PRODW+g[4];
+  const chipX=X[4]+wOf(4,TW)+g[4];
 
   /* 카드를 먼저 그려 실제 크기를 잰다 (글자 폭 어림 금지 — 함정 69 · 위 칸 폭 어림은 상한일 뿐, 높이는 실제로 잰다) */
   const html=vis.map(n=>{
@@ -333,7 +340,7 @@ function csDraw(G,K,P,H){
     e.style.left=Math.round(n.x)+'px';e.style.top=Math.round(n.y-n.ch/2)+'px';e.style.height=Math.round(n.ch)+'px';
     if(n.dim==='media'||n.dim==='target'||n.dim==='product')e.style.width=n.w+'px';
     e.style.visibility='';
-    const hid=n.kids.length&&!kidsOn(n)?n.kids.length:(n.dim==='product'&&!chipsOn(n)?(n.cr||[]).length:0);
+    const hid=n.kids.length&&!kidsOn(n)?n.kids.length:(n.depth===4&&!chipsOn(n)?(n.cr||[]).length:0);
     if(hid)badges+=`<span class="cs-badge" data-nid="${n.i}" style="left:${Math.round(n.x+n.w+8)}px;top:${Math.round(n.y-9)}px;background:${n.hue}">+${hid}</span>`;
     if(n.parent){
       const p=n.parent;
@@ -420,7 +427,7 @@ function csTipHtml(n){
   const ls=[...new Set(n.rows.map(r=>r.l))];
   if(n.dim==='media'&&ls.length===1){const l=ls[0];
     h+=tr(L('광고상품','Product'),lineProducts(l).join(', ')||'–');
-    if(CS.order==='media')h+=tr(L('타깃','Target'),l.target||joinMulti(lineTargets(l))||'–');
+    if(csDims().indexOf('target')>csDims().indexOf('media'))h+=tr(L('타깃','Target'),l.target||joinMulti(lineTargets(l))||'–');
     if(l.bid)h+=tr(L('비드 · 단가','Bid · price'),`${l.bid} ${fmt(+l.price||0)}`);
     h+=tr(L('기간','Period'),`${(l.start||'').replace(/-/g,'.')} – ${(l.end||'').replace(/-/g,'.')}`);}
   else if(n.dim!=='seg')h+=tr(L('라인','Lines'),`${ls.length}${L('개','')} · ${[...new Set(ls.map(l=>l.media))].join(', ')}`);
@@ -436,7 +443,7 @@ function csHot(n,crKey){
   const on=new Set(),hot=new Set();
   const up=m=>{for(let p=m;p;p=p.parent)on.add(p.i);};
   const down=m=>{on.add(m.i);m.kids.forEach(down);};
-  if(crKey){CS.N.vis.filter(m=>m.dim==='product'&&(m.cr||[]).some(c=>dimKey(c.n)===crKey)).forEach(up);}
+  if(crKey){CS.N.vis.filter(m=>m.depth===4&&(m.cr||[]).some(c=>dimKey(c.n)===crKey)).forEach(up);}
   else CS.N.vis.filter(m=>m===n||(m.dim===n.dim&&m.dim!=='root'&&dimKey(m.label)===dimKey(n.label))).forEach(m=>{up(m);down(m);hot.add(m.i);});
   if(n&&n.dim==='root'){csHot(null);return;}
   map.classList.add('cs-hov');
@@ -446,11 +453,12 @@ function csHot(n,crKey){
     e.classList.toggle('cs-on',ok);e.classList.toggle('cs-hot',hot.has(id)&&e.classList.contains('cs-n'));});}
 function csToggle(n){
   if(n.dim==='root'){CS.collapsed={};CS.expanded={};CS.depth=5;csSave();csPaintCtl();renderStruct();return;}
-  if(!n.kids.length&&n.dim!=='product')return;
+  if(!n.kids.length&&n.depth!==4)return;
   if(n.depth<csMinDepth())return;          /* 매체까지는 늘 펼친다 (v120.2) */
   const key=n.i+'|'+n.label;
-  const open=n.dim==='product'?(!CS.collapsed[key]&&(CS.depth>=5||CS.expanded[key])):(!CS.collapsed[key]&&(n.depth<CS.depth||CS.expanded[key]));
-  const limited=n.dim==='product'?CS.depth<5:n.depth>=CS.depth;
+  const leaf=n.depth===4;
+  const open=leaf?(!CS.collapsed[key]&&(CS.depth>=5||CS.expanded[key])):(!CS.collapsed[key]&&(n.depth<CS.depth||CS.expanded[key]));
+  const limited=leaf?CS.depth<5:n.depth>=CS.depth;
   if(open){if(limited)delete CS.expanded[key];else CS.collapsed[key]=true;}
   else{delete CS.collapsed[key];if(limited)CS.expanded[key]=true;}
   renderStruct();}
@@ -466,9 +474,9 @@ function csBind(){
       if(CS.hov!==key){CS.hov=key;csHot(null,h.el.dataset.cr);}
       const c=(h.n.cr||[])[+h.el.dataset.k];
       if(c&&CS.tipK!==key){CS.tipK=key;
-        const uses=CS.N.vis.filter(m=>m.dim==='product'&&(m.cr||[]).some(x=>dimKey(x.n)===dimKey(c.n))).length;
+        const uses=CS.N.vis.filter(m=>m.depth===4&&(m.cr||[]).some(x=>dimKey(x.n)===dimKey(c.n))).length;
         CS.tipC=`<div class="t">${esc(c.n)}</div><div style="opacity:.7;margin:-3px 0 6px">${esc(csDimName('creative'))} · ${esc(h.n.label)}</div>`
-          +`<div class="r"><span class="l">${L('상품 안 비중','Within product')}</span><b>${(h.n.cr.length>1?pct(c.v,1):L('단독 소재','Only creative'))}</b></div>`
+          +`<div class="r"><span class="l">${L(`${csDimName(h.n.dim)} 안 비중`,`Within ${csDimName(h.n.dim).toLowerCase()}`)}</span><b>${(h.n.cr.length>1?pct(c.v,1):L('단독 소재','Only creative'))}</b></div>`
           +`<div class="tsec">${L(`지금 보이는 가지 중 ${uses}곳에 쓰였습니다`,`Used in ${uses} visible branches`)}</div>`;}
       if(c)showTip(e.clientX,e.clientY,CS.tipC);
       return;}
@@ -496,7 +504,11 @@ async function csCopy(btn){
 function csPaintCtl(){
   const sw=$('csFlowSw');if(sw)sw.classList.toggle('on',!!CS.flow);
   const fw=$('csFitSw');if(fw)fw.classList.toggle('on',!!CS.fit);
-  const os=$('csOrderSel');if(os){os.innerHTML=`<option value="media">${L('매체 › 타깃','Media › Target')}</option><option value="target">${L('타깃 › 매체','Target › Media')}</option>`;os.value=CS.order;}
+  const os=$('csOrderSel');if(os){
+    os.innerHTML=`<option value="media">${L('매체 › 타깃 › 광고상품','Media › Target › Product')}</option>`
+      +`<option value="product">${L('매체 › 광고상품 › 타깃','Media › Product › Target')}</option>`
+      +`<option value="target">${L('타깃 › 매체 › 광고상품','Target › Media › Product')}</option>`;
+    os.value=csOrder();CS.pOrd=csOrder();}
   const ds=$('csDepthSel');if(ds){const d=csDims().map(csDimName).concat([csDimName('creative')]),mn=csMinDepth();
     if(CS.depth<mn)CS.depth=mn;
     ds.innerHTML=d.map((x,i)=>i+1<mn?'':`<option value="${i+1}">${L('','to ')}${esc(x)}${L('까지','')}</option>`).join('');ds.value=String(CS.depth);}}
@@ -511,7 +523,13 @@ function csWire(){
   /* 화면 맞춤은 창 높이도 따른다 (폭은 아래 ResizeObserver) */
   addEventListener('resize',()=>{if(!CS.fit||!CS.W||Math.abs(innerHeight-CS.vh)<6)return;
     clearTimeout(CS.t2);CS.t2=setTimeout(renderStruct,160);});
-  const os=$('csOrderSel');if(os)os.onchange=()=>{CS.order=os.value==='target'?'target':'media';CS.collapsed={};CS.expanded={};csSave();csPaintCtl();renderStruct();};
+  /* 시행사(저장할 수 있는 화면)가 고르면 이 캠페인의 기본 순서로 문서에 저장 — 광고주 화면도 같은 순서로 열린다.
+     광고주가 고른 것은 이 캠페인 · 이 화면에서만 */
+  const os=$('csOrderSel');if(os)os.onchange=()=>{const v=CS_ORDERS[os.value]?os.value:'media';
+    let sv=false;try{sv=canSaveView();}catch(e){}
+    if(sv){CAMPAIGN.csOrder=v==='media'?'':v;CS.ovr=null;try{markDirty();saveLocal();}catch(e){}}
+    else CS.ovr={k:csCampKey(),o:v};
+    CS.collapsed={};CS.expanded={};csPaintCtl();renderStruct();};
   const ds=$('csDepthSel');if(ds)ds.onchange=()=>{CS.depth=Math.max(csMinDepth(),Math.min(5,+ds.value||5));CS.collapsed={};CS.expanded={};csSave();renderStruct();};
   csPaintCtl();
   /* 화면 밖이면 흐름을 멈춘다 · 폭이 바뀌면(메뉴 옮김 · 창 크기 · 숨김 → 보임) 다시 그린다 */

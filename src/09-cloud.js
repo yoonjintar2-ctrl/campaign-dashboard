@@ -81,7 +81,9 @@ function serializeDoc(){
       /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
       media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false}),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
-      menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{}))},
+      menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{})),
+      /* 캠페인 구조 가지 순서 (v120.3) — '' = 매체 › 타깃 › 광고상품 · 'product' = 매체 › 광고상품 › 타깃 · 'target' = 타깃 › 매체 › 광고상품 */
+      csOrder:CAMPAIGN.csOrder||''},
     /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
     tv:(typeof tvForDoc==='function'?tvForDoc():{plan:[],spots:[]}),
     /* OOH 캠페인 — 지면 계획(plan) · 소재(cr) (v81) */
@@ -191,6 +193,7 @@ function applyDoc(d,keepToday){
   {const m=d.campaign&&d.campaign.media;
    CAMPAIGN.media=(m&&(m.digital||m.tv||m.ooh))?{digital:!!m.digital,tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};}
   {const mm=d.campaign&&d.campaign.menus;CAMPAIGN.menus=(mm&&typeof mm==='object')?JSON.parse(JSON.stringify(mm)):{};}
+  {const o=d.campaign&&d.campaign.csOrder;CAMPAIGN.csOrder=(o==='product'||o==='target')?o:'';}
   try{if(typeof tvFromDoc==='function')tvFromDoc(d);}catch(e){}
   try{if(typeof oohFromDoc==='function')oohFromDoc(d);}catch(e){}
   try{if(typeof tblCfgFromDoc==='function')tblCfgFromDoc(d);}catch(e){}
@@ -1102,7 +1105,7 @@ function resetToBlank(name,advertiser){
   /* 소재 자료함도 비운다 (v89) — 안 비우면 직전에 열어 둔 캠페인의 이미지 · 영상이 새 캠페인 문서에 같이 저장됐다 */
   try{CR_ASSETS={};}catch(e){}
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
-  CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};
+  CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];}catch(e){}
