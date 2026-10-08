@@ -3173,16 +3173,10 @@ table.sheet td.findcur{box-shadow:inset 0 0 0 2.5px #e0902f;background:rgba(224,
 
 /* ===== 데이터 투어 (v116) — 25-tour.js =====
    밝은 회색 무대 · 원근 바닥 격자 · 위쪽 진행 막대 + 제목/부제목 · 가운데 그래프(원본 복제) · 좌우 넘김 단추 */
-.tourbtn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 12px 0 9px;margin-left:8px;border:0;border-radius:999px;
-  background:#23272d;color:#fff;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;cursor:pointer;
-  box-shadow:0 1px 2px rgba(0,0,0,.12),0 4px 12px rgba(35,39,45,.18);transition:transform .15s,box-shadow .15s,background .15s}
-.tourbtn svg{width:15px;height:15px;flex:none;display:block}
-.tourbtn:hover{background:#0f1114;transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,.14),0 8px 18px rgba(35,39,45,.26)}
-.tourbtn:active{transform:none}
-.tourbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-soft),0 0 0 4px var(--acc)}
-[data-theme="dark"] .tourbtn{background:#eef0f2;color:#1b1f24}
-.tabs.dense2 .tourbtn .lb{display:none}.tabs.dense2 .tourbtn{padding:0 8px}
-@media (max-width:1180px){.tourbtn .lb{display:none}.tourbtn{padding:0 8px}}
+/* 데이터 투어 단추 — (v123.2) 왼쪽 '페이지 저장 · 이미지 · PDF' 단추와 같은 모양(.pill.dl) — 아이콘만 남보라 화면 + 재생 */
+.tabs .tourbtn{margin-left:8px}
+.tourbtn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-soft)}
+.tabs.dense2 .tourbtn .lb{display:none}.tabs.dense2 .tourbtn{padding:0 9px}
 @media print{.tourbtn,.tu{display:none!important}}
 html.tu-on .toast{z-index:3200}
 html.tu-on .secnav{display:none!important}
