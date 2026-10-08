@@ -1669,7 +1669,7 @@ function drawTblCols(bd,ft,area){
     const key=b.dataset.csreset,cfg=tblCfg(key);cfg.hide=[];cfg.label={};done(key);redraw();});
 }
 /* 광고주·캠페인 관리는 **내 계정으로 로그인한 관리자**만.
-   공유 링크(운영진 코드)로 들어온 화면에서는 열 수 없다. */
+   공유 링크(뷰어 코드)로 들어온 화면에서는 열 수 없다. */
 function canManageAdv(){
   try{
     if(typeof CLOUD==='undefined'||!CLOUD)return true;

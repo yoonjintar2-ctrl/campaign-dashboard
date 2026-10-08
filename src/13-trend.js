@@ -23,12 +23,11 @@ const TREND={posts:[],cats:TREND_CATS_DEFAULT.slice(),media:[],
 const TREND_BLOBS={};
 
 const trendOn=()=>{try{return !!(CLOUD&&CLOUD.on&&CLOUD.sb);}catch(e){return false;}};
-/* 이 게시판을 고칠 수 있는 사람 = 마스터 · 슈퍼마스터 (v117 — 서버 trend_is_admin 과 같은 규칙) · 운영진 코드 화면 */
+/* 이 게시판을 고칠 수 있는 사람 = 마스터 · 슈퍼마스터 (v117 — 서버 trend_is_admin 과 같은 규칙) */
 function trendAdmin(){
   try{
     if(CLOUD&&CLOUD.user&&(CLOUD.appRole==='super'||CLOUD.appRole==='master'))return true;
     if(!trendOn())return true;                /* 데모에서는 시안을 만져 볼 수 있게 */
-    if(CLOUD&&CLOUD.shareView&&CLOUD.shareRole==='staff')return true;
   }catch(e){}
   return false;
 }
@@ -712,7 +711,7 @@ function openTrendForm(post){
       ${(!logged&&!edit)?`<div class="tguest">
         <div class="tgh">로그인하지 않고 올립니다</div>
         <p class="thint">나중에 이 자료를 고치거나 지울 때 쓸 ID 와 비밀번호를 정해 주세요.
-          잊어버리면 마스터·운영진만 지울 수 있습니다.</p>
+          잊어버리면 마스터만 지울 수 있습니다.</p>
         <label class="tfrow"><span>ID <b class="req">*</b></span>
           <input id="tfGid" maxlength="40" placeholder="표시될 이름"></label>
         <label class="tfrow"><span>비밀번호 <b class="req">*</b></span>
@@ -1010,7 +1009,7 @@ function paintTrendToggle(){
     t.classList.toggle('on',trendVisibleToViewer());
     t.title=trendVisibleToViewer()
       ?'지금은 광고주(조회모드)에게도 트렌드 리포트 탭이 보입니다'
-      :'지금은 마스터·운영진에게만 보입니다';}
+      :'지금은 마스터에게만 보입니다';}
   paintTrendTab();
 }
 /* 탭 자체의 보임·회색 — 저장본을 되살렸을 때도 바로 맞도록 따로 떼어 둔다 (v66) */

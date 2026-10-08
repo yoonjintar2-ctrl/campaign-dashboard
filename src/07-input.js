@@ -657,7 +657,7 @@ function histWho(){
   let who='게스트',org='';
   try{const u=CLOUD&&CLOUD.user;
     if(u)who=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||who;
-    org=CLOUD&&CLOUD.shareView?(CLOUD.shareRole==='staff'?'운영진 코드':'뷰어 코드'):(u?'시행사':'데모');}catch(e){}
+    org=CLOUD&&CLOUD.shareView?'뷰어 코드':(u?'시행사':'데모');}catch(e){}
   return {who,org};}
 function commitSnapshot(kind){
   if(!DIRTY_AT)return;

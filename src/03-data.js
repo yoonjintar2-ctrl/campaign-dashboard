@@ -750,7 +750,7 @@ function defaultRange(){
 function resetDateFilter(force){
   if(!force&&FILTER_TOUCHED&&FILTER.from&&FILTER.to)return;
   return resetDateFilter0();}
-/* 마스터·운영진이 **저장해 둔 조회 기간** (v71).
+/* 마스터가 **저장해 둔 조회 기간** (v71).
    예전에는 조회 기간이 문서에 실리지 않아 광고주(뷰어)는 늘 기본 구간(첫날~실적 마지막 날)으로 봤다 —
    마스터가 고른 기간과 기본 구간이 우연히 같을 때만 같아 보여 "가끔 다르게 보인다" 로 나타났다.
    문서를 열 때 applyDoc 이 채우고, 기간을 기본으로 되돌리면 비운다. */

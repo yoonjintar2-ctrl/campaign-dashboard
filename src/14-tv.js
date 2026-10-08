@@ -138,7 +138,7 @@ function areaClick(b,e){
    ?code=<코드>&menu=<메뉴>&lang=<ko|en> — 캠페인 · 메뉴 · 언어가 바뀔 때마다 주소를 고쳐 쓴다(뒤로 가기 기록은 쌓지 않음).
    주소창을 그대로 복사해 보내면 받는 사람도 같은 캠페인 · 같은 메뉴 · 같은 언어로 열린다.
    · 로그인한 시행사 → 그 캠페인의 **뷰어(광고주) 코드** — 복사해 보내도 조회 전용이다
-   · 운영진 코드로 들어온 화면 → 코드를 싣지 않는다(운영진 권한이 퍼지지 않게). 같은 탭 새로고침은 staffResume 로 이어 연다
+   · 뷰어 코드로 들어온 화면 → 그 코드 (v121 — 링크 코드는 뷰어 코드뿐)
    · 샘플 → DEMO-2026(시행사 화면) / VIEW-2026(광고주 화면) · 접속 화면 → lang 만
    ⚠ 첫 화면이 자리 잡기 전(window.__urlLive 없음)에는 절대 고치지 않는다 — 접속 화면이 ?code 를 읽기 전에 지워지면 안 된다. */
 /* ⚠ 부트스트랩 중(접속 화면이 코드를 읽는 순간 · p8 의 첫 switchTab)에 이 파일보다 **먼저** 불린다 →
@@ -150,7 +150,7 @@ function urlBoot(){
 function urlCode(){
   const g=$('gate');if(g&&!g.classList.contains('hidden'))return '';
   if(CLOUD.sample)return SAMPLE_CODE;
-  if(CLOUD.shareView)return CLOUD.shareRole==='staff'?'':(CLOUD.shareCode||'');
+  if(CLOUD.shareView)return CLOUD.shareCode||'';
   if(CLOUD.user&&CLOUD.campaign&&CLOUD.campaign.id){
     const c=(CLOUD.list||[]).find(x=>x.id===CLOUD.campaign.id);return (c&&c.share_code)||CLOUD.campaign.share_code||'';}
   return '';}
