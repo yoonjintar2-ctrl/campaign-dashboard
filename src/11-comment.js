@@ -2,7 +2,7 @@
 
 /* ---------- 대시보드 항목 숨기기 ----------
    .sec[data-sect] 와 같은 키를 가진 모든 요소를 함께 감춘다. */
-const SECT_LABEL={pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
+const SECT_LABEL={struct:'캠페인 구조',pace:'캠페인 진행 현황',comment:'운영 코멘트',kpi:'KPI 달성 현황',
   stat:'주요 지표',daily:'일자별 캠페인 효율 비교',treemap:'분포(트리맵)',
   gantt:'소재 × 일자 게재 히스토리',heat:'요일별 · 일자별 효율 히트맵',
   creative:'효율 우수 소재',raw:'일자별 상세 효율',mix:'미디어믹스',
@@ -34,13 +34,22 @@ function sectBlocks(){
     b.nodes.push(n);});
   return out;
 }
+/* 저장된 순서에 없는 영역(새로 생긴 영역 — 캠페인 구조 v119 등)은 맨 뒤가 아니라
+   원래 자리 — 화면 순서에서 바로 뒤에 오는 영역 앞 — 에 끼운다 */
+function sectOrderFull(blocks){
+  const keys=blocks.map(b=>b.k);
+  const list=SECT_ORDER.filter(k=>keys.indexOf(k)>=0);
+  keys.forEach((k,i)=>{if(list.indexOf(k)>=0)return;
+    const nx=keys.slice(i+1).find(x=>list.indexOf(x)>=0);
+    if(nx==null)list.push(k);else list.splice(list.indexOf(nx),0,k);});
+  return list;}
 function applySectOrder(){
   const host=$('sub-perf');if(!host||!SECT_ORDER.length)return;
   const blocks=sectBlocks();
   const by={};blocks.forEach(b=>by[b.k]=b);
   const anchor=$('slotEnd');
-  /* 정한 순서대로 · 목록에 없는 것은 원래 순서 그대로 뒤에 */
-  const order=SECT_ORDER.filter(k=>by[k]).concat(blocks.map(b=>b.k).filter(k=>SECT_ORDER.indexOf(k)<0));
+  /* 정한 순서대로 · 목록에 없는 것은 원래 자리에 */
+  const order=sectOrderFull(blocks);
   order.forEach(k=>{const b=by[k];if(!b)return;
     b.nodes.forEach(n=>host.insertBefore(n,anchor));});
 }
@@ -49,8 +58,7 @@ function openSectManage(){
   const draw=()=>{
     const blocks=sectBlocks();
     const by={};blocks.forEach(b=>by[b.k]=b);
-    const order=SECT_ORDER.filter(k=>by[k])
-      .concat(blocks.map(b=>b.k).filter(k=>SECT_ORDER.indexOf(k)<0));
+    const order=sectOrderFull(blocks);
     const on=k=>k==='sum'
       ? SUMMARIES.some(s=>!HIDDEN.has('sum:'+s.id))
       : k===DUO_KEY?(!HIDDEN.has('treemap')||!HIDDEN.has('bubble')):!HIDDEN.has(k);
@@ -142,6 +150,10 @@ setTimeout(syncStick,0);setTimeout(syncStick,600);
 /* ---------- 영역 설명 (ⓘ) ----------
    광고주 · 시행사가 공통으로 궁금해할 만한 내용을 영역마다 한 덩어리로 적어 둔다. */
 const SECT_INFO={
+  struct:`<p>캠페인이 어떻게 짜여 있는지 — <b>구분 → 매체 → 타깃 → 광고상품 → 소재</b> — 를 한 장으로 봅니다. 가지 순서를 ‘타깃 › 매체’ 로 바꾸면 같은 타깃을 어느 매체들로 잡았는지 보입니다.</p>
+   <p><b>가지 굵기 = 예산</b>(정비례)입니다. 갈라진 가지 굵기의 합이 부모 가지 굵기와 같습니다. 광고상품 · 소재는 그 라인 예산을 일자별 실적의 소진 비중대로 나눈 값이라, 예산 0원인 보너스 상품은 점선으로 보입니다.</p>
+   <p>구분 아래는 예산이 많은 순서입니다. 카드를 누르면 그 아래를 접고 펼치며, 같은 이름(예: 여러 구분에 쓰인 같은 매체)은 함께 강조됩니다. 금액 · 실적은 마우스를 올리면 보입니다.</p>
+   <p>가지 순서 · 펼침 · 흐름 효과는 이 브라우저에만 기억합니다.</p>`,
   inflow:`<p><b>IWV(인터랙팅 방문)</b> — 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다.
      매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.</p>
    <p><b>유입 흐름</b> — 처음에는 유입 → 랜딩 페이지(첫 방문 페이지 기준 IWV)를 보여 줍니다. 양옆 ‹ › 로 클릭 → 유입, 노출 → 클릭 단계로 넘겨 볼 수 있고, 넘길 때 겹치는 기둥(예: 클릭)이 커지며 다음 그래프의 축이 됩니다. 그래프마다 자기 단계의 배율로 그립니다. 매체 색 = 다음 단계로 넘어간 몫, 회색 = 이탈, 마우스를 올리면 잔존율이 보입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’입니다. ‘구분 포함’ 을 켜면 구분 → 매체 → 랜딩 페이지 세 단으로 봅니다.</p>

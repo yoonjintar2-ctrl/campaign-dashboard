@@ -1590,6 +1590,8 @@ function renderAll(){
   /* 기간을 직접 고르지 않았으면 실적 · 라인이 바뀔 때 기본 기간(첫날 ~ 실적 마지막 날)을 다시 따른다 (v79) */
   try{if(followDefaultRange())buildFilters();}catch(e){}
   if(dashEmpty())return false;
+  /* 캠페인 구조 (v119) — 숨어 있으면(폭 0) 그리지 않고, 보이게 될 때 스스로 다시 그린다 */
+  try{renderStruct();}catch(e){console.warn('struct',e);}
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();
   let drew=false;

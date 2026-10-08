@@ -25,6 +25,10 @@ Object.assign(I18N_EN,{"로그인":"Sign in","이메일 (로그인 아이디)":"
   "실제 사이트에서는 이 버튼으로 이메일 계정 가입을 신청할 수 있습니다.":"On the live site, this button lets you request an email account.",
   "슈퍼마스터 · 마스터는 전체 화면을 볼 수 있습니다":"Super masters · masters can see the full screen"});
 Object.assign(I18N_EN,{"자료 게시판":"Shared board","이전":"Previous","다음":"Next"});
+/* 사전 보충 (v119 · 캠페인 구조) */
+Object.assign(I18N_EN,{"캠페인 구조":"Campaign structure","가지 굵기 = 예산 · 누르면 접고 펼칩니다":"Branch width = budget · click to fold or unfold",
+  "흐름 효과":"Flow","가지 순서":"Branch order","펼침":"Depth","매체 › 타깃":"Media › Target","타깃 › 매체":"Target › Media",
+  "가지 위로 예산이 흘러가는 효과를 켜고 끕니다":"Turn the flowing-budget effect on or off"});
 /* 사전 보충 (v78 · 엑셀 불러오기 · 리포트 엑셀) */
 Object.assign(I18N_EN,{
   "숫자로 읽을 수 없는 값입니다 — 0 으로 집계됩니다":"Can't be read as a number — counted as 0",

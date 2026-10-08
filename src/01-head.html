@@ -3336,6 +3336,63 @@ html.tu-on .secnav{display:none!important}
 @media (max-width:760px){.tu-top{padding:12px 14px 0}.tu-head{padding:0 6vw}.tu-nav{top:auto;bottom:14px;transform:none}.tu-nav:hover{transform:scale(1.06)}
   .tu-hint{display:none}.tu-recap.two{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.tu-spot.on .ring,.tu-spot.on .halo,.tu-spot.on .sheen{animation:none;stroke-dashoffset:0}.tu-floor{transition:none}}
+
+/* ===== 캠페인 구조 (v119 · 27-struct.js) — 서머리 맨 위 마인드맵 ===== */
+.cs-sum{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line2)}
+.cs-sum:empty{display:none}
+.cs-cnt{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
+.cs-cnt b{font-size:15px;font-weight:800;color:var(--ink);margin-right:3px;font-variant-numeric:tabular-nums}
+.cs-lg{margin-left:auto;display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
+.cs-lg>span{display:inline-flex;align-items:center;gap:6px}
+.cs-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;font-style:normal}
+.cs-lg b{color:var(--ink);font-weight:700}
+.cs-lg .cs-scale{padding-right:16px;border-right:1px solid var(--line)}
+.cs-lg .cs-scale i{width:36px;border-radius:1px;background:var(--b3)}
+.cs-wrap{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.cs-map{position:relative;min-height:60px}
+.cs-map svg.cs-svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.cs-n{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  text-align:left;cursor:pointer;transition:opacity .16s,box-shadow .16s;font-size:11.5px;line-height:15px;color:var(--ink);outline:none}
+.cs-n:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.cs-root{background-color:var(--tot);color:#fff;border-radius:16px;padding:12px 16px;gap:2px}
+.cs-root .a{font-size:11px;font-weight:600;opacity:.72;letter-spacing:.4px}
+.cs-root .n{font-size:15.5px;font-weight:800;line-height:20px;word-break:keep-all;overflow-wrap:anywhere}
+.cs-root .p{font-size:11px;opacity:.82;margin-top:6px}
+.cs-root .p2{font-size:11px;opacity:.82}
+[data-theme="dark"] .cs-root{border:1px solid var(--gline)}
+.cs-seg{color:#fff;font-size:15px;font-weight:800;letter-spacing:.5px;line-height:18px;padding:0 16px;
+  text-shadow:0 1px 3px rgba(20,22,26,.38)}
+.cs-seg span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-media{background-color:var(--surface);border:1.5px solid var(--cs-bd,var(--line));border-radius:10px;padding:7px 11px;gap:2px;width:max-content}
+.cs-media b{font-size:13px;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.cs-media .tg{font-size:10.5px;font-weight:700;line-height:13px;white-space:nowrap}
+.cs-tgt{background-color:var(--surface);border:1px solid var(--gline);border-radius:8px;padding:6px 9px;width:max-content;
+  word-break:keep-all;overflow-wrap:anywhere}
+.cs-prod{background-color:var(--plane2);border:1px solid var(--line);border-radius:7px;padding:5px 9px;width:max-content;
+  font-size:11.5px;line-height:14px;color:var(--ink2);word-break:keep-all;overflow-wrap:anywhere}
+.cs-n.cs-hot{box-shadow:0 6px 18px rgba(31,44,61,.18)}
+[data-theme="dark"] .cs-n.cs-hot{box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.cs-seg.cs-hot{box-shadow:none;text-decoration:underline;text-underline-offset:4px}
+.cs-chip{position:absolute;box-sizing:border-box;height:20px;padding:0 7px 2px;border:1px solid var(--cs-bd,var(--line));border-radius:6px;
+  background-color:var(--surface);color:var(--ink);font-size:10.5px;font-weight:700;line-height:17px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;cursor:default;transition:opacity .16s}
+.cs-chip.more{width:auto;color:var(--ink2);font-weight:600}
+.cs-chip i{position:absolute;left:5px;bottom:2px;height:2px;border-radius:1px;font-style:normal}
+.cs-badge{position:absolute;height:18px;min-width:18px;box-sizing:border-box;padding:0 5px;border-radius:9px;color:#fff;
+  font-size:10.5px;font-weight:700;line-height:18px;text-align:center;pointer-events:none;transition:opacity .16s}
+.cs-ln{fill:none;stroke-linecap:butt;transition:opacity .16s}
+.cs-z{fill:none;stroke-width:1.6;stroke-dasharray:3 3;transition:opacity .16s}
+/* 물빛 흐름 — 무늬 주기 120 (CS_DASH 와 맞춤) · 가지마다 --dur · --dl 이 다르다 */
+.cs-fl{fill:none;stroke-linecap:round;animation:csFlow var(--dur,3s) linear infinite;animation-delay:var(--dl,0s)}
+@keyframes csFlow{to{stroke-dashoffset:-120}}
+.cs-pause .cs-fl{animation-play-state:paused}
+.cs-noflow .cs-fl{display:none}
+/* 마우스를 올린 가지만 또렷하게 */
+.cs-hov .cs-n:not(.cs-on),.cs-hov .cs-ln:not(.cs-on),.cs-hov .cs-z:not(.cs-on),
+.cs-hov .cs-chip:not(.cs-on),.cs-hov .cs-badge:not(.cs-on){opacity:.2}
+.cs-hov .cs-fl:not(.cs-on){opacity:0!important}
+@media (prefers-reduced-motion:reduce){.cs-fl{display:none}}
+@media print{.cs-fl{display:none}}
 </style>
 </head>
 <body class="booting">

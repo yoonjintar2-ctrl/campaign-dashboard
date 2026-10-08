@@ -297,7 +297,20 @@
     <div class="filters" id="perfFilters"></div>
     <div id="hiddenBar" class="hiddenbar hidden"></div>
 
-    <div class="sec" data-sect="pace">캠페인 진행 현황
+    <!-- 캠페인 구조 (v119 · 27-struct.js) — 뷰어도 본다. 보기 설정은 이 브라우저에만 기억(문서에 저장 안 함) -->
+    <div class="sec" data-sect="struct">캠페인 구조
+      <span class="note">가지 굵기 = 예산 · 누르면 접고 펼칩니다</span>
+      <div class="tools">
+        <span class="switch on" id="csFlowSw" title="가지 위로 예산이 흘러가는 효과를 켜고 끕니다"><i></i> 흐름 효과</span>
+        <span class="hint">가지 순서</span><select class="ctl" id="csOrderSel"><option value="media">매체 › 타깃</option><option value="target">타깃 › 매체</option></select>
+        <span class="hint">펼침</span><select class="ctl" id="csDepthSel"></select>
+      </div></div>
+    <div class="card" data-sect="struct"><div class="bd">
+      <div class="cs-sum" id="csSum"></div>
+      <div class="cs-wrap" id="csWrap"><div class="cs-map" id="csMap"></div></div>
+    </div></div>
+
+    <div class="sec gap" data-sect="pace">캠페인 진행 현황
       <div class="tools"><button class="btn sm agency-only" id="paceCfgBtn" title="진행 현황에 보일 지표(노출 · 조회 · 클릭 …)를 고릅니다">⚙ 표시 항목</button></div></div>
     <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
 
