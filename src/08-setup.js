@@ -1344,7 +1344,9 @@ function switchTab(name){
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
   {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvmix','oohdash','overview'].includes(name));}
-  if(name==='dash'){try{ensureDashSub();}catch(e){}}
+  if(name==='dash'){try{ensureDashSub();}catch(e){}
+    /* 캠페인 구조 화면으로 돌아왔으면 바로 그린다 (백그라운드 탭에서는 ResizeObserver 가 늦다 · v120.1) */
+    try{if(curDashSub()==='struct')renderStruct();}catch(e){}}
   try{paintTabsOn();}catch(e){}
   /* 일자별 상세 효율로 돌아왔으면 보던 자리로, 그 밖에는 맨 위로 */
   const backRaw=name==='dash'&&$('sub-table')&&!$('sub-table').classList.contains('hidden');
@@ -1368,6 +1370,8 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
     PERF_STALE=false;}
   if(b.dataset.sub==='table')renderRaw();
   if(b.dataset.sub==='mix')renderMix();
+  /* 캠페인 구조(v120) — 보이게 되면 ResizeObserver 도 다시 그리지만, 백그라운드 탭에서는 RO 가 돌지 않아 여기서도 바로 그린다 */
+  if(b.dataset.sub==='struct'){try{renderStruct();}catch(e){console.warn('struct',e);}}
   try{paintTabsOn();}catch(e){}
   /* 숨어 있는 동안 그려진 표는 폭을 재지 못해 머리 열 고정이 걸리지 않는다 — 다시 건다 */
   try{if(typeof refreezeAll==='function')setTimeout(refreezeAll,0);}catch(e){}});
