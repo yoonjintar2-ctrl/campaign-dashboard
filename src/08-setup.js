@@ -1387,7 +1387,8 @@ function currentRole(){
   if(C.shareView&&!C.user)return C.shareRole==='staff'?'agency':'client';
   if(!C.on)return 'agency';
   if(!C.user)return 'client';
-  return (C.role==='master'||C.role==='editor'||!C.campaign)?'agency':'client';
+  /* v117 — 로그인한 사람은 계정 등급으로: 마스터 이상은 시행사 화면, 뷰어는 광고주 화면 */
+  return (C.appRole==='super'||C.appRole==='master')?'agency':'client';
 }
 /* 지금 사람의 권한 이름 — 슈퍼마스터 / 마스터 / 운영진 / 광고주 */
 function roleName(){
@@ -1395,10 +1396,9 @@ function roleName(){
   if(!C)return '시행사';
   if(C.user){
     if(C.appRole==='super')return '슈퍼마스터';
-    if(C.campaign&&C.role==='editor')return '운영진';
-    if(C.campaign&&C.role==='viewer')return '조회모드';
     if(C.appRole==='master')return '마스터';
-    return '게스트';}
+    if(C.appRole==='viewer')return '뷰어';
+    return '승인 대기';}
   if(C.sample)return '샘플 (시행사 화면)';
   if(C.shareView)return C.shareRole==='staff'?'운영진':'조회모드';
   return currentRole()==='client'?'조회모드':'시행사';
@@ -1415,16 +1415,19 @@ function applyRole(){
     chip.classList.toggle('silver',nm==='마스터');
     chip.classList.toggle('bronze',nm==='운영진');
     chip.title=c?'대시보드 열람과 엑셀 다운로드만 가능합니다'
-      :'슈퍼마스터 · 마스터 · 운영진은 전체 화면을 볼 수 있습니다';}
-  /* 슈퍼마스터에게만 계정 관리 버튼을 보여 준다 */
-  let sup=false,sample=false,needReq=false;
-  try{sup=CLOUD&&CLOUD.user&&CLOUD.appRole==='super';
+      :'슈퍼마스터 · 마스터는 전체 화면을 볼 수 있습니다';}
+  /* 회원 관리(가입 승인 · 등급 · 뷰어 광고주)는 마스터 이상에게만 (v117) */
+  let mst=false,sample=false,needReq=false,viewerList=0;
+  try{mst=!!(CLOUD&&CLOUD.user&&(CLOUD.appRole==='super'||CLOUD.appRole==='master'));
       sample=!!(CLOUD&&CLOUD.sample&&!CLOUD.user);
-      needReq=sample||!!(CLOUD&&CLOUD.user&&CLOUD.appRole==='guest');}catch(e){}
-  const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!sup);
-  /* 샘플 둘러보기 중이거나 아직 등급이 없으면 권한 요청 버튼을 보여 준다 */
+      needReq=sample&&!!CLOUD.on;
+      viewerList=(CLOUD&&CLOUD.user&&!CLOUD.shareView&&CLOUD.appRole==='viewer')?(CLOUD.list||[]).length:0;}catch(e){}
+  const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!mst);
+  /* 샘플 둘러보기 중이면 가입 신청 버튼을 보여 준다 */
   document.body.dataset.mode=sample?'sample':'';
   const rb=$('reqBtn');if(rb)rb.classList.toggle('hidden',!needReq);
+  /* 캠페인 고르기 — 시행사 화면, 또는 볼 캠페인이 둘 이상인 뷰어 계정 */
+  const cw=$('campSelWrap');if(cw)cw.classList.toggle('hidden',c&&viewerList<2);
   /* 메뉴의 보임 · 옅게는 applyMenus() 가 메뉴 설정 · 권한을 보고 한꺼번에 정한다 (v72) */
   let tv=true;try{tv=trendVisibleToViewer();}catch(e){}
   try{paintTrendToggle();}catch(e){}

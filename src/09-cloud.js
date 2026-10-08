@@ -1,16 +1,18 @@
-/* ===== 11. 클라우드 — 구글 로그인 · 캠페인 저장/불러오기 (Supabase) =====
+/* ===== 11. 클라우드 — 이메일 로그인 · 캠페인 저장/불러오기 (Supabase) =====
    config.js 와 supabase-js 가 둘 다 있을 때만 켜진다. 없으면 지금까지처럼 데모(더미) 모드. */
-/* 접속 권한 4단계 (v24)
-   appRole  = 계정 등급 : super(슈퍼마스터) / master(마스터) / guest(게스트)
-   role     = 이 캠페인 안에서의 권한 : master(마스터) / editor(운영진) / viewer(광고주)
-   shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) */
+/* 접속 권한 (v117 — 회원 시스템 개편)
+   appRole  = 계정 등급 : super(슈퍼마스터) / master(마스터) / viewer(뷰어) / pending(승인 대기)
+              마스터 이상은 모든 광고주 · 캠페인을 보고 고친다. 뷰어는 마스터가 지정한 광고주의 캠페인만 본다
+   role     = 지금 연 캠페인에서의 권한 : master(고칠 수 있음) / viewer(조회 전용) — 계정 등급에서 정해진다
+              (예전의 캠페인 단위 멤버 · 운영진 권한은 v117 에서 없앴다)
+   shareRole= 코드로 들어온 경우의 권한 : 'staff'(운영진 코드) / 'viewer'(뷰어 코드) — 로그인 없이 보는 공유 링크 */
 const CLOUD={on:false,sb:null,user:null,campaign:null,role:null,list:[],busy:false,
   shareView:false,sample:false,appRole:'guest',shareRole:null,savedAt:null,dirty:false,
   /* 코드로 들어온 사람이 옮겨 갈 수 있는 같은 광고주 캠페인 [{id,name,code,is_self}] (v82) */
   advList:[]};
 /* 광고주 열쇠 — 서버 adv_key() 와 같은 규칙(공백 정리 · 소문자). 빈 이름은 null — 묶지 않는다 (v82) */
 function advKey(a){const k=String(a==null?'':a).replace(/\s+/g,' ').trim().toLowerCase();return k||null;}
-const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',guest:'게스트'};
+const APP_ROLE_LABEL={super:'슈퍼마스터',master:'마스터',viewer:'뷰어',pending:'승인 대기',guest:'승인 대기'};
 const cfgOf=()=>(typeof window!=='undefined'&&window.CLOUD_CONFIG)||null;
 /* config.js 와 supabase-js 는 비동기로 붙으므로 준비될 때까지 기다린다.
    ⚠ 예전에는 3초만 기다려서, 회사망 등에서 라이브러리가 늦게 오면 **영구 데모 모드**가 되고
@@ -34,8 +36,10 @@ function cloudStateIdle(){
     if(!CLOUD.on){cloudState('데모 모드 · 클라우드 미설정');return;}
     if(!CLOUD.user){cloudState('로그인하면 내 캠페인이 열립니다');return;}
     if(!CLOUD.campaign){cloudState('캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요');return;}
-    const r=(typeof ROLE_LABEL!=='undefined'&&ROLE_LABEL[CLOUD.role])||CLOUD.role||'';
-    cloudState(`${CLOUD.campaign.name} · ${r} · 저장됨`);
+    /* 계정 등급 이름 — 슈퍼마스터 · 마스터 · 뷰어 (코드로 연 화면은 캠페인 권한) */
+    const r=(CLOUD.user&&!CLOUD.shareView&&APP_ROLE_LABEL[CLOUD.appRole])
+      ||(typeof ROLE_LABEL!=='undefined'&&ROLE_LABEL[CLOUD.role])||CLOUD.role||'';
+    cloudState(CLOUD.role==='viewer'?`${CLOUD.campaign.name} · ${r} · 조회 전용`:`${CLOUD.campaign.name} · ${r} · 저장됨`);
   }catch(e){}
 }
 /* 지금 상단 문구가 "…중…" 진행 표시면 평소 문구로 되돌린다 (오류 문구는 그대로 둔다) */
@@ -465,7 +469,7 @@ function enterShareView(name,kind){
   try{paintCampSel();renderBrand&&renderBrand();renderCampBar&&renderCampBar();}catch(e){}
   const bar=$('demoBar');if(bar)bar.classList.add('hidden');
   cloudState(kind==='staff'
-    ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장하려면 구글 로그인이 필요합니다`
+    ? `${name||CAMPAIGN.name} · 운영진 코드로 접속 — 저장은 마스터 계정으로 로그인해야 합니다`
     : `${name||CAMPAIGN.name} · 뷰어 코드로 열람 (조회 전용)`);
   try{urlSettled();}catch(e){}
 }
@@ -533,8 +537,7 @@ async function tryCode(raw){
   try{renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name,kind);
   endBoot();
-  /* 운영진 코드는 다음 로그인 때 정식 멤버로 등록할 수 있게 기억해 둔다 */
-  if(kind==='staff'){try{sessionStorage.setItem('staffCode',code);}catch(e){}}
+  /* (v117) 운영진 코드로 로그인하면 멤버가 되던 흐름은 없앴다 — 권한은 계정 등급(마스터 승인)으로만 */
   /* 운영진 코드는 주소창에 싣지 않는다(복사해 보내도 권한이 퍼지지 않게) — 같은 탭 새로고침만 이어 준다 (v75) */
   try{if(kind==='staff')sessionStorage.setItem('staffResume',code);else sessionStorage.removeItem('staffResume');}catch(e){}
   /* 같은 광고주의 캠페인 목록 (v82 — 권한은 광고주 단위) — 상단 캠페인 고르기에서 옮겨 갈 수 있게 */
@@ -557,26 +560,20 @@ async function switchByCode(code){
     confirmModal('캠페인을 열지 못했습니다.','잠시 후 다시 시도해 주세요.',()=>{},'확인');}
   return ok;}
 /* 게이트를 쓸 수 있는 상태로 (로그인 세션이 없을 때만 보인다) */
-function gateReady(){
+/* noAuto — 주소의 ?code= 로 바로 열지 않는다 (승인 대기 안내를 띄운 채로 둘 때) */
+function gateReady(noAuto){
   const g=gateEl();if(!g)return;
   const lg=$('gateLogo'),tb=document.querySelector('.topbar .logo .mark');
   if(lg&&tb)lg.src=tb.src;
-  const hint=$('gateHint');
-  if(hint)hint.innerHTML=`코드는 두 가지입니다 — <b>운영진 코드</b>는 데이터 수정까지, `
-    +`<b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다. 코드 하나로 같은 광고주의 다른 캠페인도 볼 수 있습니다.`
-    +`<br>둘러보기용 샘플 코드 <code>${SAMPLE_CODE}</code> (시행사 화면) · `
-    +`<code>${SAMPLE_VIEW_CODE}</code> (광고주 화면)`;
+  try{wireAuthForms();}catch(e){}
   const inp=$('gateCode');
   if(inp){
     inp.oninput=e=>{const p=e.target.selectionStart;e.target.value=normCode(e.target.value);
       gateMsg('');if(p>=e.target.value.length)e.target.setSelectionRange(99,99);};
     inp.onkeydown=e=>{if(e.key==='Enter')tryCode(inp.value);};
-    setTimeout(()=>inp.focus(),120);}
+    const gd=$('gcodeBox');if(gd)gd.ontoggle=()=>{if(gd.open)setTimeout(()=>inp.focus(),40);};}
   const go=$('gateGo');if(go)go.onclick=()=>tryCode($('gateCode').value);
   const sm=$('gateSample');if(sm)sm.onclick=enterSample;
-  const li=$('gateLogin');if(li)li.onclick=()=>{
-    if(!CLOUD.on){gateMsg('클라우드가 설정되지 않아 지금은 샘플만 볼 수 있습니다.');return;}
-    signInGoogle();};
   const qs=new URLSearchParams(location.search);
   /* 내려받은 파일을 그대로 열어 볼 때(file:// · localhost)는 ?nogate=1 로 건너뛸 수 있다.
      게시된 주소에서는 동작하지 않는다. */
@@ -587,10 +584,11 @@ function gateReady(){
     setTimeout(()=>{try{loadLocal();}catch(e){}endBoot();try{urlSettled();}catch(e){}},0);
     return;}
   /* 주소에 ?code=XXXX 가 있으면 바로 열어 준다 */
+  if(noAuto)return;
   let q=qs.get('code');
   /* 운영진 코드로 보던 탭을 새로고침한 경우 — 주소에는 코드가 없으므로 이 탭에 적어 둔 코드로 이어 연다 (v75) */
   if(!q){try{q=sessionStorage.getItem('staffResume')||'';}catch(e){q='';}}
-  if(q){if(inp)inp.value=normCode(q);tryCode(q);}
+  if(q){const gd=$('gcodeBox');if(gd)gd.open=true;if(inp)inp.value=normCode(q);tryCode(q);}
 }
 
 /* 로고를 누르면 첫 화면(접속 화면)으로 — 저장하지 않은 내용이 있으면 한 번 묻는다 */
@@ -616,33 +614,39 @@ async function cloudInit(){
     {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   CLOUD.on=true;
   CLOUD.sb.auth.onAuthStateChange((_e,session)=>{
+    /* 가입 신청(signUp) 중에 생기는 로그인 상태는 무시한다 — 승인 전이라 곧바로 로그아웃한다 (v117) */
+    if(CLOUD.authHold)return;
     const u=session?.user||null;
     if(u&&(!CLOUD.user||CLOUD.user.id!==u.id)){CLOUD.user=u;afterSignIn();}
-    else if(!u&&CLOUD.user){CLOUD.user=null;CLOUD.signedFor=null;paintAuth();cloudState('로그아웃됨 · 데모 모드');}});
+    else if(!u&&CLOUD.user){CLOUD.user=null;CLOUD.signedFor=null;CLOUD.appRole='pending';
+      try{memberPollStop();}catch(e){}paintAuth();cloudState('로그아웃됨 · 데모 모드');}});
+  try{wireAuthForms();}catch(e){}
   const {data}=await CLOUD.sb.auth.getSession();
   /* afterSignIn 은 같은 계정에 한 번만 돈다 (v80) — 로그인 이벤트와 세션 확인이 둘 다 부르면
-     캠페인 목록 · 열기가 두 번 겹쳐 돌았다 */
-  if(data?.session?.user){CLOUD.user=data.session.user;hideGate();await afterSignIn();}
+     캠페인 목록 · 열기가 두 번 겹쳐 돌았다.
+     게이트는 afterSignIn 이 계정 등급을 확인한 뒤에 걷는다 (승인 대기 계정이면 그대로 남는다) */
+  if(data?.session?.user){CLOUD.user=data.session.user;await afterSignIn();}
   else{paintAuth();cloudState('로그인하면 내 캠페인이 열립니다');gateReady();endBoot();}
 }
-async function signInGoogle(){
+/* 로그인 화면 열기 (v117 — 구글 로그인 대신 이메일 계정). 예전 이름으로 부르던 곳을 위해 이름을 남겨 둔다 */
+function signInGoogle(){
   if(!CLOUD.on){alert('클라우드가 설정되지 않았습니다. config.js 의 Supabase URL / anon key 를 확인해 주세요.');return;}
-  /* 돌아왔을 때 같은 캠페인 · 메뉴 · 언어로 — 주소 뒤를 적어 둔다 (restoreReturnUrl, p3) */
-  try{sessionStorage.setItem('dmd:return',location.search||'');}catch(e){}
-  await CLOUD.sb.auth.signInWithOAuth({provider:'google',
-    options:{redirectTo:location.href.split('#')[0].split('?')[0],
-             queryParams:{prompt:'select_account'}}});
+  showGateLogin();
 }
 async function signOutCloud(){
   if(!CLOUD.on)return;
+  /* 고친 내용이 남아 있으면 먼저 저장한다 (마스터) */
+  try{if(CLOUD.dirty&&CLOUD.campaign&&CLOUD.role!=='viewer')await cloudSave(true);}catch(e){}
+  try{memberPollStop();}catch(e){}
   await CLOUD.sb.auth.signOut();
   CLOUD.user=null;CLOUD.campaign=null;CLOUD.role=null;CLOUD.list=[];CLOUD.signedFor=null;DOC_CID=null;
-  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='guest';
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;CLOUD.appRole='pending';CLOUD.profile=null;
   paintAuth();paintCampSel();cloudState('로그아웃됨');
-  const g=gateEl();if(g)g.classList.remove('hidden');
   try{sessionStorage.removeItem('staffResume');}catch(e){}
-  gateReady();
+  /* 주소의 캠페인 코드를 먼저 걷어 낸다 — 남아 있으면 게이트가 그 코드로 다시 열어 버린다 */
   try{syncUrl();}catch(e){}
+  gateReady();
+  showGate('login',false);
 }
 async function afterSignIn(){
   const u=CLOUD.user;
@@ -654,126 +658,69 @@ async function afterSignIn(){
 }
 async function afterSignIn0(){
   const u=CLOUD.user;
-  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;hideGate();
-  /* 프로필 upsert — 트리거가 없어도 이름/이메일이 채워지도록 */
-  await CLOUD.sb.from('profiles').upsert({
-    id:u.id,email:u.email,
-    name:u.user_metadata?.full_name||u.user_metadata?.name||u.email,
-    avatar_url:u.user_metadata?.avatar_url||null},{onConflict:'id'});
-  /* 가입 후에 받은 초대도 로그인 시점에 자동으로 수락된다 */
-  try{await CLOUD.sb.rpc('accept_my_invites');}catch(err){}
-  /* 운영진 코드로 들어와 있던 사람이 로그인하면 그 캠페인의 정식 운영진이 된다 */
-  try{const sc=sessionStorage.getItem('staffCode');
-    if(sc){await CLOUD.sb.rpc('join_by_staff_code',{p_code:sc});sessionStorage.removeItem('staffCode');}
-  }catch(err){}
-  /* 계정 등급 (슈퍼마스터 / 마스터 / 게스트) */
-  try{const {data}=await CLOUD.sb.from('profiles').select('app_role').eq('id',u.id).maybeSingle();
-    CLOUD.appRole=data?.app_role||'guest';}catch(err){CLOUD.appRole='guest';}
+  CLOUD.shareView=false;CLOUD.sample=false;CLOUD.shareRole=null;
+  /* ① 계정 등급 — 프로필은 가입할 때 서버 트리거가 '승인 대기' 로 만든다 (v117).
+     등급 · 이메일은 사이트에서 바꿀 수 없다(서버 profiles_guard) */
+  let prof=null,perr=null;
+  for(let i=0;i<2&&!prof;i++){
+    try{const {data,error}=await withTimeout(CLOUD.sb.from('profiles')
+        .select('app_role,name,org,email').eq('id',u.id).maybeSingle(),15000,'계정 확인');
+      perr=error||null;prof=data||null;if(!error&&!data)break;}
+    catch(e){perr={message:String(e&&e.message||e)};}}
+  if(!prof&&!perr){
+    /* 트리거가 없는 서버 — 프로필을 만들어 둔다(등급은 서버가 승인 대기로 정한다) */
+    try{await CLOUD.sb.from('profiles').insert({id:u.id,email:u.email,
+      name:(u.user_metadata&&(u.user_metadata.name||u.user_metadata.full_name))||u.email});}catch(e){}
+    prof={app_role:'pending',email:u.email};}
+  if(!prof){
+    /* 서버에 닿지 않음 — 로그아웃하지 않고 알린다 */
+    CLOUD.signedFor=null;
+    showGate('login',false);
+    gmsg('liMsg',L('계정 정보를 불러오지 못했습니다 — 잠시 후 새로고침해 주세요.','Could not load your account — please refresh shortly.')
+      +(perr&&perr.message?` (${perr.message})`:''));
+    endBoot();return;}
+  CLOUD.profile=prof;
+  CLOUD.appRole=prof.app_role||'pending';
+  /* ② 승인 전 계정 — 안내만 하고 로그아웃 */
+  if(!['super','master','viewer'].includes(CLOUD.appRole)){
+    const em=prof.email||u.email||'';
+    CLOUD.signedFor=null;CLOUD.authHold=true;
+    try{await CLOUD.sb.auth.signOut();}catch(e){}
+    CLOUD.authHold=false;
+    CLOUD.user=null;CLOUD.appRole='pending';CLOUD.profile=null;
+    paintAuth();
+    gateReady(true);
+    await holdUnapproved(em);
+    cloudState('로그인하면 내 캠페인이 열립니다');
+    endBoot();return;}
+  hideGate();
+  { const gx=$('gateClose');if(gx)gx.classList.add('hidden'); }
   /* 내가 만든 열 — 계정에 붙어 있어 어느 캠페인에서도 · 어느 기기에서도 그대로 (v57).
      profiles.prefs 열이 아직 없는 서버에서도 깨지지 않도록 조용히 넘어간다. */
   await pullUserCols();
   paintAuth();
   applyRoleLock();
   await loadCampaignList();
-  /* 아직 등급이 없고 참여 중인 캠페인도 없으면 권한을 요청하도록 안내 */
-  if(CLOUD.appRole==='guest'&&!CLOUD.list.length)openAccessRequest();
   /* 열 캠페인이 있으면 openCampaign 이 가림막을 걷는다. 없으면 여기서 걷는다. */
   if(!CLOUD.list.length)endBoot();
+  /* 가입 요청 알림 (마스터 이상) */
+  try{memberPollStart();}catch(e){}
 }
-/* ---------- 마스터 권한 요청 (게스트 → 슈퍼마스터에게) ---------- */
-async function openAccessRequest(){
-  if(!CLOUD.on||!CLOUD.user)return;
-  let prev=null;
-  try{const {data}=await CLOUD.sb.from('access_requests')
-    .select('status,message,created_at').eq('user_id',CLOUD.user.id)
-    .order('created_at',{ascending:false}).limit(1);
-    prev=data&&data[0];}catch(err){}
-  if(prev&&prev.status==='pending'){
-    confirmModal('권한 요청이 접수되어 있습니다.',
-      `보내신 메시지 — “${prev.message||'(내용 없음)'}”\n승인되면 캠페인을 만들 수 있습니다.`,
-      ()=>{},'확인');return;}
-  openModal('캠페인 권한 요청',
-    `<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
-       이 계정에는 아직 <b>캠페인을 만들 권한</b>이 없습니다.
-       아래에 <b>소속과 용도</b>를 적어 보내 주시면 확인 후 <b>마스터 권한</b>을 드립니다.<br>
-       특정 캠페인만 보시는 분은 요청 대신 시행사에서 <b>운영진 코드</b> 또는 <b>뷰어 코드</b>를 받으시면 됩니다.</div></div>
-     <div class="fld"><label>소속 · 이름</label>
-       <input id="arOrg" placeholder="예: 미디어웍스 / 윤석진" style="width:100%"></div>
-     <div class="fld" style="margin-top:10px"><label>요청 메시지</label>
-       <textarea id="arMsg" rows="4" placeholder="예: 하반기 브랜드 캠페인 운영을 맡고 있어 캠페인 생성 권한이 필요합니다."
-         style="width:100%;resize:vertical"></textarea></div>
-     <div class="hint" id="arMsgOut" style="margin-top:8px">보낸 요청은 슈퍼마스터 화면에 그대로 표시됩니다.</div>`,
-    '<button class="btn" data-close>나중에</button><button class="btn primary" id="arGo">요청 보내기</button>',{w:620});
-  $('arGo').onclick=async()=>{
-    const org=($('arOrg').value||'').trim(),msg=($('arMsg').value||'').trim();
-    if(!msg){$('arMsgOut').textContent='요청 메시지를 적어 주세요.';return;}
-    if(org){try{await CLOUD.sb.from('profiles').update({org}).eq('id',CLOUD.user.id);}catch(err){}}
-    const {error}=await CLOUD.sb.rpc('request_access',{p_message:(org?org+' — ':'')+msg});
-    if(error){$('arMsgOut').textContent='보내지 못했습니다: '+error.message;return;}
-    closeModal();
-    confirmModal('요청을 보냈습니다.','승인되면 캠페인을 만들 수 있습니다. 잠시만 기다려 주세요.',()=>{},'확인');};
-}
-/* ---------- 슈퍼마스터 · 계정 관리 ---------- */
-async function openAccounts(){
-  if(!CLOUD.on||!CLOUD.user||CLOUD.appRole!=='super'){
-    confirmModal('슈퍼마스터만 열 수 있습니다.','계정 등급 관리는 슈퍼마스터 계정에서만 가능합니다.',()=>{},'확인');return;}
-  const [{data:reqs},{data:accs}]=await Promise.all([
-    CLOUD.sb.from('access_requests').select('*').order('created_at',{ascending:false}),
-    CLOUD.sb.rpc('list_accounts')]);
-  const pend=(reqs||[]).filter(r=>r.status==='pending');
-  let h=`<div class="notice" style="margin-bottom:12px"><span>ⓘ</span><div>
-      <b>슈퍼마스터</b>만 마스터 권한을 주거나 뺏을 수 있습니다.
-      마스터는 <b>본인이 만든 캠페인만</b> 보고 관리하며, 다른 사람에게 마스터 권한을 줄 수 없습니다.</div></div>`;
-  h+=`<div style="font-weight:700;margin:4px 0 8px">권한 요청 <span class="cnt2">${pend.length}건 대기</span></div>`;
-  if(!pend.length)h+='<div class="card" style="padding:16px;text-align:center;color:var(--muted)">대기 중인 요청이 없습니다.</div>';
-  else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th style="width:150px">이름</th><th style="width:200px">이메일</th><th>요청 메시지</th>
-      <th style="width:110px">보낸 날</th><th style="width:150px"></th></tr></thead><tbody>`;
-    pend.forEach(r=>{h+=`<tr><td>${esc(r.name||'–')}</td><td>${esc(r.email||'–')}</td>
-      <td style="text-align:left">${esc(r.message||'–')}</td>
-      <td class="mono">${(r.created_at||'').slice(0,10)}</td>
-      <td><button class="btn sm primary" data-ok="${r.id}">마스터 승인</button>
-        <button class="btn sm danger" data-no="${r.id}">거절</button></td></tr>`;});
-    h+='</tbody></table>';}
-  h+=`<div style="font-weight:700;margin:18px 0 8px">계정 목록</div>
-    <table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
-      <th style="width:150px">이름</th><th style="width:210px">이메일</th><th style="width:150px">소속</th>
-      <th style="width:110px">등급</th><th style="width:90px">캠페인</th>
-      <th style="width:130px"></th></tr></thead><tbody>`;
-  (accs||[]).forEach(a=>{
-    const me=a.id===CLOUD.user.id;
-    h+=`<tr><td>${esc(a.name||'–')}</td><td>${esc(a.email||'–')}</td><td>${esc(a.org||'–')}</td>
-      <td><span class="tagchip ${a.app_role==='guest'?'':'on'}">${APP_ROLE_LABEL[a.app_role]||a.app_role}</span></td>
-      <td class="mono">${a.campaigns||0}</td>
-      <td>${a.app_role==='super'||me?'<span class="hint">–</span>'
-        :a.app_role==='master'
-          ?`<button class="btn sm danger" data-drop="${a.id}">마스터 해제</button>`
-          :`<button class="btn sm" data-up="${a.id}">마스터 부여</button>`}</td></tr>`;});
-  h+='</tbody></table>';
-  openModal('계정 · 등급 관리 (슈퍼마스터)',h,'<button class="btn" data-close>닫기</button>',{w:1060});
-  const host=$('modalHost'),again=()=>{closeModal();openAccounts();};
-  host.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{
-    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.ok,p_approve:true});again();});
-  host.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{
-    await CLOUD.sb.rpc('decide_access',{p_request:b.dataset.no,p_approve:false});again();});
-  host.querySelectorAll('[data-up]').forEach(b=>b.onclick=async()=>{
-    await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.up,p_role:'master'});again();});
-  host.querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>
-    confirmModal('마스터 권한을 해제할까요?','이 계정은 더 이상 캠페인을 만들 수 없습니다. 이미 만든 캠페인은 남습니다.',
-      async()=>{await CLOUD.sb.rpc('set_app_role',{p_user:b.dataset.drop,p_role:'guest'});again();},'해제'));
-}
+/* 예전 이름 — 계정 관리 · 권한 요청은 회원 관리 · 가입 신청으로 바뀌었다 (v117) */
+function openAccounts(){openMembers('req');}
+function openAccessRequest(){showGateSignup();}
 function paintAuth(){
   const u=CLOUD.user;
   const av=$('meAvatar'),si=$('signIn'),bar=$('demoBar');
   const mail=$('meMail'),nameEl=$('meName'),sub=$('meSub'),wrap=$('meWrap'),menu=$('meMenu');
   if(u){
-    const nm=u.user_metadata?.full_name||u.email||'';
-    av.textContent=(nm[0]||'U').toUpperCase();
+    const pf=CLOUD.profile||{};
+    const nm=pf.name||u.user_metadata?.name||u.user_metadata?.full_name||u.email||'';
+    av.textContent=(String(nm).trim()[0]||'U').toUpperCase();
     if(mail)mail.textContent=u.email||nm;
     if(nameEl)nameEl.textContent=nm;
-    if(sub)sub.textContent=`${u.email||''} · ${APP_ROLE_LABEL[CLOUD.appRole]||'게스트'}`;
-    {const mb=$('meBtn');if(mb)mb.title=(nm&&nm!==u.email?nm+' · ':'')+(u.email||'');}
+    if(sub)sub.textContent=`${u.email||''} · ${APP_ROLE_LABEL[CLOUD.appRole]||'승인 대기'}`;
+    {const mb=$('meBtn');if(mb)mb.title=(nm&&nm!==u.email?nm+' · ':'')+(u.email||'')+' · '+(APP_ROLE_LABEL[CLOUD.appRole]||'');}
     si.classList.add('hidden');
     if(wrap)wrap.classList.remove('hidden');
     if(bar)bar.classList.add('hidden');
@@ -787,17 +734,33 @@ function paintAuth(){
     if(wrap)wrap.classList.add('hidden');
     if(bar&&!sessionStorage.getItem('demoBarHidden'))bar.classList.remove('hidden');}
   if(menu)menu.classList.add('hidden');
+  /* 회원 관리(마스터 이상) · 비밀번호 변경 · 가입 요청 알림 */
+  {const ab=$('acctBtn');if(ab)ab.classList.toggle('hidden',!isAppMaster());
+   if(!isAppMaster())try{paintBadge(0);}catch(e){}}
   if(typeof applyRoleLock==='function')applyRoleLock();
 }
 
 /* ---------- 캠페인 목록 · 열기 ---------- */
+/* 캠페인 표에서 읽는 열 (v117) — 공유 코드(share_code · staff_code)는 열 권한으로 막혀 있어 '*' 로 읽으면 오류가 난다.
+   코드는 마스터만 campaign_codes() 로 따로 받는다 (mergeCampCodes) */
+const CAMP_COLS='id,name,advertiser,start_date,end_date,doc,created_by,updated_by,created_at,updated_at';
+async function mergeCampCodes(list){
+  if(!isAppMaster()||!list||!list.length)return;
+  let rows=null;
+  try{const {data,error}=await withTimeout(CLOUD.sb.rpc('campaign_codes'),15000,'공유 코드');if(!error)rows=data;}catch(e){}
+  /* 서버에 함수가 아직 없으면(예전 DB) 표에서 바로 */
+  if(!rows){try{const {data,error}=await CLOUD.sb.from('campaigns').select('id,share_code,staff_code');if(!error)rows=data;}catch(e){}}
+  const by=new Map((rows||[]).map(r=>[r.id,r]));
+  list.forEach(c=>{const r=by.get(c.id);if(r){c.share_code=r.share_code;c.staff_code=r.staff_code;}});
+}
 async function loadCampaignList(listOnly){
-  /* RLS 가 내가 멤버인 캠페인만 돌려준다 (할당받은 캠페인만 보이는 구조) */
+  /* RLS 가 볼 수 있는 캠페인만 돌려준다 — 마스터 이상은 전부, 뷰어는 지정된 광고주의 캠페인 (v117) */
   const {data,error}=await CLOUD.sb.from('campaigns')
-    .select('id,name,advertiser,start_date,end_date,updated_at,share_code,staff_code,created_by')
+    .select('id,name,advertiser,start_date,end_date,updated_at,created_by')
     .order('updated_at',{ascending:false});
   if(error){cloudState('목록을 불러오지 못했습니다: '+error.message);return;}
   CLOUD.list=data||[];
+  await mergeCampCodes(CLOUD.list);
   paintCampSel();
   if(listOnly)return;
   /* 주소에 코드가 있으면(링크로 들어온 경우) 그 캠페인을 연다 — 내가 멤버면 내 권한으로 (v75) */
@@ -807,12 +770,23 @@ async function loadCampaignList(listOnly){
   if(hit){await openCampaign(hit.id);return;}
   /* 멤버가 아닌 캠페인의 링크 — 코드 권한(뷰어/운영진)으로 연다 */
   if(bc&&!isSample){try{if(await tryCode(bc))return;}catch(e){}}
+  /* 주소에 코드가 없으면(뷰어 계정 등) 이 탭에서 마지막으로 보던 캠페인을 다시 연다 */
+  let last='';try{last=sessionStorage.getItem('dmd:lastCid')||'';}catch(e){}
+  const back=last&&CLOUD.list.find(c=>c.id===last);
+  if(back){await openCampaign(back.id);return;}
   if(CLOUD.list.length)await openCampaign(CLOUD.list[0].id);
   else{
     /* 로그인은 했는데 캠페인이 없다 → 데모 데이터를 계속 보여 주면
        그대로 저장돼 버리므로 빈 캠페인으로 비운다 */
     resetToBlank('새 캠페인','');
-    cloudState('캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요');}
+    if(CLOUD.appRole==='viewer'){
+      /* 뷰어 — 광고주가 아직 지정되지 않았다 */
+      cloudState('볼 수 있는 캠페인이 없습니다 — 마스터가 광고주를 지정하면 보입니다');
+      openModal(L('안내','Notice'),`<div style="font-size:14px;font-weight:700;margin-bottom:6px">${L('아직 볼 수 있는 캠페인이 없습니다.','There are no campaigns you can view yet.')}</div>`
+        +`<div class="hint">${L('마스터가 이 계정에 광고주를 지정하면 그 광고주의 캠페인이 열립니다. 지정을 마스터에게 요청해 주세요.',
+          'Once a master assigns advertisers to this account, their campaigns will open here. Please ask a master.')}</div>`,
+        `<button class="btn primary" data-close>${L('확인','OK')}</button>`,{w:460});}
+    else cloudState('캠페인이 없습니다 · ＋ 새 캠페인으로 시작하세요');}
 }
 function paintCampSel(){
   const s=$('campSel');if(!s)return;
@@ -836,7 +810,7 @@ function paintCampSel(){
   s.innerHTML=(CLOUD.list.map(c=>
     `<option value="${c.id}"${CLOUD.campaign&&CLOUD.campaign.id===c.id?' selected':''}>${esc(campLabel(c))}</option>`).join('')
     ||'<option value="">캠페인 없음</option>')
-    +'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가 및 관리</option>';
+    +(isAppMaster()?'<option disabled>──────────</option><option value="__new">＋ 캠페인 추가 및 관리</option>':'');
 }
 /* 지금 화면에 올라와 있는 문서가 **어느 캠페인 것인지** (v80).
    저장할 때 CLOUD.campaign 과 다르면 멈춘다 — 캠페인 열기가 겹쳐 화면(한 캠페인)과 저장 대상(다른 캠페인)이
@@ -853,25 +827,14 @@ async function openCampaign(id){
   startBoot();
   CLOUD.busy=true;cloudState('불러오는 중…');
   /* ① 필요한 것을 **먼저 다 받아 온 뒤** ② 한 번에 갈아 끼운다 — 중간에 다른 열기가 끼어들 틈을 없앤다 */
-  const {data:c,error}=await CLOUD.sb.from('campaigns').select('*').eq('id',id).single();
+  const {data:c,error}=await CLOUD.sb.from('campaigns').select(CAMP_COLS).eq('id',id).single();
   if(seq!==OPEN_SEQ)return;                /* 그 사이 다른 캠페인 열기가 시작됐다 — 그쪽이 마무리한다 */
   if(error){CLOUD.busy=false;endBoot();cloudState('열지 못했습니다: '+error.message);return;}
-  const {data:mem}=await CLOUD.sb.from('campaign_members')
-    .select('role').eq('campaign_id',id).eq('user_id',CLOUD.user.id).maybeSingle();
-  if(seq!==OPEN_SEQ)return;
-  /* 이 캠페인의 멤버가 아니면 — 같은 광고주 캠페인에서 받은 권한을 쓴다 (v82 — 권한은 광고주 단위).
-     만든 사람은 마스터, 같은 광고주 캠페인의 마스터 · 운영진이면 운영진, 그 밖에는 조회 */
-  let role=mem&&mem.role;
-  if(!role){
-    if(c.created_by&&c.created_by===CLOUD.user.id)role='master';
-    else{try{
-      const {data:my}=await CLOUD.sb.from('campaign_members').select('campaign_id,role').eq('user_id',CLOUD.user.id);
-      const key=advKey(c.advertiser);
-      if(key){const ids=new Set((CLOUD.list||[]).filter(x=>advKey(x.advertiser)===key).map(x=>x.id));
-        const rs=(my||[]).filter(m=>ids.has(m.campaign_id)).map(m=>m.role);
-        if(rs.some(r=>r==='master'||r==='editor'))role='editor';}
-    }catch(e){}}
-    if(seq!==OPEN_SEQ)return;}
+  /* 공유 코드는 목록에서 (마스터만 받는다) — 주소창 · 전체 캠페인이 쓴다 */
+  {const li=(CLOUD.list||[]).find(x=>x.id===id);if(li){c.share_code=li.share_code;c.staff_code=li.staff_code;}}
+  try{sessionStorage.setItem('dmd:lastCid',id);}catch(e){}
+  /* 권한은 계정 등급으로 정해진다 (v117) — 마스터 이상은 고칠 수 있고, 뷰어는 조회만 */
+  const role=isAppMaster()?'master':'viewer';
   const {data:rows}=await CLOUD.sb.from('daily_stats')
     .select('stat_date,line_key,imp,click,view,eng,conv,lead,install,rev,net,extra')
     .eq('campaign_id',id);
@@ -901,10 +864,10 @@ async function openCampaign(id){
   CLOUD.busy=false;
   clearLocal();
   endBoot();
-  cloudState(`${c.name} · ${ROLE_LABEL[CLOUD.role]||CLOUD.role} · 저장됨`);
+  cloudStateIdle();
   try{urlSettled();}catch(e){}
 }
-const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'광고주'};
+const ROLE_LABEL={master:'마스터',editor:'운영진',viewer:'조회 전용'};
 /* 조회 권한이면 편집 화면을 잠근다 (광고주 모드와 동일한 처리) */
 function applyRoleLock(){
   if(typeof applyRole==='function')applyRole();
@@ -977,8 +940,8 @@ function showSaveConflict(cur){
 async function cloudSave(silent,force){
   if(CLOUD.saving){CLOUD.saveAgain=true;return;}     /* 이미 저장 중 — 끝나면 한 번 더 */
   if(!CLOUD.on||!CLOUD.user){
-    if(!silent)confirmModal('데모 모드입니다.','구글 로그인을 하면 이 캠페인을 클라우드에 저장할 수 있습니다.',
-      ()=>signInGoogle(),'구글 로그인');
+    if(!silent)confirmModal('데모 모드입니다.','로그인하면 이 캠페인을 클라우드에 저장할 수 있습니다.',
+      ()=>signInGoogle(),'로그인');
     return;}
   if(!CLOUD.campaign){if(!silent)await createCampaign();return;}
   if(CLOUD.role==='viewer'){cloudState('조회 권한이라 저장할 수 없습니다');return;}
@@ -1149,6 +1112,7 @@ function resetToBlank(name,advertiser){
 }
 async function createCampaign(after){
   if(!CLOUD.on||!CLOUD.user){signInGoogle();return;}
+  if(!isAppMaster()){confirmModal('마스터만 캠페인을 만들 수 있습니다.','뷰어 계정은 지정된 광고주의 캠페인을 보기만 합니다.',()=>{},'확인');return;}
   /* ① 광고주를 먼저 고르고 ② 캠페인 이름을 정한다 */
   const st={logo:''};
   openModal('새 캠페인',
@@ -1185,7 +1149,7 @@ async function createCampaign(after){
     try{({data,error}=await withTimeout(CLOUD.sb.from('campaigns').insert({
       name,advertiser:adv,start_date:campStart(),end_date:campEnd(),
       doc:serializeDoc(),created_by:CLOUD.user.id,updated_by:CLOUD.user.id
-    }).select().single(),20000,'캠페인 만들기'));}catch(e){error={message:String(e&&e.message||e)};}
+    }).select('id').single(),20000,'캠페인 만들기'));}catch(e){error={message:String(e&&e.message||e)};}
     CLOUD.busy=false;
     if(error||!data){
       cloudState('생성 실패: '+(error?error.message:'응답 없음'));
@@ -1202,30 +1166,26 @@ async function createCampaign(after){
 /* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
 async function openCampManage(inplace){
   if(!CLOUD.on||!CLOUD.user){
-    confirmModal('구글 로그인이 필요합니다.','로그인하면 내가 할당받은 캠페인만 목록에 나옵니다.',
-      ()=>signInGoogle(),'구글 로그인');return;}
+    confirmModal('로그인이 필요합니다.','마스터 계정으로 로그인하면 모든 캠페인을 관리할 수 있습니다.',
+      ()=>signInGoogle(),'로그인');return;}
+  if(!isAppMaster()){confirmModal('마스터만 캠페인을 관리할 수 있습니다.','뷰어 계정은 지정된 광고주의 캠페인을 보기만 합니다.',()=>{},'확인');return;}
   await loadCampaignList(true);
   const rows=CLOUD.list;
-  /* 캠페인마다 매핑된 관리자 계정을 함께 보여 준다 (v52).
-     한 번 읽어 두고 캐시 — 목록 창을 다시 그릴 때마다 서버를 두드리지 않게. */
-  if(!inplace)MEMBER_CACHE={};
-  const need=rows.map(c=>c.id).filter(id=>!MEMBER_CACHE[id]);
-  if(need.length)Object.assign(MEMBER_CACHE,await cloudMembersMany(need));
-  let h=`<div class="hint" style="margin-bottom:10px">${L(`내가 <b>만들었거나 초대받은</b> 캠페인과 <b>같은 광고주</b>의 캠페인이 보입니다.
-      <b>권한은 광고주 단위</b>입니다 — 한 캠페인에 초대받거나 코드를 받은 사람은 같은 광고주의 다른 캠페인도 볼 수 있습니다(운영진은 수정까지).`,
-      `Campaigns you <b>created or were invited to</b>, plus those of the <b>same advertiser</b>, are shown.
-      <b>Access is per advertiser</b> — anyone invited to (or given a code for) one campaign can also see that advertiser's other campaigns (staff can edit them too).`)}<br>
-      이름 변경 · 복제 · 삭제는 <b>마스터</b> 권한이 있는 캠페인에서만 됩니다.<br>
-      캠페인마다 <b>코드 두 개</b>가 자동으로 붙습니다 —
-      <b>운영진 코드</b>는 그 캠페인의 데이터를 수정·추가할 수 있고,
-      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.
-      코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사되고, <b>👥 초대</b>로 구글 계정을 직접 초대할 수 있습니다.</div>`;
+  let h=`<div class="hint" style="margin-bottom:10px">${L(`<b>마스터</b>는 모든 광고주의 캠페인을 보고 만들고 고치고 지울 수 있습니다.
+      <b>뷰어</b> 계정이 볼 광고주는 오른쪽 위 계정 메뉴의 <b>👥 회원 관리</b>에서 정합니다.`,
+      `<b>Masters</b> can see, create, edit and delete every advertiser's campaigns.
+      Which advertisers a <b>viewer</b> account can see is set in <b>👥 Members</b> in the account menu at the top right.`)}<br>
+      ${L(`캠페인마다 <b>공유 코드 두 개</b>가 자동으로 붙습니다 — 로그인 없이 링크로 여는 용도입니다.
+      <b>운영진 코드</b>는 시행사 화면으로 열리고(저장은 마스터 로그인 필요),
+      <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다. 코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사됩니다.`,
+      `Each campaign gets <b>two share codes</b> automatically — for opening by link without signing in.
+      A <b>staff code</b> opens the agency view (saving needs a master sign-in);
+      a <b>viewer code</b> allows viewing the dashboard and downloading Excel only. Click <b>⧉</b> next to a code to copy its link.`)}</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. 아래 <b>＋ 새 캠페인</b>으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
       <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
-      <th style="width:250px">관리자 계정</th>
       <th style="width:190px">공유 코드</th>
       <th style="width:300px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
@@ -1235,7 +1195,6 @@ async function openCampManage(inplace){
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
-        <td style="text-align:left">${memberChips(MEMBER_CACHE[c.id])}</td>
         <td style="text-align:left">
           <div class="codeline"><span class="ck staff">운영진</span>
             <span class="sharecode">${esc(c.staff_code||'–')}</span>
@@ -1248,8 +1207,6 @@ async function openCampManage(inplace){
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-            <button class="btn sm" data-inv="${c.id}"
-              title="이 캠페인의 관리자 계정을 보고, 마스터라면 운영진을 임명·해제합니다">👥 관리자 관리</button>
           </div>
           <div class="ln">
             <button class="btn sm" data-ren="${c.id}">이름 변경</button>
@@ -1259,12 +1216,14 @@ async function openCampManage(inplace){
     h+='</tbody></table>';}
   const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
+    +'<button class="btn" id="memMng" title="가입 승인 · 회원 등급 · 뷰어가 볼 광고주">👥 회원 관리</button>'
     +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
   if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
   const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
   if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
   if($('advMng'))$('advMng').onclick=()=>openAdvManage(redraw);
+  if($('memMng'))$('memMng').onclick=()=>openMembers('list');
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeAllModals();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
@@ -1307,12 +1266,12 @@ async function openCampManage(inplace){
   host.querySelectorAll('[data-dup]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.dup);if(!c)return;
     cloudState('복제 중…');
-    const {data:src,error:e0}=await CLOUD.sb.from('campaigns').select('*').eq('id',c.id).single();
+    const {data:src,error:e0}=await CLOUD.sb.from('campaigns').select(CAMP_COLS).eq('id',c.id).single();
     if(e0){cloudState('복제 실패: '+e0.message);return;}
     const {data:ins,error}=await CLOUD.sb.from('campaigns').insert({
       name:(src.name||'캠페인')+' 사본',advertiser:src.advertiser||'',
       start_date:src.start_date,end_date:src.end_date,
-      doc:src.doc,created_by:CLOUD.user.id,updated_by:CLOUD.user.id}).select().single();
+      doc:src.doc,created_by:CLOUD.user.id,updated_by:CLOUD.user.id}).select('id').single();
     if(error){cloudState('복제 실패: '+error.message);return;}
     /* 일별 실적도 함께 복사 */
     const {data:rows}=await CLOUD.sb.from('daily_stats').select('*').eq('campaign_id',c.id);
@@ -1425,11 +1384,8 @@ function memberChips(d){
 }
 /* 그 캠페인에서 내가 마스터인가 — 목록에서 바로 판단해야 하므로 멤버 목록으로 본다 */
 function isMasterOf(d){
-  if(!CLOUD.user)return false;
-  if(CLOUD.appRole==='super')return true;
-  if(CLOUD.shareView)return false;
-  const me=(d&&d.members||[]).find(m=>m.user_id===CLOUD.user.id);
-  return !!me&&me.role==='master';
+  /* v117 — 캠페인 단위 마스터는 없어졌다. 계정 등급이 마스터 이상이면 모든 캠페인의 마스터 */
+  return isAppMaster();
 }
 /* ---- 내가 만든 열 — 계정 저장소 (v57) ----
    로컬(localStorage)은 바로 쓰기 위한 사본이고, 계정(profiles.prefs.cols)이 원본이다.
@@ -1487,7 +1443,7 @@ async function removeMember(userId,campId){
 /* ---------- 배선 ---------- */
 (function wireCloud(){
   const b=id=>$(id);
-  if(b('signIn'))b('signIn').onclick=signInGoogle;
+  if(b('signIn'))b('signIn').onclick=()=>signInGoogle();
   if(b('signOut'))b('signOut').onclick=signOutCloud;
   /* 계정 버튼 — 누르면 로그아웃 메뉴 열기/닫기 */
   if(b('meBtn'))b('meBtn').onclick=e=>{e.stopPropagation();
@@ -1501,17 +1457,17 @@ async function removeMember(userId,campId){
     if(typeof applySheet==='function'){try{applySheet();}catch(e){}}
     cloudSave(false);};
   if(b('campMng'))b('campMng').onclick=openCampManage;
-  /* 계정 관리 — 구글 계정 메뉴 안에서 연다 */
+  /* 회원 관리 · 비밀번호 변경 — 계정 메뉴 안에서 연다 (v117) */
   if(b('acctBtn'))b('acctBtn').onclick=e=>{e.stopPropagation();
-    $('meMenu').classList.add('hidden');openAccounts();};
+    $('meMenu').classList.add('hidden');
+    const n=+(($('acctCnt')||{}).textContent||0);openMembers(n>0?'req':'list');};
+  if(b('pwBtn'))b('pwBtn').onclick=e=>{e.stopPropagation();$('meMenu').classList.add('hidden');openPwChange();};
+  /* 새 가입 요청 알림 — 누르면 회원 관리 › 가입 요청 */
+  if(b('meBadge'))b('meBadge').onclick=e=>{e.stopPropagation();$('meMenu').classList.add('hidden');openMembers('req');};
   if(b('reqBtn'))b('reqBtn').onclick=()=>{
-    if(CLOUD.user){openAccessRequest();return;}
-    confirmModal('먼저 구글 로그인이 필요합니다.',
-      '어떤 계정에 권한을 드릴지 확인해야 하기 때문입니다. 로그인한 뒤 소속과 용도를 적어 보내 주세요.',
-      ()=>{if(CLOUD.on)signInGoogle();
-        else confirmModal('지금은 샘플 화면입니다.',
-          '실제 사이트에 올린 뒤에는 이 버튼으로 바로 권한을 요청할 수 있습니다.',()=>{},'확인');},
-      '구글 로그인');};
+    if(!CLOUD.on){confirmModal('지금은 샘플 화면입니다.',
+      '실제 사이트에서는 이 버튼으로 이메일 계정 가입을 신청할 수 있습니다.',()=>{},'확인');return;}
+    showGateSignup();};
   if(b('campSel'))b('campSel').onchange=e=>{
     const v=e.target.value;
     if(v==='__new'){paintCampSel();openCampManage();return;}

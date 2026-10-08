@@ -95,44 +95,82 @@
 </script>
 <div id="gate" class="gate">
   <div class="gatecard">
+    <button class="gclose hidden" id="gateClose" type="button" title="닫기" aria-label="닫기">✕</button>
     <div class="glogo"><b>Media Dashboard</b></div>
-    <h2 id="gateTitle">공유 코드를 입력해 주세요</h2>
-    <p class="gsub" id="gateSub" data-i18n="gateSub">시행사에서 받은 <b>캠페인 코드</b>를 넣으면 해당 캠페인 대시보드가 열립니다.</p>
-    <div class="gaterow">
-      <input id="gateCode" autocomplete="off" spellcheck="false" maxlength="9" placeholder="XXXX-XXXX">
-      <button class="btn primary" id="gateGo">열기</button>
+    <!-- 로그인 (v117 — 구글 로그인 대신 이메일 계정. 계정은 가입 신청 → 마스터 승인으로 생긴다) -->
+    <div class="gpane" id="gpLogin">
+      <h2 id="gateTitle">로그인</h2>
+      <p class="gsub" data-i18n="gateSubLogin">승인받은 <b>이메일 계정</b>으로 로그인하세요.</p>
+      <form class="gform" id="loginForm" autocomplete="on" novalidate>
+        <input id="liEmail" type="email" name="email" autocomplete="username" placeholder="이메일" spellcheck="false">
+        <input id="liPw" type="password" name="password" autocomplete="current-password" placeholder="비밀번호">
+        <button class="btn primary wide" id="liGo" type="submit">로그인</button>
+      </form>
+      <div class="gatemsg" id="liMsg"></div>
+      <div class="glinks"><span>계정이 없으신가요?</span> <a href="#" id="toSignup">가입 신청</a></div>
+      <div class="gfine">비밀번호를 잊었으면 마스터에게 재설정을 요청하세요.</div>
     </div>
-    <div class="gatemsg" id="gateMsg"></div>
+    <!-- 가입 신청 -->
+    <div class="gpane hidden" id="gpSignup">
+      <h2>가입 신청</h2>
+      <p class="gsub" data-i18n="gateSubSignup">신청하면 <b>마스터가 승인</b>한 뒤 로그인할 수 있습니다.</p>
+      <form class="gform" id="signupForm" autocomplete="on" novalidate>
+        <input id="suEmail" type="email" autocomplete="username" placeholder="이메일 (로그인 아이디)" spellcheck="false">
+        <input id="suPw" type="password" autocomplete="new-password" placeholder="비밀번호 (8자 이상)">
+        <input id="suPw2" type="password" autocomplete="new-password" placeholder="비밀번호 확인">
+        <div class="g2"><input id="suName" autocomplete="name" placeholder="이름"><input id="suOrg" autocomplete="organization" placeholder="소속 (회사 · 팀)"></div>
+        <textarea id="suNote" rows="2" placeholder="요청 메모 (선택) — 예: BMW 캠페인 리포트 열람"></textarea>
+        <button class="btn primary wide" id="suGo" type="submit">가입 신청</button>
+      </form>
+      <div class="gatemsg" id="suMsg"></div>
+      <div class="glinks"><a href="#" id="toLogin">← 로그인으로 돌아가기</a></div>
+    </div>
+    <!-- 신청 완료 · 승인 대기 -->
+    <div class="gpane hidden" id="gpDone">
+      <div class="gdone" aria-hidden="true">✓</div>
+      <h2 id="gdTitle">가입 신청을 보냈습니다</h2>
+      <p class="gsub" id="gdSub">마스터가 승인하면 같은 이메일과 비밀번호로 로그인할 수 있습니다.</p>
+      <button class="btn wide" id="gdBack" type="button">로그인 화면으로</button>
+    </div>
     <div class="gatesep"><span>또는</span></div>
-    <button class="btn wide" id="gateSample">샘플 데이터 둘러보기</button>
-    <button class="btn wide ghost" id="gateLogin">
-      <svg width="14" height="14" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>
-      시행사 구글 로그인</button>
-    <div class="gfoot" id="gateHint"></div>
+    <!-- 공유 코드 — 로그인 없이 캠페인 하나를 여는 링크용 (예전 방식 그대로) -->
+    <details class="gcode" id="gcodeBox">
+      <summary>공유 코드로 열기</summary>
+      <div class="gaterow">
+        <input id="gateCode" autocomplete="off" spellcheck="false" maxlength="9" placeholder="XXXX-XXXX">
+        <button class="btn primary" id="gateGo" type="button">열기</button>
+      </div>
+      <div class="gatemsg" id="gateMsg"></div>
+      <div class="gfoot" id="gateHint" data-i18n="gateHint">시행사에서 받은 <b>공유 코드</b>로 로그인 없이 캠페인을 엽니다 — <b>뷰어 코드</b>는 대시보드 열람과 엑셀 다운로드만 됩니다.<br>둘러보기용 샘플 코드 <code>DEMO-2026</code> (시행사 화면) · <code>VIEW-2026</code> (광고주 화면)</div>
+    </details>
+    <button class="btn wide ghost" id="gateSample" type="button">샘플 데이터 둘러보기</button>
     <div class="glang"><select id="gateLang" aria-label="언어 · Language"><option value="ko">한국어</option><option value="en">English</option></select></div>
   </div>
 </div>
 <div id="bgdots" aria-hidden="true"><div class="bgfloat"><i></i></div><div class="ambient"></div></div>
 <div class="topbar">
   <div class="logo"><img class="mark" alt="" id="brandMark" hidden><span class="brandtx"><b class="adv" id="brandAdv" hidden></b><span class="prod">Media Dashboard</span></span></div>
-  <span class="campselwrap agency-only"><select class="pill" id="campSel" title="캠페인 선택 · 맨 아래에서 새 캠페인을 만들 수 있습니다"></select><i class="cv" aria-hidden="true">▾</i></span>
+  <span class="campselwrap" id="campSelWrap"><select class="pill" id="campSel" title="캠페인 선택 · 맨 아래에서 새 캠페인을 만들 수 있습니다"></select><i class="cv" aria-hidden="true">▾</i></span>
   <span class="betatag" id="betaTag" title="아직 다듬는 중인 베타 버전입니다 — 이상한 점은 알려 주세요">베타 버전</span>
-  <button class="btn sm primary hidden" id="reqBtn" title="캠페인을 만들 수 있는 마스터 권한을 요청합니다">🔑 권한 요청하기</button>
+  <button class="btn sm primary hidden" id="reqBtn" title="이메일 계정을 만들어 달라고 신청합니다 — 마스터가 승인하면 로그인할 수 있습니다">가입 신청</button>
   <div class="spacer"></div>
   <span class="rolechip" id="roleChip" title="로그인 상태에 따라 자동으로 정해집니다">광고주</span>
   <span class="hint" id="cloudState">데모 모드</span>
   <span class="savedago" id="savedAgo" title="자동 저장 시각"></span>
   <button class="btn sm agency-only" id="cloudSave" title="지금 바로 저장합니다 (평소에는 자동으로 저장됩니다)">☁ 저장</button>
-  <button class="pill" id="signIn"><svg width="15" height="15" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-3.9H24v7.1h12c-.2 1.9-1.5 4.7-4.4 6.6l6.7 5.2C42.2 35.3 45 30.1 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4C29.8 36.6 27.2 37.5 24 37.5c-5.9 0-10.9-3.9-12.7-9.2l-7.1 5.5C7.8 41.2 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.3 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7.1-5.5C2.8 17.1 2 20.4 2 24s.8 6.9 2.2 9.8l7.1-5.5z"/><path fill="#EA4335" d="M24 10.5c4.2 0 7 1.8 8.6 3.3l6.3-6.1C35 4.1 29.9 2 24 2 15.3 2 7.8 6.8 4.2 14.2l7.1 5.5C13.1 14.4 18.1 10.5 24 10.5z"/></svg>구글 로그인</button>
+  <button class="pill" id="signIn" type="button">로그인</button>
   <div class="mewrap" id="meWrap">
     <button class="me" id="meBtn" title="계정">
       <span class="avatar" id="meAvatar">GU</span>
       <span class="mail" id="meMail">게스트</span>
       <span class="cv">▾</span>
     </button>
+    <!-- 새 가입 요청 알림 (마스터 · 슈퍼마스터) — 누르면 회원 관리 › 가입 요청 -->
+    <button class="mebadge hidden" id="meBadge" type="button" title="새 가입 요청 — 눌러서 승인하기" aria-label="새 가입 요청">0</button>
     <div class="memenu hidden" id="meMenu">
       <div class="mi head"><b id="meName">게스트</b><span id="meSub">로그인하지 않음</span></div>
-      <button class="mi hidden" id="acctBtn" title="계정 등급 관리 (슈퍼마스터 전용)">🛡 계정 관리</button>
+      <button class="mi hidden" id="acctBtn" title="가입 승인 · 회원 등급 · 뷰어 광고주 지정">👥 회원 관리<span class="micnt hidden" id="acctCnt"></span></button>
+      <button class="mi" id="pwBtn" title="내 비밀번호를 바꿉니다">🔑 비밀번호 변경</button>
       <button class="mi" id="signOut">로그아웃</button>
     </div>
   </div>
@@ -155,7 +193,7 @@
 </div>
 <div class="demobar" id="demoBar">
   <span>ⓘ</span><div data-i18n="demoBar"><b>데모 모드</b> — 지금 보이는 값은 예시 데이터입니다.
-    <b>구글 로그인</b> 하면 내 캠페인을 불러오고, 입력한 값이 클라우드에 저장됩니다.</div>
+    <b>로그인</b>하면 내 캠페인을 불러오고, 입력한 값이 클라우드에 저장됩니다.</div>
   <button class="btn sm" id="demoHide">닫기</button>
 </div>
 

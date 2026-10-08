@@ -1675,7 +1675,8 @@ function canManageCamp(){
     if(typeof CLOUD==='undefined'||!CLOUD)return true;
     if(CLOUD.shareView)return false;
     if(!CLOUD.on)return true;
-    return !!CLOUD.user;
+    /* v117 — 캠페인 만들기 · 고치기 · 지우기는 마스터 이상 */
+    return !!CLOUD.user&&(CLOUD.appRole==='super'||CLOUD.appRole==='master');
   }catch(e){return true;}
 }
 function openSettingsHub(){

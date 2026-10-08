@@ -23,11 +23,10 @@ const TREND={posts:[],cats:TREND_CATS_DEFAULT.slice(),media:[],
 const TREND_BLOBS={};
 
 const trendOn=()=>{try{return !!(CLOUD&&CLOUD.on&&CLOUD.sb);}catch(e){return false;}};
-/* 이 게시판을 고칠 수 있는 사람 = 마스터 · 슈퍼마스터 · 운영진 */
+/* 이 게시판을 고칠 수 있는 사람 = 마스터 · 슈퍼마스터 (v117 — 서버 trend_is_admin 과 같은 규칙) · 운영진 코드 화면 */
 function trendAdmin(){
   try{
     if(CLOUD&&CLOUD.user&&(CLOUD.appRole==='super'||CLOUD.appRole==='master'))return true;
-    if(CLOUD&&CLOUD.user&&CLOUD.campaign&&(CLOUD.role==='master'||CLOUD.role==='editor'))return true;
     if(!trendOn())return true;                /* 데모에서는 시안을 만져 볼 수 있게 */
     if(CLOUD&&CLOUD.shareView&&CLOUD.shareRole==='staff')return true;
   }catch(e){}

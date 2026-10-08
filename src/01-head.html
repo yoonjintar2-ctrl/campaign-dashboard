@@ -280,6 +280,101 @@ body.booting .wrap,body.booting .demobar,body.booting #bgdots{visibility:hidden}
 .gatecard .btn.ghost{background:var(--surface);color:var(--ink2)}
 .gatecard .gfoot{margin-top:17px;font-size:11px;line-height:1.6;color:var(--muted)}
 .gatecard .gfoot code{font-family:inherit;font-weight:800;color:var(--acc);letter-spacing:1.2px}
+/* ===== 이메일 로그인 · 가입 신청 (v117) ===== */
+.gatecard{position:relative}
+.gatecard .gclose{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;
+  background:transparent;color:var(--muted);font-size:14px;cursor:pointer}
+.gatecard .gclose:hover{background:var(--acc-soft);color:var(--ink)}
+.gatecard .gclose.hidden,.gatecard .gpane.hidden{display:none}
+.gatecard .gform{display:grid;gap:8px;text-align:left}
+.gatecard .gform input,.gatecard .gform textarea{width:100%;box-sizing:border-box;height:42px;border:1px solid var(--line);
+  border-radius:11px;background:var(--plane2);padding:0 13px;font:inherit;font-size:13.5px;color:var(--ink)}
+.gatecard .gform textarea{height:auto;min-height:58px;padding:10px 13px;resize:vertical;line-height:1.5}
+.gatecard .gform input:focus,.gatecard .gform textarea:focus{outline:none;border-color:var(--acc);
+  box-shadow:0 0 0 3px var(--acc-soft);background:var(--surface)}
+.gatecard .gform input.bad{border-color:var(--pace);box-shadow:0 0 0 3px rgba(var(--pacergb),.14)}
+.gatecard .gform .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gatecard .gform .btn.wide{margin-top:4px;height:44px;font-size:13.5px}
+.gatecard .gform .btn[disabled]{opacity:.6;cursor:progress}
+.gatecard .glinks{margin-top:4px;font-size:12.5px;color:var(--ink2)}
+.gatecard .glinks a{color:var(--acc);font-weight:800;text-decoration:none}
+.gatecard .glinks a:hover{text-decoration:underline}
+.gatecard .gfine{margin-top:7px;font-size:11px;color:var(--muted)}
+.gatecard .gdone{width:48px;height:48px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;
+  font-size:22px;font-weight:800;color:#fff;background:#5f8f74;box-shadow:0 6px 18px rgba(95,143,116,.32)}
+.gatecard .gdone.wait{background:#c98c3c;box-shadow:0 6px 18px rgba(201,140,60,.30)}
+.gatecard #gpDone .btn.wide{margin-top:4px}
+.gatecard details.gcode{margin:0 0 4px}
+.gatecard details.gcode>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:700;color:var(--ink2);padding:6px 10px;border-radius:8px;user-select:none}
+.gatecard details.gcode>summary::-webkit-details-marker{display:none}
+.gatecard details.gcode>summary::after{content:'▾';font-size:10px;color:var(--muted);transition:transform .15s}
+.gatecard details.gcode[open]>summary::after{transform:rotate(180deg)}
+.gatecard details.gcode>summary:hover{background:var(--acc-soft);color:var(--ink)}
+.gatecard details.gcode .gaterow{margin-top:8px}
+.gatecard details.gcode .gfoot{margin-top:8px}
+/* 상단 계정 동그라미 — 새 가입 요청 알림 (마스터 · 슈퍼마스터) */
+.mewrap .mebadge{position:absolute;top:-5px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;
+  border-radius:10px;border:2px solid var(--surface);background:#d9534f;color:#fff;font-size:10.5px;font-weight:800;line-height:15px;
+  font-family:inherit;text-align:center;cursor:pointer;z-index:2;box-shadow:0 2px 6px rgba(217,83,79,.35)}
+.mewrap .mebadge.hidden{display:none}
+.mewrap .mebadge:hover{transform:scale(1.08)}
+.mewrap .mebadge.pulse{animation:mebPulse 1.6s ease-out 3}
+@keyframes mebPulse{0%{box-shadow:0 0 0 0 rgba(217,83,79,.55)}70%{box-shadow:0 0 0 10px rgba(217,83,79,0)}100%{box-shadow:0 0 0 0 rgba(217,83,79,0)}}
+@media (prefers-reduced-motion: reduce){.mewrap .mebadge.pulse{animation:none}}
+.memenu .mi .micnt{display:inline-block;margin-left:7px;min-width:18px;padding:0 6px;border-radius:9px;
+  background:#d9534f;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center}
+.memenu .mi .micnt.hidden{display:none}
+/* ===== 회원 관리 (v117) ===== */
+.mbtabs{display:inline-flex;gap:3px;padding:3px;border-radius:11px;background:var(--plane);margin-bottom:14px}
+.mbtabs button{all:unset;cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--ink2)}
+.mbtabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.mbtabs button i{font-style:normal;display:inline-block;margin-left:6px;min-width:18px;padding:0 6px;border-radius:9px;
+  background:var(--sub1);color:var(--ink2);font-size:10.5px;line-height:17px;text-align:center}
+.mbtabs button i.hot{background:#d9534f;color:#fff}
+.mbempty{padding:26px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px;background:var(--plane2)}
+.mreq{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px 16px;margin-bottom:10px}
+.mreq .who{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.mreq .who b{font-size:14px;color:var(--ink)}
+.mreq .who .em{font-size:12.5px;color:var(--ink2)}
+.mreq .who .meta{font-size:11.5px;color:var(--muted)}
+.mreq .memo{margin-top:7px;font-size:12.5px;color:var(--ink2);background:var(--plane2);border-radius:8px;padding:7px 10px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.mreq .dec{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.mreq .dec .lb{font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:6px}
+.mreq .dec .advcol{flex:1;min-width:240px}
+.mreq .dec .acts{display:flex;gap:6px;align-items:center;margin-left:auto;align-self:flex-end}
+.mlvl{display:inline-flex;gap:3px;padding:3px;border-radius:10px;background:var(--plane)}
+.mlvl label{cursor:pointer;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;color:var(--ink2)}
+.mlvl input{display:none}
+.mlvl label:has(input:checked){background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.advpick{display:flex;flex-wrap:wrap;gap:6px}
+.advpick label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--line);border-radius:999px;
+  padding:4px 11px 4px 8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--surface)}
+.advpick label:has(input:checked){border-color:var(--acc);background:var(--acc-soft);color:var(--ink)}
+.advpick input{margin:0;accent-color:var(--acc)}
+.advpick .none{font-size:12px;color:var(--muted)}
+.advpick.off{opacity:.38;pointer-events:none}
+.mrole{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px;white-space:nowrap;
+  border:1px solid var(--line);background:var(--plane2);color:var(--ink2)}
+.mrole.super{background:linear-gradient(135deg,#f7e08a,#e8c25a 40%,#fff4c9 55%,#d9ad42);border-color:#d6b25a;color:#5a430c}
+.mrole.master{background:linear-gradient(135deg,#e6eaee,#c6cdd4 40%,#fff 55%,#b9c1c9);border-color:#b9c1c9;color:#36404a}
+.mrole.viewer{background:var(--acc-soft);border-color:var(--gline);color:var(--acc)}
+.mrole.pending{background:#fff4e2;border-color:#ecd3a8;color:#8a5b17}
+[data-theme="dark"] .mrole.pending{background:#3a3020;border-color:#6b5a32;color:#e6c88f}
+.mtbl td{vertical-align:middle}
+.mtbl td.l{text-align:left}
+.mtbl .advchips{display:flex;flex-wrap:wrap;gap:4px}
+.mtbl .advchips span{font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--sub3);border:1px solid var(--line);color:var(--ink2)}
+.mtbl .advchips em{font-style:normal;font-size:11px;color:var(--pace);font-weight:700}
+.mtbl .advchips .all{color:var(--muted);font-weight:600}
+table.tbl.mtbl td.acts{white-space:nowrap}
+table.tbl.mtbl td.acts .ln{flex-wrap:nowrap;justify-content:center}
+.mtbl tr.mbme td{background:var(--acc-soft2)}
+.mbtool{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mbtool input{height:32px;border:1px solid var(--line);border-radius:9px;padding:0 11px;min-width:240px;font:inherit;font-size:12.5px;
+  background:var(--surface);color:var(--ink)}
+.mbrule{font-size:11.5px;color:var(--muted);line-height:1.6}
 /* 공유 코드 (캠페인 관리) */
 /* 샘플 둘러보기 중에는 캠페인 조작 버튼을 감추고 권한 요청 버튼만 남긴다 */
 body[data-mode="sample"] #campSel,
