@@ -17,8 +17,10 @@
 --   예전의 캠페인 단위 권한(campaign_members 의 마스터 · 운영진 · 광고주, 초대)은 더 이상 권한을 주지 않는다.
 --   표는 지우지 않고 기록으로 남긴다. 뷰어 코드 · 운영진 코드(로그인 없이 여는 공유 링크)는 그대로 둔다.
 --
---   ⚠ 실행 전에 Authentication → Sign In / Providers 에서 "Confirm email" 을 꺼 주세요.
---     (가입 승인을 마스터가 하므로 메일 확인이 필요 없고, Supabase 기본 메일 서버는 프로젝트 팀원에게만 메일을 보낸다)
+--   순서 ① 이 파일 실행 ② (Confirm email 이 켜진 채로) 슈퍼마스터 계정 만들기 → 맨 아래 8번처럼 id 로 지정
+--        ③ 그다음 Authentication → Sign In / Providers 에서 "Confirm email" 끄기
+--     (가입 승인을 마스터가 하므로 메일 확인이 필요 없고, Supabase 기본 메일 서버는 프로젝트 팀원에게만 메일을 보내
+--      켜 두면 가입 신청이 막힌다. 단 ②보다 먼저 끄면 누구나 그 이메일로 먼저 가입할 수 있다)
 -- =====================================================================
 
 create extension if not exists pgcrypto with schema extensions;
