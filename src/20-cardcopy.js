@@ -243,7 +243,7 @@ async function ccRender(card,opts){
       wrap.appendChild(cp);});
     c.replaceWith(wrap);});
   /* 복사 단추 · 좌우 넘김 단추는 그림에서 뺀다 */
-  clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn').forEach(n=>n.remove());
+  clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn,.ccskip').forEach(n=>n.remove());
   if(opts.clean)try{opts.clean(clone);}catch(e){console.warn(e);}
   /* 날짜 칸의 브라우저 기본 달력 단추 — 화면에서는 투명하게 덮어 두었는데(01-head), 의사 요소라 인라인 스타일로 옮길 수 없다.
      그림 안에서도 같은 규칙이 걸리게 작은 style 하나를 넣는다 (v112) */

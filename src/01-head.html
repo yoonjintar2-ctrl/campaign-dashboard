@@ -1393,7 +1393,7 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 @keyframes axClipX{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @keyframes axClipY{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
 @keyframes axDash{from{stroke-dasharray:0 9999}}
-@keyframes axSpin{from{transform:rotate(-150deg) scale(.82);opacity:.15}}
+@keyframes axSpin{from{transform:rotate(-100deg) scale(.9);opacity:.35}}
 @keyframes axDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes axPop{0%{transform:scale(0);opacity:0}60%{opacity:1}}
 @keyframes axZoom{from{transform:scale(.9);opacity:0}}
@@ -1429,6 +1429,10 @@ body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
 .ax-none .ax,.ax-none .wrap:not(.hidden){animation:none!important}
 @media print{.ax,.wrap{animation:none!important}}
 
+/* 유입 흐름 물결(v114.1) — 덧칠 층은 띠가 흐려질 때 같이 흐려진다 */
+.skfl{transition:opacity .12s}.skfl.dim{opacity:.13}
+body.pssave .ccskip{display:none!important}
+@media print{.ccskip{display:none!important}}
 /* ===== 영역 바로가기 — v114 (24-secnav.js) =====
    오른쪽 가장자리 점 목록. 마우스를 올리면 이름이 펼쳐진다 · 지금 영역은 길쭉한 점 */
 .secnav{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;

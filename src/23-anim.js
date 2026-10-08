@@ -21,7 +21,11 @@ const AX_RULES=[
   ['#statStrip svg.spk','clipx',70,120],
   /* KPI 달성 현황 — 도넛은 돌면서 호가 차오른다 */
   ['#donuts .ring>svg','spin',70,0],
-  ['#donuts .ring svg circle[stroke-dasharray]','dash',70,60],
+  /* 호는 끝이 둥근 모양 그대로 자라게 — 그릴 때와 같은 계산(capDash)으로 매 순간 길이를 정한다(v114.1).
+     예전(CSS 로 dasharray 를 늘림)은 시작점에 둥근 점이 먼저 찍히고(붉은 페이스 호) 자라는 끝이 곧게 보였다 */
+  ['#donuts .ring svg circle[data-axarc]','arc',70,60],
+  ['#donuts .ring svg text','fade',70,1100],
+  ['#donuts .ring svg circle.pacedot','pop',70,1250],
   ['#donuts .ring .achv','count',70,60],
   /* 일자별 캠페인 효율 비교 — 막대 자라기 · 언덕 떠오르기 · 꺾은선 그리기 · 이슈 번호 톡 */
   ['#chartDaily .dbar','growy',14,0],
@@ -112,6 +116,21 @@ function axCount(el,root,delay,key){
   AX_COUNTS.add(c);
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
   axTick();return true;}
+/* ---------- 둥근 끝 호 자라기 (KPI 도넛) ---------- */
+function axArc(el,root,delay){
+  const v=(el.getAttribute('data-axarc')||'').split(',').map(Number);
+  if(v.length<3||!v.every(isFinite)||typeof capDash!=='function')return;
+  const [cir,f,TH]=v;
+  const set=x=>{const a=capDash(cir,x,TH);
+    el.setAttribute('stroke-dasharray',a['stroke-dasharray']);
+    if(a['stroke-dashoffset']!=null)el.setAttribute('stroke-dashoffset',a['stroke-dashoffset']);else el.removeAttribute('stroke-dashoffset');
+    el.setAttribute('stroke-linecap',a['stroke-linecap']);};
+  /* 천천히 출발해 가속하다 부드럽게 멈춘다(호는 처음부터 빠르면 점이 툭 찍힌 것처럼 보인다) */
+  const io=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const c={tn:el,root,delay,dur:1500,t0:0,apply:t=>set(Math.min(f,1)*io(t)),done:()=>set(f),raw:1};
+  set(0);AX_COUNTS.add(c);
+  if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
+  axTick();}
 /* ---------- 변화량 배지 (v114) ----------
    필터 · 기간 등을 바꿔 숫자가 달라지면 숫자 옆에 지난 값 대비 ▲▼ 를 4초쯤 띄운다.
    % 로 끝나는 숫자(달성률 · 소진율 등)는 차이(%p), 나머지는 몇 % 늘고 줄었는지. 색은 좋고 나쁨이 아니라 방향만(단가는 오르면 나쁘다) */
@@ -139,8 +158,8 @@ function axTick(){
       if(!c.tn.isConnected){AX_COUNTS.delete(c);return;}
       if(!c.t0||now<c.t0)return;
       const t=Math.min(1,(now-c.t0)/c.dur);
-      if(t>=1||now-c.t0>c.dur+4000){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
-      c.tn.nodeValue=axFmt(c,c.from+(c.target-c.from)*axEase(t));});
+      if(t>=1||now-c.t0>c.dur+4000){if(c.apply)c.done();else c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
+      if(c.apply)c.apply(c.raw?t:axEase(t));else c.tn.nodeValue=axFmt(c,c.from+(c.target-c.from)*axEase(t));});
     if([...AX_COUNTS].some(c=>c.t0))AX_RAF=setTimeout(step,16);},16);}
 /* ---------- 새로 그려진 조각에 클래스 붙이기 ---------- */
 /* nodes — 한 번에 새로 들어온 조각들(카드를 하나씩 붙여도 한 묶음으로 받아 차례 지연이 이어지게) */
@@ -172,6 +191,7 @@ function axScan(nodes){
       if(gap==='row'){const tr=el.closest('tr');d+=Math.min(900,(tr?tr.sectionRowIndex:0)*22);}
       else if(gap==='di'){const td=el.closest('td');d+=Math.min(700,(+(td&&td.dataset.di)||0)*9);}
       else d+=Math.min(1100,i*(gap||0));
+      if(kind==='arc'){axArc(el,r,d);return;}
       if(kind==='count'){
         /* 지난 값을 찾는 열쇠 — 캠페인 · 자리 · 이름표(노출 · 클릭 …). 이름표가 없으면 순서 */
         const box=el.closest('.pline,.stat,.donut,.infk,.tvkpi,.ovk');
@@ -187,7 +207,7 @@ function axFinish(root){
   let list=[];
   try{list=root.getAnimations?root.getAnimations({subtree:true}):document.getAnimations();}catch(e){try{list=document.getAnimations();}catch(x){}}
   list.forEach(a=>{if(a.animationName&&/^ax/.test(a.animationName)){try{a.finish();}catch(e){}}});
-  AX_COUNTS.forEach(c=>{if(root.contains(c.tn)){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);}});
+  AX_COUNTS.forEach(c=>{if(root.contains(c.tn)){if(c.apply)c.done();else c.tn.nodeValue=c.final;AX_COUNTS.delete(c);}});
   root.querySelectorAll('.axdelta').forEach(n=>{const p=n.parentElement;n.remove();if(p)p.classList.remove('axhasdelta');});
   root.querySelectorAll('.ax-wait').forEach(r=>{r.classList.remove('ax-wait');if(AX_IO)AX_IO.unobserve(r);});
   if(root.classList&&root.classList.contains('ax-wait'))root.classList.remove('ax-wait');}

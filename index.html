@@ -1393,7 +1393,7 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 @keyframes axClipX{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @keyframes axClipY{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
 @keyframes axDash{from{stroke-dasharray:0 9999}}
-@keyframes axSpin{from{transform:rotate(-150deg) scale(.82);opacity:.15}}
+@keyframes axSpin{from{transform:rotate(-100deg) scale(.9);opacity:.35}}
 @keyframes axDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes axPop{0%{transform:scale(0);opacity:0}60%{opacity:1}}
 @keyframes axZoom{from{transform:scale(.9);opacity:0}}
@@ -1429,6 +1429,10 @@ body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
 .ax-none .ax,.ax-none .wrap:not(.hidden){animation:none!important}
 @media print{.ax,.wrap{animation:none!important}}
 
+/* 유입 흐름 물결(v114.1) — 덧칠 층은 띠가 흐려질 때 같이 흐려진다 */
+.skfl{transition:opacity .12s}.skfl.dim{opacity:.13}
+body.pssave .ccskip{display:none!important}
+@media print{.ccskip{display:none!important}}
 /* ===== 영역 바로가기 — v114 (24-secnav.js) =====
    오른쪽 가장자리 점 목록. 마우스를 올리면 이름이 펼쳐진다 · 지금 영역은 길쭉한 점 */
 .secnav{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
@@ -5828,11 +5832,11 @@ function renderSpendDonut(box,pr){
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
   /* 끝은 둥글게 — capDash 가 길이를 보정해서 회색 트랙을 침범하지 않는다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-    ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
+    ...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 게이지 색은 다른 KPI 카드와 동일 — 그라데이션 + 반투명(뒤의 목표 페이스가 비친다).
      100% 를 넘기면 뒤에 비칠 것이 없으므로 불투명하게 그려 톤이 갈리지 않게 한다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,
-    'stroke-opacity':f>=1?1:ACH_OPACITY,...capDash(cir,f,TH),
+    'stroke-opacity':f>=1?1:ACH_OPACITY,...capDash(cir,f,TH),'data-axarc':`${cir},${f},${TH}`,
     transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 호 위에 소진 금액을 곡선으로 (다른 카드의 "집행 …" 라벨과 같은 방식) */
   (function(){
@@ -6060,10 +6064,10 @@ function renderDonuts(){
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-        ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
+        ...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
       /* 100% 를 넘기면 불투명하게 — 뒤의 페이스가 비쳐 톤이 갈리는 것을 막는다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,r.color),'stroke-width':TH,
-        'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),
+        'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),'data-axarc':`${cir},${af},${TH}`,
         transform:`rotate(-90 ${CC} ${CC})`},svg);
       const pDeg=360*pf, aDeg=360*af;
       /* 호 안쪽 — 집행 실적 */
@@ -20253,9 +20257,31 @@ function infFlowDraw(host,M){
   const W=Math.max(Math.floor(box.clientWidth)||640,300),HM=infFlowHM(M),H=HM+INF_TOP*2+8;
   const P=infFlowLayout(M,v,W,HM);
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="sksvg">${P.links.map(infLinkSVG).join('')}${P.nodes.map(infNodeSVG).join('')}${P.labs}</svg>`;
+  infFlowSheen(box.querySelector('svg.sksvg'),W);
   host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>infFlowGo(host,M,(INF.step==null?2:INF.step)+(+b.dataset.go)));
   host.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>infFlowGo(host,M,+b.dataset.step));
   infFlowWire(host,M,v);}
+/* 흐르는 물결 (v114.1) — 띠 위로 옅은 빛줄기가 왼쪽에서 오른쪽으로 계속 흘러간다(유입이 들어오는 중).
+   띠 모양을 그대로 본뜬 덧칠 층에, 반복되는 흰 빛줄기 그라데이션을 깔고 그 그라데이션을 오른쪽으로 민다.
+   마우스로 띠를 고르면 덧칠도 같이 흐려진다(hl). 그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip) */
+let INF_FLOWID=0;
+function infFlowSheen(svg,W){
+  if(!svg)return;
+  let off=false;
+  try{off=typeof axOff==='function'?axOff():matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  if(off)return;
+  const links=[...svg.querySelectorAll('path.sklink')];if(!links.length)return;
+  const NS='http://www.w3.org/2000/svg',P=Math.max(150,Math.round(W*.26)),id='skfg'+(++INF_FLOWID);
+  let defs=svg.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');svg.insertBefore(defs,svg.firstChild);}
+  defs.insertAdjacentHTML('beforeend',`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${P}" y2="0" spreadMethod="repeat">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".28" stop-color="#fff" stop-opacity="0"/>
+    <stop offset=".5" stop-color="#fff" stop-opacity=".34"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="${P} 0" dur="3.4s" repeatCount="indefinite"/></linearGradient>`);
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','skflow ccskip');g.setAttribute('pointer-events','none');
+  links.forEach(l=>{const c=l.cloneNode(false);c.setAttribute('class','skfl');c.removeAttribute('style');
+    c.setAttribute('fill',`url(#${id})`);g.appendChild(c);});
+  links[links.length-1].after(g);}
 /* 단계 넘기기 — 두 그래프에 함께 있는 마디는 자리 · 크기를 바꾸며 옮겨 가고,
    나머지는 넘기는 방향으로 밀려 나가며 흐려진다 / 반대쪽에서 들어오며 진해진다. 두 칸 건너뛰면 한 칸씩 이어서 */
 function infFlowGo(host,M,to){
@@ -20302,7 +20328,7 @@ function infFlowGo(host,M,to){
 function infFlowWire(host,M,v){
   const svg=host.querySelector('.skbox svg');if(!svg)return;
   const rows=M.rows,pf=x=>pct(x,x<.01?2:1);
-  const hl=fn=>svg.querySelectorAll('.sklink').forEach(p=>p.classList.toggle('dim',!fn(p)));
+  const hl=fn=>svg.querySelectorAll('.sklink,.skfl').forEach(p=>p.classList.toggle('dim',!fn(p)));
   const tr=(l,x)=>`<div class="r"><span class="l">${l}</span><b>${x}</b></div>`;
   const stepTip=(g,s)=>{const a=s.a(g),b=s.b(g);return `<div class="t">${esc(infName(g))} · ${s.la} → ${s.lb}</div>`
     +tr(s.la,fmt(a))+tr(s.lb,fmt(b))+tr(L('잔존율','retained')+` (${s.rl})`,pf(a?b/a:NaN))+tr(L('이탈','dropped'),`${fmt(a-b)} · ${pf(a?(a-b)/a:NaN)}`);};
@@ -20953,7 +20979,7 @@ async function ccRender(card,opts){
       wrap.appendChild(cp);});
     c.replaceWith(wrap);});
   /* 복사 단추 · 좌우 넘김 단추는 그림에서 뺀다 */
-  clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn').forEach(n=>n.remove());
+  clone.querySelectorAll('.cardcopy,.cardxl,.hpbtn,.ccskip').forEach(n=>n.remove());
   if(opts.clean)try{opts.clean(clone);}catch(e){console.warn(e);}
   /* 날짜 칸의 브라우저 기본 달력 단추 — 화면에서는 투명하게 덮어 두었는데(01-head), 의사 요소라 인라인 스타일로 옮길 수 없다.
      그림 안에서도 같은 규칙이 걸리게 작은 style 하나를 넣는다 (v112) */
@@ -21571,7 +21597,11 @@ const AX_RULES=[
   ['#statStrip svg.spk','clipx',70,120],
   /* KPI 달성 현황 — 도넛은 돌면서 호가 차오른다 */
   ['#donuts .ring>svg','spin',70,0],
-  ['#donuts .ring svg circle[stroke-dasharray]','dash',70,60],
+  /* 호는 끝이 둥근 모양 그대로 자라게 — 그릴 때와 같은 계산(capDash)으로 매 순간 길이를 정한다(v114.1).
+     예전(CSS 로 dasharray 를 늘림)은 시작점에 둥근 점이 먼저 찍히고(붉은 페이스 호) 자라는 끝이 곧게 보였다 */
+  ['#donuts .ring svg circle[data-axarc]','arc',70,60],
+  ['#donuts .ring svg text','fade',70,1100],
+  ['#donuts .ring svg circle.pacedot','pop',70,1250],
   ['#donuts .ring .achv','count',70,60],
   /* 일자별 캠페인 효율 비교 — 막대 자라기 · 언덕 떠오르기 · 꺾은선 그리기 · 이슈 번호 톡 */
   ['#chartDaily .dbar','growy',14,0],
@@ -21662,6 +21692,21 @@ function axCount(el,root,delay,key){
   AX_COUNTS.add(c);
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
   axTick();return true;}
+/* ---------- 둥근 끝 호 자라기 (KPI 도넛) ---------- */
+function axArc(el,root,delay){
+  const v=(el.getAttribute('data-axarc')||'').split(',').map(Number);
+  if(v.length<3||!v.every(isFinite)||typeof capDash!=='function')return;
+  const [cir,f,TH]=v;
+  const set=x=>{const a=capDash(cir,x,TH);
+    el.setAttribute('stroke-dasharray',a['stroke-dasharray']);
+    if(a['stroke-dashoffset']!=null)el.setAttribute('stroke-dashoffset',a['stroke-dashoffset']);else el.removeAttribute('stroke-dashoffset');
+    el.setAttribute('stroke-linecap',a['stroke-linecap']);};
+  /* 천천히 출발해 가속하다 부드럽게 멈춘다(호는 처음부터 빠르면 점이 툭 찍힌 것처럼 보인다) */
+  const io=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const c={tn:el,root,delay,dur:1500,t0:0,apply:t=>set(Math.min(f,1)*io(t)),done:()=>set(f),raw:1};
+  set(0);AX_COUNTS.add(c);
+  if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
+  axTick();}
 /* ---------- 변화량 배지 (v114) ----------
    필터 · 기간 등을 바꿔 숫자가 달라지면 숫자 옆에 지난 값 대비 ▲▼ 를 4초쯤 띄운다.
    % 로 끝나는 숫자(달성률 · 소진율 등)는 차이(%p), 나머지는 몇 % 늘고 줄었는지. 색은 좋고 나쁨이 아니라 방향만(단가는 오르면 나쁘다) */
@@ -21689,8 +21734,8 @@ function axTick(){
       if(!c.tn.isConnected){AX_COUNTS.delete(c);return;}
       if(!c.t0||now<c.t0)return;
       const t=Math.min(1,(now-c.t0)/c.dur);
-      if(t>=1||now-c.t0>c.dur+4000){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
-      c.tn.nodeValue=axFmt(c,c.from+(c.target-c.from)*axEase(t));});
+      if(t>=1||now-c.t0>c.dur+4000){if(c.apply)c.done();else c.tn.nodeValue=c.final;AX_COUNTS.delete(c);return;}
+      if(c.apply)c.apply(c.raw?t:axEase(t));else c.tn.nodeValue=axFmt(c,c.from+(c.target-c.from)*axEase(t));});
     if([...AX_COUNTS].some(c=>c.t0))AX_RAF=setTimeout(step,16);},16);}
 /* ---------- 새로 그려진 조각에 클래스 붙이기 ---------- */
 /* nodes — 한 번에 새로 들어온 조각들(카드를 하나씩 붙여도 한 묶음으로 받아 차례 지연이 이어지게) */
@@ -21722,6 +21767,7 @@ function axScan(nodes){
       if(gap==='row'){const tr=el.closest('tr');d+=Math.min(900,(tr?tr.sectionRowIndex:0)*22);}
       else if(gap==='di'){const td=el.closest('td');d+=Math.min(700,(+(td&&td.dataset.di)||0)*9);}
       else d+=Math.min(1100,i*(gap||0));
+      if(kind==='arc'){axArc(el,r,d);return;}
       if(kind==='count'){
         /* 지난 값을 찾는 열쇠 — 캠페인 · 자리 · 이름표(노출 · 클릭 …). 이름표가 없으면 순서 */
         const box=el.closest('.pline,.stat,.donut,.infk,.tvkpi,.ovk');
@@ -21737,7 +21783,7 @@ function axFinish(root){
   let list=[];
   try{list=root.getAnimations?root.getAnimations({subtree:true}):document.getAnimations();}catch(e){try{list=document.getAnimations();}catch(x){}}
   list.forEach(a=>{if(a.animationName&&/^ax/.test(a.animationName)){try{a.finish();}catch(e){}}});
-  AX_COUNTS.forEach(c=>{if(root.contains(c.tn)){c.tn.nodeValue=c.final;AX_COUNTS.delete(c);}});
+  AX_COUNTS.forEach(c=>{if(root.contains(c.tn)){if(c.apply)c.done();else c.tn.nodeValue=c.final;AX_COUNTS.delete(c);}});
   root.querySelectorAll('.axdelta').forEach(n=>{const p=n.parentElement;n.remove();if(p)p.classList.remove('axhasdelta');});
   root.querySelectorAll('.ax-wait').forEach(r=>{r.classList.remove('ax-wait');if(AX_IO)AX_IO.unobserve(r);});
   if(root.classList&&root.classList.contains('ax-wait'))root.classList.remove('ax-wait');}

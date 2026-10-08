@@ -1375,11 +1375,11 @@ function renderSpendDonut(box,pr){
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
   /* 끝은 둥글게 — capDash 가 길이를 보정해서 회색 트랙을 침범하지 않는다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-    ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
+    ...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 게이지 색은 다른 KPI 카드와 동일 — 그라데이션 + 반투명(뒤의 목표 페이스가 비친다).
      100% 를 넘기면 뒤에 비칠 것이 없으므로 불투명하게 그려 톤이 갈리지 않게 한다 */
   S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,
-    'stroke-opacity':f>=1?1:ACH_OPACITY,...capDash(cir,f,TH),
+    'stroke-opacity':f>=1?1:ACH_OPACITY,...capDash(cir,f,TH),'data-axarc':`${cir},${f},${TH}`,
     transform:`rotate(-90 ${CC} ${CC})`},svg);
   /* 호 위에 소진 금액을 곡선으로 (다른 카드의 "집행 …" 라벨과 같은 방식) */
   (function(){
@@ -1607,10 +1607,10 @@ function renderDonuts(){
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
       /* 목표 페이스 — 붉은 계열로 하단에 진하게 깔린다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,
-        ...capDash(cir,pf,TH),transform:`rotate(-90 ${CC} ${CC})`},svg);
+        ...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
       /* 100% 를 넘기면 불투명하게 — 뒤의 페이스가 비쳐 톤이 갈리는 것을 막는다 */
       S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,r.color),'stroke-width':TH,
-        'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),
+        'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),'data-axarc':`${cir},${af},${TH}`,
         transform:`rotate(-90 ${CC} ${CC})`},svg);
       const pDeg=360*pf, aDeg=360*af;
       /* 호 안쪽 — 집행 실적 */

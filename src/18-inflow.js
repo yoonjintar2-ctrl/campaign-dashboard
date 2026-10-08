@@ -326,9 +326,31 @@ function infFlowDraw(host,M){
   const W=Math.max(Math.floor(box.clientWidth)||640,300),HM=infFlowHM(M),H=HM+INF_TOP*2+8;
   const P=infFlowLayout(M,v,W,HM);
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="sksvg">${P.links.map(infLinkSVG).join('')}${P.nodes.map(infNodeSVG).join('')}${P.labs}</svg>`;
+  infFlowSheen(box.querySelector('svg.sksvg'),W);
   host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>infFlowGo(host,M,(INF.step==null?2:INF.step)+(+b.dataset.go)));
   host.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>infFlowGo(host,M,+b.dataset.step));
   infFlowWire(host,M,v);}
+/* 흐르는 물결 (v114.1) — 띠 위로 옅은 빛줄기가 왼쪽에서 오른쪽으로 계속 흘러간다(유입이 들어오는 중).
+   띠 모양을 그대로 본뜬 덧칠 층에, 반복되는 흰 빛줄기 그라데이션을 깔고 그 그라데이션을 오른쪽으로 민다.
+   마우스로 띠를 고르면 덧칠도 같이 흐려진다(hl). 그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip) */
+let INF_FLOWID=0;
+function infFlowSheen(svg,W){
+  if(!svg)return;
+  let off=false;
+  try{off=typeof axOff==='function'?axOff():matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  if(off)return;
+  const links=[...svg.querySelectorAll('path.sklink')];if(!links.length)return;
+  const NS='http://www.w3.org/2000/svg',P=Math.max(150,Math.round(W*.26)),id='skfg'+(++INF_FLOWID);
+  let defs=svg.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');svg.insertBefore(defs,svg.firstChild);}
+  defs.insertAdjacentHTML('beforeend',`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${P}" y2="0" spreadMethod="repeat">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".28" stop-color="#fff" stop-opacity="0"/>
+    <stop offset=".5" stop-color="#fff" stop-opacity=".34"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="${P} 0" dur="3.4s" repeatCount="indefinite"/></linearGradient>`);
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','skflow ccskip');g.setAttribute('pointer-events','none');
+  links.forEach(l=>{const c=l.cloneNode(false);c.setAttribute('class','skfl');c.removeAttribute('style');
+    c.setAttribute('fill',`url(#${id})`);g.appendChild(c);});
+  links[links.length-1].after(g);}
 /* 단계 넘기기 — 두 그래프에 함께 있는 마디는 자리 · 크기를 바꾸며 옮겨 가고,
    나머지는 넘기는 방향으로 밀려 나가며 흐려진다 / 반대쪽에서 들어오며 진해진다. 두 칸 건너뛰면 한 칸씩 이어서 */
 function infFlowGo(host,M,to){
@@ -375,7 +397,7 @@ function infFlowGo(host,M,to){
 function infFlowWire(host,M,v){
   const svg=host.querySelector('.skbox svg');if(!svg)return;
   const rows=M.rows,pf=x=>pct(x,x<.01?2:1);
-  const hl=fn=>svg.querySelectorAll('.sklink').forEach(p=>p.classList.toggle('dim',!fn(p)));
+  const hl=fn=>svg.querySelectorAll('.sklink,.skfl').forEach(p=>p.classList.toggle('dim',!fn(p)));
   const tr=(l,x)=>`<div class="r"><span class="l">${l}</span><b>${x}</b></div>`;
   const stepTip=(g,s)=>{const a=s.a(g),b=s.b(g);return `<div class="t">${esc(infName(g))} · ${s.la} → ${s.lb}</div>`
     +tr(s.la,fmt(a))+tr(s.lb,fmt(b))+tr(L('잔존율','retained')+` (${s.rl})`,pf(a?b/a:NaN))+tr(L('이탈','dropped'),`${fmt(a-b)} · ${pf(a?(a-b)/a:NaN)}`);};
