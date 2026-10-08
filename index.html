@@ -24080,6 +24080,8 @@ function renderStruct(){
   const K=Math.max(40,Math.min(200,lineMax>0?40/lineMax:200));
   const bw=v=>v>0?Math.max(1.8,K*v/TOT):0;
   const dims=csDims();
+  /* 요약 줄은 먼저 — 아래 그리기가 중간에 실패해도 비지 않게 */
+  try{csSum(root,rows,TOT,K);}catch(e){console.warn('struct sum',e);}
   const kidsOn=n=>n.kids.length>0&&!CS.collapsed[n.i+'|'+n.label]&&(n.depth<CS.depth||!!CS.expanded[n.i+'|'+n.label]);
   const chipsOn=n=>n.dim==='product'&&!CS.collapsed[n.i+'|'+n.label]&&(CS.depth>=5||!!CS.expanded[n.i+'|'+n.label]);
 
@@ -24207,9 +24209,8 @@ function renderStruct(){
   map.classList.toggle('cs-noflow',!CS.flow);
   /* 툴팁용 — 조회 기간 실적을 라인별로 한 번만 모아 둔다 */
   const pf={};
-  factFilter().forEach(f=>{const a=pf[f.lid]||(pf[f.lid]={cost:0,imp:0,click:0});a.cost+=+f.cost||0;a.imp+=+f.imp||0;a.click+=+f.click||0;});
-  CS.N={all,vis,rows,TOT,K,pf};CS.hov=-1;
-  csSum(root,rows,TOT,K);
+  try{factFilter().forEach(f=>{const a=pf[f.lid]||(pf[f.lid]={cost:0,imp:0,click:0});a.cost+=+f.cost||0;a.imp+=+f.imp||0;a.click+=+f.click||0;});}catch(e){}
+  CS.N={all,vis,rows,TOT,K,pf};CS.hov=-1;CS.tipK='';
   csBind();
   try{CS.io&&CS.io.observe(map);}catch(e){}
 }
