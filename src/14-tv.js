@@ -62,7 +62,7 @@ function areaHome(a){
   return m?m.tab:firstDashTab();}
 /* 지금 디지털 대시보드의 하위 화면 */
 function curDashSub(){
-  return ['perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');})||'perf';}
+  return ['struct','perf','table','mix'].find(n=>{const e=$('sub-'+n);return e&&!e.classList.contains('hidden');})||'perf';}
 /* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
@@ -87,7 +87,7 @@ function paintTabsOn(){
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 페이지 저장(v112)은 보기 메뉴(대시보드 · 전체 캠페인)에서만 — 입력 화면은 빼고 */
-  const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash');
+  const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash'||cs==='struct');   /* 캠페인 구조 화면에는 관리할 영역이 없다 (v120) */
   {const mk=name==='dash'?'view':((MENUS.find(x=>x.tab===name)||{}).kind||'');
    /* 트렌드 리포트(자료 게시판)는 그림으로 남길 내용이 아니라 뺀다 (v112.1) */
    const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',mk!=='view'||name==='trend');

@@ -757,6 +757,8 @@ function resetDateFilter(force){
 /* ---------- 메뉴 목록 (v72) — 영역 × 하위 메뉴. 설정 › 메뉴 설정 · 메뉴 줄이 이 목록을 따른다 ----------
    kind: view(대시보드 — 뷰어에게 보일 수 있다) · edit(입력 — 언제나 관리자 전용) */
 const MENUS=[
+  /* 캠페인 구조 (v120) — 디지털 대시보드 첫 메뉴. 들어가면 처음 보이는 화면은 여전히 서머리(#sub-perf) */
+  {id:'d_struct',area:'digital',tab:'dash',  sub:'struct',l:'캠페인 구조', kind:'view'},
   {id:'d_sum',  area:'digital',tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
   {id:'d_daily',area:'digital',tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
   {id:'d_mix',  area:'digital',tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},

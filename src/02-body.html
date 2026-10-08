@@ -220,6 +220,7 @@
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="subbar">
+        <button type="button" data-sub="struct" data-menu="d_struct">캠페인 구조</button>
         <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
         <button type="button" data-sub="table" data-menu="d_daily">일자별 효율</button>
         <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
@@ -292,25 +293,30 @@
   <div class="barlbl first">캠페인 정보</div>
   <div class="cbar" id="campBar"></div>
 
+  <!-- 캠페인 구조 (v120 · 27-struct.js) — 디지털 대시보드의 첫 메뉴(서머리와 별개 화면). 뷰어도 본다.
+       캠페인 전체 구조라 조회 기간 · 구분/매체 필터를 따르지 않는다. 보기 설정은 이 브라우저에만 기억(문서에 저장 안 함).
+       영역 관리(data-sect) 대상이 아니다 — 숨기려면 설정 › 메뉴 설정에서 메뉴를 끈다 -->
+  <div id="sub-struct" class="hidden">
+    <div class="sec" id="csSec">캠페인 구조
+      <span class="note">가지 굵기 = 예산 · 누르면 접고 펼칩니다</span>
+      <div class="tools">
+        <span class="switch on" id="csFitSw" title="전체 구조가 스크롤 없이 한 화면에 들어오도록 촘촘하게 놓고, 모자라면 글자까지 함께 줄입니다"><i></i> 화면 맞춤</span>
+        <span class="switch on" id="csFlowSw" title="가지 위로 예산이 흘러가는 효과를 켜고 끕니다"><i></i> 흐름 효과</span>
+        <span class="hint">가지 순서</span><select class="ctl" id="csOrderSel"><option value="media">매체 › 타깃</option><option value="target">타깃 › 매체</option></select>
+        <span class="hint">펼침</span><select class="ctl" id="csDepthSel"></select>
+      </div></div>
+    <div class="card cs-card"><div class="bd">
+      <div class="cs-sum" id="csSum"></div>
+      <div class="cs-wrap" id="csWrap"><div class="cs-map" id="csMap"></div></div>
+    </div></div>
+  </div>
+
   <div id="sub-perf">
     <div class="barlbl row">조회 기간</div>
     <div class="filters" id="perfFilters"></div>
     <div id="hiddenBar" class="hiddenbar hidden"></div>
 
-    <!-- 캠페인 구조 (v119 · 27-struct.js) — 뷰어도 본다. 보기 설정은 이 브라우저에만 기억(문서에 저장 안 함) -->
-    <div class="sec" data-sect="struct">캠페인 구조
-      <span class="note">가지 굵기 = 예산 · 누르면 접고 펼칩니다</span>
-      <div class="tools">
-        <span class="switch on" id="csFlowSw" title="가지 위로 예산이 흘러가는 효과를 켜고 끕니다"><i></i> 흐름 효과</span>
-        <span class="hint">가지 순서</span><select class="ctl" id="csOrderSel"><option value="media">매체 › 타깃</option><option value="target">타깃 › 매체</option></select>
-        <span class="hint">펼침</span><select class="ctl" id="csDepthSel"></select>
-      </div></div>
-    <div class="card" data-sect="struct"><div class="bd">
-      <div class="cs-sum" id="csSum"></div>
-      <div class="cs-wrap" id="csWrap"><div class="cs-map" id="csMap"></div></div>
-    </div></div>
-
-    <div class="sec gap" data-sect="pace">캠페인 진행 현황
+    <div class="sec" data-sect="pace">캠페인 진행 현황
       <div class="tools"><button class="btn sm agency-only" id="paceCfgBtn" title="진행 현황에 보일 지표(노출 · 조회 · 클릭 …)를 고릅니다">⚙ 표시 항목</button></div></div>
     <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
 

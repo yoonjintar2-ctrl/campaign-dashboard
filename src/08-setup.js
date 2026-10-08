@@ -1359,7 +1359,7 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   /* 일자별 상세 효율에서 나갈 때는 보던 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
   document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
-  ['perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
+  ['struct','perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
   /* 효율 탭을 열 때는 **히트맵까지** 전부 다시 그린다 —
      예전에는 renderHeat() 가 빠져 있어 "일자별 토글을 눌러야 갱신되는" 것처럼 보였다 */
   if(b.dataset.sub==='perf'){
@@ -1571,7 +1571,7 @@ function dashEmpty(){
   box.classList.toggle('hidden',!on);
   box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchTab(b.dataset.go));
   /* 데이터가 없으면 대시보드 본문은 감춘다 */
-  ['sub-perf','sub-table','sub-mix'].forEach(id=>{const e=$(id);if(e)e.classList.toggle('nodata',on);});
+  ['sub-struct','sub-perf','sub-table','sub-mix'].forEach(id=>{const e=$(id);if(e)e.classList.toggle('nodata',on);});
   const sb=$('subbar');if(sb)sb.classList.toggle('nodata',on);
   /* 캠페인 정보 · 필터 줄도 함께 감춘다 (₩0 만 남으면 오히려 헷갈린다) */
   const bar=$('campBar');
@@ -1590,7 +1590,7 @@ function renderAll(){
   /* 기간을 직접 고르지 않았으면 실적 · 라인이 바뀔 때 기본 기간(첫날 ~ 실적 마지막 날)을 다시 따른다 (v79) */
   try{if(followDefaultRange())buildFilters();}catch(e){}
   if(dashEmpty())return false;
-  /* 캠페인 구조 (v119) — 숨어 있으면(폭 0) 그리지 않고, 보이게 될 때 스스로 다시 그린다 */
+  /* 캠페인 구조 (v119 → v120 별도 메뉴) — 숨어 있으면(폭 0) 그리지 않고, 보이게 될 때 스스로 다시 그린다 */
   try{renderStruct();}catch(e){console.warn('struct',e);}
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
   renderCampForm();renderMix();

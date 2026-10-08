@@ -3337,7 +3337,9 @@ html.tu-on .secnav{display:none!important}
   .tu-hint{display:none}.tu-recap.two{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.tu-spot.on .ring,.tu-spot.on .halo,.tu-spot.on .sheen{animation:none;stroke-dashoffset:0}.tu-floor{transition:none}}
 
-/* ===== 캠페인 구조 (v119 · 27-struct.js) — 서머리 맨 위 마인드맵 ===== */
+/* ===== 캠페인 구조 (v119 · 27-struct.js) — v120 부터 디지털 대시보드 첫 메뉴(#sub-struct) ===== */
+#csSec{margin-top:22px}
+.cs-card>.bd{padding:14px 18px 12px}
 .cs-sum{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line2)}
 .cs-sum:empty{display:none}
 .cs-cnt{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
@@ -3349,6 +3351,8 @@ html.tu-on .secnav{display:none!important}
 .cs-lg .cs-scale{padding-right:16px;border-right:1px solid var(--line)}
 .cs-lg .cs-scale i{width:36px;border-radius:1px;background:var(--b3)}
 .cs-wrap{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+/* 화면 맞춤으로 줄였을 때 — 지도는 넓게 그린 뒤 scale 로 줄이고, 감싼 칸 높이는 줄인 높이(JS) */
+.cs-wrap.cs-scaled{overflow:hidden}
 .cs-map{position:relative;min-height:60px}
 .cs-map svg.cs-svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
 .cs-n{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
@@ -3393,6 +3397,18 @@ html.tu-on .secnav{display:none!important}
 .cs-hov .cs-fl:not(.cs-on){opacity:0!important}
 @media (prefers-reduced-motion:reduce){.cs-fl{display:none}}
 @media print{.cs-fl{display:none}}
+/* 촘촘한 배치(화면 맞춤) — 여백 · 글자를 조금씩 줄여 줄 높이를 낮춘다 */
+.cs-fit .cs-root{padding:10px 14px;border-radius:14px}
+.cs-fit .cs-root .n{font-size:14.5px;line-height:18px}
+.cs-fit .cs-root .p{margin-top:4px}
+.cs-fit .cs-seg{font-size:14px;line-height:16px;padding:0 14px}
+.cs-fit .cs-media{padding:3px 9px;border-radius:8px;gap:0}
+.cs-fit .cs-media b{font-size:12.5px;line-height:16px}
+.cs-fit .cs-media .tg{font-size:10px;line-height:12px}
+.cs-fit .cs-tgt{padding:3px 8px;font-size:11px;line-height:14px;border-radius:7px}
+.cs-fit .cs-prod{padding:3px 8px;font-size:11px;line-height:13px;border-radius:6px}
+.cs-fit .cs-chip{height:18px;line-height:15px;font-size:10px;padding:0 6px 2px}
+.cs-fit .cs-badge{height:16px;min-width:16px;line-height:16px;font-size:10px}
 </style>
 </head>
 <body class="booting">
