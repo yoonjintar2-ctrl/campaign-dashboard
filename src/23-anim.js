@@ -20,7 +20,7 @@ const AX_RULES=[
   ['#statStrip .stat .v','count',70,0],
   ['#statStrip svg.spk','clipx',70,120],
   /* KPI 달성 현황 — 도넛은 돌면서 호가 차오른다 */
-  ['#donuts .ring>svg','spin',70,0],
+  /* (v114.2) 링 전체를 돌리던 효과는 뺐다 — 호가 9시에서 출발하다 12시로 튀어 '두 번 도는' 것처럼 보였다 */
   /* 호는 끝이 둥근 모양 그대로 자라게 — 그릴 때와 같은 계산(capDash)으로 매 순간 길이를 정한다(v114.1).
      예전(CSS 로 dasharray 를 늘림)은 시작점에 둥근 점이 먼저 찍히고(붉은 페이스 호) 자라는 끝이 곧게 보였다 */
   ['#donuts .ring svg circle[data-axarc]','arc',70,60],
@@ -117,20 +117,23 @@ function axCount(el,root,delay,key){
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
   axTick();return true;}
 /* ---------- 둥근 끝 호 자라기 (KPI 도넛) ---------- */
-function axArc(el,root,delay){
+function axArc(el,root,delay,key){
   const v=(el.getAttribute('data-axarc')||'').split(',').map(Number);
   if(v.length<3||!v.every(isFinite)||typeof capDash!=='function')return;
   const [cir,f,TH]=v;
+  const f1=Math.min(f,1),f0=key&&AX_LAST.has(key)?AX_LAST.get(key):0;
+  if(key)AX_LAST.set(key,f1);
+  if(Math.abs(f0-f1)<1e-4)return false;    /* 같은 값으로 다시 그린 것 — 그대로 둔다 */
   const set=x=>{const a=capDash(cir,x,TH);
     el.setAttribute('stroke-dasharray',a['stroke-dasharray']);
     if(a['stroke-dashoffset']!=null)el.setAttribute('stroke-dashoffset',a['stroke-dashoffset']);else el.removeAttribute('stroke-dashoffset');
     el.setAttribute('stroke-linecap',a['stroke-linecap']);};
   /* 천천히 출발해 가속하다 부드럽게 멈춘다(호는 처음부터 빠르면 점이 툭 찍힌 것처럼 보인다) */
   const io=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-  const c={tn:el,root,delay,dur:1500,t0:0,apply:t=>set(Math.min(f,1)*io(t)),done:()=>set(f),raw:1};
-  set(0);AX_COUNTS.add(c);
+  const c={tn:el,root,delay,dur:f0?900:1500,t0:0,apply:t=>set(f0+(f1-f0)*io(t)),done:()=>set(f),raw:1};
+  set(f0);AX_COUNTS.add(c);
   if(!root.classList.contains('ax-wait'))c.t0=performance.now()+delay;
-  axTick();}
+  axTick();return true;}
 /* ---------- 변화량 배지 (v114) ----------
    필터 · 기간 등을 바꿔 숫자가 달라지면 숫자 옆에 지난 값 대비 ▲▼ 를 4초쯤 띄운다.
    % 로 끝나는 숫자(달성률 · 소진율 등)는 차이(%p), 나머지는 몇 % 늘고 줄었는지. 색은 좋고 나쁨이 아니라 방향만(단가는 오르면 나쁘다) */
@@ -191,7 +194,15 @@ function axScan(nodes){
       if(gap==='row'){const tr=el.closest('tr');d+=Math.min(900,(tr?tr.sectionRowIndex:0)*22);}
       else if(gap==='di'){const td=el.closest('td');d+=Math.min(700,(+(td&&td.dataset.di)||0)*9);}
       else d+=Math.min(1100,i*(gap||0));
-      if(kind==='arc'){axArc(el,r,d);return;}
+      if(kind==='arc'){
+        /* 같은 카드 · 같은 링이면 지난 값에서 이어서(다시 그려도 값이 같으면 움직이지 않는다) */
+        const card=el.closest('.donut'),hd=card&&card.querySelector('.dhd');
+        const arcs=card?[...card.querySelectorAll('circle[data-axarc]')]:[el];
+        const ok=axArc(el,r,d,(CAMPAIGN&&(CAMPAIGN.id||CAMPAIGN.name))+'|arc|'+(hd?hd.textContent.trim().slice(0,30):'')+'|'+arcs.indexOf(el));
+        if(card){card.__axArcSeen=1;if(ok)card.__axAnim=1;}
+        return;}
+      /* 도넛 호가 그대로면(같은 값으로 다시 그림) 글씨 · 페이스 점도 그대로 */
+      {const dn=el.closest&&el.closest('.donut');if(dn&&dn.__axArcSeen&&!dn.__axAnim&&(kind==='fade'||kind==='pop'))return;}
       if(kind==='count'){
         /* 지난 값을 찾는 열쇠 — 캠페인 · 자리 · 이름표(노출 · 클릭 …). 이름표가 없으면 순서 */
         const box=el.closest('.pline,.stat,.donut,.infk,.tvkpi,.ovk');

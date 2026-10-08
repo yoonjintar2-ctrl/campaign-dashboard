@@ -1,22 +1,98 @@
 <!-- ===== 접속 화면 — 공유 코드 입력 / 샘플 둘러보기 ===== -->
-<!-- 첫 화면 가림막 — 캠페인을 불러오는 동안 대시보드 모양의 빈 틀이 반짝인다 (v114 로딩 표시) -->
+<!-- 첫 화면 가림막 — 로딩 화면(v115): 회색 아이소메트릭 무대 위 그래프들 + 가운데 문구 -->
 <div id="boot" class="bootveil" aria-busy="true">
-  <div class="sk" aria-hidden="true">
-    <div class="sk-top"><i class="skb" style="width:128px"></i><i class="skb lt" style="width:230px"></i><span class="sk-sp"></span><i class="skb pill" style="width:84px"></i><i class="skb pill" style="width:96px"></i><i class="skb sq" style="width:30px"></i></div>
-    <div class="sk-tabs"><i class="skb pill" style="width:104px"></i><i class="skb pill" style="width:118px"></i><i class="skb pill" style="width:104px"></i><span class="sk-sp"></span><i class="skb pill" style="width:64px"></i><i class="skb pill" style="width:92px"></i><i class="skb pill" style="width:74px"></i></div>
-    <div class="sk-wrap">
-      <i class="skb sm" style="width:64px"></i>
-      <div class="sk-info"><i class="skb" style="width:22%"></i><i class="skb" style="width:11%"></i><i class="skb" style="width:19%"></i><i class="skb" style="width:15%"></i><i class="skb" style="width:15%"></i></div>
-      <div class="sk-h"><i class="skb h" style="width:150px"></i></div>
-      <div class="sk-card sk-pace"><i class="skb mid" style="width:34%"></i><div class="sk-prow"><i class="skb sm" style="width:70px"></i><i class="skb sk-bar" style="--w:86%"></i><i class="skb sm" style="width:54px"></i></div><div class="sk-prow"><i class="skb sm" style="width:70px"></i><i class="skb sk-bar" style="--w:72%"></i><i class="skb sm" style="width:54px"></i></div><div class="sk-prow"><i class="skb sm" style="width:70px"></i><i class="skb sk-bar" style="--w:94%"></i><i class="skb sm" style="width:54px"></i></div><div class="sk-prow"><i class="skb sm" style="width:70px"></i><i class="skb sk-bar" style="--w:63%"></i><i class="skb sm" style="width:54px"></i></div></div>
-      <div class="sk-h"><i class="skb h" style="width:96px"></i></div>
-      <div class="sk-row"><div class="sk-card sk-stat"><i class="skb sm" style="width:38%"></i><i class="skb lg" style="width:72%"></i><i class="skb sm" style="width:46%"></i><i class="skb sm" style="width:58%"></i><i class="skb sk-spark"></i></div><div class="sk-card sk-stat"><i class="skb sm" style="width:38%"></i><i class="skb lg" style="width:72%"></i><i class="skb sm" style="width:46%"></i><i class="skb sm" style="width:58%"></i><i class="skb sk-spark"></i></div><div class="sk-card sk-stat"><i class="skb sm" style="width:38%"></i><i class="skb lg" style="width:72%"></i><i class="skb sm" style="width:46%"></i><i class="skb sm" style="width:58%"></i><i class="skb sk-spark"></i></div><div class="sk-card sk-stat"><i class="skb sm" style="width:38%"></i><i class="skb lg" style="width:72%"></i><i class="skb sm" style="width:46%"></i><i class="skb sm" style="width:58%"></i><i class="skb sk-spark"></i></div><div class="sk-card sk-stat"><i class="skb sm" style="width:38%"></i><i class="skb lg" style="width:72%"></i><i class="skb sm" style="width:46%"></i><i class="skb sm" style="width:58%"></i><i class="skb sk-spark"></i></div></div>
-      <div class="sk-h"><i class="skb h" style="width:128px"></i></div>
-      <div class="sk-row"><div class="sk-card sk-don"><i class="skb sm" style="width:44%"></i><i class="skb sk-ring"></i><i class="skb sm" style="width:52%"></i></div><div class="sk-card sk-don"><i class="skb sm" style="width:44%"></i><i class="skb sk-ring"></i><i class="skb sm" style="width:52%"></i></div><div class="sk-card sk-don"><i class="skb sm" style="width:44%"></i><i class="skb sk-ring"></i><i class="skb sm" style="width:52%"></i></div><div class="sk-card sk-don"><i class="skb sm" style="width:44%"></i><i class="skb sk-ring"></i><i class="skb sm" style="width:52%"></i></div><div class="sk-card sk-don"><i class="skb sm" style="width:44%"></i><i class="skb sk-ring"></i><i class="skb sm" style="width:52%"></i></div></div>
+  <div class="ld" id="ld">
+    <div class="ld-stage" id="ldStage">
+      <div class="ld-floor" id="ldFloor"><div class="ld-plate"></div></div>
+    </div>
+    <div class="ld-msg" role="status" aria-live="polite">
+      <div class="ld-eyebrow">Media Dashboard</div>
+      <div class="ld-title">Loading dashboard<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <div class="ld-sub">Fetching your campaign data</div>
+      <div class="ld-bar"><i></i></div>
     </div>
   </div>
-  <div class="bootlogo">Media Dashboard</div>
 </div>
+<script>
+/* 로딩 화면 무대 위 물체 만들기 (v115) — 본 스크립트보다 먼저, 가림막이 보이는 동안 바로 돈다 */
+(function(){
+  const F=document.getElementById('ldFloor');if(!F)return;
+  const add=(html)=>{F.insertAdjacentHTML('beforeend',html);};
+  const box=(x,y,w,d,h,cls,style)=>`<div class="ldbx ${cls||''}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;--h:${h}px;${style||''}"><i class="l"></i><i class="f"></i><i class="t"></i></div>`;
+  const sh=(x,y,w,d)=>`<div class="ldsh" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px"></div>`;
+
+  /* 1) 소진 언덕 + CTR 꺾은선 벽 — 뒤쪽 왼편(y≈36 줄에 세운다) */
+  {const L=640,H=176,x0=150,y0=30;
+   const hillA='M0 176 L0 112 C60 88 110 120 170 98 S290 66 350 84 S470 120 530 76 S610 58 640 70 L640 176 Z';
+   const hillB='M0 176 L0 96 C60 120 120 80 180 92 S300 112 360 70 S480 92 540 98 S610 74 640 88 L640 176 Z';
+   const line='M10 52 C70 40 120 66 180 46 S300 30 360 56 S480 70 540 38 S610 34 632 42';
+   add(`<div class="ldwall" style="left:${x0}px;top:${y0-H}px;width:${L}px;height:${H}px">
+     <svg viewBox="0 0 ${L} ${H}" preserveAspectRatio="none">
+       <defs><linearGradient id="ldhg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd2d5"/><stop offset="1" stop-color="#eef0f1" stop-opacity=".3"/></linearGradient></defs>
+       <path fill="url(#ldhg)" d="${hillA}"><animate attributeName="d" dur="7s" repeatCount="indefinite" values="${hillA};${hillB};${hillA}" calcMode="spline" keySplines=".45 .05 .3 1;.45 .05 .3 1"/></path>
+       <path class="ldctr" pathLength="1" d="${line}"/>
+       <circle class="ldiss" cx="180" cy="46" r="7" style="--d:.9s"/><circle class="ldiss" cx="360" cy="56" r="7" style="--d:1.4s"/><circle class="ldiss" cx="540" cy="38" r="7" style="--d:1.9s"/>
+     </svg></div>`);}
+
+  /* 2) 일자별 3D 막대 — 벽 앞 한 줄 */
+  {const hs=[96,120,82,140,128,110,152,136,98,164,144,122,158];
+   hs.forEach((h,i)=>{const x=172+i*45,y=70;
+     add(sh(x-10,y+18,48,28));
+     add(box(x,y,26,26,h,'ldstk ldgbar',`--p:${(38+(i*7)%20)}%;--d:${(-i*.22).toFixed(2)}s`));});}
+
+  /* 3) 유입 흐름 벽 — 뒤쪽 오른편(x≈948 줄에 세운다) */
+  {const L=330,H=160,x0=948,y0=110;
+   const bands=[['M0 30 C110 30 160 60 330 54',22,'#c5c8cc'],['M0 70 C120 70 170 98 330 100',30,'#b2b6bb'],['M0 112 C130 112 180 64 330 66',16,'#d2d5d8'],['M0 138 C120 138 190 140 330 136',12,'#dcdee1']];
+   add(`<div class="ldwall ldr" style="left:${x0}px;top:${y0-H}px;width:${L}px;height:${H}px">
+     <svg viewBox="0 0 ${L} ${H}">
+       <rect x="0" y="0" width="${L}" height="${H}" rx="14" fill="#f3f4f5" stroke="#e1e3e5"/>
+       ${bands.map(([d,w,c],i)=>`<path class="ldflow" d="${d}" stroke="${c}" stroke-width="${w}"/><path class="ldflow ldpulse" d="${d}" stroke-width="${w}" style="--d:${-i*.8}s"/>`).join('')}
+       <rect x="0" y="16" width="8" height="134" rx="3" fill="#7c8085"/><rect x="${L-8}" y="34" width="8" height="112" rx="3" fill="#4d5257"/>
+     </svg></div>`);}
+
+  /* 4) KPI 도넛 두 개 — 떠 있는 두꺼운 고리 */
+  {const don=(cx,cy,S,len,d,lift)=>{
+     const r=S/2-16,C=2*Math.PI*r,layers=[0,3,6,9];
+     let h=`<div class="ldsh" style="left:${cx-S*.6}px;top:${cy-S*.5}px;width:${S*1.2}px;height:${S*1.2}px"></div>`;
+     h+=`<div class="lddon" style="left:${cx-S/2}px;top:${cy-S/2}px;width:${S}px;height:${S}px;transform-origin:50% 50%;animation-delay:${d}">`;
+     layers.forEach((z,k)=>{const top=k===layers.length-1;
+       h+=`<svg viewBox="0 0 ${S} ${S}" style="transform:translateZ(${lift+z}px)">
+         <circle cx="${S/2}" cy="${S/2}" r="${r}" fill="none" stroke="${top?'#eceef0':'#d6d9dc'}" stroke-width="22"/>
+         ${top?`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#55595e" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>
+         <circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="var(--pace)" stroke-width="9" style="--len:${(C*.08).toFixed(1)};--d:${d}" transform="rotate(${-90+360*len} ${S/2} ${S/2})"/>`
+         :`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#3a3e43" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>`}
+       </svg>`;});
+     return h+'</div>';};
+   add(don(796,252,200,.78,'0s',18));
+   add(don(424,604,118,.56,'-1.6s',10));}
+
+  /* 5) 진행 현황 막대 — 앞 왼편, 바닥에 누워 차오른다 */
+  {const LEN=290;[[466,0],[528,-.6],[590,-1.2]].forEach(([y,d],i)=>{
+     add(`<div class="ldtrk" style="left:40px;top:${y}px;width:${LEN}px;height:34px"></div>`);
+     add(box(40,y,LEN*(i===1?.86:i===2?.72:1),34,16,'ldslab',`--d:${d}s`));
+     add(`<div class="ldball ldpace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--ldz0:26px;--ldz1:34px;--d:${d}s"></div>`);});}
+
+  /* 6) 게재 히스토리 · 히트맵 칸 — 왼쪽 가운데 */
+  {const C=8,R=9;let h=`<div class="ldcells" style="left:40px;top:150px;width:${C*24}px;grid-template-columns:repeat(${C},20px);grid-auto-rows:20px">`;
+   for(let r=0;r<R;r++)for(let c=0;c<C;c++)h+=`<i style="--d:${((r+c)*.12).toFixed(2)}s"></i>`;
+   add(h+'</div>');}
+
+  /* 7) 지형도(트리맵) 블록 — 앞 가운데 */
+  {const X=590,Y=570,tiles=[[0,0,84,58,58],[84,0,52,58,44],[136,0,38,58,30],[0,58,58,50,38],[58,58,48,50,28],[106,58,34,50,22],[140,58,34,50,16]];
+   add(sh(X-20,Y-16,216,150));
+   tiles.forEach(([x,y,w,d,h],i)=>add(box(X+x,Y+y,w-4,d-4,h,'ldtm'+(i%3===1?' ldmd':''),`--d:${(-i*.4).toFixed(2)}s`)));}
+
+  /* 8) 버블 — 앞 오른편, 둥실둥실 */
+  {[[820,470,52,30,62,'0s'],[880,546,64,44,86,'-.8s'],[812,560,34,22,46,'-1.6s'],[896,450,38,36,66,'-2.2s']].forEach(([x,y,S,z0,z1,d])=>{
+     add(sh(x-S*.3,y-S*.1,S*1.3,S*.8));
+     add(`<div class="ldball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--ldz0:${z0}px;--ldz1:${z1}px;--d:${d}"></div>`);});}
+
+  /* 화면 크기에 맞춰 무대 크기 */
+  const fit=()=>{const k=Math.max(.46,Math.min(innerWidth/1320,innerHeight/900,1.25));
+    const st=document.getElementById('ldStage');if(st)st.style.setProperty('--k',k.toFixed(3));};
+  fit();addEventListener('resize',fit);
+})();
+</script>
 <div id="gate" class="gate">
   <div class="gatecard">
     <div class="glogo"><b>Media Dashboard</b></div>
