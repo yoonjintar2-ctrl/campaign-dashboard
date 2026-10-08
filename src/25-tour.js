@@ -539,6 +539,9 @@ function tuSpot(node){
   node.classList.add('hl');
   const fit=node.querySelector('.tu-fit'),src=fit&&fit.firstElementChild;if(!src)return;
   const hls=[...src.querySelectorAll('[data-tuhl]')];if(!hls.length)return;
+  /* 장면 들어오기 · 그래프 채우기가 아직 덜 끝났으면(느린 컴퓨터 · 뒤에 있던 탭) 끝 모습으로 맞춘 뒤 잰다 — 반복 효과는 그대로 */
+  try{node.getAnimations({subtree:true}).forEach(a=>{try{const it=a.effect&&a.effect.getTiming().iterations;if(it!==Infinity)a.finish();}catch(e){}});}catch(e){}
+  try{if(typeof axFinish==='function')axFinish(src);}catch(e){}
   /* 표 — 강조할 칸이 가려져 있으면 그쪽으로 부드럽게 옮긴 뒤 */
   const sc=tuScroller(hls[0],src);
   if(sc&&!node.__panned){
