@@ -450,10 +450,15 @@ const gateEl=()=>$('gate');
    그러지 않으면 내 캠페인을 불러오는 동안 예시 데이터가 잠깐 보인다. */
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 /* 가림막 걷기 — 화면이 실제로 그려진 다음 프레임에 */
-function startBoot(){try{document.body.classList.add('booting');}catch(e){}}
+/* (v118) 걷기는 0.25초 늦춘다 — 단계(계정 확인 → 목록 → 캠페인 열기) 사이에 잠깐 걷혔다 다시 덮이면
+   로딩 화면이 '끝났다가 처음부터 다시' 도는 것처럼 보였다. 그 사이 다시 덮으면(startBoot) 걷지 않는다 */
+let BOOT_END=0;
+function startBoot(){clearTimeout(BOOT_END);BOOT_END=0;try{document.body.classList.add('booting');}catch(e){}}
 function endBoot(){
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.body.classList.remove('booting');}));
+  clearTimeout(BOOT_END);
+  BOOT_END=setTimeout(()=>{BOOT_END=0;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(!BOOT_END)document.body.classList.remove('booting');}));},250);
 }
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
 /* 코드로 들어온 사람 —

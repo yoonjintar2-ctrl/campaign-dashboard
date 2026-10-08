@@ -1128,8 +1128,17 @@ function tuneTopbarForLogo(){
   im.src=url;
 }
 
-/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록) */
-setTimeout(()=>{try{document.body.classList.remove('booting');}catch(e){}},6000);
+/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록).
+   (v118) 다만 내 캠페인을 아직 불러오는 중이면(로그인 확인 · 목록 · 데이터 받기) 기다린다 — 최대 30초.
+   예전에는 6초가 넘으면 가림막이 걷혔다가 캠페인 열기가 다시 덮어, 로딩 화면이 처음부터 다시 도는 것처럼 보였다 */
+(function bootGuard(){
+  const t0=Date.now();
+  const busy=()=>{try{return typeof CLOUD!=='undefined'&&!!CLOUD&&!!(CLOUD.busy||(CLOUD.on&&CLOUD.user&&!CLOUD.campaign&&!CLOUD.shareView));}catch(e){return false;}};
+  const tick=()=>{try{
+    if(!document.body.classList.contains('booting'))return;
+    if(busy()&&Date.now()-t0<30000){setTimeout(tick,1500);return;}
+    document.body.classList.remove('booting');}catch(e){}};
+  setTimeout(tick,6000);})();
 
 /* =========================================================================
    표 머리글을 끌어서 열 순서 바꾸기 (일별 실적 입력 · 예상 효율)

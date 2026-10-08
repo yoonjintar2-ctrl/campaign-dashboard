@@ -101,7 +101,7 @@ function renderInflow(){
       ${kp(L('유입당 단가','Cost per IWV'),won(Math.round(infCpv(A))||0),L(`전체 소진 ${won(Math.round(A.cost))}`,`total spend ${won(Math.round(A.cost))}`))}
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(A)),isFinite(dw30Rate(A))?L(`30초 이상 ${pct(dw30Rate(A),1)}`,`${pct(dw30Rate(A),1)} stay 30s+`):'')}
     </div>
-    <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
+    <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Traffic flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
       <div id="infSankey"></div></div>
     <div class="infgrid${ldOK?' ld3':''}">
       <div class="infcell infmapc"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${ldOK?L('원 크기 = 유입','size = inflow'):L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span>
@@ -326,31 +326,43 @@ function infFlowDraw(host,M){
   const W=Math.max(Math.floor(box.clientWidth)||640,300),HM=infFlowHM(M),H=HM+INF_TOP*2+8;
   const P=infFlowLayout(M,v,W,HM);
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="sksvg">${P.links.map(infLinkSVG).join('')}${P.nodes.map(infNodeSVG).join('')}${P.labs}</svg>`;
-  infFlowSheen(box.querySelector('svg.sksvg'),W);
+  infFlowSheen(box.querySelector('svg.sksvg'),P.links);
   host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>infFlowGo(host,M,(INF.step==null?2:INF.step)+(+b.dataset.go)));
   host.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>infFlowGo(host,M,+b.dataset.step));
   infFlowWire(host,M,v);}
-/* 흐르는 물결 (v114.1) — 띠 위로 옅은 빛줄기가 왼쪽에서 오른쪽으로 계속 흘러간다(유입이 들어오는 중).
-   띠 모양을 그대로 본뜬 덧칠 층에, 반복되는 흰 빛줄기 그라데이션을 깔고 그 그라데이션을 오른쪽으로 민다.
-   마우스로 띠를 고르면 덧칠도 같이 흐려진다(hl). 그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip) */
-let INF_FLOWID=0;
-function infFlowSheen(svg,W){
-  if(!svg)return;
+/* 흐르는 물결 (v118) — 띠마다 안쪽에 가는 물줄기 2~4개가 띠의 곡선을 따라 흘러간다.
+   물줄기는 띠 위 · 아래 가장자리 곡선을 같은 비율로 섞은 곡선이라 늘 띠 안에 있고, 띠가 기울면 같이 기울어 흐른다.
+   띠마다 · 물줄기마다 속도 · 간격이 조금씩 달라 한꺼번에 같은 속도로 미끄러지지 않는다(이탈 띠는 흐르지 않음).
+   가볍게 — 가는 점선의 dashoffset 만 움직이고, 화면 밖이면 멈춘다. 마우스로 띠를 고르면 같이 흐려진다(.skfl).
+   그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip). (v114.1 의 '같은 속도로 오른쪽으로 미는 빛줄기'는 뺐다) */
+let INF_FLOWID=0,INF_WIO=null;
+function infFlowSheen(svg,links){
+  if(!svg||!links||!links.length)return;
   let off=false;
   try{off=typeof axOff==='function'?axOff():matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
   if(off)return;
-  const links=[...svg.querySelectorAll('path.sklink')];if(!links.length)return;
-  const NS='http://www.w3.org/2000/svg',P=Math.max(150,Math.round(W*.26)),id='skfg'+(++INF_FLOWID);
-  let defs=svg.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');svg.insertBefore(defs,svg.firstChild);}
-  defs.insertAdjacentHTML('beforeend',`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${P}" y2="0" spreadMethod="repeat">
-    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".28" stop-color="#fff" stop-opacity="0"/>
-    <stop offset=".5" stop-color="#fff" stop-opacity=".34"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/>
-    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="${P} 0" dur="3.4s" repeatCount="indefinite"/></linearGradient>`);
+  const NS='http://www.w3.org/2000/svg',salt=(++INF_FLOWID)*131;
+  const rnd=n=>{const x=Math.sin(n*12.9898+salt*.731)*43758.5453;return x-Math.floor(x);};
+  let out='';
+  links.forEach((l,k)=>{
+    if(/\bpd\b/.test(l.cls))return;
+    const h=Math.max(l.ha,l.hb);if(!(h>=2.5))return;
+    const fs=h<7?[.5]:h<22?[.33,.67]:h<60?[.22,.5,.78]:[.17,.39,.61,.83];
+    const cx=(l.xa+l.xb)/2,base=26+rnd(k)*16;
+    fs.forEach((f,q)=>{
+      const y0=l.ya+l.ha*f,y1=l.yb+l.hb*f,r=rnd(k*7+q+1);
+      const dash=Math.round(8+r*12),gap=Math.round(60+rnd(k*13+q)*70),P=dash+gap;
+      const sp=base*(.78+r*.44),dur=(P/sp).toFixed(2),dl=(-rnd(k*3+q*5)*P/sp).toFixed(2);
+      out+=`<path class="skfl skw" d="M${l.xa},${y0.toFixed(1)} C${cx},${y0.toFixed(1)} ${cx},${y1.toFixed(1)} ${l.xb},${y1.toFixed(1)}"`
+        +` stroke-dasharray="${dash} ${gap}" style="--p:${P}px;--dur:${dur}s;--dl:${dl}s"${infAt(l.at)}></path>`;});});
+  if(!out)return;
   const g=document.createElementNS(NS,'g');g.setAttribute('class','skflow ccskip');g.setAttribute('pointer-events','none');
-  links.forEach(l=>{const c=l.cloneNode(false);c.setAttribute('class','skfl');c.removeAttribute('style');
-    c.setAttribute('fill',`url(#${id})`);g.appendChild(c);});
-  links[links.length-1].after(g);}
+  g.innerHTML=out;
+  const last=[...svg.querySelectorAll('path.sklink')].pop();
+  if(last)last.after(g);else svg.appendChild(g);
+  /* 화면 밖이면 멈춘다 */
+  try{if(!INF_WIO)INF_WIO=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle('skpause',!e.isIntersecting)));
+    INF_WIO.observe(svg);}catch(e){}}
 /* 단계 넘기기 — 두 그래프에 함께 있는 마디는 자리 · 크기를 바꾸며 옮겨 가고,
    나머지는 넘기는 방향으로 밀려 나가며 흐려진다 / 반대쪽에서 들어오며 진해진다. 두 칸 건너뛰면 한 칸씩 이어서 */
 function infFlowGo(host,M,to){
@@ -498,7 +510,7 @@ function infDwell(host,rows0){
       return `<div class="dwrow" data-i="${i}">
         <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
         <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}"><em>${pct(s.v/n,0)}</em></i>`).join('')}</div>
-        <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+        <div class="dwr"><b class="mono"><i class="avgk">${L('평균','avg')}</i>${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
   if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
     host.innerHTML=`<div class="infdw sg">${grp.map(x=>`<div class="dwgrp"><div class="dwsegc"><b>${esc(infSegLab(x.s))}</b></div>
@@ -542,7 +554,7 @@ function infLandDwell(host,rows0){
       <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b></div>
       <div class="ldbar">${segs.map(s=>{const p=s.v/n;
         return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
-      <div class="ldavg"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+      <div class="ldavg"><i class="avgk">${L('평균 체류','avg time')}</i><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`

@@ -148,7 +148,7 @@ Object.assign(I18N_EN,{
   "클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다":"Show clicks that didn't become IWV as hatched bands in the flow",
   "IWV(인터랙팅 방문)":"IWV (interacting visits)",
   "— 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다. 매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.":"— site visits that viewed 2+ pages, used a feature, or stayed 20s+. This section links clicks from media reports with visits from site analytics (Adobe Analytics etc.).",
-  "유입 흐름":"Inflow flow",
+  "유입 흐름":"Traffic flow",
   "— 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.":"— band width shows how clicks on the left (media · product · creative) flowed to landing pages on the right (IWV by entry page). IWV (All) without a landing breakdown is ‘other landing’; clicks that didn't become IWV are the hatched ‘dropped’ band.",
   "유입 효율 지도":"Inflow efficiency map",
   "— 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입당 단가(소진금액 ÷ IWV)가 쌉니다. 점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.":"— further right = higher inflow rate (IWV ÷ clicks); higher up = lower cost per IWV (spend ÷ IWV). Dashed lines are the overall average, so the top-right quadrant is the most efficient. Circle size = IWV.",
@@ -211,6 +211,8 @@ Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill beh
 Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
 /* v114 */
 Object.assign(I18N_EN,{"영역 바로가기":"Jump to section"});
+/* v118 */
+Object.assign(I18N_EN,{"비교":"comparison","효율 비교":"performance comparison"});
 /* v116 — 데이터 투어 */
 Object.assign(I18N_EN,{"데이터 투어":"Data tour",
   "서머리 그래프를 한 장씩 전체 화면으로 보여 주는 발표 모드 · 마지막에 PPT 로 저장할 수 있습니다":"Presentation mode — summary charts one at a time, full screen · save as PPT at the end"});
@@ -273,6 +275,15 @@ const I18N_RULES=[
   [/^(\d+)주차$/,(m,a)=>'Week '+a],
   /* 영어로 적힌 소계 꼬리표 앞의 이름(매체명 등)도 사전에 있으면 옮긴다 */
   [/^(.+?) (Sub Total|subtotal|Subtotal)$/,(m,a,t)=>trText(a,false,1)+' '+t]];
+/* v118 — 서머리 이름처럼 사용자가 지은 "○○별 … 효율 (비교)" 를 영어로 (영역 바로가기 · 서머리 제목) */
+{const DIMS={'매체':'media','광고상품':'product','상품':'product','소재':'creative','구분':'segment','타겟팅 그룹':'targeting group',
+   '타겟팅':'targeting','랜딩 페이지':'landing page','랜딩':'landing page','요일':'day of week','일자':'date','캠페인':'campaign'};
+ const RE_D='(매체|광고상품|상품|소재|구분|타겟팅 그룹|타겟팅|랜딩 페이지|랜딩|요일|일자|캠페인)';
+ I18N_RULES.push(
+  [new RegExp('^'+RE_D+'별\\s*효율(?:\\s*비교)?$'),(m,d)=>'Performance by '+DIMS[d]],
+  [new RegExp('^'+RE_D+'별\\s+(.+?)\\s*효율(?:\\s*비교)?$'),(m,d,x)=>{const t=trText(x,true,1);
+    return I18N_HANGUL.test(t)?m:t+' performance by '+DIMS[d];}]);}
+
 /* 큰 수 줄여 쓰기 — 8,644만 → 86.4M · 400만 → 4M · 1.2억 → 120M */
 function i18nShort(v){
   if(!isFinite(v))return String(v);

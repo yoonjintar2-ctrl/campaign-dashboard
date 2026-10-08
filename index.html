@@ -137,17 +137,18 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .ld{--floor:#f8f9f9;--grid:#e6e8ea;--ink:#24262a;--ink2:#61656b;--muted:#909499;
   --t1:#fdfdfd;--f1:#e3e5e8;--l1:#d1d4d8;--t2:#c3c6c9;--f2:#a4a8ac;--l2:#8f9398;--ldpaceC:#96635e;--ldpaceL:#c2a5a2;
   font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink)}
-/* ===== 무대 ===== */
-@property --ldrx{syntax:'<angle>';inherits:true;initial-value:57deg}
-@property --ldrz{syntax:'<angle>';inherits:true;initial-value:-42deg}
-@property --ldz{syntax:'<length>';inherits:false;initial-value:0px}
+/* ===== 무대 =====
+   (v118) 움직임은 모두 transform · opacity 로 — 화면 합성기(GPU)가 따로 돌려, 캠페인 데이터를 처리하느라 메인 스레드가
+   바쁜 순간에도 끊기지 않는다. 예전에는 바닥 각도 · 공 높이를 CSS 변수(@property)로 움직여 매 프레임 메인 스레드에서
+   무대 전체 스타일을 다시 계산했고, 데이터를 받는 순간 '살짝 끊겼다' */
 .ld{position:absolute;inset:0;overflow:hidden;
   background:radial-gradient(ellipse 70% 60% at 50% 46%,#f7f8f8 0%,#eef0f1 70%)}
 .ld-stage{position:absolute;left:50%;top:50%;width:0;height:0;perspective:2200px;transform:scale(var(--k,1))}
 .ld-floor{position:absolute;left:-490px;top:-340px;width:980px;height:680px;transform-style:preserve-3d;
-  transform:translateY(6px) rotateX(var(--ldrx)) rotateZ(var(--ldrz));
+  transform:translateY(6px) rotateX(58deg) rotateZ(-47deg);
   animation:ldSway 18s ease-in-out infinite alternate}
-@keyframes ldSway{0%{--ldrx:58deg;--ldrz:-47deg}50%{--ldrx:54deg;--ldrz:-40deg}100%{--ldrx:59deg;--ldrz:-33deg}}
+@keyframes ldSway{0%{transform:translateY(6px) rotateX(58deg) rotateZ(-47deg)}50%{transform:translateY(6px) rotateX(54deg) rotateZ(-40deg)}
+  100%{transform:translateY(6px) rotateX(59deg) rotateZ(-33deg)}}
 .ld-plate{position:absolute;inset:0;border-radius:30px;background:
   linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
   linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--floor);
@@ -202,18 +203,26 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .ldslab>.t{background:linear-gradient(90deg,#b9bdc1 0 46%,#fff 46% 46.6%,#c9cccf 46.6% 71%,#fff 71% 71.6%,#d6d8db 71.6% 86%,#fff 86% 86.6%,#e1e3e5 86.6%)}
 .ldslab>.f{background:linear-gradient(90deg,#a2a6ab 0 46%,#b4b8bc 46% 71%,#c2c5c9 71% 86%,#ced1d4 86%)}
 
-/* 공(버블 · 페이스 점) — 늘 보는 사람을 향하도록 바닥 회전을 되돌린다 */
-.ldball{position:absolute;border-radius:50%;
-  transform:translateZ(var(--ldz)) rotateZ(calc(-1*var(--ldrz))) rotateX(calc(-1*var(--ldrx)));transform-origin:50% 100%;
-  background:radial-gradient(circle at 34% 30%,#fff 0,#e6e8ea 32%,#b7bbc0 72%,#9a9fa5 100%);
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset;animation:ldBob 3.2s ease-in-out infinite alternate;animation-delay:var(--d)}
-.ldball.ldpace{background:radial-gradient(circle at 34% 30%,#fff 0,var(--ldpaceL) 40%,var(--ldpaceC) 100%);animation-duration:1.6s}
-@keyframes ldBob{from{--ldz:var(--ldz0)}to{--ldz:var(--ldz1)}}
+/* 공(버블 · 페이스 점) — 바깥은 위아래로 둥실, 안쪽 공은 바닥 회전을 그대로 되돌려 늘 보는 사람을 향한다
+   (바닥과 같은 18초 · 같은 곡선 · 같은 방향이라 매 순간 정확히 맞물린다) */
+.ldball{position:absolute;transform-style:preserve-3d;transform:translateZ(var(--ldz0));
+  animation:ldBob 3.2s ease-in-out infinite alternate;animation-delay:var(--d)}
+.ldball>i{position:absolute;inset:0;display:block;border-radius:50%;transform-origin:50% 100%;
+  transform:rotateZ(47deg) rotateX(-58deg);animation:ldFace 18s ease-in-out infinite alternate;
+  background:radial-gradient(circle at 34% 30%,#fff 0,#e6e8ea 32%,#b7bbc0 72%,#9a9fa5 100%);box-shadow:0 1px 0 rgba(255,255,255,.6) inset}
+.ldball.ldpace{animation-duration:1.6s}
+.ldball.ldpace>i{background:radial-gradient(circle at 34% 30%,#fff 0,var(--ldpaceL) 40%,var(--ldpaceC) 100%)}
+@keyframes ldBob{from{transform:translateZ(var(--ldz0))}to{transform:translateZ(var(--ldz1))}}
+@keyframes ldFace{0%{transform:rotateZ(47deg) rotateX(-58deg)}50%{transform:rotateZ(40deg) rotateX(-54deg)}100%{transform:rotateZ(33deg) rotateX(-59deg)}}
 
 /* 게재 히스토리 · 히트맵 칸 — 대각선으로 물결 */
 .ldcells{position:absolute;display:grid;gap:4px;transform-style:preserve-3d}
-.ldcells>i{display:block;border-radius:3px;background:#e7e9eb;animation:ldCell 3s ease-in-out infinite;animation-delay:var(--d)}
-@keyframes ldCell{0%,100%{background:#e7e9eb;transform:translateZ(0)}40%{background:#9da2a8;transform:translateZ(10px)}}
+.ldcells>i{position:relative;display:block;border-radius:3px;background:#e7e9eb;animation:ldCell 3s ease-in-out infinite;animation-delay:var(--d)}
+/* 색은 덧칠 층의 투명도로(배경색을 매 프레임 다시 칠하지 않게) */
+.ldcells>i::after{content:'';position:absolute;inset:0;border-radius:inherit;background:#9da2a8;opacity:0;
+  animation:ldCellC 3s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes ldCell{0%,100%{transform:translateZ(0)}40%{transform:translateZ(10px)}}
+@keyframes ldCellC{0%,100%{opacity:0}40%{opacity:1}}
 
 /* 지형도 블록 — 차례로 솟았다 내려온다 */
 .ldtm{animation:ldTm 3.8s cubic-bezier(.45,.05,.3,1) infinite;animation-delay:var(--d)}
@@ -221,8 +230,7 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 
 /* ===== 가운데 문구 ===== */
 .ld-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;text-align:center;
-  padding:22px 34px 20px;border-radius:22px;background:rgba(248,249,249,.78);
-  backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);
+  padding:22px 34px 20px;border-radius:22px;background:rgba(248,249,249,.9);
   box-shadow:0 18px 50px rgba(40,46,54,.12),0 0 0 1px rgba(255,255,255,.9) inset,0 0 0 1px rgba(40,46,54,.05)}
 .ld-eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
 .ld-title{margin-top:6px;font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--ink);white-space:nowrap}
@@ -232,15 +240,15 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 @keyframes ldDot{0%,60%,100%{opacity:.18;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .ld-sub{margin-top:6px;font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap}
 .ld-bar{position:relative;margin:16px auto 0;width:180px;height:4px;border-radius:99px;background:#e1e3e5;overflow:hidden}
-.ld-bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:99px;background:linear-gradient(90deg,#9da2a8,var(--ink));
-  animation:ldBar 1.6s cubic-bezier(.65,0,.35,1) infinite}
-@keyframes ldBar{from{left:-40%}to{left:100%}}
+.ld-bar i{position:absolute;top:0;bottom:0;left:0;width:40%;border-radius:99px;background:linear-gradient(90deg,#9da2a8,var(--ink));
+  transform:translateX(-100%);animation:ldBar 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes ldBar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 
 @media (max-width:560px){.ld-title{font-size:23px}.ld-sub{font-size:12px}.ld-msg{padding:16px 22px 15px}}
-@media (prefers-reduced-motion:reduce){.ld *,.ld-floor{animation:none!important}.ldctr{stroke-dashoffset:0}.lddon .ldarc{stroke-dasharray:var(--len) 1000}.ldiss{transform:none}}
+@media (prefers-reduced-motion:reduce){.ld *,.ld *::after,.ld-floor{animation:none!important}.ldctr{stroke-dashoffset:0}.lddon .ldarc{stroke-dasharray:var(--len) 1000}.ldiss{transform:none}}
 
 /* 가림막이 걷히면 무대의 움직임도 멈춘다(보이지 않는데 계속 돌지 않게) */
-body:not(.booting) .bootveil .ld,body:not(.booting) .bootveil .ld *{animation-play-state:paused!important}
+body:not(.booting) .bootveil .ld,body:not(.booting) .bootveil .ld *,body:not(.booting) .bootveil .ld *::after{animation-play-state:paused!important}
 
 @keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
 body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
@@ -1605,20 +1613,29 @@ body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
 
 /* 유입 흐름 물결(v114.1) — 덧칠 층은 띠가 흐려질 때 같이 흐려진다 */
 .skfl{transition:opacity .12s}.skfl.dim{opacity:.13}
+/* 유입 흐름 물줄기 (v118) — 18-inflow infFlowSheen */
+.skw{fill:none;stroke:#fff;stroke-opacity:.8;stroke-width:1.7;stroke-linecap:round;
+  animation:skWave var(--dur,4s) linear infinite;animation-delay:var(--dl,0s)}
+@keyframes skWave{to{stroke-dashoffset:calc(-1 * var(--p,120px))}}
+.skpause .skw{animation-play-state:paused}
+[data-theme="dark"] .skw{stroke-opacity:.42}
+@media (prefers-reduced-motion:reduce){.skw{display:none}}
+@media print{.skw{display:none}}
 body.pssave .ccskip{display:none!important}
 @media print{.ccskip{display:none!important}}
 /* ===== 영역 바로가기 — v114 (24-secnav.js) =====
    오른쪽 가장자리 점 목록. 마우스를 올리면 이름이 펼쳐진다 · 지금 영역은 길쭉한 점 */
-.secnav{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
-  align-items:flex-end;gap:2px;padding:8px 4px;border-radius:14px;transition:background .2s,box-shadow .2s}
+/* (v118) 왼쪽 가장자리로 — 마우스를 오른쪽에 두고 쓰면 겹쳤다. 점이 왼쪽, 이름은 오른쪽으로 펼쳐진다 */
+.secnav{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
+  align-items:flex-start;gap:2px;padding:8px 4px;border-radius:14px;transition:background .2s,box-shadow .2s}
 .secnav.on{display:flex}
-.secnav button{display:flex;align-items:center;justify-content:flex-end;gap:10px;border:0;background:none;cursor:pointer;
+.secnav button{display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-end;gap:10px;border:0;background:none;cursor:pointer;
   padding:4px 4px;font-family:inherit;color:var(--ink2)}
 .secnav button i{flex:none;display:block;width:7px;height:7px;border-radius:99px;background:var(--gline);
   transition:height .28s cubic-bezier(.2,.9,.3,1.25),background .2s,transform .2s}
 .secnav button:hover i{background:var(--ink2);transform:scale(1.25)}
 .secnav button.cur i{height:20px;background:var(--ink)}
-.secnav .snl{font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:-.2px;opacity:0;transform:translateX(8px);
+.secnav .snl{font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:-.2px;opacity:0;transform:translateX(-8px);
   pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.2);max-width:240px;overflow:hidden;text-overflow:ellipsis}
 .secnav button.cur .snl{color:var(--ink);font-weight:800}
 .secnav:hover{background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 10px 30px rgba(20,24,30,.14),0 1px 3px rgba(20,24,30,.08);
@@ -3076,6 +3093,10 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
 .dwr b{font-size:13px;font-weight:800;color:var(--ink)}
 .dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+/* (v118) 오른쪽 숫자가 평균이라는 표시 */
+.avgk{font-style:normal;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.01em}
+.dwr .avgk{margin-right:4px;vertical-align:1px}
+.ldavg .avgk{display:block;margin-bottom:1px;white-space:nowrap}
 .infh .infcfg{margin-left:auto}
 #infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
@@ -3231,7 +3252,7 @@ html.tu-on .secnav{display:none!important}
 .tu-cover .tu-sub{font-size:clamp(15px,1.35vw,24px)}
 .tu-stage{position:absolute;left:4.5vw;right:4.5vw;top:240px;bottom:5vh;display:flex;align-items:flex-start;justify-content:center;perspective:1700px;z-index:1}
 .tu-cover .tu-stage,.tu-end .tu-stage{align-items:flex-start}
-.tu-par{transform-style:preserve-3d;transition:transform .7s cubic-bezier(.22,1,.36,1)}
+.tu-par{position:relative}
 .tu-in{position:relative;transform-origin:50% 100%}
 .tu-in::after{content:'';position:absolute;left:7%;right:7%;bottom:-30px;height:40px;border-radius:50%;z-index:-1;pointer-events:none;
   background:radial-gradient(closest-side,rgba(20,26,34,.15),rgba(20,26,34,0))}
@@ -3390,7 +3411,7 @@ html.tu-on .secnav{display:none!important}
   {const LEN=290;[[466,0],[528,-.6],[590,-1.2]].forEach(([y,d],i)=>{
      add(`<div class="ldtrk" style="left:40px;top:${y}px;width:${LEN}px;height:34px"></div>`);
      add(box(40,y,LEN*(i===1?.86:i===2?.72:1),34,16,'ldslab',`--d:${d}s`));
-     add(`<div class="ldball ldpace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--ldz0:26px;--ldz1:34px;--d:${d}s"></div>`);});}
+     add(`<div class="ldball ldpace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--ldz0:26px;--ldz1:34px;--d:${d}s"><i></i></div>`);});}
 
   /* 6) 게재 히스토리 · 히트맵 칸 — 왼쪽 가운데 */
   {const C=8,R=9;let h=`<div class="ldcells" style="left:40px;top:150px;width:${C*24}px;grid-template-columns:repeat(${C},20px);grid-auto-rows:20px">`;
@@ -3405,7 +3426,7 @@ html.tu-on .secnav{display:none!important}
   /* 8) 버블 — 앞 오른편, 둥실둥실 */
   {[[820,470,52,30,62,'0s'],[880,546,64,44,86,'-.8s'],[812,560,34,22,46,'-1.6s'],[896,450,38,36,66,'-2.2s']].forEach(([x,y,S,z0,z1,d])=>{
      add(sh(x-S*.3,y-S*.1,S*1.3,S*.8));
-     add(`<div class="ldball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--ldz0:${z0}px;--ldz1:${z1}px;--d:${d}"></div>`);});}
+     add(`<div class="ldball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--ldz0:${z0}px;--ldz1:${z1}px;--d:${d}"><i></i></div>`);});}
 
   /* 화면 크기에 맞춰 무대 크기 */
   const fit=()=>{const k=Math.max(.46,Math.min(innerWidth/1320,innerHeight/900,1.25));
@@ -13301,10 +13322,15 @@ const gateEl=()=>$('gate');
    그러지 않으면 내 캠페인을 불러오는 동안 예시 데이터가 잠깐 보인다. */
 function hideGate(){const g=gateEl();if(g)g.classList.add('hidden');}
 /* 가림막 걷기 — 화면이 실제로 그려진 다음 프레임에 */
-function startBoot(){try{document.body.classList.add('booting');}catch(e){}}
+/* (v118) 걷기는 0.25초 늦춘다 — 단계(계정 확인 → 목록 → 캠페인 열기) 사이에 잠깐 걷혔다 다시 덮이면
+   로딩 화면이 '끝났다가 처음부터 다시' 도는 것처럼 보였다. 그 사이 다시 덮으면(startBoot) 걷지 않는다 */
+let BOOT_END=0;
+function startBoot(){clearTimeout(BOOT_END);BOOT_END=0;try{document.body.classList.add('booting');}catch(e){}}
 function endBoot(){
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.body.classList.remove('booting');}));
+  clearTimeout(BOOT_END);
+  BOOT_END=setTimeout(()=>{BOOT_END=0;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(!BOOT_END)document.body.classList.remove('booting');}));},250);
 }
 function gateMsg(t,ok){const m=$('gateMsg');if(!m)return;m.textContent=t||'';m.classList.toggle('ok',!!ok);}
 /* 코드로 들어온 사람 —
@@ -16962,8 +16988,17 @@ function tuneTopbarForLogo(){
   im.src=url;
 }
 
-/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록) */
-setTimeout(()=>{try{document.body.classList.remove('booting');}catch(e){}},6000);
+/* 어떤 이유로든 부팅이 끝나지 않으면 6초 뒤 가림막을 걷는다 (화면이 영영 비어 있지 않도록).
+   (v118) 다만 내 캠페인을 아직 불러오는 중이면(로그인 확인 · 목록 · 데이터 받기) 기다린다 — 최대 30초.
+   예전에는 6초가 넘으면 가림막이 걷혔다가 캠페인 열기가 다시 덮어, 로딩 화면이 처음부터 다시 도는 것처럼 보였다 */
+(function bootGuard(){
+  const t0=Date.now();
+  const busy=()=>{try{return typeof CLOUD!=='undefined'&&!!CLOUD&&!!(CLOUD.busy||(CLOUD.on&&CLOUD.user&&!CLOUD.campaign&&!CLOUD.shareView));}catch(e){return false;}};
+  const tick=()=>{try{
+    if(!document.body.classList.contains('booting'))return;
+    if(busy()&&Date.now()-t0<30000){setTimeout(tick,1500);return;}
+    document.body.classList.remove('booting');}catch(e){}};
+  setTimeout(tick,6000);})();
 
 /* =========================================================================
    표 머리글을 끌어서 열 순서 바꾸기 (일별 실적 입력 · 예상 효율)
@@ -20461,7 +20496,7 @@ function renderInflow(){
       ${kp(L('유입당 단가','Cost per IWV'),won(Math.round(infCpv(A))||0),L(`전체 소진 ${won(Math.round(A.cost))}`,`total spend ${won(Math.round(A.cost))}`))}
       ${kp(L('평균 체류시간','Avg. time on site'),fmtDur(dwAvg(A)),isFinite(dw30Rate(A))?L(`30초 이상 ${pct(dw30Rate(A),1)}`,`${pct(dw30Rate(A),1)} stay 30s+`):'')}
     </div>
-    <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Inflow flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
+    <div class="infcell infflow"><div class="infh"><b>${L('유입 흐름','Traffic flow')}</b><span>${L('‹ › 로 노출 → 클릭 · 클릭 → 유입 단계도 넘겨 볼 수 있어요 · 매체 색 = 다음 단계로 넘어간 몫 · 회색 = 이탈 · 마우스를 올리면 잔존율','‹ › to step through impressions → clicks → inflow · media color = carried on · gray = dropped · hover for retention')}</span></div>
       <div id="infSankey"></div></div>
     <div class="infgrid${ldOK?' ld3':''}">
       <div class="infcell infmapc"><div class="infh"><b>${L('유입 효율 지도','Inflow efficiency map')}</b><span>${ldOK?L('원 크기 = 유입','size = inflow'):L('위 = 유입률 높음 · 오른쪽 = 비용 효율 좋음 · 원 크기 = 유입','up = higher inflow rate · right = more cost-efficient · size = inflow')}</span>
@@ -20686,31 +20721,43 @@ function infFlowDraw(host,M){
   const W=Math.max(Math.floor(box.clientWidth)||640,300),HM=infFlowHM(M),H=HM+INF_TOP*2+8;
   const P=infFlowLayout(M,v,W,HM);
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="sksvg">${P.links.map(infLinkSVG).join('')}${P.nodes.map(infNodeSVG).join('')}${P.labs}</svg>`;
-  infFlowSheen(box.querySelector('svg.sksvg'),W);
+  infFlowSheen(box.querySelector('svg.sksvg'),P.links);
   host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>infFlowGo(host,M,(INF.step==null?2:INF.step)+(+b.dataset.go)));
   host.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>infFlowGo(host,M,+b.dataset.step));
   infFlowWire(host,M,v);}
-/* 흐르는 물결 (v114.1) — 띠 위로 옅은 빛줄기가 왼쪽에서 오른쪽으로 계속 흘러간다(유입이 들어오는 중).
-   띠 모양을 그대로 본뜬 덧칠 층에, 반복되는 흰 빛줄기 그라데이션을 깔고 그 그라데이션을 오른쪽으로 민다.
-   마우스로 띠를 고르면 덧칠도 같이 흐려진다(hl). 그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip) */
-let INF_FLOWID=0;
-function infFlowSheen(svg,W){
-  if(!svg)return;
+/* 흐르는 물결 (v118) — 띠마다 안쪽에 가는 물줄기 2~4개가 띠의 곡선을 따라 흘러간다.
+   물줄기는 띠 위 · 아래 가장자리 곡선을 같은 비율로 섞은 곡선이라 늘 띠 안에 있고, 띠가 기울면 같이 기울어 흐른다.
+   띠마다 · 물줄기마다 속도 · 간격이 조금씩 달라 한꺼번에 같은 속도로 미끄러지지 않는다(이탈 띠는 흐르지 않음).
+   가볍게 — 가는 점선의 dashoffset 만 움직이고, 화면 밖이면 멈춘다. 마우스로 띠를 고르면 같이 흐려진다(.skfl).
+   그림 복사 · 페이지 저장 · 인쇄에는 안 찍힌다(.ccskip). (v114.1 의 '같은 속도로 오른쪽으로 미는 빛줄기'는 뺐다) */
+let INF_FLOWID=0,INF_WIO=null;
+function infFlowSheen(svg,links){
+  if(!svg||!links||!links.length)return;
   let off=false;
   try{off=typeof axOff==='function'?axOff():matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
   if(off)return;
-  const links=[...svg.querySelectorAll('path.sklink')];if(!links.length)return;
-  const NS='http://www.w3.org/2000/svg',P=Math.max(150,Math.round(W*.26)),id='skfg'+(++INF_FLOWID);
-  let defs=svg.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');svg.insertBefore(defs,svg.firstChild);}
-  defs.insertAdjacentHTML('beforeend',`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${P}" y2="0" spreadMethod="repeat">
-    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".28" stop-color="#fff" stop-opacity="0"/>
-    <stop offset=".5" stop-color="#fff" stop-opacity=".34"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/>
-    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="${P} 0" dur="3.4s" repeatCount="indefinite"/></linearGradient>`);
+  const NS='http://www.w3.org/2000/svg',salt=(++INF_FLOWID)*131;
+  const rnd=n=>{const x=Math.sin(n*12.9898+salt*.731)*43758.5453;return x-Math.floor(x);};
+  let out='';
+  links.forEach((l,k)=>{
+    if(/\bpd\b/.test(l.cls))return;
+    const h=Math.max(l.ha,l.hb);if(!(h>=2.5))return;
+    const fs=h<7?[.5]:h<22?[.33,.67]:h<60?[.22,.5,.78]:[.17,.39,.61,.83];
+    const cx=(l.xa+l.xb)/2,base=26+rnd(k)*16;
+    fs.forEach((f,q)=>{
+      const y0=l.ya+l.ha*f,y1=l.yb+l.hb*f,r=rnd(k*7+q+1);
+      const dash=Math.round(8+r*12),gap=Math.round(60+rnd(k*13+q)*70),P=dash+gap;
+      const sp=base*(.78+r*.44),dur=(P/sp).toFixed(2),dl=(-rnd(k*3+q*5)*P/sp).toFixed(2);
+      out+=`<path class="skfl skw" d="M${l.xa},${y0.toFixed(1)} C${cx},${y0.toFixed(1)} ${cx},${y1.toFixed(1)} ${l.xb},${y1.toFixed(1)}"`
+        +` stroke-dasharray="${dash} ${gap}" style="--p:${P}px;--dur:${dur}s;--dl:${dl}s"${infAt(l.at)}></path>`;});});
+  if(!out)return;
   const g=document.createElementNS(NS,'g');g.setAttribute('class','skflow ccskip');g.setAttribute('pointer-events','none');
-  links.forEach(l=>{const c=l.cloneNode(false);c.setAttribute('class','skfl');c.removeAttribute('style');
-    c.setAttribute('fill',`url(#${id})`);g.appendChild(c);});
-  links[links.length-1].after(g);}
+  g.innerHTML=out;
+  const last=[...svg.querySelectorAll('path.sklink')].pop();
+  if(last)last.after(g);else svg.appendChild(g);
+  /* 화면 밖이면 멈춘다 */
+  try{if(!INF_WIO)INF_WIO=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle('skpause',!e.isIntersecting)));
+    INF_WIO.observe(svg);}catch(e){}}
 /* 단계 넘기기 — 두 그래프에 함께 있는 마디는 자리 · 크기를 바꾸며 옮겨 가고,
    나머지는 넘기는 방향으로 밀려 나가며 흐려진다 / 반대쪽에서 들어오며 진해진다. 두 칸 건너뛰면 한 칸씩 이어서 */
 function infFlowGo(host,M,to){
@@ -20858,7 +20905,7 @@ function infDwell(host,rows0){
       return `<div class="dwrow" data-i="${i}">
         <div class="dwl"><b title="${esc(infName(g))}">${esc(g.lab)}</b>${g.sub?`<span>${esc(g.sub)}</span>`:''}</div>
         <div class="dwbar">${segs.map(s=>`<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}"><em>${pct(s.v/n,0)}</em></i>`).join('')}</div>
-        <div class="dwr"><b class="mono">${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+        <div class="dwr"><b class="mono"><i class="avgk">${L('평균','avg')}</i>${fmtDur(dwAvg(g.b))}</b><span>${L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
   if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
     host.innerHTML=`<div class="infdw sg">${grp.map(x=>`<div class="dwgrp"><div class="dwsegc"><b>${esc(infSegLab(x.s))}</b></div>
@@ -20902,7 +20949,7 @@ function infLandDwell(host,rows0){
       <div class="ldname"><b title="${esc(g.lab)}">${esc(g.lab)}</b></div>
       <div class="ldbar">${segs.map(s=>{const p=s.v/n;
         return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
-      <div class="ldavg"><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
+      <div class="ldavg"><i class="avgk">${L('평균 체류','avg time')}</i><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`
@@ -22711,6 +22758,7 @@ function tuEnd(){
       +`<span class="tx"><span class="t">${tuWords(s.t)}</span><span class="l">${esc(s.label)}</span></span></button>`).join('')}</div>
     <div class="tu-acts">
       <button type="button" class="tu-btn pri" data-act="ppt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 1.4h6.5l3.6 3.6v9a.8.8 0 0 1-.8.8H3.2a.8.8 0 0 1-.8-.8V2.2a.8.8 0 0 1 .8-.8z" fill="#d35230"/><path d="M9.7 1.4v2.9a.7.7 0 0 0 .7.7h2.9z" fill="#f2a58d"/><path d="M5.6 12V7h2.1a1.6 1.6 0 0 1 0 3.2H5.6" fill="none" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg><span>${esc(L('PPT로 저장','Save as PPT'))}</span></button>
+      <button type="button" class="tu-btn" data-act="html" title="${esc(L('이 투어를 파일 하나(HTML)로 — 인터넷 없이도 브라우저에서 바로 발표할 수 있습니다','This tour as one HTML file — present from any browser, even offline'))}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.6h12.4" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 8.3l2.9 1.6-2.9 1.6z" fill="currentColor"/></svg><span>${esc(L('파일로 저장 (HTML)','Save as file (HTML)'))}</span></button>
       <button type="button" class="tu-btn" data-act="restart"><span>↺ ${esc(L('처음부터','From the start'))}</span></button>
       <button type="button" class="tu-btn" data-act="close"><span>${esc(L('닫기','Close'))}</span></button>
     </div>`;
@@ -22835,7 +22883,7 @@ function tuPlaySlide(node,sl){
     {duration:rm?150:820,delay:rm?0:280+k*60,easing:'cubic-bezier(.2,.85,.25,1)',fill:'backwards'}));
   tuAnim(node.querySelector('.tu-sub'),[{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],
     {duration:rm?150:760,delay:rm?0:520+ws.length*45,easing:E,fill:'backwards'});
-  tuAnim(node.querySelector('.tu-in'),[{opacity:0,transform:'translateY(80px) rotateX(26deg) scale(.9)'},{opacity:1,transform:'none'}],
+  tuAnim(node.querySelector('.tu-in'),[{opacity:0,transform:'translateY(56px) scale(.95)'},{opacity:1,transform:'none'}],
     {duration:rm?150:1150,delay:rm?0:330,easing:E,fill:'backwards'});
   const src=node.querySelector('.tu-src');
   if(sl.kind==='cover')src.querySelectorAll('.tu-tile').forEach((t,i)=>tuAnim(t,[{opacity:0,transform:'translateY(40px) rotateX(35deg)'},{opacity:1,transform:'none'}],
@@ -23038,7 +23086,8 @@ function tuWire(el){
     const a=t.dataset.act;
     if(a==='close')return tuClose();
     if(a==='restart')return tuGo(0,-1);
-    if(a==='ppt')return tuPpt(t);});
+    if(a==='ppt')return tuPpt(t);
+    if(a==='html')return tuHtml(t);});
   /* 휠은 장면 안 표를 옆으로 넘길 때만 — 뒤 페이지가 스크롤되지 않게 */
   el.addEventListener('wheel',e=>{const sc=e.target.closest&&e.target.closest('.tu-src .tbl-wrap,.tu-src .gantt-wrap,.tu-src .hpwrap');
     if(sc&&Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
@@ -23049,12 +23098,8 @@ function tuWire(el){
   el.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){sx=e.clientX;sy=e.clientY;}});
   el.addEventListener('pointerup',e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;
     if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4){dx<0?tuNext():tuPrev();}});
-  /* 마우스를 따라 무대가 살짝 기운다(입체감) */
-  el.addEventListener('mousemove',e=>{
-    if(TU.rm||TU.raf)return;
-    const x=e.clientX/innerWidth*2-1,y=e.clientY/innerHeight*2-1;
-    TU.raf=requestAnimationFrame(()=>{TU.raf=0;const p=TU.node&&TU.node.querySelector('.tu-par');
-      if(p)p.style.transform=`rotateX(${(-y*2.2).toFixed(2)}deg) rotateY(${(x*3).toFixed(2)}deg)`;});});}
+  /* (v118) 마우스를 따라 무대를 기울이던 효과는 뺐다 — 표 · 카드가 비스듬해져 강조 테두리와 어긋나 보였다. 그래프는 늘 평평하게 */
+}
 
 /* ---------- 8. PPT 저장 ---------- */
 let TU_PPTX=null;
@@ -23084,20 +23129,24 @@ async function tuFast(job){
 const tuYield=()=>new Promise(r=>{if(document.visibilityState==='visible')setTimeout(r,16);
   else{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);}});
 /* 장면의 그래프 → 바탕 없는 PNG + 강조할 곳(그림 안 좌표) */
-async function tuShot(sl){
+/* o.cards — 카드 바탕은 남긴다(HTML 파일 · 투어 화면처럼). 기본은 PPT 용 누끼(카드 바탕까지 뺀다) */
+async function tuShot(sl,o){
+  o=o||{};
+  const key=o.cards?'__shotH':'__shotP';
+  if(sl[key])return sl[key];                  /* 한 번 만든 그림은 다시 쓴다(PPT · HTML 둘 다 저장할 때) */
   const hold=document.createElement('div');hold.className='tu-shot';
   const src=sl.src.cloneNode(true);src.style.width=sl.W+'px';src.style.transform='none';
   hold.appendChild(src);TU.el.appendChild(hold);
   try{
-    if(!sl.tblX)tuWrap(src,sl,1213,470,Infinity);
+    if(!sl.tblX)tuWrap(src,sl,o.cards?1700:1213,o.cards?620:470,Infinity);
     const R=src.getBoundingClientRect();
     const hl=[...src.querySelectorAll('[data-tuhl]')].map(e=>{const r=e.getBoundingClientRect();
       return {x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,chip:sl.chips[+e.getAttribute('data-tuhl')]||''};}).filter(r=>r.w>2&&r.h>2);
     const strip=e=>{e.style.setProperty('background','transparent','important');e.style.setProperty('box-shadow','none','important');
       e.style.setProperty('border-color','transparent','important');};
     const out=await ccRender(src,{zoom:2,transparent:true,meta:true,dataUrl:true,
-      clean:c=>{strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
-    return {...out,hl};
+      clean:c=>{if(o.cards)return;strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
+    return (sl[key]={...out,hl});
   }finally{hold.remove();}}
 async function tuPpt(btn){
   if(TU.ppt)return;TU.ppt=1;tuPlay(false);
@@ -23179,6 +23228,212 @@ async function tuPpt(btn){
   }catch(e){console.warn('tour ppt',e);say(was);
     showToast(L('PPT를 만들지 못했어요','Couldn’t create the PPT'),String(e&&e.message||e).slice(0,140),{kind:'warn'});}
   finally{TU.ppt=0;btn.disabled=false;btn.classList.remove('busy');}}
+/* ---------- 9. 파일로 저장 (HTML) — v118 ----------
+   투어를 파일 하나로: 장면마다 그래프 그림(카드 바탕 그대로 · 2배 해상도) + 제목/부제목 글 + 강조 위치를 담고,
+   같은 모양의 작은 재생기(넘기기 · 3D 장면 전환 · 강조 · 진행 막대 · 자동 재생 · 전체 화면)를 함께 넣는다.
+   인터넷 없이 어느 브라우저에서나 열린다(Pretendard 글꼴만 인터넷이 되면 받아 쓴다) */
+async function tuHtml(btn){
+  if(TU.ppt)return;TU.ppt=1;tuPlay(false);
+  const lab=btn.querySelector('span'),was=lab.textContent;btn.disabled=true;btn.classList.add('busy');
+  const say=t=>{lab.textContent=t;};
+  try{
+    const body=TU.slides.filter(x=>x.kind==='body');
+    const nm=(typeof CAMPAIGN!=='undefined'&&CAMPAIGN.name)||'Dashboard';
+    const out=[];
+    for(const sl of TU.slides){
+      if(sl.kind==='body'){
+        const k=body.indexOf(sl);
+        say(L(`파일 만드는 중 ${k+1}/${body.length}`,`Building file ${k+1}/${body.length}`));
+        await tuYield();
+        let sh=null;try{sh=await tuShot(sl,{cards:true});}catch(e){console.warn('tour html shot',e);}
+        out.push({k:'body',eye:`<span class="no">${String(k+1).padStart(2,'0')}</span>${esc(sl.label)}`,t:tuWords(sl.t),s:sl.s,
+          img:sh?sh.data:'',w:sh?sh.W:0,h:sh?sh.H:0,
+          hl:sh?sh.hl.map(r=>({x:r.x/sh.W,y:r.y/sh.H,w:r.w/sh.W,h:r.h/sh.H,c:r.chip||''})):[]});}
+      else if(sl.kind==='cover')
+        out.push({k:'cover',eye:`<span class="no">▶</span>DATA TOUR`,t:tuWords(sl.t),s:sl.s,tiles:(sl.tiles||[]).map(x=>({k:x.k,v:x.v,s:x.s||''}))});
+      else out.push({k:'end',eye:`<span class="no">✓</span>${esc(sl.label)}`,t:tuWords(sl.t),
+        s:L(`${body.length}개 장면 · 항목을 누르면 그 장면으로 돌아갑니다`,`${body.length} scenes · click any item to jump back`),
+        recap:body.map((x,k)=>({n:String(k+1).padStart(2,'0'),t:tuWords(x.t),l:x.label,go:TU.slides.indexOf(x)}))});}
+    say(L('파일 저장 중…','Saving…'));
+    const D={name:nm,lang:LANG,dark:document.documentElement.getAttribute('data-theme')==='dark',
+      made:new Date().toISOString().slice(0,10),
+      ui:{prev:L('이전','Previous'),next:L('다음','Next'),play:L('자동 재생 (P)','Autoplay (P)'),fs:L('전체 화면 (F)','Full screen (F)'),
+        hint:L('← → 넘기기 · P 자동 재생 · F 전체 화면','← → to move · P autoplay · F full screen'),again:L('처음부터','From the start')},slides:out};
+    const html=tuHtmlDoc(D);
+    const clean=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s*[·›]\s*/g,' ').trim().replace(/\s+/g,'_');
+    const fn=`${clean(nm)||'dashboard'}_${L('데이터투어','DataTour')}_${psDay(new Date())}.html`;
+    saveFile(new TextEncoder().encode(html),fn,'text/html;charset=utf-8');
+    say(L('저장했어요 ✓','Saved ✓'));
+    showToast(L('투어를 파일로 저장했어요','Tour saved as a file'),fn,{kind:'ok'});
+    setTimeout(()=>{if(lab.isConnected)say(was);},2600);
+  }catch(e){console.warn('tour html',e);say(was);
+    showToast(L('파일을 만들지 못했어요','Couldn’t create the file'),String(e&&e.message||e).slice(0,140),{kind:'warn'});}
+  finally{TU.ppt=0;btn.disabled=false;btn.classList.remove('busy');}}
+/* 저장 파일 — 문서 + 작은 재생기. 데이터는 JSON 으로 넣는다(</ 는 막아 둔다) */
+function tuHtmlDoc(D){
+  const json=JSON.stringify(D).replace(/</g,'\\u003c');
+  const css=`
+:root{--ink:#1b1f24;--ink2:#5b636e;--mut:#8f97a2;--acc:#e4573d;--accrgb:228 87 61;--bg1:#fcfcfd;--bg2:#eef0f3;--bg3:#dde1e6;
+  --grid:rgba(36,44,56,.085);--glass:rgba(255,255,255,.74);--line:rgba(27,31,36,.1)}
+html.dk{--ink:#f1f2f4;--ink2:#b3b9c1;--mut:#868d97;--bg1:#2d3137;--bg2:#212429;--bg3:#16181b;--grid:rgba(255,255,255,.06);--glass:rgba(44,48,54,.78);--line:rgba(255,255,255,.1)}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);
+  background:radial-gradient(125% 95% at 50% 34%,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%);-webkit-font-smoothing:antialiased}
+.fw{position:fixed;inset:0;perspective:720px;perspective-origin:50% 36%;pointer-events:none;overflow:hidden}
+.fl{position:absolute;left:-120%;right:-120%;bottom:0;height:230%;transform:rotateX(80deg);transform-origin:50% 100%;
+  background-image:linear-gradient(var(--grid) 1.5px,transparent 1.5px),linear-gradient(90deg,var(--grid) 1.5px,transparent 1.5px);background-size:96px 96px;
+  -webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.5) 22%,transparent 46%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.5) 22%,transparent 46%);
+  transition:background-position 1.15s cubic-bezier(.65,0,.25,1)}
+.top{position:fixed;left:0;right:0;top:0;padding:16px 30px 0;z-index:6}
+.pg{display:flex;gap:6px}.pg i{flex:1;height:14px;position:relative;cursor:pointer}
+.pg i::before,.pg i::after{content:'';position:absolute;left:0;right:0;top:5px;height:3px;border-radius:3px}
+.pg i::before{background:rgba(27,31,36,.12)}html.dk .pg i::before{background:rgba(255,255,255,.14)}
+.pg i::after{background:var(--ink);transform:scaleX(0);transform-origin:0 50%;transition:transform .55s cubic-bezier(.22,1,.36,1)}
+.pg i.on::after{transform:scaleX(1)}.pg i.cur.play::after{transition:none;animation:pgp 9s linear both}
+@keyframes pgp{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mt{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12px;font-weight:700;color:var(--ink2)}
+.br{display:inline-flex;align-items:center;gap:8px;min-width:0}.br .d{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 4px rgb(var(--accrgb) / .15);flex:none}
+.br b{font-weight:900;font-size:11px;letter-spacing:.16em;color:var(--ink);white-space:nowrap}
+.br .cn{color:var(--mut);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw}.br .cn::before{content:'·';margin:0 8px 0 2px}
+.sp{flex:1}.ct{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:800;letter-spacing:.04em;margin-right:4px;white-space:nowrap}
+.ib{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib svg{width:14px;height:14px;display:block}.ib[aria-pressed=true]{background:var(--ink);color:var(--bg1)}
+.dk2{position:fixed;inset:0;perspective:2200px;perspective-origin:50% 46%}
+.sl{position:absolute;inset:0;transform-style:preserve-3d;backface-visibility:hidden}
+.hd{position:absolute;left:0;right:0;top:calc(66px + 3.2vh);padding:0 9vw;text-align:center;z-index:2;perspective:900px}
+.eye{display:inline-flex;align-items:center;gap:9px;font-size:clamp(11.5px,.86vw,14px);font-weight:800;color:var(--mut)}
+.eye .no{display:inline-grid;place-items:center;min-width:28px;height:21px;padding:0 8px;border-radius:999px;background:var(--ink);color:var(--bg1);font-size:11px;font-weight:800}
+.tt{margin:12px 0 0;font-size:clamp(26px,2.95vw,54px);line-height:1.2;font-weight:800;letter-spacing:-.035em;word-break:keep-all;overflow-wrap:anywhere}
+.tt .w{display:inline-block;overflow:hidden;vertical-align:top;padding:.04em .02em .12em;margin:-.04em 0 -.12em}.tt .w>span{display:inline-block;transform-origin:50% 100%}
+.tt em{font-style:normal;color:var(--acc);position:relative}
+.tt em::after{content:'';position:absolute;left:-.04em;right:-.04em;bottom:.02em;height:.16em;border-radius:.1em;z-index:-1;background:rgb(var(--accrgb) / .2);
+  transform:scaleX(0);transform-origin:0 50%;transition:transform 1s cubic-bezier(.22,1,.36,1) .25s}
+.sl.hl .tt em::after{transform:scaleX(1)}
+.sb{margin:13px auto 0;max-width:min(1180px,84vw);font-size:clamp(14px,1.16vw,21px);line-height:1.5;font-weight:500;color:var(--ink2);letter-spacing:-.015em;word-break:keep-all}
+.cover .hd{top:24vh}.cover .tt{font-size:clamp(34px,4.3vw,80px);margin-top:18px}
+.st{position:absolute;left:4.5vw;right:4.5vw;bottom:5vh;display:flex;justify-content:center;align-items:flex-start;z-index:1}
+.in{position:relative;transform-origin:50% 100%}
+.fig{position:relative}.fig svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fig .base{transition:opacity 1s ease}.sl.hl .fig .base.fd{opacity:.26}
+.ring{fill:none;stroke:var(--acc);stroke-width:2.5;stroke-dasharray:var(--l) var(--l);stroke-dashoffset:var(--l)}
+.sl.hl .ring{animation:rg 1.15s cubic-bezier(.65,0,.25,1) calc(var(--k,0)*140ms + .15s) forwards,br 3s ease-in-out calc(var(--k,0)*140ms + 1.4s) infinite}
+.halo{fill:none;stroke:rgb(var(--accrgb) / .3);stroke-width:10;opacity:0;filter:blur(6px)}.sl.hl .halo{animation:ha 3s ease-in-out 1.1s infinite}
+@keyframes rg{to{stroke-dashoffset:0}}@keyframes br{0%,100%{stroke-opacity:1}50%{stroke-opacity:.5}}@keyframes ha{0%,100%{opacity:.25}50%{opacity:1}}
+.chip{position:absolute;z-index:4;padding:6px 12px;border-radius:999px;background:var(--acc);color:#fff;font-size:13px;font-weight:800;white-space:nowrap;
+  box-shadow:0 8px 20px rgb(var(--accrgb) / .32);transform:translate(-100%,var(--ty,-62%)) scale(.6);opacity:0;transform-origin:100% 100%}
+.sl.hl .chip{animation:cp .65s cubic-bezier(.34,1.56,.64,1) .9s forwards}@keyframes cp{to{opacity:1;transform:translate(-100%,var(--ty,-62%)) scale(1)}}
+.tiles{display:flex;justify-content:center;gap:clamp(12px,1.3vw,22px);flex-wrap:wrap;padding-top:4vh}
+.tile{min-width:clamp(190px,15.5vw,290px);padding:clamp(16px,1.4vw,24px) clamp(18px,1.5vw,26px);border-radius:20px;text-align:left;background:var(--glass);
+  border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 22px 44px rgba(27,31,36,.10)}
+html.dk .tile{border-color:rgba(255,255,255,.08)}
+.tile .k{font-size:clamp(11.5px,.82vw,14px);font-weight:700;color:var(--mut)}.tile .v{margin-top:10px;font-size:clamp(19px,1.65vw,30px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.tile .s{margin-top:6px;font-size:12px;font-weight:600;color:var(--ink2)}
+.rc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 18px;max-width:1240px;margin:0 auto}
+.rc button{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-radius:14px;text-align:left;cursor:pointer;font:inherit;border:1px solid var(--line);background:var(--glass);color:var(--ink)}
+.rc button:hover{background:var(--bg1)}.rc .n{font-size:13px;font-weight:900;color:var(--acc);padding-top:1px}
+.rc .x{display:flex;flex-direction:column;gap:3px;min-width:0}.rc .t{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.35;word-break:keep-all}
+.rc .t em{font-style:normal;color:var(--acc)}.rc .l{font-size:11.5px;font-weight:600;color:var(--mut)}
+.ag{display:flex;justify-content:center;margin-top:26px}.ag button{height:46px;padding:0 24px;border-radius:999px;border:0;background:var(--ink);color:var(--bg1);font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.nv{position:fixed;top:56%;z-index:6;width:clamp(46px,3.7vw,62px);height:clamp(46px,3.7vw,62px);transform:translateY(-50%);border-radius:50%;border:1px solid var(--line);
+  background:var(--glass);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 10px 30px rgba(27,31,36,.12);transition:transform .2s,opacity .3s}
+.nv svg{width:42%;height:42%}.nv.p{left:1.4vw}.nv.n{right:1.4vw}.nv:hover{transform:translateY(-50%) scale(1.08)}.nv[disabled]{opacity:0;pointer-events:none}
+.hn{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;font-size:12px;font-weight:600;color:var(--mut);padding:6px 14px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--line);transition:opacity .8s}.hn.off{opacity:0}
+@media (max-width:760px){.top{padding:12px 14px 0}.hd{padding:0 6vw}.nv{top:auto;bottom:14px;transform:none}.hn{display:none}.rc{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.sl.hl .ring,.sl.hl .halo{animation:none;stroke-dashoffset:0}}
+@media print{.top,.nv,.hn{display:none}}`;
+  const js=`
+const D=JSON.parse(document.getElementById('tud').textContent);
+if(D.dark)document.documentElement.classList.add('dk');
+document.documentElement.lang=D.lang||'ko';
+const $=s=>document.querySelector(s),deck=$('.dk2'),N=D.slides.length,RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let I=-1,node=null,play=false,pt=0,tm=[],fx=0;
+$('.cn').textContent=D.name;document.title=D.name+' · Data Tour';
+$('.pg').innerHTML=D.slides.map((s,i)=>'<i data-go="'+i+'"></i>').join('');
+const svgNS='http://www.w3.org/2000/svg';
+function bodyHtml(s){
+  if(s.k==='cover')return '<div class="tiles">'+s.tiles.map(x=>'<div class="tile"><div class="k">'+esc(x.k)+'</div><div class="v">'+esc(x.v)+'</div>'+(x.s?'<div class="s">'+esc(x.s)+'</div>':'')+'</div>').join('')+'</div>';
+  if(s.k==='end')return '<div class="rc">'+s.recap.map(r=>'<button data-go="'+r.go+'"><span class="n">'+r.n+'</span><span class="x"><span class="t">'+r.t+'</span><span class="l">'+esc(r.l)+'</span></span></button>').join('')+'</div><div class="ag"><button data-go="0">↺ '+esc(D.ui.again)+'</button></div>';
+  if(!s.img)return '';
+  const W=s.w,H=s.h,id='c'+Math.random().toString(36).slice(2,7),rr=(w,h)=>Math.min(14,w/2,h/2),P=7;
+  const R=s.hl.map(r=>({x:r.x*W-P,y:r.y*H-P,w:r.w*W+P*2,h:r.h*H+P*2,c:r.c}));
+  return '<div class="fig"><svg viewBox="0 0 '+W+' '+H+'"><defs><clipPath id="'+id+'">'+R.map(r=>'<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'"/>').join('')+'</clipPath></defs>'
+    +'<image class="base'+(R.length?' fd':'')+'" href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'"/>'
+    +(R.length?'<image href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'" clip-path="url(#'+id+')"/>':'')
+    +R.map((r,k)=>'<rect class="halo" x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'"/><rect class="ring" x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'" style="--k:'+k+';--l:'+Math.round(2*(r.w+r.h))+'"/>').join('')
+    +'</svg>'+R.filter(r=>r.c).map((r,k)=>'<div class="chip" style="left:'+((r.x+r.w-14)/W*100)+'%;top:'+((r.y>30?r.y:r.y+r.h)/H*100)+'%;--ty:'+(r.y>30?'-62%':'-38%')+'">'+esc(r.c)+'</div>').join('')+'</div>';}
+function layout(n,s){
+  const hd=n.querySelector('.hd'),st=n.querySelector('.st'),fig=n.querySelector('.fig');
+  st.style.top=(hd.offsetTop+hd.offsetHeight+Math.max(14,innerHeight*.028))+'px';
+  if(!fig)return;
+  const sw=st.clientWidth,sh=st.clientHeight,w=s.w,h=s.h;   /* s.w · s.h = 화면 크기(그림 파일은 그 2배 해상도) */
+  const k=Math.max(.2,Math.min(1.25,sw/w,sh/h));
+  fig.style.width=Math.round(w*k)+'px';fig.style.height=Math.round(h*k)+'px';
+  n.querySelector('.in').style.marginTop=Math.max(0,Math.round((sh-h*k)*.3))+'px';}
+function mount(i){
+  const s=D.slides[i],n=document.createElement('section');n.className='sl '+s.k;
+  n.innerHTML='<div class="hd"><div class="eye">'+s.eye+'</div><h2 class="tt">'+s.t+'</h2>'+(s.s?'<p class="sb">'+esc(s.s)+'</p>':'')+'</div><div class="st"><div class="in">'+bodyHtml(s)+'</div></div>';
+  deck.appendChild(n);layout(n,s);return n;}
+const an=(el,kf,o)=>el&&el.animate?el.animate(kf,o):null;
+function go(i,dir){
+  if(i<0||i>=N||i===I)return;tm.forEach(clearTimeout);tm=[];clearTimeout(pt);
+  dir=dir||(i>I?1:-1);const old=node;I=i;node=mount(i);
+  fx-=dir*288;$('.fl').style.backgroundPosition=fx+'px 0';
+  if(old){old.style.pointerEvents='none';const a=an(old,[{opacity:1,transform:'none'},{opacity:0,transform:'translate3d('+(-dir*32)+'%,0,-560px) rotateY('+(dir*34)+'deg)'}],{duration:RM?200:820,easing:'cubic-bezier(.7,0,.25,1)',fill:'forwards'});
+    const rm=()=>old.isConnected&&old.remove();if(a)a.onfinish=rm;setTimeout(rm,1000);}
+  an(node,[{opacity:0,transform:'translate3d('+(dir*36)+'%,0,-640px) rotateY('+(-dir*36)+'deg)'},{opacity:1,transform:'none'}],{duration:RM?220:1050,delay:RM||!old?0:120,easing:'cubic-bezier(.16,1,.3,1)',fill:'backwards'});
+  const E='cubic-bezier(.16,1,.3,1)',ws=[...node.querySelectorAll('.tt .w>span')];
+  an(node.querySelector('.eye'),[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:600,delay:200,easing:E,fill:'backwards'});
+  ws.forEach((w,k)=>an(w,[{opacity:0,transform:'translateY(105%) rotateX(-80deg)'},{opacity:1,transform:'none'}],{duration:RM?150:820,delay:RM?0:280+k*60,easing:'cubic-bezier(.2,.85,.25,1)',fill:'backwards'}));
+  an(node.querySelector('.sb'),[{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:760,delay:RM?0:520+ws.length*45,easing:E,fill:'backwards'});
+  an(node.querySelector('.in'),[{opacity:0,transform:'translateY(56px) scale(.95)'},{opacity:1,transform:'none'}],{duration:RM?150:1150,delay:RM?0:330,easing:E,fill:'backwards'});
+  /* 그래프는 왼쪽부터 드러난다 */
+  an(node.querySelector('.fig svg'),[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:RM?150:1300,delay:RM?0:500,easing:'cubic-bezier(.45,0,.2,1)',fill:'backwards'});
+  node.querySelectorAll('.tile,.rc button,.ag button').forEach((t,k)=>an(t,[{opacity:0,transform:'translateY(26px)'},{opacity:1,transform:'none'}],{duration:RM?150:760,delay:RM?0:480+k*70,easing:E,fill:'backwards'}));
+  const n=node;tm.push(setTimeout(()=>n.classList.add('hl'),RM?200:1900));
+  if(play)pt=setTimeout(()=>{I<N-1?go(I+1,1):setPlay(false);},9000);
+  paint();}
+function paint(){
+  document.querySelectorAll('.pg i').forEach((s,k)=>{s.classList.toggle('on',k<=I);s.classList.toggle('cur',k===I);s.classList.toggle('play',k===I&&play);});
+  $('.ct').textContent=String(I+1).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+  $('.nv.p').disabled=I<=0;$('.nv.n').disabled=I>=N-1;
+  $('.bp').setAttribute('aria-pressed',play?'true':'false');
+  $('.bp').innerHTML=play?'<svg viewBox="0 0 16 16"><path d="M5 3.5v9M11 3.5v9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>':'<svg viewBox="0 0 16 16"><path d="M5.2 3.4v9.2l7.3-4.6z" fill="currentColor"/></svg>';}
+function setPlay(on){play=!!on;clearTimeout(pt);if(play){if(I>=N-1){go(0,1);return;}pt=setTimeout(()=>{I<N-1?go(I+1,1):setPlay(false);},9000);}paint();}
+function fs(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}catch(e){}}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-go],.nv,.bp,.bf');if(!t)return;
+  if(t.classList.contains('nv'))return t.classList.contains('p')?go(I-1,-1):go(I+1,1);
+  if(t.classList.contains('bp'))return setPlay(!play);if(t.classList.contains('bf'))return fs();
+  setPlay(false);go(+t.dataset.go);});
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key;
+  if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'){e.preventDefault();go(I+1,1);}
+  else if(k==='ArrowLeft'||k==='PageUp'||k==='Backspace'){e.preventDefault();go(I-1,-1);}
+  else if(k==='Home')go(0,-1);else if(k==='End')go(N-1,1);
+  else if(k==='p'||k==='P')setPlay(!play);else if(k==='f'||k==='F')fs();});
+let sx=null,sy=0;
+addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){sx=e.clientX;sy=e.clientY;}});
+addEventListener('pointerup',e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4)dx<0?go(I+1,1):go(I-1,-1);});
+let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(node)layout(node,D.slides[I]);},120);});
+$('.hn').textContent=D.ui.hint;setTimeout(()=>$('.hn').classList.add('off'),5200);
+$('.nv.p').setAttribute('aria-label',D.ui.prev);$('.nv.n').setAttribute('aria-label',D.ui.next);$('.bp').title=D.ui.play;$('.bf').title=D.ui.fs;
+go(0,1);`;
+  return `<!doctype html>
+<html lang="${esc(D.lang||'ko')}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(D.name)} · Data Tour</title>
+<meta name="generator" content="Media Dashboard · Data Tour (${esc(D.made)})">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>${css}</style></head><body>
+<div class="fw"><div class="fl"></div></div>
+<div class="top"><div class="pg"></div><div class="mt"><span class="br"><span class="d"></span><b>DATA TOUR</b><span class="cn"></span></span><span class="sp"></span>
+<span class="ct"></span><button class="ib bp" type="button"></button><button class="ib bf" type="button"><svg viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+<div class="dk2"></div>
+<button class="nv p" type="button"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="nv n" type="button"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div class="hn"></div>
+<script type="application/json" id="tud">${json}</`+`script>
+<script>${js}</`+`script>
+</body></html>`;}
 (function(){const b=$('tourBtn');if(b)b.addEventListener('click',()=>{try{tuOpen();}catch(e){console.warn('tour',e);}});})();
 
 /* ===== 26. 회원 — 이메일 로그인 · 가입 신청 · 회원 관리 · 가입 요청 알림 (v117) =====
@@ -23754,7 +24009,7 @@ Object.assign(I18N_EN,{
   "클릭했지만 IWV 로 이어지지 않은 몫을 유입 흐름에 빗금 띠로 보여 줍니다":"Show clicks that didn't become IWV as hatched bands in the flow",
   "IWV(인터랙팅 방문)":"IWV (interacting visits)",
   "— 사이트 방문 중 2페이지 이상 보거나 · 기능을 쓰거나 · 20초 이상 머문 방문입니다. 매체 리포트의 클릭과 사이트 분석 도구(Adobe Analytics 등)의 방문을 이어 봅니다.":"— site visits that viewed 2+ pages, used a feature, or stayed 20s+. This section links clicks from media reports with visits from site analytics (Adobe Analytics etc.).",
-  "유입 흐름":"Inflow flow",
+  "유입 흐름":"Traffic flow",
   "— 왼쪽(매체 · 상품 · 소재)의 클릭이 오른쪽 랜딩 페이지(첫 방문 페이지 기준 IWV)로 흘러간 굵기입니다. IWV (All) 중 랜딩 구분이 없는 몫은 ‘랜딩 구분 없음’, 클릭했지만 IWV 가 되지 않은 몫은 빗금 ‘이탈’ 띠입니다.":"— band width shows how clicks on the left (media · product · creative) flowed to landing pages on the right (IWV by entry page). IWV (All) without a landing breakdown is ‘other landing’; clicks that didn't become IWV are the hatched ‘dropped’ band.",
   "유입 효율 지도":"Inflow efficiency map",
   "— 오른쪽일수록 클릭 대비 유입률(IWV ÷ 클릭)이 높고, 위로 갈수록 유입당 단가(소진금액 ÷ IWV)가 쌉니다. 점선은 전체 평균이라 오른쪽 위 칸이 가장 효율적입니다. 원 크기 = IWV 입니다.":"— further right = higher inflow rate (IWV ÷ clicks); higher up = lower cost per IWV (spend ÷ IWV). Dashed lines are the overall average, so the top-right quadrant is the most efficient. Circle size = IWV.",
@@ -23817,6 +24072,8 @@ Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill beh
 Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
 /* v114 */
 Object.assign(I18N_EN,{"영역 바로가기":"Jump to section"});
+/* v118 */
+Object.assign(I18N_EN,{"비교":"comparison","효율 비교":"performance comparison"});
 /* v116 — 데이터 투어 */
 Object.assign(I18N_EN,{"데이터 투어":"Data tour",
   "서머리 그래프를 한 장씩 전체 화면으로 보여 주는 발표 모드 · 마지막에 PPT 로 저장할 수 있습니다":"Presentation mode — summary charts one at a time, full screen · save as PPT at the end"});
@@ -23879,6 +24136,15 @@ const I18N_RULES=[
   [/^(\d+)주차$/,(m,a)=>'Week '+a],
   /* 영어로 적힌 소계 꼬리표 앞의 이름(매체명 등)도 사전에 있으면 옮긴다 */
   [/^(.+?) (Sub Total|subtotal|Subtotal)$/,(m,a,t)=>trText(a,false,1)+' '+t]];
+/* v118 — 서머리 이름처럼 사용자가 지은 "○○별 … 효율 (비교)" 를 영어로 (영역 바로가기 · 서머리 제목) */
+{const DIMS={'매체':'media','광고상품':'product','상품':'product','소재':'creative','구분':'segment','타겟팅 그룹':'targeting group',
+   '타겟팅':'targeting','랜딩 페이지':'landing page','랜딩':'landing page','요일':'day of week','일자':'date','캠페인':'campaign'};
+ const RE_D='(매체|광고상품|상품|소재|구분|타겟팅 그룹|타겟팅|랜딩 페이지|랜딩|요일|일자|캠페인)';
+ I18N_RULES.push(
+  [new RegExp('^'+RE_D+'별\\s*효율(?:\\s*비교)?$'),(m,d)=>'Performance by '+DIMS[d]],
+  [new RegExp('^'+RE_D+'별\\s+(.+?)\\s*효율(?:\\s*비교)?$'),(m,d,x)=>{const t=trText(x,true,1);
+    return I18N_HANGUL.test(t)?m:t+' performance by '+DIMS[d];}]);}
+
 /* 큰 수 줄여 쓰기 — 8,644만 → 86.4M · 400만 → 4M · 1.2억 → 120M */
 function i18nShort(v){
   if(!isFinite(v))return String(v);

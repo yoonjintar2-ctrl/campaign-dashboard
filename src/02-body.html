@@ -70,7 +70,7 @@
   {const LEN=290;[[466,0],[528,-.6],[590,-1.2]].forEach(([y,d],i)=>{
      add(`<div class="ldtrk" style="left:40px;top:${y}px;width:${LEN}px;height:34px"></div>`);
      add(box(40,y,LEN*(i===1?.86:i===2?.72:1),34,16,'ldslab',`--d:${d}s`));
-     add(`<div class="ldball ldpace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--ldz0:26px;--ldz1:34px;--d:${d}s"></div>`);});}
+     add(`<div class="ldball ldpace" style="left:${40+LEN*(.62+i*.06)}px;top:${y+8}px;width:16px;height:16px;--ldz0:26px;--ldz1:34px;--d:${d}s"><i></i></div>`);});}
 
   /* 6) 게재 히스토리 · 히트맵 칸 — 왼쪽 가운데 */
   {const C=8,R=9;let h=`<div class="ldcells" style="left:40px;top:150px;width:${C*24}px;grid-template-columns:repeat(${C},20px);grid-auto-rows:20px">`;
@@ -85,7 +85,7 @@
   /* 8) 버블 — 앞 오른편, 둥실둥실 */
   {[[820,470,52,30,62,'0s'],[880,546,64,44,86,'-.8s'],[812,560,34,22,46,'-1.6s'],[896,450,38,36,66,'-2.2s']].forEach(([x,y,S,z0,z1,d])=>{
      add(sh(x-S*.3,y-S*.1,S*1.3,S*.8));
-     add(`<div class="ldball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--ldz0:${z0}px;--ldz1:${z1}px;--d:${d}"></div>`);});}
+     add(`<div class="ldball" style="left:${x}px;top:${y-S}px;width:${S}px;height:${S}px;--ldz0:${z0}px;--ldz1:${z1}px;--d:${d}"><i></i></div>`);});}
 
   /* 화면 크기에 맞춰 무대 크기 */
   const fit=()=>{const k=Math.max(.46,Math.min(innerWidth/1320,innerHeight/900,1.25));

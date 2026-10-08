@@ -137,17 +137,18 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .ld{--floor:#f8f9f9;--grid:#e6e8ea;--ink:#24262a;--ink2:#61656b;--muted:#909499;
   --t1:#fdfdfd;--f1:#e3e5e8;--l1:#d1d4d8;--t2:#c3c6c9;--f2:#a4a8ac;--l2:#8f9398;--ldpaceC:#96635e;--ldpaceL:#c2a5a2;
   font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink)}
-/* ===== 무대 ===== */
-@property --ldrx{syntax:'<angle>';inherits:true;initial-value:57deg}
-@property --ldrz{syntax:'<angle>';inherits:true;initial-value:-42deg}
-@property --ldz{syntax:'<length>';inherits:false;initial-value:0px}
+/* ===== 무대 =====
+   (v118) 움직임은 모두 transform · opacity 로 — 화면 합성기(GPU)가 따로 돌려, 캠페인 데이터를 처리하느라 메인 스레드가
+   바쁜 순간에도 끊기지 않는다. 예전에는 바닥 각도 · 공 높이를 CSS 변수(@property)로 움직여 매 프레임 메인 스레드에서
+   무대 전체 스타일을 다시 계산했고, 데이터를 받는 순간 '살짝 끊겼다' */
 .ld{position:absolute;inset:0;overflow:hidden;
   background:radial-gradient(ellipse 70% 60% at 50% 46%,#f7f8f8 0%,#eef0f1 70%)}
 .ld-stage{position:absolute;left:50%;top:50%;width:0;height:0;perspective:2200px;transform:scale(var(--k,1))}
 .ld-floor{position:absolute;left:-490px;top:-340px;width:980px;height:680px;transform-style:preserve-3d;
-  transform:translateY(6px) rotateX(var(--ldrx)) rotateZ(var(--ldrz));
+  transform:translateY(6px) rotateX(58deg) rotateZ(-47deg);
   animation:ldSway 18s ease-in-out infinite alternate}
-@keyframes ldSway{0%{--ldrx:58deg;--ldrz:-47deg}50%{--ldrx:54deg;--ldrz:-40deg}100%{--ldrx:59deg;--ldrz:-33deg}}
+@keyframes ldSway{0%{transform:translateY(6px) rotateX(58deg) rotateZ(-47deg)}50%{transform:translateY(6px) rotateX(54deg) rotateZ(-40deg)}
+  100%{transform:translateY(6px) rotateX(59deg) rotateZ(-33deg)}}
 .ld-plate{position:absolute;inset:0;border-radius:30px;background:
   linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
   linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--floor);
@@ -202,18 +203,26 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 .ldslab>.t{background:linear-gradient(90deg,#b9bdc1 0 46%,#fff 46% 46.6%,#c9cccf 46.6% 71%,#fff 71% 71.6%,#d6d8db 71.6% 86%,#fff 86% 86.6%,#e1e3e5 86.6%)}
 .ldslab>.f{background:linear-gradient(90deg,#a2a6ab 0 46%,#b4b8bc 46% 71%,#c2c5c9 71% 86%,#ced1d4 86%)}
 
-/* 공(버블 · 페이스 점) — 늘 보는 사람을 향하도록 바닥 회전을 되돌린다 */
-.ldball{position:absolute;border-radius:50%;
-  transform:translateZ(var(--ldz)) rotateZ(calc(-1*var(--ldrz))) rotateX(calc(-1*var(--ldrx)));transform-origin:50% 100%;
-  background:radial-gradient(circle at 34% 30%,#fff 0,#e6e8ea 32%,#b7bbc0 72%,#9a9fa5 100%);
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset;animation:ldBob 3.2s ease-in-out infinite alternate;animation-delay:var(--d)}
-.ldball.ldpace{background:radial-gradient(circle at 34% 30%,#fff 0,var(--ldpaceL) 40%,var(--ldpaceC) 100%);animation-duration:1.6s}
-@keyframes ldBob{from{--ldz:var(--ldz0)}to{--ldz:var(--ldz1)}}
+/* 공(버블 · 페이스 점) — 바깥은 위아래로 둥실, 안쪽 공은 바닥 회전을 그대로 되돌려 늘 보는 사람을 향한다
+   (바닥과 같은 18초 · 같은 곡선 · 같은 방향이라 매 순간 정확히 맞물린다) */
+.ldball{position:absolute;transform-style:preserve-3d;transform:translateZ(var(--ldz0));
+  animation:ldBob 3.2s ease-in-out infinite alternate;animation-delay:var(--d)}
+.ldball>i{position:absolute;inset:0;display:block;border-radius:50%;transform-origin:50% 100%;
+  transform:rotateZ(47deg) rotateX(-58deg);animation:ldFace 18s ease-in-out infinite alternate;
+  background:radial-gradient(circle at 34% 30%,#fff 0,#e6e8ea 32%,#b7bbc0 72%,#9a9fa5 100%);box-shadow:0 1px 0 rgba(255,255,255,.6) inset}
+.ldball.ldpace{animation-duration:1.6s}
+.ldball.ldpace>i{background:radial-gradient(circle at 34% 30%,#fff 0,var(--ldpaceL) 40%,var(--ldpaceC) 100%)}
+@keyframes ldBob{from{transform:translateZ(var(--ldz0))}to{transform:translateZ(var(--ldz1))}}
+@keyframes ldFace{0%{transform:rotateZ(47deg) rotateX(-58deg)}50%{transform:rotateZ(40deg) rotateX(-54deg)}100%{transform:rotateZ(33deg) rotateX(-59deg)}}
 
 /* 게재 히스토리 · 히트맵 칸 — 대각선으로 물결 */
 .ldcells{position:absolute;display:grid;gap:4px;transform-style:preserve-3d}
-.ldcells>i{display:block;border-radius:3px;background:#e7e9eb;animation:ldCell 3s ease-in-out infinite;animation-delay:var(--d)}
-@keyframes ldCell{0%,100%{background:#e7e9eb;transform:translateZ(0)}40%{background:#9da2a8;transform:translateZ(10px)}}
+.ldcells>i{position:relative;display:block;border-radius:3px;background:#e7e9eb;animation:ldCell 3s ease-in-out infinite;animation-delay:var(--d)}
+/* 색은 덧칠 층의 투명도로(배경색을 매 프레임 다시 칠하지 않게) */
+.ldcells>i::after{content:'';position:absolute;inset:0;border-radius:inherit;background:#9da2a8;opacity:0;
+  animation:ldCellC 3s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes ldCell{0%,100%{transform:translateZ(0)}40%{transform:translateZ(10px)}}
+@keyframes ldCellC{0%,100%{opacity:0}40%{opacity:1}}
 
 /* 지형도 블록 — 차례로 솟았다 내려온다 */
 .ldtm{animation:ldTm 3.8s cubic-bezier(.45,.05,.3,1) infinite;animation-delay:var(--d)}
@@ -221,8 +230,7 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 
 /* ===== 가운데 문구 ===== */
 .ld-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;text-align:center;
-  padding:22px 34px 20px;border-radius:22px;background:rgba(248,249,249,.78);
-  backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);
+  padding:22px 34px 20px;border-radius:22px;background:rgba(248,249,249,.9);
   box-shadow:0 18px 50px rgba(40,46,54,.12),0 0 0 1px rgba(255,255,255,.9) inset,0 0 0 1px rgba(40,46,54,.05)}
 .ld-eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
 .ld-title{margin-top:6px;font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--ink);white-space:nowrap}
@@ -232,15 +240,15 @@ body::before{content:'';position:fixed;inset:-40%;z-index:-1;pointer-events:none
 @keyframes ldDot{0%,60%,100%{opacity:.18;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .ld-sub{margin-top:6px;font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap}
 .ld-bar{position:relative;margin:16px auto 0;width:180px;height:4px;border-radius:99px;background:#e1e3e5;overflow:hidden}
-.ld-bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:99px;background:linear-gradient(90deg,#9da2a8,var(--ink));
-  animation:ldBar 1.6s cubic-bezier(.65,0,.35,1) infinite}
-@keyframes ldBar{from{left:-40%}to{left:100%}}
+.ld-bar i{position:absolute;top:0;bottom:0;left:0;width:40%;border-radius:99px;background:linear-gradient(90deg,#9da2a8,var(--ink));
+  transform:translateX(-100%);animation:ldBar 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes ldBar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 
 @media (max-width:560px){.ld-title{font-size:23px}.ld-sub{font-size:12px}.ld-msg{padding:16px 22px 15px}}
-@media (prefers-reduced-motion:reduce){.ld *,.ld-floor{animation:none!important}.ldctr{stroke-dashoffset:0}.lddon .ldarc{stroke-dasharray:var(--len) 1000}.ldiss{transform:none}}
+@media (prefers-reduced-motion:reduce){.ld *,.ld *::after,.ld-floor{animation:none!important}.ldctr{stroke-dashoffset:0}.lddon .ldarc{stroke-dasharray:var(--len) 1000}.ldiss{transform:none}}
 
 /* 가림막이 걷히면 무대의 움직임도 멈춘다(보이지 않는데 계속 돌지 않게) */
-body:not(.booting) .bootveil .ld,body:not(.booting) .bootveil .ld *{animation-play-state:paused!important}
+body:not(.booting) .bootveil .ld,body:not(.booting) .bootveil .ld *,body:not(.booting) .bootveil .ld *::after{animation-play-state:paused!important}
 
 @keyframes bootpulse{from{opacity:.32}to{opacity:.72}}
 body:not(.booting) .bootveil{opacity:0;pointer-events:none;visibility:hidden}
@@ -1605,20 +1613,29 @@ body.pssave .strip>.stat,body.pssave #donuts>.donut{transform:none!important}
 
 /* 유입 흐름 물결(v114.1) — 덧칠 층은 띠가 흐려질 때 같이 흐려진다 */
 .skfl{transition:opacity .12s}.skfl.dim{opacity:.13}
+/* 유입 흐름 물줄기 (v118) — 18-inflow infFlowSheen */
+.skw{fill:none;stroke:#fff;stroke-opacity:.8;stroke-width:1.7;stroke-linecap:round;
+  animation:skWave var(--dur,4s) linear infinite;animation-delay:var(--dl,0s)}
+@keyframes skWave{to{stroke-dashoffset:calc(-1 * var(--p,120px))}}
+.skpause .skw{animation-play-state:paused}
+[data-theme="dark"] .skw{stroke-opacity:.42}
+@media (prefers-reduced-motion:reduce){.skw{display:none}}
+@media print{.skw{display:none}}
 body.pssave .ccskip{display:none!important}
 @media print{.ccskip{display:none!important}}
 /* ===== 영역 바로가기 — v114 (24-secnav.js) =====
    오른쪽 가장자리 점 목록. 마우스를 올리면 이름이 펼쳐진다 · 지금 영역은 길쭉한 점 */
-.secnav{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
-  align-items:flex-end;gap:2px;padding:8px 4px;border-radius:14px;transition:background .2s,box-shadow .2s}
+/* (v118) 왼쪽 가장자리로 — 마우스를 오른쪽에 두고 쓰면 겹쳤다. 점이 왼쪽, 이름은 오른쪽으로 펼쳐진다 */
+.secnav{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:56;display:none;flex-direction:column;
+  align-items:flex-start;gap:2px;padding:8px 4px;border-radius:14px;transition:background .2s,box-shadow .2s}
 .secnav.on{display:flex}
-.secnav button{display:flex;align-items:center;justify-content:flex-end;gap:10px;border:0;background:none;cursor:pointer;
+.secnav button{display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-end;gap:10px;border:0;background:none;cursor:pointer;
   padding:4px 4px;font-family:inherit;color:var(--ink2)}
 .secnav button i{flex:none;display:block;width:7px;height:7px;border-radius:99px;background:var(--gline);
   transition:height .28s cubic-bezier(.2,.9,.3,1.25),background .2s,transform .2s}
 .secnav button:hover i{background:var(--ink2);transform:scale(1.25)}
 .secnav button.cur i{height:20px;background:var(--ink)}
-.secnav .snl{font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:-.2px;opacity:0;transform:translateX(8px);
+.secnav .snl{font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:-.2px;opacity:0;transform:translateX(-8px);
   pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.2);max-width:240px;overflow:hidden;text-overflow:ellipsis}
 .secnav button.cur .snl{color:var(--ink);font-weight:800}
 .secnav:hover{background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 10px 30px rgba(20,24,30,.14),0 1px 3px rgba(20,24,30,.08);
@@ -3076,6 +3093,10 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwr{display:flex;flex-direction:column;line-height:1.25;text-align:right}
 .dwr b{font-size:13px;font-weight:800;color:var(--ink)}
 .dwr span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+/* (v118) 오른쪽 숫자가 평균이라는 표시 */
+.avgk{font-style:normal;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.01em}
+.dwr .avgk{margin-right:4px;vertical-align:1px}
+.ldavg .avgk{display:block;margin-bottom:1px;white-space:nowrap}
 .infh .infcfg{margin-left:auto}
 #infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
@@ -3231,7 +3252,7 @@ html.tu-on .secnav{display:none!important}
 .tu-cover .tu-sub{font-size:clamp(15px,1.35vw,24px)}
 .tu-stage{position:absolute;left:4.5vw;right:4.5vw;top:240px;bottom:5vh;display:flex;align-items:flex-start;justify-content:center;perspective:1700px;z-index:1}
 .tu-cover .tu-stage,.tu-end .tu-stage{align-items:flex-start}
-.tu-par{transform-style:preserve-3d;transition:transform .7s cubic-bezier(.22,1,.36,1)}
+.tu-par{position:relative}
 .tu-in{position:relative;transform-origin:50% 100%}
 .tu-in::after{content:'';position:absolute;left:7%;right:7%;bottom:-30px;height:40px;border-radius:50%;z-index:-1;pointer-events:none;
   background:radial-gradient(closest-side,rgba(20,26,34,.15),rgba(20,26,34,0))}

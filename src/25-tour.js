@@ -393,6 +393,7 @@ function tuEnd(){
       +`<span class="tx"><span class="t">${tuWords(s.t)}</span><span class="l">${esc(s.label)}</span></span></button>`).join('')}</div>
     <div class="tu-acts">
       <button type="button" class="tu-btn pri" data-act="ppt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 1.4h6.5l3.6 3.6v9a.8.8 0 0 1-.8.8H3.2a.8.8 0 0 1-.8-.8V2.2a.8.8 0 0 1 .8-.8z" fill="#d35230"/><path d="M9.7 1.4v2.9a.7.7 0 0 0 .7.7h2.9z" fill="#f2a58d"/><path d="M5.6 12V7h2.1a1.6 1.6 0 0 1 0 3.2H5.6" fill="none" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg><span>${esc(L('PPT로 저장','Save as PPT'))}</span></button>
+      <button type="button" class="tu-btn" data-act="html" title="${esc(L('이 투어를 파일 하나(HTML)로 — 인터넷 없이도 브라우저에서 바로 발표할 수 있습니다','This tour as one HTML file — present from any browser, even offline'))}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 5.6h12.4" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 8.3l2.9 1.6-2.9 1.6z" fill="currentColor"/></svg><span>${esc(L('파일로 저장 (HTML)','Save as file (HTML)'))}</span></button>
       <button type="button" class="tu-btn" data-act="restart"><span>↺ ${esc(L('처음부터','From the start'))}</span></button>
       <button type="button" class="tu-btn" data-act="close"><span>${esc(L('닫기','Close'))}</span></button>
     </div>`;
@@ -517,7 +518,7 @@ function tuPlaySlide(node,sl){
     {duration:rm?150:820,delay:rm?0:280+k*60,easing:'cubic-bezier(.2,.85,.25,1)',fill:'backwards'}));
   tuAnim(node.querySelector('.tu-sub'),[{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],
     {duration:rm?150:760,delay:rm?0:520+ws.length*45,easing:E,fill:'backwards'});
-  tuAnim(node.querySelector('.tu-in'),[{opacity:0,transform:'translateY(80px) rotateX(26deg) scale(.9)'},{opacity:1,transform:'none'}],
+  tuAnim(node.querySelector('.tu-in'),[{opacity:0,transform:'translateY(56px) scale(.95)'},{opacity:1,transform:'none'}],
     {duration:rm?150:1150,delay:rm?0:330,easing:E,fill:'backwards'});
   const src=node.querySelector('.tu-src');
   if(sl.kind==='cover')src.querySelectorAll('.tu-tile').forEach((t,i)=>tuAnim(t,[{opacity:0,transform:'translateY(40px) rotateX(35deg)'},{opacity:1,transform:'none'}],
@@ -720,7 +721,8 @@ function tuWire(el){
     const a=t.dataset.act;
     if(a==='close')return tuClose();
     if(a==='restart')return tuGo(0,-1);
-    if(a==='ppt')return tuPpt(t);});
+    if(a==='ppt')return tuPpt(t);
+    if(a==='html')return tuHtml(t);});
   /* 휠은 장면 안 표를 옆으로 넘길 때만 — 뒤 페이지가 스크롤되지 않게 */
   el.addEventListener('wheel',e=>{const sc=e.target.closest&&e.target.closest('.tu-src .tbl-wrap,.tu-src .gantt-wrap,.tu-src .hpwrap');
     if(sc&&Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
@@ -731,12 +733,8 @@ function tuWire(el){
   el.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){sx=e.clientX;sy=e.clientY;}});
   el.addEventListener('pointerup',e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;
     if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4){dx<0?tuNext():tuPrev();}});
-  /* 마우스를 따라 무대가 살짝 기운다(입체감) */
-  el.addEventListener('mousemove',e=>{
-    if(TU.rm||TU.raf)return;
-    const x=e.clientX/innerWidth*2-1,y=e.clientY/innerHeight*2-1;
-    TU.raf=requestAnimationFrame(()=>{TU.raf=0;const p=TU.node&&TU.node.querySelector('.tu-par');
-      if(p)p.style.transform=`rotateX(${(-y*2.2).toFixed(2)}deg) rotateY(${(x*3).toFixed(2)}deg)`;});});}
+  /* (v118) 마우스를 따라 무대를 기울이던 효과는 뺐다 — 표 · 카드가 비스듬해져 강조 테두리와 어긋나 보였다. 그래프는 늘 평평하게 */
+}
 
 /* ---------- 8. PPT 저장 ---------- */
 let TU_PPTX=null;
@@ -766,20 +764,24 @@ async function tuFast(job){
 const tuYield=()=>new Promise(r=>{if(document.visibilityState==='visible')setTimeout(r,16);
   else{const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0);}});
 /* 장면의 그래프 → 바탕 없는 PNG + 강조할 곳(그림 안 좌표) */
-async function tuShot(sl){
+/* o.cards — 카드 바탕은 남긴다(HTML 파일 · 투어 화면처럼). 기본은 PPT 용 누끼(카드 바탕까지 뺀다) */
+async function tuShot(sl,o){
+  o=o||{};
+  const key=o.cards?'__shotH':'__shotP';
+  if(sl[key])return sl[key];                  /* 한 번 만든 그림은 다시 쓴다(PPT · HTML 둘 다 저장할 때) */
   const hold=document.createElement('div');hold.className='tu-shot';
   const src=sl.src.cloneNode(true);src.style.width=sl.W+'px';src.style.transform='none';
   hold.appendChild(src);TU.el.appendChild(hold);
   try{
-    if(!sl.tblX)tuWrap(src,sl,1213,470,Infinity);
+    if(!sl.tblX)tuWrap(src,sl,o.cards?1700:1213,o.cards?620:470,Infinity);
     const R=src.getBoundingClientRect();
     const hl=[...src.querySelectorAll('[data-tuhl]')].map(e=>{const r=e.getBoundingClientRect();
       return {x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,chip:sl.chips[+e.getAttribute('data-tuhl')]||''};}).filter(r=>r.w>2&&r.h>2);
     const strip=e=>{e.style.setProperty('background','transparent','important');e.style.setProperty('box-shadow','none','important');
       e.style.setProperty('border-color','transparent','important');};
     const out=await ccRender(src,{zoom:2,transparent:true,meta:true,dataUrl:true,
-      clean:c=>{strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
-    return {...out,hl};
+      clean:c=>{if(o.cards)return;strip(c);c.querySelectorAll('.card,.hpbox,.infcell,.infk').forEach(strip);}});
+    return (sl[key]={...out,hl});
   }finally{hold.remove();}}
 async function tuPpt(btn){
   if(TU.ppt)return;TU.ppt=1;tuPlay(false);
@@ -861,4 +863,210 @@ async function tuPpt(btn){
   }catch(e){console.warn('tour ppt',e);say(was);
     showToast(L('PPT를 만들지 못했어요','Couldn’t create the PPT'),String(e&&e.message||e).slice(0,140),{kind:'warn'});}
   finally{TU.ppt=0;btn.disabled=false;btn.classList.remove('busy');}}
+/* ---------- 9. 파일로 저장 (HTML) — v118 ----------
+   투어를 파일 하나로: 장면마다 그래프 그림(카드 바탕 그대로 · 2배 해상도) + 제목/부제목 글 + 강조 위치를 담고,
+   같은 모양의 작은 재생기(넘기기 · 3D 장면 전환 · 강조 · 진행 막대 · 자동 재생 · 전체 화면)를 함께 넣는다.
+   인터넷 없이 어느 브라우저에서나 열린다(Pretendard 글꼴만 인터넷이 되면 받아 쓴다) */
+async function tuHtml(btn){
+  if(TU.ppt)return;TU.ppt=1;tuPlay(false);
+  const lab=btn.querySelector('span'),was=lab.textContent;btn.disabled=true;btn.classList.add('busy');
+  const say=t=>{lab.textContent=t;};
+  try{
+    const body=TU.slides.filter(x=>x.kind==='body');
+    const nm=(typeof CAMPAIGN!=='undefined'&&CAMPAIGN.name)||'Dashboard';
+    const out=[];
+    for(const sl of TU.slides){
+      if(sl.kind==='body'){
+        const k=body.indexOf(sl);
+        say(L(`파일 만드는 중 ${k+1}/${body.length}`,`Building file ${k+1}/${body.length}`));
+        await tuYield();
+        let sh=null;try{sh=await tuShot(sl,{cards:true});}catch(e){console.warn('tour html shot',e);}
+        out.push({k:'body',eye:`<span class="no">${String(k+1).padStart(2,'0')}</span>${esc(sl.label)}`,t:tuWords(sl.t),s:sl.s,
+          img:sh?sh.data:'',w:sh?sh.W:0,h:sh?sh.H:0,
+          hl:sh?sh.hl.map(r=>({x:r.x/sh.W,y:r.y/sh.H,w:r.w/sh.W,h:r.h/sh.H,c:r.chip||''})):[]});}
+      else if(sl.kind==='cover')
+        out.push({k:'cover',eye:`<span class="no">▶</span>DATA TOUR`,t:tuWords(sl.t),s:sl.s,tiles:(sl.tiles||[]).map(x=>({k:x.k,v:x.v,s:x.s||''}))});
+      else out.push({k:'end',eye:`<span class="no">✓</span>${esc(sl.label)}`,t:tuWords(sl.t),
+        s:L(`${body.length}개 장면 · 항목을 누르면 그 장면으로 돌아갑니다`,`${body.length} scenes · click any item to jump back`),
+        recap:body.map((x,k)=>({n:String(k+1).padStart(2,'0'),t:tuWords(x.t),l:x.label,go:TU.slides.indexOf(x)}))});}
+    say(L('파일 저장 중…','Saving…'));
+    const D={name:nm,lang:LANG,dark:document.documentElement.getAttribute('data-theme')==='dark',
+      made:new Date().toISOString().slice(0,10),
+      ui:{prev:L('이전','Previous'),next:L('다음','Next'),play:L('자동 재생 (P)','Autoplay (P)'),fs:L('전체 화면 (F)','Full screen (F)'),
+        hint:L('← → 넘기기 · P 자동 재생 · F 전체 화면','← → to move · P autoplay · F full screen'),again:L('처음부터','From the start')},slides:out};
+    const html=tuHtmlDoc(D);
+    const clean=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s*[·›]\s*/g,' ').trim().replace(/\s+/g,'_');
+    const fn=`${clean(nm)||'dashboard'}_${L('데이터투어','DataTour')}_${psDay(new Date())}.html`;
+    saveFile(new TextEncoder().encode(html),fn,'text/html;charset=utf-8');
+    say(L('저장했어요 ✓','Saved ✓'));
+    showToast(L('투어를 파일로 저장했어요','Tour saved as a file'),fn,{kind:'ok'});
+    setTimeout(()=>{if(lab.isConnected)say(was);},2600);
+  }catch(e){console.warn('tour html',e);say(was);
+    showToast(L('파일을 만들지 못했어요','Couldn’t create the file'),String(e&&e.message||e).slice(0,140),{kind:'warn'});}
+  finally{TU.ppt=0;btn.disabled=false;btn.classList.remove('busy');}}
+/* 저장 파일 — 문서 + 작은 재생기. 데이터는 JSON 으로 넣는다(</ 는 막아 둔다) */
+function tuHtmlDoc(D){
+  const json=JSON.stringify(D).replace(/</g,'\\u003c');
+  const css=`
+:root{--ink:#1b1f24;--ink2:#5b636e;--mut:#8f97a2;--acc:#e4573d;--accrgb:228 87 61;--bg1:#fcfcfd;--bg2:#eef0f3;--bg3:#dde1e6;
+  --grid:rgba(36,44,56,.085);--glass:rgba(255,255,255,.74);--line:rgba(27,31,36,.1)}
+html.dk{--ink:#f1f2f4;--ink2:#b3b9c1;--mut:#868d97;--bg1:#2d3137;--bg2:#212429;--bg3:#16181b;--grid:rgba(255,255,255,.06);--glass:rgba(44,48,54,.78);--line:rgba(255,255,255,.1)}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);
+  background:radial-gradient(125% 95% at 50% 34%,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%);-webkit-font-smoothing:antialiased}
+.fw{position:fixed;inset:0;perspective:720px;perspective-origin:50% 36%;pointer-events:none;overflow:hidden}
+.fl{position:absolute;left:-120%;right:-120%;bottom:0;height:230%;transform:rotateX(80deg);transform-origin:50% 100%;
+  background-image:linear-gradient(var(--grid) 1.5px,transparent 1.5px),linear-gradient(90deg,var(--grid) 1.5px,transparent 1.5px);background-size:96px 96px;
+  -webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.5) 22%,transparent 46%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.5) 22%,transparent 46%);
+  transition:background-position 1.15s cubic-bezier(.65,0,.25,1)}
+.top{position:fixed;left:0;right:0;top:0;padding:16px 30px 0;z-index:6}
+.pg{display:flex;gap:6px}.pg i{flex:1;height:14px;position:relative;cursor:pointer}
+.pg i::before,.pg i::after{content:'';position:absolute;left:0;right:0;top:5px;height:3px;border-radius:3px}
+.pg i::before{background:rgba(27,31,36,.12)}html.dk .pg i::before{background:rgba(255,255,255,.14)}
+.pg i::after{background:var(--ink);transform:scaleX(0);transform-origin:0 50%;transition:transform .55s cubic-bezier(.22,1,.36,1)}
+.pg i.on::after{transform:scaleX(1)}.pg i.cur.play::after{transition:none;animation:pgp 9s linear both}
+@keyframes pgp{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mt{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12px;font-weight:700;color:var(--ink2)}
+.br{display:inline-flex;align-items:center;gap:8px;min-width:0}.br .d{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 4px rgb(var(--accrgb) / .15);flex:none}
+.br b{font-weight:900;font-size:11px;letter-spacing:.16em;color:var(--ink);white-space:nowrap}
+.br .cn{color:var(--mut);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw}.br .cn::before{content:'·';margin:0 8px 0 2px}
+.sp{flex:1}.ct{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:800;letter-spacing:.04em;margin-right:4px;white-space:nowrap}
+.ib{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib svg{width:14px;height:14px;display:block}.ib[aria-pressed=true]{background:var(--ink);color:var(--bg1)}
+.dk2{position:fixed;inset:0;perspective:2200px;perspective-origin:50% 46%}
+.sl{position:absolute;inset:0;transform-style:preserve-3d;backface-visibility:hidden}
+.hd{position:absolute;left:0;right:0;top:calc(66px + 3.2vh);padding:0 9vw;text-align:center;z-index:2;perspective:900px}
+.eye{display:inline-flex;align-items:center;gap:9px;font-size:clamp(11.5px,.86vw,14px);font-weight:800;color:var(--mut)}
+.eye .no{display:inline-grid;place-items:center;min-width:28px;height:21px;padding:0 8px;border-radius:999px;background:var(--ink);color:var(--bg1);font-size:11px;font-weight:800}
+.tt{margin:12px 0 0;font-size:clamp(26px,2.95vw,54px);line-height:1.2;font-weight:800;letter-spacing:-.035em;word-break:keep-all;overflow-wrap:anywhere}
+.tt .w{display:inline-block;overflow:hidden;vertical-align:top;padding:.04em .02em .12em;margin:-.04em 0 -.12em}.tt .w>span{display:inline-block;transform-origin:50% 100%}
+.tt em{font-style:normal;color:var(--acc);position:relative}
+.tt em::after{content:'';position:absolute;left:-.04em;right:-.04em;bottom:.02em;height:.16em;border-radius:.1em;z-index:-1;background:rgb(var(--accrgb) / .2);
+  transform:scaleX(0);transform-origin:0 50%;transition:transform 1s cubic-bezier(.22,1,.36,1) .25s}
+.sl.hl .tt em::after{transform:scaleX(1)}
+.sb{margin:13px auto 0;max-width:min(1180px,84vw);font-size:clamp(14px,1.16vw,21px);line-height:1.5;font-weight:500;color:var(--ink2);letter-spacing:-.015em;word-break:keep-all}
+.cover .hd{top:24vh}.cover .tt{font-size:clamp(34px,4.3vw,80px);margin-top:18px}
+.st{position:absolute;left:4.5vw;right:4.5vw;bottom:5vh;display:flex;justify-content:center;align-items:flex-start;z-index:1}
+.in{position:relative;transform-origin:50% 100%}
+.fig{position:relative}.fig svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fig .base{transition:opacity 1s ease}.sl.hl .fig .base.fd{opacity:.26}
+.ring{fill:none;stroke:var(--acc);stroke-width:2.5;stroke-dasharray:var(--l) var(--l);stroke-dashoffset:var(--l)}
+.sl.hl .ring{animation:rg 1.15s cubic-bezier(.65,0,.25,1) calc(var(--k,0)*140ms + .15s) forwards,br 3s ease-in-out calc(var(--k,0)*140ms + 1.4s) infinite}
+.halo{fill:none;stroke:rgb(var(--accrgb) / .3);stroke-width:10;opacity:0;filter:blur(6px)}.sl.hl .halo{animation:ha 3s ease-in-out 1.1s infinite}
+@keyframes rg{to{stroke-dashoffset:0}}@keyframes br{0%,100%{stroke-opacity:1}50%{stroke-opacity:.5}}@keyframes ha{0%,100%{opacity:.25}50%{opacity:1}}
+.chip{position:absolute;z-index:4;padding:6px 12px;border-radius:999px;background:var(--acc);color:#fff;font-size:13px;font-weight:800;white-space:nowrap;
+  box-shadow:0 8px 20px rgb(var(--accrgb) / .32);transform:translate(-100%,var(--ty,-62%)) scale(.6);opacity:0;transform-origin:100% 100%}
+.sl.hl .chip{animation:cp .65s cubic-bezier(.34,1.56,.64,1) .9s forwards}@keyframes cp{to{opacity:1;transform:translate(-100%,var(--ty,-62%)) scale(1)}}
+.tiles{display:flex;justify-content:center;gap:clamp(12px,1.3vw,22px);flex-wrap:wrap;padding-top:4vh}
+.tile{min-width:clamp(190px,15.5vw,290px);padding:clamp(16px,1.4vw,24px) clamp(18px,1.5vw,26px);border-radius:20px;text-align:left;background:var(--glass);
+  border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 22px 44px rgba(27,31,36,.10)}
+html.dk .tile{border-color:rgba(255,255,255,.08)}
+.tile .k{font-size:clamp(11.5px,.82vw,14px);font-weight:700;color:var(--mut)}.tile .v{margin-top:10px;font-size:clamp(19px,1.65vw,30px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.tile .s{margin-top:6px;font-size:12px;font-weight:600;color:var(--ink2)}
+.rc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 18px;max-width:1240px;margin:0 auto}
+.rc button{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-radius:14px;text-align:left;cursor:pointer;font:inherit;border:1px solid var(--line);background:var(--glass);color:var(--ink)}
+.rc button:hover{background:var(--bg1)}.rc .n{font-size:13px;font-weight:900;color:var(--acc);padding-top:1px}
+.rc .x{display:flex;flex-direction:column;gap:3px;min-width:0}.rc .t{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.35;word-break:keep-all}
+.rc .t em{font-style:normal;color:var(--acc)}.rc .l{font-size:11.5px;font-weight:600;color:var(--mut)}
+.ag{display:flex;justify-content:center;margin-top:26px}.ag button{height:46px;padding:0 24px;border-radius:999px;border:0;background:var(--ink);color:var(--bg1);font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.nv{position:fixed;top:56%;z-index:6;width:clamp(46px,3.7vw,62px);height:clamp(46px,3.7vw,62px);transform:translateY(-50%);border-radius:50%;border:1px solid var(--line);
+  background:var(--glass);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 10px 30px rgba(27,31,36,.12);transition:transform .2s,opacity .3s}
+.nv svg{width:42%;height:42%}.nv.p{left:1.4vw}.nv.n{right:1.4vw}.nv:hover{transform:translateY(-50%) scale(1.08)}.nv[disabled]{opacity:0;pointer-events:none}
+.hn{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;font-size:12px;font-weight:600;color:var(--mut);padding:6px 14px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--line);transition:opacity .8s}.hn.off{opacity:0}
+@media (max-width:760px){.top{padding:12px 14px 0}.hd{padding:0 6vw}.nv{top:auto;bottom:14px;transform:none}.hn{display:none}.rc{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.sl.hl .ring,.sl.hl .halo{animation:none;stroke-dashoffset:0}}
+@media print{.top,.nv,.hn{display:none}}`;
+  const js=`
+const D=JSON.parse(document.getElementById('tud').textContent);
+if(D.dark)document.documentElement.classList.add('dk');
+document.documentElement.lang=D.lang||'ko';
+const $=s=>document.querySelector(s),deck=$('.dk2'),N=D.slides.length,RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let I=-1,node=null,play=false,pt=0,tm=[],fx=0;
+$('.cn').textContent=D.name;document.title=D.name+' · Data Tour';
+$('.pg').innerHTML=D.slides.map((s,i)=>'<i data-go="'+i+'"></i>').join('');
+const svgNS='http://www.w3.org/2000/svg';
+function bodyHtml(s){
+  if(s.k==='cover')return '<div class="tiles">'+s.tiles.map(x=>'<div class="tile"><div class="k">'+esc(x.k)+'</div><div class="v">'+esc(x.v)+'</div>'+(x.s?'<div class="s">'+esc(x.s)+'</div>':'')+'</div>').join('')+'</div>';
+  if(s.k==='end')return '<div class="rc">'+s.recap.map(r=>'<button data-go="'+r.go+'"><span class="n">'+r.n+'</span><span class="x"><span class="t">'+r.t+'</span><span class="l">'+esc(r.l)+'</span></span></button>').join('')+'</div><div class="ag"><button data-go="0">↺ '+esc(D.ui.again)+'</button></div>';
+  if(!s.img)return '';
+  const W=s.w,H=s.h,id='c'+Math.random().toString(36).slice(2,7),rr=(w,h)=>Math.min(14,w/2,h/2),P=7;
+  const R=s.hl.map(r=>({x:r.x*W-P,y:r.y*H-P,w:r.w*W+P*2,h:r.h*H+P*2,c:r.c}));
+  return '<div class="fig"><svg viewBox="0 0 '+W+' '+H+'"><defs><clipPath id="'+id+'">'+R.map(r=>'<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'"/>').join('')+'</clipPath></defs>'
+    +'<image class="base'+(R.length?' fd':'')+'" href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'"/>'
+    +(R.length?'<image href="'+s.img+'" x="0" y="0" width="'+W+'" height="'+H+'" clip-path="url(#'+id+')"/>':'')
+    +R.map((r,k)=>'<rect class="halo" x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'"/><rect class="ring" x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+rr(r.w,r.h)+'" style="--k:'+k+';--l:'+Math.round(2*(r.w+r.h))+'"/>').join('')
+    +'</svg>'+R.filter(r=>r.c).map((r,k)=>'<div class="chip" style="left:'+((r.x+r.w-14)/W*100)+'%;top:'+((r.y>30?r.y:r.y+r.h)/H*100)+'%;--ty:'+(r.y>30?'-62%':'-38%')+'">'+esc(r.c)+'</div>').join('')+'</div>';}
+function layout(n,s){
+  const hd=n.querySelector('.hd'),st=n.querySelector('.st'),fig=n.querySelector('.fig');
+  st.style.top=(hd.offsetTop+hd.offsetHeight+Math.max(14,innerHeight*.028))+'px';
+  if(!fig)return;
+  const sw=st.clientWidth,sh=st.clientHeight,w=s.w,h=s.h;   /* s.w · s.h = 화면 크기(그림 파일은 그 2배 해상도) */
+  const k=Math.max(.2,Math.min(1.25,sw/w,sh/h));
+  fig.style.width=Math.round(w*k)+'px';fig.style.height=Math.round(h*k)+'px';
+  n.querySelector('.in').style.marginTop=Math.max(0,Math.round((sh-h*k)*.3))+'px';}
+function mount(i){
+  const s=D.slides[i],n=document.createElement('section');n.className='sl '+s.k;
+  n.innerHTML='<div class="hd"><div class="eye">'+s.eye+'</div><h2 class="tt">'+s.t+'</h2>'+(s.s?'<p class="sb">'+esc(s.s)+'</p>':'')+'</div><div class="st"><div class="in">'+bodyHtml(s)+'</div></div>';
+  deck.appendChild(n);layout(n,s);return n;}
+const an=(el,kf,o)=>el&&el.animate?el.animate(kf,o):null;
+function go(i,dir){
+  if(i<0||i>=N||i===I)return;tm.forEach(clearTimeout);tm=[];clearTimeout(pt);
+  dir=dir||(i>I?1:-1);const old=node;I=i;node=mount(i);
+  fx-=dir*288;$('.fl').style.backgroundPosition=fx+'px 0';
+  if(old){old.style.pointerEvents='none';const a=an(old,[{opacity:1,transform:'none'},{opacity:0,transform:'translate3d('+(-dir*32)+'%,0,-560px) rotateY('+(dir*34)+'deg)'}],{duration:RM?200:820,easing:'cubic-bezier(.7,0,.25,1)',fill:'forwards'});
+    const rm=()=>old.isConnected&&old.remove();if(a)a.onfinish=rm;setTimeout(rm,1000);}
+  an(node,[{opacity:0,transform:'translate3d('+(dir*36)+'%,0,-640px) rotateY('+(-dir*36)+'deg)'},{opacity:1,transform:'none'}],{duration:RM?220:1050,delay:RM||!old?0:120,easing:'cubic-bezier(.16,1,.3,1)',fill:'backwards'});
+  const E='cubic-bezier(.16,1,.3,1)',ws=[...node.querySelectorAll('.tt .w>span')];
+  an(node.querySelector('.eye'),[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:600,delay:200,easing:E,fill:'backwards'});
+  ws.forEach((w,k)=>an(w,[{opacity:0,transform:'translateY(105%) rotateX(-80deg)'},{opacity:1,transform:'none'}],{duration:RM?150:820,delay:RM?0:280+k*60,easing:'cubic-bezier(.2,.85,.25,1)',fill:'backwards'}));
+  an(node.querySelector('.sb'),[{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'none'}],{duration:760,delay:RM?0:520+ws.length*45,easing:E,fill:'backwards'});
+  an(node.querySelector('.in'),[{opacity:0,transform:'translateY(56px) scale(.95)'},{opacity:1,transform:'none'}],{duration:RM?150:1150,delay:RM?0:330,easing:E,fill:'backwards'});
+  /* 그래프는 왼쪽부터 드러난다 */
+  an(node.querySelector('.fig svg'),[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:RM?150:1300,delay:RM?0:500,easing:'cubic-bezier(.45,0,.2,1)',fill:'backwards'});
+  node.querySelectorAll('.tile,.rc button,.ag button').forEach((t,k)=>an(t,[{opacity:0,transform:'translateY(26px)'},{opacity:1,transform:'none'}],{duration:RM?150:760,delay:RM?0:480+k*70,easing:E,fill:'backwards'}));
+  const n=node;tm.push(setTimeout(()=>n.classList.add('hl'),RM?200:1900));
+  if(play)pt=setTimeout(()=>{I<N-1?go(I+1,1):setPlay(false);},9000);
+  paint();}
+function paint(){
+  document.querySelectorAll('.pg i').forEach((s,k)=>{s.classList.toggle('on',k<=I);s.classList.toggle('cur',k===I);s.classList.toggle('play',k===I&&play);});
+  $('.ct').textContent=String(I+1).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+  $('.nv.p').disabled=I<=0;$('.nv.n').disabled=I>=N-1;
+  $('.bp').setAttribute('aria-pressed',play?'true':'false');
+  $('.bp').innerHTML=play?'<svg viewBox="0 0 16 16"><path d="M5 3.5v9M11 3.5v9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>':'<svg viewBox="0 0 16 16"><path d="M5.2 3.4v9.2l7.3-4.6z" fill="currentColor"/></svg>';}
+function setPlay(on){play=!!on;clearTimeout(pt);if(play){if(I>=N-1){go(0,1);return;}pt=setTimeout(()=>{I<N-1?go(I+1,1):setPlay(false);},9000);}paint();}
+function fs(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}catch(e){}}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-go],.nv,.bp,.bf');if(!t)return;
+  if(t.classList.contains('nv'))return t.classList.contains('p')?go(I-1,-1):go(I+1,1);
+  if(t.classList.contains('bp'))return setPlay(!play);if(t.classList.contains('bf'))return fs();
+  setPlay(false);go(+t.dataset.go);});
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key;
+  if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'){e.preventDefault();go(I+1,1);}
+  else if(k==='ArrowLeft'||k==='PageUp'||k==='Backspace'){e.preventDefault();go(I-1,-1);}
+  else if(k==='Home')go(0,-1);else if(k==='End')go(N-1,1);
+  else if(k==='p'||k==='P')setPlay(!play);else if(k==='f'||k==='F')fs();});
+let sx=null,sy=0;
+addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){sx=e.clientX;sy=e.clientY;}});
+addEventListener('pointerup',e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4)dx<0?go(I+1,1):go(I-1,-1);});
+let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(node)layout(node,D.slides[I]);},120);});
+$('.hn').textContent=D.ui.hint;setTimeout(()=>$('.hn').classList.add('off'),5200);
+$('.nv.p').setAttribute('aria-label',D.ui.prev);$('.nv.n').setAttribute('aria-label',D.ui.next);$('.bp').title=D.ui.play;$('.bf').title=D.ui.fs;
+go(0,1);`;
+  return `<!doctype html>
+<html lang="${esc(D.lang||'ko')}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(D.name)} · Data Tour</title>
+<meta name="generator" content="Media Dashboard · Data Tour (${esc(D.made)})">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>${css}</style></head><body>
+<div class="fw"><div class="fl"></div></div>
+<div class="top"><div class="pg"></div><div class="mt"><span class="br"><span class="d"></span><b>DATA TOUR</b><span class="cn"></span></span><span class="sp"></span>
+<span class="ct"></span><button class="ib bp" type="button"></button><button class="ib bf" type="button"><svg viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+<div class="dk2"></div>
+<button class="nv p" type="button"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="nv n" type="button"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div class="hn"></div>
+<script type="application/json" id="tud">${json}</`+`script>
+<script>${js}</`+`script>
+</body></html>`;}
 (function(){const b=$('tourBtn');if(b)b.addEventListener('click',()=>{try{tuOpen();}catch(e){console.warn('tour',e);}});})();
