@@ -23235,9 +23235,11 @@ function tuPlace(items,obst,B,F,C){
     if(!it.finger)return null;
     pan=it.pan||[];own=it.el||null;
     const R=it.f||it.r;
-    /* 대상 둘레 → 대상 글자 둘레(칸 안 여백) → 그래프 묶음 바깥 위 · 아래(멀리서 가리킨다) */
+    /* 대상 둘레 → 대상 글자 둘레(칸 안 여백) → 그래프 묶음 바깥 위 · 아래(멀리서 가리킨다 —
+       사이에 다른 강조할 곳이 끼어 있으면 그쪽을 가리키는 것처럼 보이므로 뺀다) */
+    const clear=(y0,y1)=>!items.some(o=>o!==it&&o.r.x<R.x+R.w&&o.r.x+o.r.w>R.x&&o.r.y<y1&&o.r.y+o.r.h>y0);
     const cand=around(R,['top','right','left','bottom']).concat(it.t?around(it.t,['left','right','top','bottom']):[])
-      .concat(C?[fbox(R.x+R.w/2,C.y-G,180),fbox(R.x+R.w/2,C.y+C.h+G,0)]:[]);
+      .concat(C&&clear(C.y,R.y)?[fbox(R.x+R.w/2,C.y-G,180)]:[]).concat(C&&clear(R.y+R.h,C.y+C.h)?[fbox(R.x+R.w/2,C.y+C.h+G,0)]:[]);
     let best=null;
     if(it.pw)for(const fb of cand){const fc=cost(fb);if(fc>=1)continue;
       const pb=pills(fb,it.pw,it.ph).find(p=>cost(p)<1);if(pb){best={f:fb,p:pb};break;}}
@@ -23291,7 +23293,7 @@ function tuSpot(node,step){
   const old=[...fit.querySelectorAll('.tu-mk,.tu-mksvg,.tu-pt,.tu-chip')];
   const drop=()=>old.forEach(c=>{const a=tuAnim(c,[{opacity:getComputedStyle(c).opacity},{opacity:0}],{duration:TU.rm?60:300,fill:'forwards'});
     if(a)a.onfinish=()=>c.remove();else c.remove();});
-  const hls=all.filter(e=>tuStepOf(e)===step);
+  const hls=all.filter(e=>tuStepOf(e)===step).sort((a,b)=>+a.getAttribute('data-tuhl')-+b.getAttribute('data-tuhl'));
   if(!hls.length){drop();return;}
   /* 장면 들어오기 · 그래프 채우기가 아직 덜 끝났으면(느린 컴퓨터 · 뒤에 있던 탭) 끝 모습으로 맞춘 뒤 잰다 — 반복 효과는 그대로 */
   try{node.getAnimations({subtree:true}).forEach(a=>{try{const it=a.effect&&a.effect.getTiming().iterations;const tg=a.effect&&a.effect.target;
@@ -23640,7 +23642,7 @@ async function tuShot(sl,o){
     const M=44,B={x0:-M,y0:-M,x1:R.width+M,y1:R.height+M};
     const obst=tuObst(src).map(toP),marks=[],steps=tuSteps(src),bake=[];
     steps.forEach(st=>{
-      const hls=[...src.querySelectorAll('[data-tuhl]')].filter(e=>tuStepOf(e)===st);
+      const hls=[...src.querySelectorAll('[data-tuhl]')].filter(e=>tuStepOf(e)===st).sort((a,b)=>+a.getAttribute('data-tuhl')-+b.getAttribute('data-tuhl'));
       const its=tuItems(src,hls,sl.chips,toP,13),plan=tuPlace(its,obst,B,30,toP(R));
       /* SVG 도형은 차례가 하나뿐이면 그림에 같은 모양 덧칠로 담는다(상자보다 정확) */
       its.forEach((it,k)=>{const baked=it.svg&&steps.length===1;if(baked)bake.push(it);
