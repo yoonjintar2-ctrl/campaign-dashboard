@@ -163,9 +163,10 @@ function paintBadge(n,pulse){
     if(show&&pulse){b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse');}}
   if(c){c.classList.toggle('hidden',!show);c.textContent=String(n);}
 }
-async function memberPoll(){
+/* force — 화면이 뒤에 있어도 확인한다 (로그인 직후 첫 확인: 창을 열어 둔 채 다른 일을 하다 돌아와도 바로 숫자가 보이게) */
+async function memberPoll(force){
   if(!isAppMaster()||!CLOUD.sb)return;
-  if(document.hidden)return;
+  if(document.hidden&&!force)return;
   try{
     const {data,error}=await withTimeout(CLOUD.sb.rpc('pending_count'),15000,'');
     if(error)return;
@@ -182,8 +183,8 @@ async function memberPoll(){
 function memberPollStart(){
   memberPollStop();
   if(!isAppMaster())return;
-  memberPoll();
-  MB_POLL.t=setInterval(memberPoll,60*1000);
+  memberPoll(true);
+  MB_POLL.t=setInterval(()=>memberPoll(),60*1000);
 }
 function memberPollStop(){if(MB_POLL.t)clearInterval(MB_POLL.t);MB_POLL.t=null;MB_POLL.last=null;paintBadge(0);}
 addEventListener('visibilitychange',()=>{if(!document.hidden)memberPoll();});
