@@ -365,6 +365,10 @@ function renderDaily(){
   /* ---------- 운영 이슈 — 흰 바탕 · 검은 테두리 번호 원 (v103) ----------
      이슈가 시작된 날의 꺾은선 위에. 그날 꺾은선 값이 없으면 막대 위에. 같은 날 시작한 이슈는 원 하나 + 개수 배지.
      올리면 이슈 기간을 옅게 칠하고 내용을 띄운다 */
+  /* 데이터 투어(25-tour)가 시사점을 뽑는 재료 — 그린 그대로의 날짜 · 막대 값 · 꺾은선 값 */
+  window.__DAILY_INFO={ds,EL,bk,lk,series:series.map(s=>({key:s.key,vals:s.vals})),
+    totals:ds.map((_,i)=>i<EL?sum(series.map(s=>s.vals[i])):0),lineVals:lineVals?lineVals.slice():null,
+    bf:METRICS[bk]?METRICS[bk].f:null,lf:lk!=='none'&&METRICS[lk]?METRICS[lk].f:null};
   let ISSUE_DRAWN=0;const ISSUE_LIST=[];
   if(SHOW_ISSUES){
     const groups=new Map();

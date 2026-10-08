@@ -2203,6 +2203,7 @@ function renderBubble(){
   const maxCost=Math.max(...pts.map(p=>p.cost))||1;
   const R=c=>13+Math.sqrt(c/maxCost)*38;
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`},host);
+  svg.setAttribute('data-xl',xd.l);svg.setAttribute('data-yl',yd.l);
   /* 옅은 격자만 (구간 숫자는 넣지 않는다) */
   for(let i=0;i<=4;i++){
     S('line',{x1:P.l,x2:W-P.r,y1:P.t+PH*i/4,y2:P.t+PH*i/4,stroke:'var(--line2)','stroke-width':1},svg);
@@ -2243,6 +2244,10 @@ function renderBubble(){
   pts.slice().sort((a,b)=>b.cost-a.cost).forEach(p=>{
     const c=S('circle',{cx:X(p.xv),cy:Y(p.yv),r:R(p.cost),fill:colorOf(p),
       'fill-opacity':p.on?.62:.5,stroke:'none',class:'bub'},svg);
+    /* 데이터 투어(25-tour)용 — 이름 · 두 축 값 · 오른쪽 위로 갈수록 큰 점수(0~2) */
+    c.setAttribute('data-nm',p.name||'');c.setAttribute('data-md',[p.media,p.product].filter(Boolean).join(' · '));
+    c.setAttribute('data-xf',METRICS[xd.k].f(p.xv));c.setAttribute('data-yf',METRICS[yd.k].f(p.yv));
+    c.setAttribute('data-g',((X(p.xv)-P.l)/PW+(P.t+PH-Y(p.yv))/PH).toFixed(4));
     c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,
       `<div class="t">${esc(p.name||'(미지정)')}${p.on?'':' · 현재 OFF'}</div>`
       +`<div class="r"><span class="l">매체 · 상품</span><b>${esc(p.media)} · ${esc(p.product)}</b></div>`

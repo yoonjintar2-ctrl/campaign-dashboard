@@ -34,6 +34,8 @@ jobs:
           sed -i "s/__BUILD__/${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%MZ)/" dist/index.html
           # 설정 › 사용 가이드 버튼이 여는 PDF 도 함께 배포 (예전에는 빠져서 항상 "가이드 파일을 찾지 못했습니다")
           if [ -d guide ]; then cp -r guide dist/; fi
+          # 데이터 투어(v116)의 PPT 저장 도구(PptxGenJS) — 같은 사이트에서 먼저 불러오고, 안 되면 CDN
+          if [ -d vendor ]; then cp -r vendor dist/; fi
 
       - name: Check script syntax
         run: |

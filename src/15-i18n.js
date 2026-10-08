@@ -189,6 +189,9 @@ Object.assign(I18N_EN,{"일별 소진금액 (뒤 언덕)":"Daily spend (hill beh
 Object.assign(I18N_EN,{"유입 발생 매체만":"Only media with inflow"});
 /* v114 */
 Object.assign(I18N_EN,{"영역 바로가기":"Jump to section"});
+/* v116 — 데이터 투어 */
+Object.assign(I18N_EN,{"데이터 투어":"Data tour",
+  "서머리 그래프를 한 장씩 전체 화면으로 보여 주는 발표 모드 · 마지막에 PPT 로 저장할 수 있습니다":"Presentation mode — summary charts one at a time, full screen · save as PPT at the end"});
 /* v112 — 페이지 저장 */
 Object.assign(I18N_EN,{"⤓ 페이지 저장":"⤓ Save page",
   "지금 화면을 위에서 아래까지 한 장으로 저장합니다":"Saves the current page, top to bottom, as one file",

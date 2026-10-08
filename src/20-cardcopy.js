@@ -267,11 +267,13 @@ async function ccRender(card,opts){
   const pr=Math.min(2,16000/H2,16000/W2);
   const cv=document.createElement('canvas');cv.width=Math.round(W2*pr);cv.height=Math.round(H2*pr);
   const ctx=cv.getContext('2d');
-  const bg=getComputedStyle(card).backgroundColor;
-  ctx.fillStyle=bg&&bg!=='rgba(0, 0, 0, 0)'?bg:(cssVar('--surface')||'#fff');ctx.fillRect(0,0,cv.width,cv.height);
+  /* opts.transparent — 바탕을 칠하지 않는다(데이터 투어 PPT 의 누끼 그림, v116) */
+  if(!opts.transparent){const bg=getComputedStyle(card).backgroundColor;
+    ctx.fillStyle=bg&&bg!=='rgba(0, 0, 0, 0)'?bg:(cssVar('--surface')||'#fff');ctx.fillRect(0,0,cv.width,cv.height);}
   ctx.scale(pr,pr);ctx.drawImage(img,0,0,W2,H2);
   const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
   if(!blob)throw new Error('그림을 만들지 못했습니다');
+  if(opts.meta)return {blob,W:W2,H:H2};
   return blob;}
 function ccDownload(blob,card){
   const nm=card.querySelector('.infh>b,.infk>span');
