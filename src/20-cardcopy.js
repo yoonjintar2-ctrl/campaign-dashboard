@@ -279,7 +279,7 @@ async function ccRender(card,opts){
   return blob;}
 function ccDownload(blob,card){
   const nm=card.querySelector('.infh>b,.infk>span');
-  const sec=(nm&&nm.textContent.trim())||card.getAttribute('data-sect')||'card';
+  const sec=(nm&&nm.textContent.trim())||card.getAttribute('data-sect')||card.getAttribute('data-ccname')||'card';
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`${(typeof CAMPAIGN!=='undefined'&&CAMPAIGN.name||'dashboard').replace(/[\\/:*?"<>|]/g,'')}_${sec}.png`;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);}

@@ -30,7 +30,8 @@ Object.assign(I18N_EN,{"캠페인 구조":"Campaign structure","가지 굵기 = 
   "흐름 효과":"Flow","가지 순서":"Branch order","펼침":"Depth","매체 › 타깃":"Media › Target","타깃 › 매체":"Target › Media",
   "가지 위로 예산이 흘러가는 효과를 켜고 끕니다":"Turn the flowing-budget effect on or off",
   /* v120 — 별도 메뉴 · 화면 맞춤 */
-  "화면 맞춤":"Fit to screen",
+  "화면 맞춤":"Fit to screen","⧉ 그림 복사":"⧉ Copy image",
+  "캠페인 구조 카드를 그림(PNG)으로 클립보드에 복사합니다":"Copy the campaign structure card to the clipboard as an image (PNG)",
   "전체 구조가 스크롤 없이 한 화면에 들어오도록 촘촘하게 놓고, 모자라면 글자까지 함께 줄입니다":"Packs the whole structure into one screen without scrolling — shrinks the text too if needed"});
 /* 사전 보충 (v78 · 엑셀 불러오기 · 리포트 엑셀) */
 Object.assign(I18N_EN,{

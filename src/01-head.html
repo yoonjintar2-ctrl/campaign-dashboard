@@ -3353,6 +3353,14 @@ html.tu-on .secnav{display:none!important}
 .cs-wrap{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
 /* 화면 맞춤으로 줄였을 때 — 지도는 넓게 그린 뒤 scale 로 줄이고, 감싼 칸 높이는 줄인 높이(JS) */
 .cs-wrap.cs-scaled{overflow:hidden}
+/* 화면 맞춤 — 가로 스크롤바를 내지 않는다(폭은 JS 가 칸 안으로 맞춘다). 스크롤바가 생겼다 없어지며 폭이 흔들리는 되먹임을 끊는다 (v120.2) */
+.cs-wrap.cs-fitw{overflow-x:hidden}
+/* 캠페인 구조 화면 — 세로 스크롤바 자리를 늘 비워 두고(생겼다 없어지며 폭이 바뀌지 않게), 아래 여백을 줄여 한 화면에 */
+html:has(#tab-dash:not(.hidden)>#sub-struct:not(.hidden)){scrollbar-gutter:stable}
+#tab-dash:has(>#sub-struct:not(.hidden)){padding-bottom:24px}
+/* 카드 복사 단추(오른쪽 위, 마우스를 올리면 보임)가 범례를 덮지 않게 */
+.cs-card .cs-sum{padding-right:30px}
+.cs-lg .cs-scale{min-height:22px}
 .cs-map{position:relative;min-height:60px}
 .cs-map svg.cs-svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
 .cs-n{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;

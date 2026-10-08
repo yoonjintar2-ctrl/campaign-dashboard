@@ -22,7 +22,7 @@ var CS_P={loose:{fit:false,gRoot:28,gSeg:6,padN:8,padS:20,minPad:10,top:8,bot:16
 CS={order:'media',depth:5,flow:true,fit:true,collapsed:{},expanded:{},W:0,vh:0,scale:1,sig:'',agg:null,N:null,ro:null,io:null,t:0,hov:-1};
 (function(){try{const s=JSON.parse(localStorage.getItem('dmd:cs')||'{}');
   if(s.order==='target')CS.order='target';
-  if(s.depth>=1&&s.depth<=5)CS.depth=s.depth|0;
+  if(s.depth>=2&&s.depth<=5)CS.depth=s.depth|0;
   if(s.flow===false)CS.flow=false;
   if(s.fit===false)CS.fit=false;}catch(e){}})();
 function csSave(){try{localStorage.setItem('dmd:cs',JSON.stringify({order:CS.order,depth:CS.depth,flow:CS.flow,fit:CS.fit}));}catch(e){}}
@@ -124,19 +124,26 @@ function csTree(rows){
   all.forEach(n=>{if(n.depth>1){let p=n;while(p.depth>1)p=p.parent;n.hue=p.hue;}});
   return {root,all};}
 
-/* ---- 그리기 ---- */
+/* ---- 그리기 ----
+   (v120.2) 세 단계로 나눴다 — csCols(폭: 칸 · 카드 만들고 재기) → csVert(높이: 굵기 K · 줄 간격 e 로 세로 배치, 계산만) → csDraw(가지 · 흐름 · 칩)
+   · 펼침을 줄이면 안 보이는 칸은 폭 0 — 남는 폭을 보이는 가지 사이로 나눠 오른쪽 끝까지 채운다(여백 없음)
+   · 화면 맞춤: 넘치면 촘촘 → 넓게 그려 줄이기 / 남으면 가지를 굵게(기본의 1.8배 · 가장 큰 라인 72px 까지) → 그래도 남으면 줄 간격 */
+function csMinDepth(){return csDims().indexOf('media')+1;}   /* 펼침은 매체까지가 최소 */
 function renderStruct(){
   if(!CS)return;
   const wrap=$('csWrap'),map=$('csMap');if(!wrap||!map)return;
   const W=wrap.clientWidth;
   if(W<60){CS.W=0;return;}          /* 숨어 있다 — 보이게 되면 ResizeObserver 가 다시 부른다 (함정 65) */
-  CS.W=W;CS.vh=innerHeight;
+  CS.W=W;CS.vh=innerHeight;CS.drawnAt=Date.now();
   csWire();
+  if(CS.depth<csMinDepth())CS.depth=csMinDepth();
   if(CS.lang!==LANG){CS.lang=LANG;csPaintCtl();}   /* 언어를 바꾸면 펼침 · 가지 순서 목록 글자도 */
   hideTip&&hideTip();
   /* 지난 배율을 걷어 내고 잰다 — 줄인 채로 재면 getBoundingClientRect 가 줄어든 크기를 돌려준다 */
   map.style.transform='';map.style.transformOrigin='';wrap.style.height='';wrap.classList.remove('cs-scaled');
   map.classList.remove('cs-fit');CS.scale=1;
+  /* 화면 맞춤이면 가로 스크롤바를 아예 내지 않는다 — 스크롤바가 생겼다 없어졌다 하며 폭이 흔들리던 것(v120.2) */
+  wrap.classList.toggle('cs-fitw',!!CS.fit);
   const rows=csRows();
   if(!rows.length){map.innerHTML=`<div class="hint" style="padding:18px 4px">${L('표시할 라인이 없습니다.','No lines to show.')}</div>`;
     map.style.height='';map.style.width='';$('csSum').innerHTML='';return;}
@@ -144,52 +151,68 @@ function renderStruct(){
   const TOT=root.bud||1;
   /* 굵기 — 전체 예산 = 200px. 한 라인이 너무 굵어지지 않게(카드보다 굵으면 어색) 가장 큰 라인이 40px 를 넘지 않도록 줄인다 */
   const lineMax=Math.max(...LINES.filter(l=>rows.some(r=>r.l===l)).map(l=>lineGross(l)),0)/TOT;
-  const K=Math.max(40,Math.min(200,lineMax>0?40/lineMax:200));
+  const K0=Math.max(40,Math.min(200,lineMax>0?40/lineMax:200));
   /* 요약 줄은 먼저 — 아래 그리기가 중간에 실패해도 비지 않게(지도 위치도 이 줄 높이에 달렸다) */
-  try{csSum(root,rows,TOT,K);}catch(e){console.warn('struct sum',e);}
+  try{csSum(root,rows,TOT,K0,1);}catch(e){console.warn('struct sum',e);}
   CS.surf=csHex(getComputedStyle(document.documentElement).getPropertyValue('--surface'))||'#ffffff';
-  const C={rows,root,all,TOT,K};
-  /* 화면 맞춤 — 보통 → 촘촘 → 넓게 그려 줄이기(가장 덜 줄이는 배율을 반씩 좁혀 찾는다) */
-  let P=CS_P.loose,s=1;
+  const C={rows,root,all,TOT};
+  let P=CS_P.loose,s=1,K=K0,e=0;
+  let G=csCols(W,P,C),H=csVert(G,K,P,0);
   if(CS.fit){
     const Hav=csAvailH(wrap);
-    if(csLayout(W,P,C,false).H>Hav){
+    if(H>Hav){
       P=CS_P.tight;map.classList.add('cs-fit');
-      if(csLayout(W,P,C,false).H>Hav){
-        if(csLayout(W/CS_SMIN,P,C,false).H*CS_SMIN>Hav)s=CS_SMIN;
-        else{let lo=CS_SMIN,hi=1;
-          for(let i=0;i<6;i++){const m=(lo+hi)/2;if(csLayout(W/m,P,C,false).H*m<=Hav)lo=m;else hi=m;}
-          s=lo;}}}}
-  const R=csLayout(W/s,P,C,true);
+      G=csCols(W,P,C);H=csVert(G,K,P,0);
+      if(H>Hav){
+        /* 넓게 그려 줄이기 — 가장 덜 줄이는 배율을 반씩 좁혀 찾는다 */
+        const at=m=>{G=csCols(W/m,P,C);return csVert(G,K,P,0)*m;};
+        if(at(CS_SMIN)>Hav)s=CS_SMIN;
+        else{let lo=CS_SMIN,hi=1;for(let i=0;i<6;i++){const m=(lo+hi)/2;if(at(m)<=Hav)lo=m;else hi=m;}s=lo;}
+        G=csCols(W/s,P,C);H=csVert(G,K,P,0);}}
+    if(s===1&&H<Hav-4){
+      /* 남는 높이 — ① 가지를 굵게 ② 그래도 남으면 줄 간격 (폭은 그대로라 카드를 다시 잴 필요 없이 계산만) */
+      const Kmax=Math.max(K0,Math.min(K0*1.8,lineMax>0?72/lineMax:K0*1.8));
+      if(csVert(G,Kmax,P,0)<=Hav)K=Kmax;
+      else{let lo=K0,hi=Kmax;for(let i=0;i<8;i++){const m=(lo+hi)/2;if(csVert(G,m,P,0)<=Hav)lo=m;else hi=m;}K=lo;}
+      const EMAX=120;
+      if(csVert(G,K,P,EMAX)<=Hav)e=EMAX;
+      else{let lo=0,hi=EMAX;for(let i=0;i<7;i++){const m=(lo+hi)/2;if(csVert(G,K,P,m)<=Hav)lo=m;else hi=m;}e=lo;}}}
+  H=csVert(G,K,P,e);
+  csDraw(G,K,P,H);
   if(s<1){map.style.transformOrigin='0 0';map.style.transform=`scale(${s.toFixed(4)})`;
-    wrap.style.height=Math.ceil(R.H*s)+'px';wrap.classList.add('cs-scaled');}
-  CS.scale=s;
+    wrap.style.height=Math.ceil(H*s)+'px';wrap.classList.add('cs-scaled');}
+  CS.scale=s;CS.K=K;
+  /* 굵기 견본은 화면에 보이는 굵기(K × 배율)로 다시 */
+  if(K!==K0||s!==1)try{csSum(root,rows,TOT,K,s);}catch(e){}
   map.classList.toggle('cs-noflow',!CS.flow);
   /* 툴팁용 — 라인별 누적 실적을 한 번만 모아 둔다 (캠페인 전체 화면이라 조회 기간을 따르지 않는다) */
   const pf={};
   try{FACTS.forEach(f=>{const a=pf[f.lid]||(pf[f.lid]={cost:0,imp:0,click:0});a.cost+=+f.cost||0;a.imp+=+f.imp||0;a.click+=+f.click||0;});}catch(e){}
-  CS.N={all,vis:R.vis,rows,TOT,K,pf};CS.hov=-1;CS.tipK='';
+  CS.N={all,vis:G.vis,rows,TOT,K,pf};CS.hov=-1;CS.tipK='';
   csBind();
   try{CS.io&&CS.io.observe(map);}catch(e){}
 }
-/* 한 화면에 쓸 수 있는 지도 높이 — 문서 맨 위에서 지도까지를 뺀 창 높이.
+/* 한 화면에 쓸 수 있는 지도 높이 — 문서 맨 위에서 지도까지를 뺀 창 높이(아래는 카드 여백 + 페이지 아래 여백).
    위가 너무 길면(낮은 창) 영역 제목을 머리줄 바로 밑까지 내렸을 때 기준 */
 function csAvailH(wrap){
-  const vh=innerHeight,bot=20;
+  const vh=innerHeight,bot=42;
   const stick=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stick'),10)||94;
   const top=wrap.getBoundingClientRect().top+scrollY;
   let h=vh-top-bot;
   if(h<(vh-stick)*.55){const sec=$('csSec');const st=sec?sec.getBoundingClientRect().top+scrollY:top;
     h=vh-stick-12-(top-st)-bot;}
   return Math.max(300,h);}
-/* 폭 Wl 로 카드를 놓고 잰다 — draw 가 false 면 높이만(화면 맞춤 배율 찾기용), true 면 가지 · 흐름 · 칩까지 */
-function csLayout(Wl,P,C,draw){
-  const map=$('csMap'),{rows,root,TOT,K}=C;
-  const bw=v=>v>0?Math.max(1.8,K*v/TOT):0;
+/* ① 폭 Wl 로 칸을 정하고 카드를 만들어 잰다 */
+function csCols(Wl,P,C){
+  const map=$('csMap'),{rows,root}=C;
   const dims=csDims();
   const kidsOn=n=>n.kids.length>0&&!CS.collapsed[n.i+'|'+n.label]&&(n.depth<CS.depth||!!CS.expanded[n.i+'|'+n.label]);
   const chipsOn=n=>n.dim==='product'&&!CS.collapsed[n.i+'|'+n.label]&&(CS.depth>=5||!!CS.expanded[n.i+'|'+n.label]);
   const vis=[];const walk=n=>{vis.push(n);if(kidsOn(n))n.kids.forEach(walk);};walk(root);
+  /* 보이는 가장 깊은 칸 — 0 캠페인 · 1 구분 · 2/3 매체·타깃 · 4 광고상품 · 5 소재 */
+  let dv=0;vis.forEach(n=>{if(n.depth>dv)dv=n.depth;});
+  if(vis.some(n=>chipsOn(n)&&n.cr&&n.cr.length))dv=5;
+  const tail=dv<5?44:0;                 /* 접힌 가지의 +N 표시 자리 */
 
   /* 열 — 보통: 타깃 칸만 좁게(줄바꿈) 두고 남는 폭은 가지 사이 간격으로.
      촘촘: 타깃이 한 줄로 펴질 만큼(최대 460px) 먼저 주고 남는 폭을 간격으로 — 줄 수가 곧 높이다 */
@@ -211,24 +234,29 @@ function csLayout(Wl,P,C,draw){
     MEDW=Math.max(90,Math.min(150,Math.ceil(mN)||124));
     PRODW=Math.max(110,Math.min(270,Math.ceil(pN)||164));
     CHIPW=Math.max(60,Math.min(300,cN?Math.ceil(cN)+6:60));}
-  const fixed=ROOTW+SEGW+MEDW+PRODW+CHIPW;
+  const tD=dims.indexOf('target')+1,tOn=tD<=dv;
+  const wOf=(d,TW)=>d===0?ROOTW:d===1?SEGW:d===4?PRODW:d===5?CHIPW:(dims[d-1]==='target'?TW:MEDW);
+  const base=[140,78,70,60,20],mins=P.fit?[48,26,24,22,8]:[72,34,30,28,10];
+  const act=i=>i<dv;
+  const bs=base.reduce((a,x,i)=>a+(act(i)?x:0),0)||1,ms=mins.reduce((a,x,i)=>a+(act(i)?x:0),0);
+  let fixed=tail;for(let d=0;d<=dv;d++)if(!(tOn&&d===tD))fixed+=wOf(d,0);
   const avail=Math.max(0,Wl-fixed);
-  const base=[140,78,70,60,20],bsum=368;
-  let TW,g;
-  if(!P.fit){
-    if(avail>=568){TW=Math.min(320,200+(avail-568)*.4);const rest=avail-TW;g=base.map(x=>x*rest/bsum);}
-    else{TW=Math.max(130,200-(568-avail)*.45);const rest=Math.max(0,avail-TW);const mins=[72,34,30,28,10];
-      g=base.map((x,i)=>Math.max(mins[i],x*rest/bsum));}}
-  else{
-    const mins=[48,26,24,22,8],msum=128;
-    let need=0;vis.forEach(n=>{if(n.dim==='target')need=Math.max(need,csTextW(n.label,'400 11px')+22);});
-    TW=Math.max(130,Math.min(need||200,460,avail-msum));
-    const rest=Math.max(0,avail-TW);
-    g=base.map((x,i)=>Math.max(mins[i],x*rest/bsum));}
-  const MW=Math.ceil(fixed+TW+g.reduce((s,v)=>s+v,0));
-  const colW={media:MEDW,target:Math.round(TW),product:PRODW};
-  const X=[0,ROOTW+g[0]];
-  X[2]=X[1]+SEGW+g[1];X[3]=X[2]+colW[dims[1]]+g[2];X[4]=X[3]+colW[dims[2]]+g[3];
+  let TW=0;
+  if(tOn){
+    if(!P.fit){const pv=200+bs;TW=avail>=pv?Math.min(320,200+(avail-pv)*.4):Math.max(130,200-(pv-avail)*.45);}
+    else{let need=0;vis.forEach(n=>{if(n.dim==='target')need=Math.max(need,csTextW(n.label,'400 11px')+22);});
+      TW=Math.max(130,Math.min(need||200,460,avail-ms));}}
+  const gaps=rest=>base.map((x,i)=>act(i)?Math.max(mins[i],x*rest/bs):0);
+  let g=gaps(Math.max(0,avail-TW));
+  /* 최소 간격 때문에 넘치면 타깃 칸을 그만큼 줄인다 */
+  const over=fixed+TW+g.reduce((a,v)=>a+v,0)-Wl;
+  if(over>0&&tOn&&TW>130){TW-=Math.min(over,TW-130);g=gaps(Math.max(0,avail-TW));}
+  TW=Math.round(TW);
+  const X=[0];for(let d=0;d<5;d++)X[d+1]=X[d]+wOf(d,TW)+g[d];
+  const total=X[dv]+wOf(dv,TW)+tail;
+  /* 폭은 감싼 칸을 1px 도 넘지 않게(소수점 올림으로 넘치면 스크롤바가 생겼다 없어졌다 한다) */
+  const MW=total<=Wl+.5?Math.floor(Math.min(total,Wl)):Math.ceil(total);
+  const colW={media:MEDW,target:TW||200,product:PRODW};
   const chipX=X[4]+PRODW+g[4];
 
   /* 카드를 먼저 그려 실제 크기를 잰다 (글자 폭 어림 금지 — 함정 69 · 위 칸 폭 어림은 상한일 뿐, 높이는 실제로 잰다) */
@@ -248,19 +276,24 @@ function csLayout(Wl,P,C,draw){
   map.style.width=MW+'px';
   map.innerHTML=html;
   const elOf={};map.querySelectorAll('.cs-n').forEach(e=>{elOf[e.dataset.nid]=e;});
-  /* 크기 */
-  vis.forEach(n=>{
-    const e=elOf[n.i];n.bw=bw(n.bud);
-    if(n.dim==='root'){n.w=ROOTW;n.ch=Math.max(e.offsetHeight+(P.fit?16:24),Math.ceil(K)+18,P.rootMin);return;}
-    if(n.dim==='seg'){n.w=SEGW;n.ch=Math.max(P.fit?18:20,Math.ceil(n.bw));return;}
+  vis.forEach(n=>{const e=elOf[n.i];
+    if(n.dim==='root'){n.w=ROOTW;n.rh=e.offsetHeight;return;}
+    if(n.dim==='seg'){n.w=SEGW;n.rh=0;return;}
     /* 소수점 폭을 내리면 글자가 말줄임으로 잘린다 → 올림 + 1 */
-    const rc=e.getBoundingClientRect();n.w=Math.ceil(rc.width)+1;n.ch=Math.max(Math.ceil(rc.height),Math.ceil(n.bw)+P.minPad);});
-  /* 세로 배치 */
-  const gap=n=>n.dim==='root'?P.gRoot:n.dim==='seg'?P.gSeg:0;
+    const rc=e.getBoundingClientRect();n.w=Math.ceil(rc.width)+1;n.rh=Math.ceil(rc.height);});
+  return {vis,X,MW,ROOTW,SEGW,PRODW,chipX,elOf,kidsOn,chipsOn,TOT:C.TOT};}
+/* ② 세로 배치 — 굵기 K · 줄 간격 덧붙임 e. 계산만 하고 높이를 돌려준다 */
+function csVert(G,K,P,e){
+  const {vis,kidsOn,chipsOn,TOT}=G;
+  vis.forEach(n=>{n.bw=n.bud>0?Math.max(1.8,K*n.bud/TOT):0;
+    if(n.dim==='root')n.ch=Math.max(n.rh+(P.fit?16:24),Math.ceil(K)+18,P.rootMin);
+    else if(n.dim==='seg')n.ch=Math.max(P.fit?18:20,Math.ceil(n.bw));
+    else n.ch=Math.max(n.rh,Math.ceil(n.bw)+P.minPad);});
+  const gap=n=>n.dim==='root'?P.gRoot+e*1.5:n.dim==='seg'?P.gSeg+e*.3:0;
   const measure=n=>{
-    const own=n.ch+(n.dim==='seg'?P.padS:P.padN);
+    const own=n.ch+(n.dim==='seg'?P.padS:P.padN+e);
     if(kidsOn(n)){let s=0;n.kids.forEach((k,j)=>{s+=measure(k)+(j?gap(n):0);});n.band=Math.max(own,s);}
-    else n.band=chipsOn(n)?Math.max(own,P.fit?24:30):own;
+    else n.band=chipsOn(n)?Math.max(own,(P.fit?24:30)+e):own;
     return n.band;};
   const place=(n,top)=>{
     if(kidsOn(n)){let s=0;n.kids.forEach((k,j)=>{s+=k.band+(j?gap(n):0);});
@@ -268,11 +301,14 @@ function csLayout(Wl,P,C,draw){
       n.kids.forEach((k,j)=>{if(j)y+=gap(n);place(k,y);y+=k.band;});
       n.y=(n.kids[0].y+n.kids[n.kids.length-1].y)/2;}
     else n.y=top+n.band/2;
-    n.x=X[n.depth];};
+    n.x=G.X[n.depth];};
+  const root=vis[0];
   measure(root);place(root,P.top);
-  const H=Math.ceil(Math.max(root.band,root.ch)+P.top+P.bot);
+  return Math.ceil(Math.max(root.band,root.ch)+P.top+P.bot);}
+/* ③ 놓고 · 가지 · 흐름 · 칩 */
+function csDraw(G,K,P,H){
+  const map=$('csMap'),{vis,X,MW,ROOTW,SEGW,PRODW,chipX,elOf,kidsOn,chipsOn}=G;
   map.style.height=H+'px';
-  if(!draw)return {H,MW,vis};
   /* 가지 출발점 — 부모 끝에서 자식 가지를 굵기만큼 쌓는다 (합 = 부모 굵기) */
   vis.forEach(p=>{if(!kidsOn(p))return;
     const S=p.kids.reduce((s,k)=>s+k.bw,0);let y=p.y-S/2;
@@ -331,9 +367,7 @@ function csLayout(Wl,P,C,draw){
   const svg=`<svg class="cs-svg" width="${MW}" height="${H}" viewBox="0 0 ${MW} ${H}" aria-hidden="true">`
     +`<g class="cs-lines">${lines}${zeros}</g><g class="cs-flows ccskip">${flows}</g></svg>`;
   map.insertAdjacentHTML('afterbegin',svg);
-  map.insertAdjacentHTML('beforeend',badges+chips);
-  return {H,MW,vis};
-}
+  map.insertAdjacentHTML('beforeend',badges+chips);}
 /* 글자 폭 — 실제 글꼴로 잰다 (font = '굵기 크기') */
 function csTextW(s,font){
   try{const c=csTextW.c||(csTextW.c=document.createElement('canvas').getContext('2d'));
@@ -341,7 +375,7 @@ function csTextW(s,font){
   catch(e){return String(s).length*7;}}
 
 /* ---- 위쪽 요약 줄 — 구성 개수 · 굵기 견본 · 구분 범례 ---- */
-function csSum(root,rows,TOT,K){
+function csSum(root,rows,TOT,K,sc){
   const el=$('csSum');if(!el)return;
   const uniq=k=>new Set(rows.map(r=>dimKey(r[k]))).size;
   const crs=new Set();rows.forEach(r=>r.cr.forEach(c=>crs.add(dimKey(c.n))));
@@ -349,8 +383,10 @@ function csSum(root,rows,TOT,K){
   const named=root.kids.filter(k=>!k.blank);
   const cnt=[[named.length,L('구분','segments')],[uniq('media'),L('매체','media')],[uniq('product'),L('광고상품','products')],
     [uniq('target'),L('타깃 그룹','target groups')],[crs.size,L('소재','creatives')]];
-  const scaleV=TOT>=5e8?1e8:TOT>=5e7?1e7:1e6;
-  const scaleH=Math.max(1.8,K*scaleV/TOT);
+  /* 견본 = 화면에 보이는 굵기(K × 배율)가 22px 를 넘지 않는 가장 큰 깔끔한 금액 — 요약 줄 높이가 흔들리지 않게 */
+  const kv=K*(sc||1)/TOT;
+  const scaleV=[1e9,5e8,1e8,5e7,1e7,5e6,1e6,5e5,1e5].find(v=>v<=TOT*1.0001&&kv*v<=22)||1e5;
+  const scaleH=Math.max(1.8,kv*scaleV);
   if(!named.length)cnt.shift();
   el.innerHTML=`<div class="cs-cnt">${cnt.map(c=>`<span><b>${c[0]}</b>${esc(c[1])}</span>`).join('')}</div>`
     +`<div class="cs-lg"><span class="cs-scale">${L('가지 굵기 = 예산','Branch width = budget')}<i style="height:${scaleH.toFixed(1)}px"></i><b>${manUnitL(scaleV)}</b></span>`
@@ -411,6 +447,7 @@ function csHot(n,crKey){
 function csToggle(n){
   if(n.dim==='root'){CS.collapsed={};CS.expanded={};CS.depth=5;csSave();csPaintCtl();renderStruct();return;}
   if(!n.kids.length&&n.dim!=='product')return;
+  if(n.depth<csMinDepth())return;          /* 매체까지는 늘 펼친다 (v120.2) */
   const key=n.i+'|'+n.label;
   const open=n.dim==='product'?(!CS.collapsed[key]&&(CS.depth>=5||CS.expanded[key])):(!CS.collapsed[key]&&(n.depth<CS.depth||CS.expanded[key]));
   const limited=n.dim==='product'?CS.depth<5:n.depth>=CS.depth;
@@ -444,30 +481,48 @@ function csBind(){
     if(!h||!h.el.classList.contains('cs-n'))return;e.preventDefault();csToggle(h.n);});
   map.addEventListener('focusin',e=>{const h=nodeOf(e);if(h&&h.el.classList.contains('cs-n'))csHot(h.n);});
   map.addEventListener('focusout',()=>csHot(null));}
+/* 그림 복사 — 카드 오른쪽 위 복사 단추(20-cardcopy)와 같은 그림. 도구 줄에도 둔다(카드 단추는 마우스를 올려야 보여서) */
+async function csCopy(btn){
+  const card=document.querySelector('#sub-struct .cs-card');if(!card||btn.__busy)return;
+  btn.__busy=1;const lb=btn.textContent;btn.classList.add('busy');
+  const done=t=>{btn.textContent=t;setTimeout(()=>{btn.textContent=lb;btn.__busy=0;btn.classList.remove('busy');},1400);};
+  const dl=async()=>{ccDownload(await ccRender(card),card);done(L('✓ PNG 로 저장','✓ Saved as PNG'));};
+  try{
+    if(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem&&window.isSecureContext){
+      await navigator.clipboard.write([new ClipboardItem({'image/png':ccRender(card)})]);done(L('✓ 복사했습니다','✓ Copied'));return;}
+    await dl();
+  }catch(e){console.warn('구조 복사',e);try{await dl();}catch(x){done(L('복사하지 못했습니다','Copy failed'));}}}
 /* 위쪽 도구 — 화면 맞춤 · 흐름 효과 · 가지 순서 · 펼침 */
 function csPaintCtl(){
   const sw=$('csFlowSw');if(sw)sw.classList.toggle('on',!!CS.flow);
   const fw=$('csFitSw');if(fw)fw.classList.toggle('on',!!CS.fit);
   const os=$('csOrderSel');if(os){os.innerHTML=`<option value="media">${L('매체 › 타깃','Media › Target')}</option><option value="target">${L('타깃 › 매체','Target › Media')}</option>`;os.value=CS.order;}
-  const ds=$('csDepthSel');if(ds){const d=csDims().map(csDimName).concat([csDimName('creative')]);
-    ds.innerHTML=d.map((x,i)=>`<option value="${i+1}">${L('','to ')}${esc(x)}${L('까지','')}</option>`).join('');ds.value=String(CS.depth);}}
+  const ds=$('csDepthSel');if(ds){const d=csDims().map(csDimName).concat([csDimName('creative')]),mn=csMinDepth();
+    if(CS.depth<mn)CS.depth=mn;
+    ds.innerHTML=d.map((x,i)=>i+1<mn?'':`<option value="${i+1}">${L('','to ')}${esc(x)}${L('까지','')}</option>`).join('');ds.value=String(CS.depth);}}
 function csWire(){
   if(CS.wired)return;CS.wired=1;
   const sw=$('csFlowSw');
   if(sw)sw.onclick=()=>{CS.flow=!CS.flow;csSave();sw.classList.toggle('on',CS.flow);
     const m=$('csMap');if(m)m.classList.toggle('cs-noflow',!CS.flow);};
+  const cb=$('csCopyBtn');if(cb)cb.onclick=()=>csCopy(cb);
   const fw=$('csFitSw');
   if(fw)fw.onclick=()=>{CS.fit=!CS.fit;csSave();fw.classList.toggle('on',CS.fit);renderStruct();};
   /* 화면 맞춤은 창 높이도 따른다 (폭은 아래 ResizeObserver) */
   addEventListener('resize',()=>{if(!CS.fit||!CS.W||Math.abs(innerHeight-CS.vh)<6)return;
     clearTimeout(CS.t2);CS.t2=setTimeout(renderStruct,160);});
   const os=$('csOrderSel');if(os)os.onchange=()=>{CS.order=os.value==='target'?'target':'media';CS.collapsed={};CS.expanded={};csSave();csPaintCtl();renderStruct();};
-  const ds=$('csDepthSel');if(ds)ds.onchange=()=>{CS.depth=Math.max(1,Math.min(5,+ds.value||5));CS.collapsed={};CS.expanded={};csSave();renderStruct();};
+  const ds=$('csDepthSel');if(ds)ds.onchange=()=>{CS.depth=Math.max(csMinDepth(),Math.min(5,+ds.value||5));CS.collapsed={};CS.expanded={};csSave();renderStruct();};
   csPaintCtl();
   /* 화면 밖이면 흐름을 멈춘다 · 폭이 바뀌면(메뉴 옮김 · 창 크기 · 숨김 → 보임) 다시 그린다 */
   try{CS.io=new IntersectionObserver(es=>es.forEach(x=>x.target.classList.toggle('cs-pause',!x.isIntersecting)));}catch(e){}
   try{const w=$('csWrap');CS.ro=new ResizeObserver(()=>{const nw=w.clientWidth;
-      if(Math.abs(nw-CS.W)<3)return;clearTimeout(CS.t);CS.t=setTimeout(renderStruct,nw>60&&CS.W<60?0:140);});
+      if(Math.abs(nw-CS.W)<3)return;
+      /* 되먹임 막기 — 다시 그린 직후 스크롤바 폭만큼(24px 이하) 줄었다 늘었다 하는 것은 따라가지 않는다 */
+      const now=Date.now();CS.rh=(CS.rh||[]).filter(t=>now-t<2500);
+      if(CS.rh.length>=3&&nw>60&&CS.W>60&&Math.abs(nw-CS.W)<=24)return;
+      CS.rh.push(now);
+      clearTimeout(CS.t);CS.t=setTimeout(renderStruct,nw>60&&CS.W<60?0:140);});
     CS.ro.observe(w);}catch(e){}}
 /* 언어를 바꾸면 도구 글자도 */
 setTimeout(()=>{try{csWire();csPaintCtl();renderStruct();}catch(e){console.warn('struct',e);}
