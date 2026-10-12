@@ -1334,7 +1334,7 @@ const COL_FORMULA={
   ctr:'클릭 ÷ 노출',vtr:'조회 ÷ 노출',cvr:'전환 ÷ 클릭',etr:'참여 ÷ 노출',
   roas:'매출 ÷ 소진금액',
   imp_r:'노출 ÷ 목표 노출',click_r:'클릭 ÷ 목표 클릭',
-  view_r:'조회 ÷ 목표 조회',conv_r:'전환 ÷ 목표 전환',
+  view_r:'조회 ÷ 목표 조회',conv_r:'전환 ÷ 목표 전환',eng_r:'참여 ÷ 목표 참여',
   spend_r:'소진금액 ÷ 예산',
   progress:'오늘까지 지난 일수 ÷ 전체 집행 일수 (목표 페이스)',
   bonusRate:'보너스 밸류 ÷ 예산',

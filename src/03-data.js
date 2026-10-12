@@ -508,6 +508,8 @@ const FIELDS=[
 
   ['eng','참여','Engagement','참여','in',0,0,0,1],
   ['e_eng','목표 참여','est.engagement','참여','in',0,1,0,1],
+  /* 참여 달성률 (v125) — 다른 달성률과 같은 규칙(실적 ÷ 목표)으로 05-chart buildSumCell 이 만든다 */
+  ['eng_r','참여 달성률','eng. achv.','참여','calc',0,0,0,1],
   ['etr','ETR','ETR','참여','calc',0,1,0,1],
   ['g_cpe','목표 CPE','goal CPE','참여','calc',0,1,0,1],
   ['cpe','CPE','CPE','참여','calc',0,1,0,1],
@@ -724,6 +726,30 @@ const aggExp=ls=>{const b=zeroB();b.budget=0;b.value=0;b.netSum=0;b.bonusSum=0;
   /* 이 묶음의 라인들 — 행마다 진도율을 따로 계산할 때 쓴다 (v79) */
   Object.defineProperty(b,'lines',{value:ls,enumerable:false});
   return b;};
+/* ===== 월로 나눈 행의 예상값 — 일할 계산 (v125) =====
+   라인 예산 · 목표 · 밸류 · 보너스를 **그 달에 걸친 집행일수 비율**만큼만 잡는다.
+   예) 8/24~10/21(59일) 라인 → 8월 = 8/24~8/31 8일 → 8/59, 9월 30/59, 10월 21/59.
+   달마다 따로 반올림하면 합이 원래 예산과 몇 원씩 어긋나므로 **누적값을 반올림한 차이**로 나눈다
+   (모든 달을 더하면 라인 예산과 정확히 같다). 기간(시작 ~ 종료)도 그 달과 겹치는 구간으로 좁힌다 —
+   그래서 그 행의 진도율 · 기간 열도 그 달 기준이 된다. 그 달에 집행일이 없는 라인은 빠진다. */
+function monthSpan(ym){
+  const [y,m]=String(ym||'').split('-').map(Number);
+  if(!y||!m)return null;
+  const mm=String(m).padStart(2,'0');
+  return {a:dIdx(`${y}-${mm}-01`),z:dIdx(`${y}-${mm}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`)};}
+function lineInMonth(l,ym){
+  const ms=monthSpan(ym);if(!ms)return l;
+  const {a,z,n}=lineSpan(l);
+  const lo=Math.max(a,ms.a),hi=Math.min(z,ms.z);
+  if(hi<lo)return null;
+  const c0=lo-a,c1=hi-a+1;
+  const part=v=>{v=+v||0;return Math.round(v*c1/n)-Math.round(v*c0/n);};
+  const e={};Object.keys(l.e||{}).forEach(m=>{e[m]=part(l.e[m]);});
+  const hasVal=!(l.value===undefined||l.value===null||l.value==='');
+  return {...l,e,gross:part(lineGross(l)),bonus:part(l.bonus),value:hasVal?part(l.value):l.value,
+    start:ALLDATES[lo]?iso(ALLDATES[lo]):l.start,end:ALLDATES[hi]?iso(ALLDATES[hi]):l.end};}
+/* 라인 묶음의 예상값 — ym(YYYY-MM)을 주면 그 달 몫만 */
+const aggExpIn=(ls,ym)=>ym?aggExp(ls.map(l=>lineInMonth(l,ym)).filter(Boolean)):aggExp(ls);
 /* 날짜를 M/D 로 (앞자리 0 없이). 연도가 올해와 다르면 YY/M/D */
 const mdy=s=>{if(!s)return '–';const [y,m,d]=String(s).split('-').map(Number);
   const cy=new Date(CAMPAIGN.today+'T00:00:00').getFullYear();

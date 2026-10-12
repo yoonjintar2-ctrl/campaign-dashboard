@@ -600,13 +600,22 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       return String(av[i]).localeCompare(String(bv[i]),'ko');}
     return 0;});
   entries=applyOrder(entries,cfg);
+  /* 한 묶음에서 바꾼 형제 순서를 다른 달의 같은 묶음에도 (v125) */
+  entries=applySibOrder(entries,dims,cfg,e=>e[0].split(SEP));
   /* 예상 효율(라인)보다 행이 더 잘게 나뉜 경우:
      예상값은 라인 단위까지만 매칭해 구하고, 같은 라인 그룹에서는 첫 행에만 합쳐서 표시한다.
      (소재·월처럼 라인에 없는 차원으로 쪼개면 값이 흩어져 표시가 안 되기 때문) */
   const expIdx=dims.map((d,i)=>NO_EXP_DIMS.includes(d)?-1:i).filter(i=>i>=0);
   const finer=expIdx.length<dims.length;                 /* 라인보다 잘게 나뉘었는가 */
-  const expKey=vals=>expIdx.map(i=>vals[i]).join(SEP);
-  const expFor=vals=>aggExp(LNS.filter(l=>expIdx.every(i=>i>=vals.length||lv(l,dims[i])===vals[i])));
+  /* '월' 로 나눴으면 예산 · 목표를 그 달의 집행일수만큼 일할 계산한다 (v125) —
+     예전에는 달마다 라인 예산 전체가 되풀이돼 8/24~8/31 처럼 며칠뿐인 달도 예산이 꽉 차 보였다.
+     같은 라인이라도 달이 다르면 예상값 칸을 합치지 않는다(expKey 에 달을 넣음) */
+  const monIdx=dims.indexOf('month');
+  const monOf=vals=>monIdx>=0&&monIdx<vals.length?vals[monIdx]:'';
+  const expKey=vals=>expIdx.map(i=>vals[i]).join(SEP)+(monIdx>=0?SEP+monOf(vals):'');
+  /* 예상값을 아예 숨기는 표 — 라인 차원도 월도 없을 때(소재 · 랜딩만) */
+  const XHIDE=(expIdx.length||monIdx>=0)?false:'all';
+  const expFor=vals=>aggExpIn(LNS.filter(l=>expIdx.every(i=>i>=vals.length||lv(l,dims[i])===vals[i])),monOf(vals));
   /* 머리글 정렬 (v72) — 화면에서만. 같은 부모 안에서 그 열 값으로 형제끼리 줄 세운다 */
   const hpKey='piv:'+(cfg.id||'mix');
   const srt=HP_SORT[hpKey];
@@ -614,7 +623,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
     entries=hpSortEntries(entries,dims,srt,pre=>{
       if(!cellDef[srt.k])return NaN;
       const gf=facts.filter(f=>pre.every((v,x)=>f[dims[x]]===v));
-      try{return hpVal(cellDef[srt.k](aggFacts(gf),expFor(pre),expIdx.length?false:'all')[0]);}catch(e){return NaN;}});}
+      try{return hpVal(cellDef[srt.k](aggFacts(gf),expFor(pre),XHIDE)[0]);}catch(e){return NaN;}});}
   /* 맨 위 묶음(구분 등)의 순서를 손으로 정했으면(cfg.topOrder — 끌어 옮기기 · '순서' 단추) 머리글 정렬보다 우선 (v124).
      그 안의 매체 · 랜딩은 머리글 정렬(예: IWV 많은 순)을 그대로 따른다. 목록에 없는 새 값은 맨 뒤 */
   if(Array.isArray(cfg.topOrder)&&cfg.topOrder.length&&dims.length>1){
@@ -677,7 +686,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       +`${d>0?'+':''}${(d/goal*100).toFixed(1)}% ${d>0?'(저조)':'(우수)'}`;};
   /* 같은 라인(예상 효율 입력 단위)에 속한 연속 데이터 행의 길이를 미리 센다 */
   const runInfo=out.map(()=>null);
-  if(finer&&expIdx.length){
+  if(finer&&(expIdx.length||monIdx>=0)){
     let i=0;
     while(i<out.length){
       if(out[i].kind!=='data'){i++;continue;}
@@ -697,7 +706,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
         h+=`<td class="head" data-lvl="${ci}" data-pk="${esc(vals.slice(0,ci+1).join(SEP))}"`
           +` data-pp="${esc(vals.slice(0,ci).join(SEP))}"${sp>1?` rowspan="${sp}"`:''}>${dimCellHTML(dims[ci],v)}</td>`;});
       const rls=LNS.filter(l=>expIdx.every(i2=>i2>=vals.length||lv(l,dims[i2])===vals[i2]));
-      h+=cells(aggFacts(fs),expFor(vals),expIdx.length?false:'all',runInfo[i],rowKpi(rls,cols),true)+'</tr>';
+      h+=cells(aggFacts(fs),expFor(vals),XHIDE,runInfo[i],rowKpi(rls,cols),true)+'</tr>';
     }else{
       const L=r.level,vals=r.vals;
       h+=`<tr class="sub sub-l${Math.min(L,3)}">`;
@@ -707,10 +716,10 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       const cs=Math.max(dims.length-(L+1),1);
       h+=`<td class="head" data-lvl="${L+1>=dims.length?L:L+1}" colspan="${cs}">${esc(dimDisp(dims[L],vals[L]))} 소계</td>`;
       const gf=facts.filter(f=>vals.every((v,x)=>f[dims[x]]===v));
-      h+=cells(aggFacts(gf),expFor(vals),expIdx.length?false:'all')+'</tr>';
+      h+=cells(aggFacts(gf),expFor(vals),XHIDE)+'</tr>';
     }});
   h+=`<tr class="total"><td class="head" data-lvl="0" colspan="${dims.length}">TOTAL</td>`
-    +cells(aggFacts(facts),aggExp(opt&&opt.lines?activeLines().filter(l=>LNS.includes(l)):activeLines()),expIdx.length?false:'all')+'</tr></tbody>';
+    +cells(aggFacts(facts),aggExp(opt&&opt.lines?activeLines().filter(l=>LNS.includes(l)):activeLines()),XHIDE)+'</tr></tbody>';
   tbl.innerHTML=h;
   applyColWidths(tbl,cfg,cols,!!(opt&&opt.fill));
   markBlanks(tbl);

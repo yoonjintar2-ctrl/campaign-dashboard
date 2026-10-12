@@ -630,7 +630,8 @@ function openBuilder(host,cfg,opts){
       +'<span class="spacer"></span>'
       +'<button class="btn sm primary" data-a="close">닫기</button>';
     ft.querySelector('[data-a=close]').onclick=()=>{host.classList.add('hidden');host.innerHTML='';};
-    ft.querySelector('[data-a=reset]').onclick=()=>{cfg.order=null;opts.onApply&&opts.onApply();};
+    ft.querySelector('[data-a=reset]').onclick=()=>{cfg.order=null;delete cfg.sibOrder;opts.onApply&&opts.onApply();
+      try{markDirty();saveLocal();}catch(e){}};
   }
   /* 바꾸는 즉시 표에 반영한다 — 예전에는 [적용] 을 눌러야 했다 */
   function commit(){
@@ -743,7 +744,10 @@ function enableRowDrag(tbl,cfg,rerender){
       const from=keys.indexOf(RDRAG.key);let to;
       keys.splice(from,1);to=keys.indexOf(tr.dataset.key);
       keys.splice(before?to:to+1,0,RDRAG.key);
-      cfg.order=keys;RDRAG=null;rerender();
+      cfg.order=keys;
+      /* 같은 순서를 다른 달의 같은 묶음에도 (v125) */
+      try{const Lf=String(RDRAG.key).split(SEP).length-1;learnSibOrder(cfg,keys,Lf,sibPre(RDRAG.pre,Lf));}catch(x){}
+      RDRAG=null;rerender();
       try{markDirty();saveLocal();}catch(x){}};
   });
   /* 상위 계층 블록 이동 */
@@ -777,6 +781,8 @@ function enableRowDrag(tbl,cfg,rerender){
       const at=before?first:last+1;
       rest.splice(at<0?rest.length:at,0,...moving);
       cfg.order=rest;
+      /* 같은 순서를 다른 달의 같은 묶음에도 (v125) */
+      try{const Lb=+BDRAG.lvl;learnSibOrder(cfg,rest,Lb,sibPre(BDRAG.pp,Lb));}catch(x){}
       /* 맨 위 단계(구분 등)를 옮겼으면 그 순서를 따로 기억 — 머리글 정렬을 켜 둬도 유지된다 (v124) */
       if(BDRAG.lvl==='0')cfg.topOrder=[...new Set(rest.map(k=>k.split(SEP)[0]))];
       BDRAG=null;rerender();
@@ -803,6 +809,46 @@ const applyOrder=(entries,cfg)=>{
   const idx=k=>{const i=cfg.order.indexOf(k);return i<0?1e9:i;};
   return entries.slice().sort((a,b)=>idx(a[0])-idx(b[0]));
 };
+/* ===== 형제 순서 공유 (v125) =====
+   한 묶음 안에서 끌어 바꾼 순서를, 상위 묶음이 **'월' 만 다른** 다른 묶음에도 똑같이 쓴다.
+   예) 월 › 매체 › 광고상품 표에서 8월 YouTube 의 VVC 를 맨 위로 → 9월 · 10월 YouTube 도 VVC 가 맨 위.
+       8월 안에서 Meta 를 YouTube 위로 올리면 다른 달도 Meta 가 위.
+   규칙은 표 설정 cfg.sibOrder 에 { '광고상품@매체=YouTube': ['VVC','VRC',…] } 로 담겨 캠페인 문서와 함께 저장된다.
+   열쇠에 '월' 값을 넣지 않으므로 **나중에 생기는 달에도** 같은 순서가 걸린다.
+   구분 · 매체처럼 월이 아닌 상위 값은 열쇠에 남는다 — 브랜딩 YouTube 와 퍼포먼스 YouTube 는 따로 정한다. */
+const SIB_FREE_DIMS=['month'];
+function sibRuleKey(dims,L,vals){
+  return dims[L]+'@'+dims.slice(0,L).map((d,i)=>SIB_FREE_DIMS.includes(d)?'':d+'='+vals[i])
+    .filter(Boolean).join('\u0002');}
+/* 단계마다 형제 묶음을 규칙 순서로 다시 세운다. 규칙에 없는 값은 지금 순서 그대로 뒤에.
+   같은 묶음 줄은 한데 모인다(떨어져 있던 새 행도 제 묶음 안으로) — valsOf(item) = 그 줄의 차원 값 배열 */
+function applySibOrder(list,dims,cfg,valsOf){
+  const so=cfg&&cfg.sibOrder;
+  if(!so||typeof so!=='object'||!Object.keys(so).length||!dims||!dims.length)return list;
+  const walk=(items,L)=>{
+    if(L>=dims.length||items.length<2)return items;
+    const groups=new Map();
+    items.forEach(it=>{const v=String(valsOf(it)[L]);if(!groups.has(v))groups.set(v,[]);groups.get(v).push(it);});
+    let order=[...groups.keys()];
+    const rule=order.length>1?so[sibRuleKey(dims,L,valsOf(items[0]).map(String))]:null;
+    if(Array.isArray(rule)&&rule.length){
+      const rk=v=>{const i=rule.indexOf(v);return i<0?1e9:i;};
+      order=order.map((v,i)=>({v,i,r:rk(v)})).sort((a,b)=>a.r-b.r||a.i-b.i).map(x=>x.v);}
+    return order.flatMap(v=>walk(groups.get(v),L+1));};
+  return walk(list,0);}
+/* 끌어 옮긴 뒤의 줄 목록(keys)에서 그 부모(pre) 아래 L 단계 형제 순서를 읽어 규칙으로 남긴다 */
+function learnSibOrder(cfg,keys,L,pre){
+  const dims=(cfg&&cfg.rows||[]).map(r=>r.k);
+  if(dims.length<2||!(L>=0&&L<dims.length)||pre.length!==L)return;
+  const seq=[];
+  keys.forEach(k=>{const v=String(k).split(SEP);
+    if(pre.every((x,i)=>v[i]===x)&&!seq.includes(v[L]))seq.push(v[L]);});
+  if(seq.length<2)return;
+  const rk=sibRuleKey(dims,L,pre);
+  const old=(cfg.sibOrder&&Array.isArray(cfg.sibOrder[rk]))?cfg.sibOrder[rk]:[];
+  cfg.sibOrder={...(cfg.sibOrder||{}),[rk]:seq.concat(old.filter(v=>!seq.includes(v)))};}
+/* 부모 값 배열 — 맨 위 단계의 부모는 빈 배열. 구분이 비어 있는('') 묶음도 있으므로 단계 수로 판단한다 */
+const sibPre=(s,L)=>L===0?[]:String(s==null?'':s).split(SEP);
 
 /* ===== 머리글 팝업 (v72) — 머리글을 누르면 그 열이 무슨 값인지 설명하고,
    그 열 기준으로 오름차순 · 내림차순 정렬을 고른다. 모든 표(서머리 · 일자별 · 미디어믹스 · TV)에 쓴다.

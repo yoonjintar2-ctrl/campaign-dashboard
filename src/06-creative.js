@@ -1558,6 +1558,8 @@ function renderGantt(){
     return 0;});
   if(GANTT.order&&GANTT_SORT==='budget'){const idx=k=>{const i=GANTT.order.indexOf(k);return i<0?1e9:i;};
     rowsData.sort((a,b)=>idx(a.key)-idx(b.key));}
+  /* 한 묶음에서 바꾼 형제 순서를 다른 달의 같은 묶음에도 (v125) */
+  if(GANTT_SORT==='budget')rowsData=applySibOrder(rowsData,dims,GANTT,r=>r.vals);
   /* 머리글로 고른 정렬 (v110) — 서머리와 같은 규칙: 같은 부모 안에서 형제끼리 그 열 값으로.
      묶음(소계) 단위는 묶음 합계로, 맨 아래 줄은 줄 값으로. 행 머리 열을 고르면 그 단계만 이름순 */
   const HS=HP_SORT.gantt;

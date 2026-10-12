@@ -644,7 +644,7 @@ function infOrderDlg(){
   paint();
   const done=()=>{closeModal();try{renderInflow();}catch(e){console.warn(e);}try{markDirty();saveLocal();}catch(e){}};
   box.querySelector('[data-a=ok]').onclick=()=>{cfg.topOrder=list.slice();done();};
-  box.querySelector('[data-a=auto]').onclick=()=>{delete cfg.topOrder;cfg.order=null;done();};}
+  box.querySelector('[data-a=auto]').onclick=()=>{delete cfg.topOrder;delete cfg.sibOrder;cfg.order=null;done();};}
 
 /* 효율 버블이 다시 그려질 때(데이터 · 필터 · 기간이 바뀔 때) 함께 그린다 */
 (function(){try{const orig=renderBubble;renderBubble=function(){const r=orig.apply(this,arguments);try{renderInflow();}catch(e){console.warn(e);}return r;};}catch(e){}})();

@@ -870,6 +870,7 @@ function renderMix(){
       return String(av[i]).localeCompare(String(bv[i]),'ko');}
     return 0;});
   entries=applyOrder(entries,MIX_CFG);
+  entries=applySibOrder(entries,dims,MIX_CFG,e=>e[0].split(SEP));   /* v125 — 형제 순서 공유 */
   const totalBudget=sum(LINES.map(lineGross));
   const linesOf=rs=>[...new Set(rs.map(r=>r.l))];
   const cell=(rs,k,tot)=>{
