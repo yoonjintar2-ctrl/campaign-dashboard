@@ -3099,6 +3099,19 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwr .avgk{margin-right:4px;vertical-align:1px}
 .ldavg .avgk{display:block;margin-bottom:1px;white-space:nowrap}
 .infh .infcfg{margin-left:auto}
+.infh .infcfg+.infcfg{margin-left:6px}
+.infh .infcfg.hidden{display:none}
+.infordon{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc);vertical-align:2px;margin-left:2px}
+/* 순서 정하기 창 (v124) */
+.inford{display:flex;flex-direction:column;gap:6px}
+.inforow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:grab}
+.inforow.dragging{opacity:.5}
+.inforow.ins-top{box-shadow:0 -2px 0 var(--acc)}.inforow.ins-bot{box-shadow:0 2px 0 var(--acc)}
+.inforow .grip{color:var(--muted);font-size:12px;letter-spacing:-2px}
+.inforow .n{min-width:18px;font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.inforow b{font-weight:700}
+.inforow .btn{min-width:30px;padding:0 6px}
+.inforow .btn[disabled]{opacity:.3;cursor:default}
 #infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
 .infempty{padding:22px 6px}
@@ -5868,7 +5881,10 @@ function enableRowDrag(tbl,cfg,rerender){
       const last=rest.length-1-[...rest].reverse().findIndex(k=>inBlk(k,tgt));
       const at=before?first:last+1;
       rest.splice(at<0?rest.length:at,0,...moving);
-      cfg.order=rest;BDRAG=null;rerender();
+      cfg.order=rest;
+      /* 맨 위 단계(구분 등)를 옮겼으면 그 순서를 따로 기억 — 머리글 정렬을 켜 둬도 유지된다 (v124) */
+      if(BDRAG.lvl==='0')cfg.topOrder=[...new Set(rest.map(k=>k.split(SEP)[0]))];
+      BDRAG=null;rerender();
       try{markDirty();saveLocal();}catch(x){}};
   });
 }
@@ -7641,6 +7657,11 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       if(!cellDef[srt.k])return NaN;
       const gf=facts.filter(f=>pre.every((v,x)=>f[dims[x]]===v));
       try{return hpVal(cellDef[srt.k](aggFacts(gf),expFor(pre),expIdx.length?false:'all')[0]);}catch(e){return NaN;}});}
+  /* 맨 위 묶음(구분 등)의 순서를 손으로 정했으면(cfg.topOrder — 끌어 옮기기 · '순서' 단추) 머리글 정렬보다 우선 (v124).
+     그 안의 매체 · 랜딩은 머리글 정렬(예: IWV 많은 순)을 그대로 따른다. 목록에 없는 새 값은 맨 뒤 */
+  if(Array.isArray(cfg.topOrder)&&cfg.topOrder.length&&dims.length>1){
+    const ti=v=>{const i=cfg.topOrder.indexOf(v);return i<0?1e9:i;};
+    entries=entries.map((e,i)=>({e,i,t:ti(e[0].split(SEP)[0])})).sort((a,b)=>a.t-b.t||a.i-b.i).map(x=>x.e);}
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,rows);
   /* 예상값이 들어가는 열 — 소재처럼 잘게 나뉜 구간에서는 위·아래 셀을 합쳐 한 번만 표시한다 */
@@ -20464,7 +20485,10 @@ function infGroups(dim,okSet,seg,onlySeg){
     g.fs.push(f);});
   return [...map.values()].map(g=>({key:g.key,lab:g.lab,sub:g.sub,col:g.col,seg:g.seg,b:aggFacts(g.fs)}));}
 /* 구분 순서 = 예상 효율(라인)에 처음 나온 순서. 구분이 없는 줄은 맨 뒤 */
-const infSegRank=()=>{const m=new Map();LINES.forEach(l=>{const s=l.segment||'';if(s&&!m.has(s))m.set(s,m.size);});return s=>s?(m.has(s)?m.get(s):m.size):m.size+1;};
+/* (v124) 상세 표에서 구분 순서를 정했으면(INF_TBL.topOrder) 흐름 · 체류시간 그래프도 같은 순서로 */
+const infSegOrder=()=>{try{const c=INF_TBL;return c&&c.rows&&c.rows[0]&&c.rows[0].k==='segment'&&Array.isArray(c.topOrder)?c.topOrder:[];}catch(e){return [];}};
+const infSegRank=()=>{const m=new Map();infSegOrder().forEach(s=>{if(s&&!m.has(s))m.set(s,m.size);});
+  LINES.forEach(l=>{const s=l.segment||'';if(s&&!m.has(s))m.set(s,m.size);});return s=>s?(m.has(s)?m.get(s):m.size):m.size+1;};
 const infSegLab=s=>s===''?L('(구분 없음)','(no segment)'):s==='__etc'?L('그 외','Others'):s;
 const infColor=g=>{if(g.col==='__etc')return 'rgb(150,157,166)';try{const c=hueOf(g.col);return `rgb(${c[0]},${c[1]},${c[2]})`;}catch(e){return 'var(--acc)';}};
 const infName=g=>[g.seg?infSegLab(g.seg):'',g.sub,g.lab].filter(Boolean).join(' · ');
@@ -20529,7 +20553,7 @@ function renderInflow(){
     </div>
     <div class="infcell"><div class="infh"><b>${L('유입 효율 상세분석','Inflow efficiency details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
         <span class="switch${infTbl().allMedia?'':' on'}" id="infOnlySw" title="${L('끄면 유입 데이터가 없는 매체까지 모두 보여 줍니다','Turn off to show media without inflow data too')}"><i></i> ${L('유입 발생 매체만','Only media with inflow')}</span>
-        ${isClient()?'':`<button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
+        ${isClient()?'':`<button class="btn sm infcfg" id="infOrdBtn" title="${L('맨 앞 기준(구분 등)의 순서를 직접 정합니다 — 저장하면 그대로 유지됩니다','Set the order of the first grouping (e.g. segment) — kept when saved')}">↕ ${L('순서','Order')}</button><button class="btn sm infcfg" id="infCfgBtn">${L('⚙ 헤더 편집','⚙ Edit headers')}</button>`}</div>
       <div class="hidden" id="infCfgBox"></div>
       <div class="tbl-wrap noy" id="infTblWrap"><table class="tbl gln fit cmpt inftbl" id="infTbl"></table></div></div>
     ${miss.length?`<div class="hint infmiss">${L(`IWV 가 없거나 ${INF_MIN}건 미만이라 분석에서 뺀 매체`,`Excluded (no IWV or fewer than ${INF_MIN})`)}: <span data-noi18n>${esc(miss.join(' · '))}</span></div>`:''}`;
@@ -20547,6 +20571,7 @@ function renderInflow(){
   try{infTable();}catch(e){console.warn(e);}
   {const sw=$('infOnlySw');if(sw)sw.onclick=()=>{const c=infTbl();c.allMedia=!c.allMedia;sw.classList.toggle('on',!c.allMedia);
     infTable();try{if(!isClient()){markDirty();saveLocal();}}catch(e){}};}
+  {const ob=$('infOrdBtn');if(ob)ob.onclick=infOrderDlg;}
   const cb=$('infCfgBtn');
   if(cb)cb.onclick=()=>{const box=$('infCfgBox');if(!box)return;
     if(!box.classList.contains('hidden')&&box.firstChild){box.classList.add('hidden');box.innerHTML='';return;}
@@ -20615,11 +20640,13 @@ function infFlowLayout(M,v,W,HM){
   const clipN=narrow?10:15;
   const pf=x=>pct(x,x<.01?2:1);
   const segOf=i=>M.useSeg?rows[i].seg:null;
+  /* 이름표 벌리기 (v124) — 아래로 밀어 겹침을 풀고, 아래 끝을 넘으면 넘친 이름표부터 차례로 위로 되민다.
+     예전에는 넘친 만큼 이름표 전체를 한꺼번에 올려서, 아래쪽이 붐비면 위쪽 매체 이름표까지 자기 마디에서 떨어져
+     옆 매체의 띠 옆에 붙어 보였다(iX3 — Naver GFA 띠가 Tmap 이름표 옆에서 Model Page 로 가는 것처럼) */
   const spread=(cs,gap,lo,hi)=>{const o=cs.map((c,i)=>({c,i,y:c})).sort((a,b)=>a.c-b.c);
     for(let k=1;k<o.length;k++)if(o[k].y<o[k-1].y+gap)o[k].y=o[k-1].y+gap;
-    const over=o.length?o[o.length-1].y-hi:0;if(over>0)o.forEach(x=>x.y-=over);
-    for(let k=o.length-2;k>=0;k--)if(o[k].y>o[k+1].y-gap)o[k].y=o[k+1].y-gap;
-    const under=o.length?lo-o[0].y:0;if(under>0)o.forEach(x=>x.y+=under);
+    if(o.length&&o[o.length-1].y>hi){o[o.length-1].y=hi;for(let k=o.length-2;k>=0;k--)if(o[k].y>o[k+1].y-gap)o[k].y=o[k+1].y-gap;}
+    if(o.length&&o[0].y<lo){o[0].y=lo;for(let k=1;k<o.length;k++)if(o[k].y<o[k-1].y+gap)o[k].y=o[k-1].y+gap;}
     const r=[];o.forEach(x=>r[x.i]=x.y);return r;};
   /* 기둥 하나 — 값 비중대로 쌓는다. 구분이 바뀌는 자리는 틈을 넓혀 묶음이 보이게 */
   const gapsOf=vals=>{const vis=vals.map((x,i)=>x>0?i:-1).filter(i=>i>=0);
@@ -21019,7 +21046,40 @@ function infTable(){
     facts:only?factFilter().filter(f=>INF_OK.has(f.lid)):factFilter(),lines:only?LINES.filter(l=>INF_OK.has(l.id)):LINES,fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
+  /* '순서' 단추 — 맨 앞 기준이 둘 이상 나뉠 때만, 이름은 그 기준으로(구분 순서 · 매체 순서 …) */
+  {const ob=$('infOrdBtn');if(ob){const d=cfg.rows&&cfg.rows[0]&&cfg.rows[0].k,n=new Set([...tbl.querySelectorAll('tbody tr[data-key]')].map(r=>r.dataset.key.split(SEP)[0])).size;
+    const dl=(DIMS.find(x=>x.k===d)||{l:d||''}).l;
+    ob.classList.toggle('hidden',!(cfg.rows.length>1&&n>1));ob.innerHTML=`↕ ${esc(L(`${dl} 순서`,`${dl} order`))}${Array.isArray(cfg.topOrder)&&cfg.topOrder.length?' <i class="infordon"></i>':''}`;}}
 }
+/* 맨 앞 기준(구분 등) 순서 정하기 (v124) — 끌어 옮기거나 ▲▼. '자동'은 머리글 정렬(기본 IWV 많은 순)을 따른다.
+   정한 순서는 표 설정(INF_TBL.topOrder)에 담겨 저장되고, 구분이면 유입 흐름 · 체류시간 그래프도 같은 순서 */
+function infOrderDlg(){
+  const cfg=infTbl(),tbl=$('infTbl');if(!tbl)return;
+  const d=cfg.rows&&cfg.rows[0]&&cfg.rows[0].k,dl=(DIMS.find(x=>x.k===d)||{l:d||''}).l;
+  let list=[...new Set([...tbl.querySelectorAll('tbody tr[data-key]')].map(r=>r.dataset.key.split(SEP)[0]))];
+  const lab=v=>d==='segment'?infSegLab(v):(v||'–');
+  const box=openModal(L(`${dl} 순서`,`${dl} order`),
+    `<div class="hint" style="margin-bottom:10px">${L(`끌어서 옮기거나 ▲▼ 로 순서를 바꿉니다. 저장하면 이 순서가 유지되고, 그 안의 행은 머리글 정렬(기본 IWV 많은 순)을 따릅니다.${d==='segment'?' 유입 흐름 · 체류시간 그래프도 같은 순서로 그립니다.':''}`,
+      `Drag or use ▲▼. The order is kept when saved; rows inside still follow the header sort (IWV by default).${d==='segment'?' The traffic flow and time-on-site charts follow it too.':''}`)}</div>
+     <div class="inford" id="infOrdList"></div>`,
+    `<button class="btn" data-a="auto" title="${L('머리글 정렬(기본 IWV 많은 순)대로','Follow the header sort (IWV by default)')}">${L('자동 (정렬대로)','Auto (by sort)')}</button><div class="spacer"></div>
+     <button class="btn" data-close>${L('취소','Cancel')}</button><button class="btn primary" data-a="ok">${L('적용','Apply')}</button>`,{w:420});
+  const host=box.querySelector('#infOrdList');let drag=null;
+  const paint=()=>{host.innerHTML=list.map((v,i)=>`<div class="inforow" draggable="true" data-i="${i}"><span class="grip">⋮⋮</span><span class="n">${i+1}</span><b>${esc(lab(v))}</b>
+      <span class="spacer"></span><button type="button" class="btn sm" data-up="${i}" ${i?'':'disabled'} aria-label="${L('위로','Up')}">▲</button><button type="button" class="btn sm" data-dn="${i}" ${i<list.length-1?'':'disabled'} aria-label="${L('아래로','Down')}">▼</button></div>`).join('');
+    host.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[list[i-1],list[i]]=[list[i],list[i-1]];paint();});
+    host.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{const i=+b.dataset.dn;[list[i+1],list[i]]=[list[i],list[i+1]];paint();});
+    host.querySelectorAll('.inforow').forEach(r=>{
+      r.ondragstart=e=>{drag=+r.dataset.i;r.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','o');};
+      r.ondragend=()=>{drag=null;r.classList.remove('dragging');host.querySelectorAll('.ins-top,.ins-bot').forEach(x=>x.classList.remove('ins-top','ins-bot'));};
+      r.ondragover=e=>{if(drag==null)return;e.preventDefault();host.querySelectorAll('.ins-top,.ins-bot').forEach(x=>x.classList.remove('ins-top','ins-bot'));
+        const rr=r.getBoundingClientRect();r.classList.add(e.clientY<rr.top+rr.height/2?'ins-top':'ins-bot');};
+      r.ondrop=e=>{if(drag==null)return;e.preventDefault();const to=+r.dataset.i,before=r.classList.contains('ins-top');
+        const v=list.splice(drag,1)[0];let at=to>drag?to-1:to;if(!before)at++;list.splice(at,0,v);drag=null;paint();};});};
+  paint();
+  const done=()=>{closeModal();try{renderInflow();}catch(e){console.warn(e);}try{markDirty();saveLocal();}catch(e){}};
+  box.querySelector('[data-a=ok]').onclick=()=>{cfg.topOrder=list.slice();done();};
+  box.querySelector('[data-a=auto]').onclick=()=>{delete cfg.topOrder;cfg.order=null;done();};}
 
 /* 효율 버블이 다시 그려질 때(데이터 · 필터 · 기간이 바뀔 때) 함께 그린다 */
 (function(){try{const orig=renderBubble;renderBubble=function(){const r=orig.apply(this,arguments);try{renderInflow();}catch(e){console.warn(e);}return r;};}catch(e){}})();

@@ -3099,6 +3099,19 @@ table.sheet td.calc{background:var(--acc-soft2);color:var(--ink2);text-align:cen
 .dwr .avgk{margin-right:4px;vertical-align:1px}
 .ldavg .avgk{display:block;margin-bottom:1px;white-space:nowrap}
 .infh .infcfg{margin-left:auto}
+.infh .infcfg+.infcfg{margin-left:6px}
+.infh .infcfg.hidden{display:none}
+.infordon{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc);vertical-align:2px;margin-left:2px}
+/* 순서 정하기 창 (v124) */
+.inford{display:flex;flex-direction:column;gap:6px}
+.inforow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:grab}
+.inforow.dragging{opacity:.5}
+.inforow.ins-top{box-shadow:0 -2px 0 var(--acc)}.inforow.ins-bot{box-shadow:0 2px 0 var(--acc)}
+.inforow .grip{color:var(--muted);font-size:12px;letter-spacing:-2px}
+.inforow .n{min-width:18px;font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.inforow b{font-weight:700}
+.inforow .btn{min-width:30px;padding:0 6px}
+.inforow .btn[disabled]{opacity:.3;cursor:default}
 #infCfgBox{margin:4px 0 10px}
 .infmiss{margin-top:2px}
 .infempty{padding:22px 6px}

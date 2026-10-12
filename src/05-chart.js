@@ -615,6 +615,11 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
       if(!cellDef[srt.k])return NaN;
       const gf=facts.filter(f=>pre.every((v,x)=>f[dims[x]]===v));
       try{return hpVal(cellDef[srt.k](aggFacts(gf),expFor(pre),expIdx.length?false:'all')[0]);}catch(e){return NaN;}});}
+  /* 맨 위 묶음(구분 등)의 순서를 손으로 정했으면(cfg.topOrder — 끌어 옮기기 · '순서' 단추) 머리글 정렬보다 우선 (v124).
+     그 안의 매체 · 랜딩은 머리글 정렬(예: IWV 많은 순)을 그대로 따른다. 목록에 없는 새 값은 맨 뒤 */
+  if(Array.isArray(cfg.topOrder)&&cfg.topOrder.length&&dims.length>1){
+    const ti=v=>{const i=cfg.topOrder.indexOf(v);return i<0?1e9:i;};
+    entries=entries.map((e,i)=>({e,i,t:ti(e[0].split(SEP)[0])})).sort((a,b)=>a.t-b.t||a.i-b.i).map(x=>x.e);}
   const keys=entries.map(e=>e[0].split(SEP));
   const {out,span}=pivotLayout(keys,rows);
   /* 예상값이 들어가는 열 — 소재처럼 잘게 나뉜 구간에서는 위·아래 셀을 합쳐 한 번만 표시한다 */

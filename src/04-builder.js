@@ -776,7 +776,10 @@ function enableRowDrag(tbl,cfg,rerender){
       const last=rest.length-1-[...rest].reverse().findIndex(k=>inBlk(k,tgt));
       const at=before?first:last+1;
       rest.splice(at<0?rest.length:at,0,...moving);
-      cfg.order=rest;BDRAG=null;rerender();
+      cfg.order=rest;
+      /* 맨 위 단계(구분 등)를 옮겼으면 그 순서를 따로 기억 — 머리글 정렬을 켜 둬도 유지된다 (v124) */
+      if(BDRAG.lvl==='0')cfg.topOrder=[...new Set(rest.map(k=>k.split(SEP)[0]))];
+      BDRAG=null;rerender();
       try{markDirty();saveLocal();}catch(x){}};
   });
 }
