@@ -6419,6 +6419,8 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
     cut.setAttribute('d',needle(v));const g=pt(RM,v);glow.setAttribute('cx',f(g[0]));glow.setAttribute('cy',f(g[1]));
     setBig(k<1&&to?ach*(v/to):ach);if(k<1)PG.anim=requestAnimationFrame(step);};
   step(t0);if(dur)PG.anim=requestAnimationFrame(step);
+  /* 탭이 가려져 있으면 rAF 가 멈춘다 — 끝 상태는 따로 보장 */
+  if(dur)setTimeout(()=>{if(PG.v!==to){cancelAnimationFrame(PG.anim);step(t0+dur);}},dur+250);
   /* 막대 채우기 */
   requestAnimationFrame(()=>box.querySelectorAll('.pg-row .bar i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
   /* 게이지에 마우스 — 수치 */
