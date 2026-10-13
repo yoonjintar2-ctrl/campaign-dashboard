@@ -1464,24 +1464,21 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pg-stat{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 14px;border-radius:14px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .pg-stat i{width:7px;height:7px;border-radius:50%}
 .pg-foot{font-size:12px;color:var(--muted);margin-top:8px}
-.pg-vr{width:1px;align-self:stretch;background:var(--line);margin:18px 0}
-.pg-r{flex:1 1 320px;min-width:0;padding:8px 24px 0 30px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
-.pg-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;align-items:end;gap:6px 16px}
-.pg-row .nm{display:flex;align-items:baseline;gap:8px;min-width:0}
-.pg-row .nm b{font-size:13.5px;font-weight:700}
-.pg-row .nm span{font-size:11.5px;font-weight:300;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pg-row .pc{grid-row:span 2;align-self:center;text-align:right;white-space:nowrap}
-.pg-row .pc strong{display:block;font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
-.pg-row .pc small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
-.pg-row .bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden}
-.pg-row .bar.none{background:repeating-linear-gradient(90deg,var(--track) 0 6px,transparent 6px 10px)}
-.pg-row .bar i{display:block;height:100%;width:0;border-radius:5px;background:var(--fill);transition:width 1s cubic-bezier(.22,.8,.3,1)}
+/* v129 — 게이지 가운데 + 아래 한 줄 칩 (시안 F) */
+.pg{flex-direction:column;align-items:center}
+.pg-l{flex:none;width:100%;max-width:600px}
+.pg-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px 22px;width:100%;max-width:1080px;margin-top:16px;padding:0 8px 4px;box-sizing:border-box}
+.pg-chip{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:5px 10px;min-width:0;cursor:default}
+.pg-chip b{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-chip strong{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.pg-chip .bar{grid-column:1/-1;height:5px;border-radius:3px;background:var(--track);overflow:hidden}
+.pg-chip .bar.none{background:repeating-linear-gradient(90deg,var(--track) 0 6px,transparent 6px 10px)}
+.pg-chip .bar i{display:block;height:100%;width:0;border-radius:3px;background:var(--fill);transition:width 1s cubic-bezier(.22,.8,.3,1)}
 @keyframes pgBreath{0%,100%{opacity:0}50%{opacity:1}}
 @keyframes pgGlow{0%,100%{opacity:.55}50%{opacity:1}}
 .pg .pg-zb{opacity:0;animation:pgBreath 4.2s ease-in-out infinite}
 .pg .pg-glow{animation:pgGlow 3.2s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.pg .pg-zb,.pg .pg-glow{animation:none}.pg-row .bar i{transition:none}}
-@media (max-width:900px){.pg-vr{display:none}.pg-r{padding:18px 8px 4px;border-top:1px solid var(--line);margin-top:8px}}
+@media (prefers-reduced-motion:reduce){.pg .pg-zb,.pg .pg-glow{animation:none}.pg-chip .bar i{transition:none}}
 
 /* 맨 위 — 집행 경과 (가운데) */
 .phead{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;
