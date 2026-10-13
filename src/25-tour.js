@@ -707,7 +707,60 @@ function tuLayout(node,sl){
   fit.style.width=Math.round(w*s)+'px';fit.style.height=Math.round(h*s)+'px';
   /* 남는 세로 여백은 위 30% · 아래 70% — 제목과 가깝게 */
   node.querySelector('.tu-in').style.marginTop=sl.kind==='body'?Math.max(0,Math.round((sh-h*s)*.3))+'px':'';
-  node.__s=s;}
+  node.__s=s;
+  try{tuPanBtns(node);}catch(e){}}
+/* ---------- 긴 표 좌우 넘기기 단추 (v126) ----------
+   투어의 표는 글자가 읽힐 크기로 두고 옆으로 넘겨 보는데, 원래 화면의 좌우 단추(.hpbtn)는 조작 단추라 감춰져
+   휠을 옆으로 굴리는 것 말고는 옮길 방법이 없었다. 장면마다 넘칠 때만 ‹ › 단추를 붙인다.
+   · 넘김 폭 = 보이는 폭(고정 열 제외)의 85% · 열 경계에 맞춘다 · 끝에 닿으면 그쪽 단추를 숨긴다
+   · 손으로 넘기면 그 장면의 강조(형광펜 · 손가락 · 이름표)는 걷고 자동 재생을 멈춘다 — 남은 강조 차례가 표를 다시 끌고 가지 않게 */
+function tuPanBtns(node){
+  node.querySelectorAll('.tu-hpb').forEach(b=>b.remove());
+  const src=node.querySelector('.tu-fit>.tu-src');if(!src)return;
+  const scs=[...src.querySelectorAll('.tbl-wrap,.gantt-wrap,.hpwrap')]
+    .filter((sc,i,a)=>sc.scrollWidth>sc.clientWidth+4&&!a.some(o=>o!==sc&&o.contains(sc)));
+  const IC={l:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    r:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>'};
+  scs.forEach(sc=>{
+    const host=sc.parentElement;if(!host)return;
+    if(getComputedStyle(host).position==='static')host.style.position='relative';
+    /* 고정 열(행 머리) 오른쪽 끝 — 왼쪽 단추는 그 바로 옆에 */
+    const fzW=()=>{const fz=[...sc.querySelectorAll('thead .lfz,thead th.lead')];
+      /* 붙어 있는(sticky) 칸의 offsetLeft 에는 지금 넘긴 만큼이 더해져 있다 — 빼고 잰다 */
+      return fz.length?Math.max(0,...fz.map(c=>c.offsetLeft+c.offsetWidth-(getComputedStyle(c).position==='sticky'?sc.scrollLeft:0))):0;};
+    const starts=()=>{const tr=sc.querySelector('tbody tr[data-key]')||sc.querySelector('thead tr:last-child');
+      return tr?[...tr.children].map(c=>c.offsetLeft).filter(x=>x>0):[];};
+    const mk=d=>{const b=document.createElement('button');b.type='button';b.className='tu-hpb '+d;
+      b.setAttribute('aria-label',d==='l'?L('왼쪽으로','Scroll left'):L('오른쪽으로','Scroll right'));
+      b.title=d==='l'?L('표를 왼쪽으로 넘기기','Scroll the table left'):L('표를 오른쪽으로 넘기기','Scroll the table right');
+      b.innerHTML=IC[d];host.appendChild(b);return b;};
+    const bl=mk('l'),br=mk('r');
+    const place=()=>{const top=sc.offsetTop+Math.min(sc.offsetHeight,host.offsetHeight-sc.offsetTop)/2;
+      bl.style.top=br.style.top=Math.round(top)+'px';
+      bl.style.left=Math.round(sc.offsetLeft+fzW()+10)+'px';
+      br.style.left=Math.round(sc.offsetLeft+sc.clientWidth-10-44)+'px';};
+    const paint=()=>{const max=sc.scrollWidth-sc.clientWidth;
+      bl.classList.toggle('on',sc.scrollLeft>2);br.classList.toggle('on',sc.scrollLeft<max-2);};
+    const go=dir=>{
+      const fz=fzW(),vis=Math.max(80,sc.clientWidth-fz),max=sc.scrollWidth-sc.clientWidth;
+      const want=sc.scrollLeft+dir*vis*.85,cur=sc.scrollLeft;
+      /* 열 경계에 맞춘다 — 그 열의 왼쪽 끝이 고정 열 바로 옆에 오도록 */
+      const cand=starts().map(x=>x-fz).filter(x=>dir>0?x>cur+4:x<cur-4);
+      let to=cand.length?cand.reduce((a,b)=>Math.abs(b-want)<Math.abs(a-want)?b:a):want;
+      to=Math.max(0,Math.min(max,to));
+      tuPanHand(node);
+      sc.scrollTo({left:to,behavior:TU.rm?'auto':'smooth'});};
+    bl.onclick=e=>{e.stopPropagation();go(-1);};
+    br.onclick=e=>{e.stopPropagation();go(1);};
+    sc.addEventListener('scroll',paint,{passive:true});
+    place();paint();});}
+/* 손으로 넘겼다 — 강조 표시를 걷고 자동 재생을 멈춘다. 다음 차례(→ · 재생)로 가면 그 칸으로 다시 옮겨 가 강조한다 */
+function tuPanHand(node){
+  if(TU.play)try{tuPlay(false);}catch(e){}
+  node.__hand=true;
+  node.querySelectorAll('.tu-chip,.tu-mk,.tu-mksvg,.tu-pt').forEach(c=>{
+    const a=tuAnim(c,[{opacity:getComputedStyle(c).opacity},{opacity:0}],{duration:TU.rm?60:220,fill:'forwards'});
+    if(a)a.onfinish=()=>c.remove();else c.remove();});}
 /* 카드 줄(지표 · KPI 도넛)이 길어 한 줄이면 너무 작아질 때 — 2~4줄로 접어 가장 크게 보이는 쪽을 고른다 */
 function tuWrap(src,sl,sw,sh,cap){
   src.classList.remove('tu-wrapx');src.style.width=sl.W+'px';
@@ -899,6 +952,8 @@ function tuSpot(node,step){
   const fit=node.querySelector('.tu-fit'),src=fit&&fit.firstElementChild;if(!src)return;
   const all=[...src.querySelectorAll('[data-tuhl]')];if(!all.length)return;
   if(step==null)step=tuSteps(src)[0];
+  /* 손으로 표를 넘긴 장면은 다시 옮기거나 강조하지 않는다 — 다른 장면으로 가면(새 무대) 풀린다 (v126) */
+  if(node.__hand)return;
   node.__step=step;
   const old=[...fit.querySelectorAll('.tu-mk,.tu-mksvg,.tu-pt,.tu-chip')];
   const drop=()=>old.forEach(c=>{const a=tuAnim(c,[{opacity:getComputedStyle(c).opacity},{opacity:0}],{duration:TU.rm?60:300,fill:'forwards'});
@@ -1103,8 +1158,10 @@ function tuWire(el){
     if(a==='html')return tuHtml(t);});
   /* 휠은 장면 안 표를 옆으로 넘길 때만 — 뒤 페이지가 스크롤되지 않게 */
   el.addEventListener('wheel',e=>{const sc=e.target.closest&&e.target.closest('.tu-src .tbl-wrap,.tu-src .gantt-wrap,.tu-src .hpwrap');
-    if(sc&&Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
-    if(sc&&e.shiftKey)return;
+    if(sc&&(Math.abs(e.deltaX)>Math.abs(e.deltaY)||e.shiftKey)){
+      /* 손으로 옆으로 넘기면 강조를 걷는다 (v126) */
+      if(TU.node&&TU.node.querySelector('.tu-mk,.tu-chip,.tu-pt'))tuPanHand(TU.node);
+      return;}
     e.preventDefault();},{passive:false});
   /* 터치 — 좌우로 밀어 넘기기 */
   let sx=null,sy=0;

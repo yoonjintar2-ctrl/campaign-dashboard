@@ -3314,6 +3314,17 @@ html.tu-on .secnav{display:none!important}
   transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .2s,opacity .3s}
 .tu-nav svg{width:42%;height:42%;display:block}
 .tu-nav.prev{left:1.4vw}.tu-nav.next{right:1.4vw}
+/* 긴 표 좌우 넘기기 (v126) — 화면의 .hpbtn 과 같은 모양, 표 안(고정 열 옆 · 오른쪽 끝) */
+.tu-src .tu-hpb{position:absolute;z-index:7;width:44px;height:44px;margin-top:-22px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;padding:0;border:0;
+  background:rgba(210,210,215,.78);color:rgba(0,0,0,.62);box-shadow:0 2px 10px rgba(0,0,0,.12);
+  -webkit-backdrop-filter:blur(10px) saturate(180%);backdrop-filter:blur(10px) saturate(180%);
+  opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s,background .15s,color .15s,transform .12s}
+.tu-src .tu-hpb.on{opacity:1;visibility:visible}
+.tu-src .tu-hpb:hover{background:rgba(223,223,227,.95);color:rgba(0,0,0,.85)}
+.tu-src .tu-hpb:active{transform:scale(.94)}
+.tu-src .tu-hpb svg{display:block}
+[data-theme="dark"] .tu-src .tu-hpb{background:rgba(88,88,92,.78);color:rgba(255,255,255,.8)}
 .tu-nav:hover{transform:translateY(-50%) scale(1.08);background:var(--tu-bg1)}
 .tu-nav.next:hover svg{animation:tuNudge .7s ease-in-out infinite}
 .tu-nav[disabled]{opacity:0;pointer-events:none}
