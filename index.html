@@ -6343,7 +6343,9 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
   const pt=(r,v)=>[CX+r*Math.cos(ang(v)),CY-r*Math.sin(ang(v))];
   const seg=(v0,v1)=>{if(v1-v0<1e-4)return '';const a=pt(R,v0),b=pt(R,v1),c=pt(RI,v1),d=pt(RI,v0);
     return `M${f(a[0])} ${f(a[1])}A${R} ${R} 0 0 1 ${f(b[0])} ${f(b[1])}L${f(c[0])} ${f(c[1])}A${RI} ${RI} 0 0 0 ${f(d[0])} ${f(d[1])}Z`;};
-  const clv=x=>Math.min(Math.max(x,0),VMAX);
+  /* 100% 위는 눌러 담는다: g(a) = 1 + 0.05·(1 − e^(−(a−1)/0.12)) — 바늘은 105% 를 넘지 않고, 구역 경계도 같은 눈금이라 바늘 · 구역 · 상태가 늘 맞는다 */
+  const vis=a=>a<=1?Math.max(a,0):1+0.05*(1-Math.exp(-(a-1)/0.12));
+  const clv=x=>vis(x);
   const bnd=[VMIN,clv(PG.ZB.warn*p),clv(PG.ZB.ok*p),clv(PG.ZB.great*p),VMAX],keys=['bad','warn','ok','great'],zi=keys.indexOf(zk);
   const za=a=>(A0-(A0-A1)*a);
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -6361,11 +6363,10 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
   band+=`<path d="${cuts.map(b=>{const a=pt(RI-1,b),c=pt(R+1,b);return `M${f(a[0])} ${f(a[1])}L${f(c[0])} ${f(c[1])}`;}).join('')}" stroke-width="4" fill="none" style="stroke:var(--surface)"/>`;
   /* 눈금 — 띠 안 바깥 가장자리 · 틈에 걸리는 것은 생략 · 바늘 구역은 그 색의 어두운 톤(반투명), 나머지는 옅은 흰색 */
   const vpx=v=>v*(A0-A1)*Math.PI/180*(R-12),tks={bad:'',warn:'',ok:'',great:''};
-  for(let i=0;i<=22;i++){const v=i/20;if(cuts.some(c=>Math.abs(vpx(v)-vpx(c))<5))continue;
+  for(let i=0;i<=20;i++){const v=i/20;if(cuts.some(c=>Math.abs(vpx(v)-vpx(c))<5))continue;
     let z=0;while(z<3&&v>=bnd[z+1])z++;const a=pt(R-5,v),b=pt(i%2?R-12:R-21,v);
     tks[keys[z]]+=`M${f(a[0])} ${f(a[1])}L${f(b[0])} ${f(b[1])}`;}
   band+=keys.filter(k=>tks[k]).map(k=>`<path d="${tks[k]}" stroke-width="2.8" stroke-linecap="round" fill="none" style="stroke:var(${k===zk?'--tk-'+k:'--tk-n'});stroke-opacity:${k===zk?.45:1}"/>`).join('');
-  band+=[[L('효율 저조','Low'),CX-RM],[L('효율 우수','High'),CX+RM]].map(([t,x])=>`<text x="${f(x)}" y="${CY-9}" text-anchor="middle" font-size="10.5" font-weight="500" style="fill:#fff;fill-opacity:.92">${esc(t)}</text>`).join('');
   /* 집행일 점 + 양 끝 곡선 글씨 */
   const N=Math.max(cs.days,1),E=Math.min(Math.max(elapsedAll,0),N);
   let dots='';for(let i=0;i<N;i++){const q=pt(R+13,(i+.5)/N),today=i===E-1;
@@ -6373,15 +6374,16 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
     dots+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${today?3.6:N>60?1.8:2.7}" style="fill:var(${i<E?'--dot-on':'--dot-off'})"/>`;}
   const RT=R+13,arcD=(a0,a1)=>{const P=a=>[CX+RT*Math.cos(a*Math.PI/180),CY-RT*Math.sin(a*Math.PI/180)];const p0=P(a0),p1=P(a1);
     return `M${f(p0[0])} ${f(p0[1])}A${RT} ${RT} 0 0 1 ${f(p1[0])} ${f(p1[1])}`;},gap=(A0-A1)/N/2+2.2;
-  let labs='';for(let i=0;i<=11;i++){const v=i/10,q=pt(R+33,v),c=Math.cos(ang(v));
+  let labs='';for(let i=0;i<=10;i++){const v=i/10,q=pt(R+33,v),c=Math.cos(ang(v));
     labs+=`<text x="${f(q[0])}" y="${f(q[1])}" text-anchor="${c<-.25?'end':c>.25?'start':'middle'}" dominant-baseline="middle" font-size="11" font-weight="${i%5?300:400}" opacity="${i>10?.7:1}" style="fill:var(--muted)">${i*10}%</text>`;}
-  const svg=`<svg class="pg-svg" viewBox="-20 22 640 298" role="img" aria-label="${esc(`${L('핵심 KPI','Key KPI')} ${lab} ${pct(ach,1)}, ${L('페이스 대비','vs pace')} ${sign(pr-1)}`)}">
+  const svg=`<svg class="pg-svg" viewBox="-20 22 640 314" role="img" aria-label="${esc(`${L('핵심 KPI','Key KPI')} ${lab} ${pct(ach,1)}, ${L('페이스 대비','vs pace')} ${sign(pr-1)}`)}">
     <defs><clipPath id="pgBand"><path d="${seg(VMIN,VMAX)}"/></clipPath><clipPath id="pgZone"><path d="${seg(bnd[zi],bnd[zi+1])}"/></clipPath>
       <linearGradient id="pgSheen" x1="0" y1="${CY-R}" x2="0" y2="${CY}" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:#fff;stop-opacity:var(--sheen-t)"/><stop offset=".45" style="stop-color:#fff;stop-opacity:0"/><stop offset="1" style="stop-color:#000;stop-opacity:var(--sheen-b)"/></linearGradient>
       <radialGradient id="pgDeep"><stop offset="0" style="stop-color:var(--z-${zk}-dd);stop-opacity:.95"/><stop offset=".5" style="stop-color:var(--z-${zk}-dd);stop-opacity:.45"/><stop offset="1" style="stop-color:var(--z-${zk}-dd);stop-opacity:0"/></radialGradient>
       <mask id="pgCut" maskUnits="userSpaceOnUse" x="-20" y="0" width="640" height="340"><rect x="-20" y="0" width="640" height="340" fill="#fff"/><path class="pg-cut" fill="#000"/></mask>
       <path id="pgArcL" d="${arcD(182,A0+gap)}" fill="none"/><path id="pgArcR" d="${arcD(A1-gap,-2)}" fill="none"/></defs>
     <g mask="url(#pgCut)">${band}</g>${dots}${labs}
+    ${[[L('효율 저조','Low'),CX-RM],[L('효율 우수','High'),CX+RM]].map(([t,x])=>`<text x="${f(x)}" y="${CY+17}" text-anchor="middle" font-size="11" font-weight="500" style="fill:var(--muted)">${esc(t)}</text>`).join('')}
     <text font-size="11.5" font-weight="600" dominant-baseline="middle" style="fill:var(--dot-on)"><textPath href="#pgArcL" startOffset="100%" text-anchor="end">${esc(L(`집행 ${E}일`,`Day ${E}`))}</textPath></text>
     <text font-size="11.5" font-weight="500" dominant-baseline="middle" style="fill:var(--muted)"><textPath href="#pgArcR" startOffset="0%" text-anchor="start">${esc(L(`남은 ${N-E}일`,`${N-E} days left`))}</textPath></text>
     <text x="${CX}" y="${CY-92}" text-anchor="middle" font-size="15" font-weight="700" style="fill:var(--ink2)">${esc(L('핵심 KPI','Key KPI'))} : ${esc(lab)}</text>
@@ -6413,7 +6415,7 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
   const needle=v=>{const RB=RI-2,dv=(15/RB)/Math.PI,tip=pt(R-9,v),bl=pt(RB,v-dv),br=pt(RB,v+dv),b0=pt(RI-30,v);
     return `M${f(b0[0])} ${f(b0[1])}L${f(bl[0])} ${f(bl[1])}L${f(tip[0])} ${f(tip[1])}L${f(br[0])} ${f(br[1])}Z`;};
   const setBig=r=>{const t=(Math.max(r,0)*100).toFixed(1).split('.');bi.textContent=t[0];bf.textContent='.'+t[1]+'%';};
-  const to=Math.min(Math.max(ach,.004),VMAX-.004),from=PG.v,t0=performance.now(),dur=(reduce||from===to)?0:900;
+  const to=Math.max(vis(ach),.004),from=PG.v,t0=performance.now(),dur=(reduce||from===to)?0:900;
   cancelAnimationFrame(PG.anim);
   const step=now=>{const k=dur?Math.min((now-t0)/dur,1):1,e=1-Math.pow(1-k,3),v=from+(to-from)*e;PG.v=v;
     cut.setAttribute('d',needle(v));const g=pt(RM,v);glow.setAttribute('cx',f(g[0]));glow.setAttribute('cy',f(g[1]));
@@ -6441,7 +6443,7 @@ function pgAlign(){
   if(getComputedStyle(pg).flexDirection==='column'||pg.offsetWidth<760)return;
   const bars=r.querySelectorAll('.bar');if(!bars.length)return;
   const sr=sv.getBoundingClientRect();if(!sr.height)return;
-  const gB=sr.top+(PG.CY-22)*sr.height/298;
+  const gB=sr.top+(PG.CY-22)*sr.height/314;
   const bB=bars[bars.length-1].getBoundingClientRect().bottom;
   const d=Math.round(gB-bB);
   if(d>0)r.style.paddingTop=(parseFloat(getComputedStyle(r).paddingTop)+d)+'px';
