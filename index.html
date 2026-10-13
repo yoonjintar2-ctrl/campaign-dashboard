@@ -93,10 +93,7 @@
 [data-theme="dark"] .pill{background:var(--surface);color:var(--ink);border-color:var(--line)}
 [data-theme="dark"] .modal,[data-theme="dark"] .memenu,[data-theme="dark"] .tip{background:var(--surface);color:var(--ink)}
 [data-theme="dark"] .cr,[data-theme="dark"] .stat,[data-theme="dark"] .donut{background:var(--surface)}
-[data-theme="dark"] .tmap{background:var(--plane2);border-color:var(--line)}
-[data-theme="dark"] .tmap .sect{border-color:var(--surface)}
-[data-theme="dark"] .tmap .grp{border-color:rgba(34,39,43,.92)}
-[data-theme="dark"] .tmap .tile{border-color:rgba(34,39,43,.55)}
+[data-theme="dark"] .tmap{background:var(--surface);border-color:var(--line)}
 [data-theme="dark"] table.tbl tbody td{border-color:var(--cell)}
 [data-theme="dark"] .cmt{background:var(--surface);color:var(--ink)}
 *{box-sizing:border-box}
@@ -474,6 +471,22 @@ body[data-mode="sample"] #cloudSave{display:none !important}
 .copyb.ok{border-color:#3d6b52;color:#3d6b52}
 /* 캠페인 관리 — 액션 버튼 두 줄, 글자는 세로 가운데 */
 table.tbl td.acts{white-space:normal;padding:8px 10px}
+/* (v125) 캠페인 및 광고주 관리 — 순서 손잡이 · 이름 옆 연필(마우스를 올리면) */
+table.cmtbl tr.cur>td{background:var(--acc-soft2)}
+table.cmtbl .cmg{width:26px;padding:0 0 0 6px!important}
+table.cmtbl .cmgrip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:28px;border-radius:6px;
+  color:var(--muted);font-size:12px;letter-spacing:-2px;cursor:grab;user-select:none;opacity:.55}
+table.cmtbl tr:hover .cmgrip{opacity:1}
+table.cmtbl .cmgrip:hover{background:var(--plane2);color:var(--ink)}
+table.cmtbl tr.dragging{opacity:.45}
+table.cmtbl tr.ins-top>td{box-shadow:inset 0 2px 0 var(--acc)}
+table.cmtbl tr.ins-bot>td{box-shadow:inset 0 -2px 0 var(--acc)}
+table.cmtbl .cmname{display:flex;align-items:center;gap:6px;min-height:26px}
+table.cmtbl .cmren{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;
+  border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink2);cursor:pointer;
+  opacity:0;transition:opacity .12s,background .12s,color .12s}
+table.cmtbl tr:hover .cmren,table.cmtbl .cmren:focus-visible{opacity:1}
+table.cmtbl .cmren:hover{background:var(--acc-soft2);color:var(--acc);border-color:var(--acc)}
 table.tbl td.acts .ln{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
 table.tbl td.acts .ln+.ln{margin-top:5px}
 table.tbl td.acts .btn{display:inline-flex;align-items:center;justify-content:center;
@@ -1875,26 +1888,20 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .duo .bublgd{padding:10px 12px;margin:0 0 10px;flex:none}
 .duo .bublgd .how{gap:5px 16px;margin-top:9px;padding-top:8px;font-size:11px}
 .tmap{position:relative;width:100%;height:520px;border-radius:10px;overflow:hidden;
-  background:var(--plane2);border:1px solid var(--line2)}
-/* 섹터(매체) — 굵은 테두리를 border-box 로 그려 어느 쪽이든 같은 두께 */
-.tmap .sect{position:absolute;overflow:hidden;border:4px solid var(--surface);border-radius:3px}
-/* 매체 머리글 — 아래 그룹 상자(.grp)가 2px 흰 테두리를 갖고 있으므로
-   상품 머리글(.gh)이 칠해지는 자리와 똑같이 좌우를 2px 씩 들여 놓는다.
-   (예전에는 투명 테두리 + background-clip:padding-box 로 맞췄는데,
-    색을 style="background:…" 로 넣는 순간 단축 속성이 background-clip 을 되돌려
-    매체 띠만 좌우로 2px 씩 더 넓게 칠해졌다 — 여러 번 지적받은 그 문제다) */
-.tmap .sect>.sh{position:absolute;left:2px;right:2px;top:0;height:21px;
+  background:var(--surface);border:1px solid var(--line2)}
+/* (v125) 테두리 없음 — 칸마다 계산된 자리에 놓아 틈을 고르게 (매체 사이 4px · 매체 안 2px).
+   매체 머리글 · 묶음 머리글 · 타일의 가장자리가 같은 선에 맞는다 */
+.tmap .sect{position:absolute}
+.tmap .sect>.sh{position:absolute;left:0;right:0;top:0;height:21px;border-radius:3px 3px 0 0;
   display:flex;align-items:center;
   gap:6px;padding:0 8px;font-size:11.5px;font-weight:800;color:#fff;
   white-space:nowrap;overflow:hidden;z-index:3}
 .tmap .sect>.sh .sv{margin-left:auto;font-weight:600;opacity:.85;font-variant-numeric:tabular-nums}
-.tmap .sin{position:absolute;left:0;right:0;top:0;bottom:0}
-.tmap .grp{position:absolute;border:2px solid rgba(255,255,255,.92);border-radius:2px;
-  pointer-events:none;z-index:2}
-.tmap .grp>.gh{position:absolute;left:0;right:0;top:0;height:17px;line-height:17px;padding:0 6px;
+.tmap .grp{position:absolute;pointer-events:none;z-index:2}
+.tmap .grp>.gh{position:absolute;left:0;right:0;top:0;bottom:0;line-height:17px;padding:0 6px;border-radius:2px 2px 0 0;
   font-size:10.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   color:#fff;text-shadow:0 1px 1px rgba(20,30,42,.28)}
-.tmap .tile{position:absolute;overflow:hidden;border:1px solid rgba(255,255,255,.55);
+.tmap .tile{position:absolute;overflow:hidden;border-radius:2px;
   display:flex;flex-direction:column;justify-content:center;padding:4px 6px;cursor:default;
   transition:filter .1s}
 .tmap .tile:hover{filter:brightness(1.14)}
@@ -10138,51 +10145,61 @@ function renderTreemap(){
         (leaf.c/leaf.v)*(mk==='imp'?1000:1))}</b></div>`:'')
     +`<div class="r"><span class="l">${esc(names[0])} 안에서</span><b>${pct(leaf.v/sect.v,1)}</b></div>`
     +`<div class="r"><span class="l">전체 대비</span><b>${pct(leaf.v/grand,1)}</b></div>`);
-  squarify(sects,0,0,W,H).forEach(sc=>{
+  /* (v125) 간격 모델 — 테두리를 겹쳐 그리던 방식(섹터 4px · 묶음 2px · 타일 1px)은
+     겹치는 자리마다 틈이 3·4·6px 로 달라지고 머리글과 타일 가장자리가 어긋났다.
+     이제 테두리는 없고 모든 칸을 '계산된 자리'에 둔다:
+       매체 사이 = S, 매체 안(머리글 ↔ 타일 · 타일 ↔ 타일 · 묶음 ↔ 묶음) = G,
+       가장자리는 머리글 · 타일 · 묶음이 모두 같은 선에 맞는다.
+     모서리는 정수로 반올림한다 — 이웃한 두 칸이 같은 경계값에서 ±k 만큼 떨어지므로 틈이 늘 정확히 같다. */
+  const S=4,G=2,RD=Math.round;
+  const edges=(x,y,w,h,k)=>({x0:RD(x+k),y0:RD(y+k),x1:RD(x+w-k),y1:RD(y+h-k)});
+  const place=(d,e,o)=>{d.style.left=(e.x0-o.x0)+'px';d.style.top=(e.y0-o.y0)+'px';
+    d.style.width=Math.max(0,e.x1-e.x0)+'px';d.style.height=Math.max(0,e.y1-e.y0)+'px';};
+  /* 정해진 사각형(정수 경계) 안을 꽉 채우되, 칸 사이만 G 씩 띄운다 */
+  const fill=(nodes,e)=>squarify(nodes,e.x0-G/2,e.y0-G/2,(e.x1-e.x0)+G,(e.y1-e.y0)+G)
+    .map(n=>Object.assign(n,{e:edges(n.x,n.y,n.w,n.h,G/2)}));
+  squarify(sects,S/2,S/2,W-S,H-S).forEach(sc=>{
     const base=sc.etc?TM_ETC:hueOf(sc.name);
     const tOf=shadeT(collect(sc));
-    /* 섹터 — 굵은 테두리를 border-box 로 그려 폭이 균일하게 */
-    const sec=el('div','sect',box);
-    sec.style.cssText=`left:${sc.x}px;top:${sc.y}px;width:${sc.w}px;height:${sc.h}px`;
-    const inner=el('div','sin',sec);
-    if(sc.h>HEAD+10){
+    const se=edges(sc.x,sc.y,sc.w,sc.h,S/2);
+    const sec=el('div','sect',box);place(sec,se,{x0:0,y0:0});
+    const head=(se.y1-se.y0)>HEAD+10;
+    if(head){
       const hd=el('div','sh',sec);
       const sA=mixWhite(base,0),sB=mixWhite(base,.18);
       hd.style.background=`linear-gradient(100deg,rgb(${sA.join(',')}),rgb(${sB.join(',')}))`;
       hd.innerHTML=`<span>${esc(sc.name)}</span><span class="sv">${pct(sc.v/grand,1)}</span>`;
-      inner.style.top=HEAD+'px';}
-    /* 타일 배치는 섹터의 실제 안쪽 크기(테두리 제외)를 그대로 쓴다 —
-       예전처럼 sc.w-6 을 쓰면 오른쪽이 2px 잘려 매체명 띠와 어긋난다 */
-    const iw=sec.clientWidth||Math.max(sc.w-8,0), ih=sec.clientHeight||Math.max(sc.h-8,0);
-    const tile=(node,x,y,w,h,names,parent)=>{
+      hd.style.height=HEAD+'px';}
+    const tile=(node,e,names)=>{
       /* 글자를 모두 흰색으로 통일하기 위해 타일이 너무 밝아지지 않게 농도를 묶는다 */
       const t=Math.min(tOf(node),.42), rgb=mixWhite(base,t);
       const lite=mixWhite(rgb,.14);
-      const d=el('div','tile',inner);
+      const w=e.x1-e.x0,h=e.y1-e.y0;
+      const d=el('div','tile',sec);
       d.className='tile'+(h<34?' sm':'')+(h<24||w<52?' xs':'')+(h<15||w<34?' tiny':'');
-      d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-        +`background:linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}));color:#fff`;
+      place(d,e,se);
+      d.style.background=`linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}))`;d.style.color='#fff';
       d.innerHTML=`<div class="tn">${esc(node.name)}</div>`
         +`<div class="tv">${METRICS[mk].f(node.v)}</div>`;
       d.addEventListener('mousemove',tip(names,node,sc));
       d.addEventListener('mouseleave',hideTip);};
-    const layout=(nodes,x,y,w,h,names,depth)=>{
-      squarify(nodes,x,y,w,h).forEach(n=>{
-        if(n.kids&&n.kids.length&&n.h>SUBHEAD+12&&n.w>46){
-          const g=el('div','grp',inner);
-          g.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
+    const layout=(nodes,e,names)=>{
+      if(e.x1-e.x0<1||e.y1-e.y0<1)return;
+      fill(nodes,e).forEach(n=>{
+        const ne=n.e,w=ne.x1-ne.x0,h=ne.y1-ne.y0;
+        if(n.kids&&n.kids.length&&h>SUBHEAD+12&&w>46){
+          /* 묶음(예: 기타 안의 매체) — 머리글 띠 + 그 아래 G 띄우고 타일 */
+          const g=el('div','grp',sec);place(g,{x0:ne.x0,y0:ne.y0,x1:ne.x1,y1:ne.y0+SUBHEAD},se);
           const gh=el('div','gh',g);
           const gA=mixWhite(base,.06),gB=mixWhite(base,.24);
           gh.style.background=`linear-gradient(100deg,rgb(${gA.join(',')}),rgb(${gB.join(',')}))`;
           gh.style.color='#fff';
           gh.textContent=n.name;
-          layout(n.kids,n.x,n.y+SUBHEAD,n.w,n.h-SUBHEAD,names.concat([n.name]),depth+1);
+          layout(n.kids,{x0:ne.x0,y0:ne.y0+SUBHEAD+G,x1:ne.x1,y1:ne.y1},names.concat([n.name]));
         }else if(n.kids&&n.kids.length){
-          layout(n.kids,n.x,n.y,n.w,n.h,names.concat([n.name]),depth+1);
-        }else{
-          tile(n,n.x,n.y,n.w,n.h,names.concat([n.name]));}});};
-    const y0=sc.h>HEAD+10?HEAD:0;
-    layout(sc.kids||[sc],0,0,Math.max(iw,0),Math.max(ih-y0,0),[sc.name],1);
+          layout(n.kids,ne,names.concat([n.name]));
+        }else tile(n,ne,names.concat([n.name]));});};
+    layout(sc.kids||[sc],{x0:se.x0,y0:se.y0+(head?HEAD+G:0),x1:se.x1,y1:se.y1},[sc.name]);
   });
 }
 addEventListener('resize',()=>{clearTimeout(window.__tmapT);
@@ -13835,7 +13852,7 @@ async function loadCampaignList(listOnly){
     .select('id,name,advertiser,start_date,end_date,updated_at,created_by')
     .order('updated_at',{ascending:false});
   if(error){cloudState('목록을 불러오지 못했습니다: '+error.message);return;}
-  CLOUD.list=data||[];
+  CLOUD.list=campSort(data||[]);
   await mergeCampCodes(CLOUD.list);
   paintCampSel();
   if(listOnly)return;
@@ -14239,6 +14256,27 @@ async function createCampaign(after){
     await loadCampaignList();
     await openCampaign(data.id);};
 }
+/* ---------- (v125) 캠페인 순서 — 관리 창에서 끌어 옮긴 순서 ----------
+   계정에 붙는다(profiles.prefs.campOrder) — 어느 기기에서 로그인해도 같은 순서.
+   목록에 없는 캠페인(새로 만든 것 등)은 맨 위, 그 사이는 최근 저장순. 상단 캠페인 선택 목록도 이 순서. */
+let CAMP_ORDER=(()=>{try{return JSON.parse(localStorage.getItem('dmd:campOrder')||'[]')||[];}catch(e){return [];}})();
+function campSort(list){
+  if(!CAMP_ORDER.length)return list;
+  const ix=new Map(CAMP_ORDER.map((id,i)=>[id,i]));
+  return list.map((c,i)=>({c,i})).sort((a,b)=>{
+    const ia=ix.has(a.c.id)?ix.get(a.c.id):-1,ib=ix.has(b.c.id)?ix.get(b.c.id):-1;
+    return ia-ib||a.i-b.i;}).map(x=>x.c);
+}
+async function saveCampOrder(ids){
+  CAMP_ORDER=ids.slice();
+  try{localStorage.setItem('dmd:campOrder',JSON.stringify(CAMP_ORDER));}catch(e){}
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    const prefs=Object.assign({},(data&&data.prefs)||{},{campOrder:CAMP_ORDER});
+    await CLOUD.sb.from('profiles').update({prefs}).eq('id',CLOUD.user.id);
+  }catch(e){}
+}
 /* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
 /* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
 async function openCampManage(inplace){
@@ -14258,15 +14296,18 @@ async function openCampManage(inplace){
       Click <b>⧉</b> next to the code to copy its link. Links only give viewer access.`)}</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. 아래 <b>＋ 새 캠페인</b>으로 시작하세요.</div>';
   else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite cmtbl" id="cmTbl" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th class="cmg" title="끌어서 순서를 바꿉니다"></th>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
       <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
       <th style="width:190px">뷰어 코드</th>
-      <th style="width:300px"></th></tr></thead><tbody>`;
+      <th style="width:250px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
       const cur=CLOUD.campaign&&CLOUD.campaign.id===c.id;
-      h+=`<tr data-cid="${c.id}"${cur?' style="background:var(--acc-soft2)"':''}>
-        <td style="text-align:left"><b>${esc(c.name||'(이름 없음)')}</b>${cur?' <span class="cnt2">열려 있음</span>':''}</td>
+      h+=`<tr data-cid="${c.id}"${cur?' class="cur"':''}>
+        <td class="cmg"><span class="cmgrip" title="끌어서 순서 바꾸기" aria-label="순서 바꾸기">⋮⋮</span></td>
+        <td style="text-align:left"><div class="cmname"><b>${esc(c.name||'(이름 없음)')}</b>${cur?' <span class="cnt2">열려 있음</span>':''}
+          <button type="button" class="cmren" data-ren="${c.id}" title="캠페인 이름 · 광고주 변경" aria-label="이름 변경"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M11.3 2.3a1.4 1.4 0 0 1 2 2L5.6 12l-2.8.8.8-2.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10.2 3.4l2.4 2.4" stroke="currentColor" stroke-width="1.5"/></svg></button></div></td>
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
@@ -14278,9 +14319,6 @@ async function openCampManage(inplace){
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-          </div>
-          <div class="ln">
-            <button class="btn sm" data-ren="${c.id}">이름 변경</button>
             <button class="btn sm" data-dup="${c.id}">캠페인 복제</button>
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
@@ -14288,13 +14326,39 @@ async function openCampManage(inplace){
   const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<button class="btn" id="memMng" title="가입 승인 · 회원 등급 · 뷰어가 볼 광고주">👥 회원 관리</button>'
-    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
+    +'<div class="spacer"></div>'
+    +(CAMP_ORDER.length&&rows.length>1?'<button class="btn" id="cmOrdReset" title="직접 정한 순서를 지우고 최근 저장순으로 되돌립니다">↺ 최근 저장순</button>':'')
+    +'<button class="btn" data-close>닫기</button>';
   if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
   const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
   if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
   if($('advMng'))$('advMng').onclick=()=>openAdvManage(redraw);
   if($('memMng'))$('memMng').onclick=()=>openMembers('list');
+  /* (v125) 순서 — 왼쪽 ⋮⋮ 를 잡고 끌어 옮기면 바로 저장 */
+  if($('cmOrdReset'))$('cmOrdReset').onclick=async()=>{await saveCampOrder([]);await loadCampaignList(true);redraw();};
+  const tb=host.querySelector('#cmTbl tbody');
+  if(tb){let drag=null;
+    const clr=()=>tb.querySelectorAll('.ins-top,.ins-bot').forEach(x=>x.classList.remove('ins-top','ins-bot'));
+    tb.querySelectorAll('tr[data-cid]').forEach(tr=>{
+      const g=tr.querySelector('.cmgrip');
+      /* 손잡이를 누를 때만 끌 수 있게 — 이름 · 코드 글자를 고르는 데 방해되지 않게 */
+      g.onpointerdown=()=>{tr.draggable=true;};
+      tr.onpointerup=()=>{if(!drag)tr.draggable=false;};
+      tr.ondragstart=e=>{drag=tr;tr.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','camp');};
+      tr.ondragend=()=>{tr.classList.remove('dragging');tr.draggable=false;drag=null;clr();};
+      tr.ondragover=e=>{if(!drag||drag===tr)return;e.preventDefault();clr();
+        const r=tr.getBoundingClientRect();tr.classList.add(e.clientY<r.top+r.height/2?'ins-top':'ins-bot');};
+      tr.ondrop=async e=>{if(!drag||drag===tr)return;e.preventDefault();
+        const before=tr.classList.contains('ins-top');clr();
+        tr.parentNode.insertBefore(drag,before?tr:tr.nextSibling);
+        const ids=[...tb.querySelectorAll('tr[data-cid]')].map(r=>r.dataset.cid);
+        CLOUD.list=ids.map(id=>CLOUD.list.find(c=>c.id===id)).filter(Boolean)
+          .concat(CLOUD.list.filter(c=>!ids.includes(c.id)));
+        paintCampSel();
+        await saveCampOrder(CLOUD.list.map(c=>c.id));
+        if(!$('cmOrdReset'))redraw();
+        cloudState('캠페인 순서를 저장했습니다');};});}
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeAllModals();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
@@ -14419,6 +14483,9 @@ async function pullUserCols(){
     const {data,error}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
     if(error)return;                               /* prefs 열이 없는 서버 — 로컬만 쓴다 */
     const cloud=(data&&data.prefs&&Array.isArray(data.prefs.cols))?data.prefs.cols:[];
+    /* (v125) 캠페인 순서도 계정에서 */
+    if(data&&data.prefs&&Array.isArray(data.prefs.campOrder)){CAMP_ORDER=data.prefs.campOrder.slice();
+      try{localStorage.setItem('dmd:campOrder',JSON.stringify(CAMP_ORDER));}catch(e){}}
     const merged=ucMerge(loadUserCols(),cloud);
     if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){
       saveUserCols(merged);regUserCols(merged);

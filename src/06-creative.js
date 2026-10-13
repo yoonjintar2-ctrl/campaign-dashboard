@@ -2073,51 +2073,61 @@ function renderTreemap(){
         (leaf.c/leaf.v)*(mk==='imp'?1000:1))}</b></div>`:'')
     +`<div class="r"><span class="l">${esc(names[0])} 안에서</span><b>${pct(leaf.v/sect.v,1)}</b></div>`
     +`<div class="r"><span class="l">전체 대비</span><b>${pct(leaf.v/grand,1)}</b></div>`);
-  squarify(sects,0,0,W,H).forEach(sc=>{
+  /* (v125) 간격 모델 — 테두리를 겹쳐 그리던 방식(섹터 4px · 묶음 2px · 타일 1px)은
+     겹치는 자리마다 틈이 3·4·6px 로 달라지고 머리글과 타일 가장자리가 어긋났다.
+     이제 테두리는 없고 모든 칸을 '계산된 자리'에 둔다:
+       매체 사이 = S, 매체 안(머리글 ↔ 타일 · 타일 ↔ 타일 · 묶음 ↔ 묶음) = G,
+       가장자리는 머리글 · 타일 · 묶음이 모두 같은 선에 맞는다.
+     모서리는 정수로 반올림한다 — 이웃한 두 칸이 같은 경계값에서 ±k 만큼 떨어지므로 틈이 늘 정확히 같다. */
+  const S=4,G=2,RD=Math.round;
+  const edges=(x,y,w,h,k)=>({x0:RD(x+k),y0:RD(y+k),x1:RD(x+w-k),y1:RD(y+h-k)});
+  const place=(d,e,o)=>{d.style.left=(e.x0-o.x0)+'px';d.style.top=(e.y0-o.y0)+'px';
+    d.style.width=Math.max(0,e.x1-e.x0)+'px';d.style.height=Math.max(0,e.y1-e.y0)+'px';};
+  /* 정해진 사각형(정수 경계) 안을 꽉 채우되, 칸 사이만 G 씩 띄운다 */
+  const fill=(nodes,e)=>squarify(nodes,e.x0-G/2,e.y0-G/2,(e.x1-e.x0)+G,(e.y1-e.y0)+G)
+    .map(n=>Object.assign(n,{e:edges(n.x,n.y,n.w,n.h,G/2)}));
+  squarify(sects,S/2,S/2,W-S,H-S).forEach(sc=>{
     const base=sc.etc?TM_ETC:hueOf(sc.name);
     const tOf=shadeT(collect(sc));
-    /* 섹터 — 굵은 테두리를 border-box 로 그려 폭이 균일하게 */
-    const sec=el('div','sect',box);
-    sec.style.cssText=`left:${sc.x}px;top:${sc.y}px;width:${sc.w}px;height:${sc.h}px`;
-    const inner=el('div','sin',sec);
-    if(sc.h>HEAD+10){
+    const se=edges(sc.x,sc.y,sc.w,sc.h,S/2);
+    const sec=el('div','sect',box);place(sec,se,{x0:0,y0:0});
+    const head=(se.y1-se.y0)>HEAD+10;
+    if(head){
       const hd=el('div','sh',sec);
       const sA=mixWhite(base,0),sB=mixWhite(base,.18);
       hd.style.background=`linear-gradient(100deg,rgb(${sA.join(',')}),rgb(${sB.join(',')}))`;
       hd.innerHTML=`<span>${esc(sc.name)}</span><span class="sv">${pct(sc.v/grand,1)}</span>`;
-      inner.style.top=HEAD+'px';}
-    /* 타일 배치는 섹터의 실제 안쪽 크기(테두리 제외)를 그대로 쓴다 —
-       예전처럼 sc.w-6 을 쓰면 오른쪽이 2px 잘려 매체명 띠와 어긋난다 */
-    const iw=sec.clientWidth||Math.max(sc.w-8,0), ih=sec.clientHeight||Math.max(sc.h-8,0);
-    const tile=(node,x,y,w,h,names,parent)=>{
+      hd.style.height=HEAD+'px';}
+    const tile=(node,e,names)=>{
       /* 글자를 모두 흰색으로 통일하기 위해 타일이 너무 밝아지지 않게 농도를 묶는다 */
       const t=Math.min(tOf(node),.42), rgb=mixWhite(base,t);
       const lite=mixWhite(rgb,.14);
-      const d=el('div','tile',inner);
+      const w=e.x1-e.x0,h=e.y1-e.y0;
+      const d=el('div','tile',sec);
       d.className='tile'+(h<34?' sm':'')+(h<24||w<52?' xs':'')+(h<15||w<34?' tiny':'');
-      d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-        +`background:linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}));color:#fff`;
+      place(d,e,se);
+      d.style.background=`linear-gradient(152deg,rgb(${lite.join(',')}),rgb(${rgb.join(',')}))`;d.style.color='#fff';
       d.innerHTML=`<div class="tn">${esc(node.name)}</div>`
         +`<div class="tv">${METRICS[mk].f(node.v)}</div>`;
       d.addEventListener('mousemove',tip(names,node,sc));
       d.addEventListener('mouseleave',hideTip);};
-    const layout=(nodes,x,y,w,h,names,depth)=>{
-      squarify(nodes,x,y,w,h).forEach(n=>{
-        if(n.kids&&n.kids.length&&n.h>SUBHEAD+12&&n.w>46){
-          const g=el('div','grp',inner);
-          g.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
+    const layout=(nodes,e,names)=>{
+      if(e.x1-e.x0<1||e.y1-e.y0<1)return;
+      fill(nodes,e).forEach(n=>{
+        const ne=n.e,w=ne.x1-ne.x0,h=ne.y1-ne.y0;
+        if(n.kids&&n.kids.length&&h>SUBHEAD+12&&w>46){
+          /* 묶음(예: 기타 안의 매체) — 머리글 띠 + 그 아래 G 띄우고 타일 */
+          const g=el('div','grp',sec);place(g,{x0:ne.x0,y0:ne.y0,x1:ne.x1,y1:ne.y0+SUBHEAD},se);
           const gh=el('div','gh',g);
           const gA=mixWhite(base,.06),gB=mixWhite(base,.24);
           gh.style.background=`linear-gradient(100deg,rgb(${gA.join(',')}),rgb(${gB.join(',')}))`;
           gh.style.color='#fff';
           gh.textContent=n.name;
-          layout(n.kids,n.x,n.y+SUBHEAD,n.w,n.h-SUBHEAD,names.concat([n.name]),depth+1);
+          layout(n.kids,{x0:ne.x0,y0:ne.y0+SUBHEAD+G,x1:ne.x1,y1:ne.y1},names.concat([n.name]));
         }else if(n.kids&&n.kids.length){
-          layout(n.kids,n.x,n.y,n.w,n.h,names.concat([n.name]),depth+1);
-        }else{
-          tile(n,n.x,n.y,n.w,n.h,names.concat([n.name]));}});};
-    const y0=sc.h>HEAD+10?HEAD:0;
-    layout(sc.kids||[sc],0,0,Math.max(iw,0),Math.max(ih-y0,0),[sc.name],1);
+          layout(n.kids,ne,names.concat([n.name]));
+        }else tile(n,ne,names.concat([n.name]));});};
+    layout(sc.kids||[sc],{x0:se.x0,y0:se.y0+(head?HEAD+G:0),x1:se.x1,y1:se.y1},[sc.name]);
   });
 }
 addEventListener('resize',()=>{clearTimeout(window.__tmapT);

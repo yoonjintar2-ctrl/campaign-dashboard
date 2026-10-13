@@ -763,7 +763,7 @@ async function loadCampaignList(listOnly){
     .select('id,name,advertiser,start_date,end_date,updated_at,created_by')
     .order('updated_at',{ascending:false});
   if(error){cloudState('목록을 불러오지 못했습니다: '+error.message);return;}
-  CLOUD.list=data||[];
+  CLOUD.list=campSort(data||[]);
   await mergeCampCodes(CLOUD.list);
   paintCampSel();
   if(listOnly)return;
@@ -1167,6 +1167,27 @@ async function createCampaign(after){
     await loadCampaignList();
     await openCampaign(data.id);};
 }
+/* ---------- (v125) 캠페인 순서 — 관리 창에서 끌어 옮긴 순서 ----------
+   계정에 붙는다(profiles.prefs.campOrder) — 어느 기기에서 로그인해도 같은 순서.
+   목록에 없는 캠페인(새로 만든 것 등)은 맨 위, 그 사이는 최근 저장순. 상단 캠페인 선택 목록도 이 순서. */
+let CAMP_ORDER=(()=>{try{return JSON.parse(localStorage.getItem('dmd:campOrder')||'[]')||[];}catch(e){return [];}})();
+function campSort(list){
+  if(!CAMP_ORDER.length)return list;
+  const ix=new Map(CAMP_ORDER.map((id,i)=>[id,i]));
+  return list.map((c,i)=>({c,i})).sort((a,b)=>{
+    const ia=ix.has(a.c.id)?ix.get(a.c.id):-1,ib=ix.has(b.c.id)?ix.get(b.c.id):-1;
+    return ia-ib||a.i-b.i;}).map(x=>x.c);
+}
+async function saveCampOrder(ids){
+  CAMP_ORDER=ids.slice();
+  try{localStorage.setItem('dmd:campOrder',JSON.stringify(CAMP_ORDER));}catch(e){}
+  try{
+    if(!CLOUD.sb||!CLOUD.user)return;
+    const {data}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
+    const prefs=Object.assign({},(data&&data.prefs)||{},{campOrder:CAMP_ORDER});
+    await CLOUD.sb.from('profiles').update({prefs}).eq('id',CLOUD.user.id);
+  }catch(e){}
+}
 /* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
 /* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
 async function openCampManage(inplace){
@@ -1186,15 +1207,18 @@ async function openCampManage(inplace){
       Click <b>⧉</b> next to the code to copy its link. Links only give viewer access.`)}</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. 아래 <b>＋ 새 캠페인</b>으로 시작하세요.</div>';
   else{
-    h+=`<table class="tbl lite" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+    h+=`<table class="tbl lite cmtbl" id="cmTbl" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
+      <th class="cmg" title="끌어서 순서를 바꿉니다"></th>
       <th style="min-width:190px">캠페인명</th><th style="min-width:120px">광고주</th>
       <th style="width:160px">기간</th><th style="width:96px">최근 저장</th>
       <th style="width:190px">뷰어 코드</th>
-      <th style="width:300px"></th></tr></thead><tbody>`;
+      <th style="width:250px"></th></tr></thead><tbody>`;
     rows.forEach(c=>{
       const cur=CLOUD.campaign&&CLOUD.campaign.id===c.id;
-      h+=`<tr data-cid="${c.id}"${cur?' style="background:var(--acc-soft2)"':''}>
-        <td style="text-align:left"><b>${esc(c.name||'(이름 없음)')}</b>${cur?' <span class="cnt2">열려 있음</span>':''}</td>
+      h+=`<tr data-cid="${c.id}"${cur?' class="cur"':''}>
+        <td class="cmg"><span class="cmgrip" title="끌어서 순서 바꾸기" aria-label="순서 바꾸기">⋮⋮</span></td>
+        <td style="text-align:left"><div class="cmname"><b>${esc(c.name||'(이름 없음)')}</b>${cur?' <span class="cnt2">열려 있음</span>':''}
+          <button type="button" class="cmren" data-ren="${c.id}" title="캠페인 이름 · 광고주 변경" aria-label="이름 변경"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M11.3 2.3a1.4 1.4 0 0 1 2 2L5.6 12l-2.8.8.8-2.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10.2 3.4l2.4 2.4" stroke="currentColor" stroke-width="1.5"/></svg></button></div></td>
         <td>${esc(c.advertiser||'–')}</td>
         <td class="mono">${c.start_date||'–'} ~ ${c.end_date||'–'}</td>
         <td class="mono">${(c.updated_at||'').slice(0,10)||'–'}</td>
@@ -1206,9 +1230,6 @@ async function openCampManage(inplace){
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
-          </div>
-          <div class="ln">
-            <button class="btn sm" data-ren="${c.id}">이름 변경</button>
             <button class="btn sm" data-dup="${c.id}">캠페인 복제</button>
             <button class="btn sm danger" data-del="${c.id}">캠페인 삭제</button>
           </div></td></tr>`;});
@@ -1216,13 +1237,39 @@ async function openCampManage(inplace){
   const foot='<button class="btn primary" id="campNew" title="새 캠페인 만들기">＋ 새 캠페인</button>'
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<button class="btn" id="memMng" title="가입 승인 · 회원 등급 · 뷰어가 볼 광고주">👥 회원 관리</button>'
-    +'<div class="spacer"></div><button class="btn" data-close>닫기</button>';
+    +'<div class="spacer"></div>'
+    +(CAMP_ORDER.length&&rows.length>1?'<button class="btn" id="cmOrdReset" title="직접 정한 순서를 지우고 최근 저장순으로 되돌립니다">↺ 최근 저장순</button>':'')
+    +'<button class="btn" data-close>닫기</button>';
   if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
   const redraw=()=>openCampManage(true);          /* 창은 그대로 두고 목록만 다시 */
   if($('campNew'))$('campNew').onclick=()=>createCampaign(redraw);
   if($('advMng'))$('advMng').onclick=()=>openAdvManage(redraw);
   if($('memMng'))$('memMng').onclick=()=>openMembers('list');
+  /* (v125) 순서 — 왼쪽 ⋮⋮ 를 잡고 끌어 옮기면 바로 저장 */
+  if($('cmOrdReset'))$('cmOrdReset').onclick=async()=>{await saveCampOrder([]);await loadCampaignList(true);redraw();};
+  const tb=host.querySelector('#cmTbl tbody');
+  if(tb){let drag=null;
+    const clr=()=>tb.querySelectorAll('.ins-top,.ins-bot').forEach(x=>x.classList.remove('ins-top','ins-bot'));
+    tb.querySelectorAll('tr[data-cid]').forEach(tr=>{
+      const g=tr.querySelector('.cmgrip');
+      /* 손잡이를 누를 때만 끌 수 있게 — 이름 · 코드 글자를 고르는 데 방해되지 않게 */
+      g.onpointerdown=()=>{tr.draggable=true;};
+      tr.onpointerup=()=>{if(!drag)tr.draggable=false;};
+      tr.ondragstart=e=>{drag=tr;tr.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','camp');};
+      tr.ondragend=()=>{tr.classList.remove('dragging');tr.draggable=false;drag=null;clr();};
+      tr.ondragover=e=>{if(!drag||drag===tr)return;e.preventDefault();clr();
+        const r=tr.getBoundingClientRect();tr.classList.add(e.clientY<r.top+r.height/2?'ins-top':'ins-bot');};
+      tr.ondrop=async e=>{if(!drag||drag===tr)return;e.preventDefault();
+        const before=tr.classList.contains('ins-top');clr();
+        tr.parentNode.insertBefore(drag,before?tr:tr.nextSibling);
+        const ids=[...tb.querySelectorAll('tr[data-cid]')].map(r=>r.dataset.cid);
+        CLOUD.list=ids.map(id=>CLOUD.list.find(c=>c.id===id)).filter(Boolean)
+          .concat(CLOUD.list.filter(c=>!ids.includes(c.id)));
+        paintCampSel();
+        await saveCampOrder(CLOUD.list.map(c=>c.id));
+        if(!$('cmOrdReset'))redraw();
+        cloudState('캠페인 순서를 저장했습니다');};});}
   host.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
     closeAllModals();await openCampaign(b.dataset.open);});
   /* 코드 옆 ⧉ 아이콘 — 접속 링크를 클립보드로 */
@@ -1347,6 +1394,9 @@ async function pullUserCols(){
     const {data,error}=await CLOUD.sb.from('profiles').select('prefs').eq('id',CLOUD.user.id).maybeSingle();
     if(error)return;                               /* prefs 열이 없는 서버 — 로컬만 쓴다 */
     const cloud=(data&&data.prefs&&Array.isArray(data.prefs.cols))?data.prefs.cols:[];
+    /* (v125) 캠페인 순서도 계정에서 */
+    if(data&&data.prefs&&Array.isArray(data.prefs.campOrder)){CAMP_ORDER=data.prefs.campOrder.slice();
+      try{localStorage.setItem('dmd:campOrder',JSON.stringify(CAMP_ORDER));}catch(e){}}
     const merged=ucMerge(loadUserCols(),cloud);
     if(JSON.stringify(merged)!==JSON.stringify(USER_COLS)){
       saveUserCols(merged);regUserCols(merged);
