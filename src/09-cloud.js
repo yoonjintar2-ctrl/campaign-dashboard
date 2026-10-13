@@ -152,6 +152,8 @@ function serializeDoc(){
            ovCollage:(typeof OV_COLLAGE!=='undefined'?!!OV_COLLAGE:true),
            /* 캠페인 진행 현황에서 숨긴 지표 (v82) */
            paceHide:(typeof PACE_HIDE!=='undefined'?PACE_HIDE.slice():[]),
+           /* 캠페인 진행 현황 그래프 스타일 (v128) — basic | gauge */
+           paceStyle:(typeof PACE_STYLE!=='undefined'?PACE_STYLE:'basic'),
            /* 조회 기간 (v71) — 마스터가 고른 기간을 광고주도 그대로 보도록. null 이면 기본 구간 */
            range:(typeof rangeForDoc==='function'?rangeForDoc():null)}
   };
@@ -252,6 +254,7 @@ function applyDoc(d,keepToday){
   try{OV_COLLAGE=v.ovCollage!==false;if(typeof OVC!=='undefined')OVC.key='';}catch(e){}
   /* 캠페인 진행 현황 숨긴 지표 (v82) — 없던 저장본은 모두 보이게 */
   try{PACE_HIDE=Array.isArray(v.paceHide)?v.paceHide.filter(k=>typeof k==='string'):[];}catch(e){}
+  try{PACE_STYLE=v.paceStyle==='gauge'?'gauge':'basic';}catch(e){}
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(typeof v.crMedia==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.media=v.crMedia;
   if(typeof v.crSeg==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.segment=v.crSeg;
@@ -1108,7 +1111,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
-  try{PACE_HIDE=[];}catch(e){}
+  try{PACE_HIDE=[];PACE_STYLE='basic';}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}
   try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}

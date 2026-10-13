@@ -1436,6 +1436,53 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
    좌(지표명 · 집행) · 막대 · 우(목표)는 절대 줄바꿈하지 않고, 좁아지면 가로 스크롤. */
 .pacescroll{overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
 .pacebody{min-width:560px}
+/* ===== 캠페인 진행 현황 · 게이지형 (v128) ===== */
+.pstyle{display:inline-flex;gap:2px;padding:3px;border-radius:9px;background:var(--plane)}
+.pstyle button{height:26px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.pstyle button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,25,35,.12)}
+.pg{--z-bad:#dc8376;--z-warn:#e6ab62;--z-ok:#86c399;--z-great:#6b98c8;
+  --z-bad-d:#bd5a4c;--z-warn-d:#cf8530;--z-ok-d:#529e6b;--z-great-d:#4473a8;
+  --z-bad-dd:#a8473a;--z-warn-dd:#b86f1c;--z-ok-dd:#3d8656;--z-great-dd:#335f93;
+  --t-bad:#a3443a;--t-warn:#8c5414;--t-ok:#2c7449;--t-great:#2b5a8c;
+  --p-bad:#f8e1dd;--p-warn:#f9ead6;--p-ok:#e2f2e7;--p-great:#dde8f4;
+  --tk-bad:#a4564b;--tk-warn:#a77736;--tk-ok:#4e8862;--tk-great:#3e6898;
+  --n-bad:#959ea8;--n-warn:#b2b9c0;--n-ok:#c5cad0;--n-great:#a1a9b2;--tk-n:rgba(255,255,255,.34);
+  --dot-on:#3c4957;--dot-off:rgba(60,73,87,.17);--sheen-t:.26;--sheen-b:.10;--rim:.55;--rim-in:.10;
+  --track:rgba(30,42,56,.08);--fill:#3c4957;
+  display:flex;flex-wrap:wrap;align-items:flex-start}
+[data-theme="dark"] .pg{--z-bad:#9b5047;--z-warn:#9b733a;--z-ok:#467e5b;--z-great:#40709f;
+  --z-bad-d:#c06a5d;--z-warn-d:#c4954f;--z-ok-d:#63a87b;--z-great-d:#5f93c8;
+  --z-bad-dd:#7d3a32;--z-warn-dd:#7a5626;--z-ok-dd:#2f5c40;--z-great-dd:#2c5276;
+  --t-bad:#f3a497;--t-warn:#f2c08c;--t-ok:#a6dbb9;--t-great:#aecbec;
+  --p-bad:rgba(227,109,92,.2);--p-warn:rgba(232,160,90,.2);--p-ok:rgba(126,196,152,.18);--p-great:rgba(110,160,215,.22);
+  --tk-bad:#c98a80;--tk-warn:#c9a46f;--tk-ok:#86b896;--tk-great:#88a9cf;
+  --n-bad:#3a4148;--n-warn:#454c53;--n-ok:#50575e;--n-great:#3f464d;--tk-n:rgba(255,255,255,.1);
+  --dot-on:#dfe5eb;--dot-off:rgba(223,229,235,.18);--sheen-t:.14;--sheen-b:.22;--rim:.22;--rim-in:.25;
+  --track:rgba(232,236,240,.09);--fill:#d5dce3}
+.pg-l{flex:0 1 640px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 10px 6px;box-sizing:border-box}
+.pg-svg{width:100%;max-width:600px;height:auto;display:block;overflow:visible}
+.pg-stat{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 14px;border-radius:14px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.pg-stat i{width:7px;height:7px;border-radius:50%}
+.pg-foot{font-size:12px;color:var(--muted);margin-top:8px}
+.pg-vr{width:1px;align-self:stretch;background:var(--line);margin:18px 0}
+.pg-r{flex:1 1 320px;min-width:0;padding:8px 24px 0 30px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
+.pg-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;align-items:end;gap:6px 16px}
+.pg-row .nm{display:flex;align-items:baseline;gap:8px;min-width:0}
+.pg-row .nm b{font-size:13.5px;font-weight:700}
+.pg-row .nm span{font-size:11.5px;font-weight:300;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-row .pc{grid-row:span 2;align-self:center;text-align:right;white-space:nowrap}
+.pg-row .pc strong{display:block;font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.pg-row .pc small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.pg-row .bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden}
+.pg-row .bar.none{background:repeating-linear-gradient(90deg,var(--track) 0 6px,transparent 6px 10px)}
+.pg-row .bar i{display:block;height:100%;width:0;border-radius:5px;background:var(--fill);transition:width 1s cubic-bezier(.22,.8,.3,1)}
+@keyframes pgBreath{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes pgGlow{0%,100%{opacity:.55}50%{opacity:1}}
+.pg .pg-zb{opacity:0;animation:pgBreath 4.2s ease-in-out infinite}
+.pg .pg-glow{animation:pgGlow 3.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.pg .pg-zb,.pg .pg-glow{animation:none}.pg-row .bar i{transition:none}}
+@media (max-width:900px){.pg-vr{display:none}.pg-r{padding:18px 8px 4px;border-top:1px solid var(--line);margin-top:8px}}
+
 /* 맨 위 — 집행 경과 (가운데) */
 .phead{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;
   font-variant-numeric:tabular-nums;margin-bottom:16px;display:flex;align-items:baseline;
@@ -3823,7 +3870,7 @@ html:has(#tab-dash:not(.hidden)>#sub-struct:not(.hidden)){scrollbar-gutter:stabl
     <div id="hiddenBar" class="hiddenbar hidden"></div>
 
     <div class="sec" data-sect="pace">캠페인 진행 현황
-      <div class="tools"><button class="btn sm agency-only" id="paceCfgBtn" title="진행 현황에 보일 지표(노출 · 조회 · 클릭 …)를 고릅니다">⚙ 표시 항목</button></div></div>
+      <div class="tools"><div class="pstyle agency-only" id="paceStyle" role="group" aria-label="그래프 스타일"><button type="button" data-ps="basic">기본형</button><button type="button" data-ps="gauge">게이지형</button></div><button class="btn sm agency-only" id="paceCfgBtn" title="진행 현황에 보일 지표(노출 · 조회 · 클릭 …)를 고릅니다">⚙ 표시 항목</button></div></div>
     <div class="card" data-sect="pace"><div class="bd" id="paceBox"></div></div>
 
     <div class="sec gap" data-sect="stat">주요 지표
@@ -6263,6 +6310,142 @@ function openPaceCfg(){
     try{renderPace();}catch(e){}
     try{markDirty();saveLocal();}catch(e){}});
 }
+
+/* ===== 캠페인 진행 현황 — 게이지형 (v128) =====
+   관리자가 고른다(views.paceStyle). 왼쪽 = 핵심 KPI 반원 게이지, 오른쪽 = 나머지 지표 막대.
+   게이지: 0% = 162°, 100% = 18°, 띠는 양쪽 수평선(180° · 0°)까지 — 오른쪽 18°~0° 는 100% 초과(최대 112.5%).
+   구역은 목표 페이스(p = 오늘까지 목표 ÷ 전체 목표) 기준: 효율 저조 < 0.5875p ≤ 주의 < 0.9125p ≤ 적정 ≤ 1.0875p < 우수.
+   바늘이 있는 구역만 색 · 은은한 움직임(어두운 쪽으로만), 나머지 구역은 무채색. 바늘은 띠를 바늘 모양으로 오려 낸 자리. */
+var PACE_STYLE='basic';
+const PG={A0:162,A1:18,VMAX:1.125,VMIN:-0.125,CX:300,CY:312,R:240,RI:134,ZB:{warn:0.5875,ok:0.9125,great:1.0875},v:0,anim:0};
+const PG_ZL={bad:['효율 저조','Low'],warn:['주의','Caution'],ok:['적정','On pace'],great:['우수','Ahead']};
+const pgZone=pr=>pr<PG.ZB.warn?'bad':pr<PG.ZB.ok?'warn':pr<=PG.ZB.great?'ok':'great';
+function setPaceStyle(s){
+  PACE_STYLE=s==='gauge'?'gauge':'basic';
+  try{renderPace();}catch(e){console.warn(e);}
+  try{markDirty();saveLocal();}catch(e){}}
+function paintPaceStyle(){
+  const g=$('paceStyle');if(!g)return;
+  g.querySelectorAll('[data-ps]').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.ps===PACE_STYLE?'true':'false');
+    if(!b.onclick)b.onclick=()=>{if(b.dataset.ps!==PACE_STYLE)setPaceStyle(b.dataset.ps);};});}
+function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
+  const box=$('paceBox');
+  /* 핵심 KPI — 예산 비중이 가장 큰 KPI (숨긴 지표면 보이는 것 중 첫째) */
+  let mk0=null;try{const kr=kpiAchRows(activeLines());if(kr.length)mk0=kr[0].k;}catch(e){}
+  const main=rows.find(x=>x.k===mk0)||rows[0];
+  if(!main){box.innerHTML=`<div class="hint" style="padding:18px 6px">${all.length?L('표시할 지표를 모두 숨겼습니다 — ⚙ 표시 항목에서 다시 켤 수 있습니다.','All metrics are hidden — turn them back on in ⚙ Show items.')
+    :L('예상효율 입력에 목표(예상 노출 · 클릭 …)를 넣으면 게이지가 생깁니다.','Add goals in the plan to see the gauge.')}</div>`;return;}
+  const {A0,A1,VMAX,VMIN,CX,CY,R,RI}=PG,RM=(R+RI)/2;
+  const lab=KPI_LABEL[main.k]||main.k;
+  const p=main.goal?Math.min(Math.max(main.due/main.goal,0),1):0;
+  const pr=main.due>0?main.act/main.due:1, ach=main.goal?main.act/main.goal:0, zk=pgZone(pr);
+  const f=n=>n.toFixed(2),ang=v=>(A0-(A0-A1)*v)*Math.PI/180;
+  const pt=(r,v)=>[CX+r*Math.cos(ang(v)),CY-r*Math.sin(ang(v))];
+  const seg=(v0,v1)=>{if(v1-v0<1e-4)return '';const a=pt(R,v0),b=pt(R,v1),c=pt(RI,v1),d=pt(RI,v0);
+    return `M${f(a[0])} ${f(a[1])}A${R} ${R} 0 0 1 ${f(b[0])} ${f(b[1])}L${f(c[0])} ${f(c[1])}A${RI} ${RI} 0 0 0 ${f(d[0])} ${f(d[1])}Z`;};
+  const clv=x=>Math.min(Math.max(x,0),VMAX);
+  const bnd=[VMIN,clv(PG.ZB.warn*p),clv(PG.ZB.ok*p),clv(PG.ZB.great*p),VMAX],keys=['bad','warn','ok','great'],zi=keys.indexOf(zk);
+  const za=a=>(A0-(A0-A1)*a);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sign=x=>(x>=0?'+':'−')+Math.abs(x*100).toFixed(1)+'%';
+  /* 띠 */
+  let band=keys.map((k,i)=>`<path d="${seg(bnd[i],bnd[i+1])}" style="fill:var(--${k===zk?'z':'n'}-${k})"/>`).join('')
+    +`<path class="pg-zb" d="${seg(bnd[zi],bnd[zi+1])}" style="fill:var(--z-${zk}-d)"/>`
+    +`<g clip-path="url(#pgBand)"><rect x="-20" y="0" width="640" height="340" fill="url(#pgSheen)"/>`
+    +`<path d="M${f(pt(R-1,VMIN)[0])} ${f(pt(R-1,VMIN)[1])}A${R-1} ${R-1} 0 0 1 ${f(pt(R-1,VMAX)[0])} ${f(pt(R-1,VMAX)[1])}" fill="none" stroke-width="1.5" style="stroke:#fff;stroke-opacity:var(--rim)"/>`
+    +`<path d="M${f(pt(RI+1,VMIN)[0])} ${f(pt(RI+1,VMIN)[1])}A${RI+1} ${RI+1} 0 0 1 ${f(pt(RI+1,VMAX)[0])} ${f(pt(RI+1,VMAX)[1])}" fill="none" stroke-width="2" style="stroke:#000;stroke-opacity:var(--rim-in)"/>`
+    +`<g clip-path="url(#pgZone)">`
+    +(reduce?'':`<g><circle cx="${CX}" cy="${CY-RM}" r="72" fill="url(#pgDeep)"/><animateTransform attributeName="transform" type="rotate" values="${90-za(bnd[zi])} ${CX} ${CY};${90-za(bnd[zi+1])} ${CX} ${CY};${90-za(bnd[zi])} ${CX} ${CY}" dur="6.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"/></g>`)
+    +`<circle class="pg-glow" r="88" fill="url(#pgDeep)"/></g></g>`;
+  const cuts=bnd.slice(1,4).filter(b=>b>.001&&b<VMAX-.001);
+  band+=`<path d="${cuts.map(b=>{const a=pt(RI-1,b),c=pt(R+1,b);return `M${f(a[0])} ${f(a[1])}L${f(c[0])} ${f(c[1])}`;}).join('')}" stroke-width="4" fill="none" style="stroke:var(--surface)"/>`;
+  /* 눈금 — 띠 안 바깥 가장자리 · 틈에 걸리는 것은 생략 · 바늘 구역은 그 색의 어두운 톤(반투명), 나머지는 옅은 흰색 */
+  const vpx=v=>v*(A0-A1)*Math.PI/180*(R-12),tks={bad:'',warn:'',ok:'',great:''};
+  for(let i=0;i<=22;i++){const v=i/20;if(cuts.some(c=>Math.abs(vpx(v)-vpx(c))<5))continue;
+    let z=0;while(z<3&&v>=bnd[z+1])z++;const a=pt(R-5,v),b=pt(i%2?R-12:R-21,v);
+    tks[keys[z]]+=`M${f(a[0])} ${f(a[1])}L${f(b[0])} ${f(b[1])}`;}
+  band+=keys.filter(k=>tks[k]).map(k=>`<path d="${tks[k]}" stroke-width="2.8" stroke-linecap="round" fill="none" style="stroke:var(${k===zk?'--tk-'+k:'--tk-n'});stroke-opacity:${k===zk?.45:1}"/>`).join('');
+  band+=[[L('효율 저조','Low'),CX-RM],[L('효율 우수','High'),CX+RM]].map(([t,x])=>`<text x="${f(x)}" y="${CY-9}" text-anchor="middle" font-size="10.5" font-weight="500" style="fill:#fff;fill-opacity:.92">${esc(t)}</text>`).join('');
+  /* 집행일 점 + 양 끝 곡선 글씨 */
+  const N=Math.max(cs.days,1),E=Math.min(Math.max(elapsedAll,0),N);
+  let dots='';for(let i=0;i<N;i++){const q=pt(R+13,(i+.5)/N),today=i===E-1;
+    if(today)dots+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6.6" fill="none" stroke-width="1.2" opacity=".45" style="stroke:var(--dot-on)"/>`;
+    dots+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="${today?3.6:N>60?1.8:2.7}" style="fill:var(${i<E?'--dot-on':'--dot-off'})"/>`;}
+  const RT=R+13,arcD=(a0,a1)=>{const P=a=>[CX+RT*Math.cos(a*Math.PI/180),CY-RT*Math.sin(a*Math.PI/180)];const p0=P(a0),p1=P(a1);
+    return `M${f(p0[0])} ${f(p0[1])}A${RT} ${RT} 0 0 1 ${f(p1[0])} ${f(p1[1])}`;},gap=(A0-A1)/N/2+2.2;
+  let labs='';for(let i=0;i<=11;i++){const v=i/10,q=pt(R+33,v),c=Math.cos(ang(v));
+    labs+=`<text x="${f(q[0])}" y="${f(q[1])}" text-anchor="${c<-.25?'end':c>.25?'start':'middle'}" dominant-baseline="middle" font-size="11" font-weight="${i%5?300:400}" opacity="${i>10?.7:1}" style="fill:var(--muted)">${i*10}%</text>`;}
+  const svg=`<svg class="pg-svg" viewBox="-20 22 640 298" role="img" aria-label="${esc(`${L('핵심 KPI','Key KPI')} ${lab} ${pct(ach,1)}, ${L('페이스 대비','vs pace')} ${sign(pr-1)}`)}">
+    <defs><clipPath id="pgBand"><path d="${seg(VMIN,VMAX)}"/></clipPath><clipPath id="pgZone"><path d="${seg(bnd[zi],bnd[zi+1])}"/></clipPath>
+      <linearGradient id="pgSheen" x1="0" y1="${CY-R}" x2="0" y2="${CY}" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:#fff;stop-opacity:var(--sheen-t)"/><stop offset=".45" style="stop-color:#fff;stop-opacity:0"/><stop offset="1" style="stop-color:#000;stop-opacity:var(--sheen-b)"/></linearGradient>
+      <radialGradient id="pgDeep"><stop offset="0" style="stop-color:var(--z-${zk}-dd);stop-opacity:.95"/><stop offset=".5" style="stop-color:var(--z-${zk}-dd);stop-opacity:.45"/><stop offset="1" style="stop-color:var(--z-${zk}-dd);stop-opacity:0"/></radialGradient>
+      <mask id="pgCut" maskUnits="userSpaceOnUse" x="-20" y="0" width="640" height="340"><rect x="-20" y="0" width="640" height="340" fill="#fff"/><path class="pg-cut" fill="#000"/></mask>
+      <path id="pgArcL" d="${arcD(182,A0+gap)}" fill="none"/><path id="pgArcR" d="${arcD(A1-gap,-2)}" fill="none"/></defs>
+    <g mask="url(#pgCut)">${band}</g>${dots}${labs}
+    <text font-size="11.5" font-weight="600" dominant-baseline="middle" style="fill:var(--dot-on)"><textPath href="#pgArcL" startOffset="100%" text-anchor="end">${esc(L(`집행 ${E}일`,`Day ${E}`))}</textPath></text>
+    <text font-size="11.5" font-weight="500" dominant-baseline="middle" style="fill:var(--muted)"><textPath href="#pgArcR" startOffset="0%" text-anchor="start">${esc(L(`남은 ${N-E}일`,`${N-E} days left`))}</textPath></text>
+    <text x="${CX}" y="${CY-92}" text-anchor="middle" font-size="15" font-weight="700" style="fill:var(--ink2)">${esc(L('핵심 KPI','Key KPI'))} : ${esc(lab)}</text>
+    <text class="pg-big" x="${CX}" y="${CY-26}" text-anchor="middle" font-size="56" font-weight="800" letter-spacing="-2" style="fill:var(--ink);font-variant-numeric:tabular-nums"><tspan class="pg-bi"></tspan><tspan class="pg-bf" font-size="28" font-weight="700" letter-spacing="-.5" dx="2"></tspan></text>
+    <text x="${CX}" y="${CY-1}" text-anchor="middle" font-size="12.5" font-weight="300" style="fill:var(--ink2)">${esc(L(`집행 ${lab} ${fmt(Math.round(main.act))} / 목표 ${lab} ${fmt(Math.round(main.goal))}`,`Actual ${fmt(Math.round(main.act))} / Goal ${fmt(Math.round(main.goal))} ${lab}`))}</text>
+  </svg>`;
+  /* 오른쪽 — 나머지 지표: 색 없이 희미한 막대를 진하게 채운다 */
+  const others=rows.filter(x=>x!==main);
+  const row=x=>{const l=KPI_LABEL[x.k]||x.k,r=x.goal?x.act/x.goal:0,xr=x.due>0?x.act/x.due:1;
+    return `<div class="pg-row pgm" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,r,pr:xr,media:x.media}))}">
+      <div class="nm"><b>${esc(l)}</b><span>${manUnit(x.act)} / ${manUnit(x.goal)}</span></div>
+      <div class="pc"><strong>${pct(r,1)}</strong><small>${L('페이스 대비','vs pace')} ${sign(xr-1)}</small></div>
+      <div class="bar"><i data-w="${(Math.min(Math.max(r,0),1)*100).toFixed(2)}"></i></div></div>`;};
+  const iwRow=x=>`<div class="pg-row"><div class="nm"><b>${L('유입 (IWV)','Inflow (IWV)')}</b><span>${L('목표 없음','no goal')}</span></div>
+      <div class="pc"><strong>${fmt(Math.round(x.act))}</strong><small>${L('유입률','Inflow rate')} ${x.clk?pct(x.act/x.clk,2):'–'}</small></div>
+      <div class="bar none"></div></div>`;
+  const side=others.map(row).join('')+(iwOn?iwRow(iw):'');
+  const narrow=sc.startIso!==cs.startIso&&false;
+  box.innerHTML=`<div class="pg">
+    <div class="pg-l pgm" data-tip="${esc(JSON.stringify({l:lab,act:main.act,goal:main.goal,due:main.due,r:ach,pr,media:main.media}))}">
+      <div class="pg-stat" style="background:var(--p-${zk});color:var(--t-${zk})"><i style="background:var(--z-${zk}-d)"></i>${esc(L(PG_ZL[zk][0],PG_ZL[zk][1]))} · ${L('페이스 대비','vs pace')} ${sign(pr-1)}</div>
+      ${svg}
+      <div class="pg-foot">${L('집행 기간','Flight')} ${mdy(cs.startIso)} – ${mdy(cs.endIso)}<span class="phead" style="display:none">${Math.round(E/N*100)}% 경과</span></div>
+    </div>
+    ${side?`<div class="pg-vr"></div><div class="pg-r">${side}</div>`:''}
+  </div>`;
+  /* 바늘 · 큰 숫자 — 지난번 자리에서 새 자리로 */
+  const sv=box.querySelector('.pg-svg'),cut=sv.querySelector('.pg-cut'),glow=sv.querySelector('.pg-glow'),bi=sv.querySelector('.pg-bi'),bf=sv.querySelector('.pg-bf');
+  const needle=v=>{const RB=RI-2,dv=(15/RB)/Math.PI,tip=pt(R-9,v),bl=pt(RB,v-dv),br=pt(RB,v+dv),b0=pt(RI-30,v);
+    return `M${f(b0[0])} ${f(b0[1])}L${f(bl[0])} ${f(bl[1])}L${f(tip[0])} ${f(tip[1])}L${f(br[0])} ${f(br[1])}Z`;};
+  const setBig=r=>{const t=(Math.max(r,0)*100).toFixed(1).split('.');bi.textContent=t[0];bf.textContent='.'+t[1]+'%';};
+  const to=Math.min(Math.max(ach,.004),VMAX-.004),from=PG.v,t0=performance.now(),dur=(reduce||from===to)?0:900;
+  cancelAnimationFrame(PG.anim);
+  const step=now=>{const k=dur?Math.min((now-t0)/dur,1):1,e=1-Math.pow(1-k,3),v=from+(to-from)*e;PG.v=v;
+    cut.setAttribute('d',needle(v));const g=pt(RM,v);glow.setAttribute('cx',f(g[0]));glow.setAttribute('cy',f(g[1]));
+    setBig(k<1&&to?ach*(v/to):ach);if(k<1)PG.anim=requestAnimationFrame(step);};
+  step(t0);if(dur)PG.anim=requestAnimationFrame(step);
+  /* 막대 채우기 */
+  requestAnimationFrame(()=>box.querySelectorAll('.pg-row .bar i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
+  /* 게이지에 마우스 — 수치 */
+  sv.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(L('핵심 KPI','Key KPI'))} · ${esc(lab)}</div>`
+    +`<div class="r"><span class="l">${L('집행','Actual')}</span><b>${fmt(Math.round(main.act))}</b></div>`
+    +`<div class="r"><span class="l">${L('목표','Goal')}</span><b>${fmt(Math.round(main.goal))}</b></div>`
+    +`<div class="r"><span class="l">${L('오늘까지 목표','Goal to date')}</span><b>${fmt(Math.round(main.due))}</b></div>`
+    +`<div class="r"><span class="l">${L('달성률','Achieved')}</span><b>${pct(ach,1)}</b></div>`
+    +`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${sign(pr-1)}</b></div>`));
+  sv.addEventListener('mouseleave',hideTip);
+  pgAlign();
+}
+/* 게이지 바닥(수평선) = 오른쪽 마지막 막대 바닥 — 둘 중 위에 있는 쪽을 내린다 */
+function pgAlign(){
+  const box=$('paceBox'),pg=box&&box.querySelector('.pg');if(!pg)return;
+  const l=pg.querySelector('.pg-l'),r=pg.querySelector('.pg-r'),sv=pg.querySelector('.pg-svg');if(!r||!sv)return;
+  l.style.paddingTop='';r.style.paddingTop='';
+  if(getComputedStyle(pg).flexDirection==='column'||pg.offsetWidth<760)return;
+  const bars=r.querySelectorAll('.bar');if(!bars.length)return;
+  const sr=sv.getBoundingClientRect();if(!sr.height)return;
+  const gB=sr.top+(PG.CY-22)*sr.height/298;
+  const bB=bars[bars.length-1].getBoundingClientRect().bottom;
+  const d=Math.round(gB-bB);
+  if(d>0)r.style.paddingTop=(parseFloat(getComputedStyle(r).paddingTop)+d)+'px';
+  else if(d<0)l.style.paddingTop=(parseFloat(getComputedStyle(l).paddingTop)-d)+'px';
+}
+addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=setTimeout(()=>{try{pgAlign();}catch(e){}},150);};})());
 function renderPace(){
   const sc=paceScope();          /* 기간 필터 구간 — 집행 수치와 머리글 */
   const cs=campScope();          /* 캠페인 전체 — 날짜 칸과 시작/종료일 */
@@ -6341,6 +6524,8 @@ function renderPace(){
   const den=cs.days;
   /* 며칠째인가도 캠페인 시작일 기준 — 조회 시작일이 아니라 */
   const elapsedAll=Math.min(cs.days,Math.max(0,dIdx(sc.endIso)-cs.i0+1));
+  paintPaceStyle();
+  if(PACE_STYLE==='gauge'){renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll);return;}
   $('paceBox').innerHTML=`
     <div class="pacescroll"><div class="pacebody">
       <div class="phead">집행 ${elapsedAll}일차 <span class="sep">/</span> 총 ${den}일
@@ -13241,6 +13426,8 @@ function serializeDoc(){
            ovCollage:(typeof OV_COLLAGE!=='undefined'?!!OV_COLLAGE:true),
            /* 캠페인 진행 현황에서 숨긴 지표 (v82) */
            paceHide:(typeof PACE_HIDE!=='undefined'?PACE_HIDE.slice():[]),
+           /* 캠페인 진행 현황 그래프 스타일 (v128) — basic | gauge */
+           paceStyle:(typeof PACE_STYLE!=='undefined'?PACE_STYLE:'basic'),
            /* 조회 기간 (v71) — 마스터가 고른 기간을 광고주도 그대로 보도록. null 이면 기본 구간 */
            range:(typeof rangeForDoc==='function'?rangeForDoc():null)}
   };
@@ -13341,6 +13528,7 @@ function applyDoc(d,keepToday){
   try{OV_COLLAGE=v.ovCollage!==false;if(typeof OVC!=='undefined')OVC.key='';}catch(e){}
   /* 캠페인 진행 현황 숨긴 지표 (v82) — 없던 저장본은 모두 보이게 */
   try{PACE_HIDE=Array.isArray(v.paceHide)?v.paceHide.filter(k=>typeof k==='string'):[];}catch(e){}
+  try{PACE_STYLE=v.paceStyle==='gauge'?'gauge':'basic';}catch(e){}
   if(typeof v.crAllMedia==='boolean'&&typeof CR_ALL_MEDIA!=='undefined')CR_ALL_MEDIA=v.crAllMedia;
   if(typeof v.crMedia==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.media=v.crMedia;
   if(typeof v.crSeg==='string'&&typeof CR_FILTER!=='undefined')CR_FILTER.segment=v.crSeg;
@@ -14197,7 +14385,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
-  try{PACE_HIDE=[];}catch(e){}
+  try{PACE_HIDE=[];PACE_STYLE='basic';}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}
   try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}
@@ -22782,8 +22970,8 @@ const TU_INS={
   /* 캠페인 진행 현황 (v123) — 제목 = 캠페인 KPI(예산이 가장 큰 KPI 묶음의 지표) 목표 대비 실적,
      부제목 = 그 실적을 이끈 매체(몇 회 · 몇 %) · 다음 매체들 · 다른 지표 달성률. 강조 = KPI 줄에서 1위 매체 구간 */
   pace(sl,h){
-    const rows=[...sl.src.querySelectorAll('.pline')].map(line=>{
-      const b=line.querySelector('.pbar[data-tip]');let d=null;
+    const rows=[...sl.src.querySelectorAll('.pline,.pgm')].map(line=>{
+      const b=line.matches('.pgm')?line:line.querySelector('.pbar[data-tip]');let d=null;
       try{d=b&&JSON.parse(b.getAttribute('data-tip'));}catch(e){}
       return d&&d.goal>0?{line,d,l:tuTx(line.querySelector('.pside .nm1'))||d.l}:null;}).filter(Boolean);
     if(!rows.length)return null;

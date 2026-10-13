@@ -1436,6 +1436,53 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
    좌(지표명 · 집행) · 막대 · 우(목표)는 절대 줄바꿈하지 않고, 좁아지면 가로 스크롤. */
 .pacescroll{overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
 .pacebody{min-width:560px}
+/* ===== 캠페인 진행 현황 · 게이지형 (v128) ===== */
+.pstyle{display:inline-flex;gap:2px;padding:3px;border-radius:9px;background:var(--plane)}
+.pstyle button{height:26px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.pstyle button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(15,25,35,.12)}
+.pg{--z-bad:#dc8376;--z-warn:#e6ab62;--z-ok:#86c399;--z-great:#6b98c8;
+  --z-bad-d:#bd5a4c;--z-warn-d:#cf8530;--z-ok-d:#529e6b;--z-great-d:#4473a8;
+  --z-bad-dd:#a8473a;--z-warn-dd:#b86f1c;--z-ok-dd:#3d8656;--z-great-dd:#335f93;
+  --t-bad:#a3443a;--t-warn:#8c5414;--t-ok:#2c7449;--t-great:#2b5a8c;
+  --p-bad:#f8e1dd;--p-warn:#f9ead6;--p-ok:#e2f2e7;--p-great:#dde8f4;
+  --tk-bad:#a4564b;--tk-warn:#a77736;--tk-ok:#4e8862;--tk-great:#3e6898;
+  --n-bad:#959ea8;--n-warn:#b2b9c0;--n-ok:#c5cad0;--n-great:#a1a9b2;--tk-n:rgba(255,255,255,.34);
+  --dot-on:#3c4957;--dot-off:rgba(60,73,87,.17);--sheen-t:.26;--sheen-b:.10;--rim:.55;--rim-in:.10;
+  --track:rgba(30,42,56,.08);--fill:#3c4957;
+  display:flex;flex-wrap:wrap;align-items:flex-start}
+[data-theme="dark"] .pg{--z-bad:#9b5047;--z-warn:#9b733a;--z-ok:#467e5b;--z-great:#40709f;
+  --z-bad-d:#c06a5d;--z-warn-d:#c4954f;--z-ok-d:#63a87b;--z-great-d:#5f93c8;
+  --z-bad-dd:#7d3a32;--z-warn-dd:#7a5626;--z-ok-dd:#2f5c40;--z-great-dd:#2c5276;
+  --t-bad:#f3a497;--t-warn:#f2c08c;--t-ok:#a6dbb9;--t-great:#aecbec;
+  --p-bad:rgba(227,109,92,.2);--p-warn:rgba(232,160,90,.2);--p-ok:rgba(126,196,152,.18);--p-great:rgba(110,160,215,.22);
+  --tk-bad:#c98a80;--tk-warn:#c9a46f;--tk-ok:#86b896;--tk-great:#88a9cf;
+  --n-bad:#3a4148;--n-warn:#454c53;--n-ok:#50575e;--n-great:#3f464d;--tk-n:rgba(255,255,255,.1);
+  --dot-on:#dfe5eb;--dot-off:rgba(223,229,235,.18);--sheen-t:.14;--sheen-b:.22;--rim:.22;--rim-in:.25;
+  --track:rgba(232,236,240,.09);--fill:#d5dce3}
+.pg-l{flex:0 1 640px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 10px 6px;box-sizing:border-box}
+.pg-svg{width:100%;max-width:600px;height:auto;display:block;overflow:visible}
+.pg-stat{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 14px;border-radius:14px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.pg-stat i{width:7px;height:7px;border-radius:50%}
+.pg-foot{font-size:12px;color:var(--muted);margin-top:8px}
+.pg-vr{width:1px;align-self:stretch;background:var(--line);margin:18px 0}
+.pg-r{flex:1 1 320px;min-width:0;padding:8px 24px 0 30px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
+.pg-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;align-items:end;gap:6px 16px}
+.pg-row .nm{display:flex;align-items:baseline;gap:8px;min-width:0}
+.pg-row .nm b{font-size:13.5px;font-weight:700}
+.pg-row .nm span{font-size:11.5px;font-weight:300;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-row .pc{grid-row:span 2;align-self:center;text-align:right;white-space:nowrap}
+.pg-row .pc strong{display:block;font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.pg-row .pc small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.pg-row .bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden}
+.pg-row .bar.none{background:repeating-linear-gradient(90deg,var(--track) 0 6px,transparent 6px 10px)}
+.pg-row .bar i{display:block;height:100%;width:0;border-radius:5px;background:var(--fill);transition:width 1s cubic-bezier(.22,.8,.3,1)}
+@keyframes pgBreath{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes pgGlow{0%,100%{opacity:.55}50%{opacity:1}}
+.pg .pg-zb{opacity:0;animation:pgBreath 4.2s ease-in-out infinite}
+.pg .pg-glow{animation:pgGlow 3.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.pg .pg-zb,.pg .pg-glow{animation:none}.pg-row .bar i{transition:none}}
+@media (max-width:900px){.pg-vr{display:none}.pg-r{padding:18px 8px 4px;border-top:1px solid var(--line);margin-top:8px}}
+
 /* 맨 위 — 집행 경과 (가운데) */
 .phead{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;
   font-variant-numeric:tabular-nums;margin-bottom:16px;display:flex;align-items:baseline;

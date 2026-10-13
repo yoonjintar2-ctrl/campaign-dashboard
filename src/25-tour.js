@@ -176,8 +176,8 @@ const TU_INS={
   /* 캠페인 진행 현황 (v123) — 제목 = 캠페인 KPI(예산이 가장 큰 KPI 묶음의 지표) 목표 대비 실적,
      부제목 = 그 실적을 이끈 매체(몇 회 · 몇 %) · 다음 매체들 · 다른 지표 달성률. 강조 = KPI 줄에서 1위 매체 구간 */
   pace(sl,h){
-    const rows=[...sl.src.querySelectorAll('.pline')].map(line=>{
-      const b=line.querySelector('.pbar[data-tip]');let d=null;
+    const rows=[...sl.src.querySelectorAll('.pline,.pgm')].map(line=>{
+      const b=line.matches('.pgm')?line:line.querySelector('.pbar[data-tip]');let d=null;
       try{d=b&&JSON.parse(b.getAttribute('data-tip'));}catch(e){}
       return d&&d.goal>0?{line,d,l:tuTx(line.querySelector('.pside .nm1'))||d.l}:null;}).filter(Boolean);
     if(!rows.length)return null;
