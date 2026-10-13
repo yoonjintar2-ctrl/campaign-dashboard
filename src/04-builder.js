@@ -1194,15 +1194,13 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
     <text class="pg-big" x="${CX}" y="${CY-26}" text-anchor="middle" font-size="56" font-weight="800" letter-spacing="-2" style="fill:var(--ink);font-variant-numeric:tabular-nums"><tspan class="pg-bi"></tspan><tspan class="pg-bf" font-size="28" font-weight="700" letter-spacing="-.5" dx="2"></tspan></text>
     <text x="${CX}" y="${CY-1}" text-anchor="middle" font-size="12.5" font-weight="300" style="fill:var(--ink2)">${esc(L(`집행 ${lab} ${fmt(Math.round(main.act))} / 목표 ${lab} ${fmt(Math.round(main.goal))}`,`Actual ${fmt(Math.round(main.act))} / Goal ${fmt(Math.round(main.goal))} ${lab}`))}</text>
   </svg>`;
-  /* 오른쪽 — 나머지 지표: 색 없이 희미한 막대를 진하게 채운다 */
+  /* 게이지 아래 — 나머지 지표 한 줄 칩 (v129 · 시안 F): 이름 · 달성률 · 얇은 막대. 자세한 수치는 마우스 */
   const others=rows.filter(x=>x!==main);
   const row=x=>{const l=KPI_LABEL[x.k]||x.k,r=x.goal?x.act/x.goal:0,xr=x.due>0?x.act/x.due:1;
-    return `<div class="pg-row pgm" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,r,pr:xr,media:x.media}))}">
-      <div class="nm"><b>${esc(l)}</b><span>${manUnit(x.act)} / ${manUnit(x.goal)}</span></div>
-      <div class="pc"><strong>${pct(r,1)}</strong><small>${L('페이스 대비','vs pace')} ${sign(xr-1)}</small></div>
+    return `<div class="pg-chip pgm" data-tip="${esc(JSON.stringify({l,act:x.act,goal:x.goal,due:x.due,r,pr:xr,media:x.media}))}">
+      <b>${esc(l)}</b><strong>${pct(r,1)}</strong>
       <div class="bar"><i data-w="${(Math.min(Math.max(r,0),1)*100).toFixed(2)}"></i></div></div>`;};
-  const iwRow=x=>`<div class="pg-row"><div class="nm"><b>${L('유입 (IWV)','Inflow (IWV)')}</b><span>${L('목표 없음','no goal')}</span></div>
-      <div class="pc"><strong>${fmt(Math.round(x.act))}</strong><small>${L('유입률','Inflow rate')} ${x.clk?pct(x.act/x.clk,2):'–'}</small></div>
+  const iwRow=x=>`<div class="pg-chip pgiw" data-itip="${esc(JSON.stringify({act:x.act,clk:x.clk}))}"><b>${L('유입 (IWV)','Inflow (IWV)')}</b><strong>${fmt(Math.round(x.act))}</strong>
       <div class="bar none"></div></div>`;
   const side=others.map(row).join('')+(iwOn?iwRow(iw):'');
   const narrow=sc.startIso!==cs.startIso&&false;
@@ -1212,7 +1210,7 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
       ${svg}
       <div class="pg-foot">${L('집행 기간','Flight')} ${mdy(cs.startIso)} – ${mdy(cs.endIso)}<span class="phead" style="display:none">${Math.round(E/N*100)}% 경과</span></div>
     </div>
-    ${side?`<div class="pg-vr"></div><div class="pg-r">${side}</div>`:''}
+    ${side?`<div class="pg-chips">${side}</div>`:''}
   </div>`;
   /* 바늘 · 큰 숫자 — 지난번 자리에서 새 자리로 */
   const sv=box.querySelector('.pg-svg'),cut=sv.querySelector('.pg-cut'),glow=sv.querySelector('.pg-glow'),bi=sv.querySelector('.pg-bi'),bf=sv.querySelector('.pg-bf');
@@ -1228,7 +1226,16 @@ function renderPaceGauge(all,rows,iw,iwOn,cs,sc,elapsedAll){
   /* 탭이 가려져 있으면 rAF 가 멈춘다 — 끝 상태는 따로 보장 */
   if(dur)setTimeout(()=>{if(PG.v!==to){cancelAnimationFrame(PG.anim);step(t0+dur);}},dur+250);
   /* 막대 채우기 */
-  requestAnimationFrame(()=>box.querySelectorAll('.pg-row .bar i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
+  requestAnimationFrame(()=>box.querySelectorAll('.pg-chip .bar i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
+  box.querySelectorAll('.pg-chip').forEach(c=>{let o=null;try{o=JSON.parse(c.dataset.tip||c.dataset.itip);}catch(e){return;}
+    c.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,c.dataset.tip
+      ?`<div class="t">${esc(o.l)}</div><div class="r"><span class="l">${L('집행','Actual')}</span><b>${fmt(Math.round(o.act))}</b></div>`
+        +`<div class="r"><span class="l">${L('목표','Goal')}</span><b>${fmt(Math.round(o.goal))}</b></div>`
+        +`<div class="r"><span class="l">${L('달성률','Achieved')}</span><b>${pct(o.r,1)}</b></div>`
+        +`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${sign(o.pr-1)}</b></div>`
+      :`<div class="t">${L('유입 (IWV)','Inflow (IWV)')}</div><div class="r"><span class="l">${L('유입','Inflow')}</span><b>${fmt(Math.round(o.act))}</b></div>`
+        +`<div class="r"><span class="l">${L('유입률','Inflow rate')}</span><b>${o.clk?pct(o.act/o.clk,2):'–'}</b></div>`));
+    c.addEventListener('mouseleave',hideTip);});
   /* 게이지에 마우스 — 수치 */
   sv.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(L('핵심 KPI','Key KPI'))} · ${esc(lab)}</div>`
     +`<div class="r"><span class="l">${L('집행','Actual')}</span><b>${fmt(Math.round(main.act))}</b></div>`
