@@ -561,7 +561,9 @@ function infLandDwell(host,rows0){
       <div class="ldbar">${segs.map(s=>{const p=s.v/n;
         return `<i style="flex:${s.v} 1 0;--op:${INF_BAND_OP[s.bi]}"${s.bi>=2?` class="dk${s.bi>=3?' hi':''}"`:''} data-b="${s.bi}" data-v="${s.v}">${p>=.09?`<em>${pct(p,0)}</em>`:''}</i>`;}).join('')}</div>
       <div class="ldavg"><i class="avgk">${L('평균 체류','avg time')}</i><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
-  host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`;
+  /* 아래 범례 (v129) — 기둥 위(짧게 머문 방문) → 아래(오래 머문 방문) 순서 그대로 */
+  host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`
+    +`<div class="infbl ldlg">${INF_BANDS.map((x,i)=>`<span><i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}</span>`).join('')}</div>`;
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`
       +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
