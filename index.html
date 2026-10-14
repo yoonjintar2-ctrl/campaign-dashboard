@@ -20810,13 +20810,21 @@ var INF={dim:'media',mapSeg:''};
 const INF_MIN=10;
 const INF_LAND=[{k:'iwv_tda',l:'TDA'},{k:'iwv_mh',l:'Mobility Hub'},{k:'iwv_mp',l:'Model Page'}];
 /* 체류시간 10구간 → 화면에서는 5묶음 */
-const INF_BANDS=[
+/* 체류시간 구간 묶음 (v129.2) — 엑셀(Adobe) 항목을 그대로 묶는다.
+   예전 마지막 칸 '10분 이상' 은 엑셀에 없는 항목처럼 보였다(엑셀은 10~15 · 15~20 · 20~30분까지).
+   → 마지막 칸은 '10~30분'. 캠페인에 '30분 이상' 실적이 하나라도 있으면 그 칸을 따로 하나 더 둔다(섞지 않음). */
+const INF_BANDS_BASE=[
   {l:'15초 미만',en:'<15s',ks:['dw15']},
   {l:'15~59초',en:'15–59s',ks:['dw30','dw60']},
   {l:'1~3분',en:'1–3m',ks:['dw3m']},
   {l:'3~10분',en:'3–10m',ks:['dw5m','dw10m']},
-  {l:'10분 이상',en:'10m+',ks:['dw15m','dw20m','dw30m','dw30p']}];
-const INF_BAND_OP=[.16,.34,.55,.76,.96];
+  {l:'10~30분',en:'10–30m',ks:['dw15m','dw20m','dw30m']}];
+let INF_BANDS=INF_BANDS_BASE.slice(),INF_BAND_OP=[.16,.34,.55,.76,.96];
+function infSetBands(){
+  let has30=false;try{has30=FACTS.some(f=>(+f.dw30p||0)>0);}catch(e){}
+  INF_BANDS=has30?INF_BANDS_BASE.concat([{l:'30분 이상',en:'30m+',ks:['dw30p']}]):INF_BANDS_BASE.slice();
+  INF_BAND_OP=has30?[.14,.28,.44,.6,.78,.96]:[.16,.34,.55,.76,.96];}
+const infBandLegend=()=>`<div class="infbl ldlg">${INF_BANDS.map((x,i)=>`<span><i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}</span>`).join('')}</div>`;
 const infHas=b=>(+b.iwv||0)>0||dwSum(b)>0||INF_LAND.some(x=>(+b[x.k]||0)>0);
 const infRate=b=>b.click?b.iwv/b.click:NaN;
 const infCpv=b=>b.iwv?b.cost/b.iwv:NaN;
@@ -20860,6 +20868,7 @@ function renderInflow(){
   const any=infAny();
   document.querySelectorAll('[data-sect="inflow"]').forEach(n=>n.classList.toggle('infnone',!any));
   if(!any){body.innerHTML='';return;}
+  infSetBands();
   const dim=INF.dim||'media';
   /* 머리 단추 */
   const seg=$('infDim');
@@ -20908,8 +20917,7 @@ function renderInflow(){
         <div class="infmap" id="infMap"></div></div>
       ${ldOK?`<div class="infcell infldc"><div class="infh"><b>${L('체류시간 분포 · 랜딩 페이지별','Time on site · by landing page')}</b><span>${L('평균 체류시간 순','by average')}</span></div>
         <div id="infLand"></div></div>`:''}
-      <div class="infcell infdwc"><div class="infh"><b>${ldOK?L('체류시간 분포 · ','Time on site · ')+infDimLab(dim):L('체류시간 분포','Time on site')}</b><span>${ldOK?L('평균 체류시간 순','by average'):L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span>
-          <span class="infbl">${INF_BANDS.map((x,i)=>`<i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}`).join('')}</span></div>
+      <div class="infcell infdwc"><div class="infh"><b>${ldOK?L('체류시간 분포 · ','Time on site · ')+infDimLab(dim):L('체류시간 분포','Time on site')}</b><span>${ldOK?L('평균 체류시간 순','by average'):L('방문을 머문 시간 구간으로 나눈 비율 · 평균 체류시간 순','Share of visits by time spent · sorted by average')}</span></div>
         <div id="infDwell"></div></div>
     </div>
     <div class="infcell"><div class="infh"><b>${L('유입 효율 상세분석','Inflow efficiency details')}</b><span>${L('머리글을 누르면 설명 · 정렬','click a header for its description · sorting')}</span>
@@ -20923,7 +20931,7 @@ function renderInflow(){
   const dwR=rows.filter(g=>dwSum(g.b)>0),nDw=dwR.length,nSh=useSeg?new Set(dwR.map(g=>g.seg)).size:0;
   /* 효율 지도는 구분으로 나누지 않는다(원이 너무 작아진다) — 전체, 또는 머리에서 고른 구분 하나만 (v103) */
   const mapRows=()=>infGroups(dim,okSet,false,segOK&&INF.mapSeg!=null&&INF.mapSeg!==''&&segList.includes(INF.mapSeg)?INF.mapSeg:null).filter(g=>infHas(g.b));
-  const mapH=nDw?nDw*44+(useSeg?nSh*16:0)+26:340;
+  const mapH=nDw?nDw*44+(useSeg?nSh*16:0)+26+40:340;   /* +40 = 아래 구간 범례 줄 (v129.2) */
   try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}
   {const ms=$('infMapSeg');if(ms)ms.onchange=()=>{INF.mapSeg=ms.value;try{infMap($('infMap'),mapRows(),T,mapH);}catch(e){console.warn(e);}};}
   try{infDwell($('infDwell'),rows);}catch(e){console.warn(e);}
@@ -21316,8 +21324,8 @@ function infDwell(host,rows0){
   /* 구분으로 나눴으면 유입 흐름처럼 — 왼쪽에 구분 이름 + 그 구분의 매체들을 감싸는 괄호 (v103) */
   if(sg){const grp=[];rows.forEach((g,i)=>{const l=grp[grp.length-1];if(l&&l.s===g.seg)l.idx.push(i);else grp.push({s:g.seg,idx:[i]});});
     host.innerHTML=`<div class="infdw sg">${grp.map(x=>`<div class="dwgrp"><div class="dwsegc"><b>${esc(infSegLab(x.s))}</b></div>
-        <div class="dwrows">${x.idx.map(i=>rowHTML(rows[i],i)).join('')}</div></div>`).join('')}</div>`;}
-  else host.innerHTML=`<div class="infdw">${rows.map(rowHTML).join('')}</div>`;
+        <div class="dwrows">${x.idx.map(i=>rowHTML(rows[i],i)).join('')}</div></div>`).join('')}</div>`+infBandLegend();}
+  else host.innerHTML=`<div class="infdw">${rows.map(rowHTML).join('')}</div>`+infBandLegend();
   host.querySelectorAll('.dwbar i').forEach(seg=>{const g=rows[+seg.closest('.dwrow').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(infName(g))} · ${L(b.l,b.en)}</div>`
       +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
@@ -21329,7 +21337,7 @@ function infDwell(host,rows0){
    랜딩 페이지가 어디냐에 따라 머무는 시간이 크게 다르다 — 매체별 막대와 따로, 랜딩마다 세로 100% 기둥 하나.
    v106.2 — 위에 랜딩 이름, 기둥은 위 = 짧게 머문 방문(옅게) → 아래 = 오래 머문 방문(진하게), 아래에 평균 체류시간 · 방문 수.
    이름 · 기둥 · 평균 세 줄은 subgrid 로 기둥끼리 높이를 맞춘다(이름이 두 줄이 돼도 기둥 위끝이 가지런하게).
-   구간 범례는 바로 옆 매체별 분포 머리의 것을 같이 쓴다(칸이 좁아 따로 두지 않는다).
+   구간 범례는 기둥 아래에 따로 둔다 (v129 · v129.2 에서 매체별 분포도 아래로 옮김).
    지금 조회 기간 · 필터, 분석 대상 라인(INF_MIN 이상)만. 랜딩을 안 적은 몫은 '(랜딩 미입력)' 기둥(맨 뒤) */
 const infDimLab=d=>d==='product'?L('광고상품별','by product'):d==='creative'?L('소재별','by creative'):L('매체별','by media');
 function infLandGroups(okSet){
@@ -21359,7 +21367,7 @@ function infLandDwell(host,rows0){
       <div class="ldavg"><i class="avgk">${L('평균 체류','avg time')}</i><b class="mono">${many?esc(fmtDur(dwAvg(g.b))).replace(/ /g,'<br>'):esc(fmtDur(dwAvg(g.b)))}</b><span>${many?fmt(n):L(`방문 ${fmt(n)}`,`${fmt(n)} visits`)}</span></div></div>`;};
   /* 아래 범례 (v129) — 기둥 위(짧게 머문 방문) → 아래(오래 머문 방문) 순서 그대로 */
   host.innerHTML=`<div class="infld${many?' many':''}"><div class="ldcols">${rows.map(col).join('')}</div></div>`
-    +`<div class="infbl ldlg">${INF_BANDS.map((x,i)=>`<span><i style="--op:${INF_BAND_OP[i]}"></i>${L(x.l,x.en)}</span>`).join('')}</div>`;
+    +infBandLegend();
   host.querySelectorAll('.ldbar i').forEach(seg=>{const g=rows[+seg.closest('.ldcol').dataset.i],b=INF_BANDS[+seg.dataset.b],v=+seg.dataset.v;
     seg.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(g.lab)} · ${L(b.l,b.en)}</div>`
       +`<div class="r"><span class="l">${L('방문','Visits')}</span><b>${fmt(v)}</b></div>`
