@@ -1439,6 +1439,9 @@ $('fcToggle').onclick=()=>{SHOW_FORECAST=!SHOW_FORECAST;$('fcToggle').classList.
   renderDaily();markDirty();};
 $('benchToggle').onclick=()=>{SHOW_BENCH=!SHOW_BENCH;$('benchToggle').classList.toggle('on',SHOW_BENCH);
   renderDaily();markDirty();};
+/* 화면 폭 맞춤 (v131) — 한 달이 넘는 캠페인을 가로로 넘기지 않고 한 화면에. 문서(views.dailyFit)에 저장된다 */
+if($('dailyFitTgl'))$('dailyFitTgl').onclick=()=>{DAILY_FIT_ON=!DAILY_FIT_ON;
+  $('dailyFitTgl').classList.toggle('on',DAILY_FIT_ON);renderDaily();try{markDirty();}catch(e){}};
 /* 트렌드 리포트를 광고주에게 보일지 (v66) — 캠페인마다 정하고 저장에 실린다 */
 if($('trendViewerTgl'))$('trendViewerTgl').onclick=()=>{try{toggleTrendViewer();}catch(e){}};
 /* 그래프 전용 필터 (v54) — 이 그래프만 구분·매체·광고상품으로 좁혀 본다 */

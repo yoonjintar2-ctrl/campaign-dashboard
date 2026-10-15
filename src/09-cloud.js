@@ -136,6 +136,8 @@ function serializeDoc(){
            /* 일자별 효율 비교의 두 토글 — 예상 효율선 · 남은 기간 예측 (v51) */
            bench:(typeof SHOW_BENCH!=='undefined'?!!SHOW_BENCH:true),
            forecast:(typeof SHOW_FORECAST!=='undefined'?!!SHOW_FORECAST:true),
+           /* 일자별 효율 비교 — 화면 폭 맞춤 (v131) */
+           dailyFit:(typeof DAILY_FIT_ON!=='undefined'?!!DAILY_FIT_ON:false),
            /* 일자별 효율 비교 그래프 전용 필터 (v54) */
            dailyFilt:(typeof DAILY_FILT!=='undefined'?{...DAILY_FILT}:null),
            /* 트렌드 리포트를 광고주에게 보일지 (v66) */
@@ -276,6 +278,7 @@ function applyDoc(d,keepToday){
   /* 예상 효율선 · 예측선 토글 (v51) — 화면 버튼 표시까지 함께 되돌린다 */
   if(typeof v.bench==='boolean'&&typeof SHOW_BENCH!=='undefined')SHOW_BENCH=v.bench;
   if(typeof v.forecast==='boolean'&&typeof SHOW_FORECAST!=='undefined')SHOW_FORECAST=v.forecast;
+  try{DAILY_FIT_ON=v.dailyFit===true;}catch(e){}
   try{const bt=$('benchToggle');if(bt)bt.classList.toggle('on',SHOW_BENCH);
       const ft=$('fcToggle');if(ft)ft.classList.toggle('on',SHOW_FORECAST);}catch(e){}
   /* 일자별 효율 비교 그래프 전용 필터 (v54) */
@@ -1125,7 +1128,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
-  try{PACE_HIDE=[];PACE_STYLE='basic';}catch(e){}
+  try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}
   try{OV_COLLAGE=true;}catch(e){}
   try{if(typeof OV!=='undefined')OV.key='';}catch(e){}

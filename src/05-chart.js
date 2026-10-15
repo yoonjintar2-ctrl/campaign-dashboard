@@ -13,6 +13,8 @@ let ISSUE_OVERFLOW=0;
 /* 일자별 효율 비교의 계열 순서 — 기본은 예산 큰 순, 범례를 끌어서 바꿀 수 있다 */
 let DAILY_ORDER={};
 let SHOW_FORECAST=true, SHOW_BENCH=true;
+/* v131 — 일자별 효율 비교를 가로 넘김 대신 화면 폭에 맞춰 그릴지 (views.dailyFit) */
+let DAILY_FIT_ON=false;
 let LINE_TONE='#2f5d6b';   /* 일자별 효율 비교 꺾은선 — 테마 강조색 */
 /* SVG 글자 폭 어림 — getComputedTextLength() 가 0 을 돌려줄 때만 쓴다 */
 function estTextW(s,size){
@@ -192,7 +194,10 @@ function renderDaily(){
      (서머리 표처럼 좌우 ‹ › 단추 · 트랙패드/Shift+휠 가로 스크롤) */
   const DAYS_VIS=31;
   /* 페이지 저장(v112.1) 동안에는 전체 기간을 한 화면 폭에 담는다(window.__DAILY_FIT) */
-  const W=ds.length>DAYS_VIS&&!window.__DAILY_FIT?Math.round(SXp*2+(Wv-SXp*2)/DAYS_VIS*ds.length):Wv;
+  /* v131 — '화면 폭 맞춤'을 켜면 화면에서도 같은 방식(DAILY_FIT_ON). 토글은 한 달이 넘을 때만 보인다 */
+  const FIT=!!(window.__DAILY_FIT||DAILY_FIT_ON);
+  try{const ft=$('dailyFitTgl');if(ft){ft.style.display=ds.length>DAYS_VIS?'':'none';ft.classList.toggle('on',!!DAILY_FIT_ON);}}catch(e){}
+  const W=ds.length>DAYS_VIS&&!FIT?Math.round(SXp*2+(Wv-SXp*2)/DAYS_VIS*ds.length):Wv;
   const floorH=132,Ftop=H-floorH,BASE=Ftop+Math.round(floorH*.42);
   const P={l:SXp,r:SXp,t:16};
   const svg=S('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,class:'chart d3'},host);
@@ -269,6 +274,7 @@ function renderDaily(){
   const PRGB=pal.map(rgbOf);
   /* 막대 · 날짜 글자 — 날짜에 마우스를 올리면 그 막대만 진하고 크게(v107) */
   const BARS=[],DTXT=[];
+  const DSKIP=step>=17?1:Math.ceil(17/step);
   ds.forEach((d,i)=>{if(!(totals[i]>0))return;
     const bl=cx(i)-(bw+DEP)/2,w=bw+DEP+26;
     S('ellipse',{cx:bl-8+w/2,cy:BASE-DEP/2,rx:w/2,ry:8,fill:`url(#${shg})`,opacity:i>=EL?.3:1,'pointer-events':'none'},svg);});
@@ -283,8 +289,11 @@ function renderDaily(){
       if(si===topIdx)S('path',{d:`M${bl.toFixed(1)} ${top.toFixed(1)} l${DEP.toFixed(1)} ${(-DEP).toFixed(1)} h${bw.toFixed(1)} l${(-DEP).toFixed(1)} ${DEP.toFixed(1)} Z`,fill:rgba(c,.85,1.18)},g);
       y=top;});
     const rest=isRest(d);
-    const t=S('text',{x:cx(i),y:BASE+21,'text-anchor':'middle','font-size':10.5,'font-weight':700,
-      fill:rest?'var(--hol)':INK2,opacity:rest?.85:1,class:'ddate'},svg);t.textContent=d.getDate();DTXT[i]=t;
+    /* 폭에 맞춰 칸이 좁아지면(v131) 날짜를 n일 간격으로만 적는다 — 1 · 1+n · 1+2n … (월말에 다음 달 1일과 붙으면 뺀다) */
+    const dn=d.getDate(),dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    const showD=DSKIP<=1||((dn-1)%DSKIP===0&&(dn===1||dim-dn+1>=Math.ceil(DSKIP*.6)));
+    if(showD){const t=S('text',{x:cx(i),y:BASE+21,'text-anchor':'middle','font-size':10.5,'font-weight':700,
+      fill:rest?'var(--hol)':INK2,opacity:rest?.85:1,class:'ddate'},svg);t.textContent=dn;DTXT[i]=t;}
     if(d.getDate()===1||i===0){
       const m=S('text',{x:cx(i),y:BASE+35,'text-anchor':'middle','font-size':10,'font-weight':800,fill:INK2},svg);
       m.textContent=(d.getMonth()+1)+'월';}});
