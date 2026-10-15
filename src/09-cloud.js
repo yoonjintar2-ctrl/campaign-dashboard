@@ -389,6 +389,19 @@ let DEMO_SNAP=null;
    이 브라우저에 마지막 상태를 적어 둔다. 캠페인마다 따로 저장한다. */
 const LS_KEY=()=>'dmd:doc:'+((CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'local');
 let LS_T=null;
+/* v130 — 클라우드 캠페인은 브라우저에 사본을 남기지 않는다.
+   원본은 Supabase(campaigns.doc · daily_stats)이고, 캠페인별 사본(dmd:doc:<id>)은
+   열 때 다시 읽지도 않으면서 캠페인마다 0.2~1.8MB씩 쌓여 github.io 주소 전체가 함께 쓰는
+   약 5MB(문자 수) 브라우저 공간을 거의 다 차지했다. 사본은 로그인 없이 내려받은 파일로 열 때('local')만 쓴다. */
+const LS_CLOUD=()=>!!(CLOUD&&CLOUD.campaign&&CLOUD.campaign.id);
+(function purgeCampaignCopies(){
+  try{
+    const dead=[];
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+      if(k&&k.indexOf('dmd:doc:')===0&&k!=='dmd:doc:local')dead.push(k);}
+    dead.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  }catch(e){}
+})();
 /* 일별 실적은 doc(설정 문서)에 넣지 않는다 — 클라우드에서는 daily_stats 테이블이 원본이기 때문.
    대신 브라우저 저장본에만 따로 담는다. 이게 없으면 새로고침할 때 라인의 daily 가 비고
    입력 시트에 적힌 줄만 살아남아 화면이 텅 비어 보였다. */
@@ -417,6 +430,7 @@ function unpackDaily(list){
 const lsPack=()=>JSON.stringify({t:Date.now(),doc:serializeDoc(),daily:packDaily()});
 function saveLocal(){
   clearTimeout(LS_T);
+  if(LS_CLOUD())return;                 /* v130 — 클라우드 캠페인은 Supabase 가 원본 */
   LS_T=setTimeout(()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}},500);
 }
 function loadLocal(){
@@ -437,7 +451,7 @@ function loadLocal(){
 }
 function clearLocal(){try{localStorage.removeItem(LS_KEY());}catch(e){}}
 /* 값이 바뀔 때마다 조용히 적어 둔다 */
-addEventListener('beforeunload',()=>{try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}});
+addEventListener('beforeunload',()=>{if(LS_CLOUD())return;try{localStorage.setItem(LS_KEY(),lsPack());}catch(e){}});
 function restoreDemo(){
   if(!DEMO_SNAP)return false;
   clearWorkState();
