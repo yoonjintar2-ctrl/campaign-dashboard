@@ -1205,6 +1205,19 @@ async function saveCampOrder(ids){
     await CLOUD.sb.from('profiles').update({prefs}).eq('id',CLOUD.user.id);
   }catch(e){}
 }
+/* ---------- 공유 링크 (v130) ----------
+   캠페인 링크는 늘 대표 주소(dashboard.jintar.co.kr) 기준 — 예전 github.io 주소로 열어 둔 화면에서 복사해도 같은 주소.
+   (예전 주소는 GitHub 이 대표 주소로 넘겨 준다.) 파일 · localhost 로 열었을 때만 지금 주소를 쓴다. */
+const APP_URL=(()=>{try{const h=location.hostname;
+  if(location.protocol==='https:'&&h&&!/^(localhost|127\.)/.test(h))return 'https://dashboard.jintar.co.kr/';
+  return location.href.split('#')[0].split('?')[0];}catch(e){return 'https://dashboard.jintar.co.kr/';}})();
+const shareLink=code=>APP_URL+'?code='+encodeURIComponent(code);
+function shareMessage(c){
+  const nm=(c.name||'').trim()||'캠페인',adv=(c.advertiser||'').trim();
+  return `${adv?`[${adv}] `:''}${nm} · ${L('캠페인 대시보드','Campaign dashboard')}\n`
+    +`${shareLink(c.share_code)}\n`
+    +L(`보안 코드(${c.share_code})가 포함된 전용 링크입니다. 받으신 분만 열람해 주시고 외부로 전달하지 말아 주세요.`,
+       `This private link includes a security code (${c.share_code}). Please keep it to yourself and do not forward it.`);}
 /* ---------- 캠페인 및 광고주 관리 (이름 변경 · 복제 · 삭제 · 광고주 로고) ---------- */
 /* inplace=true 면 이미 떠 있는 창의 본문만 갈아 끼운다 (창이 닫혔다 열리지 않게) */
 async function openCampManage(inplace){
@@ -1219,9 +1232,9 @@ async function openCampManage(inplace){
       `<b>Masters</b> can see, create, edit and delete every advertiser's campaigns.
       Which advertisers a <b>viewer</b> account can see is set in <b>👥 Members</b> in the account menu at the top right.`)}<br>
       ${L(`캠페인마다 <b>뷰어 코드</b>가 자동으로 붙습니다 — 로그인 없이 링크로 대시보드를 열람하고 엑셀을 내려받는 용도(조회 전용)입니다.
-      코드 옆 <b>⧉</b>를 누르면 접속 링크가 복사됩니다. 링크로는 뷰어만 들어올 수 있습니다.`,
+      코드 옆 <b>⧉</b>를 누르면 접속 링크가, <b>안내문</b>을 누르면 캠페인 이름 · 보안 링크 안내와 함께 복사됩니다. 링크로는 뷰어만 들어올 수 있습니다.`,
       `Each campaign gets a <b>viewer code</b> automatically — a link for viewing the dashboard and downloading Excel without signing in (read-only).
-      Click <b>⧉</b> next to the code to copy its link. Links only give viewer access.`)}</div>`;
+      Click <b>⧉</b> next to the code to copy its link, or <b>Message</b> to copy it with the campaign name and a security note. Links only give viewer access.`)}</div>`;
   if(!rows.length)h+='<div class="card" style="padding:22px;text-align:center">아직 캠페인이 없습니다. 아래 <b>＋ 새 캠페인</b>으로 시작하세요.</div>';
   else{
     h+=`<table class="tbl lite cmtbl" id="cmTbl" style="background:#fff;border-radius:10px;overflow:hidden"><thead><tr>
@@ -1243,7 +1256,9 @@ async function openCampManage(inplace){
           <div class="codeline"><span class="ck view">뷰어</span>
             <span class="sharecode view">${esc(c.share_code||'–')}</span>
             <button class="copyb" data-copy="${c.id}" data-kind="viewer"
-              title="광고주용 접속 링크를 복사합니다">⧉</button></div></td>
+              title="광고주용 접속 링크만 복사합니다">⧉</button>
+            <button class="copyb msg" data-copymsg="${c.id}"
+              title="캠페인 이름 · 보안 링크 안내문과 함께 복사합니다 — 카카오톡 · 메일에 그대로 붙여 넣으세요">안내문</button></div></td>
         <td class="acts">
           <div class="ln">${cur?'<button class="btn sm" disabled title="지금 열려 있는 캠페인입니다">열기</button>'
               :`<button class="btn sm" data-open="${c.id}">열기</button>`}
@@ -1293,11 +1308,19 @@ async function openCampManage(inplace){
   host.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.copy);if(!c)return;
     const code=c.share_code;if(!code)return;
-    const url=location.href.split('#')[0].split('?')[0]+'?code='+code;
+    const url=shareLink(code);
     if(await copyText(url)){
       b.textContent='✓';b.classList.add('ok');
       setTimeout(()=>{b.textContent='⧉';b.classList.remove('ok');},1400);}
     else prompt('광고주에게 전달할 주소입니다.',url);});
+  /* 안내문과 함께 — 캠페인 이름 · 대시보드 · 보안 코드 링크라는 점 (v130) */
+  host.querySelectorAll('[data-copymsg]').forEach(b=>b.onclick=async()=>{
+    const c=CLOUD.list.find(x=>x.id===b.dataset.copymsg);if(!c||!c.share_code)return;
+    const msg=shareMessage(c);
+    if(await copyText(msg)){
+      b.textContent='✓ 복사됨';b.classList.add('ok');
+      setTimeout(()=>{b.textContent='안내문';b.classList.remove('ok');},1600);}
+    else prompt('광고주에게 전달할 안내문입니다.',msg);});
   /* 이름 변경 — 위에 작은 창을 하나 더 띄운다 (목록 창은 그대로) · 광고주는 드롭다운 */
   host.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{
     const c=CLOUD.list.find(x=>x.id===b.dataset.ren);if(!c)return;

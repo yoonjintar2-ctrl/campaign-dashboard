@@ -36,6 +36,9 @@ jobs:
           if [ -d guide ]; then cp -r guide dist/; fi
           # 데이터 투어(v116)의 PPT 저장 도구(PptxGenJS) — 같은 사이트에서 먼저 불러오고, 안 되면 CDN
           if [ -d vendor ]; then cp -r vendor dist/; fi
+          # 링크 미리보기 썸네일 (v130 · og:image)
+          if [ -f og.png ]; then cp og.png dist/; fi
+          if [ -f logo.png ]; then cp logo.png dist/; fi
 
       - name: Check script syntax
         run: |
