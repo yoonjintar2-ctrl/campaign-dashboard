@@ -26,21 +26,32 @@ function ovRow(p){
   const m=p.media||{};
   const md=(m.digital||m.tv||m.ooh)?{digital:!!m.digital,tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};
   const lines=Array.isArray(p.lines)?p.lines:[];
-  const tvp=Array.isArray(p.tv&&p.tv.plan)?p.tv.plan:[];let tvs=Array.isArray(p.tv&&p.tv.spots)?p.tv.spots:[],tvn=0;
+  const tvp=Array.isArray(p.tv&&p.tv.plan)?p.tv.plan:[];let tvs=Array.isArray(p.tv&&p.tv.spots)?p.tv.spots:[],tvn=0;const tvMon={};
   const oo=Array.isArray(p.ooh)?p.ooh:[];
   /* 예산 — 예전 저장본(net 기준)은 net 을 그대로 (수수료 0) */
   const lb=l=>{const g=l&&l.gross;return Math.round((g===undefined||g===null||g==='')?(+l.net||0):(+g||0))||0;};
   const TP=tvPlanTotal(tvp),TA=tvSpotTotal(tvs),O=oohTotal(oo);
   /* v132 — 요약형 TV(채널별 계획 · 채널별 실적 · 일자별 실적)가 있으면 그걸 쓴다 */
   {const t=p.tv||{},mx=Array.isArray(t.mix)?t.mix:[],chs=Array.isArray(t.ch)?t.ch:[],dy=Array.isArray(t.day)?t.day:[];
-   if(mx.length){let amt=0,grp=0;mx.forEach(r=>{amt+=tvMixCalc(r).amt;grp+=tvNum(r.grp);});TP.amt=amt;TP.grp=grp;}
+   if(mx.length){let amt=0,grp=0;mx.forEach(r=>{amt+=tvMixCalc(r).amt;grp+=tvNum(r.grp);
+       Object.keys(r).forEach(k=>{const m=/^a@(\d{4}-\d{2})$/.exec(k);if(m&&tvNum(r[k]))tvMon[m[1]]=(tvMon[m[1]]||0)+tvNum(r[k]);});});
+     TP.amt=amt;TP.grp=grp;}
    if(chs.length){TA.cost=sum(chs.map(r=>tvNum(r.cost)));TA.grp=sum(chs.map(r=>tvNum(r.grp)));}
    else if(dy.length)TA.grp=sum(dy.map(r=>tvNum(r.grp)));
    tvs=tvs.concat(dy.filter(r=>ovIso(r.date)).map(r=>({date:r.date})));
    tvn=mx.length+chs.length+dy.length;}
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
-  const tD=tvs.map(r=>r.date);const tP=per(tD,tD);
+  const tD=tvs.map(r=>r.date);let tP=per(tD,tD);
+  /* v132.1 — 채널별 계획에 월 예산이 있으면 TV 기간 · 일별 예산은 그 달들로 (실적 날짜만으로 잡으면 예산이 열흘에 몰렸다).
+     첫 달 · 마지막 달은 캠페인(디지털 라인) 시작 · 종료일에 맞춘다 */
+  const tvMs=Object.keys(tvMon).sort(),tvMonSpan=[];
+  if(tvMs.length){const s0=[dP.start,p.start_date].find(ovIso)||'',e0=[dP.end,p.end_date].find(ovIso)||'';
+    tvMs.forEach(ym=>{const last=new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();
+      let a=ym+'-01',z=ym+'-'+String(last).padStart(2,'0');
+      if(s0&&s0.slice(0,7)===ym&&s0>a)a=s0;if(e0&&e0.slice(0,7)===ym&&e0<z)z=e0;
+      tvMonSpan.push([a,z,tvMon[ym],'tv']);});
+    tP={start:[tvMonSpan[0][0],tP.start].filter(ovIso).sort()[0],end:[tvMonSpan[tvMonSpan.length-1][1],tP.end].filter(ovIso).sort().slice(-1)[0]};}
   const a={
     digital:{on:md.digital,budget:sum(lines.map(lb)),spend:Math.round(+p.net||0),imp:+p.imp||0,click:+p.click||0,view:+p.view||0,
       n:lines.length,...dP},
@@ -64,7 +75,8 @@ function ovRow(p){
   const spans=[];
   if(a.digital.inc)lines.forEach(l=>{const v=lb(l);if(v>0&&ovIso(l.start)&&ovIso(l.end)&&l.end>=l.start)spans.push([l.start,l.end,v,'digital']);});
   if(a.ooh.inc)oo.forEach(r=>{const v=tvNum(r.cost);if(v>0&&ovIso(r.start)&&ovIso(r.end)&&r.end>=r.start)spans.push([r.start,r.end,v,'ooh']);});
-  if(a.tv.inc&&a.tv.budget>0){
+  if(a.tv.inc&&tvMonSpan.length&&a.tv.plan>0)tvMonSpan.forEach(x=>spans.push(x));
+  else if(a.tv.inc&&a.tv.budget>0){
     const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
     if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
   return {id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
