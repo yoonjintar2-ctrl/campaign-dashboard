@@ -1603,10 +1603,13 @@ function drawDigitalCols(bd,ft){
 /* TV · OOH — 입력 표마다 열 표시 · 이름 · 직접 만든 열 */
 function drawTblCols(bd,ft,area){
   const agency=!(typeof isClient==='function'&&isClient());
-  const keys=area==='tv'?[['plan','TV 예상효율 입력 표','채널 · 프로그램별 계획 — TV › 예상효율 입력'],['spot','TV 데이터 입력 표','방송 실적(스팟) — TV › 데이터 입력']]
+  const keys=area==='tv'?[['mix','TV 채널별 계획 표','채널별 월 예산 · 노출 횟수 · 예상 GRP · Reach — TV › 예상효율 입력'],
+      ['ch','TV 채널별 실적 표','채널별 집행 — TV › 데이터 입력'],['day','TV 일자별 실적 표','일자별 퍼포먼스 — TV › 데이터 입력']]
+      .concat(typeof TV_PLAN!=='undefined'&&TV_PLAN.length?[['plan','TV 프로그램별 계획 표 (이전 형식)','채널 · 프로그램별 계획 — TV › 예상효율 입력']]:[])
+      .concat(typeof TV_SPOTS!=='undefined'&&TV_SPOTS.length?[['spot','TV 방송 실적 표 (이전 형식)','방송 실적(스팟) — TV › 데이터 입력']]:[])
     :[['ooh','OOH 예상효율 입력 표','지면별 계획 — OOH › 예상효율 입력 · OOH 서머리의 게재 지면 표도 이 설정을 따릅니다']];
   const md=(typeof campMedia==='function')?campMedia():{};
-  const KIND=c=>c.extra?'직접 만든 열':c.type==='calc'?'자동 계산':c.type==='date'?'날짜':c.type==='num'||c.type==='pct'?'숫자':'텍스트';
+  const KIND=c=>c.extra?'직접 만든 열':c.type==='calc'?'자동 계산':c.type==='date'?'날짜':c.type==='num'||c.type==='pct'||c.type==='dec'?'숫자':'텍스트';
   const one=([key,ttl,sub])=>{
     const cfg=tblCfg(key),fx=TBL_FIXED[key]||[];
     const cols=tblColsAll(key);

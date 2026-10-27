@@ -16,7 +16,7 @@ const ovNorm=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
 function campPeriodAll(){
   const md=campMedia(),ds=[],de=[];
   if(md.digital)(LINES||[]).forEach(l=>{if(ovIso(l.start))ds.push(l.start);if(ovIso(l.end))de.push(l.end);});
-  if(md.tv)(TV_SPOTS||[]).forEach(r=>{if(ovIso(r.date)){ds.push(r.date);de.push(r.date);}});
+  if(md.tv)(TV_SPOTS||[]).concat(typeof TV_DAY!=='undefined'?TV_DAY:[]).forEach(r=>{if(ovIso(r.date)){ds.push(r.date);de.push(r.date);}});
   if(md.ooh)(OOH_PLAN||[]).forEach(r=>{if(ovIso(r.start))ds.push(r.start);if(ovIso(r.end))de.push(r.end);});
   ds.sort();de.sort();
   return {start:ds[0]||'',end:de[de.length-1]||''};}
@@ -26,18 +26,25 @@ function ovRow(p){
   const m=p.media||{};
   const md=(m.digital||m.tv||m.ooh)?{digital:!!m.digital,tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};
   const lines=Array.isArray(p.lines)?p.lines:[];
-  const tvp=Array.isArray(p.tv&&p.tv.plan)?p.tv.plan:[],tvs=Array.isArray(p.tv&&p.tv.spots)?p.tv.spots:[];
+  const tvp=Array.isArray(p.tv&&p.tv.plan)?p.tv.plan:[];let tvs=Array.isArray(p.tv&&p.tv.spots)?p.tv.spots:[],tvn=0;
   const oo=Array.isArray(p.ooh)?p.ooh:[];
   /* 예산 — 예전 저장본(net 기준)은 net 을 그대로 (수수료 0) */
   const lb=l=>{const g=l&&l.gross;return Math.round((g===undefined||g===null||g==='')?(+l.net||0):(+g||0))||0;};
   const TP=tvPlanTotal(tvp),TA=tvSpotTotal(tvs),O=oohTotal(oo);
+  /* v132 — 요약형 TV(채널별 계획 · 채널별 실적 · 일자별 실적)가 있으면 그걸 쓴다 */
+  {const t=p.tv||{},mx=Array.isArray(t.mix)?t.mix:[],chs=Array.isArray(t.ch)?t.ch:[],dy=Array.isArray(t.day)?t.day:[];
+   if(mx.length){let amt=0,grp=0;mx.forEach(r=>{amt+=tvMixCalc(r).amt;grp+=tvNum(r.grp);});TP.amt=amt;TP.grp=grp;}
+   if(chs.length){TA.cost=sum(chs.map(r=>tvNum(r.cost)));TA.grp=sum(chs.map(r=>tvNum(r.grp)));}
+   else if(dy.length)TA.grp=sum(dy.map(r=>tvNum(r.grp)));
+   tvs=tvs.concat(dy.filter(r=>ovIso(r.date)).map(r=>({date:r.date})));
+   tvn=mx.length+chs.length+dy.length;}
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
   const tD=tvs.map(r=>r.date);const tP=per(tD,tD);
   const a={
     digital:{on:md.digital,budget:sum(lines.map(lb)),spend:Math.round(+p.net||0),imp:+p.imp||0,click:+p.click||0,view:+p.view||0,
       n:lines.length,...dP},
-    tv:{on:md.tv,plan:Math.round(TP.amt||0),spend:Math.round(TA.cost||0),pgrp:TP.grp||0,grp:TA.grp||0,n:tvp.length+tvs.length,...tP},
+    tv:{on:md.tv,plan:Math.round(TP.amt||0),spend:Math.round(TA.cost||0),pgrp:TP.grp||0,grp:TA.grp||0,n:tvp.length+tvs.length+tvn,...tP},
     ooh:{on:md.ooh,budget:Math.round(O.cost||0),slots:O.n,media:O.media,n:oo.length,start:O.start,end:O.end}};
   a.digital.has=a.digital.n>0||a.digital.spend>0;
   a.tv.budget=a.tv.plan>0?a.tv.plan:a.tv.spend;          /* 계획이 없으면 집행 광고비를 광고비로 */
@@ -67,7 +74,7 @@ function ovSelfRow(){
   let net=0,imp=0,click=0,view=0;
   (FACTS||[]).forEach(f=>{net+=+f.cost||0;imp+=+f.imp||0;click+=+f.click||0;view+=+f.view||0;});
   return ovRow({id:(CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'self',name:CAMPAIGN.name,self:true,media:campMedia(),
-    lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS},ooh:OOH_PLAN,net,imp,click,view,updated_at:new Date().toISOString()});}
+    lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS,mix:TV_MIX,ch:TV_CH,day:TV_DAY},ooh:OOH_PLAN,net,imp,click,view,updated_at:new Date().toISOString()});}
 function ovStatus(r,today){
   if(!r.start||!r.end)return '';
   return today<r.start?'pre':today>r.end?'done':'live';}

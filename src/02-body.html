@@ -574,24 +574,52 @@
 
 <!-- ================= TV 캠페인 (v71 · 기본 틀) ================= -->
 <div class="wrap hidden" id="tab-tvdash">
-  <div class="sec">TV 캠페인 현황 <span class="note" id="tvDashNote"></span></div>
+  <div class="sec">TV 캠페인 현황 <span class="tvtgt hidden"></span> <span class="note" id="tvDashNote"></span></div>
   <div class="tvkpis" id="tvKpis"></div>
   <div id="tvEmpty" class="hidden"></div>
   <div class="sec gap">채널별 집행 <span class="note">예상효율(계획) 대비 리포트 데이터(실적)</span></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvChTbl"></table></div></div>
+  <div class="hint tvfoot" id="tvChReachNote"></div>
 </div>
 <div class="wrap hidden" id="tab-tvdaily">
-  <div class="sec">TV 일자별 효율 <span class="note" id="tvDailyNote"></span></div>
+  <div class="sec">TV 일자별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvDailyNote"></span></div>
   <div id="tvDailyEmpty" class="hidden"></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvDailyTbl"></table></div></div>
 </div>
 <div class="wrap hidden" id="tab-tvmix">
-  <div class="sec">TV 미디어믹스 <span class="note">TV캠페인 예상효율 입력(계획) 기준 · 채널 › 프로그램</span></div>
+  <div class="sec">TV 미디어믹스 <span class="tvtgt hidden"></span> <span class="note" id="tvMixSub">TV캠페인 예상효율 입력(계획) 기준</span></div>
   <div id="tvMixEmpty" class="hidden"></div>
-  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvmixt" id="tvMixTbl"></table></div></div>
+  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvmixt tvmix2" id="tvMixTbl"></table></div></div>
+  <div class="hint tvfoot" id="tvMixReachNote"></div>
 </div>
 <div class="wrap hidden" id="tab-tvinput">
-  <div class="sec">TV 방송 실적 입력 <span class="note" id="tvSpotNote"></span>
+  <div class="sec">TV 실적 입력 <span class="note">채널별 집행 · 일자별 퍼포먼스</span>
+    <div class="tools">
+      <button class="btn sm" id="tvResCols">⚙ 열 설정</button>
+      <button class="btn sm" id="tvResUp" title="채널별 집행 · 일자별 퍼포먼스 표가 있는 엑셀을 불러옵니다 (한 시트에 둘 다 있어도 됩니다)">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvResWipe">🗑 데이터 모두 삭제</button>
+    </div></div>
+  <div class="tvmeta">
+    <label>전체 Reach 1+ <input class="txt mono" id="tvReach" inputmode="decimal" style="width:90px"> %</label>
+    <span class="hint" id="tvReachLock">일자별 퍼포먼스의 마지막 누적 Reach 1+ 를 씁니다.</span>
+  </div>
+  <div class="sec gap">채널별 집행 <span class="note" id="tvChInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvChAdd">+ 행 추가</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvChInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">일자별 퍼포먼스 <span class="note" id="tvDayInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvDayAdd">+ 행 추가</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvDayInTbl"></table></div>
+  </div></div>
+  <div class="notice" style="margin-top:22px"><span>ⓘ</span>
+    <div><b>엑셀 불러오기</b>는 '채널 · 집행 광고비 · 횟수 · GRP · Reach 1+' 표와 '일 · 횟수 · GRP · Reach 1+ · 누적 GRP · 누적 Reach 1+' 표를 찾아 넣습니다(한 시트에 위아래로 있어도 됩니다).
+      채널별 집행은 통째로 바뀌고, 일자별은 같은 날짜만 새 값으로 바뀝니다.
+      Reach 1+ 는 중복이 빠진 값이라 더하지 않습니다 — 전체 Reach 는 일자별의 마지막 <b>누적 Reach 1+</b>(없으면 채널표 '계' 줄 · 위 칸)를 씁니다.
+      엑셀에서 여러 칸을 복사해 표의 칸에 붙여 넣어도 됩니다.</div></div>
+  <div id="tvSpotOld" class="hidden" style="margin-top:30px">
+  <div class="sec">TV 방송 실적 (이전 형식 · 스팟 단위) <span class="note" id="tvSpotNote"></span>
     <div class="tools">
       <button class="btn sm" id="tvSpotCols">⚙ 열 설정</button>
       <button class="btn sm" id="tvSpotAdd">+ 행 추가</button>
@@ -607,9 +635,32 @@
       <b>GRP = 횟수 × 시청률(%)</b> 로 자동 계산됩니다.
       엑셀에서 여러 칸을 복사해 표의 칸에 붙여 넣으면 그 칸부터 펼쳐지고, 모자라는 행은 새로 만들어집니다.
       맨 왼쪽 점 손잡이를 끌면 행 순서를 바꿀 수 있습니다.</div></div>
+  </div>
 </div>
 <div class="wrap hidden" id="tab-tvplan">
-  <div class="sec">TV 예상효율 <span class="note" id="tvPlanNote"></span>
+  <div class="sec">TV 예상효율 <span class="note" id="tvMixInNote"></span>
+    <div class="tools">
+      <button class="btn sm" id="tvMixCols">⚙ 열 설정</button>
+      <button class="btn sm" id="tvMixAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvMixUp" title="'채널 | 예산(월별) | 노출 횟수(월별) | 예상 GRP | 예상 Reach 1+' 표를 불러옵니다">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvMixWipe">🗑 데이터 모두 삭제</button>
+    </div></div>
+  <div class="tvmeta">
+    <label>타겟 <input class="txt" id="tvTarget" placeholder="예: P40-64" style="width:110px"></label>
+    <label>전체 예상 Reach 1+ <input class="txt mono" id="tvPlanReach" inputmode="decimal" style="width:90px"> %</label>
+    <span class="hint">타겟은 TV 서머리 · 일자별 퍼포먼스 · 미디어믹스 머리글에 표시됩니다. 채널별 Reach 는 중복이 있어 더하지 않으므로 전체 예상 Reach 는 따로 적습니다.</span>
+  </div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvMixInTbl"></table></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" id="tvMixAdd2">+ 행 추가</button></div>
+  </div></div>
+  <div class="notice" style="margin-top:22px"><span>ⓘ</span>
+    <div>채널마다 <b>월별 예산 · 월별 노출 횟수 · 예상 GRP · 예상 Reach 1+</b>를 적습니다. 달은 캠페인 기간에 맞춰 열이 생깁니다.
+      <b>엑셀 불러오기</b>는 '채널 | 예산(10월 · 11월 · 계 · 비중) | 노출 횟수(…) | 예상 GRP | 예상 Reach 1+' 두 줄 머리글 표를 읽습니다.
+      금액은 <b>원 단위</b>로 넣습니다(머리글에 '천원' · '백만원'이 적혀 있으면 원으로 바꿔 넣습니다).
+      '계' 줄의 예상 Reach 1+ 는 전체 예상 Reach 로 들어갑니다.</div></div>
+  <div id="tvPlanOld" class="hidden" style="margin-top:30px">
+  <div class="sec">TV 프로그램별 계획 (이전 형식) <span class="note" id="tvPlanNote"></span>
     <div class="tools">
       <button class="btn sm" id="tvPlanCols">⚙ 열 설정</button>
       <button class="btn sm" id="tvPlanAdd">+ 행 추가</button>
@@ -624,6 +675,7 @@
     <div data-i18n="tvPlanNotice">채널 · 프로그램(또는 시급 묶음) 단위로 <b>횟수 · 단가 · 예상 시청률</b>을 적으면
       <b>금액 = 횟수 × 단가</b>, <b>예상 GRP = 횟수 × 예상 시청률(%)</b>, <b>예상 CPRP = 금액 ÷ 예상 GRP</b> 가 자동으로 계산됩니다.
       TV캠페인 대시보드에서 리포트 데이터(실적)와 나란히 비교합니다.</div></div>
+  </div>
 </div>
 
 <!-- ================= OOH 캠페인 (v81) — 계획 · 소재만 ================= -->

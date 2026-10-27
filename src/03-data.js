@@ -791,7 +791,7 @@ const MENUS=[
   {id:'d_input',area:'digital',tab:'input',              l:'데이터 입력',  kind:'edit'},
   {id:'d_plan', area:'digital',tab:'setup',              l:'예상효율 입력',kind:'edit'},
   {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'서머리',       kind:'view'},
-  {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 효율',  kind:'view'},
+  {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
