@@ -587,7 +587,11 @@
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvDailyTbl"></table></div></div>
 </div>
 <div class="wrap hidden" id="tab-tvmix">
-  <div class="sec">TV 미디어믹스 <span class="tvtgt hidden"></span> <span class="note" id="tvMixSub">TV캠페인 예상효율 입력(계획) 기준</span></div>
+  <div class="sec">TV 미디어믹스 <span class="tvtgt hidden"></span> <span class="note">TV캠페인 예상효율 입력(계획) 기준 · 금액 단위 천원</span></div>
+  <div class="sec gap tvsub">프로그램별 편성 <span class="note">채널 › 프로그램</span></div>
+  <div id="tvProgEmpty" class="hidden"></div>
+  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvmixt tvprog" id="tvProgTbl"></table></div></div>
+  <div class="sec gap tvsub">채널별 월 계획 <span class="note">월별 예산 · 노출 횟수 · 예상 GRP · 예상 Reach 1+</span></div>
   <div id="tvMixEmpty" class="hidden"></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvmixt tvmix2" id="tvMixTbl"></table></div></div>
   <div class="hint tvfoot" id="tvMixReachNote"></div>
@@ -639,31 +643,15 @@
   </div>
 </div>
 <div class="wrap hidden" id="tab-tvplan">
-  <div class="sec">TV 예상효율 <span class="note" id="tvMixInNote"></span>
-    <div class="tools">
-      <button class="btn sm" id="tvMixCols">⚙ 열 설정</button>
-      <button class="btn sm" id="tvMixAdd">+ 행 추가</button>
-      <button class="btn sm" id="tvMixUp" title="'채널 | 예산(월별) | 노출 횟수(월별) | 예상 GRP | 예상 Reach 1+' 표를 불러옵니다">⤒ 엑셀 불러오기</button>
-      <button class="btn sm danger" id="tvMixWipe">🗑 데이터 모두 삭제</button>
-    </div></div>
+  <div class="sec">TV 예상효율
+    <div class="tools"><button class="btn sm" id="tvPlanCols">⚙ 열 설정</button></div></div>
   <div class="tvmeta">
     <label>타겟 <input class="txt" id="tvTarget" placeholder="예: P40-64" style="width:110px"></label>
     <label>전체 예상 Reach 1+ <input class="txt mono" id="tvPlanReach" inputmode="decimal" style="width:90px"> %</label>
     <span class="hint"><b>금액 단위: 천원.</b> 타겟은 TV 서머리 · 일자별 퍼포먼스 · 미디어믹스 머리글에 표시됩니다. 채널별 Reach 는 중복이 있어 더하지 않으므로 전체 예상 Reach 는 따로 적습니다.</span>
   </div>
-  <div class="card"><div class="bd" style="padding:13px">
-    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvMixInTbl"></table></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" id="tvMixAdd2">+ 행 추가</button></div>
-  </div></div>
-  <div class="notice" style="margin-top:22px"><span>ⓘ</span>
-    <div>채널마다 <b>월별 예산 · 월별 노출 횟수 · 예상 GRP · 예상 Reach 1+</b>를 적습니다. 달은 캠페인 기간에 맞춰 열이 생깁니다.
-      <b>엑셀 불러오기</b>는 '채널 | 예산(10월 · 11월 · 계 · 비중) | 노출 횟수(…) | 예상 GRP | 예상 Reach 1+' 두 줄 머리글 표를 읽습니다.
-      금액은 <b>천원 단위</b>로 적습니다(엑셀 머리글에 '(원)' · '백만원'이 적혀 있으면 그 단위로 읽습니다).
-      '계' 줄의 예상 Reach 1+ 는 전체 예상 Reach 로 들어갑니다.</div></div>
-  <div id="tvPlanOld" class="hidden" style="margin-top:30px">
-  <div class="sec">TV 프로그램별 계획 (이전 형식) <span class="note" id="tvPlanNote"></span>
+  <div class="sec gap">프로그램별 계획 <span class="note" id="tvPlanNote"></span>
     <div class="tools">
-      <button class="btn sm" id="tvPlanCols">⚙ 열 설정</button>
       <button class="btn sm" id="tvPlanAdd">+ 행 추가</button>
       <button class="btn sm" id="tvPlanUp">⤒ 엑셀 불러오기</button>
       <button class="btn sm danger" id="tvPlanWipe">🗑 데이터 모두 삭제</button>
@@ -672,11 +660,27 @@
     <div class="sheet-wrap"><table class="sheet tvsheet" id="tvPlanTbl"></table></div>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" id="tvPlanAdd2">+ 행 추가</button></div>
   </div></div>
-  <div class="notice" style="margin-top:22px"><span>ⓘ</span>
-    <div data-i18n="tvPlanNotice">채널 · 프로그램(또는 시급 묶음) 단위로 <b>횟수 · 단가 · 예상 시청률</b>을 적으면
+  <div class="notice" style="margin-top:14px"><span>ⓘ</span>
+    <div>채널 · 프로그램(또는 시급 묶음) 단위로 <b>횟수 · 단가 · 예상 시청률</b>을 적으면
       <b>금액 = 횟수 × 단가</b>, <b>예상 GRP = 횟수 × 예상 시청률(%)</b>, <b>예상 CPRP = 금액 ÷ 예상 GRP</b> 가 자동으로 계산됩니다.
-      TV캠페인 대시보드에서 리포트 데이터(실적)와 나란히 비교합니다.</div></div>
-  </div>
+      TV 미디어믹스의 <b>위 표(프로그램별 편성)</b>가 됩니다.</div></div>
+  <div class="sec gap">채널별 월 계획 <span class="note" id="tvMixInNote"></span>
+    <div class="tools">
+      <button class="btn sm" id="tvMixAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvMixUp" title="'채널 | 월 | 예산 | 횟수 | 예상 GRP | 예상 Reach 1+' 표, 또는 월이 열로 펼쳐진 표를 불러옵니다">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvMixWipe">🗑 데이터 모두 삭제</button>
+    </div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvMixInTbl"></table></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" id="tvMixAdd2">+ 행 추가</button></div>
+  </div></div>
+  <div class="notice" style="margin-top:14px"><span>ⓘ</span>
+    <div>한 줄에 <b>채널 · 월 · 예산 · 횟수 · 예상 GRP · 예상 Reach 1+</b>를 적습니다. 월은 '10월' · '2026-10' 처럼 적으면 됩니다.
+      한 채널이 두 달에 걸치면 두 줄로 적고, <b>월을 비운 줄</b>은 채널 전체 값(예: 채널 전체 예상 Reach)으로 봅니다.
+      Reach 는 더하지 않으므로 채널 Reach 는 한 줄에만 적어 주세요(여러 줄에 적으면 가장 큰 값을 씁니다).
+      <b>엑셀 불러오기</b>는 이 모양의 표와 '채널 | 예산(10월 · 11월 · 계 · 비중) | 노출 횟수(…) | 예상 GRP | 예상 Reach 1+' 두 줄 머리글 표를 모두 읽습니다.
+      금액은 <b>천원 단위</b>(엑셀 머리글에 '(원)' · '백만원'이 있으면 그 단위)이고, '계' 줄의 예상 Reach 1+ 는 전체 예상 Reach 로 들어갑니다.
+      TV 미디어믹스의 <b>아래 표(채널별 월 계획)</b>가 됩니다.</div></div>
 </div>
 
 <!-- ================= OOH 캠페인 (v81) — 계획 · 소재만 ================= -->

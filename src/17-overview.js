@@ -34,7 +34,9 @@ function ovRow(p){
   /* v132 — 요약형 TV(채널별 계획 · 채널별 실적 · 일자별 실적)가 있으면 그걸 쓴다 */
   {const t=p.tv||{},mx=Array.isArray(t.mix)?t.mix:[],chs=Array.isArray(t.ch)?t.ch:[],dy=Array.isArray(t.day)?t.day:[];
    if(mx.length){let amt=0,grp=0;mx.forEach(r=>{amt+=tvMixCalc(r).amt;grp+=tvNum(r.grp);
-       Object.keys(r).forEach(k=>{const m=/^a@(\d{4}-\d{2})$/.exec(k);if(m&&tvNum(r[k]))tvMon[m[1]]=(tvMon[m[1]]||0)+tvNum(r[k]);});});
+       Object.keys(r).forEach(k=>{const m=/^a@(\d{4}-\d{2})$/.exec(k);if(m&&tvNum(r[k]))tvMon[m[1]]=(tvMon[m[1]]||0)+tvNum(r[k]);});
+       /* v132.2 — 월 한 열(ym · amt) */
+       if(/^\d{4}-\d{2}$/.test(r.ym||'')&&tvNum(r.amt))tvMon[r.ym]=(tvMon[r.ym]||0)+tvNum(r.amt);});
      TP.amt=amt;TP.grp=grp;}
    if(chs.length){TA.cost=sum(chs.map(r=>tvNum(r.cost)));TA.grp=sum(chs.map(r=>tvNum(r.grp)));}
    else if(dy.length)TA.grp=sum(dy.map(r=>tvNum(r.grp)));

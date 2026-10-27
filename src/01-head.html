@@ -731,7 +731,10 @@ table.tvch{width:100%}
 table.tvch td,table.tvch th{text-align:center}
 table.tvch td.head{font-weight:700}
 /* v132.1 — 좁은 화면에서 채널 이름이 글자마다 꺾이지 않게 (표는 가로로 넘겨 본다) */
-table.tbl.tvch td.head,table.tbl.tvmix2 td.head,table.tbl.tvday td.head{white-space:nowrap;word-break:keep-all}
+table.tbl.tvch td.head,table.tbl.tvmix2 td.head,table.tbl.tvday td.head,table.tbl.tvprog td.head{white-space:nowrap;word-break:keep-all}
+table.tvprog td,table.tvprog th{text-align:center}
+table.tvprog tr.sub td{font-weight:700;background:var(--acc-soft2)}
+.sec.tvsub{font-size:15px}
 table.tbl.tvch thead th,table.tbl.tvmix2 thead th{white-space:nowrap}
 /* TV 입력 표 — 디지털 입력 시트(table.sheet)의 모양을 그대로 쓰고 계산 칸 · 합계만 더한다 */
 table.tvsheet td.calc{padding:0 10px;text-align:right;color:var(--ink2);background:var(--bg2,rgba(125,140,158,.05))}
