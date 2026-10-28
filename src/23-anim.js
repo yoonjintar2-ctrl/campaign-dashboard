@@ -246,3 +246,37 @@ addEventListener('beforeprint',()=>{try{axFinish();}catch(e){}});
     .observe(document.body,{attributes:true,attributeFilter:['class']});
   /* 이미 그려져 있는 그래프(이 파일보다 먼저 그려진 것)도 한 번 */
   try{axScan([...document.querySelectorAll(AX_ROOTS)]);}catch(e){}})();
+
+
+/* ===== 버튼 눌림 반응 (v133 · 시안 D 「눌림 + 반짝」) =====
+   모든 버튼 · 스위치 · 메뉴 · 탭 · 아이콘 버튼에 한 곳에서 붙인다(문서에 이벤트 하나) — 새로 그려지는 버튼도 그대로 된다.
+   누르는 동안 .pdown(살짝 작아짐), 누르고 나면 .pfx(탄력 있게 돌아오며 한 번 번쩍).
+   끌어서 옮기는 손잡이 · 입력 칸 · 꺼진 버튼은 빼고, 키보드(Enter · Space)로 눌러도 번쩍인다 */
+(function pressFx(){
+  const SEL='button,.btn,.switch,[role="button"],[role="tab"]';
+  const SKIP='.rgrip,.cmgrip,.cmgrip *,[data-nopress],input,select,textarea';
+  const pick=t=>{
+    const el=t&&t.closest?t.closest(SEL):null;
+    if(!el||el.matches(SKIP)||el.closest('[data-nopress]'))return null;
+    if(el.disabled||el.getAttribute('aria-disabled')==='true')return null;
+    return el;};
+  let cur=null;
+  const release=()=>{if(cur){cur.classList.remove('pdown');cur=null;}};
+  document.addEventListener('pointerdown',e=>{
+    if(e.button!==0&&e.pointerType==='mouse')return;
+    if(e.target.closest&&e.target.closest(SKIP))return;
+    const el=pick(e.target);if(!el)return;
+    release();cur=el;el.classList.add('pdown');},true);
+  ['pointerup','pointercancel','dragstart'].forEach(t=>document.addEventListener(t,release,true));
+  document.addEventListener('pointerout',e=>{if(cur&&e.target===cur&&!cur.contains(e.relatedTarget))release();},true);
+  /* 진한 바탕 버튼은 흰 번쩍임 — .btn.primary 말고도 색이 진한 버튼(테마 · 메뉴 선택 등)을 바탕 밝기로 가린다 */
+  const darkBg=el=>{try{const m=/rgba?\(([^)]+)\)/.exec(getComputedStyle(el).backgroundColor);if(!m)return false;
+    const v=m[1].split(',').map(Number);if(v.length>3&&v[3]<.5)return false;
+    return (v[0]*.299+v[1]*.587+v[2]*.114)<110;}catch(e){return false;}};
+  document.addEventListener('click',e=>{
+    const el=pick(e.target);if(!el)return;
+    el.classList.remove('pfx','pfx-lt');void el.offsetWidth;
+    if(!el.classList.contains('primary')&&darkBg(el))el.classList.add('pfx-lt');
+    el.classList.add('pfx');
+    clearTimeout(el.__pfxT);el.__pfxT=setTimeout(()=>el.classList.remove('pfx','pfx-lt'),460);},true);
+})();

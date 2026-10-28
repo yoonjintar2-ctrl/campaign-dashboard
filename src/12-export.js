@@ -1330,6 +1330,7 @@ const COL_FORMULA={
   /* 목표 단가 — 예산 ÷ 목표 수치 */
   g_cpm:'예산 ÷ 목표 노출 × 1,000',g_cpc:'예산 ÷ 목표 클릭',g_cpv:'예산 ÷ 목표 조회',
   g_cpa:'예산 ÷ 목표 전환',g_cpe:'예산 ÷ 목표 참여',
+  g_vtr:'목표 조회 ÷ 목표 노출',
   /* 비율 */
   ctr:'클릭 ÷ 노출',vtr:'조회 ÷ 노출',cvr:'전환 ÷ 클릭',etr:'참여 ÷ 노출',
   roas:'매출 ÷ 소진금액',
@@ -1418,6 +1419,7 @@ function colInfo(k,label,scope){
   if(!out.desc&&/^e_/.test(k)){const b=(typeof FLD!=='undefined'&&FLD[k.slice(2)])?FLD[k.slice(2)].l:k.slice(2);
     out.desc=`예상효율 입력에 적은 목표 ${b}입니다.`;}
   if(!out.desc&&/^g_cp/.test(k))out.desc='예산을 목표 수치로 나눈 목표 단가입니다.';
+  if(!out.desc&&k==='g_vtr')out.desc='예상효율 입력의 목표 조회를 목표 노출로 나눈 목표 VTR 입니다. 실적 VTR 과 나란히 견줍니다.';
   if(!out.desc&&/_r$/.test(k))out.desc='목표 대비 실적의 비율(달성률)입니다.';
   if(!out.desc&&/^(cpm|cpc|cpv|cpa|cpe|cpi)$/.test(k))out.desc='실적 단가입니다 — 낮을수록 효율이 좋습니다.';
   if(!out.desc&&/^(ctr|vtr|cvr|etr)$/.test(k))out.desc='비율 지표입니다 — 높을수록 좋습니다.';

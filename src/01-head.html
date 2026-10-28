@@ -3585,6 +3585,23 @@ html:has(#tab-dash:not(.hidden)>#sub-struct:not(.hidden)){scrollbar-gutter:stabl
 .cs-fit .cs-prod{padding:3px 8px;font-size:11px;line-height:13px;border-radius:6px}
 .cs-fit .cs-chip{height:18px;line-height:15px;font-size:10px;padding:0 6px 2px}
 .cs-fit .cs-badge{height:16px;min-width:16px;line-height:16px;font-size:10px}
+/* ===== 버튼 눌림 반응 (v133 · 시안 D 「눌림 + 반짝」) =====
+   누르는 동안 살짝 작아지고(scale .97), 떼면 탄력 있게 돌아오며 바탕이 한 번 밝게 번쩍한다.
+   · transform 대신 개별 속성 scale 을 쓴다 — 위치를 transform 으로 잡은 버튼(가운데 정렬 등)과 부딪치지 않게
+   · 번쩍임은 안쪽 그림자(inset box-shadow)로 — 버튼에 position · overflow 를 새로 주지 않아도 모양 그대로 덮인다
+   · 스위치는 손잡이 둘레에 고리가 한 번 퍼진다 · 동작 줄이기 설정이면 크기 변화 없이 번쩍임만 */
+:root{--pfx:rgb(var(--accrgb)/.17)}
+.pdown{scale:.97}
+.pfx{animation:pfxRel .24s cubic-bezier(.3,1.7,.5,1),pfxFlash .42s ease-out}
+.btn.primary.pfx,.pfx.pfx-lt{--pfx:rgba(255,255,255,.32)}
+.btn.danger.pfx{--pfx:rgb(201 132 132/.2)}
+.switch.pfx{animation:pfxRel .24s cubic-bezier(.3,1.7,.5,1)}
+.switch.pfx>i{animation:pfxRing .42s ease-out}
+@keyframes pfxRel{from{scale:.97}to{scale:1}}
+@keyframes pfxFlash{from{box-shadow:inset 0 0 0 999px var(--pfx)}to{box-shadow:inset 0 0 0 999px transparent}}
+@keyframes pfxRing{from{box-shadow:0 0 0 0 rgb(var(--accrgb)/.42)}to{box-shadow:0 0 0 6px rgb(var(--accrgb)/0)}}
+@media (prefers-reduced-motion:reduce){.pdown{scale:1}.pfx,.switch.pfx{animation:pfxFlash .3s ease-out}.switch.pfx>i{animation:none}}
+body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
 </style>
 </head>
 <body class="booting">

@@ -241,7 +241,11 @@ function applyDoc(d,keepToday){
     FILTER_TOUCHED=false;}catch(e){}
   /* v72 — 예전 구성에 남아 있는 수수료 · Net 열은 뺀다 */
   const dropCfg=c=>{try{(c&&c.groups||[]).forEach(g=>{if(Array.isArray(g.cols))g.cols=g.cols.filter(k=>!DROP_COLS.has(k));});}catch(e){}return c;};
-  if(v.summaries){SUMMARIES=v.summaries;SUMMARIES.forEach(dropCfg);}
+  if(v.summaries){SUMMARIES=v.summaries;SUMMARIES.forEach(dropCfg);
+    /* 목표 VTR (v133) — VTR 열이 있는 저장본에는 그 앞에 한 번만 넣는다. 나중에 빼면 다시 넣지 않도록 표시(gvtr)를 남긴다 */
+    try{SUMMARIES.forEach(sm=>{if(!sm||sm.gvtr)return;sm.gvtr=1;
+      (sm.groups||[]).forEach(g=>{if(!Array.isArray(g.cols)||g.cols.includes('g_vtr'))return;
+        const i=g.cols.indexOf('vtr');if(i>=0)g.cols.splice(i,0,'g_vtr');});});}catch(e){}}
   if(v.mix)MIX_CFG=dropCfg(v.mix);
   /* 유입 분석 상세 표 (v93) — 없던 저장본은 기본 구성으로 (다른 캠페인 구성이 남지 않게) */
   try{INF_TBL=v.inflow&&Array.isArray(v.inflow.groups)?dropCfg(v.inflow):null;

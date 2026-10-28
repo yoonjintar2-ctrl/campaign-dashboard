@@ -502,6 +502,8 @@ function buildSumCell(){
   SUM_CELL.g_cpv=goalCost('view');
   SUM_CELL.g_cpa=goalCost('conv');
   SUM_CELL.g_cpe=goalCost('eng');
+  /* 목표 VTR (v133) — 목표 조회 ÷ 목표 노출 */
+  SUM_CELL.g_vtr=(a,e,x)=>[HA(x)||!e.imp||!e.view?'–':pct(e.view/e.imp)];
   SUM_CELL.start=(a,e,x)=>[HA(x)||!e.dstart?'–':mdy(e.dstart)];
   SUM_CELL.end=(a,e,x)=>[HA(x)||!e.dend?'–':mdy(e.dend)];
   SUM_CELL.startT=()=>['–'];SUM_CELL.endT=()=>['–'];
@@ -526,7 +528,7 @@ COLREB.push(()=>{
 });
 /* 예상값이 들어가는 열 (소재 단위로 쪼개지면 위·아래 셀을 합쳐 표시) */
 SUM_CELL.__exp=new Set(FIELDS.filter(f=>/^e_/.test(f.k)||/_r$/.test(f.k)
-  ||/^g_cp/.test(f.k)
+  ||/^g_(cp|vtr)/.test(f.k)
   ||['budget','net','value','bonus','bonusRate','feeA','feeR','spend_r','start','end','period'].includes(f.k))
   .map(f=>f.k).concat(['period','bid']));
 /* 기본 표시 열 — 열설정북의 "대시보드/데이터입력 탭에 디펄트 표시" 기준 */
@@ -537,11 +539,11 @@ const SUM_PRESET=()=>({
     {id:uid(),name:'운영사항',cols:['period','budget','cost','spend_r','progress']},
     {id:uid(),name:'노출 효율',cols:['e_imp','imp','imp_r','g_cpm','cpm']},
     {id:uid(),name:'클릭 효율',cols:['e_click','click','click_r','ctr','g_cpc','cpc']},
-    {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','vtr','g_cpv','cpv']}
+    {id:uid(),name:'조회 효율',cols:['e_view','view','view_r','g_vtr','vtr','g_cpv','cpv']}
   ].map(g=>({...g,cols:g.cols.filter(k=>SUM_CELL[k])}))
 });
-let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET()},
-               {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),
+let SUMMARIES=[{id:'s1',name:'상세 효율 비교',...SUM_PRESET(),gvtr:1},
+               {id:'s2',name:'타겟팅 그룹별 효율',...SUM_PRESET(),gvtr:1,
                 rows:[{k:'target',sub:false}]}];
 /* **KPI 지표** → 그 지표의 비용 효율 열 · 목표 단가 열 · 계산 밑값.
    비드 타입이 아니라 라인에 정해 둔 KPI 를 따른다 —
