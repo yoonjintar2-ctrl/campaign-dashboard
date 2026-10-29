@@ -1130,7 +1130,7 @@ function resetToBlank(name,advertiser){
   try{CR_ASSETS={};}catch(e){}
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
   CAMPAIGN.media={digital:true,tv:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
-  try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_META={target:'',planReach:'',reach:''};}catch(e){}
+  try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_SEG=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}

@@ -437,7 +437,7 @@ const TV_TBL={
    표마다 {hide:[열쇠], label:{열쇠:이름}, extra:[{k,l,type:'text'|'num'}]} — 캠페인 문서(doc.tblCols)에 담긴다.
    숨긴 열의 값은 지우지 않는다(다시 켜면 그대로). 직접 만든 열은 '비고' 앞에 붙는다 */
 var TBL_CFG={};
-const TBL_FIXED={plan:['ch'],spot:['date','ch'],ooh:['media','slot'],mix:['ch'],ch:['ch'],day:['date']};
+const TBL_FIXED={plan:['ch'],spot:['date','ch'],ooh:['media','slot'],mix:['ch'],ch:['ch'],day:['date'],seg:['seg']};
 function tblCfg(key){
   const c=TBL_CFG[key]||(TBL_CFG[key]={});
   if(!Array.isArray(c.hide))c.hide=[];
@@ -531,7 +531,7 @@ function tvChanged(){
   try{if(!$('tab-tvdaily').classList.contains('hidden'))renderTvDaily();}catch(e){}
   try{if(!$('tab-tvmix').classList.contains('hidden'))renderTvMix();}catch(e){}
   /* 전체 Reach 는 일자표의 마지막 누적 Reach 를 따른다 — 채널표 · 일자표 합계 줄도 함께 (v132) */
-  try{['ch','day'].forEach(x=>{const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);});tvPaintMeta();}catch(e){}
+  try{['ch','day','seg'].forEach(x=>{const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);});tvPaintMeta();}catch(e){}
   try{markDirty();saveLocal();}catch(e){}}
 /* 표 하나에 리스너를 한 번만 (위임) */
 function tvWire(key){
@@ -633,6 +633,9 @@ function tvImport(key,file){
       if(typeof isTotalRow==='function'&&isTotalRow(row)){tot++;return;}
       const r=T.blank();
       want.forEach(c=>{if(map[c.k]==null)return;let v=row[map[c.k]];
+        /* v134 — 구분별 표의 금액 칸은 머리글에 단위가 없으면 천원 (v132.1 규칙과 같게) */
+        if(key==='seg'&&c.unit==='k'&&v!=null&&String(v).trim()!==''){const t=String((grid[hi]||[])[map[c.k]]||'');
+          const sc=/백만/.test(t)?1e6:/천원/.test(t)?1e3:/\(\s*원\s*\)/.test(t)?1:1e3;v=tvNum(v)*sc;}
         /* 엑셀에서 % 서식인 시청률 칸은 0.052 로 들어온다 — 직접 적은 5.2 와 같은 %p 로 맞춘다 (v78) */
         if(c.type==='pct'&&typeof v==='number'&&pct.has((hi+1+di)+','+map[c.k]))v=v*100;
         v=v==null?'':String(v).trim();
@@ -663,7 +666,7 @@ function tvImport(key,file){
    계획도 채널 단위 — 월별 예산 · 월별 노출 횟수 · 예상 GRP · 예상 Reach 1+ (전체 예상 Reach 는 따로).
    예전 형식(프로그램별 계획 TV_PLAN · 스팟 실적 TV_SPOTS)은 그대로 두고, 새 표가 비어 있으면 그걸로 보여 준다. */
 let TV_MIX=[],TV_CH=[],TV_DAY=[];
-let TV_META={target:'',planReach:'',reach:''};
+let TV_META={target:'',planReach:'',reach:'',reach3:''};
 const tvIsoOk=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'');
 /* 캠페인 기간의 달 — 디지털 라인 기간 + TV 방송일 */
 function tvMonthRange(){
@@ -783,6 +786,42 @@ TV_TBL.day={id:'tvDayInTbl',name:'TV 일자별 실적',base:TV_DAY_COLS,get cols
     return '';},
   blank:()=>({date:'',cnt:'',grp:'',reach:'',cumgrp:'',cumreach:''}),note:'tvDayInNote',changed:()=>tvChanged()};
 
+/* ---------- v134 — 구분(품목)별 계획 · 실적 (코웨이처럼 한 캠페인에 품목 여러 개가 TV 에 나갈 때) ----------
+   채널표와 따로 둔다: 리포트가 품목별로는 GRP · eq.GRP · Reach 를, 채널별로는 광고비를 준다(품목별 광고비가 없는 경우가 많다).
+   Reach 는 품목끼리도 더하지 않는다 → TOTAL 은 전체 Reach(일자표 · 위 칸). 비어 있으면 서머리에 이 표가 보이지 않는다 */
+let TV_SEG=[];
+const TV_SEG_COLS=[
+  {k:'seg',l:'구분',type:'text',w:130},
+  {k:'amt',l:'계획 예산',type:'num',unit:'k',w:116},
+  {k:'cost',l:'집행 광고비',type:'num',unit:'k',w:116},
+  {k:'pgrp',l:'계획 GRP',type:'dec',w:90},
+  {k:'grp',l:'실적 GRP',type:'dec',w:90},
+  {k:'peq',l:'계획 eq.GRP',type:'dec',w:100},
+  {k:'eq',l:'실적 eq.GRP',type:'dec',w:100},
+  {k:'preach',l:'계획 Reach 1+(%)',type:'pct',w:120},
+  {k:'reach',l:'실적 Reach 1+(%)',type:'pct',w:120},
+  {k:'preach3',l:'계획 Reach 3+(%)',type:'pct',w:120},
+  {k:'reach3',l:'실적 Reach 3+(%)',type:'pct',w:120},
+  {k:'pcnt',l:'계획 횟수',type:'num',w:84},
+  {k:'cnt',l:'실적 횟수',type:'num',w:84},
+  {k:'note',l:'비고',type:'text',w:170}];
+function tvSegTotal(rows){
+  const o={amt:0,cost:0,pgrp:0,grp:0,peq:0,eq:0,pcnt:0,cnt:0};
+  (rows||TV_SEG).forEach(r=>Object.keys(o).forEach(k=>o[k]+=tvNum(r[k])));return o;}
+TV_TBL.seg={id:'tvSegInTbl',name:'TV 구분별 계획 · 실적',base:TV_SEG_COLS,get cols(){return tblCols('seg');},
+  rows:()=>TV_SEG,set:v=>{TV_SEG=v;},calc:()=>({}),total:rs=>tvSegTotal(rs),
+  foot:(c,t)=>{
+    if(c.k==='amt'||c.k==='cost')return t[c.k]?fmt(t[c.k]/1000):'';
+    if(c.k==='pcnt'||c.k==='cnt')return t[c.k]?fmt(t[c.k]):'';
+    if(['pgrp','grp','peq','eq'].includes(c.k))return t[c.k]?String(tvR(t[c.k],3)):'';
+    if(c.k==='reach'){const v=tvActReach();return isFinite(v)?String(tvR(v,2)):'';}
+    if(c.k==='preach')return tvHas(TV_META.planReach)?String(tvR(tvNum(TV_META.planReach),2)):'';
+    if(c.k==='reach3')return tvHas(TV_META.reach3)?String(tvR(tvNum(TV_META.reach3),2)):'';
+    return '';},
+  blank:()=>({seg:'',amt:'',cost:'',pgrp:'',grp:'',peq:'',eq:'',preach:'',reach:'',preach3:'',reach3:'',pcnt:'',cnt:'',note:''}),
+  note:'tvSegInNote',changed:()=>tvChanged()};
+const tvSegRows=()=>TV_SEG.filter(r=>String(r.seg||'').trim());
+
 /* ---------- 채널 이름 맞추기 — 계획(TV조선)과 리포트(TV CHOSUN)가 다르게 적어도 같은 채널로 ---------- */
 const TV_CH_ALIAS={tvchosun:'tv조선',chosun:'tv조선',tv조선:'tv조선',조선tv:'tv조선',channela:'채널a',채널a:'채널a',
   kbs2tv:'kbs2',kbs2:'kbs2',kbs1tv:'kbs1',kbs1:'kbs1',mbctv:'mbc',sbstv:'sbs',jtbctv:'jtbc'};
@@ -842,6 +881,7 @@ function tvPaintMeta(){
   set('tvPlanReach',tvHas(TV_META.planReach)?tvR(tvNum(TV_META.planReach),2):'');
   const d=tvDays().filter(r=>tvHas(r.cumreach));
   set('tvReach',tvHas(TV_META.reach)?tvR(tvNum(TV_META.reach),2):'',d.length?`자동 ${tvR(tvNum(d[d.length-1].cumreach),2)}`:'');
+  set('tvReach3',tvHas(TV_META.reach3)?tvR(tvNum(TV_META.reach3),2):'');
   const lk=$('tvReachLock');if(lk)lk.classList.toggle('hidden',!d.length);
   const old=(id,on)=>{const e=$(id);if(e)e.classList.toggle('hidden',!on);};
   old('tvSpotOld',TV_SPOTS.length>0);}
@@ -917,6 +957,42 @@ function renderTvDash(){
   const nt=$('tvDashNote');
   if(nt){const ds=(TV_DAY.length?tvDays().map(r=>r.date):TV_SPOTS.map(r=>r.date).filter(tvIsoOk)).sort();
     nt.textContent=ds.length?`방송일 ${mdy(ds[0])}~${mdy(ds[ds.length-1])}`:'';}
+  try{renderTvSeg(P,A);}catch(e){console.warn(e);}
+}
+/* ---------- v134 — 구분(품목)별 집행: 구분별 계획 · 실적 표가 있을 때만 ---------- */
+function renderTvSeg(P,A){
+  const box=$('tvSegBox'),tb=$('tvSegTbl');if(!box||!tb)return;
+  const rows=tvSegRows();box.classList.toggle('hidden',!rows.length);if(!rows.length){tb.innerHTML='';return;}
+  const has=k=>rows.some(r=>tvHas(r[k]));
+  const showEq=has('peq')||has('eq'),showR3=has('preach3')||has('reach3')||tvHas(TV_META.reach3);
+  const showCost=has('cost');
+  const v=(r,k)=>tvHas(r[k])?tvNum(r[k]):NaN;
+  const n0=x=>isFinite(x)&&x?fmt(x):'–';
+  const T=tvSegTotal(rows),tot={seg:'TOTAL',amt:T.amt||NaN,cost:T.cost||NaN,pgrp:T.pgrp||NaN,grp:T.grp||NaN,peq:T.peq||NaN,eq:T.eq||NaN,
+    preach:P&&isFinite(P.reach)?P.reach:NaN,reach:A&&isFinite(A.reach)?A.reach:NaN,
+    preach3:NaN,reach3:tvHas(TV_META.reach3)?tvNum(TV_META.reach3):NaN,pcnt:T.pcnt||NaN,cnt:T.cnt||NaN};
+  const row=(o,isTot)=>{const g=k=>isTot?o[k]:v(o,k);
+    return `<tr${isTot?' class="total"':''}><td class="head">${esc(isTot?'TOTAL':String(o.seg).trim())}</td>`
+      +`<td class="mono">${tvKw(g('amt'))}</td>`
+      +(showCost?`<td class="mono">${tvKw(g('cost'))}</td><td class="mono">${tvP1(tvPc(g('cost'),g('amt')))}</td>`:'')
+      +`<td class="mono gsep">${tvG(g('pgrp'))}</td><td class="mono">${tvGa(g('grp'))}</td><td class="mono">${tvP1(tvPc(g('grp'),g('pgrp')))}</td>`
+      +(showEq?`<td class="mono gsep">${tvG(g('peq'))}</td><td class="mono">${tvGa(g('eq'))}</td><td class="mono">${tvP1(tvPc(g('eq'),g('peq')))}</td>`:'')
+      +`<td class="mono gsep">${tvRc(g('preach'))}</td><td class="mono">${tvRa(g('reach'))}</td>`
+      +(showR3?`<td class="mono gsep">${tvRc(g('preach3'))}</td><td class="mono">${tvRa(g('reach3'))}</td>`:'')
+      +`<td class="mono gsep">${n0(g('pcnt'))}</td><td class="mono">${n0(g('cnt'))}</td></tr>`;};
+  tb.innerHTML=`<thead><tr><th rowspan="2">${L('구분','Group')}</th><th colspan="${showCost?3:1}">${L('예산','Budget')} <span class="tvunit">(${L('천원','K KRW')})</span></th>`
+      +`<th colspan="3" class="gsep">GRP</th>${showEq?'<th colspan="3" class="gsep">eq.GRP</th>':''}`
+      +`<th colspan="2" class="gsep">Reach 1+</th>${showR3?'<th colspan="2" class="gsep">Reach 3+</th>':''}<th colspan="2" class="gsep">${L('집행 횟수','Spots')}</th></tr>`
+    +`<tr><th>${L('계획 금액','Planned')}</th>${showCost?`<th>${L('집행 광고비','Spent')}</th><th>${L('소진율','Burn')}</th>`:''}`
+      +`<th class="gsep">${L('계획','Plan')}</th><th>${L('실적','Actual')}</th><th>${L('달성률','Achv.')}</th>`
+      +(showEq?`<th class="gsep">${L('계획','Plan')}</th><th>${L('실적','Actual')}</th><th>${L('달성률','Achv.')}</th>`:'')
+      +`<th class="gsep">${L('계획','Plan')}</th><th>${L('실적','Actual')}</th>`
+      +(showR3?`<th class="gsep">${L('계획','Plan')}</th><th>${L('실적','Actual')}</th>`:'')
+      +`<th class="gsep">${L('계획','Plan')}</th><th>${L('실적','Actual')}</th></tr></thead><tbody>`
+    +rows.map(r=>row(r,false)).join('')+row(tot,true)+'</tbody>';
+  const n=$('tvSegNote');
+  if(n)n.textContent=(showCost?'':L('품목별 광고비가 없는 리포트라 예산은 계획 금액만 보입니다 · ','Spend by group is not reported — budget shows the plan only · '))
+    +L('구분별 Reach 는 더하지 않습니다 — TOTAL 은 전체(중복 제거) Reach 입니다.','Reach is not summed across groups — TOTAL shows the de-duplicated overall reach.');
 }
 /* ---------- TV 일자별 퍼포먼스 (v132) — 횟수 · GRP · Reach 1+ · 누적 ---------- */
 function tvEmptyNote(elId,show,ko,en){
@@ -1208,6 +1284,7 @@ function renderTV(){
   try{renderTvTable('mix');}catch(e){console.warn(e);}
   try{renderTvTable('ch');}catch(e){console.warn(e);}
   try{renderTvTable('day');}catch(e){console.warn(e);}
+  try{renderTvTable('seg');}catch(e){console.warn(e);}
   try{renderTvTable('plan');}catch(e){console.warn(e);}
   try{renderTvTable('spot');}catch(e){console.warn(e);}
   try{tvPaintMeta();}catch(e){console.warn(e);}
@@ -1217,13 +1294,14 @@ function renderTV(){
 /* 문서에 담기 · 되살리기 — serializeDoc / applyDoc 이 부른다 */
 function tvForDoc(){return {plan:TV_PLAN.map(r=>({...r})),spots:TV_SPOTS.map(r=>({...r})),
   /* v132 — 요약형(채널별 계획 · 채널별 실적 · 일자별 실적) + 타겟 · 전체 Reach */
-  mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),meta:{...TV_META}};}
+  mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),seg:TV_SEG.map(r=>({...r})),meta:{...TV_META}};}
 function tvFromDoc(d){
   const t=d&&d.tv,arr=k=>Array.isArray(t&&t[k])?t[k].map(r=>({...r})):[];
   TV_PLAN=arr('plan');TV_SPOTS=arr('spots');
   TV_MIX=tvMixLong(arr('mix'));TV_CH=arr('ch');TV_DAY=arr('day');
   const m=t&&t.meta&&typeof t.meta==='object'?t.meta:{};
-  TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:''};}
+  TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:'',reach3:tvHas(m.reach3)?m.reach3:''};
+  TV_SEG=arr('seg');}
 
 /* ---------- 연결 ---------- */
 (function initTV(){
@@ -1239,12 +1317,13 @@ function tvFromDoc(d){
     on('tvMixAdd',()=>tvAddRow('mix'));on('tvMixAdd2',()=>tvAddRow('mix'));
     on('tvMixUp',()=>tvMixImport());on('tvMixWipe',()=>tvWipe('mix'));on('tvMixCols',()=>openColSettings('tv'));
     on('tvChAdd',()=>tvAddRow('ch'));on('tvDayAdd',()=>tvAddRow('day'));
+    on('tvSegAdd',()=>tvAddRow('seg'));on('tvSegUp',()=>tvImport('seg'));on('tvSegWipe',()=>tvWipe('seg'));
     on('tvResUp',()=>tvResImport());on('tvResWipe',()=>tvResWipe());on('tvResCols',()=>openColSettings('tv'));
     const meta=(id,k,num)=>{const e=$(id);if(!e)return;e.onchange=()=>{let v=e.value.trim();
       if(num)v=v===''?'':tvR(tvNum(v),3);TV_META[k]=v;tvPaintMeta();
-      ['mix','ch','day'].forEach(x=>{try{const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);}catch(err){}});
+      ['mix','ch','day','seg'].forEach(x=>{try{const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);}catch(err){}});
       tvPaintTarget();tvChanged();};};
-    meta('tvTarget','target',false);meta('tvPlanReach','planReach',true);meta('tvReach','reach',true);
+    meta('tvTarget','target',false);meta('tvPlanReach','planReach',true);meta('tvReach','reach',true);meta('tvReach3','reach3',true);
     renderTV();applyMediaTabs();};
   document.readyState==='loading'?addEventListener('DOMContentLoaded',go):setTimeout(go,0);
 })();

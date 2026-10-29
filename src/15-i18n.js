@@ -664,3 +664,12 @@ function setLang(v,opt){
 })();
 /* 엑셀 리포트용 — 셀 · 시트 이름 (사용자 데이터 보호를 위해 낱말 대체는 쓰지 않는다) */
 const trXL=s=>LANG==='en'?trText(s,false):s;
+/* v134 — TV 구분(품목)별 계획 · 실적 */
+Object.assign(I18N_EN,{"구분별 집행":"Delivery by group","품목 등 구분별 계획 대비 실적":"Plan vs. actual by group (e.g. product)",
+  "구분별 계획 · 실적":"Plan · actual by group","전체 Reach 3+":"Overall Reach 3+","계획 예산":"Planned budget",
+  "계획 GRP":"Plan GRP","실적 GRP":"Actual GRP","계획 eq.GRP":"Plan eq.GRP","실적 eq.GRP":"Actual eq.GRP",
+  "계획 Reach 1+(%)":"Plan Reach 1+ (%)","실적 Reach 1+(%)":"Actual Reach 1+ (%)","계획 Reach 3+(%)":"Plan Reach 3+ (%)","실적 Reach 3+(%)":"Actual Reach 3+ (%)",
+  "TV 구분별 계획 · 실적":"TV plan · actual by group","TV 구분별 표":"TV table by group",
+  "구분(품목)별 계획 · 실적 — TV › 데이터 입력":"Plan · actual by group (product) — TV › Data input",
+  "품목처럼 한 캠페인 안의 구분별로 계획 · 실적을 적으면 TV 서머리에 '구분별 집행' 표가 생깁니다. 비워 두면 보이지 않습니다.":
+    "Enter plan · actual per group (such as products) in this campaign to show a 'Delivery by group' table in the TV summary. Leave empty to hide it."});

@@ -580,6 +580,11 @@
   <div class="sec gap">채널별 집행 <span class="note">예상효율(계획) 대비 리포트 데이터(실적)</span></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvChTbl"></table></div></div>
   <div class="hint tvfoot" id="tvChReachNote"></div>
+  <div id="tvSegBox" class="hidden">
+    <div class="sec gap">구분별 집행 <span class="note">품목 등 구분별 계획 대비 실적</span></div>
+    <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvSegTbl"></table></div></div>
+    <div class="hint tvfoot" id="tvSegNote"></div>
+  </div>
 </div>
 <div class="wrap hidden" id="tab-tvdaily">
   <div class="sec">TV 일자별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvDailyNote"></span></div>
@@ -605,9 +610,18 @@
     </div></div>
   <div class="tvmeta">
     <label>전체 Reach 1+ <input class="txt mono" id="tvReach" inputmode="decimal" style="width:90px"> %</label>
+    <label>전체 Reach 3+ <input class="txt mono" id="tvReach3" inputmode="decimal" style="width:90px"> %</label>
     <span class="hint" id="tvReachLock">일자별 퍼포먼스의 마지막 누적 Reach 1+ 를 씁니다.</span>
     <span class="hint"><b>금액 단위: 천원</b></span>
   </div>
+  <div class="sec gap">구분별 계획 · 실적 <span class="note" id="tvSegInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvSegAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvSegUp" title="구분 · 계획 예산 · 실적 GRP · Reach 1+ … 머리글이 있는 엑셀을 불러옵니다 (금액은 단위가 없으면 천원)">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvSegWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">품목처럼 한 캠페인 안의 구분별로 계획 · 실적을 적으면 TV 서머리에 '구분별 집행' 표가 생깁니다. 비워 두면 보이지 않습니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvSegInTbl"></table></div>
+  </div></div>
   <div class="sec gap">채널별 집행 <span class="note" id="tvChInNote"></span>
     <div class="tools"><button class="btn sm" id="tvChAdd">+ 행 추가</button></div></div>
   <div class="card"><div class="bd" style="padding:13px">
