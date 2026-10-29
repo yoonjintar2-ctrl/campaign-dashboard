@@ -1251,14 +1251,15 @@ function switchTab(name){
     return;}
   /* 선택 표시는 paintTabsOn() 이 한다 (v72 — 영역 · 하위 메뉴 두 줄) */
   {const T=$('tabs');if(T)T.dataset.cur=name;}
-  if(['tvdash','tvdaily','tvmix'].includes(name)){try{TV_LAST=name;}catch(e){}}
+  if(['tvdash','tvdaily','tvweekly','tvmix'].includes(name)){try{TV_LAST=name;}catch(e){}}
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvdaily','tvmix','tvinput','tvplan','oohdash','oohplan','overview'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmix','tvinput','tvplan','oohdash','oohplan','overview'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
   if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
+  if(name==='tvweekly'){try{renderTvWeekly();}catch(e){}}
   if(name==='tvmix'){try{renderTvMix();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
   if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
@@ -1269,7 +1270,7 @@ function switchTab(name){
   /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
-  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvmix','oohdash','overview'].includes(name));}
+  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvweekly','tvmix','oohdash','overview'].includes(name));}
   if(name==='dash'){try{ensureDashSub();}catch(e){}
     /* 캠페인 구조 화면으로 돌아왔으면 바로 그린다 (백그라운드 탭에서는 ResizeObserver 가 늦다 · v120.1) */
     try{if(curDashSub()==='struct')renderStruct();}catch(e){}}

@@ -236,7 +236,8 @@
         <div class="subhd">대시보드</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
-        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 효율</button>
+        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
+        <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
       </div>
         <div class="subhd subinhd">입력</div>
@@ -426,6 +427,8 @@
             <option value="media|creative">매체 › 소재</option>
             <option value="creative|media">소재 › 매체</option>
             <option value="segment|media|product">구분 › 매체 › 광고상품</option>
+            <option value="segment|creative">구분 › 소재</option>
+            <option value="segment|media|creative">구분 › 매체 › 소재</option>
           </select>
         </div>
       </div>
@@ -591,6 +594,12 @@
   <div id="tvDailyEmpty" class="hidden"></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvDailyTbl"></table></div></div>
 </div>
+<div class="wrap hidden" id="tab-tvweekly">
+  <div class="sec">TV 주차별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvWeeklyNote"></span></div>
+  <div id="tvWeeklyEmpty" class="hidden"></div>
+  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvWeekTbl"></table></div></div>
+  <div class="hint tvfoot" id="tvWeeklyReachNote"></div>
+</div>
 <div class="wrap hidden" id="tab-tvmix">
   <div class="sec">TV 미디어믹스 <span class="tvtgt hidden"></span> <span class="note">TV캠페인 예상효율 입력(계획) 기준 · 금액 단위 천원</span></div>
   <div class="sec gap tvsub">프로그램별 편성 <span class="note">채널 › 프로그램</span></div>
@@ -632,8 +641,14 @@
   <div class="card"><div class="bd" style="padding:13px">
     <div class="sheet-wrap"><table class="sheet tvsheet" id="tvDayInTbl"></table></div>
   </div></div>
+  <div class="sec gap">주차별 퍼포먼스 <span class="note" id="tvWkInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvWkAdd">+ 행 추가</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">리포트에 일별 값이 없고 주별만 있을 때 씁니다. TV › 주차별 퍼포먼스 메뉴는 설정 › 메뉴 설정에서 켭니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvWkInTbl"></table></div>
+  </div></div>
   <div class="notice" style="margin-top:22px"><span>ⓘ</span>
-    <div><b>엑셀 불러오기</b>는 '채널 · 집행 광고비 · 횟수 · GRP · Reach 1+' 표와 '일 · 횟수 · GRP · Reach 1+ · 누적 GRP · 누적 Reach 1+' 표를 찾아 넣습니다(한 시트에 위아래로 있어도 됩니다).
+    <div><b>엑셀 불러오기</b>는 '채널 · 집행 광고비 · 횟수 · GRP · Reach 1+' 표, '일 · 횟수 · GRP · Reach 1+ · 누적 GRP · 누적 Reach 1+' 표, '주차 · 기간 · 횟수 · GRP …' 표를 찾아 넣습니다(한 시트에 위아래로 있어도 됩니다).
       채널별 집행은 통째로 바뀌고, 일자별은 같은 날짜만 새 값으로 바뀝니다.
       Reach 1+ 는 중복이 빠진 값이라 더하지 않습니다 — 전체 Reach 는 일자별의 마지막 <b>누적 Reach 1+</b>(없으면 채널표 '계' 줄 · 위 칸)를 씁니다.
       엑셀에서 여러 칸을 복사해 표의 칸에 붙여 넣어도 됩니다.</div></div>

@@ -794,6 +794,8 @@ const MENUS=[
   {id:'d_plan', area:'digital',tab:'setup',              l:'예상효율 입력',kind:'edit'},
   {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'서머리',       kind:'view'},
   {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
+  /* 주차별 퍼포먼스 (v135) — 일별 값이 없는 리포트(코웨이 등)용. 기본은 꺼 두고 메뉴 설정에서 켠다(udef:false) */
+  {id:'t_week', area:'tv',     tab:'tvweekly',           l:'주차별 퍼포먼스',kind:'view',udef:false},
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
@@ -805,7 +807,7 @@ const MENUS=[
   {id:'overview',area:'overview',tab:'overview',         l:'전체 캠페인',  kind:'view',vdef:false}];
 const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
-  tvdash:'tv',tvdaily:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
+  tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
   oohdash:'ooh',oohplan:'ooh',trend:'trend',overview:'overview'};
 const AREA_LABEL={digital:'디지털',tv:'TV',ooh:'OOH',trend:'트렌드 리포트',overview:'전체 캠페인'};
 /* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */
