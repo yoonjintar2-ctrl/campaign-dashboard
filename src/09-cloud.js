@@ -317,12 +317,18 @@ function applyDoc(d,keepToday){
 /* 일별 실적 행 → 라인의 daily 배열 · 누적 a 로 되돌린다 */
 function applyDaily(rows){
   SHEET_COVER=null;                       /* 서버에서 통째로 새로 채운다 (v78) */
+  /* v139 — 열쇠(구분 · 매체 · 상품 · 타겟 · 라인)가 같은 라인이 여럿일 수 있다(예: 10월 · 11월 라인).
+     예전에는 열쇠 하나에 라인 하나만 기억해 마지막 라인(11월)이 10월 실적을 받고, 입력 시트가 10월 라인에
+     같은 값을 또 채워 대시보드 합계가 두 배가 됐다(테슬라어택 Phase 2, 3). 이제는 그 날짜가 기간 안인 라인에 */
   const byKey={};LINES.forEach(l=>{
-    byKey[LINE_KEY(l)]=l;
+    (byKey[LINE_KEY(l)]=byKey[LINE_KEY(l)]||[]).push(l);
     l.daily={};AMET.forEach(m=>l.daily[m]=new Array(TOTAL_DAYS).fill(0));
     l.a={};AMET.forEach(m=>l.a[m]=0);});
+  const pick=(r)=>{const ls=byKey[r.line_key];if(!ls)return null;if(ls.length===1)return ls[0];
+    const d=String(r.stat_date||'').slice(0,10);
+    return ls.find(l=>(!l.start||d>=l.start)&&(!l.end||d<=l.end))||ls[0];};
   (rows||[]).forEach(r=>{
-    const l=byKey[r.line_key];if(!l)return;
+    const l=pick(r);if(!l)return;
     const i=Math.round((new Date(r.stat_date+'T00:00:00')-d0)/DAY);
     if(i<0||i>=TOTAL_DAYS)return;
     const src={...(r.extra||{}),imp:r.imp,click:r.click,view:r.view,eng:r.eng,conv:r.conv,
@@ -421,10 +427,11 @@ function packDaily(){
 }
 function unpackDaily(list){
   if(!Array.isArray(list)||!list.length)return false;
-  const by={};list.forEach(x=>{if(x&&x.k)by[x.k]=x.d||{};});
+  /* 같은 열쇠의 라인이 여럿이면 저장한 순서대로 하나씩 (v139) */
+  const by={};list.forEach(x=>{if(x&&x.k)(by[x.k]=by[x.k]||[]).push(x.d||{});});
   let hit=0;
   LINES.forEach(l=>{
-    const d=by[LINE_KEY(l)];if(!d)return;hit++;
+    const q=by[LINE_KEY(l)];const d=q&&(q.length>1?q.shift():q[0]);if(!d)return;hit++;
     l.daily=l.daily||{};l.a=l.a||{};
     AMET.forEach(m=>{
       if(!Array.isArray(l.daily[m]))l.daily[m]=[];
