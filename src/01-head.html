@@ -1948,6 +1948,44 @@ body.colresizing,body.colresizing *{cursor:col-resize !important;user-select:non
 .stat .sppill[hidden]{display:none}
 @media(max-width:1200px){.stat{aspect-ratio:auto;min-height:200px}}
 
+
+/* ===== v136 — TV 주차별 퍼포먼스 ===== */
+/* 상자 안 첫 머리글도 위 섹션과 띄운다 — 전역 .sec:first-child{margin-top:0} 때문에 '구분별 집행'이 채널표에 붙어 보였다 */
+#tvSegBox>.sec.gap:first-child,#tvwFlowBox>.sec.gap:first-child,#tvwFlightBox>.sec.gap:first-child,.tvwduo>.duocol>.sec.gap:first-child{margin-top:56px}
+.tvwstrip{margin-top:4px}
+.tvwstat .v .vsm{font-size:15px;font-weight:700;color:var(--ink2);letter-spacing:-.2px}
+.tvwstat .e .sub{color:var(--muted);font-weight:400}
+#tvwFlow{margin:0 -18px;overflow:hidden}
+#tvwFlow svg{display:block}
+.chart.tvwflow .dbar{transform-box:fill-box;transform-origin:50% 100%;transition:transform .18s ease,filter .18s ease,opacity .18s}
+.chart.tvwflow .dbar.on{transform:scale(1.06,1.03);filter:saturate(1.4) brightness(.86)}
+[data-theme="dark"] .chart.tvwflow .dbar.on{filter:saturate(1.3) brightness(1.18)}
+.chart.tvwflow.hov .dbar:not(.on){opacity:.6}
+.tvwduo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 26px;align-items:stretch}
+.tvwduo.one{grid-template-columns:minmax(0,1fr)}
+.tvwduo>.duocol{min-width:0;display:flex;flex-direction:column}
+.tvwduo>.duocol>.card{flex:1 1 auto}
+@media (max-width:1240px){.tvwduo{grid-template-columns:minmax(0,1fr)}}
+#tvwRt svg{display:block;width:100%;height:auto}
+table.tvwheat{width:100%}
+table.tvwheat th,table.tvwheat td{text-align:center}
+table.tvwheat td.head{text-align:left}
+table.tvwheat td.hcell{background:rgb(var(--accrgb) / var(--a));position:relative;padding:8px 6px;line-height:1.2}
+table.tvwheat td.hcell b{display:block;font-size:12.5px;font-weight:800;color:var(--ink)}
+table.tvwheat td.hcell span{display:block;font-size:10.5px;color:var(--ink2);margin-top:2px}
+table.tvwheat td.hcell[style*="--a:0.6"] b,table.tvwheat td.hcell[style*="--a:0.7"] b,table.tvwheat td.hcell[style*="--a:0.8"] b{color:#fff}
+table.tvwheat td.hcell[style*="--a:0.6"] span,table.tvwheat td.hcell[style*="--a:0.7"] span,table.tvwheat td.hcell[style*="--a:0.8"] span{color:rgba(255,255,255,.82)}
+[data-theme="dark"] table.tvwheat td.hcell b{color:var(--ink)}
+table.tvwheat td.tot{font-weight:700}
+table.tvflight th .sub{display:block;font-size:10px;font-weight:600;color:var(--muted)}
+table.tvflight th.tvwup{color:var(--muted)}
+table.tvflight td.fl{padding:6px 8px;min-width:96px}
+table.tvflight .flc{position:relative;height:30px}
+table.tvflight .flc b{display:block;text-align:left;font-size:12.5px;font-weight:800;color:var(--ink);line-height:18px}
+table.tvflight .flc::after{content:'';position:absolute;left:0;right:0;bottom:3px;height:7px;border-radius:99px;background:var(--line2)}
+table.tvflight .flc i{position:absolute;left:0;bottom:3px;height:7px;z-index:1;border-radius:99px;background:linear-gradient(90deg,var(--acc-lt),var(--acc-d))}
+table.tvflight td.fl.up .flc i{background:repeating-linear-gradient(135deg,var(--acc-lt) 0 4px,transparent 4px 7px)}
+table.tvflight td.fl.up .flc b{color:var(--muted)}
 /* treemap */
 /* 노출 분포 · 효율 버블 — 한 행 안에 좌우로, 카드 높이는 항상 같게 */
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:stretch;margin-top:72px}

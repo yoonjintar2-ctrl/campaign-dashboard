@@ -638,7 +638,7 @@ function tvImport(key,file){
       const r=T.blank();
       want.forEach(c=>{if(map[c.k]==null)return;let v=row[map[c.k]];
         /* v134 — 구분별 표의 금액 칸은 머리글에 단위가 없으면 천원 (v132.1 규칙과 같게) */
-        if(key==='seg'&&c.unit==='k'&&v!=null&&String(v).trim()!==''){const t=String((grid[hi]||[])[map[c.k]]||'');
+        if(['seg','wkch','wkseg'].includes(key)&&c.unit==='k'&&v!=null&&String(v).trim()!==''){const t=String((grid[hi]||[])[map[c.k]]||'');
           const sc=/백만/.test(t)?1e6:/천원/.test(t)?1e3:/\(\s*원\s*\)/.test(t)?1:1e3;v=tvNum(v)*sc;}
         /* 엑셀에서 % 서식인 시청률 칸은 0.052 로 들어온다 — 직접 적은 5.2 와 같은 %p 로 맞춘다 (v78) */
         if(c.type==='pct'&&typeof v==='number'&&pct.has((hi+1+di)+','+map[c.k]))v=v*100;
@@ -766,6 +766,8 @@ function tvActReach(){
 /* ---------- 주차별 퍼포먼스 (v135) — 리포트에 일별 값이 없고 주별만 있을 때 ----------
    한 줄 = 한 주: 주차 · 시작일 · 종료일 · 횟수 · 집행 광고비 · GRP · eq.GRP · Reach 1+ · Reach 3+ · 누적 GRP · 누적 Reach 1+ */
 let TV_WEEK=[];
+/* v136 — 주차 × 채널 · 주차별 시청률 · 구분 × 주차 (화면 · 표는 28-tvweek.js) */
+let TV_WKCH=[],TV_WKRT=[],TV_WKSEG=[];
 const TV_WEEK_COLS=[
   {k:'wk',l:'주차',type:'text',w:90},
   {k:'start',l:'시작일',type:'date',w:112},
@@ -774,6 +776,8 @@ const TV_WEEK_COLS=[
   {k:'cost',l:'집행 광고비',type:'num',unit:'k',w:120},
   {k:'grp',l:'GRP',type:'dec',w:90},
   {k:'eqgrp',l:'eq.GRP',type:'dec',w:90},
+  {k:'nlsn',l:'닐슨 금액',type:'num',unit:'k',w:120},
+  {k:'bonus',l:'보너스 금액',type:'num',unit:'k',w:120},
   {k:'reach',l:'Reach 1+(%)',type:'pct',w:104},
   {k:'reach3',l:'Reach 3+(%)',type:'pct',w:104},
   {k:'cumgrp',l:'누적 GRP',type:'dec',w:96},
@@ -785,16 +789,16 @@ const tvWeeks=()=>{const ws=TV_WEEK.filter(r=>String(r.wk||'').trim()||tvIsoOk(r
 const tvWkLabel=(r,i)=>String(r.wk||'').trim()||`${i+1}주차`;
 TV_TBL.week={id:'tvWkInTbl',name:'TV 주차별 실적',base:TV_WEEK_COLS,get cols(){return tblCols('week');},
   rows:()=>TV_WEEK,set:v=>{TV_WEEK=v;},calc:()=>({}),
-  total:rs=>{const o={cnt:0,cost:0,grp:0,eqgrp:0};(rs||TV_WEEK).forEach(r=>Object.keys(o).forEach(k=>o[k]+=tvNum(r[k])));return o;},
+  total:rs=>{const o={cnt:0,cost:0,grp:0,eqgrp:0,nlsn:0,bonus:0};(rs||TV_WEEK).forEach(r=>Object.keys(o).forEach(k=>o[k]+=tvNum(r[k])));return o;},
   foot:(c,t)=>{
     if(c.k==='cnt')return t.cnt?fmt(t.cnt):'';
-    if(c.k==='cost')return t.cost?fmt(t.cost/1000):'';
+    if(c.k==='cost'||c.k==='nlsn'||c.k==='bonus')return t[c.k]?fmt(t[c.k]/1000):'';
     if(c.k==='grp'||c.k==='eqgrp')return t[c.k]?String(tvR(t[c.k],3)):'';
     if(c.k==='cumgrp'){const g=tvWeeks().filter(r=>tvHas(r.cumgrp));return g.length?String(tvR(tvNum(g[g.length-1].cumgrp),3)):(t.grp?String(tvR(t.grp,3)):'');}
     if(c.k==='reach'||c.k==='cumreach'){const v=tvActReach();return isFinite(v)?String(tvR(v,2)):'';}
     if(c.k==='reach3')return tvHas(TV_META.reach3)?String(tvR(tvNum(TV_META.reach3),2)):'';
     return '';},
-  blank:()=>({wk:'',start:'',end:'',cnt:'',cost:'',grp:'',eqgrp:'',reach:'',reach3:'',cumgrp:'',cumreach:'',note:''}),
+  blank:()=>({wk:'',start:'',end:'',cnt:'',cost:'',grp:'',eqgrp:'',nlsn:'',bonus:'',reach:'',reach3:'',cumgrp:'',cumreach:'',note:''}),
   note:'tvWkInNote',changed:()=>tvChanged()};
 TV_TBL.mix={id:'tvMixInTbl',name:'TV 채널별 월 계획',base:TV_MIX_COLS,get cols(){return tblCols('mix');},
   rows:()=>TV_MIX,set:v=>{TV_MIX=v;},calc:()=>({}),total:rs=>tvMixTotal(rs),
@@ -1085,57 +1089,7 @@ function renderTvDaily(){
     'TV 실적이 아직 없습니다. <b>TV › 데이터 입력</b>의 일자별 퍼포먼스에 방송일 · 횟수 · GRP · Reach 1+ 를 넣으면 날짜별로 모입니다.',
     'No TV results yet. Enter air date · spots · GRP · Reach 1+ in the daily performance table of <b>TV › Data input</b>.');
 }
-/* ---------- TV 주차별 퍼포먼스 (v135) ---------- */
-function renderTvWeekly(){
-  const tb=$('tvWeekTbl');if(!tb)return;
-  tvPaintTarget();
-  let cg=0;
-  const ws=tvWeeks().map((r,i)=>{cg+=tvNum(r.grp);
-    return {i,wk:tvWkLabel(r,i),s:tvIsoOk(r.start)?r.start:'',e:tvIsoOk(r.end)?r.end:'',cnt:tvNum(r.cnt),cost:tvNum(r.cost),
-      grp:tvNum(r.grp),eq:tvNum(r.eqgrp),reach:tvHas(r.reach)?tvNum(r.reach):NaN,reach3:tvHas(r.reach3)?tvNum(r.reach3):NaN,
-      cumgrp:tvHas(r.cumgrp)?tvNum(r.cumgrp):cg,cumreach:tvHas(r.cumreach)?tvNum(r.cumreach):NaN};});
-  const n=ws.length;
-  const has=k=>ws.some(r=>isFinite(r[k])&&r[k]);
-  const showCost=has('cost'),showEq=has('eq'),showR3=has('reach3')||tvHas(TV_META.reach3);
-  const tot={cnt:sum(ws.map(r=>r.cnt)),cost:sum(ws.map(r=>r.cost)),grp:sum(ws.map(r=>r.grp)),eq:sum(ws.map(r=>r.eq))};
-  const allReach=tvActReach(),allR3=tvHas(TV_META.reach3)?tvNum(TV_META.reach3):NaN;
-  const per=r=>r.s?`${mdy(r.s)}~${r.e?mdy(r.e):''}`:'–';
-  const cols=[['wk','주차'],['per','기간'],['spots','횟수']]
-    .concat(showCost?[['cost','집행 광고비']]:[],[['grp','GRP']],showEq?[['eq','eq.GRP']]:[],[['reach','Reach 1+']],showR3?[['reach3','Reach 3+']]:[],
-      [['cumgrp','누적 GRP'],['cumreach','누적 Reach 1+']]);
-  const srt=HP_SORT['tvweekly'];
-  const rows=ws.slice();
-  if(srt&&srt.dir){const f={wk:r=>r.i,per:r=>r.s||r.i,spots:r=>r.cnt,cost:r=>r.cost,grp:r=>r.grp,eq:r=>r.eq,reach:r=>r.reach,reach3:r=>r.reach3,
-      cumgrp:r=>r.cumgrp,cumreach:r=>r.cumreach}[srt.k];if(f)rows.sort((a,b)=>hpCmp(f(a),f(b),srt.dir));}
-  const cell=(k,r,T)=>{
-    if(k==='wk')return `<td class="head">${esc(T?'TOTAL':r.wk)}</td>`;
-    if(k==='per')return `<td class="mono">${T?'':per(r)}</td>`;
-    if(k==='spots')return `<td class="mono">${(T?tot.cnt:r.cnt)?fmt(T?tot.cnt:r.cnt):'–'}</td>`;
-    if(k==='cost')return `<td class="mono">${tvKw(T?tot.cost:r.cost)}</td>`;
-    if(k==='grp')return `<td class="mono">${tvG(T?tot.grp:r.grp)}</td>`;
-    if(k==='eq')return `<td class="mono">${tvG(T?tot.eq:r.eq)}</td>`;
-    if(k==='reach')return `<td class="mono">${tvRc(T?allReach:r.reach)}</td>`;
-    if(k==='reach3')return `<td class="mono">${tvRc(T?allR3:r.reach3)}</td>`;
-    if(k==='cumgrp')return `<td class="mono">${tvG(T?(n?ws[n-1].cumgrp:NaN):r.cumgrp)}</td>`;
-    if(k==='cumreach')return `<td class="mono">${tvRc(T?allReach:r.cumreach)}</td>`;
-    return '<td></td>';};
-  let h='<thead><tr>'+cols.map(([k,l],i)=>`<th${i>=2?' class="num"':''}>${l}${k==='cost'?' <span class="tvunit">(천원)</span>':''}</th>`).join('')+'</tr></thead><tbody>';
-  rows.forEach(r=>{h+='<tr>'+cols.map(([k])=>cell(k,r,false)).join('')+'</tr>';});
-  if(n)h+='<tr class="total">'+cols.map(([k])=>cell(k,null,true)).join('')+'</tr>';
-  else h+=`<tr><td colspan="${cols.length}" class="hint" style="padding:22px;text-align:center">${L('주차별 실적이 아직 없습니다.','No weekly results yet.')}</td></tr>`;
-  tb.innerHTML=h+'</tbody>';
-  const ths=[...tb.tHead.rows[0].cells];
-  wireHeadPops(cols.map(([k,l],i)=>({th:ths[i],k,label:l})),{cur:srt,scope:'tv',
-    onSort:(k,d)=>{if(d)HP_SORT['tvweekly']={k,dir:d};else delete HP_SORT['tvweekly'];renderTvWeekly();}});
-  const nt=$('tvWeeklyNote');
-  if(nt){const ss=ws.map(r=>r.s).filter(Boolean).sort(),ee=ws.map(r=>r.e).filter(Boolean).sort();
-    nt.textContent=n?(ss.length?`${mdy(ss[0])}~${mdy(ee.length?ee[ee.length-1]:ss[ss.length-1])} · `:'')+`${fmt(n)}주`:'';}
-  const rn=$('tvWeeklyReachNote');
-  if(rn)rn.textContent=n>1&&isFinite(allReach)?L('TOTAL 의 Reach 는 주차 합이 아니라 중복을 뺀 전체 값입니다.','TOTAL reach is the de-duplicated overall value, not the sum of weeks.'):'';
-  tvEmptyNote('tvWeeklyEmpty',!n,
-    'TV 주차별 실적이 아직 없습니다. <b>TV › 데이터 입력</b>의 주차별 퍼포먼스에 주차 · 기간 · 횟수 · GRP · Reach 1+ 를 넣으면 여기에 모입니다.',
-    'No weekly TV results yet. Enter week · period · spots · GRP · Reach 1+ in the weekly table of <b>TV › Data input</b>.');
-}
+/* TV 주차별 퍼포먼스 화면은 28-tvweek.js (v136) */
 /* ---------- TV 미디어믹스 (v132.2) — 위: 프로그램별 편성 / 아래: 채널 × 월 예산 · 노출 횟수 · 예상 GRP · 예상 Reach 1+ ---------- */
 function renderTvMix(){
   tvPaintTarget();
@@ -1388,9 +1342,10 @@ function tvMixImport(file){
   (file instanceof Blob)?run(file):pickFile(run);}
 /* 실적 두 표 모두 지우기 */
 function tvResWipe(){
-  const n=TV_CH.length+TV_DAY.length;if(!n&&!tvHas(TV_META.reach))return;
+  const n=TV_CH.length+TV_DAY.length+TV_WEEK.length+TV_WKCH.length+TV_WKRT.length+TV_WKSEG.length;if(!n&&!tvHas(TV_META.reach))return;
   confirmModal('TV 실적(채널별 집행 · 일자별 퍼포먼스)을 모두 지울까요?',`${fmt(TV_CH.length)}채널 · ${fmt(TV_DAY.length)}일이 사라집니다.`,
-    ()=>{TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_META.reach='';renderTvTable('ch');renderTvTable('day');renderTvTable('week');tvPaintMeta();tvChanged();},'모두 지우기');}
+    ()=>{TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_META.reach='';
+      ['ch','day','week','wkch','wkrt','wkseg'].forEach(k=>{try{renderTvTable(k);}catch(e){}});tvPaintMeta();tvChanged();},'모두 지우기');}
 
 function renderTV(){
   try{renderTvTable('mix');}catch(e){console.warn(e);}
@@ -1398,6 +1353,7 @@ function renderTV(){
   try{renderTvTable('day');}catch(e){console.warn(e);}
   try{renderTvTable('week');}catch(e){console.warn(e);}
   try{renderTvTable('seg');}catch(e){console.warn(e);}
+  ['wkch','wkrt','wkseg'].forEach(k=>{try{if(TV_TBL[k])renderTvTable(k);}catch(e){console.warn(e);}});
   try{renderTvTable('plan');}catch(e){console.warn(e);}
   try{renderTvTable('spot');}catch(e){console.warn(e);}
   try{tvPaintMeta();}catch(e){console.warn(e);}
@@ -1407,14 +1363,15 @@ function renderTV(){
 /* 문서에 담기 · 되살리기 — serializeDoc / applyDoc 이 부른다 */
 function tvForDoc(){return {plan:TV_PLAN.map(r=>({...r})),spots:TV_SPOTS.map(r=>({...r})),
   /* v132 — 요약형(채널별 계획 · 채널별 실적 · 일자별 실적) + 타겟 · 전체 Reach */
-  mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),week:TV_WEEK.map(r=>({...r})),seg:TV_SEG.map(r=>({...r})),meta:{...TV_META}};}
+  mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),week:TV_WEEK.map(r=>({...r})),seg:TV_SEG.map(r=>({...r})),
+  wkch:TV_WKCH.map(r=>({...r})),wkrt:TV_WKRT.map(r=>({...r})),wkseg:TV_WKSEG.map(r=>({...r})),meta:{...TV_META}};}
 function tvFromDoc(d){
   const t=d&&d.tv,arr=k=>Array.isArray(t&&t[k])?t[k].map(r=>({...r})):[];
   TV_PLAN=arr('plan');TV_SPOTS=arr('spots');
   TV_MIX=tvMixLong(arr('mix'));TV_CH=arr('ch');TV_DAY=arr('day');
   const m=t&&t.meta&&typeof t.meta==='object'?t.meta:{};
   TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:'',reach3:tvHas(m.reach3)?m.reach3:''};
-  TV_SEG=arr('seg');TV_WEEK=arr('week');}
+  TV_SEG=arr('seg');TV_WEEK=arr('week');TV_WKCH=arr('wkch');TV_WKRT=arr('wkrt');TV_WKSEG=arr('wkseg');}
 
 /* ---------- 연결 ---------- */
 (function initTV(){

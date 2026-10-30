@@ -597,6 +597,35 @@
 <div class="wrap hidden" id="tab-tvweekly">
   <div class="sec">TV 주차별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvWeeklyNote"></span></div>
   <div id="tvWeeklyEmpty" class="hidden"></div>
+  <div class="strip tvwstrip" id="tvwStrip"></div>
+  <div id="tvwFlowBox" class="hidden">
+    <div class="sec gap">주차별 집행 흐름 <span class="note">막대 = 방송사별 · 뒤 언덕 = 주별 집행 광고비</span>
+      <div class="tools">
+        <span class="hint">막대그래프 값</span><select class="ctl" id="tvwBarSel"></select>
+        <span class="hint">꺾은선 그래프 값</span><select class="ctl" id="tvwLineSel"></select>
+      </div></div>
+    <div class="card"><div class="bd">
+      <div id="tvwFlow"></div>
+      <div class="legend" id="tvwFlowLg"></div>
+    </div></div>
+  </div>
+  <div class="tvwduo" id="tvwDuo">
+    <div class="duocol" id="tvwHeatCol">
+      <div class="sec gap">방송사 × 주차 <span class="note" id="tvwHeatNote"></span>
+        <div class="tools"><select class="ctl" id="tvwHeatSel"></select></div></div>
+      <div class="card"><div class="bd" id="tvwHeat"></div></div>
+    </div>
+    <div class="duocol" id="tvwRtCol">
+      <div class="sec gap">시청률 지수 <span class="note">편성 평균 시청률 ÷ 타깃 평균 × 100</span></div>
+      <div class="card"><div class="bd"><div id="tvwRt"></div><div class="legend" id="tvwRtLg"></div></div></div>
+    </div>
+  </div>
+  <div id="tvwFlightBox" class="hidden">
+    <div class="sec gap">품목별 주차 편성 <span class="note" id="tvwFlightNote"></span></div>
+    <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvflight" id="tvwFlight"></table></div></div>
+    <div class="hint tvfoot" id="tvwFlightFoot"></div>
+  </div>
+  <div class="sec gap">주차별 상세 <span class="note">금액 단위 천원</span></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvWeekTbl"></table></div></div>
   <div class="hint tvfoot" id="tvWeeklyReachNote"></div>
 </div>
@@ -646,6 +675,30 @@
   <div class="card"><div class="bd" style="padding:13px">
     <div class="hint" style="margin-bottom:8px">리포트에 일별 값이 없고 주별만 있을 때 씁니다. TV › 주차별 퍼포먼스 메뉴는 설정 › 메뉴 설정에서 켭니다.</div>
     <div class="sheet-wrap"><table class="sheet tvsheet" id="tvWkInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">주차 × 채널 실적 <span class="note" id="tvWkChInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvWkChAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvWkChUp" title="주차 · 채널 · 집행 광고비 · eq.GRP … 머리글이 있는 엑셀을 불러옵니다 (금액은 단위가 없으면 천원)">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvWkChWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">주별 리포트의 채널(방송사)별 값입니다. 주차별 퍼포먼스 화면의 방송사별 막대 · 방송사 × 주차 표가 됩니다. 주차 이름은 위 주차별 퍼포먼스 표와 같게 적습니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvWkChInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">주차별 시청률 <span class="note" id="tvWkRtInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvWkRtAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvWkRtUp">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvWkRtWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">채널 구분(지상파 · 종편 · 케이블 등)별로 우리 편성의 평균 시청률과 타깃 평균 시청률을 적으면 '시청률 지수'(편성 ÷ 타깃 평균 × 100) 그래프가 생깁니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvWkRtInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">구분 × 주차 (계획 · 실적) <span class="note" id="tvWkSegInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvWkSegAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvWkSegUp">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvWkSegWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">품목 등 구분별 주차 편성입니다. 계획 횟수(큐시트)만 있어도 '품목별 주차 편성'이 생기고, 실적이 있으면 실적 / 계획으로 보입니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvWkSegInTbl"></table></div>
   </div></div>
   <div class="notice" style="margin-top:22px"><span>ⓘ</span>
     <div><b>엑셀 불러오기</b>는 '채널 · 집행 광고비 · 횟수 · GRP · Reach 1+' 표, '일 · 횟수 · GRP · Reach 1+ · 누적 GRP · 누적 Reach 1+' 표, '주차 · 기간 · 횟수 · GRP …' 표를 찾아 넣습니다(한 시트에 위아래로 있어도 됩니다).
