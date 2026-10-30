@@ -3690,6 +3690,34 @@ html:has(#tab-dash:not(.hidden)>#sub-struct:not(.hidden)){scrollbar-gutter:stabl
 @keyframes pfxRing{from{box-shadow:0 0 0 0 rgb(var(--accrgb)/.42)}to{box-shadow:0 0 0 6px rgb(var(--accrgb)/0)}}
 @media (prefers-reduced-motion:reduce){.pdown{scale:1}.pfx,.switch.pfx{animation:pfxFlash .3s ease-out}.switch.pfx>i{animation:none}}
 body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
+/* ===== 데이터 투어 · 소재 × 일자 전용 그래프 (v138) ===== */
+.tu-gv{display:flex;flex-direction:column;gap:14px;width:1100px;font-variant-numeric:tabular-nums}
+.tu-gvp{background:var(--tu-glass,rgba(255,255,255,.74));border:1px solid var(--tu-line,rgba(27,31,36,.1));border-radius:16px;padding:14px 16px 6px}
+.tu-gvp .hd{display:flex;align-items:baseline;gap:10px;padding:0 4px 2px}
+.tu-gvp .hd b{font-size:17px;font-weight:800;color:var(--tu-ink,#1b1f24);letter-spacing:-.3px}
+.tu-gvp.main .hd b{font-size:19px}
+.tu-gvp .hd .u{font-size:12px;color:var(--tu-mut,#8f97a2);font-weight:600}
+.tu-gvp .hd .sp{flex:1}
+.tu-gvp .hd .ch{font-size:15px;font-weight:700;color:var(--tu-ink2,#5b636e)}
+.tu-gvp .hd .ch i{font-style:normal;font-weight:800;margin-left:6px;padding:2px 9px;border-radius:99px;font-size:13px}
+.tu-gvp .hd .ch.good i{background:var(--tu-grid,rgba(36,44,56,.085));color:var(--tu-ink,#1b1f24)}
+.tu-gvp .hd .ch.bad i{background:rgb(var(--tu-accrgb,228 87 61)/.14);color:var(--tu-acc,#e4573d)}
+.tu-gvp svg.gv{display:block;width:1066px;max-width:none;overflow:visible}
+.tu-gvp .gr{stroke:var(--tu-line,rgba(27,31,36,.1));stroke-width:1}
+.tu-gvp .tk{font-size:12px;fill:var(--tu-mut,#8f97a2);font-weight:600}
+.tu-gvp .dx{font-size:12.5px;fill:var(--tu-ink2,#5b636e);font-weight:600}
+.tu-gvp .bd{fill:var(--tu-grid,rgba(36,44,56,.085))}
+.tu-gvp .bl{font-size:12px;fill:var(--tu-ink2,#5b636e);font-weight:700}
+.tu-gvp .av{stroke:var(--tu-ink,#1b1f24);stroke-width:2;stroke-dasharray:5 4;opacity:.75}
+.tu-gvp .avt{font-size:15px;font-weight:800;fill:var(--tu-ink,#1b1f24)}
+.tu-gvp .ln{fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.tu-gvp .ln.m{stroke:var(--tu-ink,#1b1f24);stroke-width:3.6}
+.tu-gvp .ln.c{stroke:var(--tu-acc,#e4573d)}
+.tu-gvp .dt.m{fill:var(--tu-ink,#1b1f24)}.tu-gvp .dt.c{fill:var(--tu-acc,#e4573d)}
+/* 강조 — 선은 면이 아니라 굵은 반투명 띠로 덧칠한다(기본 형광펜은 도형 안을 칠해 선 아래가 붉게 채워졌다) */
+.tu-src .tu-gvp .tu-mksvg,.tu-shot .tu-gvp .tu-mksvg{fill:none!important;stroke:rgb(var(--tu-accrgb) / .26)!important;stroke-width:16px!important;
+  stroke-linecap:round;stroke-linejoin:round}
+[data-theme="dark"] .tu-src .tu-gvp .tu-mksvg,[data-theme="dark"] .tu-shot .tu-gvp .tu-mksvg{fill:none!important;stroke:rgb(var(--tu-accrgb) / .34)!important}
 </style>
 </head>
 <body class="booting">

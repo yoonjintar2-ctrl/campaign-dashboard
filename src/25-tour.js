@@ -162,6 +162,62 @@ function tuInfModel(){
     const rows=infGroups(dim,ok,useSeg).filter(g=>infHas(g.b)).sort((a,b)=>(useSeg?rk(a.seg)-rk(b.seg):0)||(b.b.iwv||0)-(a.b.iwv||0)||(b.b.click||0)-(a.b.click||0));
     return {rows,M:rows.length?infFlowModel(rows,useSeg):null,A:aggFacts(factFilter()),dim};
   }catch(e){console.warn('tour inflow',e);return null;}}
+/* ---------- 소재 × 일자 장면 전용 그래프 (v138) ----------
+   o.days = 전체(같은 KPI 단가 소재들) 날짜별 {i,c,b} · o.pick = 부제목에 나온 소재들 · span(cs) = 소재의 날짜별 값
+   선 = 3일 이동(앞뒤 하루씩 묶은 단가) · 띠 = 처음 · 마지막 W일 · 점선과 숫자 = 그 W일 평균(제목 · 부제목과 같은 값) */
+function tuGanttViz(o){
+  const {days,pick,span,agg,f,lab,W,ALL}=o;
+  if(!days||days.length<4)return null;
+  const PW=1066,PL=78,PR=104,iw=PW-PL-PR;
+  const x0=days[0].i,x1=days[days.length-1].i;
+  if(!(x1>x0))return null;
+  const X=i=>PL+(i-x0)/(x1-x0)*iw;
+  const roll=a=>a.map((d,k)=>({i:d.i,v:agg(a.slice(Math.max(0,k-1),k+2))})).filter(p=>isFinite(p.v));
+  const NS='http://www.w3.org/2000/svg';
+  const mk=(tag,at,par)=>{const e=document.createElementNS(NS,tag);Object.entries(at).forEach(([k,v])=>e.setAttribute(k,String(v)));if(par)par.appendChild(e);return e;};
+  const root=document.createElement('div');root.className='tu-gv';
+  const lines=[];
+  const md=i=>{const d=ALL[i];return d?`${d.getMonth()+1}/${d.getDate()}`:'';};
+  const series=[{nm:L('전체','All'),a:days,main:1}].concat(pick.map(b=>({nm:b.c.name||'',a:span([b.c])})));
+  series.forEach((S,si)=>{
+    const a=S.a;if(!a||a.length<4){lines.push(null);return;}
+    const w=S.main?W:Math.max(2,Math.min(7,Math.floor(a.length/3)));
+    const v1=agg(a.slice(0,w)),v2=agg(a.slice(-w)),g=(v1-v2)/v1;
+    const pts=roll(a);if(pts.length<2){if(!S.main)lines.push(null);return;}
+    const H=S.main?236:148,PT=S.main?30:26,PB=S.main?30:24,ih=H-PT-PB;
+    const vals=pts.map(p=>p.v).concat([v1,v2]);
+    let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.14||hi*.1||1;lo=Math.max(0,lo-pad);hi=hi+pad;
+    const Y=v=>PT+(1-(v-lo)/(hi-lo))*ih;
+    const box=document.createElement('div');box.className='tu-gvp'+(S.main?' main':'');
+    const up=g<0;
+    box.innerHTML=`<div class="hd"><b>${esc(S.nm)}</b><span class="u">${esc(lab)} · ${esc(L('3일 이동 평균','3-day rolling'))}</span>`
+      +`<span class="sp"></span><span class="ch ${S.main?(up?'bad':'good'):(up?'bad':'good')}">${esc(f(v1))} → ${esc(f(v2))} <i>${up?'+':'−'}${Math.abs(g*100).toFixed(1)}%</i></span></div>`;
+    const svg=mk('svg',{viewBox:`0 0 ${PW} ${H}`,width:PW,height:H,class:'gv'},box);
+    /* 가로 눈금 3줄 */
+    for(let k=0;k<=2;k++){const v=lo+(hi-lo)*k/2,y=Y(v);
+      mk('line',{x1:PL,x2:PL+iw,y1:y,y2:y,class:'gr'},svg);
+      const t=mk('text',{x:PL-10,y:y+4,'text-anchor':'end',class:'tk'},svg);t.textContent=f(v);}
+    /* 처음 · 마지막 W일 띠 + 평균 점선 */
+    const band=(sl,v,lbl,right)=>{const xa=X(sl[0].i)-6,xb=X(sl[sl.length-1].i)+6;
+      mk('rect',{x:xa,y:PT-4,width:Math.max(8,xb-xa),height:ih+8,rx:6,class:'bd'},svg);
+      const y=Y(v);mk('line',{x1:xa,x2:xb,y1:y,y2:y,class:'av'},svg);
+      const t=mk('text',{x:right?xb+8:xa-8,y:y+4,'text-anchor':right?'start':'end',class:'avt'},svg);t.textContent=f(v);
+      if(lbl){const tl=mk('text',{x:(xa+xb)/2,y:PT-10,'text-anchor':'middle',class:'bl'},svg);tl.textContent=lbl;}};
+    const first=a.slice(0,w),last=a.slice(-w);
+    band(first,v1,S.main?L(`처음 ${w}일`,`First ${w}d`):'',false);
+    band(last,v2,S.main?L(`마지막 ${w}일`,`Last ${w}d`):'',true);
+    /* 선 */
+    const P=pts.map(p=>[X(p.i),Y(p.v)]);
+    const ln=mk('path',{d:smoothPath(P),class:'ln'+(S.main?' m':' c')},svg);
+    mk('circle',{cx:P[P.length-1][0],cy:P[P.length-1][1],r:4.5,class:'dt'+(S.main?' m':' c')},svg);
+    if(!S.main)lines.push(ln);
+    /* 날짜 — 맨 아래 그래프에만, 7일 간격 */
+    if(si===series.length-1||(S.main&&series.length===1)){
+      const step=Math.max(1,Math.round((x1-x0)/8));
+      for(let i=x0;i<=x1;i+=step){const t=mk('text',{x:X(i),y:H-4,'text-anchor':'middle',class:'dx'},svg);t.textContent=md(i);}}
+    root.appendChild(box);});
+  if(!root.children.length)return null;
+  return {el:root,w:1100,lines};}
 const TU_INS={
   /* 캠페인 구조 (v119 마인드맵) — 구성 개수 · 구분별 예산 비중 */
   struct(sl){
@@ -420,7 +476,15 @@ const TU_INS={
     const bestOnly=bits.filter(b=>b.best).sort((a,b)=>a.va-b.va)[0];
     const cands=bits.filter(b=>!b.best).concat(bestOnly?[bestOnly]:[]);
     const pick=[];cands.sort((a,b)=>b.sc-a.sc).forEach(b=>{if(pick.length<2&&!pick.some(x=>x.c===b.c))pick.push(b);});
-    pick.forEach(b=>{const tr=trs.find(x=>x.nm===b.c.name)||trs.find(x=>x.nm.startsWith(b.c.name));if(tr)h(tr.r,b.chip);});
+    /* (v138) 표 전체(소재 수십 줄 × 날짜)를 줄여 넣으면 글자가 0.3배까지 작아져 읽을 수 없었다 —
+       제목 · 부제목이 말하는 것만 그래프로: 위 = 전체 단가 흐름, 아래 = 부제목에 나온 소재마다 작은 그래프.
+       그래프를 못 그리면(날짜가 너무 적음 등) 예전처럼 표를 강조한다 */
+    let viz=null;
+    try{viz=tuGanttViz({days,pick,span,agg,f,lab,W,ALL:typeof ALLDATES!=='undefined'?ALLDATES:[]});}catch(e){console.warn('tour gantt viz',e);viz=null;}
+    if(viz){
+      sl.src.innerHTML='';sl.src.appendChild(viz.el);sl.W=viz.w;sl.tblX=0;sl.src.style.width=viz.w+'px';
+      pick.forEach((b,k)=>{const ln=viz.lines[k];if(ln)h(ln,b.chip);});}
+    else pick.forEach(b=>{const tr=trs.find(x=>x.nm===b.c.name)||trs.find(x=>x.nm.startsWith(b.c.name));if(tr)h(tr.r,b.chip);});
     /* 같은 방향으로 크게 움직인 소재는 머리말을 한 번만 — '상승 폭이 큰 소재 A … · B …' */
     let said=false;
     const sub=pick.map(b=>{if(!b.same)return b.tx;const pre=said?'':(b.same==='up'?L(`${lab} 상승 폭이 큰 소재 `,`${lab} rose most: `):L(`${lab} 개선 폭이 큰 소재 `,`${lab} improved most: `));said=true;return pre+b.tx;});
