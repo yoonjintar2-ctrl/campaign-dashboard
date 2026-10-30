@@ -579,15 +579,29 @@
 <div class="wrap hidden" id="tab-tvdash">
   <div class="sec">TV 캠페인 현황 <span class="tvtgt hidden"></span> <span class="note" id="tvDashNote"></span></div>
   <div class="tvkpis" id="tvKpis"></div>
+  <div class="tvwstrip hidden" id="tvwStrip"></div>
   <div id="tvEmpty" class="hidden"></div>
-  <div class="sec gap">채널별 집행 <span class="note">예상효율(계획) 대비 리포트 데이터(실적)</span></div>
-  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvChTbl"></table></div></div>
-  <div class="hint tvfoot" id="tvChReachNote"></div>
   <div id="tvSegBox" class="hidden">
-    <div class="sec gap">구분별 집행 <span class="note">품목 등 구분별 계획 대비 실적</span></div>
+    <div class="sec gap">품목별 성과 <span class="note">구분(품목)별 계획 대비 실적 · 방송사 구성 · 소재</span></div>
+    <div class="tvscards" id="tvSegCards"></div>
+    <div class="legend" id="tvSegCardsLg"></div>
+    <div id="tvSegChBox" class="hidden">
+      <div class="sec gap tvsub">품목 × 방송사 <span class="note" id="tvSegChNote"></span>
+        <div class="tools"><select class="ctl" id="tvSegChSel"></select></div></div>
+      <div class="card"><div class="bd" id="tvSegCh"></div></div>
+    </div>
+    <div id="tvSegCrBox" class="hidden">
+      <div class="sec gap tvsub">품목 › 소재 <span class="note">당월 실적 · 온에어 이후 누적</span></div>
+      <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvsegcr" id="tvSegCrTbl"></table></div></div>
+      <div class="hint tvfoot" id="tvSegCrFoot"></div>
+    </div>
+    <div class="sec gap tvsub">품목별 계획 대비 실적 <span class="note">구분(품목)별 계획 · 실적 표</span></div>
     <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvSegTbl"></table></div></div>
     <div class="hint tvfoot" id="tvSegNote"></div>
   </div>
+  <div class="sec gap">채널별 집행 <span class="note">예상효율(계획) 대비 리포트 데이터(실적)</span></div>
+  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch" id="tvChTbl"></table></div></div>
+  <div class="hint tvfoot" id="tvChReachNote"></div>
 </div>
 <div class="wrap hidden" id="tab-tvdaily">
   <div class="sec">TV 일자별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvDailyNote"></span></div>
@@ -597,33 +611,27 @@
 <div class="wrap hidden" id="tab-tvweekly">
   <div class="sec">TV 주차별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvWeeklyNote"></span></div>
   <div id="tvWeeklyEmpty" class="hidden"></div>
-  <div class="strip tvwstrip" id="tvwStrip"></div>
-  <div id="tvwFlowBox" class="hidden">
-    <div class="sec gap">주차별 집행 흐름 <span class="note">막대 = 방송사별 · 뒤 언덕 = 주별 집행 광고비</span>
-      <div class="tools">
-        <span class="hint">막대그래프 값</span><select class="ctl" id="tvwBarSel"></select>
-        <span class="hint">꺾은선 그래프 값</span><select class="ctl" id="tvwLineSel"></select>
-      </div></div>
-    <div class="card"><div class="bd">
-      <div id="tvwFlow"></div>
-      <div class="legend" id="tvwFlowLg"></div>
-    </div></div>
+  <div id="tvwFlightBox" class="hidden">
+    <div class="sec gap">품목별 주차 편성 <span class="note" id="tvwFlightNote"></span></div>
+    <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvflight" id="tvwFlight"></table></div></div>
+    <div class="hint tvfoot" id="tvwFlightFoot"></div>
+  </div>
+  <div id="tvwRtCol" class="hidden">
+    <div class="sec gap">시청률 지수 <span class="note">편성 평균 시청률 ÷ 타깃 평균 × 100</span>
+      <div class="tools"><select class="ctl" id="tvwRtSel"></select></div></div>
+    <div class="card"><div class="bd"><div id="tvwRt"></div><div class="legend" id="tvwRtLg"></div></div></div>
   </div>
   <div class="tvwduo" id="tvwDuo">
+    <div class="duocol hidden" id="tvwFlowBox">
+      <div class="sec gap">주차별 집행 흐름 <span class="note">막대 = 방송사별 · 뒤 언덕 = 주별 광고비</span>
+        <div class="tools"><select class="ctl" id="tvwBarSel" title="막대그래프 값"></select><select class="ctl" id="tvwLineSel" title="꺾은선 그래프 값"></select></div></div>
+      <div class="card"><div class="bd"><div id="tvwFlow"></div><div class="legend" id="tvwFlowLg"></div></div></div>
+    </div>
     <div class="duocol" id="tvwHeatCol">
       <div class="sec gap">방송사 × 주차 <span class="note" id="tvwHeatNote"></span>
         <div class="tools"><select class="ctl" id="tvwHeatSel"></select></div></div>
       <div class="card"><div class="bd" id="tvwHeat"></div></div>
     </div>
-    <div class="duocol" id="tvwRtCol">
-      <div class="sec gap">시청률 지수 <span class="note">편성 평균 시청률 ÷ 타깃 평균 × 100</span></div>
-      <div class="card"><div class="bd"><div id="tvwRt"></div><div class="legend" id="tvwRtLg"></div></div></div>
-    </div>
-  </div>
-  <div id="tvwFlightBox" class="hidden">
-    <div class="sec gap">품목별 주차 편성 <span class="note" id="tvwFlightNote"></span></div>
-    <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvflight" id="tvwFlight"></table></div></div>
-    <div class="hint tvfoot" id="tvwFlightFoot"></div>
   </div>
   <div class="sec gap">주차별 상세 <span class="note">금액 단위 천원</span></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvWeekTbl"></table></div></div>
@@ -659,6 +667,22 @@
   <div class="card"><div class="bd" style="padding:13px">
     <div class="hint" style="margin-bottom:8px">품목처럼 한 캠페인 안의 구분별로 계획 · 실적을 적으면 TV 서머리에 '구분별 집행' 표가 생깁니다. 비워 두면 보이지 않습니다.</div>
     <div class="sheet-wrap"><table class="sheet tvsheet" id="tvSegInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">구분 × 채널 실적 <span class="note" id="tvSegChInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvSegChAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvSegChUp">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvSegChWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">품목(구분)이 어느 방송사에 얼마나 나갔는지 — TV 서머리의 '품목 × 방송사' 표와 품목 카드의 방송사 구성이 됩니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvSegChInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">구분 × 소재 실적 <span class="note" id="tvSegCrInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvSegCrAdd">+ 행 추가</button>
+      <button class="btn sm" id="tvSegCrUp">⤒ 엑셀 불러오기</button>
+      <button class="btn sm danger" id="tvSegCrWipe">🗑</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">품목 안의 소재별 당월 실적 · 온에어 이후 누적 — TV 서머리의 '품목 › 소재' 표가 됩니다. 금액은 천원.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvSegCrInTbl"></table></div>
   </div></div>
   <div class="sec gap">채널별 집행 <span class="note" id="tvChInNote"></span>
     <div class="tools"><button class="btn sm" id="tvChAdd">+ 행 추가</button></div></div>
