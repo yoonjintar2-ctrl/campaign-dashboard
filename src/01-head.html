@@ -3630,7 +3630,8 @@ html:has(#tab-dash:not(.hidden)>#sub-struct:not(.hidden)){scrollbar-gutter:stabl
 [data-theme="dark"] .cs-root{border:1px solid var(--gline)}
 .cs-seg{color:#fff;font-size:15px;font-weight:800;letter-spacing:.5px;line-height:18px;padding:0 16px;
   text-shadow:0 1px 3px rgba(20,22,26,.38)}
-.cs-seg span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-seg span{max-width:100%;white-space:normal;overflow-wrap:break-word;word-break:keep-all}
+.cs-seg.thin{color:var(--ink);text-shadow:0 0 3px var(--surface),0 0 6px var(--surface),0 0 10px var(--surface)}
 .cs-media{background-color:var(--surface);border:1.5px solid var(--cs-bd,var(--line));border-radius:10px;padding:7px 11px;gap:2px;width:max-content}
 .cs-media b{font-size:13px;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .cs-media .tg{font-size:10.5px;font-weight:700;line-height:13px;white-space:nowrap}
