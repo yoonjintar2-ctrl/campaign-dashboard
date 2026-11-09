@@ -755,14 +755,18 @@ table.tvmon td.tvm-rt{color:var(--muted)}
 /* 표 — 머리 줄 · 왼쪽 머리 열 고정 */
 table.wrt{border-collapse:separate;border-spacing:0;min-width:100%;width:max-content}
 table.wrt th,table.wrt td{white-space:nowrap;padding:8px 12px;border-bottom:1px solid var(--line2)}
-table.wrt thead th{position:sticky;top:0;z-index:3;background:var(--surface2,var(--surface));font-size:11.5px;color:var(--ink2);font-weight:800;text-align:center;line-height:1.35}
+table.wrt thead th{position:sticky;top:0;z-index:3;background:var(--hdr);font-size:11.5px;color:#fff;font-weight:800;text-align:center;line-height:1.35;border-bottom-color:var(--cell-d)}
 table.wrt thead tr:nth-child(2) th{top:var(--wrh1,34px)}
 table.wrt .stk{position:sticky;z-index:2;background:var(--surface)}
-table.wrt thead .stk{z-index:5;background:var(--surface2,var(--surface))}
+table.wrt thead .stk{z-index:5;background:var(--hdr)}
 table.wrt .c0{left:0}
 table.wrt td.head,table.wrt th.head{text-align:left;font-weight:700;color:var(--ink)}
 table.wrt .gs{border-left:1px solid var(--line)}
-table.wrt th .on{display:block;font-size:10.5px;font-weight:600;color:var(--muted);margin-top:2px}
+table.wrt th .on{display:block;font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7);margin-top:2px}
+table.wrt thead th .u{color:rgba(255,255,255,.7)}
+table.wrt thead th.sum{background:var(--hdr2);color:#fff}
+table.wrt thead th.hi{background:#4e6a8a;color:#fff}
+table.wrt thead .gs{border-left-color:var(--cell-d)}
 table.wrt th .dot,.wrchip i,.wrsb .nm i{display:inline-block;width:8px;height:8px;border-radius:2.5px;margin-right:6px;vertical-align:1px}
 table.wrt .sum{font-weight:800;color:var(--ink);background:color-mix(in srgb,var(--acc-soft) 70%,transparent)}
 table.wrt .tot{font-weight:800}
@@ -810,23 +814,23 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrchip:hover{border-color:var(--ink2)}
 .wrchip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}.wrchip.on em{color:color-mix(in srgb,var(--surface) 70%,transparent)}
 @media (prefers-reduced-motion: reduce){.wrsb .seg,.wr-dn.done .cd{animation:none}}
-/* 게이지 카드 — 카드 바탕 자체가 막대(왼쪽 연한 회색 → 오른쪽 짙은 회청) */
+/* 게이지 카드 (v147) — 카드 바탕은 그대로, 안에 작은 게이지 막대(왼쪽 연한 회색 → 오른쪽 짙은 회청) */
 .wrgs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:4px 0 6px}
 @media (max-width:1100px){.wrgs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.wrgs{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.wrg{--wg0:#eef1f5;--wg1:#7b8a9c;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--surface);min-height:122px;padding:16px 18px}
-[data-theme="dark"] .wrg{--wg0:#2c3036;--wg1:#6d7f95}
-.wrg.rch{--wg1:#5d7aa3}
-.wrg .fill{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--wg0),var(--wg1));background-size:calc(100% / var(--p)) 100%;
-  transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
-.wrg.go .fill{width:calc(var(--p) * 100%)}
-.wrg .fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,255,255,.7)}
-.wrg .tx{position:relative;display:flex;flex-direction:column;gap:4px}
+.wrg{--wg0:#d9dee5;--wg1:#5f7088;position:relative;border-radius:16px;border:1px solid var(--line);background:var(--surface);padding:16px 18px 14px;display:flex;flex-direction:column;gap:12px}
+[data-theme="dark"] .wrg{--wg0:#3a4048;--wg1:#8aa0bb}
+.wrg.rch{--wg1:#4f6f9a}
+.wrg .tx{display:flex;flex-direction:column;gap:4px}
 .wrg .l{font-size:12px;font-weight:800;color:var(--ink2)}
 .wrg .tx b{font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-.4px;line-height:1.15}
 .wrg .s{font-size:11.5px;font-weight:600;color:var(--muted)}
-.wrg .pc{position:absolute;right:14px;bottom:12px;font-size:15px;font-weight:900;color:var(--ink2)}
-.wrg.full .pc{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.wrg .gb{display:flex;align-items:center;gap:10px;margin-top:auto}
+.wrg .gt{flex:1;height:8px;border-radius:99px;background:var(--line2);overflow:hidden}
+.wrg .gt i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--wg0),var(--wg1));background-size:calc(100% / var(--p)) 100%;
+  transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+.wrg.go .gt i{width:calc(var(--p) * 100%)}
+.wrg .pc{font-size:13px;font-weight:900;color:var(--ink);min-width:52px;text-align:right}
 /* 소재 지도 */
 .wrsc{overflow-x:auto;scrollbar-width:none}.wrsc::-webkit-scrollbar{display:none}
 .wrsc-in{position:relative;margin:0 auto}
@@ -837,8 +841,12 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsc-in .ax{font-size:11.5px;fill:var(--ink2);font-weight:800}
 .wrsc-in .ln{fill:none;stroke-width:1.3;opacity:.55;transition:opacity .2s,stroke-width .2s}
 .wrsc-in .pt{cursor:pointer;animation:wrPop .5s cubic-bezier(.3,1.4,.5,1) both;animation-delay:var(--d);transform-box:fill-box;transform-origin:center}
-.wrsc-in .pt .halo{opacity:.12}.wrsc-in .pt .ring{opacity:.28}.wrsc-in .pt .core{stroke:#fff;stroke-width:2}
-.wrsc-in .pt.sel .core{stroke:var(--ink);stroke-width:2.5}.wrsc-in .pt.sel .halo{opacity:.22}
+.wrsc-in .pt .halo{opacity:0;transform-box:fill-box;transform-origin:center}
+.wrsc-in .pt .core{stroke:none}
+.wrsc-in .pt.sel .core{transform-box:fill-box;transform-origin:center;transform:scale(1.25)}
+.wrsc-in .pt.sel .halo{animation:wrRadar 2.2s cubic-bezier(.2,.6,.3,1) infinite}
+.wrsc-in .pt.sel .halo.h2{animation-delay:1.1s}
+@keyframes wrRadar{0%{opacity:.42;transform:scale(.35)}100%{opacity:0;transform:scale(1.6)}}
 .wrsc-in.hot .pt:not(.on),.wrsc-in.hot .ln:not(.on),.wrsc-in.hot .wrscc:not(.on){opacity:.22}
 .wrsc-in .ln.on{opacity:1;stroke-width:2}
 .wrscc{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;background:var(--surface);
@@ -919,12 +927,17 @@ table.writ .z{color:var(--gline)}
 .wrwk .wb{animation:wrRise .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d);transform-box:fill-box;transform-origin:bottom;transition:opacity .15s}
 .wrwk .wb.past{opacity:.34}.wrwk .wb.dim{opacity:.22}.wrwk .wb.past.dim{opacity:.14}.wrwk .wb:not(.dim):hover{opacity:1}
 .wrwk .tv{font-size:10.5px;font-weight:800;fill:var(--ink2)}
+.wrwk .wb .pp{opacity:0;transition:opacity .2s}.wrwk .wb .ag{transition:opacity .2s}
+.wrwk .wb:hover .pp{opacity:1}.wrwk .wb:hover .ag{opacity:0}
+.wrwk .wb:hover .pp rect{animation:wrSplit .32s cubic-bezier(.3,1.3,.5,1) both;animation-delay:var(--j)}
+@keyframes wrSplit{from{transform:scaleX(.6);opacity:.4}to{transform:none;opacity:1}}
+.wrwk .wb .pp rect{transform-box:fill-box;transform-origin:center}
 .wrwk .wl{font-size:11px;font-weight:800;fill:var(--ink)}.wrwk .wd{font-size:9.5px;fill:var(--muted)}
 .wrwk .wl.past,.wrwk .wd.past{opacity:.55}
 .wrwk .msep{stroke:var(--gline);stroke-dasharray:2 4}
 .wrwk .mn{font-size:11.5px;font-weight:900;fill:var(--ink)}.wrwk .mn.past{fill:var(--muted);font-weight:700}
 table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
-@media (prefers-reduced-motion: reduce){.wrsc-in .pt,.wrscc,.wrrt .rb,.wrtl .tn{animation:none}.wrg .fill{transition:none}}
+@media (prefers-reduced-motion: reduce){.wrsc-in .pt,.wrscc,.wrrt .rb,.wrtl .tn,.wrsc-in .pt.sel .halo{animation:none}.wrg .gt i{transition:none}}
 /* 리포트 (v143) — 연도 · 월 고르기 */
 .rpt-nav{display:flex;flex-direction:column;gap:10px;margin:4px 0 16px}
 .rpt-ys,.rpt-ms{display:flex;flex-wrap:wrap;gap:6px}
@@ -2672,6 +2685,11 @@ table.tbl.lite thead th,table.tbl.lite tr.total td,
 table.tbl.lite thead th.gsep,table.tbl.lite tr.total td.gsep{border-color:var(--cell)}
 table.tbl.lite th.g{background:var(--acc-soft);color:var(--acc)}
 table.tbl.lite tr.total td,table.tbl.lite tbody tr.total:hover td{background:var(--sub1) !important;color:var(--acc-d)}
+/* v147 — 모든 표의 머리 줄: 음영을 짙게 · 흰 글자 · 굵게 (연한 머리였던 lite 표도) */
+table.tbl thead th{font-weight:800}
+table.tbl.lite thead th{background:var(--hdr);color:#fff;font-weight:800;border-color:var(--cell-d)}
+table.tbl.lite thead th.g,table.tbl.lite thead th.subhd{background:var(--hdr2);color:#fff}
+table.tbl.lite thead th .tvunit,table.tbl.lite thead th .u,table.tbl.lite thead th .note,table.tbl.lite thead th small{color:rgba(255,255,255,.72)!important}
 table.tbl input,table.tbl select{height:29px;border:1px solid var(--line);border-radius:7px;background:var(--surface);
   padding:0 7px;text-align:center;width:100%;min-width:70px;font-size:12px}
 table.tbl input.num{text-align:right}

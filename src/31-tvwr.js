@@ -25,7 +25,8 @@ const wrEok=k=>{const v=wrN(k);if(!isFinite(v))return '–';const e=v/1e5;
 const wrD=s=>{const m=String(s||'').match(/(\d{4})-(\d\d)-(\d\d)/);return m?`${m[1].slice(2)}.${+m[2]}.${+m[3]}`:'';};
 const wrPct=(a,b)=>isFinite(a)&&isFinite(b)&&b>0?a/b:NaN;
 /* 품목 색 — 같은 품목은 어느 달에서나 같은 색 (차분한 색 10개) */
-const WR_PAL=['#3d5a8a','#b8743f','#4b8a6c','#86589e','#a8893b','#4b8aa6','#a35a68','#66788f','#7f963f','#8f6b52'];
+/* v147 — 알록달록하지 않게: 채도를 낮춘 회청 · 청록 · 회갈 계열로 서로 비슷한 톤 */
+const WR_PAL=['#4f6b8f','#8a7b68','#5d8580','#7d7090','#93876f','#5f84a3','#8c6f73','#6c7b8e','#748a6d','#7f8796'];
 const WR_ICOL={'아이콘3':0,'아이콘얼음정수기':1,'카페얼음정수기':5,'안마매트리스':3,'음식물처리기':2,'페블체어2':4,'트리플체어2':6,
   '스마트매트리스':7,'아이콘프로':8,'노블청정기':9,'비데':2,'히티브':6,'마사지셋/코어셋':4,'코웨이페스타':3};
 function wrCol(n){if(n in WR_ICOL)return WR_PAL[WR_ICOL[n]];let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return WR_PAL[h%WR_PAL.length];}
@@ -255,10 +256,11 @@ function renderWrDash(){
   /* 게이지 카드 */
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=wrEqTarget();
   const grpT=isFinite(eqT)&&wrN(T.eq)>0&&wrN(T.grp)>0?eqT*T.grp/T.eq:NaN;
+  /* v147 — 카드 바탕은 그대로, 카드 안에 작은 게이지 막대 */
   const card=(l,v,p,sub,cls)=>{const pp=isFinite(p)?Math.max(0,p):0,pc=Math.min(pp,1);
-    return `<div class="wrg ${cls||''}${pc>=.82?' full':''}" style="--p:${Math.max(pc,.0001).toFixed(4)}"><div class="fill"></div>
+    return `<div class="wrg ${cls||''}" style="--p:${Math.max(pc,.0001).toFixed(4)}">
       <div class="tx"><span class="l">${l}</span><b>${v}</b><span class="s">${sub}</span></div>
-      <div class="pc mono">${isFinite(p)?(p*100).toFixed(1)+'%':'–'}</div></div>`;};
+      <div class="gb"><div class="gt"><i></i></div><span class="pc mono">${isFinite(p)?(p*100).toFixed(1)+'%':'–'}</span></div></div>`;};
   const kpis=`<div class="wrgs">
     ${card(L('목표 대비 소진 예산','Budget spent vs target'),wrEok(spent),wrPct(spent,bud),`${L('목표','Target')} ${wrEok(bud)}`)}
     ${card('GRP',wrF(T.grp,1),wrPct(T.grp,grpT),isFinite(grpT)?`${L('목표(환산)','Target(conv.)')} ${wrF(grpT,0)}`:L('목표 없음','No target'))}
@@ -307,9 +309,10 @@ function wrScatter(pts){
   for(let i=0;i<=5;i++){const v=XM*i/5,xx=X(v);grid+=`<line x1="${xx}" x2="${xx}" y1="${y0}" y2="${y1}" class="gl"/><text x="${xx}" y="${y1+18}" class="tk" text-anchor="middle">${wrF(v)}</text>`;}
   const lines=pts.map((p,i)=>{const ex=p.side<0?CW+4:Wd-CW-4,ey=p.cy+CH/2,mx2=p.side<0?x0-16:x1+16;
     return `<path class="ln" data-i="${i}" d="M${p.x.toFixed(1)},${p.y.toFixed(1)} L${mx2},${ey.toFixed(1)} L${ex},${ey.toFixed(1)}" stroke="${wrCol(p.it)}"/>`;}).join('');
+  /* 레이더 효과(퍼지는 원)는 고른 점에만 — 나머지는 테두리 없는 점 하나 */
   const dots=pts.map((p,i)=>`<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
-      <circle r="22" class="halo" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/><circle r="11" class="ring" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/>
-      <circle r="6.5" class="core" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/></g>`).join('');
+      <circle r="20" class="halo" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/><circle r="20" class="halo h2" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/>
+      <circle r="7" class="core" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/></g>`).join('');
   const cards=pts.map((p,i)=>{const c=p.c,cc=c.c||{};
     return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" style="left:${p.side<0?0:Wd-CW}px;top:${p.cy}px;width:${CW}px;height:${CH}px;--c:${wrCol(p.it)};--d:${200+i*50}ms">
       <div class="t"><i></i><b>${esc(p.it)}</b><span>${esc(c.n)}</span></div>
@@ -383,8 +386,8 @@ function wrRatings(){
     const mx=Math.max(...rows.map(r=>Math.max(wrN(r.cw)||0,wrN(r.avg)||0)))*1.15||1;
     const bars=rows.map((r,i)=>{const cx=8+i*BW+BW/2,isT=/계/.test(r.ch),a=wrN(r.avg)||0,c=wrN(r.cw)||0,ha=a/mx*(H-PB-PT),hc=c/mx*(H-PB-PT),idx=a>0?c/a*100:NaN;
       return `<g class="rb${isT?' tot':''}" data-ch="${esc(r.ch)}" data-a="${a}" data-c="${c}" style="--d:${i*40}ms">
-        <rect class="av" x="${cx-17}" y="${H-PB-ha}" width="34" height="${ha}" rx="4"/>
-        <rect class="cw" x="${cx-10}" y="${H-PB-hc}" width="20" height="${hc}" rx="3" fill="${WR_CW}"/>
+        <rect class="av" x="${cx-19}" y="${H-PB-ha}" width="24" height="${ha}" rx="3"/>
+        <rect class="cw" x="${cx-5}" y="${H-PB-hc}" width="24" height="${hc}" rx="3" fill="${WR_CW}"/>
         <text x="${cx}" y="${H-PB-Math.max(ha,hc)-7}" class="iv${isFinite(idx)&&idx>=100?' up':''}" text-anchor="middle">${isFinite(idx)?Math.round(idx):'–'}</text>
         <text x="${cx}" y="${H-PB+15}" class="nm" text-anchor="middle">${esc(r.ch.length>10?r.ch.slice(0,9)+'…':r.ch)}</text></g>`;}).join('');
     return `<div class="wrrt" style="flex:${rows.length} 0 ${w}px"><div class="h">${lab}</div><svg width="${w}" height="${H}" viewBox="0 0 ${w} ${H}">
@@ -400,10 +403,16 @@ function wrTimeline(){
   const list=[];TV_WR.items.forEach(it=>it.cr.forEach(c=>{if(/^\d{4}-\d\d-\d\d$/.test(c.on||''))list.push({it:it.n,c});}));
   list.sort((a,b)=>a.c.on.localeCompare(b.c.on)||a.it.localeCompare(b.it,'ko'));
   if(!list.length){box.innerHTML=`<div class="card wrcard hint">${L('온에어 날짜가 있는 소재가 없습니다','No creative with an on-air date')}</div>`;return;}
-  const SP=196,w=Math.max(list.length*SP+80,600);
+  /* v147 — 실제 날짜 간격을 반영(가까운 소재는 최소 간격만큼은 벌린다) */
+  const day=d=>Date.parse(d+'T00:00:00')/864e5,d0=day(list[0].c.on),span=Math.max(1,day(list[list.length-1].c.on)-d0);
+  /* 간격 = 최소 간격 + √(벌어진 날 수) — 먼 소재는 멀게, 몰린 소재도 읽히게 */
+  const MIN=110,gaps=list.map((x,i)=>i?Math.sqrt(Math.max(0,day(x.c.on)-day(list[i-1].c.on))):0),gs=gaps.reduce((a,b)=>a+b,0)||1;
+  const room=Math.max(0,Math.max(list.length*175,1100)-80-MIN*(list.length-1)),xs=[];
+  list.forEach((x,i)=>xs.push(i?xs[i-1]+MIN+gaps[i]/gs*room:40));
+  const w=xs[xs.length-1]+220;
   let lastY='';
   const nodes=list.map((x,i)=>{const up=i%2===0,c=x.c,cc=c.c||{},y=c.on.slice(0,4),showY=y!==lastY;lastY=y;
-    return `<div class="tn ${up?'up':'dn'}" style="left:${40+i*SP}px;--c:${wrCol(x.it)};--d:${i*70}ms">
+    return `<div class="tn ${up?'up':'dn'}" style="left:${xs[i].toFixed(0)}px;--c:${wrCol(x.it)};--d:${i*70}ms">
       <div class="dot"><span>${String(i+1).padStart(2,'0')}</span></div>${showY?`<div class="yr">${y}</div>`:''}
       <div class="dt">${wrD(c.on)}</div><div class="stem"></div>
       <div class="cd"><div class="t"><i></i>${esc(x.it)}</div><b>${esc(c.n)}</b>
@@ -442,16 +451,21 @@ function wrWeekChart(){
   const keys=Object.keys(totK).sort((a,b)=>(a.startsWith('지상파')?0:1)-(b.startsWith('지상파')?0:1)||totK[b]-totK[a]);
   const tk=keys.filter(k=>k.startsWith('지상파')),ck=keys.filter(k=>!k.startsWith('지상파'));
   const col={};tk.forEach((k,i)=>col[k]=WR_TONE.t[Math.min(i,WR_TONE.t.length-1)]);ck.forEach((k,i)=>col[k]=WR_TONE.c[Math.min(i,WR_TONE.c.length-1)]);
-  const Wd=Math.max(900,box.clientWidth||1100),PL=16,PR=16,TOPB=86,H=430,BOT=58,n=S.length,step=(Wd-PL-PR)/Math.max(n,1),bw=Math.min(46,step*.62);
+  const Wd=Math.max(900,box.clientWidth||1100),PL=16,PR=16,TOPB=150,H=500,BOT=58,n=S.length,step=(Wd-PL-PR)/Math.max(n,1),bw=Math.min(46,step*.62);
   const val=b=>vi?b.cost:b.eq,mx=Math.max(...S.map(val))*1.08||1,Y=v=>H-BOT-(v/mx)*(H-BOT-TOPB);
-  const cprp=S.map(b=>b.eq>0?b.cost/b.eq:NaN),cm=Math.max(...cprp.filter(isFinite))*1.12||1,cn=Math.min(...cprp.filter(isFinite))*.85||0,CY=v=>14+(1-(v-cn)/((cm-cn)||1))*(TOPB-40);
+  /* CPRP — 최저~최고를 위쪽 띠 높이 전부에 펼쳐 편차가 보이게 */
+  const cprp=S.map(b=>b.eq>0?b.cost/b.eq:NaN),cf=cprp.filter(isFinite),c1=Math.max(...cf),c0=Math.min(...cf),pad=(c1-c0)*.12||c1*.1||1,cm=c1+pad,cn=Math.max(0,c0-pad),CY=v=>30+(1-(v-cn)/((cm-cn)||1))*(TOPB-62);
   let bars='',labs='',months='',lastYm='',grid='';
   for(let i=0;i<=4;i++){const yy=TOPB+(H-BOT-TOPB)*i/4;grid+=`<line x1="${PL}" x2="${Wd-PR}" y1="${yy}" y2="${yy}" class="gl"/>`;}
-  S.forEach((b,i)=>{const cx=PL+step*(i+.5);let acc=0;
-    const segs=keys.filter(k=>b.pp[k]&&b.pp[k][vi]>0).map(k=>{const v=b.pp[k][vi],y=Y(acc+v),hh=Y(acc)-y;acc+=v;
-      return `<rect x="${(cx-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,hh-1).toFixed(1)}" fill="${col[k]}" rx="2"/>`;}).join('');
-    const rest=val(b)-acc;const extra=rest>val(b)*.01?`<rect x="${(cx-bw/2).toFixed(1)}" y="${Y(val(b)).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(acc)-Y(val(b))).toFixed(1)}" fill="#c9ced3" rx="2"/>`:'';
-    bars+=`<g class="wb${b.past?' past':''}" data-i="${i}" style="--d:${i*35}ms">${extra}${segs}<rect class="hit" x="${(cx-step/2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" fill="transparent"/>
+  /* 평소엔 지상파 · 케이블 두 칸, 마우스를 올리면 그 막대가 PP 별로 갈라진다 (모서리는 각지게) */
+  const GC={t:'#3d5f99',c:'#6d7883'};
+  S.forEach((b,i)=>{const cx=PL+step*(i+.5),x=(cx-bw/2).toFixed(1),bwS=bw.toFixed(1);let acc=0;
+    const segs=keys.filter(k=>b.pp[k]&&b.pp[k][vi]>0).map((k,j)=>{const v=b.pp[k][vi],y=Y(acc+v),hh=Y(acc)-y;acc+=v;
+      return `<rect x="${x}" y="${y.toFixed(1)}" width="${bwS}" height="${Math.max(0,hh-1.5).toFixed(1)}" fill="${col[k]}" style="--j:${j*18}ms"/>`;}).join('');
+    const gT=keys.filter(k=>k.startsWith('지상파')).reduce((s,k)=>s+((b.pp[k]||[])[vi]||0),0),gC=acc-gT;
+    const agg=`${gT>0?`<rect x="${x}" y="${Y(gT).toFixed(1)}" width="${bwS}" height="${Math.max(0,Y(0)-Y(gT)-1.5).toFixed(1)}" fill="${GC.t}"/>`:''}${gC>0?`<rect x="${x}" y="${Y(gT+gC).toFixed(1)}" width="${bwS}" height="${Math.max(0,Y(gT)-Y(gT+gC)).toFixed(1)}" fill="${GC.c}"/>`:''}`;
+    const rest=val(b)-acc;const extra=rest>val(b)*.01?`<rect x="${x}" y="${Y(val(b)).toFixed(1)}" width="${bwS}" height="${(Y(acc)-Y(val(b))).toFixed(1)}" fill="#c9ced3"/>`:'';
+    bars+=`<g class="wb${b.past?' past':''}" data-i="${i}" style="--d:${i*35}ms">${extra}<g class="ag">${agg}</g><g class="pp">${segs}</g><rect class="hit" x="${(cx-step/2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" fill="transparent"/>
       <text x="${cx}" y="${(Y(val(b))-6).toFixed(1)}" class="tv" text-anchor="middle">${vi?wrEok(b.cost):wrF(b.eq,0)}</text></g>`;
     labs+=`<text x="${cx}" y="${H-BOT+16}" class="wl${b.past?' past':''}" text-anchor="middle">${esc(b.l)}</text><text x="${cx}" y="${H-BOT+29}" class="wd${b.past?' past':''}" text-anchor="middle">${wrD(b.s).slice(3)}~${wrD(b.e).slice(3).replace(/^\d+\./,'')}</text>`;
     if(b.ym!==lastYm){lastYm=b.ym;const m=+String(b.ym).slice(5,7);
@@ -466,7 +480,8 @@ function wrWeekChart(){
     <path d="${path}" class="cl"/>${cdots}${grid}${months}${bars}${labs}
     <line x1="${PL}" x2="${Wd-PR}" y1="${H-BOT}" y2="${H-BOT}" class="axl"/></svg>`;
   const leg=$('wrWkLeg');
-  if(leg)leg.innerHTML=keys.map(k=>`<span><i style="background:${col[k]};opacity:1"></i>${esc(k.split('|')[1])}</span>`).join('')+`<span class="n">${L('흐린 막대 = 지난 캠페인','Faded = past campaigns')}</span>`;
+  if(leg)leg.innerHTML=`<span><i style="background:${GC.t};opacity:1"></i>${L('지상파','Terrestrial')}</span><span><i style="background:${GC.c};opacity:1"></i>${L('케이블 · 종편','Cable · GP')}</span>`
+    +`<span class="n">${L('막대에 마우스를 올리면 PP 별로 나뉨 · 흐린 막대 = 지난 캠페인','Hover a bar to split by PP · faded = past campaigns')}</span>`;
   box.querySelectorAll('g.wb').forEach(g=>{const b=S[+g.dataset.i];
     g.onmousemove=e=>{const rows=keys.filter(k=>b.pp[k]&&(b.pp[k][0]>0||b.pp[k][1]>0)).sort((p,q)=>b.pp[q][vi]-b.pp[p][vi]);
       showTip(e.clientX,e.clientY,`<div class="t">${L(+String(b.ym).slice(5,7)+'월','M'+(+String(b.ym).slice(5,7)))} ${esc(b.l)} · ${wrD(b.s)}~${wrD(b.e)}${b.past?' · '+L('지난 캠페인','past'):''}</div>
