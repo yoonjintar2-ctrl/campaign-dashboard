@@ -838,6 +838,11 @@ function dgSplit(){const md=campMedia();return md.ott?(md.digital?'both':'ott'):
 /* 지금 보는 쪽 — 한쪽만 켜져 있으면 그쪽 */
 function curDgArea(){const s=dgSplit();return s==='none'?'digital':s==='ott'?'ott':(DG_AREA==='ott'?'ott':'digital');}
 function lineArea(l){return dgSplit()==='none'?'digital':(isOttMedia(l&&l.media)?'ott':'digital');}
+/* OTT 를 실제로 쓰는가 (v150) — OTT 를 켜 두었어도 OTT 라인이 없으면(그 달 OTT 집행 없음) OTT 메뉴를 감춘다.
+   라인이 하나도 없는 OTT 전용 새 캠페인은 OTT 입력을 해야 하므로 그대로 보인다 */
+function ottInUse(){try{const md=campMedia();if(!md.ott)return false;
+  if((LINES||[]).some(l=>isOttMedia(l.media)))return true;
+  return !md.tv&&!md.ooh&&!(LINES||[]).length;}catch(e){return true;}}
 /* OTT 라인 요약 — 예산 · 기간 · 라인 수 · 실적(소진 · 노출 · 클릭 · 조회). 전체 캠페인 화면용 (v143) */
 function ottSumNow(){
   const ls=LINES.filter(l=>isOttMedia(l.media)),ids=new Set(ls.map(l=>l.id));

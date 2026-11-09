@@ -38,7 +38,7 @@ function menuUsed(id){
   if(m.area==='digital'&&!md.digital)return false;
   if(m.area==='tv'&&!md.tv)return false;
   if(m.area==='ooh'&&!md.ooh)return false;
-  if(m.area==='ott'&&!md.ott)return false;
+  if(m.area==='ott'&&!(typeof ottInUse==='function'?ottInUse():md.ott))return false;
   const c=campMenus()[id];
   /* 기본이 '꺼짐'인 메뉴(주차별 퍼포먼스 · v135)는 켜 둔 경우에만 */
   if(m.udef===false)return !!(c&&c.on===true);

@@ -277,7 +277,7 @@ function renderWrDash(){
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
   h.innerHTML=wrHead(L('TV 서머리','TV summary'),`${wrMonth()} · ${W.period||''}`)+kpis
-    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 같은 품목은 같은 색 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · same product = same color · click to show its table below')}</span></div>
+    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 같은 품목은 같은 색 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · same product = same color · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
       <div id="wrItem"></div>
@@ -316,9 +316,13 @@ function wrScatter(pts){
   const lines=pts.map((p,i)=>{const ex=p.side<0?CW+4:Wd-CW-4,ey=p.cy+CH/2,mx2=p.side<0?x0-16:x1+16;
     return `<path class="ln" data-i="${i}" d="M${p.x.toFixed(1)},${p.y.toFixed(1)} L${mx2},${ey.toFixed(1)} L${ex},${ey.toFixed(1)}" stroke="${wrCol(p.it)}"/>`;}).join('');
   /* 레이더 효과(퍼지는 원)는 고른 점에만 — 나머지는 테두리 없는 점 하나 */
-  const dots=pts.map((p,i)=>`<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
-      <circle r="20" class="halo" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/><circle r="20" class="halo h2" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/>
-      <circle r="7" class="core" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/></g>`).join('');
+  /* v150 — 점 크기 = 월 예산 (넓이가 예산에 비례 · 가장 큰 소재 반지름 24). 큰 점이 작은 점을 덮지 않게 큰 것부터 그린다 */
+  const mxB=Math.max(...pts.map(p=>wrN(p.c.bud)).filter(isFinite),0);
+  const rad=p=>{const b=wrN(p.c.bud);return mxB>0&&b>0?Math.max(5,24*Math.sqrt(b/mxB)):5;};
+  const dots=pts.map((p,i)=>[p,i]).sort((a,b)=>rad(b[0])-rad(a[0])).map(([p,i])=>{const r=rad(p);
+    return `<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
+      <circle r="${(r*2.4).toFixed(1)}" class="halo" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/><circle r="${(r*2.4).toFixed(1)}" class="halo h2" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/>
+      <circle r="${r.toFixed(1)}" class="core" fill="${wrCol(p.it)}" fill-opacity=".86" cx="${p.x}" cy="${p.y}"/></g>`;}).join('');
   const cards=pts.map((p,i)=>{const c=p.c,cc=c.c||{};
     return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" style="left:${p.side<0?0:Wd-CW}px;top:${p.cy}px;width:${CW}px;height:${CH}px;--c:${wrCol(p.it)};--d:${200+i*50}ms">
       <div class="t"><i></i><b>${esc(p.it)}</b><span>${esc(c.n)}</span></div>
