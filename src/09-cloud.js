@@ -62,6 +62,8 @@ function histDoc(doc){
   if(Array.isArray(doc.creatives))out.creatives=doc.creatives.map(noImg);
   if(doc.crAssets&&typeof doc.crAssets==='object'){out.crAssets={};for(const k in doc.crAssets)out.crAssets[k]=noImg(doc.crAssets[k]);}
   if(doc.ooh&&Array.isArray(doc.ooh.cr))out.ooh={...doc.ooh,cr:doc.ooh.cr.map(noImg)};
+  /* 리포트 스냅샷은 히스토리에 담지 않는다 (크고, 화면에서 바뀌지 않는다) */
+  if(doc.report)out.report={v:doc.report.v,m:doc.report.m,omit:1};
   return out;}
 /* ---------- 직렬화 ----------
    캠페인 설정·소재·이슈·화면 구성은 JSON 문서 한 덩어리(campaigns.doc),
@@ -93,6 +95,8 @@ function serializeDoc(){
     ooh:(typeof oohForDoc==='function'?oohForDoc():{plan:[],cr:[]}),
     /* TV · OOH 입력 표의 열 설정 — 숨김 · 이름 · 직접 만든 열 (v81) */
     tblCols:(typeof tblCfgForDoc==='function'?tblCfgForDoc():{}),
+    /* 월별 리포트 스냅샷 (v149) — 화면에서 고치지 않으므로 받은 그대로 다시 담는다 */
+    ...(typeof RPT_DOC!=='undefined'&&RPT_DOC?{report:RPT_DOC}:{}),
     /* daily · cdaily · cdet 은 입력 시트에서 매번 다시 만들어지는 값이라 담지 않는다
        (특히 cdaily 는 소재 × 날짜 × 지표라 그대로 담으면 문서가 몇 배로 커진다) */
     lines:LINES.map(l=>{const o={...l};delete o.daily;delete o.cdaily;delete o.cdet;delete o.lsplit;delete o.ldays;delete o.landDom;return o;}),
@@ -188,6 +192,8 @@ function applyDoc(d,keepToday){
   if(!d||!d.lines)return;
   CAMPAIGN.name=d.campaign?.name||CAMPAIGN.name;
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
+  /* 월별 리포트 (v149) */
+  try{RPT_DOC=d.report&&typeof d.report==='object'&&!d.report.omit?d.report:null;}catch(e){}
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:todaySeoul();   /* 서울 날짜 (v78) */
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
@@ -580,6 +586,7 @@ async function tryCode(raw){
   try{renderCampForm&&renderCampForm();}catch(e){}
   enterShareView(c.name);
   endBoot();
+  try{if(typeof rptResume==='function')setTimeout(rptResume,0);}catch(e){}
   try{sessionStorage.removeItem('staffResume');}catch(e){}
   /* 같은 광고주의 캠페인 목록 (v82 — 권한은 광고주 단위) — 상단 캠페인 고르기에서 옮겨 갈 수 있게 */
   loadAdvList(code);
@@ -906,6 +913,7 @@ async function openCampaign(id){
   endBoot();
   cloudStateIdle();
   try{urlSettled();}catch(e){}
+  try{if(typeof rptResume==='function')rptResume();}catch(e){}
 }
 /* editor(예전 운영진)는 마스터로 이름이 바뀌었다 (v121) */
 const ROLE_LABEL={master:'마스터',editor:'마스터',viewer:'조회 전용'};
@@ -1144,6 +1152,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_MON=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{TV_WR=null;}catch(e){}
+  try{RPT_DOC=null;}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}

@@ -39,6 +39,8 @@ jobs:
           # 링크 미리보기 썸네일 (v130 · og:image)
           if [ -f og.png ]; then cp og.png dist/; fi
           if [ -f logo.png ]; then cp logo.png dist/; fi
+          # 리포트 소재 아카이브 스토리보드 (v149)
+          if [ -d assets ]; then cp -r assets dist/; fi
 
       - name: Check script syntax
         run: |

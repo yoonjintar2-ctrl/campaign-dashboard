@@ -1571,6 +1571,8 @@ function renderEverything(){
   try{if(typeof renderOOH==='function')renderOOH();}catch(e){}
   /* 전체 캠페인은 보고 있을 때만 다시 그린다 (다른 캠페인을 서버에서 읽어 오므로) */
   try{const ov=$('tab-overview');if(ov&&!ov.classList.contains('hidden')&&typeof renderOverview==='function')renderOverview();}catch(e){}
+  /* 리포트도 보고 있을 때만 (v149) */
+  try{const rp=$('tab-report');if(rp&&!rp.classList.contains('hidden')&&typeof renderReport==='function')renderReport();}catch(e){}
   try{if(typeof applyMediaTabs==='function')applyMediaTabs();}catch(e){}
   PERF_STALE=false;
 }
