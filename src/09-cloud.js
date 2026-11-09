@@ -79,7 +79,9 @@ function serializeDoc(){
       bgMotion:(typeof bgMotionNow==='function'?bgMotionNow():'float'),
       agencyLogo:CAMPAIGN.agencyLogo||'',
       /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
-      media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false}),
+      /* v143 — OTT 를 켠 캠페인은 OTT 라인 요약(ottSum)도 함께: 광고주 화면 전체 캠페인(서버 함수는 라인 매체를 안 준다)용 */
+      media:(()=>{const m=(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false});
+        try{if(m.ott&&typeof ottSumNow==='function')return {...m,ottSum:ottSumNow()};}catch(e){}return m;})(),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
       menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{})),
       /* 캠페인 구조 가지 순서 (v120.3) — '' = 매체 › 타깃 › 광고상품 · 'product' = 매체 › 광고상품 › 타깃 · 'target' = 타깃 › 매체 › 광고상품 */

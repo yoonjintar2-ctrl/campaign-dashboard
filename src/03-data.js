@@ -813,14 +813,16 @@ const MENUS=[
   /* OOH (v81) — 계획(광고비 · 매체 · 지면 · 지면 정보 · 날짜)과 소재만. 실적 입력 없음 */
   {id:'o_sum',  area:'ooh',    tab:'oohdash',            l:'서머리',       kind:'view'},
   {id:'o_plan', area:'ooh',    tab:'oohplan',            l:'예상효율 입력',kind:'edit'},
+  /* 리포트 (v143) — 연도 › 월별. 틀만 있고 내용은 자료 양식이 정해지면. 광고주에게는 기본 숨김 */
+  {id:'report', area:'report', tab:'report',             l:'연도 · 월별 리포트',kind:'view',vdef:false},
   {id:'trend',  area:'trend',  tab:'trend',              l:'트렌드 리포트',kind:'view'},
   /* 전체 캠페인 (v81) — 같은 광고주의 모든 캠페인 요약. 광고주(뷰어)에게는 기본으로 숨긴다(vdef:false) */
   {id:'overview',area:'overview',tab:'overview',         l:'전체 캠페인',  kind:'view',vdef:false}];
 const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
   tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmonthly:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
-  oohdash:'ooh',oohplan:'ooh',trend:'trend',overview:'overview'};
-const AREA_LABEL={digital:'디지털',tv:'TV',ott:'OTT',ooh:'OOH',trend:'트렌드 리포트',overview:'전체 캠페인'};
+  oohdash:'ooh',oohplan:'ooh',report:'report',trend:'trend',overview:'overview'};
+const AREA_LABEL={digital:'디지털',tv:'TV',ott:'OTT',ooh:'OOH',report:'리포트',trend:'트렌드 리포트',overview:'전체 캠페인'};
 /* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */
 const MEDIA_AREAS=['digital','tv','ott','ooh'];
 /* ---------- 디지털 · OTT 나누기 (v141) ----------
@@ -835,6 +837,13 @@ function dgSplit(){const md=campMedia();return md.ott?(md.digital?'both':'ott'):
 /* 지금 보는 쪽 — 한쪽만 켜져 있으면 그쪽 */
 function curDgArea(){const s=dgSplit();return s==='none'?'digital':s==='ott'?'ott':(DG_AREA==='ott'?'ott':'digital');}
 function lineArea(l){return dgSplit()==='none'?'digital':(isOttMedia(l&&l.media)?'ott':'digital');}
+/* OTT 라인 요약 — 예산 · 기간 · 라인 수 · 실적(소진 · 노출 · 클릭 · 조회). 전체 캠페인 화면용 (v143) */
+function ottSumNow(){
+  const ls=LINES.filter(l=>isOttMedia(l.media)),ids=new Set(ls.map(l=>l.id));
+  const o={n:ls.length,gross:Math.round(sum(ls.map(l=>+lineGross(l)||0))),net:0,imp:0,click:0,view:0,
+    start:ls.map(l=>l.start).filter(Boolean).sort()[0]||'',end:ls.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||''};
+  (FACTS||[]).forEach(f=>{if(!ids.has(f.lid))return;o.net+=+f.cost||0;o.imp+=+f.imp||0;o.click+=+f.click||0;o.view+=+f.view||0;});
+  o.net=Math.round(o.net);return o;}
 /* 지금 영역의 라인 id 묶음 — 나누지 않는 캠페인이면 null(거르지 않음) */
 function areaLidSet(){
   if(dgSplit()==='none')return null;

@@ -242,6 +242,26 @@ function applyMenus(){
 }
 /* 예전 이름 — 부르는 곳이 여럿이라 남겨 둔다 */
 function applyMediaTabs(){applyMenus();}
+/* 상위 메뉴 단추 폭을 펼친 판(.megapop)의 열 폭에 맞춘다 (v143) — 펼치든 접든 메뉴 너비가 같다.
+   판의 열 위치를 재서 단추 i 의 최소 폭 = 다음 열 시작 − 이 열 시작 − 단추 사이 틈. 좁은 화면(판이 줄 바꿈)에서는 하지 않는다 */
+function syncAreaW(t,clear){
+  t=t||$('tabs');if(!t)return;
+  const btns=[...t.querySelectorAll('.arearow>.area')];
+  btns.forEach(b=>b.style.minWidth='');
+  if(clear||innerWidth<=760)return;
+  const g=t.querySelector('.megapop');if(!g)return;
+  const was=g.getAttribute('style')||'';
+  g.style.display='flex';g.style.visibility='hidden';g.style.animation='none';
+  try{
+    const vis=btns.filter(b=>!b.classList.contains('menuoff')&&!b.classList.contains('hidden')&&b.offsetParent);
+    const cols=new Map([...g.querySelectorAll('.subgrp')].filter(x=>!x.classList.contains('menuoff')).map(x=>[x.dataset.area,x.getBoundingClientRect()]));
+    const ok=vis.filter(b=>cols.has(b.dataset.area));
+    if(ok.length!==vis.length||!ok.length)return;
+    const gap=parseFloat(getComputedStyle(t.querySelector('.arearow')).columnGap)||0;
+    ok.forEach((b,i)=>{const r=cols.get(b.dataset.area),nx=ok[i+1]?cols.get(ok[i+1].dataset.area):null;
+      const w=nx?nx.left-r.left-gap:r.width+8;
+      b.style.minWidth=Math.max(0,Math.round(w))+'px';});
+  }finally{g.setAttribute('style',was);if(!was)g.removeAttribute('style');}}
 /* 줄이 넘치면 줄인다(.dense → .dense2 → .dense3). v74 — 하위 메뉴는 드롭다운이라 줄에는 상위 메뉴 · 지금 메뉴 · 도구만 */
 function fitTabs(){
   const t=$('tabs');if(!t)return;
@@ -253,7 +273,11 @@ function fitTabs(){
   tmp.forEach(e=>e.classList.remove('hidden','tooloff'));
   const over=()=>t.scrollWidth>t.clientWidth+2;
   try{
-    t.classList.remove('dense','dense2','dense3');
+    t.classList.remove('dense','dense2','dense3','dsync');
+    /* 상위 메뉴 폭 = 펼친 판의 열 폭 (v143). 넘치면 ① 도구 글자를 아이콘만으로 → ② 그래도 넘치면 예전처럼 글자 폭 */
+    syncAreaW(t);
+    if(over())t.classList.add('dsync');
+    if(over()){t.classList.remove('dsync');syncAreaW(t,true);}
     if(over())t.classList.add('dense');
     if(over())t.classList.add('dense2');
     if(over())t.classList.add('dense3');
@@ -303,7 +327,7 @@ function openMenuSettings(){
      하위 메뉴는 그 영역 펼침판의 순서와 글자 그대로 */
   const T=$('tabs');
   const siteAreas=T?[...T.querySelectorAll('.arearow .area[data-area]')].map(b=>b.dataset.area):[];
-  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'trend'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'trend'];
+  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'report','trend'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'report','trend'];
   const siteBtn=id=>T&&T.querySelector(`.subgrp [data-menu="${id}"]`);
   const menusOf=a=>{const ms=MENUS.filter(m=>m.area===a);
     const pos=m=>{const b=siteBtn(m.id);if(!b)return 999;return [...T.querySelectorAll(`.subgrp[data-area="${a}"] [data-menu]`)].indexOf(b);};
@@ -324,7 +348,7 @@ function openMenuSettings(){
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
          <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
-  const COMMON_SUB={overview:'같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OOH 캠페인 목록',trend:'모든 캠페인이 함께 쓰는 자료 게시판'};
+  const COMMON_SUB={overview:'같은 광고주의 모든 캠페인 — 광고비와 디지털 · TV · OTT · OOH 캠페인 목록',report:'연도 · 월별 리포트 — 구성은 준비 중',trend:'모든 캠페인이 함께 쓰는 자료 게시판'};
   const groups=areaOrder.map(a=>MEDIA_AREAS.includes(a)?area(a):common(a,COMMON_SUB[a]||'')).join('');
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.

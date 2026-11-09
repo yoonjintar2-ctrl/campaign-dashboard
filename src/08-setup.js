@@ -1255,7 +1255,7 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvinput','tvplan','oohdash','oohplan','overview'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvinput','tvplan','oohdash','oohplan','overview','report'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
   if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
@@ -1268,10 +1268,11 @@ function switchTab(name){
   if(name==='oohdash'){try{renderOohDash();}catch(e){}}
   if(name==='oohplan'){try{renderTvTable('ooh');renderOohCrEdit();}catch(e){}}
   if(name==='overview'){try{renderOverview();}catch(e){}}
+  if(name==='report'){try{renderReport();}catch(e){}}
   /* 트렌드 리포트는 처음 들어갈 때 한 번 불러온다 (v66) */
   if(name==='trend'){try{paintTrendToggle();trendLoad();}catch(e){}}
   /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
-  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','oohdash','overview'].includes(name));}
+  {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','oohdash','overview','report'].includes(name));}
   if(name==='dash'){try{ensureDashSub();}catch(e){}
     /* 디지털 ↔ OTT 를 바꿨으면 지금 그린다 (v141) */
     try{dgFlush();}catch(e){}
