@@ -450,6 +450,7 @@ function tvwFlight(weeks){
 
 /* ---------- TV 주차별 퍼포먼스 (v135 → v136) ---------- */
 function renderTvWeekly(){
+  try{if(renderWrWeek())return;}catch(e){console.warn('wrWeek',e);}
   const tb=$('tvWeekTbl');if(!tb)return;
   tvPaintTarget();
   const weeks=tvwWeekList(),A=weeks.map(o=>tvwWeekAgg(o));

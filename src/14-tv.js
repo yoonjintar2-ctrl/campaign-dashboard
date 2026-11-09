@@ -989,6 +989,7 @@ function tvPaintMeta(){
 
 /* ---------- TV 대시보드 — v132.2: 예산 소진 · 예산 열은 그대로, CPRP 자리에 Reach 1+ (금액은 천원) ---------- */
 function renderTvDash(){
+  try{if(renderWrDash())return;}catch(e){console.warn('wrDash',e);}
   const box=$('tvKpis'),tb=$('tvChTbl');if(!box||!tb)return;
   tvPaintTarget();
   const PA=tvPlanAgg(),AA=tvActAgg(),P=PA.tot,A=AA.tot;
@@ -1146,6 +1147,8 @@ function renderTvDaily(){
 /* TV 주차별 퍼포먼스 화면은 28-tvweek.js (v136) */
 /* ---------- TV 미디어믹스 (v132.2) — 위: 프로그램별 편성 / 아래: 채널 × 월 예산 · 노출 횟수 · 예상 GRP · 예상 Reach 1+ ---------- */
 function renderTvMix(){
+  /* 위클리 리포트를 받은 캠페인은 리포트 전용 화면(31-tvwr.js) */
+  try{if(renderWrMix())return;}catch(e){console.warn('wrMix',e);}
   tvPaintTarget();
   try{renderTvProg();}catch(e){console.warn(e);}
   const tb=$('tvMixTbl');if(!tb)return;
@@ -1419,6 +1422,8 @@ function tvForDoc(){return {plan:TV_PLAN.map(r=>({...r})),spots:TV_SPOTS.map(r=>
   /* v132 — 요약형(채널별 계획 · 채널별 실적 · 일자별 실적) + 타겟 · 전체 Reach */
   mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),week:TV_WEEK.map(r=>({...r})),seg:TV_SEG.map(r=>({...r})),
   wkch:TV_WKCH.map(r=>({...r})),wkrt:TV_WKRT.map(r=>({...r})),wkseg:TV_WKSEG.map(r=>({...r})),mon:(typeof TV_MON!=='undefined'?TV_MON:[]).map(r=>({...r})),
+  /* v146 — 위클리 리포트 원본 묶음(31-tvwr.js) */
+  ...(typeof TV_WR!=='undefined'&&TV_WR?{wr:TV_WR}:{}),
   segch:TV_SEGCH.map(r=>({...r})),segcr:TV_SEGCR.map(r=>({...r})),meta:{...TV_META}};}
 function tvFromDoc(d){
   const t=d&&d.tv,arr=k=>Array.isArray(t&&t[k])?t[k].map(r=>({...r})):[];
@@ -1427,7 +1432,8 @@ function tvFromDoc(d){
   const m=t&&t.meta&&typeof t.meta==='object'?t.meta:{};
   TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:'',reach3:tvHas(m.reach3)?m.reach3:''};
   TV_SEG=arr('seg');TV_WEEK=arr('week');TV_WKCH=arr('wkch');TV_WKRT=arr('wkrt');TV_WKSEG=arr('wkseg');TV_SEGCH=arr('segch');TV_SEGCR=arr('segcr');
-  try{TV_MON=arr('mon');}catch(e){}}
+  try{TV_MON=arr('mon');}catch(e){}
+  try{TV_WR=(t&&t.wr&&typeof t.wr==='object')?t.wr:null;}catch(e){}}
 
 /* ---------- 연결 ---------- */
 (function initTV(){
