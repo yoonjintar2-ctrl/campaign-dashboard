@@ -12,7 +12,7 @@
      dorder:[{n, cr:[{n, raw, on, k, sn}]}], det:{k:{cells:[[chIdx,cnt,grp,eq,r1,r3]…], t:{지상파,케이블,T}}},   ← 당월_품목별 세부
      rt:{지상파|종편|케이블:[{ch, cw, avg, cww[], avgw[]}]},                                 ← 당월_시청률
      hist:[{ym, weeks, tot, pp:{'지상파|KBS2':[[eq,cost],…]}}]}                               ← 직전 몇 달 주차(연속 그래프) */
-let TV_WR=null;
+var TV_WR=null;   // var — 03-data 의 campStart 가 불러올 때(파일이 아직 안 읽혔어도) typeof 로 볼 수 있게
 const wrOn=()=>!!(TV_WR&&Array.isArray(TV_WR.items)&&TV_WR.items.length);
 let WR_SEL={item:'',cr:''},WR_WK={mode:'eq',pp:'all'},WR_ETC=null;
 

@@ -171,8 +171,10 @@ const segments=()=>[...new Set(areaLines().map(l=>l.segment))];
 /* 기간 = 라인 시작/종료의 최소·최대 */
 const DAY=86400000;
 /* 새로 추가한 빈 라인(날짜 미입력)은 기간 계산에서 제외한다 */
-const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||CAMPAIGN.today;
-const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||CAMPAIGN.today;
+/* v146 — 라인이 없는 TV 전용 달(위클리 리포트)은 리포트 주차 기간으로 */
+const wrSpan=i=>{try{const w=typeof TV_WR!=='undefined'&&TV_WR&&TV_WR.weeks;return w&&w.length?(i?w[w.length-1].e:w[0].s):'';}catch(e){return '';}};
+const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||wrSpan(0)||CAMPAIGN.today;
+const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||wrSpan(1)||CAMPAIGN.today;
 let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
 /* 오늘 · 어제는 캠페인을 새로 불러오면 다시 계산해야 한다 —
    상수로 한 번만 잡아 두면 예전 캠페인의 날짜(예: 9/24)가 계속 남아

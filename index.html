@@ -5044,8 +5044,10 @@ const segments=()=>[...new Set(areaLines().map(l=>l.segment))];
 /* 기간 = 라인 시작/종료의 최소·최대 */
 const DAY=86400000;
 /* 새로 추가한 빈 라인(날짜 미입력)은 기간 계산에서 제외한다 */
-const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||CAMPAIGN.today;
-const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||CAMPAIGN.today;
+/* v146 — 라인이 없는 TV 전용 달(위클리 리포트)은 리포트 주차 기간으로 */
+const wrSpan=i=>{try{const w=typeof TV_WR!=='undefined'&&TV_WR&&TV_WR.weeks;return w&&w.length?(i?w[w.length-1].e:w[0].s):'';}catch(e){return '';}};
+const campStart=()=>LINES.map(l=>l.start).filter(Boolean).sort()[0]||wrSpan(0)||CAMPAIGN.today;
+const campEnd=()=>LINES.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||wrSpan(1)||CAMPAIGN.today;
 let d0=new Date(campStart()+'T00:00:00'),dE=new Date(campEnd()+'T00:00:00');
 /* 오늘 · 어제는 캠페인을 새로 불러오면 다시 계산해야 한다 —
    상수로 한 번만 잡아 두면 예전 캠페인의 날짜(예: 9/24)가 계속 남아
@@ -28059,7 +28061,7 @@ function renderReport(){
      dorder:[{n, cr:[{n, raw, on, k, sn}]}], det:{k:{cells:[[chIdx,cnt,grp,eq,r1,r3]…], t:{지상파,케이블,T}}},   ← 당월_품목별 세부
      rt:{지상파|종편|케이블:[{ch, cw, avg, cww[], avgw[]}]},                                 ← 당월_시청률
      hist:[{ym, weeks, tot, pp:{'지상파|KBS2':[[eq,cost],…]}}]}                               ← 직전 몇 달 주차(연속 그래프) */
-let TV_WR=null;
+var TV_WR=null;   // var — 03-data 의 campStart 가 불러올 때(파일이 아직 안 읽혔어도) typeof 로 볼 수 있게
 const wrOn=()=>!!(TV_WR&&Array.isArray(TV_WR.items)&&TV_WR.items.length);
 let WR_SEL={item:'',cr:''},WR_WK={mode:'eq',pp:'all'},WR_ETC=null;
 
