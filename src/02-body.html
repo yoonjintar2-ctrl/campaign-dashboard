@@ -221,10 +221,10 @@
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="subbar">
+        <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
         <button type="button" data-sub="struct" data-menu="d_struct">캠페인 구조</button>
         <button type="button" data-sub="perf" data-menu="d_sum" class="on">서머리</button>
         <button type="button" data-sub="table" data-menu="d_daily">일자별 효율</button>
-        <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
@@ -236,10 +236,11 @@
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="tvsubbar">
-        <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
-        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
-        <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
+        <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
+        <button type="button" data-tab="tvmonthly" data-menu="t_month">월별 퍼포먼스</button>
+        <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
+        <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
@@ -252,10 +253,10 @@
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="2.4" y="3.8" width="15.2" height="12.4" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.3 7.4v5.2l4.4-2.6z"/></svg></span><span>OTT</span></div>
         <div class="subhd">대시보드</div>
         <div class="subbar" id="ottsubbar">
+        <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
         <button type="button" data-osub="struct" data-menu="ot_struct">캠페인 구조</button>
         <button type="button" data-osub="perf" data-menu="ot_sum">서머리</button>
         <button type="button" data-osub="table" data-menu="ot_daily">일자별 효율</button>
-        <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
@@ -625,6 +626,20 @@
   <div id="tvDailyEmpty" class="hidden"></div>
   <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvday" id="tvDailyTbl"></table></div></div>
 </div>
+<!-- TV 월별 퍼포먼스 (v142) — 29-tvmonth.js -->
+<div class="wrap hidden" id="tab-tvmonthly">
+  <div class="sec">TV 월별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvMonNote"></span></div>
+  <div id="tvMonEmpty" class="hidden"></div>
+  <div class="tvm-cards" id="tvMonCards"></div>
+  <div class="sec gap">월별 계획 · 실적</div>
+  <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch tvmon" id="tvMonTbl"></table></div></div>
+  <div class="hint tvfoot" id="tvMonFoot"></div>
+  <div id="tvMonChBox" class="hidden">
+    <div class="sec gap">채널 × 월 <span class="note" id="tvMonChNote"></span>
+      <div class="tools"><select class="ctl" id="tvMonChSel" title="보이는 값"></select></div></div>
+    <div class="card fit"><div class="tbl-wrap noy"><table class="tbl lite tvch tvmon" id="tvMonChTbl"></table></div></div>
+  </div>
+</div>
 <div class="wrap hidden" id="tab-tvweekly">
   <div class="sec">TV 주차별 퍼포먼스 <span class="tvtgt hidden"></span> <span class="note" id="tvWeeklyNote"></span></div>
   <div id="tvWeeklyEmpty" class="hidden"></div>
@@ -710,6 +725,12 @@
     <div class="tools"><button class="btn sm" id="tvDayAdd">+ 행 추가</button></div></div>
   <div class="card"><div class="bd" style="padding:13px">
     <div class="sheet-wrap"><table class="sheet tvsheet" id="tvDayInTbl"></table></div>
+  </div></div>
+  <div class="sec gap">월별 실적 <span class="note" id="tvMonInNote"></span>
+    <div class="tools"><button class="btn sm" id="tvMonAdd">+ 행 추가</button></div></div>
+  <div class="card"><div class="bd" style="padding:13px">
+    <div class="hint" style="margin-bottom:8px">리포트가 달마다 올 때 씁니다. 채널을 비운 줄 = 그 달 전체, 채널을 적은 줄 = 그 달 · 그 채널. 비워 두면 월별 퍼포먼스는 일자별 · 주차별 실적을 달로 묶어 보여 줍니다.</div>
+    <div class="sheet-wrap"><table class="sheet tvsheet" id="tvMonInTbl"></table></div>
   </div></div>
   <div class="sec gap">주차별 퍼포먼스 <span class="note" id="tvWkInNote"></span>
     <div class="tools"><button class="btn sm" id="tvWkAdd">+ 행 추가</button></div></div>

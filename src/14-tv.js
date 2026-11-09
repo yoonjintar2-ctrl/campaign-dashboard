@@ -557,9 +557,10 @@ function tvChanged(){
   try{if(!$('tab-tvdash').classList.contains('hidden'))renderTvDash();}catch(e){}
   try{if(!$('tab-tvdaily').classList.contains('hidden'))renderTvDaily();}catch(e){}
   try{if(!$('tab-tvweekly').classList.contains('hidden'))renderTvWeekly();}catch(e){}
+  try{if(!$('tab-tvmonthly').classList.contains('hidden'))renderTvMonthly();}catch(e){}
   try{if(!$('tab-tvmix').classList.contains('hidden'))renderTvMix();}catch(e){}
   /* 전체 Reach 는 일자표의 마지막 누적 Reach 를 따른다 — 채널표 · 일자표 합계 줄도 함께 (v132) */
-  try{['ch','day','seg'].forEach(x=>{const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);});tvPaintMeta();}catch(e){}
+  try{['ch','day','seg','mon'].forEach(x=>{if(!TV_TBL[x])return;const t=$(TV_TBL[x].id);if(t&&t.tFoot)t.tFoot.innerHTML=tvFootHTML(x);});tvPaintMeta();}catch(e){}
   try{markDirty();saveLocal();}catch(e){}}
 /* 표 하나에 리스너를 한 번만 (위임) */
 function tvWire(key){
@@ -794,6 +795,8 @@ let TV_WEEK=[];
 let TV_WKCH=[],TV_WKRT=[],TV_WKSEG=[];
 /* v137 — 구분 × 채널 · 구분 × 소재 (품목 분석) */
 let TV_SEGCH=[],TV_SEGCR=[];
+/* v142 — 월별 실적 (화면 · 표는 29-tvmonth.js) */
+let TV_MON=[];
 const TV_WEEK_COLS=[
   {k:'wk',l:'주차',type:'text',w:90},
   {k:'start',l:'시작일',type:'date',w:112},
@@ -1380,7 +1383,7 @@ function renderTV(){
   try{renderTvTable('day');}catch(e){console.warn(e);}
   try{renderTvTable('week');}catch(e){console.warn(e);}
   try{renderTvTable('seg');}catch(e){console.warn(e);}
-  ['wkch','wkrt','wkseg','segch','segcr'].forEach(k=>{try{if(TV_TBL[k])renderTvTable(k);}catch(e){console.warn(e);}});
+  ['mon','wkch','wkrt','wkseg','segch','segcr'].forEach(k=>{try{if(TV_TBL[k])renderTvTable(k);}catch(e){console.warn(e);}});
   try{renderTvTable('plan');}catch(e){console.warn(e);}
   try{renderTvTable('spot');}catch(e){console.warn(e);}
   try{tvPaintMeta();}catch(e){console.warn(e);}
@@ -1391,7 +1394,7 @@ function renderTV(){
 function tvForDoc(){return {plan:TV_PLAN.map(r=>({...r})),spots:TV_SPOTS.map(r=>({...r})),
   /* v132 — 요약형(채널별 계획 · 채널별 실적 · 일자별 실적) + 타겟 · 전체 Reach */
   mix:TV_MIX.map(r=>({...r})),ch:TV_CH.map(r=>({...r})),day:TV_DAY.map(r=>({...r})),week:TV_WEEK.map(r=>({...r})),seg:TV_SEG.map(r=>({...r})),
-  wkch:TV_WKCH.map(r=>({...r})),wkrt:TV_WKRT.map(r=>({...r})),wkseg:TV_WKSEG.map(r=>({...r})),
+  wkch:TV_WKCH.map(r=>({...r})),wkrt:TV_WKRT.map(r=>({...r})),wkseg:TV_WKSEG.map(r=>({...r})),mon:(typeof TV_MON!=='undefined'?TV_MON:[]).map(r=>({...r})),
   segch:TV_SEGCH.map(r=>({...r})),segcr:TV_SEGCR.map(r=>({...r})),meta:{...TV_META}};}
 function tvFromDoc(d){
   const t=d&&d.tv,arr=k=>Array.isArray(t&&t[k])?t[k].map(r=>({...r})):[];
@@ -1399,7 +1402,8 @@ function tvFromDoc(d){
   TV_MIX=tvMixLong(arr('mix'));TV_CH=arr('ch');TV_DAY=arr('day');
   const m=t&&t.meta&&typeof t.meta==='object'?t.meta:{};
   TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:'',reach3:tvHas(m.reach3)?m.reach3:''};
-  TV_SEG=arr('seg');TV_WEEK=arr('week');TV_WKCH=arr('wkch');TV_WKRT=arr('wkrt');TV_WKSEG=arr('wkseg');TV_SEGCH=arr('segch');TV_SEGCR=arr('segcr');}
+  TV_SEG=arr('seg');TV_WEEK=arr('week');TV_WKCH=arr('wkch');TV_WKRT=arr('wkrt');TV_WKSEG=arr('wkseg');TV_SEGCH=arr('segch');TV_SEGCR=arr('segcr');
+  try{TV_MON=arr('mon');}catch(e){}}
 
 /* ---------- 연결 ---------- */
 (function initTV(){
