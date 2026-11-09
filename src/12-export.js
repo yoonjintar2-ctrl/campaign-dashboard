@@ -522,7 +522,7 @@ async function exportDashboard(){
     /* ---- 시트 3 · 미디어믹스 ---- */
     const s3={name:'미디어믹스',rows:[],merges:[]};
     push(s3.rows,[T(`${CAMPAIGN.name} — 미디어믹스 (예상 효율 기준)`,1)]);
-    push(s3.rows,[T(`집행 기간 ${campStart()} ~ ${campEnd()}   ·   예산 ${won(sum(LINES.map(lineGross)))}   ·   Value ${won(sum(LINES.map(lineValue)))}`,2)]);
+    push(s3.rows,[T(`집행 기간 ${campStart()} ~ ${campEnd()}   ·   예산 ${won(sum(areaLines().map(lineGross)))}   ·   Value ${won(sum(areaLines().map(lineValue)))}`,2)]);
     blank(s3.rows);
     renderMix();
     const mtbl=$('tblMix');
@@ -1517,9 +1517,11 @@ function openColDict(){openColSettings('digital');}
 function openColSettings(tab){
   COLSET_TAB=tab||COLSET_TAB||'digital';
   const md=(typeof campMedia==='function')?campMedia():{digital:true};
-  const tabs=[{k:'digital',l:'디지털'},{k:'tv',l:'TV'},{k:'ooh',l:'OOH'}];
+  /* 디지털 탭의 열은 OTT(v141)도 함께 쓴다 */
+  const tabs=[{k:'digital',l:md.ott?'디지털 · OTT':'디지털'},{k:'tv',l:'TV'},{k:'ooh',l:'OOH'}];
+  const tOn=k=>k==='digital'?(md.digital||md.ott):md[k];
   const box=openModal('열 설정',
-    `<div class="cstabs" role="tablist">${tabs.map(t=>`<button type="button" class="cstab" data-cst="${t.k}" role="tab">${t.l}${md[t.k]?'':'<i>이 캠페인에서 끔</i>'}</button>`).join('')}</div>
+    `<div class="cstabs" role="tablist">${tabs.map(t=>`<button type="button" class="cstab" data-cst="${t.k}" role="tab">${t.l}${tOn(t.k)?'':'<i>이 캠페인에서 끔</i>'}</button>`).join('')}</div>
      <div id="csBody"></div>`,
     '<span id="csFoot"></span><div class="spacer"></div><button class="btn primary" data-close>닫기</button>',{w:980});
   const draw=()=>{

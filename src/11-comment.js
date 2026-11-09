@@ -431,7 +431,7 @@ function autoComment(){
     return {m,ach:achOf(ls),gross:sum(ls.map(lineGross))};})
     .sort((x,y)=>(y.ach||0)-(x.ach||0));
   const days=Math.max(1,sc.i1-sc.i0+1);
-  const bestAll=CREATIVES.map(c=>{const bb=crAgg(c);const uk=unitOf(kpiOf(LINES.find(l=>l.id===c.lid)));
+  const bestAll=CREATIVES.filter(c=>crInArea(c)).map(c=>{const bb=crAgg(c);const uk=unitOf(kpiOf(LINES.find(l=>l.id===c.lid)));
       return {c,uk,v:METRICS[uk].c(bb),base:bb.imp||0};})
     .filter(x=>x.base>0&&isFinite(x.v)&&x.v>0).sort((x,y)=>x.v-y.v)[0];
   /* 한 줄씩 끊어서 — 길게 이어 쓰면 읽기 어렵다 */

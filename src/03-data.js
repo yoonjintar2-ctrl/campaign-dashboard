@@ -166,7 +166,7 @@ const bonusRate=ls=>{const g=sum(ls.map(lineGross));return g?sum(ls.map(l=>+l.bo
     l.a={};Object.keys(l.e).forEach(m=>l.a[m]=Math.round(l.e[m]*k*perf*(.96+r()*.08)));
     l.a.net=Math.round(lineNet(l)*k);});
 })();
-const segments=()=>[...new Set(LINES.map(l=>l.segment))];
+const segments=()=>[...new Set(areaLines().map(l=>l.segment))];
 
 /* 기간 = 라인 시작/종료의 최소·최대 */
 const DAY=86400000;
@@ -799,6 +799,15 @@ const MENUS=[
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
+  /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
+     어느 라인이 OTT 인지는 메뉴 설정의 'OTT 매체'(CAMPAIGN.ottMedia) · 디지털을 끄면 모든 라인이 OTT.
+     입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
+  {id:'ot_struct',area:'ott',  tab:'dash',   sub:'struct',l:'캠페인 구조', kind:'view'},
+  {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
+  {id:'ot_daily',area:'ott',   tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
+  {id:'ot_mix', area:'ott',    tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
+  {id:'ot_input',area:'ott',   tab:'input',              l:'데이터 입력',  kind:'edit'},
+  {id:'ot_plan',area:'ott',    tab:'setup',              l:'예상효율 입력',kind:'edit'},
   /* OOH (v81) — 계획(광고비 · 매체 · 지면 · 지면 정보 · 날짜)과 소재만. 실적 입력 없음 */
   {id:'o_sum',  area:'ooh',    tab:'oohdash',            l:'서머리',       kind:'view'},
   {id:'o_plan', area:'ooh',    tab:'oohplan',            l:'예상효율 입력',kind:'edit'},
@@ -809,9 +818,50 @@ const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
   tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
   oohdash:'ooh',oohplan:'ooh',trend:'trend',overview:'overview'};
-const AREA_LABEL={digital:'디지털',tv:'TV',ooh:'OOH',trend:'트렌드 리포트',overview:'전체 캠페인'};
+const AREA_LABEL={digital:'디지털',tv:'TV',ott:'OTT',ooh:'OOH',trend:'트렌드 리포트',overview:'전체 캠페인'};
 /* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */
-const MEDIA_AREAS=['digital','tv','ooh'];
+const MEDIA_AREAS=['digital','tv','ott','ooh'];
+/* ---------- 디지털 · OTT 나누기 (v141) ----------
+   두 영역은 같은 대시보드 화면(tab-dash)을 쓴다. DG_AREA 가 지금 보는 쪽이고,
+   activeLines · factFilter · paceFacts 와 화면이 직접 읽는 라인 목록(areaLines)이 그쪽 라인만 남긴다.
+   · OTT 를 안 쓰는 캠페인 → 나누지 않는다(모든 라인 = 디지털)
+   · 디지털을 끄고 OTT 만 → 모든 라인이 OTT
+   · 둘 다 → 'OTT 매체'(CAMPAIGN.ottMedia, 없으면 넷플릭스 · 티빙 등 이름으로 자동)에 든 매체의 라인이 OTT */
+var DG_AREA='digital',DG_DIRTY=false;
+const OTT_RE=/netflix|넷플릭스|tving|티빙|wavve|웨이브|coupang\s*play|쿠팡\s*플레이|disney|디즈니|watcha|왓챠|u\+\s*모바일|apple\s*tv|prime\s*video|프라임\s*비디오|laftel|라프텔/i;
+function ottMediaList(){
+  if(typeof CAMPAIGN!=='undefined'&&Array.isArray(CAMPAIGN.ottMedia))return CAMPAIGN.ottMedia.slice();
+  return [...new Set((LINES||[]).map(l=>String(l.media||'').trim()).filter(m=>m&&OTT_RE.test(m)))];}
+function dgSplit(){const md=campMedia();return md.ott?(md.digital?'both':'ott'):'none';}
+/* 지금 보는 쪽 — 한쪽만 켜져 있으면 그쪽 */
+function curDgArea(){const s=dgSplit();return s==='none'?'digital':s==='ott'?'ott':(DG_AREA==='ott'?'ott':'digital');}
+function lineArea(l,set){const s=dgSplit();if(s==='none')return 'digital';if(s==='ott')return 'ott';
+  set=set||new Set(ottMediaList().map(CKEY));return set.has(CKEY(l&&l.media))?'ott':'digital';}
+/* 지금 영역의 라인 id 묶음 — 나누지 않는 캠페인이면 null(거르지 않음) */
+function areaLidSet(){
+  if(dgSplit()==='none')return null;
+  const a=curDgArea(),set=new Set(ottMediaList().map(CKEY));
+  return new Set(LINES.filter(l=>lineArea(l,set)===a).map(l=>l.id));}
+function areaLines(){const s=areaLidSet();return s?LINES.filter(l=>s.has(l.id)):LINES;}
+/* 소재가 지금 영역의 라인에 붙어 있는가 */
+function crInArea(c,s){s=s===undefined?areaLidSet():s;if(!s)return true;
+  const ids=Array.isArray(c&&c.lids)&&c.lids.length?c.lids:[c&&c.lid];return ids.some(id=>s.has(id));}
+/* 영역 바꾸기 — 대시보드는 다음에 보일 때(switchTab · 하위 메뉴) 다시 그린다 */
+function setDgArea(a){
+  a=a==='ott'?'ott':'digital';
+  const before=curDgArea();DG_AREA=a;
+  if(curDgArea()===before)return;
+  /* 구분 · 매체 · 제품 필터는 영역마다 값이 달라 풀어 둔다 */
+  try{const ls=areaLines();['segment','media','line'].forEach(k=>{if(FILTER[k]!=='all'&&!ls.some(l=>l[k]===FILTER[k]))FILTER[k]='all';});}catch(e){}
+  try{if(typeof CR_FILTER!=='undefined'){const cs=CREATIVES.filter(c=>crInArea(c));
+    ['segment','media'].forEach(k=>{if(CR_FILTER[k]&&CR_FILTER[k]!=='all'&&!cs.some(c=>c[k]===CR_FILTER[k]))CR_FILTER[k]='all';});}}catch(e){}
+  DG_DIRTY=true;}
+/* 다시 그리기가 밀려 있으면 지금 그린다 (대시보드가 보일 때) */
+function dgFlush(){
+  if(!DG_DIRTY)return;DG_DIRTY=false;
+  try{buildFilters();}catch(e){}
+  let drew=false;try{drew=renderAll();}catch(e){console.warn('dgFlush',e);}
+  if(!drew){try{renderCreatives();renderGantt();renderHeat();renderBubble();equalizeDuo();renderTreemap();}catch(e){}}}
 function campMenus(){return (typeof CAMPAIGN!=='undefined'&&CAMPAIGN.menus)||{};}
 let TV_LAST='tvdash';
 let DOC_RANGE=null;
@@ -848,7 +898,7 @@ function rangeForDoc(){
 /* 지금 기간이 기본값 그대로인가 (초기화 단추를 켤지 판단) */
 const rangeIsDefault=()=>{const d=defaultRange();
   return (!FILTER.from||FILTER.from===d.from)&&(!FILTER.to||FILTER.to===d.to);};
-const activeLines=()=>LINES.filter(l=>['segment','media','line'].every(k=>FILTER[k]==='all'||l[k]===FILTER[k]));
+const activeLines=()=>areaLines().filter(l=>['segment','media','line'].every(k=>FILTER[k]==='all'||l[k]===FILTER[k]));
 
 /* ===== 조회 기간(스코프) =====
    구분·매체·제품을 고르면 그 라인들이 실제로 집행되는 가장 빠른 날 ~ 가장 늦은 날로 좁힌다.
@@ -922,13 +972,15 @@ const paceRatioOf=ls=>{
 const paceRatio=()=>paceRatioOf(activeLines());
 function factFilter(extra){
   const s=viewScope();
-  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
+  const A=areaLidSet();
+  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1&&(!A||A.has(f.lid))
     &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k])&&(!extra||extra(f)));
 }
 /* 실적 팩트 — 달력으로 고른 구간만. 대시보드의 집행 수치·금액은 모두 이걸 쓴다 */
 function paceFacts(){
   const s=viewScope();
-  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1
+  const A=areaLidSet();
+  return FACTS.filter(f=>f.d>=s.i0&&f.d<=s.i1&&(!A||A.has(f.lid))
     &&['segment','media','line'].every(k=>FILTER[k]==='all'||f[k]===FILTER[k]));
 }
 const isClient=()=>document.body.dataset.role==='client';

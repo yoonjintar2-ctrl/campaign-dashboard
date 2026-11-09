@@ -618,7 +618,7 @@ function infTable(){
   /* 유입 발생 매체만 (v104, 기본 켬) — 끄면 유입 데이터가 없는 매체(라인)까지 모두 */
   const only=!cfg.allMedia;
   const draw=()=>buildPivot(tbl,cfg,SUM_DEF,SUM_CELL,draw,{
-    facts:only?factFilter().filter(f=>INF_OK.has(f.lid)):factFilter(),lines:only?LINES.filter(l=>INF_OK.has(l.id)):LINES,fill:true});
+    facts:only?factFilter().filter(f=>INF_OK.has(f.lid)):factFilter(),lines:only?areaLines().filter(l=>INF_OK.has(l.id)):areaLines(),fill:true});
   draw();
   try{enableHPager(tbl.closest('.infcell'),tbl.parentNode);}catch(e){}
   /* '순서' 단추 — 맨 앞 기준이 둘 이상 나뉠 때만, 이름은 그 기준으로(구분 순서 · 매체 순서 …) */

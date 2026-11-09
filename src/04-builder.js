@@ -1026,14 +1026,16 @@ function mixHex(a,b,t){
 const PATTERN="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Crect x='4' y='7' width='38' height='30' rx='5' fill='%23ffffff' fill-opacity='0.11'/%3E%3Ccircle cx='15' cy='17' r='3.6' fill='%23ffffff' fill-opacity='0.17'/%3E%3Cpath d='M8 33 L19 20 L27 28 L32 23 L38 33 Z' fill='%23ffffff' fill-opacity='0.17'/%3E%3C/svg%3E\")";
 
 function renderCampBar(){
-  const gross=sum(LINES.map(lineGross));
+  /* 디지털 · OTT 를 나눈 캠페인은 지금 영역의 라인만 (v141) */
+  const LS=areaLines(),pS=LS.map(l=>l.start).filter(Boolean).sort()[0]||campStart(),pE=LS.map(l=>l.end).filter(Boolean).sort().slice(-1)[0]||campEnd();
+  const gross=sum(LS.map(lineGross));
   const it=(k,v)=>`<div class="it"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   $('campBar').innerHTML=it('캠페인',CAMPAIGN.name)+it('광고주',CAMPAIGN.advertiser)
-    +it('집행 기간',`${campStart().replace(/-/g,'.')} – ${campEnd().replace(/-/g,'.')}`)
+    +it('집행 기간',`${pS.replace(/-/g,'.')} – ${pE.replace(/-/g,'.')}`)
     +it('총 예산',won(gross));
   /* 보너스가 없으면 보너스율은 굳이 적지 않는다 */
-  const br=bonusRate(LINES);
-  $('campBar').innerHTML+=it('총 Value',`${won(sum(LINES.map(lineValue)))}`
+  const br=bonusRate(LS);
+  $('campBar').innerHTML+=it('총 Value',`${won(sum(LS.map(lineValue)))}`
     +(br>0.0005?` <span style="color:var(--muted);font-weight:600;font-size:11.5px">보너스율 ${pct(br,1)}</span>`:''));
 }
 /* 만 · 억 단위 축약 (막대 안 · 종합 목표 내역에서 쓴다) */

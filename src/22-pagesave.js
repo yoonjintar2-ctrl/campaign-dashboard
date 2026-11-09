@@ -39,7 +39,7 @@ function psViewSet(on){
   try{dispatchEvent(new Event('resize'));}catch(e){}}
 function psMenu(){
   const T=$('tabs'),cur=(T&&T.dataset.cur)||'dash';
-  const m=cur==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===curDashSub()):MENUS.find(x=>x.tab===cur);
+  const m=tabMenu(cur,curDashSub());
   return {cur,m};}
 const psTr=s=>{try{return LANG==='en'&&typeof trText==='function'?trText(s):s;}catch(e){return s;}};
 function psMenuLabel(m){

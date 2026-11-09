@@ -15,7 +15,7 @@ const ovNorm=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
 /* 이 캠페인의 전체 기간 — 켜 둔 영역(디지털 라인 · TV 방송일 · OOH 게재일)을 모두 본다 */
 function campPeriodAll(){
   const md=campMedia(),ds=[],de=[];
-  if(md.digital)(LINES||[]).forEach(l=>{if(ovIso(l.start))ds.push(l.start);if(ovIso(l.end))de.push(l.end);});
+  if(md.digital||md.ott)(LINES||[]).forEach(l=>{if(ovIso(l.start))ds.push(l.start);if(ovIso(l.end))de.push(l.end);});
   if(md.tv)(TV_SPOTS||[]).concat(typeof TV_DAY!=='undefined'?TV_DAY:[]).forEach(r=>{if(ovIso(r.date)){ds.push(r.date);de.push(r.date);}});
   if(md.ooh)(OOH_PLAN||[]).forEach(r=>{if(ovIso(r.start))ds.push(r.start);if(ovIso(r.end))de.push(r.end);});
   ds.sort();de.sort();
@@ -24,7 +24,8 @@ function campPeriodAll(){
 /* 저장된 문서 조각 → 캠페인 한 줄 */
 function ovRow(p){
   const m=p.media||{};
-  const md=(m.digital||m.tv||m.ooh)?{digital:!!m.digital,tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};
+  /* OTT(v141) 라인은 이 화면에서 디지털과 함께 센다 — 디지털을 끄고 OTT 만 켠 캠페인도 라인 예산이 빠지지 않게 */
+  const md=(m.digital||m.tv||m.ooh||m.ott)?{digital:!!(m.digital||m.ott),tv:!!m.tv,ooh:!!m.ooh}:{digital:true,tv:false,ooh:false};
   const lines=Array.isArray(p.lines)?p.lines:[];
   const tvp=Array.isArray(p.tv&&p.tv.plan)?p.tv.plan:[];let tvs=Array.isArray(p.tv&&p.tv.spots)?p.tv.spots:[],tvn=0;const tvMon={};
   const oo=Array.isArray(p.ooh)?p.ooh:[];

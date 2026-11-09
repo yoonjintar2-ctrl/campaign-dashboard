@@ -592,7 +592,7 @@ function buildPivot(tbl,cfg,cdef,cellDef,rerender,opt){
   const dims=rows.map(r=>r.k),noExp=dims.some(d=>NO_EXP_DIMS.includes(d));
   const cols=cfgCols(cfg),seps=gsepSet(cfg);
   const facts=opt&&opt.facts?opt.facts:factFilter();
-  const LNS=opt&&opt.lines?opt.lines:LINES;
+  const LNS=opt&&opt.lines?opt.lines:areaLines();
   const map=new Map();
   facts.forEach(f=>{const key=dims.map(d=>f[d]).join(SEP);
     if(!map.has(key))map.set(key,[]);map.get(key).push(f);});

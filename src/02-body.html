@@ -206,6 +206,7 @@
     <button class="area" type="button" data-area="overview" aria-haspopup="menu" aria-expanded="false" data-tab="overview" data-menu="overview"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 3.2h5.8V9H3zM11.2 3.2H17V9h-5.8zM3 11h5.8v5.8H3zM11.2 11H17v5.8h-5.8z"/></svg></span><span class="al">전체 캠페인</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area on" type="button" data-area="digital" aria-haspopup="menu" aria-expanded="false" data-tab="dash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span class="al">디지털</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area" type="button" data-area="tv" aria-haspopup="menu" aria-expanded="false" data-tab="tvdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span class="al">TV</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="area" type="button" data-area="ott" aria-haspopup="menu" aria-expanded="false"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="2.4" y="3.8" width="15.2" height="12.4" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.3 7.4v5.2l4.4-2.6z"/></svg></span><span class="al">OTT</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area" type="button" data-area="ooh" aria-haspopup="menu" aria-expanded="false" data-tab="oohdash"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 3.2h15.2v8.6H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M6.6 11.8v5.4M13.4 11.8v5.4M4.6 17.2h10.8"/></svg></span><span class="al">OOH</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="area" type="button" data-area="trend" aria-haspopup="menu" aria-expanded="false" data-tab="trend" data-menu="trend"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span class="al">트렌드 리포트</span><span class="acur"></span><svg class="acv" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="M2 3.6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="megapop" role="menu">
@@ -244,6 +245,22 @@
         <div class="subbar subin">
         <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
         <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
+      </div>
+    </div>
+    <!-- OTT (v141) — 디지털과 같은 화면(대시보드 · 입력)을 OTT 라인만으로. data-osub · data-otab 는 p8 이 단다 -->
+    <div class="subgrp" data-area="ott">
+      <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="2.4" y="3.8" width="15.2" height="12.4" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.3 7.4v5.2l4.4-2.6z"/></svg></span><span>OTT</span></div>
+        <div class="subhd">대시보드</div>
+        <div class="subbar" id="ottsubbar">
+        <button type="button" data-osub="struct" data-menu="ot_struct">캠페인 구조</button>
+        <button type="button" data-osub="perf" data-menu="ot_sum">서머리</button>
+        <button type="button" data-osub="table" data-menu="ot_daily">일자별 효율</button>
+        <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
+      </div>
+        <div class="subhd subinhd">입력</div>
+        <div class="subbar subin">
+        <button type="button" data-otab="input" data-menu="ot_input">데이터 입력</button>
+        <button type="button" data-otab="setup" data-menu="ot_plan">예상효율 입력</button>
       </div>
     </div>
     <div class="subgrp" data-area="ooh">

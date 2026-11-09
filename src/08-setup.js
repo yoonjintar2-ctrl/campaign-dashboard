@@ -846,7 +846,7 @@ const md=s=>mdy(s);   /* M/D (앞에 0 없이) */
 function mixRows(){
   const dims=MIX_CFG.rows.map(r=>r.k);
   const useCr=dims.includes('creative'),base=[];
-  LINES.forEach(l=>{
+  areaLines().forEach(l=>{
     if(useCr){const cs=CREATIVES.filter(c=>c.lid===l.id);
       (cs.length?cs:[{name:'–'}]).forEach(c=>base.push({l,creative:c.name}));}
     else base.push({l,creative:'–'});});
@@ -871,7 +871,7 @@ function renderMix(){
     return 0;});
   entries=applyOrder(entries,MIX_CFG);
   entries=applySibOrder(entries,dims,MIX_CFG,e=>e[0].split(SEP));   /* v125 — 형제 순서 공유 */
-  const totalBudget=sum(LINES.map(lineGross));
+  const totalBudget=sum(areaLines().map(lineGross));
   const linesOf=rs=>[...new Set(rs.map(r=>r.l))];
   const cell=(rs,k,tot)=>{
     const ls=linesOf(rs);
@@ -1136,8 +1136,8 @@ function buildFilters(){
   /* 대시보드 상단 필터는 **기간 하나만** — 구분·매체·제품은 각 표의 행 구성으로 본다.
      날짜는 고르는 즉시 반영된다 ([적용] 버튼 없음). */
   const dimSels=p=>selHTML(p+'Segment','구분',segments(),FILTER.segment)
-    +selHTML(p+'Media','매체',[...new Set(LINES.map(l=>l.media))],FILTER.media)
-    +selHTML(p+'Line','제품',[...new Set(LINES.map(l=>l.line))],FILTER.line);
+    +selHTML(p+'Media','매체',[...new Set(areaLines().map(l=>l.media))],FILTER.media)
+    +selHTML(p+'Line','제품',[...new Set(areaLines().map(l=>l.line))],FILTER.line);
   const wire=p=>{
     ['Segment','Media','Line'].forEach((s,i)=>{
       const e2=$(p+s);if(!e2)return;
@@ -1272,6 +1272,8 @@ function switchTab(name){
   /* 다크 보기는 대시보드(디지털 · TV)에서만 쓰는 기능이라 그 화면에서만 보인다 (v58 → v72) */
   {const db=$('darkToggle');if(db)db.classList.toggle('hidden',!['dash','tvdash','tvdaily','tvweekly','tvmix','oohdash','overview'].includes(name));}
   if(name==='dash'){try{ensureDashSub();}catch(e){}
+    /* 디지털 ↔ OTT 를 바꿨으면 지금 그린다 (v141) */
+    try{dgFlush();}catch(e){}
     /* 캠페인 구조 화면으로 돌아왔으면 바로 그린다 (백그라운드 탭에서는 ResizeObserver 가 늦다 · v120.1) */
     try{if(curDashSub()==='struct')renderStruct();}catch(e){}}
   try{paintTabsOn();}catch(e){}
@@ -1279,15 +1281,26 @@ function switchTab(name){
   const backRaw=name==='dash'&&$('sub-table')&&!$('sub-table').classList.contains('hidden');
   if(backRaw&&typeof renderRaw==='function'){renderRaw();}
   else scrollTo({top:0});}
-document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>{
+  /* 디지털 펼침판의 입력 메뉴 — 디지털 쪽으로 (v141, OTT 와 같은 화면) */
+  if(b.closest('.subgrp[data-area="digital"]'))setDgArea('digital');
+  switchTab(b.dataset.tab);});
+/* OTT 펼침판 (v141) — 디지털과 같은 화면(대시보드 하위 · 입력)을 OTT 쪽으로 연다 */
+document.querySelectorAll('#tabs [data-osub]').forEach(b=>b.onclick=()=>{setDgArea('ott');dashSubGo(b.dataset.osub);});
+document.querySelectorAll('#tabs [data-otab]').forEach(b=>b.onclick=()=>{setDgArea('ott');switchTab(b.dataset.otab);});
 /* 상위 메뉴 — 누르면 하위 메뉴 드롭다운을 펼친다 (v74 · areaClick 은 p14). 하위가 하나뿐이면 바로 이동 */
 document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=e=>areaClick(b,e));
-document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
+document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{setDgArea('digital');dashSubGo(b.dataset.sub);});
+/* 대시보드 하위 화면으로 — 디지털 · OTT 가 함께 쓴다 (v141, 예전 #subbar 단추 동작 그대로) */
+function dashSubGo(sub){
   /* 다른 화면에서 누르면 먼저 디지털 대시보드로 (v72 — 하위 메뉴가 늘 보인다) */
-  if($('tab-dash').classList.contains('hidden')){switchTab('dash');if(!$('tab-dash').classList.contains('hidden')&&curDashSub()===b.dataset.sub){paintTabsOn();return;}}
+  if($('tab-dash').classList.contains('hidden')){switchTab('dash');if(!$('tab-dash').classList.contains('hidden')&&curDashSub()===sub){paintTabsOn();return;}}
   /* 일자별 상세 효율에서 나갈 때는 보던 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x===b));
+  /* 영역(디지털 · OTT)이 바뀌었으면 먼저 다시 그린다 */
+  try{dgFlush();}catch(e){}
+  const b={dataset:{sub}};
+  document.querySelectorAll('#subbar button[data-sub]').forEach(x=>x.classList.toggle('on',x.dataset.sub===sub));
   ['struct','perf','table','mix'].forEach(n=>$('sub-'+n).classList.toggle('hidden',n!==b.dataset.sub));
   /* 효율 탭을 열 때는 **히트맵까지** 전부 다시 그린다 —
      예전에는 renderHeat() 가 빠져 있어 "일자별 토글을 눌러야 갱신되는" 것처럼 보였다 */
@@ -1301,7 +1314,7 @@ document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{
   if(b.dataset.sub==='struct'){try{renderStruct();}catch(e){console.warn('struct',e);}}
   try{paintTabsOn();}catch(e){}
   /* 숨어 있는 동안 그려진 표는 폭을 재지 못해 머리 열 고정이 걸리지 않는다 — 다시 건다 */
-  try{if(typeof refreezeAll==='function')setTimeout(refreezeAll,0);}catch(e){}});
+  try{if(typeof refreezeAll==='function')setTimeout(refreezeAll,0);}catch(e){}}
 /* 역할은 고르는 것이 아니라 로그인 상태로 정해진다.
    · 클라우드가 설정되지 않은 데모(로컬 파일)  → 시행사 (시안을 그대로 둘러볼 수 있게)
    · 클라우드가 있는데 로그인 안 함 · 조회 권한 → 광고주 (대시보드만)
@@ -1485,7 +1498,7 @@ function renderIssueAlert(){
 }
 /* 아직 아무 데이터도 없는 캠페인은 0% · 1일차 같은 숫자 대신 안내만 보여 준다 */
 function dashEmpty(){
-  const on=!LINES.length||!FACTS.length;
+  const on=!areaLines().length||!FACTS.length;
   const host=$('tab-dash');if(!host)return on;
   let box=$('dashEmpty');
   if(!box){

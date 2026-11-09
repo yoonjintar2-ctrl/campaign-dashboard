@@ -9,15 +9,23 @@
 /* ---------- 운영 영역(매체) ---------- */
 /* 문서에 없으면(예전 캠페인) 디지털만 운영한 것으로 본다 */
 /* v81 — OOH 영역 추가 {digital, tv, ooh} */
+/* v141 — OTT 영역 {digital, tv, ott, ooh} */
 function campMedia(){
   const m=CAMPAIGN.media||{};
-  const d=m.digital!==false, t=!!m.tv, o=!!m.ooh;
-  return (d||t||o)?{digital:d,tv:t,ooh:o}:{digital:true,tv:false,ooh:false};}
+  const d=m.digital!==false, t=!!m.tv, o=!!m.ooh, v=!!m.ott;
+  return (d||t||o||v)?{digital:d,tv:t,ott:v,ooh:o}:{digital:true,tv:false,ott:false,ooh:false};}
 function setCampMedia(m){
-  const d=!!m.digital,t=!!m.tv,o=!!m.ooh;
-  if(!d&&!t&&!o)return false;                  /* 최소 한 개는 있어야 캠페인이 성립한다 */
-  CAMPAIGN.media={digital:d,tv:t,ooh:o};
+  const d=!!m.digital,t=!!m.tv,o=!!m.ooh,v=!!m.ott;
+  if(!d&&!t&&!o&&!v)return false;              /* 최소 한 개는 있어야 캠페인이 성립한다 */
+  CAMPAIGN.media={digital:d,tv:t,ott:v,ooh:o};
   return true;}
+/* 디지털 · OTT 가 함께 쓰는 화면(dash · input · setup)의 메뉴 — 지금 보는 쪽(curDgArea)의 것 (v141) */
+const DG_TABS=['dash','input','setup'];
+function areaOfTab(name){return DG_TABS.includes(name)?curDgArea():(AREA_OF_TAB[name]||'digital');}
+function tabMenu(name,sub){
+  const a=areaOfTab(name);
+  const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
+  return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
 /* ---------- 메뉴 목록 ----------
    kind: view(대시보드 — 뷰어에게 보일 수 있다) · edit(입력 — 언제나 관리자 전용) */
@@ -30,6 +38,7 @@ function menuUsed(id){
   if(m.area==='digital'&&!md.digital)return false;
   if(m.area==='tv'&&!md.tv)return false;
   if(m.area==='ooh'&&!md.ooh)return false;
+  if(m.area==='ott'&&!md.ott)return false;
   const c=campMenus()[id];
   /* 기본이 '꺼짐'인 메뉴(주차별 퍼포먼스 · v135)는 켜 둔 경우에만 */
   if(m.udef===false)return !!(c&&c.on===true);
@@ -58,7 +67,11 @@ function firstDashTab(){
   return m?m.tab:'dash';}
 /* 영역을 누르면 — 디지털은 대시보드(보던 하위 화면 그대로), TV 는 마지막으로 본 TV 대시보드 */
 function areaHome(a){
-  if(a==='digital'&&tabVisible('dash'))return 'dash';
+  /* 디지털 · OTT — 그 영역의 대시보드(보던 하위 화면) 또는 그 영역의 첫 메뉴 (v141) */
+  if(a==='digital'||a==='ott'){
+    const m=MENUS.find(x=>x.area===a&&x.kind==='view'&&menuVisible(x.id))||MENUS.find(x=>x.area===a&&menuVisible(x.id));
+    if(m){setDgArea(a);return m.tab;}
+    return firstDashTab();}
   if(a==='tv'&&TV_LAST&&tabVisible(TV_LAST))return TV_LAST;
   const m=MENUS.find(x=>x.area===a&&x.kind==='view'&&menuVisible(x.id))
     ||MENUS.find(x=>x.area===a&&menuVisible(x.id));
@@ -69,7 +82,7 @@ function curDashSub(){
 /* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
-  const name=T.dataset.cur||'dash',area=AREA_OF_TAB[name]||'digital';
+  const name=T.dataset.cur||'dash',area=areaOfTab(name);
   const cs=curDashSub();
   T.querySelectorAll('.area').forEach(b=>{
     const on=b.dataset.area===area;b.classList.toggle('on',on);
@@ -77,7 +90,7 @@ function paintTabsOn(){
     /* 사전 번역이 되도록 한국어 원문(MENUS.l)을 넣는다 — 영어 화면이면 textContent 훅이 옮긴다 */
     let lb='';
     if(on&&MEDIA_AREAS.includes(area)){
-      const m=name==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===cs):MENUS.find(x=>x.tab===name);
+      const m=tabMenu(name,cs);
       lb=m?m.l:'';}
     const src=c.firstChild&&c.firstChild.__ko!=null?c.firstChild.__ko:c.textContent;
     if(src!==lb||(!lb&&c.textContent))c.textContent=lb;});
@@ -87,8 +100,10 @@ function paintTabsOn(){
    if(ob){const adv=String(CAMPAIGN.advertiser||'').trim(),lb=adv?`${adv} 캠페인 현황`:'광고주 캠페인 현황';
      const src=ob.firstChild&&ob.firstChild.__ko!=null?ob.firstChild.__ko:ob.textContent;
      if(src!==lb)ob.textContent=lb;}}
-  T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
-  T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&b.dataset.sub===cs));
+  T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name&&(!DG_TABS.includes(name)||area==='digital')));
+  T.querySelectorAll('.subgrp [data-otab]').forEach(b=>b.classList.toggle('on',b.dataset.otab===name&&area==='ott'));
+  T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='digital'&&b.dataset.sub===cs));
+  T.querySelectorAll('[data-osub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='ott'&&b.dataset.osub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 페이지 저장(v112)은 보기 메뉴(대시보드 · 전체 캠페인)에서만 — 입력 화면은 빼고 */
   const sm=$('sectMngBtn');if(sm)sm.classList.toggle('tooloff',name!=='dash'||cs==='struct');   /* 캠페인 구조 화면에는 관리할 영역이 없다 (v120) */
   {const mk=name==='dash'?'view':((MENUS.find(x=>x.tab===name)||{}).kind||'');
@@ -161,7 +176,7 @@ function urlMenu(){
   const g=$('gate');if(g&&!g.classList.contains('hidden'))return '';
   const T=$('tabs');if(!T)return '';
   const cur=T.dataset.cur||'dash';
-  const m=cur==='dash'?MENUS.find(x=>x.tab==='dash'&&x.sub===curDashSub()):MENUS.find(x=>x.tab===cur);
+  const m=tabMenu(cur,curDashSub());
   return m?m.id:'';}
 function syncUrl(){
   if(!window.__urlLive)return;
@@ -177,9 +192,10 @@ function syncUrl(){
 /* 주소에 적힌 메뉴로 가기 — 보이지 않는 메뉴(꺼짐 · 광고주에게 숨김)면 그대로 둔다 */
 function goMenu(id){
   const m=MENU_BY[id];if(!m||!menuVisible(id))return false;
+  if(m.area==='digital'||m.area==='ott')setDgArea(m.area);
   if(m.tab==='dash'){
     if(($('tabs')||{}).dataset?.cur!=='dash')switchTab('dash');
-    const b=document.querySelector(`#subbar [data-sub="${m.sub}"]`);if(b&&curDashSub()!==m.sub)b.click();}
+    if(curDashSub()!==m.sub||DG_DIRTY)dashSubGo(m.sub);}
   else switchTab(m.tab);
   return true;}
 /* 캠페인(또는 샘플 · 코드 화면)이 자리 잡은 뒤 한 번 — 주소의 메뉴로 옮기고, 이후로는 주소를 따라 고친다 */
@@ -189,11 +205,13 @@ function urlSettled(){
   window.__urlLive=true;syncUrl();}
 /* 디지털 대시보드에서 지금 하위 화면이 꺼져 있으면 보이는 첫 하위 화면으로 */
 function ensureDashSub(){
-  const cs=curDashSub(),m=MENUS.find(x=>x.tab==='dash'&&x.sub===cs);
+  const cs=curDashSub(),a=curDgArea(),m=MENUS.find(x=>x.tab==='dash'&&x.sub===cs&&x.area===a);
   if(m&&menuVisible(m.id))return;
-  const alt=MENUS.find(x=>x.tab==='dash'&&menuVisible(x.id));
-  const b=alt&&document.querySelector(`#subbar [data-sub="${alt.sub}"]`);
-  if(b)b.click();}
+  /* 이 영역(디지털 · OTT)에 보이는 대시보드가 없으면 다른 쪽으로 (v141) */
+  const alt=MENUS.find(x=>x.tab==='dash'&&x.area===a&&menuVisible(x.id))||MENUS.find(x=>x.tab==='dash'&&menuVisible(x.id));
+  if(!alt)return;
+  if(alt.area!==a)setDgArea(alt.area);
+  if(alt.sub!==cs)dashSubGo(alt.sub);}
 /* 메뉴 줄 전체 — 사용 여부 · 권한 · 뷰어 노출에 맞춘다 */
 function applyMenus(){
   const T=$('tabs');if(!T)return;
@@ -219,7 +237,7 @@ function applyMenus(){
     g.classList.toggle('menuoff',![...g.querySelectorAll('.subbar')].some(x=>!x.classList.contains('menuoff')));});
   const cur=T.dataset.cur||'dash';
   if(!tabVisible(cur))switchTab(firstDashTab());
-  else{if(cur==='dash')ensureDashSub();paintTabsOn();}
+  else{if(cur==='dash'){ensureDashSub();dgFlush();}paintTabsOn();}
   try{fitTabs();}catch(e){}
 }
 /* 예전 이름 — 부르는 곳이 여럿이라 남겨 둔다 */
@@ -274,10 +292,13 @@ addEventListener('resize',()=>{clearTimeout(window.__fitTabsT);window.__fitTabsT
 /* ---------- 설정 › 메뉴 설정 (v72 — 예전 "운영 매체") ----------
    영역(디지털 · TV · OOH) 켜기, 메뉴마다 사용 여부, 광고주(뷰어)에게 보일지.
    트렌드 리포트 · 전체 캠페인은 영역이 아니라 공용 메뉴 — 켜고 끄기만 한다 (v81) */
-const AREA_SUB={digital:'디지털 캠페인 메뉴',tv:'TV 캠페인 메뉴',ooh:'OOH(옥외) 캠페인 메뉴 — 계획 · 소재만'};
+const AREA_SUB={digital:'디지털 캠페인 메뉴',tv:'TV 캠페인 메뉴',ott:'OTT 캠페인 메뉴 — 디지털과 같은 화면, OTT 라인만',ooh:'OOH(옥외) 캠페인 메뉴 — 계획 · 소재만'};
 function openMenuSettings(){
   const md=campMedia(),cm=campMenus();
-  const st={media:{...md},menus:{}};
+  const st={media:{...md},menus:{},ott:new Set(ottMediaList().map(CKEY))};
+  /* OTT 매체 고르기 (v141) — 이 캠페인 라인의 매체 이름들. 예산 큰 순 */
+  const mBud={};(LINES||[]).forEach(l=>{const k=String(l.media||'').trim();if(k)mBud[k]=(mBud[k]||0)+(+lineGross(l)||0);});
+  const mNames=Object.keys(mBud).sort((a,b)=>mBud[b]-mBud[a]||a.localeCompare(b,'ko'));
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:m.udef===false?c.on===true:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
       :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
@@ -296,10 +317,14 @@ function openMenuSettings(){
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
+  const ottPick=()=>`<tr class="mott"><td colspan="3"><div class="mott-h">${L('OTT로 볼 매체','Media shown under OTT')}
+        <span class="mott-n" id="mottNote"></span></div>
+      <div class="mott-l">${mNames.length?mNames.map(n=>`<label class="mott-c"><input type="checkbox" data-ottm="${esc(n)}"><span>${esc(n)}</span></label>`).join('')
+        :`<span class="mfix">${L('예상효율 입력에 라인을 넣으면 매체 이름이 여기에 나옵니다','Media names appear here once lines are added')}</span>`}</div></td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
-      ${menusOf(a).map(row).join('')}</tbody>`;
+      ${a==='ott'?ottPick():''}${menusOf(a).map(row).join('')}</tbody>`;
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
          <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
@@ -307,9 +332,9 @@ function openMenuSettings(){
   const groups=areaOrder.map(a=>MEDIA_AREAS.includes(a)?area(a):common(a,COMMON_SUB[a]||'')).join('');
   const box=openModal('메뉴 설정',
     `<div class="hint" style="margin:-2px 0 12px">${L(`이번 캠페인에서 쓸 메뉴를 고르고, 광고주(뷰어)에게 보일지 정합니다.
-      <b>디지털 · TV · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
+      <b>디지털 · TV · OTT · OOH 중 최소 한 영역</b>은 켜야 합니다. 뷰어에게 숨긴 메뉴는 시행사 화면에서만 옅게 보입니다.`,
       `Choose the menus this campaign uses and whether advertisers (viewers) can see them.
-      <b>At least one of Digital · TV · OOH</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
+      <b>At least one of Digital · TV · OTT · OOH</b> must be on. Menus hidden from viewers appear dimmed only on the agency screen.`)}</div>
      <table class="mset"><thead><tr><th>메뉴</th><th>사용</th><th>뷰어에게 보이기</th></tr></thead>
        ${groups}
      </table>
@@ -324,20 +349,31 @@ function openMenuSettings(){
       tr.querySelectorAll('input[data-k]').forEach(cb=>{cb.checked=!!s[cb.dataset.k];
         cb.disabled=!!off||(cb.dataset.k==='viewer'&&!s.on);});
       tr.classList.toggle('unused',!s.on);});
+    /* OTT 매체 — 디지털을 끄면 모든 라인이 OTT 라 고를 필요가 없다 */
+    {const both=st.media.ott&&st.media.digital;
+     box.querySelectorAll('input[data-ottm]').forEach(cb=>{cb.checked=!st.media.digital||st.ott.has(CKEY(cb.dataset.ottm));cb.disabled=!both;});
+     const tr=box.querySelector('tr.mott');if(tr)tr.classList.toggle('off',!both);
+     const nt=$('mottNote');if(nt)nt.textContent=!st.media.ott?'':!st.media.digital
+       ?L('디지털을 끄면 모든 라인이 OTT로 보입니다','With Digital off, every line is shown under OTT')
+       :L('고른 매체의 라인은 OTT에서만, 나머지는 디지털에서 보입니다','Lines of the checked media appear under OTT; the rest under Digital');}
     box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)?!st.media[g.dataset.area]
       :!MENUS.some(m=>m.area===g.dataset.area&&st.menus[m.id].on)));};
   const check=()=>{
-    if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OOH must be on.');
+    if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OTT · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OTT · OOH must be on.');
+    if(st.media.ott&&st.media.digital&&mNames.length&&!mNames.some(n=>st.ott.has(CKEY(n))))
+      return L('디지털과 OTT를 함께 쓰려면 <b>OTT로 볼 매체</b>를 한 개 이상 골라 주세요.','Pick <b>at least one medium</b> to show under OTT.');
     for(const a of MEDIA_AREAS){
       if(st.media[a]&&!MENUS.some(m=>m.area===a&&st.menus[m.id].on))
         return L(`<b>${AREA_LABEL[a]}</b> 영역을 쓰려면 메뉴를 <b>한 개 이상</b> 켜 주세요.`,
-          `Turn on <b>at least one</b> menu to use <b>${a==='tv'?'TV':a==='ooh'?'OOH':'Digital'}</b>.`);}
+          `Turn on <b>at least one</b> menu to use <b>${a==='tv'?'TV':a==='ooh'?'OOH':a==='ott'?'OTT':'Digital'}</b>.`);}
     const viewerAny=MENUS.some(m=>m.kind==='view'&&(!MEDIA_AREAS.includes(m.area)||st.media[m.area])&&st.menus[m.id].on&&st.menus[m.id].viewer);
     if(!viewerAny)return L('광고주(뷰어)에게 보일 메뉴가 <b>하나도 없습니다</b>. 한 개 이상 켜 주세요.',
       '<b>No menu</b> is visible to advertisers (viewers). Turn on at least one.');
     return '';};
   const say=()=>{const m=check();$('medMsg').innerHTML=m?`<span style="color:var(--neg)">${m}</span>`:'';return !m;};
   box.querySelectorAll('input[data-area]').forEach(cb=>cb.onchange=()=>{st.media[cb.dataset.area]=cb.checked;paint();say();});
+  box.querySelectorAll('input[data-ottm]').forEach(cb=>cb.onchange=()=>{const k=CKEY(cb.dataset.ottm);
+    if(cb.checked)st.ott.add(k);else st.ott.delete(k);paint();say();});
   box.querySelectorAll('input[data-common]').forEach(cb=>cb.onchange=()=>{
     MENUS.filter(m=>m.area===cb.dataset.common).forEach(m=>{st.menus[m.id].on=cb.checked;});paint();say();});
   box.querySelectorAll('tr[data-mid] input[data-k]').forEach(cb=>cb.onchange=()=>{
@@ -347,6 +383,10 @@ function openMenuSettings(){
   if(ok)ok.onclick=()=>{
     if(!say())return;
     setCampMedia(st.media);
+    /* OTT 매체 — 디지털과 함께 쓸 때 고른 것만 적는다(이름은 라인에 적힌 그대로). 디지털을 끄면 전부 OTT 라 목록은 그대로 둔다 */
+    if(st.media.ott&&st.media.digital)CAMPAIGN.ottMedia=mNames.filter(n=>st.ott.has(CKEY(n)));
+    /* 영역이 바뀌었을 수 있다 — 대시보드를 다시 그리게 */
+    DG_DIRTY=true;
     const out={};
     MENUS.forEach(m=>{const s=st.menus[m.id],o={};
       if(m.udef===false){if(s.on)o.on=true;}else if(!s.on)o.on=false;
@@ -359,6 +399,7 @@ function openMenuSettings(){
     try{TREND_VIEWER=!!st.menus.trend.viewer;paintTrendToggle();}catch(e){}
     closeModal();
     try{applyRole();}catch(e){applyMenus();}
+    try{if(($('tabs')||{}).dataset.cur==='dash'||!$('tab-dash').classList.contains('hidden'))dgFlush();}catch(e){}
     try{if(campMedia().tv)renderTV();}catch(e){}
     try{if(campMedia().ooh&&typeof renderOOH==='function')renderOOH();}catch(e){}
     try{markDirty();saveLocal();}catch(e){}};

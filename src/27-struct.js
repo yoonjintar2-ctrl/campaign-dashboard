@@ -73,7 +73,7 @@ function csSheetAgg(){
 
 /* ---- 라인 × 광고상품 한 줄씩 (예산 · 소재 비중) — 캠페인 전체(필터 무시, v120) ---- */
 function csRows(){
-  const lines=LINES.slice();
+  const lines=areaLines().slice();      /* 디지털 · OTT 를 나눈 캠페인은 지금 영역만 (v141) */
   const A=csSheetAgg();
   /* 대시보드 실적(전체 기간)의 라인별 소재 소진 — 시트에 소재 구분이 없을 때 쓴다 */
   const FC={};

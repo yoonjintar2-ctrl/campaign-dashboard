@@ -739,11 +739,11 @@ function mergeCreatives(list,mode){
 }
 /* 효율 우수 소재 전용 매체 고르기 (v55) — 대시보드 공통 필터와 별개로,
    "이 매체에서는 어떤 소재가 잘 돌았나" 를 바로 볼 수 있게 한다. 뷰어도 쓸 수 있다. */
-const crSegPool=()=>[...new Set(CREATIVES
+const crSegPool=()=>[...new Set(CREATIVES.filter(c=>crInArea(c))
   .filter(c=>['media','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
   .map(c=>c.segment))].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'ko'));
 /* 매체 목록은 **이 영역에서 고른 구분** 안에서만 뽑는다 (v59) */
-const crMediaPool=()=>[...new Set(CREATIVES
+const crMediaPool=()=>[...new Set(CREATIVES.filter(c=>crInArea(c))
   .filter(c=>['segment','line'].every(k=>FILTER[k]==='all'||c[k]===FILTER[k]))
   .filter(c=>CR_FILTER.segment==='all'||c.segment===CR_FILTER.segment)
   .map(c=>c.media))].filter(Boolean).sort((a,b)=>mediaBudget(b)-mediaBudget(a));
@@ -770,7 +770,8 @@ function filteredCreatives(){
   const keys=CR_ALL_MEDIA?['segment','line']:['segment','media','line'];
   const mSel=CR_FILTER.media&&CR_FILTER.media!=='all'?CR_FILTER.media:null;
   const sSel=CR_FILTER.segment&&CR_FILTER.segment!=='all'?CR_FILTER.segment:null;
-  let a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+  const AS=areaLidSet();
+  let a=mergeCreatives(CREATIVES.filter(c=>crInArea(c,AS)&&(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
     &&(!mSel||c.media===mSel)&&(!sSel||c.segment===sSel)
     &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),CR_ALL_MEDIA?'name':'');
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
@@ -784,7 +785,8 @@ function ganttCreatives(){
   const keys=['segment','media','line'];
   /* 소재 이름은 항상 열쇠에 들어가므로 차원 목록에서는 뺀다 */
   const dims=(GANTT.rows||[]).map(r=>r.k).filter(k=>k!=='creative');
-  const a=mergeCreatives(CREATIVES.filter(c=>(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
+  const AS=areaLidSet();
+  const a=mergeCreatives(CREATIVES.filter(c=>crInArea(c,AS)&&(CR_FILTER.type==='all'||c.type===CR_FILTER.type)
     &&keys.every(k=>FILTER[k]==='all'||c[k]===FILTER[k])),dims);
   const sv=c=>{const b=crAgg(c);return CR_FILTER.sort==='ctr'?b.click/b.imp:b[CR_FILTER.sort];};
   a.sort((x,y)=>(sv(y)||0)-(sv(x)||0));
@@ -1393,7 +1395,7 @@ function ganttRank(dim,val,c){
   if(dim==='media')return mediaBudget(val);
   if(dim==='creative')return creativeBudget(c);
   if(dim==='product'||dim==='segment'||dim==='target'||dim==='line')
-    return sum(LINES.filter(l=>l[dim]===val).map(lineGross));
+    return sum(areaLines().filter(l=>l[dim]===val).map(lineGross));
   return null;}
 /* 앞 단계 값이 같은 줄끼리 반드시 붙여 놓는다 (v110) — 단계마다 처음 나온 순서를 지키며 묶는다.
    어떤 정렬(예산 · 머리글 · 끌어 옮긴 순서)을 거쳐도 같은 소재(매체 …)가 흩어져 소계가 여러 번 나오지 않게 */
