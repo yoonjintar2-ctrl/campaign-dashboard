@@ -2920,6 +2920,15 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   background:#3a3a3a;color:#f0f0f0;border-color:#4a4a4a}
 .topbar.darkbar .btn:hover,.topbar.darkbar .pill:hover{background:#464646}
 .topbar.darkbar .me .mail{color:#cccccc}
+/* v144 — 로고 바탕색으로 칠한 상단 바. 밝은 바탕(코웨이 흰색)은 다크 모드에서도 글자를 짙게 */
+.topbar.logobg{background:var(--tbbg)!important;border-bottom-color:rgba(0,0,0,.08)}
+.topbar.logobg:not(.logobg-dk){--ink:#1b1b1b;--ink2:#3a3a3a;--muted:#7a7a7a;--line:#e3e3e3;--surface:#ffffff;color:#1b1b1b}
+.topbar.logobg:not(.logobg-dk) .btn,.topbar.logobg:not(.logobg-dk) .pill,.topbar.logobg:not(.logobg-dk) select{
+  background:rgba(0,0,0,.035);color:#1b1b1b;border-color:rgba(0,0,0,.12)}
+.topbar.logobg:not(.logobg-dk) .btn:hover,.topbar.logobg:not(.logobg-dk) .pill:hover{background:rgba(0,0,0,.07)}
+.topbar.logobg.logobg-dk{--ink:#f0f0f0;--ink2:#d8d8d8;--muted:#ababab;--line:rgba(255,255,255,.18);color:#f0f0f0}
+.topbar.logobg.logobg-dk .btn,.topbar.logobg.logobg-dk .pill,.topbar.logobg.logobg-dk select{
+  background:rgba(255,255,255,.1);color:#f0f0f0;border-color:rgba(255,255,255,.18)}
 
 /* 칩 고르기 메뉴 — 이름 검색 */
 .cfmenu .cfq{width:calc(100% - 16px);margin:2px 8px 6px;height:28px;border:1px solid var(--line);

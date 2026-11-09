@@ -2920,6 +2920,15 @@ select:hover,input:hover{border-color:var(--acc-lt)}
   background:#3a3a3a;color:#f0f0f0;border-color:#4a4a4a}
 .topbar.darkbar .btn:hover,.topbar.darkbar .pill:hover{background:#464646}
 .topbar.darkbar .me .mail{color:#cccccc}
+/* v144 — 로고 바탕색으로 칠한 상단 바. 밝은 바탕(코웨이 흰색)은 다크 모드에서도 글자를 짙게 */
+.topbar.logobg{background:var(--tbbg)!important;border-bottom-color:rgba(0,0,0,.08)}
+.topbar.logobg:not(.logobg-dk){--ink:#1b1b1b;--ink2:#3a3a3a;--muted:#7a7a7a;--line:#e3e3e3;--surface:#ffffff;color:#1b1b1b}
+.topbar.logobg:not(.logobg-dk) .btn,.topbar.logobg:not(.logobg-dk) .pill,.topbar.logobg:not(.logobg-dk) select{
+  background:rgba(0,0,0,.035);color:#1b1b1b;border-color:rgba(0,0,0,.12)}
+.topbar.logobg:not(.logobg-dk) .btn:hover,.topbar.logobg:not(.logobg-dk) .pill:hover{background:rgba(0,0,0,.07)}
+.topbar.logobg.logobg-dk{--ink:#f0f0f0;--ink2:#d8d8d8;--muted:#ababab;--line:rgba(255,255,255,.18);color:#f0f0f0}
+.topbar.logobg.logobg-dk .btn,.topbar.logobg.logobg-dk .pill,.topbar.logobg.logobg-dk select{
+  background:rgba(255,255,255,.1);color:#f0f0f0;border-color:rgba(255,255,255,.18)}
 
 /* 칩 고르기 메뉴 — 이름 검색 */
 .cfmenu .cfq{width:calc(100% - 16px);margin:2px 8px 6px;height:28px;border:1px solid var(--line);
@@ -3999,7 +4008,6 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
-        <button type="button" data-tab="tvmonthly" data-menu="t_month">월별 퍼포먼스</button>
         <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
       </div>
@@ -5471,8 +5479,7 @@ const MENUS=[
   {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
   /* 주차별 퍼포먼스 (v135) — 일별 값이 없는 리포트(코웨이 등)용. 기본은 꺼 두고 메뉴 설정에서 켠다(udef:false) */
   {id:'t_week', area:'tv',     tab:'tvweekly',           l:'주차별 퍼포먼스',kind:'view',udef:false},
-  /* 월별 퍼포먼스 (v142) — 달마다 계획(채널별 월 계획) 대비 실적 */
-  {id:'t_month',area:'tv',     tab:'tvmonthly',          l:'월별 퍼포먼스',kind:'view'},
+  /* 월별 퍼포먼스(v142)는 v144 에서 메뉴를 뺐다 — 먼슬리 리포트가 따로 나간다(화면 코드 29-tvmonth.js 는 남겨 둠) */
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
@@ -17944,10 +17951,13 @@ function refreshBgDots(){
   bgDotBuild(url,svg=>{BGDOT.svg=svg;paintBgDots(svg);});
 }
 /* 로고가 밝으면 상단 바를 짙게 — 흰 배경 위 흰 로고가 안 보이던 문제 */
+/* v144 — 로고에 배경색이 칠해져 있으면(네 모서리가 불투명하고 같은 색) 상단 바를 그 색으로 맞춘다.
+   흰 바탕 로고(코웨이)가 짙은 상단 바 위에 흰 네모로 떠 보이던 문제. 바 글자색은 그 색의 밝기로 고른다 */
 function tuneTopbarForLogo(){
   const bar=document.querySelector('.topbar');if(!bar)return;
   const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
-  if(!url){bar.classList.remove('darkbar');return;}
+  const clearBg=()=>{bar.classList.remove('logobg','logobg-dk');bar.style.removeProperty('--tbbg');};
+  if(!url){bar.classList.remove('darkbar');clearBg();return;}
   const im=new Image();
   im.onload=()=>{
     try{
@@ -17955,14 +17965,26 @@ function tuneTopbarForLogo(){
       const cx=cv.getContext('2d',{willReadFrequently:true});
       cx.drawImage(im,0,0,24,24);
       const d=cx.getImageData(0,0,24,24).data;
+      /* 모서리 색 */
+      const px=(x,y)=>{const i=(y*24+x)*4;return [d[i],d[i+1],d[i+2],d[i+3]];};
+      const cs=[px(0,0),px(23,0),px(0,23),px(23,23),px(1,1),px(22,1),px(1,22),px(22,22)];
+      const opaque=cs.every(c=>c[3]>235);
+      const avgC=[0,1,2].map(k=>cs.reduce((s,c)=>s+c[k],0)/cs.length);
+      const same=cs.every(c=>Math.abs(c[0]-avgC[0])+Math.abs(c[1]-avgC[1])+Math.abs(c[2]-avgC[2])<36);
+      if(opaque&&same){
+        const L=(0.2126*avgC[0]+0.7152*avgC[1]+0.0722*avgC[2])/255;
+        bar.classList.remove('darkbar');bar.classList.add('logobg');bar.classList.toggle('logobg-dk',L<0.55);
+        bar.style.setProperty('--tbbg',`rgb(${avgC.map(Math.round).join(',')})`);
+        return;}
+      clearBg();
       let lum=0,n=0;
       for(let i=0;i<d.length;i+=4){
         const a=d[i+3]/255;if(a<0.25)continue;
         lum+=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;n++;}
       const avg=n?lum/n:0;
       bar.classList.toggle('darkbar',n>0&&avg>0.72);
-    }catch(e){bar.classList.remove('darkbar');}};
-  im.onerror=()=>bar.classList.remove('darkbar');
+    }catch(e){bar.classList.remove('darkbar');clearBg();}};
+  im.onerror=()=>{bar.classList.remove('darkbar');clearBg();};
   im.crossOrigin='anonymous';
   im.src=url;
 }
@@ -21322,6 +21344,7 @@ function oohFromDoc(d){
 var OV={key:'',at:0,rows:null,busy:false,src:'',err:'',seq:0};
 /* c = 색 · 모양 클래스 글자 (v143 — OTT 가 들어와 첫 글자(o)가 OOH 와 겹쳐 따로 둔다) */
 const OV_AREAS=[{k:'digital',c:'d',get l(){return L('디지털','Digital');}},{k:'tv',c:'t',l:'TV'},{k:'ott',c:'v',l:'OTT'},{k:'ooh',c:'o',l:'OOH'}];
+let OV_VIS=OV_AREAS;
 const ovC=k=>(OV_AREAS.find(x=>x.k===k)||{c:'d'}).c;
 const ovIso=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'');
 const ovNorm=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
@@ -21540,6 +21563,8 @@ function paintOverview(loading){
     tot[x.k]={n:rs.length,budget:sum(rs.map(r=>r.a[x.k].budget)),spend:sum(rs.map(r=>r.a[x.k].spend||0)),
       slots:sum(rs.map(r=>r.a[x.k].slots||0))};});
   const all=sum(OV_AREAS.map(x=>tot[x.k].budget));
+  /* v144 — 광고비 · 집행이 하나도 없는 영역(예: 코웨이 디지털 0원)은 줄 · 범례 · 목록에서 숨긴다 */
+  const AV=OV_AREAS.filter(x=>tot[x.k].budget>0||tot[x.k].spend>0);OV_VIS=AV.length?AV:OV_AREAS;
   /* 소진율 — 실적이 들어오는 디지털 · TV 만 (OOH 는 실적 입력이 없다) */
   const sb=tot.digital.budget+tot.tv.budget+tot.ott.budget,sp=tot.digital.spend+tot.tv.spend+tot.ott.spend;
   const shr=k=>all?tot[k].budget/all:NaN;
@@ -21570,7 +21595,7 @@ function paintOverview(loading){
         <text x="${CX}" y="${CX-3}" text-anchor="middle" class="dc2" style="font-size:${Math.min(18,148/(won0(all).length*.6)).toFixed(1)}px">${won0(all)}</text>
         <text x="${CX}" y="${CX+19}" text-anchor="middle" class="dc3" style="font-size:${fit(t3,10.5,140)}px">${t3}</text>
         <text x="${CX}" y="${CX+36}" text-anchor="middle" class="dc4" style="font-size:${fit(t4,10,126)}px">${t4}</text></svg>
-      <div class="klegend2">${OV_AREAS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;};
+      <div class="klegend2">${OV_VIS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;};
   /* v86 — 매체 아이콘: 단색 선, 굵게. 디지털은 휴대폰이 모니터 앞에 오고(흰 바탕으로 덮음) 둘 사이에 틈을 둔다 */
   const ICON={
     digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="8" width="31" height="21" rx="2.5"/><path d="M14 37h12M20 29v8"/><rect class="cut" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><rect class="fg" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><path d="M34.5 37.2h4"/></svg>',
@@ -21604,13 +21629,13 @@ function paintOverview(loading){
       L('종료일','End'),e0.replace(/-/g,'.'));};
   /* 총 광고비 → 디지털 · TV · OOH 로 갈라지는 연결선 (파생 관계) */
   /* 줄 수(n)에 맞춰 각 줄 가운데 높이 — 줄 사이 틈 12px (v143 — OTT 가 들어와 넷) */
-  const NR=OV_AREAS.length,GP=12,yAt=i=>`calc((100% - ${(NR-1)*GP}px) * ${((i+.5)/NR).toFixed(5)} + ${i*GP}px)`;
+  const NR=OV_VIS.length,GP=12,yAt=i=>`calc((100% - ${(NR-1)*GP}px) * ${((i+.5)/NR).toFixed(5)} + ${i*GP}px)`;
   const tree=`<div class="ovtree" aria-hidden="true"><i class="tin"></i><i class="tv" style="top:${yAt(0)};bottom:${yAt(0)}"></i>
-      ${OV_AREAS.map((x,i)=>`<i class="tout ov${x.c}${tot[x.k].budget?'':' zero'}" style="top:${yAt(i)}" data-ovk="${x.k}"></i>`).join('')}</div>`;
+      ${OV_VIS.map((x,i)=>`<i class="tout ov${x.c}${tot[x.k].budget?'':' zero'}" style="top:${yAt(i)}" data-ovk="${x.k}"></i>`).join('')}</div>`;
   box.innerHTML=
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
    +tree
-   +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_AREAS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
+   +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_VIS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
    +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div></div>`;
   paintOvFlow($('ovFlow'),rows,won0);
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
@@ -21663,7 +21688,7 @@ function paintOverview(loading){
         <div class="ovrows">${rows.map(row).join('')}
         <div class="ovgrid"><div class="ovl"></div><div class="ovtrack">${months.map(d=>`<i style="left:${((d.getTime()-A)/W*100).toFixed(3)}%"></i>`).join('')}
           ${isFinite(tx)?`<b class="ovtoday" style="left:${tx.toFixed(3)}%"><span>${L('오늘','Today')}</span></b>`:''}</div><div class="ovr"></div></div></div>
-        <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
+        <div class="ovleg">${OV_VIS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
       tl.querySelectorAll('[data-ovtip]').forEach(b=>{let o=null;try{o=JSON.parse(b.dataset.ovtip);}catch(e){return;}
         b.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o.n)}</div>`
           +(o.p?`<div class="r"><span class="l">${L('기간','Period')}</span><b>${esc(o.p)}</b></div>`:'')
@@ -21680,7 +21705,7 @@ function paintOverview(loading){
       return `<td class="head tl">${can?`<button type="button" class="ovname lnk" data-ovgo="${i}" title="${L('눌러서 이 캠페인의 서머리로 이동','Click to go to this campaign\'s summary')}">${esc(r.name)}</button>`:`<span class="ovname">${esc(r.name)}</span>`}${r.self?` <em class="ovme">${L('지금','Current')}</em>`:''}</td>`;};
     const sbar=(a,b)=>{const v=b?a/b:NaN;return `<td class="mono ovpct">${isFinite(v)?`<span class="ovmini"><i style="width:${Math.min(Math.max(v,0),1)*100}%"></i></span>${pc1(v)}`:'–'}</td>`;};
     const n0=v=>v?fmt(v):'–';
-    const sect=(x,head,body,foot)=>{const rs=rows.filter(r=>r.a[x.k].inc);
+    const sect=(x,head,body,foot)=>{if(!OV_VIS.includes(x))return '';const rs=rows.filter(r=>r.a[x.k].inc);
       return `<div class="card ovcard"><div class="ovch"><i class="ovdot ${x.c}"></i><b>${L(`${x.l} 캠페인`,`${x.l} campaigns`)}</b>
           <span class="hint">${L(`${fmt(rs.length)}개`,`${fmt(rs.length)}`)}${rs.length?` · ${won0(tot[x.k].budget)}`:''}</span></div>
         ${rs.length?`<div class="tbl-wrap noy"><table class="tbl lite ovtbl"><thead><tr>${head.map(h=>`<th${h[1]?' class="num"':''}>${h[0]}</th>`).join('')}</tr></thead>
@@ -21942,7 +21967,7 @@ function paintOvColumns(bx,rows,won0){
   bx.innerHTML=`<div class="ovstage" style="padding:${PT}px ${SPX}px ${BI}px">
       <i class="ovfl" style="height:${F}px;bottom:${BI}px"></i>
       <div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
-      <div class="ovleg onfloor" style="bottom:12px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
+      <div class="ovleg onfloor" style="bottom:12px">${OV_VIS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

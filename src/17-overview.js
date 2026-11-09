@@ -10,6 +10,7 @@
 var OV={key:'',at:0,rows:null,busy:false,src:'',err:'',seq:0};
 /* c = 색 · 모양 클래스 글자 (v143 — OTT 가 들어와 첫 글자(o)가 OOH 와 겹쳐 따로 둔다) */
 const OV_AREAS=[{k:'digital',c:'d',get l(){return L('디지털','Digital');}},{k:'tv',c:'t',l:'TV'},{k:'ott',c:'v',l:'OTT'},{k:'ooh',c:'o',l:'OOH'}];
+let OV_VIS=OV_AREAS;
 const ovC=k=>(OV_AREAS.find(x=>x.k===k)||{c:'d'}).c;
 const ovIso=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'');
 const ovNorm=s=>String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
@@ -228,6 +229,8 @@ function paintOverview(loading){
     tot[x.k]={n:rs.length,budget:sum(rs.map(r=>r.a[x.k].budget)),spend:sum(rs.map(r=>r.a[x.k].spend||0)),
       slots:sum(rs.map(r=>r.a[x.k].slots||0))};});
   const all=sum(OV_AREAS.map(x=>tot[x.k].budget));
+  /* v144 — 광고비 · 집행이 하나도 없는 영역(예: 코웨이 디지털 0원)은 줄 · 범례 · 목록에서 숨긴다 */
+  const AV=OV_AREAS.filter(x=>tot[x.k].budget>0||tot[x.k].spend>0);OV_VIS=AV.length?AV:OV_AREAS;
   /* 소진율 — 실적이 들어오는 디지털 · TV 만 (OOH 는 실적 입력이 없다) */
   const sb=tot.digital.budget+tot.tv.budget+tot.ott.budget,sp=tot.digital.spend+tot.tv.spend+tot.ott.spend;
   const shr=k=>all?tot[k].budget/all:NaN;
@@ -258,7 +261,7 @@ function paintOverview(loading){
         <text x="${CX}" y="${CX-3}" text-anchor="middle" class="dc2" style="font-size:${Math.min(18,148/(won0(all).length*.6)).toFixed(1)}px">${won0(all)}</text>
         <text x="${CX}" y="${CX+19}" text-anchor="middle" class="dc3" style="font-size:${fit(t3,10.5,140)}px">${t3}</text>
         <text x="${CX}" y="${CX+36}" text-anchor="middle" class="dc4" style="font-size:${fit(t4,10,126)}px">${t4}</text></svg>
-      <div class="klegend2">${OV_AREAS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;};
+      <div class="klegend2">${OV_VIS.map(x=>`<span class="${tot[x.k].budget?'':'zero'}" data-ovpie="${x.k}"><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;};
   /* v86 — 매체 아이콘: 단색 선, 굵게. 디지털은 휴대폰이 모니터 앞에 오고(흰 바탕으로 덮음) 둘 사이에 틈을 둔다 */
   const ICON={
     digital:'<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="8" width="31" height="21" rx="2.5"/><path d="M14 37h12M20 29v8"/><rect class="cut" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><rect class="fg" x="29.5" y="16.5" width="14" height="25" rx="3.2"/><path d="M34.5 37.2h4"/></svg>',
@@ -292,13 +295,13 @@ function paintOverview(loading){
       L('종료일','End'),e0.replace(/-/g,'.'));};
   /* 총 광고비 → 디지털 · TV · OOH 로 갈라지는 연결선 (파생 관계) */
   /* 줄 수(n)에 맞춰 각 줄 가운데 높이 — 줄 사이 틈 12px (v143 — OTT 가 들어와 넷) */
-  const NR=OV_AREAS.length,GP=12,yAt=i=>`calc((100% - ${(NR-1)*GP}px) * ${((i+.5)/NR).toFixed(5)} + ${i*GP}px)`;
+  const NR=OV_VIS.length,GP=12,yAt=i=>`calc((100% - ${(NR-1)*GP}px) * ${((i+.5)/NR).toFixed(5)} + ${i*GP}px)`;
   const tree=`<div class="ovtree" aria-hidden="true"><i class="tin"></i><i class="tv" style="top:${yAt(0)};bottom:${yAt(0)}"></i>
-      ${OV_AREAS.map((x,i)=>`<i class="tout ov${x.c}${tot[x.k].budget?'':' zero'}" style="top:${yAt(i)}" data-ovk="${x.k}"></i>`).join('')}</div>`;
+      ${OV_VIS.map((x,i)=>`<i class="tout ov${x.c}${tot[x.k].budget?'':' zero'}" style="top:${yAt(i)}" data-ovk="${x.k}"></i>`).join('')}</div>`;
   box.innerHTML=
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
    +tree
-   +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_AREAS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
+   +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_VIS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
    +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div></div>`;
   paintOvFlow($('ovFlow'),rows,won0);
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
@@ -351,7 +354,7 @@ function paintOverview(loading){
         <div class="ovrows">${rows.map(row).join('')}
         <div class="ovgrid"><div class="ovl"></div><div class="ovtrack">${months.map(d=>`<i style="left:${((d.getTime()-A)/W*100).toFixed(3)}%"></i>`).join('')}
           ${isFinite(tx)?`<b class="ovtoday" style="left:${tx.toFixed(3)}%"><span>${L('오늘','Today')}</span></b>`:''}</div><div class="ovr"></div></div></div>
-        <div class="ovleg">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
+        <div class="ovleg">${OV_VIS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
       tl.querySelectorAll('[data-ovtip]').forEach(b=>{let o=null;try{o=JSON.parse(b.dataset.ovtip);}catch(e){return;}
         b.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o.n)}</div>`
           +(o.p?`<div class="r"><span class="l">${L('기간','Period')}</span><b>${esc(o.p)}</b></div>`:'')
@@ -368,7 +371,7 @@ function paintOverview(loading){
       return `<td class="head tl">${can?`<button type="button" class="ovname lnk" data-ovgo="${i}" title="${L('눌러서 이 캠페인의 서머리로 이동','Click to go to this campaign\'s summary')}">${esc(r.name)}</button>`:`<span class="ovname">${esc(r.name)}</span>`}${r.self?` <em class="ovme">${L('지금','Current')}</em>`:''}</td>`;};
     const sbar=(a,b)=>{const v=b?a/b:NaN;return `<td class="mono ovpct">${isFinite(v)?`<span class="ovmini"><i style="width:${Math.min(Math.max(v,0),1)*100}%"></i></span>${pc1(v)}`:'–'}</td>`;};
     const n0=v=>v?fmt(v):'–';
-    const sect=(x,head,body,foot)=>{const rs=rows.filter(r=>r.a[x.k].inc);
+    const sect=(x,head,body,foot)=>{if(!OV_VIS.includes(x))return '';const rs=rows.filter(r=>r.a[x.k].inc);
       return `<div class="card ovcard"><div class="ovch"><i class="ovdot ${x.c}"></i><b>${L(`${x.l} 캠페인`,`${x.l} campaigns`)}</b>
           <span class="hint">${L(`${fmt(rs.length)}개`,`${fmt(rs.length)}`)}${rs.length?` · ${won0(tot[x.k].budget)}`:''}</span></div>
         ${rs.length?`<div class="tbl-wrap noy"><table class="tbl lite ovtbl"><thead><tr>${head.map(h=>`<th${h[1]?' class="num"':''}>${h[0]}</th>`).join('')}</tr></thead>
@@ -630,7 +633,7 @@ function paintOvColumns(bx,rows,won0){
   bx.innerHTML=`<div class="ovstage" style="padding:${PT}px ${SPX}px ${BI}px">
       <i class="ovfl" style="height:${F}px;bottom:${BI}px"></i>
       <div class="ovcols" style="height:${Hc}px;width:${(PX*2+plotW).toFixed(1)}px">${cols}</div>
-      <div class="ovleg onfloor" style="bottom:12px">${OV_AREAS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
+      <div class="ovleg onfloor" style="bottom:12px">${OV_VIS.map(x=>`<span><i class="ovdot ${x.c}"></i>${x.l}</span>`).join('')}</div></div>`;
   const C=bx.querySelector('.ovcols');
   bx.querySelectorAll('[data-oci]').forEach(el=>{const i=el.dataset.oci;
     el.addEventListener('mouseenter',()=>C.querySelectorAll(`[data-oci="${i}"]`).forEach(x=>x.classList.add('hl')));

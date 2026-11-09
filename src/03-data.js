@@ -796,8 +796,7 @@ const MENUS=[
   {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
   /* 주차별 퍼포먼스 (v135) — 일별 값이 없는 리포트(코웨이 등)용. 기본은 꺼 두고 메뉴 설정에서 켠다(udef:false) */
   {id:'t_week', area:'tv',     tab:'tvweekly',           l:'주차별 퍼포먼스',kind:'view',udef:false},
-  /* 월별 퍼포먼스 (v142) — 달마다 계획(채널별 월 계획) 대비 실적 */
-  {id:'t_month',area:'tv',     tab:'tvmonthly',          l:'월별 퍼포먼스',kind:'view'},
+  /* 월별 퍼포먼스(v142)는 v144 에서 메뉴를 뺐다 — 먼슬리 리포트가 따로 나간다(화면 코드 29-tvmonth.js 는 남겨 둠) */
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},

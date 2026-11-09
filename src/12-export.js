@@ -1105,10 +1105,13 @@ function refreshBgDots(){
   bgDotBuild(url,svg=>{BGDOT.svg=svg;paintBgDots(svg);});
 }
 /* 로고가 밝으면 상단 바를 짙게 — 흰 배경 위 흰 로고가 안 보이던 문제 */
+/* v144 — 로고에 배경색이 칠해져 있으면(네 모서리가 불투명하고 같은 색) 상단 바를 그 색으로 맞춘다.
+   흰 바탕 로고(코웨이)가 짙은 상단 바 위에 흰 네모로 떠 보이던 문제. 바 글자색은 그 색의 밝기로 고른다 */
 function tuneTopbarForLogo(){
   const bar=document.querySelector('.topbar');if(!bar)return;
   const url=CAMPAIGN.advLogo||advLogo(CAMPAIGN.advertiser)||'';
-  if(!url){bar.classList.remove('darkbar');return;}
+  const clearBg=()=>{bar.classList.remove('logobg','logobg-dk');bar.style.removeProperty('--tbbg');};
+  if(!url){bar.classList.remove('darkbar');clearBg();return;}
   const im=new Image();
   im.onload=()=>{
     try{
@@ -1116,14 +1119,26 @@ function tuneTopbarForLogo(){
       const cx=cv.getContext('2d',{willReadFrequently:true});
       cx.drawImage(im,0,0,24,24);
       const d=cx.getImageData(0,0,24,24).data;
+      /* 모서리 색 */
+      const px=(x,y)=>{const i=(y*24+x)*4;return [d[i],d[i+1],d[i+2],d[i+3]];};
+      const cs=[px(0,0),px(23,0),px(0,23),px(23,23),px(1,1),px(22,1),px(1,22),px(22,22)];
+      const opaque=cs.every(c=>c[3]>235);
+      const avgC=[0,1,2].map(k=>cs.reduce((s,c)=>s+c[k],0)/cs.length);
+      const same=cs.every(c=>Math.abs(c[0]-avgC[0])+Math.abs(c[1]-avgC[1])+Math.abs(c[2]-avgC[2])<36);
+      if(opaque&&same){
+        const L=(0.2126*avgC[0]+0.7152*avgC[1]+0.0722*avgC[2])/255;
+        bar.classList.remove('darkbar');bar.classList.add('logobg');bar.classList.toggle('logobg-dk',L<0.55);
+        bar.style.setProperty('--tbbg',`rgb(${avgC.map(Math.round).join(',')})`);
+        return;}
+      clearBg();
       let lum=0,n=0;
       for(let i=0;i<d.length;i+=4){
         const a=d[i+3]/255;if(a<0.25)continue;
         lum+=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;n++;}
       const avg=n?lum/n:0;
       bar.classList.toggle('darkbar',n>0&&avg>0.72);
-    }catch(e){bar.classList.remove('darkbar');}};
-  im.onerror=()=>bar.classList.remove('darkbar');
+    }catch(e){bar.classList.remove('darkbar');clearBg();}};
+  im.onerror=()=>{bar.classList.remove('darkbar');clearBg();};
   im.crossOrigin='anonymous';
   im.src=url;
 }
