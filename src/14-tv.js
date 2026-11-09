@@ -295,10 +295,7 @@ addEventListener('resize',()=>{clearTimeout(window.__fitTabsT);window.__fitTabsT
 const AREA_SUB={digital:'디지털 캠페인 메뉴',tv:'TV 캠페인 메뉴',ott:'OTT 캠페인 메뉴 — 디지털과 같은 화면, OTT 라인만',ooh:'OOH(옥외) 캠페인 메뉴 — 계획 · 소재만'};
 function openMenuSettings(){
   const md=campMedia(),cm=campMenus();
-  const st={media:{...md},menus:{},ott:new Set(ottMediaList().map(CKEY))};
-  /* OTT 매체 고르기 (v141) — 이 캠페인 라인의 매체 이름들. 예산 큰 순 */
-  const mBud={};(LINES||[]).forEach(l=>{const k=String(l.media||'').trim();if(k)mBud[k]=(mBud[k]||0)+(+lineGross(l)||0);});
-  const mNames=Object.keys(mBud).sort((a,b)=>mBud[b]-mBud[a]||a.localeCompare(b,'ko'));
+  const st={media:{...md},menus:{}};
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:m.udef===false?c.on===true:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
       :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
@@ -317,14 +314,13 @@ function openMenuSettings(){
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
-  const ottPick=()=>`<tr class="mott"><td colspan="3"><div class="mott-h">${L('OTT로 볼 매체','Media shown under OTT')}
-        <span class="mott-n" id="mottNote"></span></div>
-      <div class="mott-l">${mNames.length?mNames.map(n=>`<label class="mott-c"><input type="checkbox" data-ottm="${esc(n)}"><span>${esc(n)}</span></label>`).join('')
-        :`<span class="mfix">${L('예상효율 입력에 라인을 넣으면 매체 이름이 여기에 나옵니다','Media names appear here once lines are added')}</span>`}</div></td></tr>`;
+  /* OTT 매체는 고정(넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스) — 고를 것 없이 안내만 (v141) */
+  const ottNote=()=>`<tr class="mott"><td colspan="3">${L('넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스 라인이 OTT에 나오고, 나머지 매체는 디지털에 나옵니다.',
+      'Netflix · Coupang Play · TVING · Disney+ lines appear under OTT; other media stay under Digital.')}</td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
-      ${a==='ott'?ottPick():''}${menusOf(a).map(row).join('')}</tbody>`;
+      ${a==='ott'?ottNote():''}${menusOf(a).map(row).join('')}</tbody>`;
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
          <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
@@ -349,19 +345,10 @@ function openMenuSettings(){
       tr.querySelectorAll('input[data-k]').forEach(cb=>{cb.checked=!!s[cb.dataset.k];
         cb.disabled=!!off||(cb.dataset.k==='viewer'&&!s.on);});
       tr.classList.toggle('unused',!s.on);});
-    /* OTT 매체 — 디지털을 끄면 모든 라인이 OTT 라 고를 필요가 없다 */
-    {const both=st.media.ott&&st.media.digital;
-     box.querySelectorAll('input[data-ottm]').forEach(cb=>{cb.checked=!st.media.digital||st.ott.has(CKEY(cb.dataset.ottm));cb.disabled=!both;});
-     const tr=box.querySelector('tr.mott');if(tr)tr.classList.toggle('off',!both);
-     const nt=$('mottNote');if(nt)nt.textContent=!st.media.ott?'':!st.media.digital
-       ?L('디지털을 끄면 모든 라인이 OTT로 보입니다','With Digital off, every line is shown under OTT')
-       :L('고른 매체의 라인은 OTT에서만, 나머지는 디지털에서 보입니다','Lines of the checked media appear under OTT; the rest under Digital');}
     box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)?!st.media[g.dataset.area]
       :!MENUS.some(m=>m.area===g.dataset.area&&st.menus[m.id].on)));};
   const check=()=>{
     if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OTT · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OTT · OOH must be on.');
-    if(st.media.ott&&st.media.digital&&mNames.length&&!mNames.some(n=>st.ott.has(CKEY(n))))
-      return L('디지털과 OTT를 함께 쓰려면 <b>OTT로 볼 매체</b>를 한 개 이상 골라 주세요.','Pick <b>at least one medium</b> to show under OTT.');
     for(const a of MEDIA_AREAS){
       if(st.media[a]&&!MENUS.some(m=>m.area===a&&st.menus[m.id].on))
         return L(`<b>${AREA_LABEL[a]}</b> 영역을 쓰려면 메뉴를 <b>한 개 이상</b> 켜 주세요.`,
@@ -372,8 +359,6 @@ function openMenuSettings(){
     return '';};
   const say=()=>{const m=check();$('medMsg').innerHTML=m?`<span style="color:var(--neg)">${m}</span>`:'';return !m;};
   box.querySelectorAll('input[data-area]').forEach(cb=>cb.onchange=()=>{st.media[cb.dataset.area]=cb.checked;paint();say();});
-  box.querySelectorAll('input[data-ottm]').forEach(cb=>cb.onchange=()=>{const k=CKEY(cb.dataset.ottm);
-    if(cb.checked)st.ott.add(k);else st.ott.delete(k);paint();say();});
   box.querySelectorAll('input[data-common]').forEach(cb=>cb.onchange=()=>{
     MENUS.filter(m=>m.area===cb.dataset.common).forEach(m=>{st.menus[m.id].on=cb.checked;});paint();say();});
   box.querySelectorAll('tr[data-mid] input[data-k]').forEach(cb=>cb.onchange=()=>{
@@ -383,8 +368,6 @@ function openMenuSettings(){
   if(ok)ok.onclick=()=>{
     if(!say())return;
     setCampMedia(st.media);
-    /* OTT 매체 — 디지털과 함께 쓸 때 고른 것만 적는다(이름은 라인에 적힌 그대로). 디지털을 끄면 전부 OTT 라 목록은 그대로 둔다 */
-    if(st.media.ott&&st.media.digital)CAMPAIGN.ottMedia=mNames.filter(n=>st.ott.has(CKEY(n)));
     /* 영역이 바뀌었을 수 있다 — 대시보드를 다시 그리게 */
     DG_DIRTY=true;
     const out={};

@@ -698,16 +698,9 @@ table.mset .marea b{font-size:14px;color:var(--ink)}
 table.mset .marea i{font-style:normal;font-size:11px;color:var(--muted)}
 table.mset tr.off td.mn,table.mset tr.unused td.mn{color:var(--muted);font-weight:500}
 table.mset tbody.off tr.mhead b{color:var(--muted)}
-/* OTT 로 볼 매체 (v141) */
-table.mset tr.mott td{padding:8px 8px 10px 26px;background:var(--acc-soft)}
-table.mset .mott-h{font-size:11.5px;font-weight:700;color:var(--ink);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-bottom:6px}
-table.mset .mott-n{font-weight:500;color:var(--muted);font-size:11px}
-table.mset .mott-l{display:flex;flex-wrap:wrap;gap:6px}
-table.mset .mott-c{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 6px;border:1px solid var(--line);border-radius:999px;
-  background:var(--surface);font-size:11.5px;cursor:pointer}
-table.mset .mott-c input{width:14px;height:14px}
-table.mset tr.mott.off td{background:transparent}
-table.mset tr.mott.off .mott-c{opacity:.55;cursor:default}
+/* OTT 안내 줄 (v141) */
+table.mset tr.mott td{padding:7px 8px 9px 26px;font-size:11.5px;color:var(--muted)}
+table.mset tbody.off tr.mott td{opacity:.6}
 /* TV 대시보드 카드 */
 .tvkpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:6px 0 4px}
 /* v132 — TV 서머리 카드 3장(GRP · Reach 1+ · 횟수) · 타겟 표시 · 입력 화면 칸 */
@@ -5414,7 +5407,7 @@ const MENUS=[
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
-     어느 라인이 OTT 인지는 메뉴 설정의 'OTT 매체'(CAMPAIGN.ottMedia) · 디지털을 끄면 모든 라인이 OTT.
+     OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
      입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
   {id:'ot_struct',area:'ott',  tab:'dash',   sub:'struct',l:'캠페인 구조', kind:'view'},
   {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
@@ -5438,24 +5431,20 @@ const MEDIA_AREAS=['digital','tv','ott','ooh'];
 /* ---------- 디지털 · OTT 나누기 (v141) ----------
    두 영역은 같은 대시보드 화면(tab-dash)을 쓴다. DG_AREA 가 지금 보는 쪽이고,
    activeLines · factFilter · paceFacts 와 화면이 직접 읽는 라인 목록(areaLines)이 그쪽 라인만 남긴다.
-   · OTT 를 안 쓰는 캠페인 → 나누지 않는다(모든 라인 = 디지털)
-   · 디지털을 끄고 OTT 만 → 모든 라인이 OTT
-   · 둘 다 → 'OTT 매체'(CAMPAIGN.ottMedia, 없으면 넷플릭스 · 티빙 등 이름으로 자동)에 든 매체의 라인이 OTT */
+   · OTT 영역을 안 켠 캠페인 → 나누지 않는다(모든 라인 = 디지털, 예전 그대로)
+   · OTT 영역을 켜면 → OTT 매체(넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스 — 고정) 라인은 OTT, 나머지는 디지털 */
 var DG_AREA='digital',DG_DIRTY=false;
-const OTT_RE=/netflix|넷플릭스|tving|티빙|wavve|웨이브|coupang\s*play|쿠팡\s*플레이|disney|디즈니|watcha|왓챠|u\+\s*모바일|apple\s*tv|prime\s*video|프라임\s*비디오|laftel|라프텔/i;
-function ottMediaList(){
-  if(typeof CAMPAIGN!=='undefined'&&Array.isArray(CAMPAIGN.ottMedia))return CAMPAIGN.ottMedia.slice();
-  return [...new Set((LINES||[]).map(l=>String(l.media||'').trim()).filter(m=>m&&OTT_RE.test(m)))];}
+const OTT_RE=/netflix|넷플릭스|coupang\s*play|쿠팡\s*플레이|tving|티빙|disney|디즈니/i;
+const isOttMedia=m=>OTT_RE.test(String(m==null?'':m));
 function dgSplit(){const md=campMedia();return md.ott?(md.digital?'both':'ott'):'none';}
 /* 지금 보는 쪽 — 한쪽만 켜져 있으면 그쪽 */
 function curDgArea(){const s=dgSplit();return s==='none'?'digital':s==='ott'?'ott':(DG_AREA==='ott'?'ott':'digital');}
-function lineArea(l,set){const s=dgSplit();if(s==='none')return 'digital';if(s==='ott')return 'ott';
-  set=set||new Set(ottMediaList().map(CKEY));return set.has(CKEY(l&&l.media))?'ott':'digital';}
+function lineArea(l){return dgSplit()==='none'?'digital':(isOttMedia(l&&l.media)?'ott':'digital');}
 /* 지금 영역의 라인 id 묶음 — 나누지 않는 캠페인이면 null(거르지 않음) */
 function areaLidSet(){
   if(dgSplit()==='none')return null;
-  const a=curDgArea(),set=new Set(ottMediaList().map(CKEY));
-  return new Set(LINES.filter(l=>lineArea(l,set)===a).map(l=>l.id));}
+  const a=curDgArea();
+  return new Set(LINES.filter(l=>lineArea(l)===a).map(l=>l.id));}
 function areaLines(){const s=areaLidSet();return s?LINES.filter(l=>s.has(l.id)):LINES;}
 /* 소재가 지금 영역의 라인에 붙어 있는가 */
 function crInArea(c,s){s=s===undefined?areaLidSet():s;if(!s)return true;
@@ -13819,8 +13808,6 @@ function serializeDoc(){
       media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false}),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
       menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{})),
-      /* OTT 로 볼 매체 이름 (v141) — 없으면 넷플릭스 · 티빙 등 이름으로 자동 */
-      ...(Array.isArray(CAMPAIGN.ottMedia)?{ottMedia:CAMPAIGN.ottMedia.slice()}:{}),
       /* 캠페인 구조 가지 순서 (v120.3) — '' = 매체 › 타깃 › 광고상품 · 'product' = 매체 › 광고상품 › 타깃 · 'target' = 타깃 › 매체 › 광고상품 */
       csOrder:CAMPAIGN.csOrder||''},
     /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
@@ -13935,7 +13922,6 @@ function applyDoc(d,keepToday){
   /* 운영 매체 · TV 데이터 (v71) — 예전 저장본은 디지털만 */
   {const m=d.campaign&&d.campaign.media;
    CAMPAIGN.media=(m&&(m.digital||m.tv||m.ooh||m.ott))?{digital:!!m.digital,tv:!!m.tv,ott:!!m.ott,ooh:!!m.ooh}:{digital:true,tv:false,ott:false,ooh:false};}
-  {const om=d.campaign&&d.campaign.ottMedia;if(Array.isArray(om))CAMPAIGN.ottMedia=om.map(x=>String(x));else delete CAMPAIGN.ottMedia;}
   /* 캠페인을 새로 열면 디지털 쪽부터 (디지털을 끈 캠페인은 curDgArea 가 OTT 로) */
   try{DG_AREA='digital';DG_DIRTY=true;}catch(e){}
   {const mm=d.campaign&&d.campaign.menus;CAMPAIGN.menus=(mm&&typeof mm==='object')?JSON.parse(JSON.stringify(mm)):{};}
@@ -14878,7 +14864,7 @@ function resetToBlank(name,advertiser){
   /* 소재 자료함도 비운다 (v89) — 안 비우면 직전에 열어 둔 캠페인의 이미지 · 영상이 새 캠페인 문서에 같이 저장됐다 */
   try{CR_ASSETS={};}catch(e){}
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
-  CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};delete CAMPAIGN.ottMedia;CAMPAIGN.csOrder='';
+  CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
@@ -19811,10 +19797,7 @@ addEventListener('resize',()=>{clearTimeout(window.__fitTabsT);window.__fitTabsT
 const AREA_SUB={digital:'디지털 캠페인 메뉴',tv:'TV 캠페인 메뉴',ott:'OTT 캠페인 메뉴 — 디지털과 같은 화면, OTT 라인만',ooh:'OOH(옥외) 캠페인 메뉴 — 계획 · 소재만'};
 function openMenuSettings(){
   const md=campMedia(),cm=campMenus();
-  const st={media:{...md},menus:{},ott:new Set(ottMediaList().map(CKEY))};
-  /* OTT 매체 고르기 (v141) — 이 캠페인 라인의 매체 이름들. 예산 큰 순 */
-  const mBud={};(LINES||[]).forEach(l=>{const k=String(l.media||'').trim();if(k)mBud[k]=(mBud[k]||0)+(+lineGross(l)||0);});
-  const mNames=Object.keys(mBud).sort((a,b)=>mBud[b]-mBud[a]||a.localeCompare(b,'ko'));
+  const st={media:{...md},menus:{}};
   MENUS.forEach(m=>{const c=cm[m.id]||{};
     st.menus[m.id]={on:m.udef===false?c.on===true:c.on!==false,viewer:m.id==='trend'?(()=>{try{return trendVisibleToViewer();}catch(e){return true;}})()
       :(m.kind==='view'&&(m.vdef===false?c.viewer===true:c.viewer!==false))};});
@@ -19833,14 +19816,13 @@ function openMenuSettings(){
       <td class="mc"><label class="mchk"><input type="checkbox" data-k="on"></label></td>
       <td class="mc">${m.kind==='view'?'<label class="mchk"><input type="checkbox" data-k="viewer"></label>'
         :'<span class="mfix">관리자 전용</span>'}</td></tr>`;
-  const ottPick=()=>`<tr class="mott"><td colspan="3"><div class="mott-h">${L('OTT로 볼 매체','Media shown under OTT')}
-        <span class="mott-n" id="mottNote"></span></div>
-      <div class="mott-l">${mNames.length?mNames.map(n=>`<label class="mott-c"><input type="checkbox" data-ottm="${esc(n)}"><span>${esc(n)}</span></label>`).join('')
-        :`<span class="mfix">${L('예상효율 입력에 라인을 넣으면 매체 이름이 여기에 나옵니다','Media names appear here once lines are added')}</span>`}</div></td></tr>`;
+  /* OTT 매체는 고정(넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스) — 고를 것 없이 안내만 (v141) */
+  const ottNote=()=>`<tr class="mott"><td colspan="3">${L('넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스 라인이 OTT에 나오고, 나머지 매체는 디지털에 나옵니다.',
+      'Netflix · Coupang Play · TVING · Disney+ lines appear under OTT; other media stay under Digital.')}</td></tr>`;
   const area=a=>`<tbody class="mgrp" data-area="${a}">
       <tr class="mhead"><td colspan="3"><label class="marea"><input type="checkbox" data-area="${a}">
         <b>${AREA_LABEL[a]}</b><i>${AREA_SUB[a]}</i></label></td></tr>
-      ${a==='ott'?ottPick():''}${menusOf(a).map(row).join('')}</tbody>`;
+      ${a==='ott'?ottNote():''}${menusOf(a).map(row).join('')}</tbody>`;
   /* 공용 메뉴(전체 캠페인 · 트렌드 리포트)도 이름 왼쪽 체크박스로 켜고 끈다 (v82) — 그 묶음 메뉴의 '사용' 과 같다 */
   const common=(a,sub)=>`<tbody class="mgrp" data-area="${a}"><tr class="mhead"><td colspan="3"><label class="marea">
          <input type="checkbox" data-common="${a}"><b>${AREA_LABEL[a]}</b><i>${sub}</i></label></td></tr>${menusOf(a).map(row).join('')}</tbody>`;
@@ -19865,19 +19847,10 @@ function openMenuSettings(){
       tr.querySelectorAll('input[data-k]').forEach(cb=>{cb.checked=!!s[cb.dataset.k];
         cb.disabled=!!off||(cb.dataset.k==='viewer'&&!s.on);});
       tr.classList.toggle('unused',!s.on);});
-    /* OTT 매체 — 디지털을 끄면 모든 라인이 OTT 라 고를 필요가 없다 */
-    {const both=st.media.ott&&st.media.digital;
-     box.querySelectorAll('input[data-ottm]').forEach(cb=>{cb.checked=!st.media.digital||st.ott.has(CKEY(cb.dataset.ottm));cb.disabled=!both;});
-     const tr=box.querySelector('tr.mott');if(tr)tr.classList.toggle('off',!both);
-     const nt=$('mottNote');if(nt)nt.textContent=!st.media.ott?'':!st.media.digital
-       ?L('디지털을 끄면 모든 라인이 OTT로 보입니다','With Digital off, every line is shown under OTT')
-       :L('고른 매체의 라인은 OTT에서만, 나머지는 디지털에서 보입니다','Lines of the checked media appear under OTT; the rest under Digital');}
     box.querySelectorAll('tbody.mgrp').forEach(g=>g.classList.toggle('off',MEDIA_AREAS.includes(g.dataset.area)?!st.media[g.dataset.area]
       :!MENUS.some(m=>m.area===g.dataset.area&&st.menus[m.id].on)));};
   const check=()=>{
     if(!MEDIA_AREAS.some(a=>st.media[a]))return L('디지털 · TV · OTT · OOH 중 <b>최소 한 영역</b>은 켜야 합니다.','<b>At least one</b> of Digital · TV · OTT · OOH must be on.');
-    if(st.media.ott&&st.media.digital&&mNames.length&&!mNames.some(n=>st.ott.has(CKEY(n))))
-      return L('디지털과 OTT를 함께 쓰려면 <b>OTT로 볼 매체</b>를 한 개 이상 골라 주세요.','Pick <b>at least one medium</b> to show under OTT.');
     for(const a of MEDIA_AREAS){
       if(st.media[a]&&!MENUS.some(m=>m.area===a&&st.menus[m.id].on))
         return L(`<b>${AREA_LABEL[a]}</b> 영역을 쓰려면 메뉴를 <b>한 개 이상</b> 켜 주세요.`,
@@ -19888,8 +19861,6 @@ function openMenuSettings(){
     return '';};
   const say=()=>{const m=check();$('medMsg').innerHTML=m?`<span style="color:var(--neg)">${m}</span>`:'';return !m;};
   box.querySelectorAll('input[data-area]').forEach(cb=>cb.onchange=()=>{st.media[cb.dataset.area]=cb.checked;paint();say();});
-  box.querySelectorAll('input[data-ottm]').forEach(cb=>cb.onchange=()=>{const k=CKEY(cb.dataset.ottm);
-    if(cb.checked)st.ott.add(k);else st.ott.delete(k);paint();say();});
   box.querySelectorAll('input[data-common]').forEach(cb=>cb.onchange=()=>{
     MENUS.filter(m=>m.area===cb.dataset.common).forEach(m=>{st.menus[m.id].on=cb.checked;});paint();say();});
   box.querySelectorAll('tr[data-mid] input[data-k]').forEach(cb=>cb.onchange=()=>{
@@ -19899,8 +19870,6 @@ function openMenuSettings(){
   if(ok)ok.onclick=()=>{
     if(!say())return;
     setCampMedia(st.media);
-    /* OTT 매체 — 디지털과 함께 쓸 때 고른 것만 적는다(이름은 라인에 적힌 그대로). 디지털을 끄면 전부 OTT 라 목록은 그대로 둔다 */
-    if(st.media.ott&&st.media.digital)CAMPAIGN.ottMedia=mNames.filter(n=>st.ott.has(CKEY(n)));
     /* 영역이 바뀌었을 수 있다 — 대시보드를 다시 그리게 */
     DG_DIRTY=true;
     const out={};

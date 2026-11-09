@@ -800,7 +800,7 @@ const MENUS=[
   {id:'t_input',area:'tv',     tab:'tvinput',            l:'데이터 입력',  kind:'edit'},
   {id:'t_plan', area:'tv',     tab:'tvplan',             l:'예상효율 입력',kind:'edit'},
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
-     어느 라인이 OTT 인지는 메뉴 설정의 'OTT 매체'(CAMPAIGN.ottMedia) · 디지털을 끄면 모든 라인이 OTT.
+     OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
      입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
   {id:'ot_struct',area:'ott',  tab:'dash',   sub:'struct',l:'캠페인 구조', kind:'view'},
   {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
@@ -824,24 +824,20 @@ const MEDIA_AREAS=['digital','tv','ott','ooh'];
 /* ---------- 디지털 · OTT 나누기 (v141) ----------
    두 영역은 같은 대시보드 화면(tab-dash)을 쓴다. DG_AREA 가 지금 보는 쪽이고,
    activeLines · factFilter · paceFacts 와 화면이 직접 읽는 라인 목록(areaLines)이 그쪽 라인만 남긴다.
-   · OTT 를 안 쓰는 캠페인 → 나누지 않는다(모든 라인 = 디지털)
-   · 디지털을 끄고 OTT 만 → 모든 라인이 OTT
-   · 둘 다 → 'OTT 매체'(CAMPAIGN.ottMedia, 없으면 넷플릭스 · 티빙 등 이름으로 자동)에 든 매체의 라인이 OTT */
+   · OTT 영역을 안 켠 캠페인 → 나누지 않는다(모든 라인 = 디지털, 예전 그대로)
+   · OTT 영역을 켜면 → OTT 매체(넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스 — 고정) 라인은 OTT, 나머지는 디지털 */
 var DG_AREA='digital',DG_DIRTY=false;
-const OTT_RE=/netflix|넷플릭스|tving|티빙|wavve|웨이브|coupang\s*play|쿠팡\s*플레이|disney|디즈니|watcha|왓챠|u\+\s*모바일|apple\s*tv|prime\s*video|프라임\s*비디오|laftel|라프텔/i;
-function ottMediaList(){
-  if(typeof CAMPAIGN!=='undefined'&&Array.isArray(CAMPAIGN.ottMedia))return CAMPAIGN.ottMedia.slice();
-  return [...new Set((LINES||[]).map(l=>String(l.media||'').trim()).filter(m=>m&&OTT_RE.test(m)))];}
+const OTT_RE=/netflix|넷플릭스|coupang\s*play|쿠팡\s*플레이|tving|티빙|disney|디즈니/i;
+const isOttMedia=m=>OTT_RE.test(String(m==null?'':m));
 function dgSplit(){const md=campMedia();return md.ott?(md.digital?'both':'ott'):'none';}
 /* 지금 보는 쪽 — 한쪽만 켜져 있으면 그쪽 */
 function curDgArea(){const s=dgSplit();return s==='none'?'digital':s==='ott'?'ott':(DG_AREA==='ott'?'ott':'digital');}
-function lineArea(l,set){const s=dgSplit();if(s==='none')return 'digital';if(s==='ott')return 'ott';
-  set=set||new Set(ottMediaList().map(CKEY));return set.has(CKEY(l&&l.media))?'ott':'digital';}
+function lineArea(l){return dgSplit()==='none'?'digital':(isOttMedia(l&&l.media)?'ott':'digital');}
 /* 지금 영역의 라인 id 묶음 — 나누지 않는 캠페인이면 null(거르지 않음) */
 function areaLidSet(){
   if(dgSplit()==='none')return null;
-  const a=curDgArea(),set=new Set(ottMediaList().map(CKEY));
-  return new Set(LINES.filter(l=>lineArea(l,set)===a).map(l=>l.id));}
+  const a=curDgArea();
+  return new Set(LINES.filter(l=>lineArea(l)===a).map(l=>l.id));}
 function areaLines(){const s=areaLidSet();return s?LINES.filter(l=>s.has(l.id)):LINES;}
 /* 소재가 지금 영역의 라인에 붙어 있는가 */
 function crInArea(c,s){s=s===undefined?areaLidSet():s;if(!s)return true;

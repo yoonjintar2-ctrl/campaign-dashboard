@@ -82,8 +82,6 @@ function serializeDoc(){
       media:(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false}),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
       menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{})),
-      /* OTT 로 볼 매체 이름 (v141) — 없으면 넷플릭스 · 티빙 등 이름으로 자동 */
-      ...(Array.isArray(CAMPAIGN.ottMedia)?{ottMedia:CAMPAIGN.ottMedia.slice()}:{}),
       /* 캠페인 구조 가지 순서 (v120.3) — '' = 매체 › 타깃 › 광고상품 · 'product' = 매체 › 광고상품 › 타깃 · 'target' = 타깃 › 매체 › 광고상품 */
       csOrder:CAMPAIGN.csOrder||''},
     /* TV 캠페인 — 예상효율(plan) · 리포트 데이터(spots) (v71) */
@@ -198,7 +196,6 @@ function applyDoc(d,keepToday){
   /* 운영 매체 · TV 데이터 (v71) — 예전 저장본은 디지털만 */
   {const m=d.campaign&&d.campaign.media;
    CAMPAIGN.media=(m&&(m.digital||m.tv||m.ooh||m.ott))?{digital:!!m.digital,tv:!!m.tv,ott:!!m.ott,ooh:!!m.ooh}:{digital:true,tv:false,ott:false,ooh:false};}
-  {const om=d.campaign&&d.campaign.ottMedia;if(Array.isArray(om))CAMPAIGN.ottMedia=om.map(x=>String(x));else delete CAMPAIGN.ottMedia;}
   /* 캠페인을 새로 열면 디지털 쪽부터 (디지털을 끈 캠페인은 curDgArea 가 OTT 로) */
   try{DG_AREA='digital';DG_DIRTY=true;}catch(e){}
   {const mm=d.campaign&&d.campaign.menus;CAMPAIGN.menus=(mm&&typeof mm==='object')?JSON.parse(JSON.stringify(mm)):{};}
@@ -1141,7 +1138,7 @@ function resetToBlank(name,advertiser){
   /* 소재 자료함도 비운다 (v89) — 안 비우면 직전에 열어 둔 캠페인의 이미지 · 영상이 새 캠페인 문서에 같이 저장됐다 */
   try{CR_ASSETS={};}catch(e){}
   /* 새 캠페인은 디지털만 켠 채로 시작한다 — 설정 › 운영 매체에서 바꾼다 (v71) */
-  CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};delete CAMPAIGN.ottMedia;CAMPAIGN.csOrder='';
+  CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
