@@ -40,6 +40,12 @@ const wrPaid=c=>(wrN(c.bud)>0)||(wrN(c.cost)>0);
 /* 목표 eq.GRP — 채널 예산 ÷ 목표 CPRP 의 합 */
 function wrEqTarget(){let t=0,ok=false;(TV_WR.chs||[]).forEach(c=>{if(wrN(c.bud)>0&&wrN(c.tc)>0){t+=c.bud/c.tc;ok=true;}});return ok?t:NaN;}
 
+/* 전체 캠페인(광고주 화면)용 TV 요약 — 저장할 때 media.tvSum 으로 (v148). 금액은 원 */
+function tvSumNow(){
+  if(wrOn()){const W=TV_WR,t=W.wtot||{};return {plan:Math.round((+t.bud||+W.tot.bud||0)*1000),spend:Math.round((+t.cost||0)*1000),grp:+W.tot.grp||0,pgrp:0,mon:{[W.ym]:Math.round((+t.bud||+W.tot.bud||0)*1000)}};}
+  try{const T=tvMixTotal?tvMixTotal():null;let plan=0,mon={};(TV_MIX||[]).forEach(r=>{const a=tvMixCalc(r).amt||0;plan+=a;if(/^\d{4}-\d{2}$/.test(r.ym||''))mon[r.ym]=(mon[r.ym]||0)+a;});
+    const spend=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.cost)||0),0),grp=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.grp)||0),0);
+    return plan||spend?{plan,spend,grp,pgrp:0,mon}:null;}catch(e){return null;}}
 /* ---------- 가로 스크롤: 막대는 숨기고 좌우 가운데에 떠 있는 화살표로 ---------- */
 function wrHs(inner,cls){return `<div class="wrhs ${cls||''}"><div class="wrhs-in">${inner}</div>
   <button type="button" class="wrhs-b l" aria-label="${L('왼쪽으로','Scroll left')}"><svg viewBox="0 0 12 12"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg></button>

@@ -53,6 +53,10 @@ function ovRow(p){
    else if(dy.length)TA.grp=sum(dy.map(r=>tvNum(r.grp)));
    tvs=tvs.concat(dy.filter(r=>ovIso(r.date)).map(r=>({date:r.date})));
    tvn=mx.length+chs.length+dy.length;}
+  /* v148 — 광고주 화면 서버 함수는 TV 계획 · 채널 표를 주지 않는다 → 저장할 때 적어 둔 요약(media.tvSum) */
+  if(!(TP.amt>0)&&!(TA.cost>0)&&m.tvSum&&typeof m.tvSum==='object'){const s=m.tvSum;
+    TP.amt=+s.plan||0;TP.grp=+s.pgrp||0;TA.cost=+s.spend||0;TA.grp=+s.grp||0;tvn=Math.max(tvn,1);
+    Object.entries(s.mon||{}).forEach(([ym,v])=>{if(/^\d{4}-\d{2}$/.test(ym)&&+v)tvMon[ym]=(tvMon[ym]||0)+(+v);});}
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
   const tD=tvs.map(r=>r.date);let tP=per(tD,tD);

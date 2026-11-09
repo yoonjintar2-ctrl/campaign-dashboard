@@ -14105,7 +14105,8 @@ function serializeDoc(){
       /* 운영 매체 (v71) — {digital, tv}. 없으면 디지털만 */
       /* v143 — OTT 를 켠 캠페인은 OTT 라인 요약(ottSum)도 함께: 광고주 화면 전체 캠페인(서버 함수는 라인 매체를 안 준다)용 */
       media:(()=>{const m=(typeof campMedia==='function'?campMedia():{digital:true,tv:false,ooh:false});
-        try{if(m.ott&&typeof ottSumNow==='function')return {...m,ottSum:ottSumNow()};}catch(e){}return m;})(),
+        let o=m;try{if(m.ott&&typeof ottSumNow==='function')o={...o,ottSum:ottSumNow()};}catch(e){}
+        try{if(m.tv&&typeof tvSumNow==='function'){const t=tvSumNow();if(t)o={...o,tvSum:t};}}catch(e){}return o;})(),
       /* 메뉴 설정 (v72) — 켜 둔 기본값과 다른 것만 { 메뉴: {on:false, viewer:false} } */
       menus:JSON.parse(JSON.stringify(CAMPAIGN.menus||{})),
       /* 캠페인 구조 가지 순서 (v120.3) — '' = 매체 › 타깃 › 광고상품 · 'product' = 매체 › 광고상품 › 타깃 · 'target' = 타깃 › 매체 › 광고상품 */
@@ -21604,6 +21605,10 @@ function ovRow(p){
    else if(dy.length)TA.grp=sum(dy.map(r=>tvNum(r.grp)));
    tvs=tvs.concat(dy.filter(r=>ovIso(r.date)).map(r=>({date:r.date})));
    tvn=mx.length+chs.length+dy.length;}
+  /* v148 — 광고주 화면 서버 함수는 TV 계획 · 채널 표를 주지 않는다 → 저장할 때 적어 둔 요약(media.tvSum) */
+  if(!(TP.amt>0)&&!(TA.cost>0)&&m.tvSum&&typeof m.tvSum==='object'){const s=m.tvSum;
+    TP.amt=+s.plan||0;TP.grp=+s.pgrp||0;TA.cost=+s.spend||0;TA.grp=+s.grp||0;tvn=Math.max(tvn,1);
+    Object.entries(s.mon||{}).forEach(([ym,v])=>{if(/^\d{4}-\d{2}$/.test(ym)&&+v)tvMon[ym]=(tvMon[ym]||0)+(+v);});}
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
   const tD=tvs.map(r=>r.date);let tP=per(tD,tD);
@@ -28107,6 +28112,12 @@ const wrPaid=c=>(wrN(c.bud)>0)||(wrN(c.cost)>0);
 /* 목표 eq.GRP — 채널 예산 ÷ 목표 CPRP 의 합 */
 function wrEqTarget(){let t=0,ok=false;(TV_WR.chs||[]).forEach(c=>{if(wrN(c.bud)>0&&wrN(c.tc)>0){t+=c.bud/c.tc;ok=true;}});return ok?t:NaN;}
 
+/* 전체 캠페인(광고주 화면)용 TV 요약 — 저장할 때 media.tvSum 으로 (v148). 금액은 원 */
+function tvSumNow(){
+  if(wrOn()){const W=TV_WR,t=W.wtot||{};return {plan:Math.round((+t.bud||+W.tot.bud||0)*1000),spend:Math.round((+t.cost||0)*1000),grp:+W.tot.grp||0,pgrp:0,mon:{[W.ym]:Math.round((+t.bud||+W.tot.bud||0)*1000)}};}
+  try{const T=tvMixTotal?tvMixTotal():null;let plan=0,mon={};(TV_MIX||[]).forEach(r=>{const a=tvMixCalc(r).amt||0;plan+=a;if(/^\d{4}-\d{2}$/.test(r.ym||''))mon[r.ym]=(mon[r.ym]||0)+a;});
+    const spend=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.cost)||0),0),grp=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.grp)||0),0);
+    return plan||spend?{plan,spend,grp,pgrp:0,mon}:null;}catch(e){return null;}}
 /* ---------- 가로 스크롤: 막대는 숨기고 좌우 가운데에 떠 있는 화살표로 ---------- */
 function wrHs(inner,cls){return `<div class="wrhs ${cls||''}"><div class="wrhs-in">${inner}</div>
   <button type="button" class="wrhs-b l" aria-label="${L('왼쪽으로','Scroll left')}"><svg viewBox="0 0 12 12"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg></button>
