@@ -27,9 +27,11 @@ const wrPct=(a,b)=>isFinite(a)&&isFinite(b)&&b>0?a/b:NaN;
 /* 품목 색 — 같은 품목은 어느 달에서나 같은 색 (차분한 색 10개) */
 /* v147 — 알록달록하지 않게: 채도를 낮춘 회청 · 청록 · 회갈 계열로 서로 비슷한 톤 */
 const WR_PAL=['#4f6b8f','#8a7b68','#5d8580','#7d7090','#93876f','#5f84a3','#8c6f73','#6c7b8e','#748a6d','#7f8796'];
-const WR_ICOL={'아이콘3':0,'아이콘얼음정수기':1,'카페얼음정수기':5,'안마매트리스':3,'음식물처리기':2,'페블체어2':4,'트리플체어2':6,
+const WR_ICOL={'아이콘3':0,'아이콘얼음정수기':1,'카페얼음정수기':5,'안마매트리스':3,'음식물처리기':2,'페블체어2':8,'트리플체어2':6,
   '스마트매트리스':7,'아이콘프로':8,'노블청정기':9,'비데':2,'히티브':6,'마사지셋/코어셋':4,'코웨이페스타':3};
 function wrCol(n){if(n in WR_ICOL)return WR_PAL[WR_ICOL[n]];let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return WR_PAL[h%WR_PAL.length];}
+/* v151 — 서머리에는 품목 고유 색을 쓰지 않는다(색 체계 합의 전) — 차분한 회청 한 가지 */
+const WR_NEU='#9fb2c9',WR_NEU2='#6f86a3';
 /* 지상파 · 케이블 톤 — 지상파는 푸른 기 도는 짙은 회청, 케이블은 무채 회색. 같은 톤 안에서 PP 마다 밝기만 */
 const WR_TONE={t:['#24406f','#3d5f99','#6b8cc4','#9db6e0','#c4d4ee'],c:['#3f4a54','#58636e','#717c87','#8a949e','#a3acb5','#bcc3ca','#d2d7dc','#e1e5e8']};
 function wrShade(h,k){const n=parseInt(h.slice(1),16),f=c=>Math.max(0,Math.min(255,Math.round(c*k)));return `rgb(${f(n>>16&255)},${f(n>>8&255)},${f(n&255)})`;}
@@ -277,7 +279,7 @@ function renderWrDash(){
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
   h.innerHTML=wrHead(L('TV 서머리','TV summary'),`${wrMonth()} · ${W.period||''}`)+kpis
-    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 같은 품목은 같은 색 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · same product = same color · click to show its table below')}</span></div>
+    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
       <div id="wrItem"></div>
@@ -293,7 +295,7 @@ function renderWrDash(){
 function wrScatter(pts){
   const box=$('wrSc');if(!box)return;
   if(!pts.length){box.innerHTML=`<div class="hint" style="padding:30px;text-align:center">${L('당월 소재 실적이 없습니다','No creative results this month')}</div>`;return;}
-  const Wd=Math.max(980,box.clientWidth||1100),CW=232,CH=82,GAP=10,PAD=46;
+  const Wd=Math.max(980,box.clientWidth||1100),CW=236,CH=92,GAP=10,PAD=46;
   const x0=CW+PAD,x1=Wd-CW-PAD;
   const half=Math.ceil(pts.length/2),rows=Math.max(half,4);
   const Hd=Math.max(440,rows*(CH+GAP)+40),y0=24,y1=Hd-40;
@@ -314,19 +316,21 @@ function wrScatter(pts){
   let grid='';for(let i=0;i<=5;i++){const yy=y0+(y1-y0)*i/5;grid+=`<line x1="${x0}" x2="${x1}" y1="${yy}" y2="${yy}" class="gl"/>`;}
   for(let i=0;i<=5;i++){const v=XM*i/5,xx=X(v);grid+=`<line x1="${xx}" x2="${xx}" y1="${y0}" y2="${y1}" class="gl"/><text x="${xx}" y="${y1+18}" class="tk" text-anchor="middle">${wrF(v)}</text>`;}
   const lines=pts.map((p,i)=>{const ex=p.side<0?CW+4:Wd-CW-4,ey=p.cy+CH/2,mx2=p.side<0?x0-16:x1+16;
-    return `<path class="ln" data-i="${i}" d="M${p.x.toFixed(1)},${p.y.toFixed(1)} L${mx2},${ey.toFixed(1)} L${ex},${ey.toFixed(1)}" stroke="${wrCol(p.it)}"/>`;}).join('');
+    return `<path class="ln" data-i="${i}" d="M${p.x.toFixed(1)},${p.y.toFixed(1)} L${mx2},${ey.toFixed(1)} L${ex},${ey.toFixed(1)}"/>`;}).join('');
   /* 레이더 효과(퍼지는 원)는 고른 점에만 — 나머지는 테두리 없는 점 하나 */
   /* v150 — 점 크기 = 월 예산 (넓이가 예산에 비례 · 가장 큰 소재 반지름 24). 큰 점이 작은 점을 덮지 않게 큰 것부터 그린다 */
   const mxB=Math.max(...pts.map(p=>wrN(p.c.bud)).filter(isFinite),0);
   const rad=p=>{const b=wrN(p.c.bud);return mxB>0&&b>0?Math.max(5,24*Math.sqrt(b/mxB)):5;};
   const dots=pts.map((p,i)=>[p,i]).sort((a,b)=>rad(b[0])-rad(a[0])).map(([p,i])=>{const r=rad(p);
     return `<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
-      <circle r="${(r*2.4).toFixed(1)}" class="halo" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/><circle r="${(r*2.4).toFixed(1)}" class="halo h2" fill="${wrCol(p.it)}" cx="${p.x}" cy="${p.y}"/>
-      <circle r="${r.toFixed(1)}" class="core" fill="${wrCol(p.it)}" fill-opacity=".86" cx="${p.x}" cy="${p.y}"/></g>`;}).join('');
+      <circle r="${(r*2.4).toFixed(1)}" class="halo" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/><circle r="${(r*2.4).toFixed(1)}" class="halo h2" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/>
+      <circle r="${r.toFixed(1)}" class="core" cx="${p.x}" cy="${p.y}"/></g>`;}).join('');
   const cards=pts.map((p,i)=>{const c=p.c,cc=c.c||{};
-    return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" style="left:${p.side<0?0:Wd-CW}px;top:${p.cy}px;width:${CW}px;height:${CH}px;--c:${wrCol(p.it)};--d:${200+i*50}ms">
-      <div class="t"><i></i><b>${esc(p.it)}</b><span>${esc(c.n)}</span></div>
-      <div class="m"><span>${L('월 예산','Budget')} <b>${wrEok(c.bud)}</b></span><span>eq <b>${wrF(c.eq,1)}</b></span><span>GRP <b>${wrF(c.grp,1)}</b></span><span>R1 <b>${wrF(c.r1,1)}</b></span><span>R3 <b>${wrF(c.r3,1)}</b></span></div>
+    /* v151 — 소재 이름이 먼저 · R3+ 와 eq.GRP 를 크게, 나머지는 작게 */
+    return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" style="left:${p.side<0?0:Wd-CW}px;top:${p.cy}px;width:${CW}px;height:${CH}px;--d:${200+i*50}ms">
+      <div class="t"><b>${esc(c.n)}</b><span>${esc(p.it)}</span></div>
+      <div class="big"><span><em>R3+</em><b>${wrF(c.r3,1)}<i>%</i></b></span><span><em>eq.GRP</em><b>${wrF(c.eq,1)}</b></span></div>
+      <div class="m"><span>${L('월 예산','Budget')} ${wrEok(c.bud)}</span><span>GRP ${wrF(c.grp,1)}</span><span>R1+ ${wrF(c.r1,1)}%</span></div>
       <div class="cum">${L('온에어 이후','Since on-air')} GRP ${wrF(cc.grp,1)} · eq ${wrF(cc.eq,1)} · R1 ${wrF(cc.r1,1)} · R3 ${wrF(cc.r3,1)}</div></div>`;}).join('');
   box.innerHTML=`<div class="wrsc-in" style="width:${Wd}px;height:${Hd}px">
     <svg width="${Wd}" height="${Hd}" viewBox="0 0 ${Wd} ${Hd}">${grid}
@@ -349,7 +353,7 @@ function wrItemTbl(){
   let ent=ord.find(e=>e.n===WR_SEL.item)||ord[0];
   const crs=ent.cr.filter(c=>c.n!=='계'),sumK=(ent.cr.find(c=>c.n==='계')||{}).k,allK=(((W.dorder||[]).find(e=>e.n==='__ALL__')||{}).cr||[{}])[0].k;
   let selK=(crs.find(c=>c.n===WR_SEL.cr||c.sn===WR_SEL.cr)||{}).k||'';
-  const chips=wrChips(ord.map(e=>({k:e.n,l:e.n,c:wrCol(e.n)})),ent.n,'data-wri')
+  const chips=wrChips(ord.map(e=>({k:e.n,l:e.n})),ent.n,'data-wri')
     +wrChips([...crs.map(c=>({k:c.k,l:c.n,s:c.on?wrD(c.on):''})),{k:sumK||'',l:L('품목 계','Product total')}],selK||sumK,'data-wrc');
   const blocks=[...crs.map(c=>({k:c.k,l:c.n,on:c.on})),{k:sumK,l:L('품목 계','Product total'),sum:1},{k:allK,l:L('전체 합계','All products'),all:1}].filter(b=>b.k&&W.det[b.k]);
   const chs=W.chs||[];
@@ -422,7 +426,7 @@ function wrTimeline(){
   const w=xs[xs.length-1]+220;
   let lastY='';
   const nodes=list.map((x,i)=>{const up=i%2===0,c=x.c,cc=c.c||{},y=c.on.slice(0,4),showY=y!==lastY;lastY=y;
-    return `<div class="tn ${up?'up':'dn'}" style="left:${xs[i].toFixed(0)}px;--c:${wrCol(x.it)};--d:${i*70}ms">
+    return `<div class="tn ${up?'up':'dn'}" style="left:${xs[i].toFixed(0)}px;--c:${WR_NEU2};--d:${i*70}ms">
       <div class="dot"><span>${String(i+1).padStart(2,'0')}</span></div>${showY?`<div class="yr">${y}</div>`:''}
       <div class="dt">${wrD(c.on)}</div><div class="stem"></div>
       <div class="cd"><div class="t"><i></i>${esc(x.it)}</div><b>${esc(c.n)}</b>

@@ -839,26 +839,27 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsc-in .axl{stroke:var(--gline);stroke-width:1.2}
 .wrsc-in .tk{font-size:11px;fill:var(--muted);font-weight:600}
 .wrsc-in .ax{font-size:11.5px;fill:var(--ink2);font-weight:800}
-.wrsc-in .ln{fill:none;stroke-width:1.3;opacity:.55;transition:opacity .2s,stroke-width .2s}
+.wrsc-in .ln{fill:none;stroke:var(--gline);stroke-width:.6;opacity:.32;transition:opacity .2s,stroke-width .2s}
 .wrsc-in .pt{cursor:pointer;animation:wrPop .5s cubic-bezier(.3,1.4,.5,1) both;animation-delay:var(--d);transform-box:fill-box;transform-origin:center}
 .wrsc-in .pt .halo{opacity:0;transform-box:fill-box;transform-origin:center}
-.wrsc-in .pt .core{stroke:none}
+.wrsc-in .pt .core{stroke:none;fill:#9fb2c9;fill-opacity:.62;transition:fill .2s,fill-opacity .2s}.wrsc-in .pt.on .core,.wrsc-in .pt.sel .core{fill:#5f7a9c;fill-opacity:.78}
 .wrsc-in .pt.sel .core{transform-box:fill-box;transform-origin:center;transform:scale(1.25)}
 .wrsc-in .pt.sel .halo{animation:wrRadar 2.2s cubic-bezier(.2,.6,.3,1) infinite}
 .wrsc-in .pt.sel .halo.h2{animation-delay:1.1s}
 @keyframes wrRadar{0%{opacity:.42;transform:scale(.35)}100%{opacity:0;transform:scale(1.6)}}
 .wrsc-in.hot .pt:not(.on),.wrsc-in.hot .ln:not(.on),.wrsc-in.hot .wrscc:not(.on){opacity:.22}
-.wrsc-in .ln.on{opacity:1;stroke-width:2}
-.wrscc{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;background:var(--surface);
+.wrsc-in .ln.on{opacity:.85;stroke-width:1;stroke:var(--ink2)}
+.wrscc{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-left:3px solid #b6c4d4;border-radius:12px;background:var(--surface);
   padding:8px 11px;cursor:pointer;transition:opacity .2s,box-shadow .2s,border-color .2s;animation:wrFade .45s ease both;animation-delay:var(--d);overflow:hidden}
 .wrscc:hover,.wrscc.on{box-shadow:0 8px 22px rgba(0,0,0,.1)}
-.wrscc.sel{border-color:var(--ink2);border-left-color:var(--c);box-shadow:0 0 0 1.5px var(--ink2) inset}
-.wrscc .t{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;overflow:hidden}
-.wrscc .t i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
-.wrscc .t b{font-weight:800;color:var(--ink)}.wrscc .t span{font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
-.wrscc .m{display:flex;flex-wrap:wrap;gap:2px 9px;margin-top:5px;font-size:11px;color:var(--muted)}
+.wrscc.sel{border-color:var(--ink2);border-left-color:#5f7a9c;box-shadow:0 0 0 1.5px var(--ink2) inset}
+.wrscc .t{display:flex;align-items:baseline;gap:6px;font-size:12.5px;white-space:nowrap;overflow:hidden}
+.wrscc .big{display:flex;gap:16px;margin-top:3px}.wrscc .big span{display:flex;align-items:baseline;gap:5px}.wrscc .big em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted)}
+.wrscc .big b{font-size:18px;font-weight:900;color:var(--ink);letter-spacing:-.4px;font-variant-numeric:tabular-nums}.wrscc .big b i{font-style:normal;font-size:11px;font-weight:700;margin-left:1px}
+.wrscc .t b{font-weight:800;color:var(--ink)}.wrscc .t span{font-size:10.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.wrscc .m{display:flex;flex-wrap:nowrap;gap:2px 8px;margin-top:2px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden}
 .wrscc .m b{color:var(--ink);font-weight:800}
-.wrscc .cum{margin-top:4px;font-size:10px;color:var(--muted);opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrscc .cum{margin-top:2px;font-size:9.5px;color:var(--muted);opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes wrPop{from{transform:scale(0);opacity:0}to{transform:none;opacity:1}}
 /* 품목 세부 표 */
 .wrsel{margin:2px 0 4px}.wrsel .wrchips+.wrchips{margin-top:-4px}
@@ -1102,6 +1103,43 @@ table.rpdt tr.sbar td{padding:8px 6px 4px;background:none}
 .rpgal img{display:block;width:100%;height:auto;background:#fff}.rpgal figcaption{font-size:11.5px;color:var(--ink2);padding:7px 10px;font-weight:600}
 table.rpcrt .mo{margin:0}table.rpcrt td{vertical-align:middle}
 @media (prefers-reduced-motion: reduce){#rptBody *{transition:none!important;animation:none!important}}
+/* ===== 리포트 v151 — 막대↔도넛 · 기운 3D 도넛 · 영역 그래프 · 브랜드 상세 ===== */
+.rpbd{display:block;overflow:visible}.rpbd .nil{fill:var(--line)}
+.rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
+.rpbd.hot .bl .bd{opacity:.22;transition:opacity .2s}
+.rpbd .dc1{font-size:12px;font-weight:700;fill:var(--muted)}.rpbd .dc2{font-size:17px;font-weight:900;fill:var(--ink)}
+.rpbd .bdl{fill:none;stroke:var(--gline);stroke-width:.7;opacity:.55}
+.rpbd .bdx{fill:var(--surface);stroke:var(--line)}.rpbd .bdn{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbd .bds{font-size:10.5px;font-weight:600;fill:var(--muted)}
+.rpbdx{display:flex;justify-content:space-around;margin:-4px 8px 0;font-size:11px;font-weight:600;color:var(--muted)}.rpbdx span{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rpbdx span.cur{color:var(--ink);font-weight:900}.rpbdx.br span{font-size:11.5px;color:var(--ink2);font-weight:700}.rpbdx.br span.cur{color:#1d6fc2}
+.rp3dbox{display:flex;justify-content:center;min-height:260px}
+.rp3d .sl{transition:opacity .18s,filter .2s}.rp3d.hot .sl:not(.on){opacity:.32}.rp3d.hot .sl.on{filter:brightness(1.06)}
+.rp3d .cd{transition:opacity .2s}.rp3d.hot .cd:not(.on){opacity:.35}.rp3d.done .cd{animation:wrFade .45s ease both}
+.rp3d .ln{fill:none;stroke:var(--gline);stroke-width:.7;opacity:.5}.rp3d .lnd{fill:var(--gline);opacity:.7}
+.rp3d .bx{fill:var(--surface);stroke:var(--line)}.rp3d .cd.mine .bx{stroke:#1d6fc2;stroke-opacity:.5}
+.rp3d .cn{font-size:12px;font-weight:800;fill:var(--ink)}.rp3d .cd.mine .cn{fill:#1d6fc2}.rp3d .cv{font-size:11px;font-weight:700;fill:var(--muted)}
+.rpalg{display:flex;flex-wrap:wrap;gap:6px 18px;margin:2px 0 8px}
+.rpalg button{font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);background:none;border:0;padding:2px 0;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.rpalg button i{width:12px;height:12px;border-radius:4px}.rpalg button.mine{color:var(--ink);font-weight:800}.rpalg button.off{opacity:.35}
+.rparea .gl{stroke:var(--line2)}.rparea .ax{font-size:10px;fill:var(--muted);font-weight:600}
+.rparea .ln{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.85;transition:stroke-dashoffset 1.3s var(--rpd) var(--d)}
+.rparea .ln.mine{stroke-width:2.6;opacity:1}.go .rparea .ln{stroke-dashoffset:0}
+.rparea .ar{opacity:0;transition:opacity 1s ease calc(var(--d) + .3s)}.go .rparea .ar{opacity:1}
+.rparea .xh{stroke:var(--ink2);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
+.rpbubw{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}@media (max-width:1100px){.rpbubw{grid-template-columns:1fr}}
+.rpbub.hot .bb:not(.on){opacity:.45}.rpbub .bb.on circle:not(.pulse){stroke-width:2}
+.rpbubside .bl{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.rpbubside .bl button{font:inherit;display:grid;grid-template-columns:10px 1fr auto auto auto;gap:10px;align-items:center;text-align:left;padding:6px 10px;border:1px solid transparent;border-radius:9px;background:none;cursor:pointer;font-size:12px;color:var(--ink2)}
+.rpbubside .bl button i{width:10px;height:10px;border-radius:50%}.rpbubside .bl button b{color:var(--ink);font-weight:800}.rpbubside .bl button.mine b{color:#1d6fc2}
+.rpbubside .bl button span{font-variant-numeric:tabular-nums;font-size:11.5px}
+.rpbubside .bl button.on{background:var(--plane2);border-color:var(--line)}
+.rpbubside .bcard{background:var(--plane2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rpbubside .bh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.rpbubside .bh i{width:10px;height:10px;border-radius:50%}
+.rpbubside .bh b{font-size:14px;font-weight:900;color:var(--ink)}.rpbubside .bh span{font-size:11px;color:var(--muted);font-weight:600}
+table.rpbt td,table.rpbt th{padding:5px 8px;font-size:11.5px}table.rpbt tr.cur td{font-weight:800;background:color-mix(in srgb,#1d6fc2 6%,var(--surface))}
+/* 표 — 맨 왼쪽 머리 열(구분 · 브랜드 · MPP · 월)은 가운데 정렬 */
+table.rptbl td.br,table.rptbl td.md{text-align:center}
+#tab-tvdash .wrhost table.tbl tbody td:first-child,#tab-tvmix .wrhost table.tbl tbody td:first-child,#tab-tvweekly .wrhost table.tbl tbody td:first-child,#tab-tvdash .wrhost table.tbl tbody th,#tab-tvmix .wrhost table.tbl tbody th{text-align:center}
 #tab-tvmonthly .tvm-cards+.sec.gap{margin-top:26px}
 table.tvmix2 th{white-space:nowrap;line-height:1.3}
 .tvunit{font-size:10.5px;font-weight:600;color:var(--muted)}

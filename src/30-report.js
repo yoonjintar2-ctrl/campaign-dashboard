@@ -9,7 +9,7 @@
      own:[{m,t:[예산,GRP,eq,R1,R3],it:[[품목,예산,eq,R3]]}]  (코웨이 위클리 리포트 · 1~m월)
      arch:[{n:품목,cr:[{n,on,mo:[[월,예산,eq,R3,누적eq,누적R3]]}],img:[{id,on,mo,w,h}]}]}  (소재 아카이브 · 스토리보드는 assets/cr/)
    분석 문구는 없다 — 숫자와 그래프만. 업종 · 브랜드 · 월은 칩으로 바꿔 가며 한 화면에서 비교한다. */
-var RPT={y:0,m:0,cat:'',brand:'코웨이',sos:'ytd',sosMed:'atl',mix:'m',bub:'m',tblM:0,arcCat:'all'};
+var RPT={y:0,m:0,cat:'',brand:'코웨이',sos:'ytd',sosMed:'atl',mix:'ytd',bub:'m',tblM:0,arcCat:'all'};
 var RPT_DOC=null;   // var — 09-cloud applyDoc 이 먼저 불러도 되게
 const rptOn=()=>!!(RPT_DOC&&RPT_DOC.v&&!RPT_DOC.none&&Array.isArray(RPT_DOC.cats));
 const RPT_CW='#1d6fc2';
@@ -68,7 +68,9 @@ function rpBrands(cat){
   const list=Object.keys(tot).filter(b=>tot[b]>0||b==='코웨이'||((RPT_DOC.tvr||{})[cat.k]||[]).some(r=>r[1]===b));
   list.sort((a,b)=>(b==='코웨이')-(a==='코웨이')||tot[b]-tot[a]);
   return list;}
-function rpColMap(cat){const m={};let i=0;rpBrands(cat).forEach(b=>{m[b]=b==='코웨이'?RPT_CW:RPT_PAL[i++%RPT_PAL.length];});return m;}
+/* v151 — 코웨이만 색, 경쟁사는 회색 명도만 */
+function rpColMap(cat){const m={},bs=rpBrands(cat).filter(b=>b!=='코웨이');m['코웨이']=RPT_CW;bs.forEach((b,i)=>m[b]=rpMono(i,bs.length));return m;}
+function rpHueMap(cat){const m={};let i=0;rpBrands(cat).forEach(b=>{m[b]=b==='코웨이'?RPT_CW:RPT_PAL[i++%RPT_PAL.length];});return m;}
 /* 브랜드 · 기간(당월 m / 누적 ytd) · 매체 키 → 천원 */
 function rpAmt(cat,b,per,medKeys){
   const rows=rpSpend(cat)[b];if(!rows)return 0;const M=RPT_DOC.m;
@@ -145,8 +147,8 @@ function rpOwn(){
       ${kpi('R1+',r1,'p',0,'',2)}${kpi('R3+',r3,'p',0,'',3)}
       ${kpi(L('집행 품목','Items'),n,'n',0,L(`GRP ${wrF(grp)}`,`GRP ${wrF(grp)}`),4)}</div>
     <div class="rpgrid2">
-      ${rpCard(L('품목별 집행','By item'),L(`${M}월`,`M${M}`),`<div id="rpIso" class="rpiso"></div>`,rpSeg(mets,RP_OWN_MET,'data-rpom'))}
-      ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L(`1~${M}월 · 품목 누적`,`M1–M${M} · stacked by item`),`<div id="rpOwnTr"></div>`)}</div>`;
+      ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),L('이번 달 캠페인의 품목별 TV 집행','this campaign, by item'),`<div id="rpIso" class="rpiso"></div>`,rpSeg(mets,RP_OWN_MET,'data-rpom'))}
+      ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대에 마우스를 올리면 그 달 품목별 내역','hover a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
   rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkpis'));
   h.querySelectorAll('[data-rpom]').forEach(b=>b.onclick=()=>{RP_OWN_MET=b.dataset.rpom;h.querySelectorAll('[data-rpom]').forEach(x=>x.classList.toggle('on',x===b));rpIso();});}
 
@@ -169,7 +171,8 @@ function rpIso(){
   const mx=Math.max(...it.map(x=>rN(x[vi])))||1;
   const fmt=v=>k==='bud'?wrEok(v):k==='eq'?wrF(v):wrF(v,1)+'%';
   let g='';
-  it.forEach((x,i)=>{const v=rN(x[vi]),hh=Math.max(2,(base-top)*v/mx),cx=pad+gap*(i+.2),col=wrCol(x[0]);
+  /* v151 — 품목 고유 색은 쓰지 않는다: 회청 한 가지, 순위대로 명도만 */
+  it.forEach((x,i)=>{const v=rN(x[vi]),hh=Math.max(2,(base-top)*v/mx),cx=pad+gap*(i+.2),col=['#4f6b8f','#5f7a9c','#7089a8','#8198b4','#93a7c0','#a5b6cb','#b7c5d6','#c6d1de'][Math.min(i,7)];
     g+=`<g class="ib" style="--d:${i*80}ms" data-tip="${i}">${rpPrism(cx,base,bw,hh,col,dx,dy)}</g>
       <text class="iv" style="--d:${i*80+380}ms" x="${(cx+bw/2+dx/2).toFixed(1)}" y="${(base-hh-dy-8).toFixed(1)}" text-anchor="middle">${fmt(v)}</text>
       <text class="in" x="${(cx+bw/2).toFixed(1)}" y="${base+20}" text-anchor="middle">${rpWrap(x[0]).map((t,j)=>`<tspan x="${(cx+bw/2).toFixed(1)}" dy="${j?14:0}">${esc(t)}</tspan>`).join('')}</text>`;});
@@ -179,21 +182,10 @@ function rpIso(){
   rpTipWire(box,i=>{const x=it[+i];if(!x)return '';return `<div class="t">${esc(x[0])}</div>${rpTr(L('광고비','Spend'),wrEok(x[1]))}${x.length>5?rpTr(L('· 지상파','· Terr.'),wrEok(x[4]))+rpTr(L('· 케이블 · 종편','· Cable'),wrEok(x[5]))+rpTr('GRP',wrF(x[6])):''}${rpTr('eq.GRP',wrF(x[2],1))}${x.length>7?rpTr('R1+',wrF(x[7],1)+'%'):''}${rpTr('R3+',wrF(x[3],1)+'%')}`;});}
 function rpOwnTrend(){
   const box=$('rpOwnTr');if(!box)return;const own=RPT_DOC.own||[],M=RPT_DOC.m;
-  const items=[...new Set(own.flatMap(o=>o.it.filter(x=>rN(x[1])>0).map(x=>x[0])))];
-  const W=Math.max(420,box.clientWidth||520),H=300,base=H-40,top=26,n=12,gw=(W-20)/n,bw=Math.min(30,gw*.56);
-  const mx=Math.max(...own.map(o=>rN(o.t[0])))||1;let g='';
-  for(let m=1;m<=12;m++){const o=own.find(z=>z.m===m),x=10+gw*(m-1)+(gw-bw)/2;
-    if(o){let y=base;const sh=o.it.filter(z=>rN(z[1])>0).sort((a,b)=>items.indexOf(a[0])-items.indexOf(b[0]));
-      g+=`<g class="cb${m===M?' cur':''}" style="--d:${m*55}ms">`;
-      sh.forEach(z=>{const hh=(base-top)*rN(z[1])/mx;y-=hh;g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,hh-1).toFixed(1)}" fill="${wrCol(z[0])}" data-tip="${m}|${esc(z[0])}"/>`;});
-      g+=`</g><text class="cv${m===M?' cur':''}" style="--d:${m*55+400}ms" x="${(x+bw/2).toFixed(1)}" y="${(y-6).toFixed(1)}" text-anchor="middle">${wrEok(o.t[0])}</text>`;}
-    else g+=`<rect x="${x.toFixed(1)}" y="${base-2}" width="${bw.toFixed(1)}" height="2" class="nil"/>`;
-    g+=`<text class="mx${m===M?' cur':''}" x="${(x+bw/2).toFixed(1)}" y="${base+18}" text-anchor="middle">${m}${L('월','')}</text>`;}
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpcols"><line x1="6" x2="${W-6}" y1="${base}" y2="${base}" class="bl"/>${g}</svg>
-    <div class="rplg">${items.map(n2=>`<span><i style="background:${wrCol(n2)}"></i>${esc(n2)}</span>`).join('')}</div>`;
-  rpGo(box);
-  rpTipWire(box,k=>{const [m,n2]=k.split('|'),o=own.find(z=>z.m===+m);if(!o)return '';const z=o.it.find(q=>q[0]===n2);
-    return `<div class="t">${m}${L('월','')} · ${esc(n2)}</div>${z?rpTr(L('광고비','Spend'),wrEok(z[1]))+rpTr('eq.GRP',wrF(z[2],1))+rpTr('R3+',wrF(z[3],1)+'%'):''}${rpTr(L('월 합계','Month total'),wrEok(o.t[0]))}`;});}
+  const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1);const it=o?o.it.filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
+    return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#4f6b8f':'#9fb2c9',
+      slices:it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지','T')} ${wrEok(x[4])} / ${L('케','C')} ${wrEok(x[5])}`:''}))};});
+  rpBarDonut(box,bars,{H:330,cur:M-1,legend:`<div class="rpbdx">${[...Array(12)].map((_,i)=>`<span class="${i+1===M?'cur':''}">${i+1}${L('월','')}</span>`).join('')}</div>`});}
 
 /* ================================================================
    업종 고르기 — 업종 타일(코웨이 점유율 고리)이 곧 선택 칩
@@ -212,10 +204,10 @@ function rpCatBar(){
 function rpCatBody(){
   const h=$('rpCatBody');if(!h)return;const c=rpCat();
   const hasTv=!!((RPT_DOC.tvr||{})[c.k]||[]).length,hasDet=hasTv&&!!c.ar;
-  h.innerHTML=`<div class="rpblk" id="rpSos"></div><div class="rpblk" id="rpMix"></div>
+  h.innerHTML=`<div class="rpblk" id="rpMix"></div><div class="rpblk" id="rpSos"></div>
     ${hasTv?`<div class="rpblk" id="rpTv"></div>`:''}${hasDet?`<div class="rpblk" id="rpDet"></div>`:''}
     <div class="rpblk" id="rpEtc"></div><div class="rpblk" id="rpDg"></div>`;
-  rpSos();rpMix();if(hasTv)rpTv();if(hasDet)rpDet();rpEtc();rpDg();}
+  rpMix();rpSos();if(hasTv)rpTv();if(hasDet)rpDet();rpEtc();rpDg();}
 
 /* ================================================================
    ② 경쟁사 광고비 — 월별 누적 막대 + 3D 도넛(SOS)
@@ -227,14 +219,13 @@ function rpSos(){
   const tot=segs.reduce((s,x)=>s+x.v,0);
   const meds=[{k:'atl',l:L('4대 매체','ATL')},{k:'tv',l:'TV'},{k:'etc',l:L('라디오 · 인쇄','Radio · Print')},{k:'dg',l:L('디지털','Digital')},{k:'all',l:L('4대 + 디지털','ATL + digital')}];
   h.innerHTML=`<div class="sec">${L('경쟁사 광고비','Competitor spend')} <span class="note">${esc(c.lab)}${c.sp==='정수기'&&c.k!=='정수기'?L(' · 광고비는 정수기(일반+얼음) 합산',' · spend = water purifier total'):''}</span></div>
-    <div class="rpgrid2 w64">
+    <div class="rpgrid2">
       ${rpCard(L('월별 광고비','Monthly spend'),L(`1~${M}월`,`M1–M${M}`),`<div id="rpSosCols"></div>`,rpSeg(meds,RPT.sosMed,'data-rpsm'))}
-      ${rpCard('SOS',RPT.sos==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`),
-        tot?`<div class="rpdnwrap"><div id="rpSosDn" class="rpdn"></div><div class="rpdnlg">${segs.map((s,i)=>`<div class="it" data-k="${i}" style="--d:${i*60+500}ms"><i style="background:${s.col}"></i><span>${esc(s.n)}</span><b>${rpP(s.v/tot*100,1)}</b><em>${wrEok(s.v)}</em></div>`).join('')}</div></div>`
-          :`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
+      ${rpCard(L('광고비 점유율','Share of spend'),RPT.sos==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`),
+        tot?`<div id="rpSosDn" class="rp3dbox"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
         rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.sos,'data-rpsp'))}</div>`;
   rpSosCols(c,col,bs,mk);
-  if(tot)rpDnMount($('rpSosDn'),segs,h.querySelector('.rpdnlg'));
+  if(tot)rp3dDonut($('rpSosDn'),segs,'코웨이');
   h.querySelectorAll('[data-rpsm]').forEach(b=>b.onclick=()=>{RPT.sosMed=b.dataset.rpsm;rpSos();});
   h.querySelectorAll('[data-rpsp]').forEach(b=>b.onclick=()=>{RPT.sos=b.dataset.rpsp;rpSos();});
   rpGo(h);}
@@ -254,7 +245,7 @@ function rpSosCols(c,col,bs,mk){
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpcols"><line x1="6" x2="${W-6}" y1="${base}" y2="${base}" class="bl"/>${g}</svg>
     <div class="rplg">${used.map(b=>`<span${b==='코웨이'?' class="mine"':''}><i style="background:${col[b]}"></i>${esc(b)}</span>`).join('')}</div>`;
   rpTipWire(box,k=>{const [m,b]=k.split('|');const r=(sp[b]||[])[+m-1]||[],v=val(b,+m),t=tots[+m-1];
-    return `<div class="t">${m}${L('월','')} · ${esc(b)}</div>${rpTr(L('광고비','Spend'),wrEok(v))}${rpTr('SOS',rpP(v/t*100,1))}
+    return `<div class="t">${m}${L('월','')} · ${esc(b)}</div>${rpTr(L('광고비','Spend'),wrEok(v))}${rpTr(L('점유율','Share'),rpP(v/t*100,1))}
       <div class="tsec">${L('매체별','By media')}</div>${RPT_MED.map(md=>{const a=md.i.reduce((s,i)=>s+rN(r[i]),0);return a>0?rpTr(md.l,wrEok(a)):'';}).join('')}`;});}
 
 /* 3D 도넛 — 위에서 비스듬히 본 고리. 0 → 360° 로 감기며 펼쳐지고, 범례 · 조각에 마우스를 올리면 그 조각만 */
@@ -298,20 +289,16 @@ function rpMix(){
   const MM=RPT_MED.filter(md=>RP_ATL.includes(md.k));
   const bs=rpBrands(c).map(b=>({b,v:MM.map(md=>rpAmt(c,b,RPT.mix,[md.k]))})).map(x=>({...x,t:rpSum(x.v)})).filter(x=>x.t>0)
     .sort((a,b)=>(b.b==='코웨이')-(a.b==='코웨이')||b.t-a.t);
-  const mx=Math.max(...bs.map(x=>x.t),1);
-  const body=bs.length?`<div class="rpmix">${bs.map((x,i)=>`<div class="row${x.b==='코웨이'?' mine':''}" style="--d:${i*60}ms">
-      <div class="nm">${esc(x.b)}</div>
-      <div class="bar">${x.v.map((v,j)=>v>0?`<span class="sg" style="--w:${(v/x.t*100).toFixed(2)}%;background:${MM[j].c}" data-tip="${i}|${j}">${v/x.t>=.09?`<em>${Math.round(v/x.t*100)}%</em>`:''}</span>`:'').join('')}</div>
-      <div class="tt"><i style="--w:${(x.t/mx*100).toFixed(1)}%"></i><b>${wrEok(x.t)}</b></div></div>`).join('')}</div>
-    <div class="rplg">${MM.map(md=>`<span><i style="background:${md.c}"></i>${md.l}</span>`).join('')}</div>`
-    :`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`;
-  h.innerHTML=`<div class="sec">${L('미디어 믹스','Media mix')} <span class="note">${esc(c.lab)} · ${L('4대 매체 · 디지털은 아래 디지털 광고비','ATL · digital below')}</span></div>
-    ${rpCard(L('브랜드별 매체 비중','Media share by brand'),RPT.mix==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`),body,
+  h.innerHTML=`<div class="sec">${L('브랜드별 광고비','Spend by brand')} <span class="note">${esc(c.lab)} · ${L('4대 매체 · 디지털은 아래 디지털 광고비','ATL · digital below')}</span></div>
+    ${rpCard(L('브랜드별 광고비 · 매체 비중','Spend · media share by brand'),(RPT.mix==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`))+L(' · 막대에 마우스를 올리면 매체별 비중',' · hover a bar for media share'),
+      bs.length?`<div id="rpMixBd"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
       rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.mix,'data-rpmx'))}`;
   h.querySelectorAll('[data-rpmx]').forEach(b=>b.onclick=()=>{RPT.mix=b.dataset.rpmx;rpMix();});
-  rpGo(h);
-  rpTipWire(h,k=>{const [i,j]=k.split('|').map(Number),x=bs[i];if(!x)return '';
-    return `<div class="t">${esc(x.b)} · ${MM[j].l}</div>${rpTr(L('광고비','Spend'),wrEok(x.v[j]))}${rpTr(L('비중','Share'),rpP(x.v[j]/x.t*100,1))}`;});}
+  if(!bs.length)return;
+  const others=bs.filter(x=>x.b!=='코웨이').length;let oi=0;
+  rpBarDonut($('rpMixBd'),bs.map(x=>({k:x.b,label:x.b,v:x.t,col:x.b==='코웨이'?RPT_CW:rpMono(oi++,others),
+      slices:x.v.map((v,j)=>({n:MM[j].l,v,col:MM[j].c})).filter(z=>z.v>0)})),
+    {H:360,legend:`<div class="rpbdx br">${bs.map(x=>`<span class="${x.b==='코웨이'?'cur':''}">${esc(x.b)}</span>`).join('')}</div><div class="rplg">${MM.map(md=>`<span><i style="background:${md.c}"></i>${md.l}</span>`).join('')}</div>`});}
 
 /* ================================================================
    ④ TV 집행 결과 — 버블(eq.GRP × R3+ · 크기 = 광고비) · TV set 성과 표 · 월별 eq.GRP
@@ -327,57 +314,55 @@ function rpTv(){
   const mChips=rpChips(months.map(m=>({k:String(m),l:L(`${m}월`,`M${m}`)})),String(RPT.tblM),'data-rptm2','sm');
   h.innerHTML=`<div class="sec">${L('TV 집행 결과','TV results')} <span class="note">${esc(c.lab)} · F30-45 · ${L('수도권','Seoul metro')}</span></div>
     <div class="rpmonths">${mChips}</div>
-    <div class="rpgrid2 w55">
-      ${rpCard(L('노출량 × 도달','Exposure × reach'),L('eq.GRP × R3+ · 원 크기 = 광고비','eq.GRP × R3+ · size = spend'),`<div id="rpBub"></div>`,segB)}
-      ${rpCard(L('월별 eq.GRP','Monthly eq.GRP'),L('TV set · 브랜드별','TV set · by brand'),`<div id="rpEqLn"></div>`)}</div>
+    ${rpCard(L('노출량 × 도달','Exposure × reach'),L('eq.GRP × R3+ · 원 크기 = 광고비 · 브랜드에 마우스를 올리면 월별 실적','eq.GRP × R3+ · size = spend · hover a brand for monthly detail'),
+      `<div class="rpbubw"><div id="rpBub"></div><div id="rpBubSide" class="rpbubside"></div></div>`,segB)}
     ${rpCard(L('TV set 성과','TV set performance'),L(`${RPT.tblM}월 · 실집행은 코웨이 실제 · 경쟁사 추정`,`M${RPT.tblM} · actual = Coway real, competitors est.`),`<div id="rpTvTbl"></div>`)}`;
   h.querySelectorAll('[data-rpbb]').forEach(b=>b.onclick=()=>{RPT.bub=b.dataset.rpbb;rpTv();});
   h.querySelectorAll('[data-rptm2]').forEach(b=>b.onclick=()=>{RPT.tblM=+b.dataset.rptm2;rpTv();});
-  rpBubble(c,col,bub);rpEqLine(c,col);rpTvTbl(c,col);rpGo(h);}
+  rpBubble(c,col,bub);rpTvTbl(c,col);rpGo(h);}
+/* 브랜드 상세 카드 — 월별 TV set 실적(이 리포트까지) */
+function rpBrandCard(c,b,col){
+  const rows=((RPT_DOC.tvr||{})[c.k]||[]).filter(r=>r[1]===b&&r[2]===2).sort((x,y)=>x[0]-y[0]);
+  const bub=((RPT_DOC.bub||{})[c.k]||{})[b];
+  if(!rows.length)return `<div class="hint">${L('TV 실적 없음','No TV results')}</div>`;
+  const mx=Math.max(...rows.map(r=>rN(r[7])),1);
+  return `<div class="bh"><i style="background:${col[b]}"></i><b>${esc(b)}</b>${bub?`<span>${L('연 누적','YTD')} eq ${wrF(bub.eq)} · R3+ ${wrF(bub.r3)}% · ${wrEok(bub.won/1000)}</span>`:''}</div>
+    <table class="tbl lite rptbl rpbt"><thead><tr><th>${L('월','Mo')}</th><th>${L('광고비','Spend')}</th><th>eq.GRP</th><th>R1+</th><th>R3+</th><th>A.F</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr${r[0]===RPT.tblM?' class="cur"':''}><td class="br">${r[0]}${L('월','')}</td><td>${wrEok(rN(r[4])||rN(r[3]))}</td>
+      <td class="eqc"><span class="mb" style="--w:${(rN(r[7])/mx*100).toFixed(1)}%;--c:${col[b]}"></span><b>${wrF(r[7])}</b></td><td>${wrF(r[10],1)}%</td><td>${wrF(r[11],1)}%</td><td>${wrF(r[12],1)}</td></tr>`).join('')}</tbody></table>
+    <div class="hint">${L('광고비 = 코웨이 실집행 · 경쟁사 추정 실집행','Spend = Coway actual · competitors estimated')}</div>`;}
 function rpBubble(c,col,bub){
-  const box=$('rpBub');if(!box)return;
+  const box=$('rpBub'),side=$('rpBubSide');if(!box)return;
   const pts=RPT.bub==='ytd'&&bub?Object.entries(bub).map(([b,v])=>({b,x:rN(v.eq),y:rN(v.r3),s:rN(v.won)/1000})).filter(p=>p.x>0||p.s>0)
     :rpTvRows(c,RPT.tblM).filter(r=>r[2]===2).map(r=>({b:r[1],x:rN(r[7]),y:rN(r[11]),s:rN(r[4])||rN(r[3]),r})).filter(p=>p.x>0);
-  if(!pts.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;return;}
-  const W=Math.max(420,box.clientWidth||560),H=330,L0=44,B=H-34,T=16,R0=W-18;
+  if(!pts.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;if(side)side.innerHTML='';return;}
+  const W=Math.max(480,box.clientWidth||720),H=380,L0=46,B=H-34,T=20,R0=W-24;
   const mxX=Math.max(...pts.map(p=>p.x))*1.18||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y))*1.25/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
-  const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>8+Math.sqrt(s/mxS)*34;
-  const nice=m=>{const s=Math.pow(10,Math.floor(Math.log10(m/4)));const f=m/4/s;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*s;};
+  const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>8+Math.sqrt(s/mxS)*38;
+  const nice=m=>{const s2=Math.pow(10,Math.floor(Math.log10(m/4)));const f=m/4/s2;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*s2;};
   const sx=nice(mxX),sy=nice(mxY);let grid='';
   for(let v=0;v<=mxX;v+=sx)grid+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${B}" class="gl"/><text x="${X(v)}" y="${B+16}" text-anchor="middle" class="ax">${wrF(v)}</text>`;
   for(let v=0;v<=mxY;v+=sy)grid+=`<line x1="${L0}" x2="${R0}" y1="${Y(v)}" y2="${Y(v)}" class="gl"/><text x="${L0-6}" y="${Y(v)+4}" text-anchor="end" class="ax">${v}%</text>`;
   const ord=[...pts].sort((a,b)=>b.s-a.s);
-  const dots=ord.map((p,i)=>{const cx=X(p.x),cy=Y(p.y),r=RR(p.s),me=p.b==='코웨이';
-    return `<g class="bb${me?' mine':''}" style="--d:${i*90}ms" data-tip="${esc(p.b)}">
-      ${me?`<circle cx="${cx}" cy="${cy}" r="${r}" class="pulse" fill="none" stroke="${col[p.b]}"/>`:''}
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${col[p.b]||'#999'}" fill-opacity="${me?.88:.62}"/>
+  /* v151 — 경쟁사는 회색, 코웨이만 색 · 반투명이라 뒤 눈금이 비친다 */
+  const dots=ord.map((p,i)=>{const cx=X(p.x),cy=Y(p.y),r=RR(p.s),me=p.b==='코웨이',fc=me?RPT_CW:'#9aa3ad';
+    return `<g class="bb${me?' mine':''}" style="--d:${i*90}ms" data-b="${esc(p.b)}">
+      ${me?`<circle cx="${cx}" cy="${cy}" r="${r}" class="pulse" fill="none" stroke="${RPT_CW}"/>`:''}
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fc}" fill-opacity="${me?.42:.3}" stroke="${fc}" stroke-opacity="${me?.7:.45}" stroke-width="1"/>
       <text x="${cx}" y="${cy-r-6}" text-anchor="middle" class="bl2">${esc(p.b)}</text></g>`;}).join('');
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpbub">${grid}
     <text x="${R0}" y="${B-6}" text-anchor="end" class="axt">eq.GRP →</text><text x="${L0+6}" y="${T+12}" class="axt">↑ R3+</text>${dots}</svg>`;
-  rpTipWire(box,b=>{const p=pts.find(q=>q.b===b);if(!p)return '';
-    return `<div class="t">${esc(b)}</div>${rpTr('eq.GRP',wrF(p.x))}${rpTr('R3+',wrF(p.y,1)+'%')}${rpTr(L('광고비','Spend'),wrEok(p.s))}${p.r?rpTr('R1+',wrF(p.r[10],1)+'%')+rpTr('A.F',wrF(p.r[12],1))+rpTr(L('모니터링 CPRP','Mon. CPRP'),wrF(p.r[8])):''}`;});}
-function rpEqLine(c,col){
-  const box=$('rpEqLn');if(!box)return;const M=RPT_DOC.m,rows=((RPT_DOC.tvr||{})[c.k]||[]).filter(r=>r[2]===2);
-  const bs=[...new Set(rows.map(r=>r[1]))];
-  if(!bs.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;return;}
-  /* 자료가 시작되는 달부터 (브랜드 PR 은 4월 리포트부터) */
-  const m0=Math.min(...rows.map(r=>r[0])),N=M-m0+1;
-  const ser=bs.map(b=>({b,v:[...Array(N)].map((_,i)=>{const r=rows.find(q=>q[1]===b&&q[0]===m0+i);return r?rN(r[7]):0;})}));
-  const mx=Math.max(...ser.flatMap(s=>s.v))||1,W=Math.max(380,box.clientWidth||460),H=330,L0=14,R0=W-14,T=22,B=H-34,step=(R0-L0)/Math.max(1,N-1);
-  const X=i=>N===1?(L0+R0)/2:L0+step*i,Y=v=>B-(B-T)*v/mx;
-  ser.sort((a,b)=>(a.b==='코웨이')-(b.b==='코웨이'));
-  let g='';for(let i=0;i<N;i++)g+=`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${B}" class="gl"/><text x="${X(i)}" y="${B+18}" text-anchor="middle" class="ax">${m0+i}${L('월','')}</text>`;
-  ser.forEach((s,k)=>{const me=s.b==='코웨이',d=s.v.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-    g+=`<path d="${d}" pathLength="1" class="ln${me?' mine':''}" stroke="${col[s.b]||'#999'}" style="--d:${k*120}ms"/>`;
-    s.v.forEach((v,i)=>{if(v>0)g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${me?4.5:3}" fill="${col[s.b]}" class="pt" style="--d:${k*120+700}ms" data-tip="${m0+i}"/>`;});});
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpln">${g}<rect class="hit" x="0" y="0" width="${W}" height="${H}" fill="transparent"/><line class="xh" y1="${T}" y2="${B}" x1="-10" x2="-10"/></svg>
-    <div class="rplg">${[...ser].reverse().map(s=>`<span${s.b==='코웨이'?' class="mine"':''}><i style="background:${col[s.b]}"></i>${esc(s.b)}</span>`).join('')}</div>`;
-  const svg=box.querySelector('svg'),xh=svg.querySelector('.xh');
-  svg.addEventListener('mousemove',e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width;
-    const i=Math.max(0,Math.min(N-1,Math.round(N===1?0:(x-L0)/step)));xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));
-    const list=[...ser].map(s=>[s.b,s.v[i]]).filter(x2=>x2[1]>0).sort((a,b)=>b[1]-a[1]);
-    showTip(e.clientX,e.clientY,`<div class="t">${m0+i}${L('월','')} · eq.GRP</div>${list.length?list.map(([b,v])=>rpTr(`<i class="dot" style="background:${col[b]}"></i>${esc(b)}`,wrF(v))).join(''):`<div class="r">${L('집행 없음','No TV')}</div>`}`);});
-  svg.addEventListener('mouseleave',()=>{xh.setAttribute('x1',-10);xh.setAttribute('x2',-10);hideTip();});}
+  /* 오른쪽 — 브랜드 목록(마우스를 올리면 아래에 월별 카드) */
+  const list=[...pts].sort((a,b)=>(b.b==='코웨이')-(a.b==='코웨이')||b.x-a.x);
+  let cur=list[0].b;
+  const paint=b=>{cur=b;if(!side)return;side.querySelectorAll('[data-sb]').forEach(e=>e.classList.toggle('on',e.dataset.sb===b));
+    const cd=side.querySelector('.bcard');if(cd)cd.innerHTML=rpBrandCard(c,b,col);rpGo(cd);
+    box.querySelectorAll('.bb').forEach(g=>g.classList.toggle('on',g.dataset.b===b));box.querySelector('svg').classList.add('hot');};
+  if(side){side.innerHTML=`<div class="bl">${list.map(p=>`<button type="button" class="${p.b==='코웨이'?'mine':''}" data-sb="${esc(p.b)}"><i style="background:${p.b==='코웨이'?RPT_CW:'#9aa3ad'}"></i><b>${esc(p.b)}</b>
+      <span>eq ${wrF(p.x)}</span><span>R3+ ${wrF(p.y,1)}%</span><span>${wrEok(p.s)}</span></button>`).join('')}</div><div class="bcard"></div>`;
+    side.querySelectorAll('[data-sb]').forEach(e=>e.addEventListener('mouseenter',()=>paint(e.dataset.sb)));}
+  box.querySelectorAll('.bb').forEach(g=>g.addEventListener('mouseenter',()=>paint(g.dataset.b)));
+  paint(cur);box.querySelector('svg').classList.remove('hot');}
 function rpTvTbl(c,col){
   const box=$('rpTvTbl');if(!box)return;const rows=rpTvRows(c,RPT.tblM);
   const bs=[...new Set(rows.map(r=>r[1]))].sort((a,b)=>(b==='코웨이')-(a==='코웨이')||rN((rows.find(r=>r[1]===b&&r[2]===2)||[])[7])-rN((rows.find(r=>r[1]===a&&r[2]===2)||[])[7]));
@@ -460,11 +445,11 @@ function rpDetCable(c){
       <i class="m" style="--w:${(x.mon/x.eq/mxC*100).toFixed(1)}%" data-tip="${i}"></i>${x.act!=null?`<i class="a" style="--w:${(x.act/x.eq/mxC*100).toFixed(1)}%" data-tip="${i}"></i>`:''}</span>
       <b>${wrF(x.mon/x.eq)}${x.act!=null?` <em>${wrF(x.act/x.eq)}</em>`:''}</b></div>`).join('')}</div>
     <div class="rplg"><span><i style="background:#9aa6b3"></i>${L('모니터링 CPRP','Mon. CPRP')}</span>${hasAct?`<span><i style="background:${RPT_CW}"></i>${L('실집행 CPRP','Act. CPRP')}</span>`:''}</div>`;
-  box.innerHTML=`<div class="rpgrid3">
-    ${rpCard(L('케이블 · 종편 MPP 비중','Cable MPP share'),hasAct?L('실집행 기준','by actual'):L('모니터링 기준','by monitored'),`<div class="rpdnwrap col"><div id="rpMppDn" class="rpdn"></div><div class="rpdnlg">${segs.map((s,i)=>`<div class="it" data-k="${i}" style="--d:${i*50+500}ms"><i style="background:${s.col}"></i><span>${esc(s.n)}</span><b>${rpP(s.v/tS*100,1)}</b></div>`).join('')}</div></div>`)}
+  box.innerHTML=`<div class="rpgrid2">
+    ${rpCard(L('케이블 · 종편 MPP 비중','Cable MPP share'),hasAct?L('실집행 기준','by actual'):L('모니터링 기준','by monitored'),`<div id="rpMppDn" class="rp3dbox"></div>`)}
     ${rpCard(L('케이블 · 종편 세부 운영','Cable detail'),'',wrHs(tb),'','span2')}</div>
     ${rpCard(L('MPP별 CPRP','CPRP by MPP'),L('낮을수록 효율적','lower is better'),bars)}`;
-  rpDnMount($('rpMppDn'),segs,box.querySelector('.rpdnlg'));wrHsWire(box);
+  rp3dDonut($('rpMppDn'),segs,'');wrHsWire(box);
   rpTipWire(box.querySelector('.rpcp'),i=>{const x=cp[+i];if(!x)return '';return `<div class="t">${esc(x.k)}</div>${rpTr(L('모니터링 CPRP','Mon. CPRP'),wrF(x.mon/x.eq))}${x.act!=null?rpTr(L('실집행 CPRP','Act. CPRP'),wrF(x.act/x.eq)):''}${rpTr('eq.GRP',wrF(x.eq,1))}`;});}
 
 /* ================================================================
@@ -484,7 +469,7 @@ function rpEtc(){
   rpGo(h);
   rpTipWire(h,k=>{const [mk,b]=k.split('|'),md=RPT_MED.find(x=>x.k===mk);return `<div class="t">${esc(b)} · ${md.l}</div>${rpTr(L(`${M}월`,`M${M}`),wrEok(rpAmt(c,b,'m',[mk])))}${rpTr(L('누적','YTD'),wrEok(rpAmt(c,b,'ytd',[mk])))}`;});}
 function rpDg(){
-  const h=$('rpDg');if(!h)return;const c=rpCat(),M=RPT_DOC.m,col=rpColMap(c),sp=rpSpend(c);
+  const h=$('rpDg');if(!h)return;const c=rpCat(),M=RPT_DOC.m,col=rpHueMap(c),sp=rpSpend(c);
   const DG=[{l:L('유튜브','YouTube'),c:'#2f7d6f'},{l:L('메타','Meta'),c:'#6fb3a5'},{l:L('기타(네이버 · 카카오 · 네트워크 등)','Other'),c:'#a8d5cb'}];
   const dgd=((RPT_DOC.dgd||{})[c.k])||{};
   const bs=rpBrands(c).filter(b=>(sp[b]||[]).some(r=>rN(r[5])+rN(r[6])+rN(r[7])>0));
@@ -493,23 +478,13 @@ function rpDg(){
   const cur=Object.entries(dgd).map(([b,v])=>({b,v:[rN(v[0]),rN(v[1]),rN(v[2])]})).map(x=>({...x,t:rpSum(x.v)})).filter(x=>x.t>0).sort((a,b)=>b.t-a.t);
   if(!col.__dg){Object.keys(dgd).forEach(b=>{if(!col[b])col[b]=RPT_PAL[Object.keys(col).length%RPT_PAL.length];});}
   h.innerHTML=`<div class="sec">${L('디지털 광고비','Digital spend')} <span class="note">${esc(c.lab)}</span></div>
-    <div class="rpgrid2 w55">${rpCard(L('월별 디지털 광고비','Monthly digital'),L(`1~${M}월 · 브랜드별`,'by brand'),`<div id="rpDgLn"></div>`)}
+    <div class="rpgrid2 w64">${rpCard(L('월별 디지털 광고비','Monthly digital'),L(`1~${M}월 · 브랜드별`,'by brand'),`<div id="rpDgLn"></div>`)}
       ${rpCard(L('매체별','By platform'),L(`${M}월 · 리포트 ② 당월 세부`,`M${M}`),cur.length?`<div class="rpmix dg">${cur.map((x,i)=>`<div class="row${x.b==='코웨이'?' mine':''}" style="--d:${i*60}ms"><div class="nm">${esc(x.b)}</div>
           <div class="bar abs" style="--tw:${(x.t/cur[0].t*100).toFixed(1)}%">${x.v.map((v,j)=>v>0?`<span class="sg" style="--w:${(v/x.t*100).toFixed(2)}%;background:${DG[j].c}" data-tip="${i}|${j}"></span>`:'').join('')}</div><div class="tt"><b>${wrEok(x.t)}</b></div></div>`).join('')}</div>
           <div class="rplg">${DG.map(d=>`<span><i style="background:${d.c}"></i>${d.l}</span>`).join('')}</div>`:`<div class="hint rpnil">${Object.keys(RPT_DOC.dgd||{}).length?L('당월 집행 없음','None this month'):L('이 달 리포트에는 매체별 세부가 없습니다','No platform detail in this report')}</div>`)}</div>`;
-  /* 꺾은선 — 영역은 흐리게, 코웨이 선을 굵게 */
-  const box=$('rpDgLn'),mx=Math.max(...ser.flatMap(s=>s.v))||1,W=Math.max(380,box.clientWidth||520),H=300,L0=14,R0=W-14,T=20,B=H-34,step=(R0-L0)/Math.max(1,M-1);
-  const X=i=>M===1?(L0+R0)/2:L0+step*i,Y=v=>B-(B-T)*v/mx;let g='';
-  for(let i=0;i<M;i++)g+=`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${B}" class="gl"/><text x="${X(i)}" y="${B+18}" text-anchor="middle" class="ax">${i+1}${L('월','')}</text>`;
-  [...ser].sort((a,b)=>(a.b==='코웨이')-(b.b==='코웨이')).forEach((s,k)=>{const me=s.b==='코웨이',d=s.v.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-    g+=`${me?`<path d="${d} L${X(M-1).toFixed(1)},${B} L${X(0).toFixed(1)},${B} Z" fill="${col[s.b]}" class="ar" style="--d:${k*100}ms"/>`:''}<path d="${d}" pathLength="1" class="ln${me?' mine':''}" stroke="${col[s.b]}" style="--d:${k*100}ms"/>`;});
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpln">${g}<line class="xh" y1="${T}" y2="${B}" x1="-10" x2="-10"/></svg>
-    <div class="rplg">${ser.map(s=>`<span${s.b==='코웨이'?' class="mine"':''}><i style="background:${col[s.b]}"></i>${esc(s.b)}</span>`).join('')}</div>`;
-  const svg=box.querySelector('svg'),xh=svg.querySelector('.xh');
-  svg.addEventListener('mousemove',e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width,i=Math.max(0,Math.min(M-1,Math.round(M===1?0:(x-L0)/step)));
-    xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));const list=ser.map(s=>[s.b,s.v[i]]).filter(z=>z[1]>0).sort((a,b)=>b[1]-a[1]);
-    showTip(e.clientX,e.clientY,`<div class="t">${i+1}${L('월','')} · ${L('디지털','Digital')}</div>${list.length?list.map(([b,v])=>rpTr(`<i class="dot" style="background:${col[b]}"></i>${esc(b)}`,wrEok(v))).join(''):`<div class="r">${L('집행 없음','None')}</div>`}`);});
-  svg.addEventListener('mouseleave',()=>{xh.setAttribute('x1',-10);xh.setAttribute('x2',-10);hideTip();});
+  /* v151 — 부드러운 곡선 영역 + 아래로 옅어지는 그라데이션 · 범례를 눌러 브랜드 켜고 끄기 */
+  let ai=0;const acol={};ser.forEach(x=>acol[x.b]=x.b==='코웨이'?'#3f86d6':RP_AREA[ai++%RP_AREA.length]);
+  rpAreaChart($('rpDgLn'),ser.map(x=>({b:x.b,v:x.v,col:acol[x.b],mine:x.b==='코웨이'})),[...Array(M)].map((_,i)=>`${RPT_DOC.y%100}.${String(i+1).padStart(2,'0')}`),{H:300,title:L('디지털','Digital')});
   rpGo(h);
   rpTipWire(h.querySelector('.rpmix.dg')||h,k=>{const [i,j]=String(k).split('|').map(Number),x=cur[i];if(!x||!DG[j])return '';return `<div class="t">${esc(x.b)} · ${DG[j].l}</div>${rpTr(L('광고비','Spend'),wrEok(x.v[j]))}${rpTr(L('비중','Share'),rpP(x.v[j]/x.t*100,1))}`;});}
 
@@ -531,7 +506,7 @@ function rpArch(){
   h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')} <span class="note">${L(`코웨이 TVC · 1~${M}월`,`Coway TVC · M1–M${M}`)}</span></div>
     ${rpChips(cats,RPT.arcCat,'data-rparc')}
     <div class="rparch">${vis.map((a,i)=>{const im=a.img[a.img.length-1];
-      return `<button type="button" class="rpac" data-rpai="${esc(a.n)}" style="--d:${i*45}ms;--c:${wrCol(a.n)}">
+      return `<button type="button" class="rpac" data-rpai="${esc(a.n)}" style="--d:${i*45}ms;--c:#8ea3bd">
         <div class="th">${im?`<img src="${rpImg(im.id,1)}" alt="" decoding="async">`:`<div class="ph">${esc(a.n.slice(0,2))}</div>`}${a.last===M?`<span class="live">${L('이번 달 온에어','On air')}</span>`:''}</div>
         <div class="tx"><b>${esc(a.n)}</b><div class="meta"><span>${L(`소재 ${a.cr.length}`,`${a.cr.length} creatives`)}</span>${a.img.length?`<span>${L(`스토리보드 ${a.img.length}`,`${a.img.length} boards`)}</span>`:''}</div>
           <div class="mo">${[...Array(12)].map((_,k)=>`<i class="${a.mo.has(k+1)?'on':''}${k+1>M?' fut':''}" title="${k+1}${L('월','')}"></i>`).join('')}</div>
