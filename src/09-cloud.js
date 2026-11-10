@@ -1216,10 +1216,16 @@ async function createCampaign(after){
 }
 /* ---------- (v125) 캠페인 순서 — 관리 창에서 끌어 옮긴 순서 ----------
    계정에 붙는다(profiles.prefs.campOrder) — 어느 기기에서 로그인해도 같은 순서.
-   목록에 없는 캠페인(새로 만든 것 등)은 맨 위, 그 사이는 최근 저장순. 상단 캠페인 선택 목록도 이 순서. */
+   목록에 없는 캠페인(새로 만든 것 등)은 맨 위, 순서가 없으면 광고주별 · 기간 시작일 순(v164). 상단 캠페인 선택 목록도 이 순서. */
 let CAMP_ORDER=(()=>{try{return JSON.parse(localStorage.getItem('dmd:campOrder')||'[]')||[];}catch(e){return [];}})();
+/* v164 — 직접 정한 순서가 없으면: 광고주별로 묶고(최근 저장한 광고주 먼저) 그 안에서는 기간 시작일 순(1월 → 12월) */
+function campSortDef(list){
+  const g=new Map();list.forEach(c=>{const a=c.advertiser||'';if(!g.has(a))g.set(a,g.size);});
+  return list.map((c,i)=>({c,i})).sort((a,b)=>g.get(a.c.advertiser||'')-g.get(b.c.advertiser||'')
+    ||String(a.c.start_date||'9999').localeCompare(String(b.c.start_date||'9999'))||a.i-b.i).map(x=>x.c);
+}
 function campSort(list){
-  if(!CAMP_ORDER.length)return list;
+  if(!CAMP_ORDER.length)return campSortDef(list);
   const ix=new Map(CAMP_ORDER.map((id,i)=>[id,i]));
   return list.map((c,i)=>({c,i})).sort((a,b)=>{
     const ia=ix.has(a.c.id)?ix.get(a.c.id):-1,ib=ix.has(b.c.id)?ix.get(b.c.id):-1;
@@ -1300,7 +1306,7 @@ async function openCampManage(inplace){
     +'<button class="btn" id="advMng" title="광고주 목록과 로고를 관리합니다">🏷 광고주 관리</button>'
     +'<button class="btn" id="memMng" title="가입 승인 · 회원 등급 · 뷰어가 볼 광고주">👥 회원 관리</button>'
     +'<div class="spacer"></div>'
-    +(CAMP_ORDER.length&&rows.length>1?'<button class="btn" id="cmOrdReset" title="직접 정한 순서를 지우고 최근 저장순으로 되돌립니다">↺ 최근 저장순</button>':'')
+    +(CAMP_ORDER.length&&rows.length>1?'<button class="btn" id="cmOrdReset" title="직접 정한 순서를 지우고 기본 순서(광고주별 · 기간 순)로 되돌립니다">↺ 기본 순서</button>':'')
     +'<button class="btn" data-close>닫기</button>';
   if(!(inplace&&repaintModal(h,foot)))openModal('캠페인 및 광고주 관리',h,foot,{w:1340});
   const host=$('modalHost').querySelector('.modal#mdl')||$('modalHost');
