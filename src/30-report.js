@@ -120,7 +120,7 @@ function renderReport(){
   const host=$('rptBody');if(!host)return;
   const ys=rptYears();
   /* 보고 있는 리포트가 바뀌면 리포트 안 선택(표 달 · 브랜드 등)을 처음으로 (v157 — 9월에 4월 표가 남던 문제) */
-  if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;}
+  if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;RPT.cat='';}
   if(RPT.oldY&&ys.includes(RPT.oldY))RPT.y=RPT.oldY;else{RPT.oldY=0;if(RPT_DOC&&RPT_DOC.y)RPT.y=RPT_DOC.y;}
   if(!ys.includes(RPT.y))RPT.y=ys[ys.length-1];
   /* 달 고르기 줄은 올해 이전 연도를 볼 때만 — 올해 달은 메뉴에서 고른다 */
@@ -145,7 +145,7 @@ function renderReport(){
       <div class="txt">${Object.values(camps).some(c=>c.r)?L('위의 달 가운데 점이 찍힌 달을 누르면 그 달 리포트로 옮겨 갑니다.','Pick a month with a dot above to open its report.')
         :L('먼슬리 리포트 데이터가 들어오면 이 자리에 표와 그래프가 채워집니다.','Tables and charts appear here once monthly report data is loaded.')}</div></div>`;
     return;}
-  if(!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat=(RPT_DOC.cats.find(c=>c.k==='정수기 일반')||RPT_DOC.cats[0]).k;
+  if(RPT.cat&&!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat='';
   host.innerHTML=`<div id="rpOwn" class="rpblk"></div>
     <div class="rpsticky" id="rpCatBar"></div>
     <div id="rpCatBody" class="rpcatpanel"></div>
@@ -245,7 +245,8 @@ function rpCatBar(){
   const h=$('rpCatBar');if(!h)return;
   if(!RP_COMP)rpCompLoad().then(()=>{if(h.isConnected)rpCatBar();});
   const st=Object.fromEntries(RPT_DOC.cats.map(c=>[c.k,rpCatState(c)]));
-  if(st[RPT.cat]!=='on'){const f=RPT_DOC.cats.find(c=>st[c.k]==='on');if(f){RPT.cat=f.k;}}
+  /* v158 — 처음엔 아무 품목도 고르지 않는다(고르면 아래에 데이터) */
+  if(RPT.cat&&st[RPT.cat]!=='on')RPT.cat='';
   h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목','Product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
     <div class="rpcats2" role="tablist">${RPT_DOC.cats.map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);
       return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' off':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`disabled title="${L('이번 달 코웨이 집행 없음','No Coway spend this month')}"`:''} style="--d:${i*35}ms">
@@ -259,7 +260,11 @@ function rpCatBar(){
     const body=$('rpCatBody');if(body){body.classList.remove('flash');void body.offsetWidth;body.classList.add('flash');}});}
 
 function rpCatBody(){
-  const h=$('rpCatBody');if(!h)return;const c=rpCat();
+  const h=$('rpCatBody');if(!h)return;
+  /* 품목을 고르기 전 — 자리만(스켈레톤) + 안내 */
+  if(!RPT.cat){h.classList.add('empty');h.innerHTML=`<div class="rpskel"><div class="msg"><b>${L('위에서 품목을 고르세요','Pick a product above')}</b><span>${L('품목을 선택하면 이 부분에 경쟁사 광고비 · TV 집행 결과 · 디지털 등 데이터가 보여집니다','Competitor spend, TV results and digital data for that product appear here')}</span></div>
+      <div class="sk g2"><i></i><i></i></div><div class="sk g1"><i></i></div><div class="sk g2"><i></i><i></i></div></div>`;return;}
+  h.classList.remove('empty');const c=rpCat();
   const hasTv=!!((RPT_DOC.tvr||{})[c.k]||[]).length,hasDet=hasTv&&!!c.ar;
   h.innerHTML=`<div class="rpblk" id="rpMix"></div><div class="rpblk" id="rpSos"></div>
     ${hasTv?`<div class="rpblk" id="rpTv"></div>`:''}${hasDet?`<div class="rpblk" id="rpDet"></div>`:''}

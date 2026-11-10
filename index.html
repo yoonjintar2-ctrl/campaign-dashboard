@@ -1102,6 +1102,18 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpsticky.stuck .rpct{height:42px}.rpsticky.stuck .rpct.on::before,.rpsticky.stuck .rpct .tg{display:none}.rpsticky.stuck .rpct .nm{bottom:12px}
 .rpsticky.stuck .rpcatl em{display:none}
 .rpcatsen{height:1px;margin-bottom:-1px}
+/* 품목을 고르기 전 — 스켈레톤 */
+.rpskel{position:relative;padding:18px 0 4px}
+.rpskel .msg{position:absolute;z-index:2;left:50%;top:120px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+  padding:18px 26px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(20,30,45,.1);max-width:min(520px,90%)}
+.rpskel .msg b{font-size:16px;font-weight:900;color:var(--ink)}.rpskel .msg span{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.5}
+.rpskel .msg::before{content:'↑';font-size:18px;font-weight:900;color:var(--ink2);animation:rpUp 1.6s ease-in-out infinite}
+@keyframes rpUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.rpskel .sk{display:grid;gap:14px;margin-bottom:14px}.rpskel .sk.g2{grid-template-columns:1fr 1fr}
+.rpskel .sk i{display:block;height:230px;border-radius:16px;background:linear-gradient(100deg,var(--plane2) 30%,color-mix(in srgb,var(--surface) 70%,var(--plane2)) 50%,var(--plane2) 70%);background-size:220% 100%;animation:rpSk 1.6s linear infinite;border:1px solid var(--line2)}
+.rpskel .sk.g1 i{height:170px}
+@keyframes rpSk{from{background-position:120% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.rpskel .sk i,.rpskel .msg::before{animation:none}}
 /* 업종이 적용되는 영역 — 옅은 바탕 판으로 묶는다 */
 .rpcatpanel{margin-top:14px;padding:2px 18px 22px;border-radius:20px;background:color-mix(in srgb,var(--acc-soft2) 70%,transparent);border:1px solid var(--line2)}
 .rpcatpanel.flash{animation:rpFlash .7s ease}
@@ -28524,7 +28536,7 @@ function renderReport(){
   const host=$('rptBody');if(!host)return;
   const ys=rptYears();
   /* 보고 있는 리포트가 바뀌면 리포트 안 선택(표 달 · 브랜드 등)을 처음으로 (v157 — 9월에 4월 표가 남던 문제) */
-  if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;}
+  if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;RPT.cat='';}
   if(RPT.oldY&&ys.includes(RPT.oldY))RPT.y=RPT.oldY;else{RPT.oldY=0;if(RPT_DOC&&RPT_DOC.y)RPT.y=RPT_DOC.y;}
   if(!ys.includes(RPT.y))RPT.y=ys[ys.length-1];
   /* 달 고르기 줄은 올해 이전 연도를 볼 때만 — 올해 달은 메뉴에서 고른다 */
@@ -28549,7 +28561,7 @@ function renderReport(){
       <div class="txt">${Object.values(camps).some(c=>c.r)?L('위의 달 가운데 점이 찍힌 달을 누르면 그 달 리포트로 옮겨 갑니다.','Pick a month with a dot above to open its report.')
         :L('먼슬리 리포트 데이터가 들어오면 이 자리에 표와 그래프가 채워집니다.','Tables and charts appear here once monthly report data is loaded.')}</div></div>`;
     return;}
-  if(!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat=(RPT_DOC.cats.find(c=>c.k==='정수기 일반')||RPT_DOC.cats[0]).k;
+  if(RPT.cat&&!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat='';
   host.innerHTML=`<div id="rpOwn" class="rpblk"></div>
     <div class="rpsticky" id="rpCatBar"></div>
     <div id="rpCatBody" class="rpcatpanel"></div>
@@ -28649,7 +28661,8 @@ function rpCatBar(){
   const h=$('rpCatBar');if(!h)return;
   if(!RP_COMP)rpCompLoad().then(()=>{if(h.isConnected)rpCatBar();});
   const st=Object.fromEntries(RPT_DOC.cats.map(c=>[c.k,rpCatState(c)]));
-  if(st[RPT.cat]!=='on'){const f=RPT_DOC.cats.find(c=>st[c.k]==='on');if(f){RPT.cat=f.k;}}
+  /* v158 — 처음엔 아무 품목도 고르지 않는다(고르면 아래에 데이터) */
+  if(RPT.cat&&st[RPT.cat]!=='on')RPT.cat='';
   h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목','Product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
     <div class="rpcats2" role="tablist">${RPT_DOC.cats.map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);
       return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' off':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`disabled title="${L('이번 달 코웨이 집행 없음','No Coway spend this month')}"`:''} style="--d:${i*35}ms">
@@ -28663,7 +28676,11 @@ function rpCatBar(){
     const body=$('rpCatBody');if(body){body.classList.remove('flash');void body.offsetWidth;body.classList.add('flash');}});}
 
 function rpCatBody(){
-  const h=$('rpCatBody');if(!h)return;const c=rpCat();
+  const h=$('rpCatBody');if(!h)return;
+  /* 품목을 고르기 전 — 자리만(스켈레톤) + 안내 */
+  if(!RPT.cat){h.classList.add('empty');h.innerHTML=`<div class="rpskel"><div class="msg"><b>${L('위에서 품목을 고르세요','Pick a product above')}</b><span>${L('품목을 선택하면 이 부분에 경쟁사 광고비 · TV 집행 결과 · 디지털 등 데이터가 보여집니다','Competitor spend, TV results and digital data for that product appear here')}</span></div>
+      <div class="sk g2"><i></i><i></i></div><div class="sk g1"><i></i></div><div class="sk g2"><i></i><i></i></div></div>`;return;}
+  h.classList.remove('empty');const c=rpCat();
   const hasTv=!!((RPT_DOC.tvr||{})[c.k]||[]).length,hasDet=hasTv&&!!c.ar;
   h.innerHTML=`<div class="rpblk" id="rpMix"></div><div class="rpblk" id="rpSos"></div>
     ${hasTv?`<div class="rpblk" id="rpTv"></div>`:''}${hasDet?`<div class="rpblk" id="rpDet"></div>`:''}
@@ -29873,7 +29890,7 @@ function rpBdCards(b,cx,cy,rx,R,q,W,H){
 /* ---------------- ② 기운 3D 도넛 + 떼어 낸 코웨이 조각 + 안내선 카드 ---------------- */
 function rp3dDonutSvg(S0,T,W,meKey,opt){
   const tot=S0.reduce((s,x)=>s+x.v,0);if(!tot)return {svg:'',S:[]};
-  const R=(opt&&opt.R)||Math.min(W*.2,118),K=.56,r=R*.52,DEP=22,ROT=13*Math.PI/180,TAU=Math.PI*2,CW=Math.min(170,W*.27),CH=38,PITCH=44,cs=Math.cos(ROT),sn=Math.sin(ROT);
+  const CW=Math.min(170,W*.27),below0=!!(opt&&opt.below),R=Math.min((opt&&opt.R)||Math.min(W*.2,118),below0?1e9:(W/2-CW-34)/1.06),K=.56,r=R*.52,DEP=22,ROT=13*Math.PI/180,TAU=Math.PI*2,CH=38,PITCH=48,cs=Math.cos(ROT),sn=Math.sin(ROT);
   /* 카드 줄 수 — 다 펼친 각도로 왼쪽 · 오른쪽에 몇 개씩 가는지 */
   let aa=-Math.PI/2,nl=0,nr=0;S0.forEach(s=>{const sp=s.v/tot*TAU,mid=aa+sp/2;aa+=sp;const x=Math.cos(mid)*cs-Math.sin(mid)*K*sn;if(x>=0)nr++;else nl++;});
   const below=!!(opt&&opt.below);
@@ -29912,9 +29929,9 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
     const pts=S.filter(s=>s.v>0).map(s=>{const mid=(s.a0+s.a1)/2,fr=Math.sin(mid)>0,[x,y]=rot(P(s,mid,R+2,fr?DEP*.45:0)),[ox,oy]=rot(P(s,mid,R+16,fr?DEP*.6:0));return {s,x,y,ax:x,ay:y,ox,oy,out:dd=>rot(P(s,mid,R+2+dd,fr?DEP*.6:0)),side:x>=cx?1:-1};});
     /* 균형 맞춘 배치 · 그대로 배치 · 위아래 끝 점 하나씩 뒤집은 배치 중 교차가 가장 적은 것 */
     const lay=sides=>{let html='';const paths=[];
-      [-1,1].forEach(sd=>{const L=pts.filter((p,ii)=>sides[ii]===sd).sort((p,q)=>p.oy-q.oy);let ys=L.map(p=>p.oy-CH/2);
-        for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+PITCH);const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);
-        for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*PITCH,ys[i]);
+      /* v158 — 카드는 양쪽 모두 같은 간격으로 쌓고, 묶음을 도넛 가운데 높이에 맞춘다(정돈된 열) */
+      [-1,1].forEach(sd=>{const L=pts.filter((p,ii)=>sides[ii]===sd).sort((p,q)=>p.oy-q.oy),GP=PITCH,tH=L.length*CH+Math.max(0,L.length-1)*(GP-CH);
+        const y0=Math.max(4,Math.min(H-4-tH,rc-tH/2));let ys=L.map((p,i)=>y0+i*GP);
         const pl=rpPlace(L,ys,sd>0?W-CW-2:2+CW,CH);
         L.forEach((p,i)=>{const bx=sd>0?W-CW-2:2,y=ys[pl[i].k],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1),me=p.s.n===meKey;
           paths.push([[p.x,p.y],[pl[i].ox,pl[i].oy],[ex,ey]]);

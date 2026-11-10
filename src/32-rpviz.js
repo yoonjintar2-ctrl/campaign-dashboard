@@ -201,7 +201,7 @@ function rpBdCards(b,cx,cy,rx,R,q,W,H){
 /* ---------------- ② 기운 3D 도넛 + 떼어 낸 코웨이 조각 + 안내선 카드 ---------------- */
 function rp3dDonutSvg(S0,T,W,meKey,opt){
   const tot=S0.reduce((s,x)=>s+x.v,0);if(!tot)return {svg:'',S:[]};
-  const R=(opt&&opt.R)||Math.min(W*.2,118),K=.56,r=R*.52,DEP=22,ROT=13*Math.PI/180,TAU=Math.PI*2,CW=Math.min(170,W*.27),CH=38,PITCH=44,cs=Math.cos(ROT),sn=Math.sin(ROT);
+  const CW=Math.min(170,W*.27),below0=!!(opt&&opt.below),R=Math.min((opt&&opt.R)||Math.min(W*.2,118),below0?1e9:(W/2-CW-34)/1.06),K=.56,r=R*.52,DEP=22,ROT=13*Math.PI/180,TAU=Math.PI*2,CH=38,PITCH=48,cs=Math.cos(ROT),sn=Math.sin(ROT);
   /* 카드 줄 수 — 다 펼친 각도로 왼쪽 · 오른쪽에 몇 개씩 가는지 */
   let aa=-Math.PI/2,nl=0,nr=0;S0.forEach(s=>{const sp=s.v/tot*TAU,mid=aa+sp/2;aa+=sp;const x=Math.cos(mid)*cs-Math.sin(mid)*K*sn;if(x>=0)nr++;else nl++;});
   const below=!!(opt&&opt.below);
@@ -240,9 +240,9 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
     const pts=S.filter(s=>s.v>0).map(s=>{const mid=(s.a0+s.a1)/2,fr=Math.sin(mid)>0,[x,y]=rot(P(s,mid,R+2,fr?DEP*.45:0)),[ox,oy]=rot(P(s,mid,R+16,fr?DEP*.6:0));return {s,x,y,ax:x,ay:y,ox,oy,out:dd=>rot(P(s,mid,R+2+dd,fr?DEP*.6:0)),side:x>=cx?1:-1};});
     /* 균형 맞춘 배치 · 그대로 배치 · 위아래 끝 점 하나씩 뒤집은 배치 중 교차가 가장 적은 것 */
     const lay=sides=>{let html='';const paths=[];
-      [-1,1].forEach(sd=>{const L=pts.filter((p,ii)=>sides[ii]===sd).sort((p,q)=>p.oy-q.oy);let ys=L.map(p=>p.oy-CH/2);
-        for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+PITCH);const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);
-        for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*PITCH,ys[i]);
+      /* v158 — 카드는 양쪽 모두 같은 간격으로 쌓고, 묶음을 도넛 가운데 높이에 맞춘다(정돈된 열) */
+      [-1,1].forEach(sd=>{const L=pts.filter((p,ii)=>sides[ii]===sd).sort((p,q)=>p.oy-q.oy),GP=PITCH,tH=L.length*CH+Math.max(0,L.length-1)*(GP-CH);
+        const y0=Math.max(4,Math.min(H-4-tH,rc-tH/2));let ys=L.map((p,i)=>y0+i*GP);
         const pl=rpPlace(L,ys,sd>0?W-CW-2:2+CW,CH);
         L.forEach((p,i)=>{const bx=sd>0?W-CW-2:2,y=ys[pl[i].k],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1),me=p.s.n===meKey;
           paths.push([[p.x,p.y],[pl[i].ox,pl[i].oy],[ex,ey]]);

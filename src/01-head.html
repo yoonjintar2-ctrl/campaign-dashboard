@@ -1102,6 +1102,18 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpsticky.stuck .rpct{height:42px}.rpsticky.stuck .rpct.on::before,.rpsticky.stuck .rpct .tg{display:none}.rpsticky.stuck .rpct .nm{bottom:12px}
 .rpsticky.stuck .rpcatl em{display:none}
 .rpcatsen{height:1px;margin-bottom:-1px}
+/* 품목을 고르기 전 — 스켈레톤 */
+.rpskel{position:relative;padding:18px 0 4px}
+.rpskel .msg{position:absolute;z-index:2;left:50%;top:120px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+  padding:18px 26px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(20,30,45,.1);max-width:min(520px,90%)}
+.rpskel .msg b{font-size:16px;font-weight:900;color:var(--ink)}.rpskel .msg span{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.5}
+.rpskel .msg::before{content:'↑';font-size:18px;font-weight:900;color:var(--ink2);animation:rpUp 1.6s ease-in-out infinite}
+@keyframes rpUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.rpskel .sk{display:grid;gap:14px;margin-bottom:14px}.rpskel .sk.g2{grid-template-columns:1fr 1fr}
+.rpskel .sk i{display:block;height:230px;border-radius:16px;background:linear-gradient(100deg,var(--plane2) 30%,color-mix(in srgb,var(--surface) 70%,var(--plane2)) 50%,var(--plane2) 70%);background-size:220% 100%;animation:rpSk 1.6s linear infinite;border:1px solid var(--line2)}
+.rpskel .sk.g1 i{height:170px}
+@keyframes rpSk{from{background-position:120% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.rpskel .sk i,.rpskel .msg::before{animation:none}}
 /* 업종이 적용되는 영역 — 옅은 바탕 판으로 묶는다 */
 .rpcatpanel{margin-top:14px;padding:2px 18px 22px;border-radius:20px;background:color-mix(in srgb,var(--acc-soft2) 70%,transparent);border:1px solid var(--line2)}
 .rpcatpanel.flash{animation:rpFlash .7s ease}
