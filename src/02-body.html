@@ -220,7 +220,6 @@
     </div>
     <div class="subgrp" data-area="digital">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="subbar">
         <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
         <button type="button" data-sub="struct" data-menu="d_struct">캠페인 구조</button>
@@ -235,7 +234,6 @@
     </div>
     <div class="subgrp" data-area="tv">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
@@ -251,7 +249,6 @@
     <!-- OTT (v141) — 디지털과 같은 화면(대시보드 · 입력)을 OTT 라인만으로. data-osub · data-otab 는 p8 이 단다 -->
     <div class="subgrp" data-area="ott">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="2.4" y="3.8" width="15.2" height="12.4" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.3 7.4v5.2l4.4-2.6z"/></svg></span><span>OTT</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="ottsubbar">
         <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
         <button type="button" data-osub="struct" data-menu="ot_struct">캠페인 구조</button>
@@ -266,7 +263,6 @@
     </div>
     <div class="subgrp" data-area="ooh">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 3.2h15.2v8.6H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M6.6 11.8v5.4M13.4 11.8v5.4M4.6 17.2h10.8"/></svg></span><span>OOH</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="oohsubbar">
         <button type="button" data-tab="oohdash" data-menu="o_sum">서머리</button>
       </div>
@@ -278,9 +274,9 @@
     <div class="subgrp" data-area="report">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="3" y="3.2" width="14" height="13.6" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 7.4h14M7 3.2V1.8M13 3.2V1.8M6.6 13.4v-2.6M10 13.4V9.6M13.4 13.4v-1.6"/></svg></span><span>리포트</span></div>
       <div class="subbar">
-        <button type="button" data-tab="report" data-menu="report">연도 · 월별 리포트</button>
+        <button type="button" data-tab="report" data-menu="report" id="rptMenuBtn">월별 리포트</button>
+        <span class="rptml" id="rptMenuList"></span>
       </div>
-      <p class="subnote">연도를 고르고 달마다 리포트를 봅니다</p>
     </div>
     <div class="subgrp" data-area="trend">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span>트렌드 리포트</span></div>

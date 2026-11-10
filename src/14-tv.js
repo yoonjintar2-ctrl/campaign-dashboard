@@ -82,6 +82,7 @@ function curDashSub(){
 /* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
+  try{if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   const name=T.dataset.cur||'dash',area=areaOfTab(name);
   const cs=curDashSub();
   T.querySelectorAll('.area').forEach(b=>{

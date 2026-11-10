@@ -194,6 +194,7 @@ function applyDoc(d,keepToday){
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
   /* 월별 리포트 (v149) */
   try{RPT_DOC=d.report&&typeof d.report==='object'&&!d.report.omit?d.report:null;}catch(e){}
+  try{if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:todaySeoul();   /* 서울 날짜 (v78) */
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
@@ -1152,7 +1153,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_MON=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{TV_WR=null;}catch(e){}
-  try{RPT_DOC=null;}catch(e){}
+  try{RPT_DOC=null;if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}

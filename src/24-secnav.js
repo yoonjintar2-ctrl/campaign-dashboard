@@ -21,6 +21,8 @@ function snBuild(){
   const secs=w?[...w.querySelectorAll('.sec')].filter(s=>s.getClientRects().length&&!s.closest('.hidden,.modal')):[];
   const items=secs.map(s=>({s,l:snLabel(s)})).filter(x=>x.l);
   const sig=items.map(x=>x.l).join('|');
+  /* v157 — TV 화면에선 오른쪽 가장자리로(왼쪽 카드와 겹치지 않게) */
+  nav.classList.toggle('r',!!(w&&/^tab-tv/.test(w.id)));
   if(nav.__sig===sig&&SN.items.length===items.length&&SN.items.every((x,i)=>x.s===items[i].s)){snPaint();return;}
   nav.__sig=sig;SN.items=items;SN.cur=-1;
   nav.classList.toggle('on',items.length>=3);

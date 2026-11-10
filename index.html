@@ -785,6 +785,7 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsb{display:grid;grid-template-columns:150px 1fr 96px;gap:12px;align-items:center}
 .wrsb .nm{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wrsb .bar{display:flex;height:34px;gap:2px;align-items:stretch}
+.wrsb .bar .seg{box-shadow:none}
 .wrsb .seg{position:relative;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 9px;color:#fff;min-width:3px;
   transform-origin:left center;animation:wrGrow .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0ms)}
 .wrsb .seg:first-child{border-radius:6px 4px 4px 6px}.wrsb .seg:last-child{border-radius:4px 6px 6px 4px}
@@ -839,7 +840,7 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsc-in .axl{stroke:var(--gline);stroke-width:1.2}
 .wrsc-in .tk{font-size:11px;fill:var(--muted);font-weight:600}
 .wrsc-in .ax{font-size:11.5px;fill:var(--ink2);font-weight:800}
-.wrsc-in .ln{fill:none;stroke:var(--gline);stroke-width:.6;opacity:.32;transition:opacity .2s,stroke-width .2s}
+.wrsc-in .ln{fill:none;stroke:var(--gline);stroke-width:.85;opacity:.6;transition:opacity .2s,stroke-width .2s,stroke .2s}
 .wrsc-in .pt{cursor:pointer;animation:wrPop .5s cubic-bezier(.3,1.4,.5,1) both;animation-delay:var(--d);transform-box:fill-box;transform-origin:center}
 .wrsc-in .pt .halo{opacity:0;transform-box:fill-box;transform-origin:center}
 .wrsc-in .pt .core{stroke:none;fill:#9fb2c9;fill-opacity:.62;transition:fill .2s,fill-opacity .2s}.wrsc-in .pt.on .core,.wrsc-in .pt.sel .core{fill:#5f7a9c;fill-opacity:.78}
@@ -848,7 +849,15 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsc-in .pt.sel .halo.h2{animation-delay:1.1s}
 @keyframes wrRadar{0%{opacity:.42;transform:scale(.35)}100%{opacity:0;transform:scale(1.6)}}
 .wrsc-in.hot .pt:not(.on),.wrsc-in.hot .ln:not(.on),.wrsc-in.hot .wrscc:not(.on){opacity:.22}
-.wrsc-in .ln.on{opacity:.85;stroke-width:1;stroke:var(--ink2)}
+.wrsc-in .ln.on{opacity:.72;stroke-width:1.1;stroke:#8394a8}
+/* v157 — 품목 묶음 틀 */
+.wrscg{position:absolute;box-sizing:border-box;border:1px solid var(--line2);border-radius:15px;background:color-mix(in srgb,var(--plane2) 55%,transparent);
+  animation:wrFade .5s ease both;animation-delay:var(--d);transition:border-color .2s,background .2s}
+.wrscg .gh{display:flex;align-items:baseline;gap:6px;height:22px;padding:5px 10px 0;font-size:11px;white-space:nowrap;overflow:hidden}
+.wrscg .gh b{font-weight:800;color:var(--ink2);letter-spacing:-.2px}.wrscg .gh span{font-size:10px;font-weight:600;color:var(--muted)}
+.wrscg.on{border-color:var(--gline);background:color-mix(in srgb,var(--plane2) 85%,transparent)}
+.wrsc-in.hot .wrscg:not(.on){opacity:.45}
+@keyframes wrFade{from{opacity:0}to{opacity:1}}
 .wrscc{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-left:3px solid #b6c4d4;border-radius:12px;background:var(--surface);
   padding:8px 11px;cursor:pointer;transition:opacity .2s,box-shadow .2s,border-color .2s;animation:wrFade .45s ease both;animation-delay:var(--d);overflow:hidden}
 .wrscc:hover,.wrscc.on{box-shadow:0 8px 22px rgba(0,0,0,.1)}
@@ -864,12 +873,19 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 /* 품목 세부 표 */
 .wrsel{margin:2px 0 4px}.wrsel .wrchips+.wrchips{margin-top:-4px}
 .wrsel .wrchips:nth-child(2) .wrchip{font-size:12px;padding:5px 11px}
+/* v157 — 품목 · 소재 칩을 한 줄로(넘치면 가로로 밀어 봄) · 가운데 세로 구분선 */
+.wrsel.one{display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px}.wrsel.one::-webkit-scrollbar{display:none}
+.wrsel.one .wrchips{flex-wrap:nowrap;margin:0;flex:none}.wrsel.one .wrchips+.wrchips{margin:0;padding-left:14px;margin-left:14px;border-left:1px solid var(--line)}
+.wrsel.one .wrchip{white-space:nowrap}
 table.writ .c0{left:0;min-width:86px}table.writ .c1{left:86px;min-width:110px}table.writ .c2{left:196px;min-width:112px}
 table.writ td.mono{text-align:right}table.writ td.g,table.writ td.c1{vertical-align:top;font-weight:800}
 table.writ .hi{background:color-mix(in srgb,var(--acc-soft) 80%,#e9eef6)}
 [data-theme="dark"] table.writ .hi{background:#2a313a}
 table.writ th.hi{color:var(--ink)}
 table.writ .z{color:var(--gline)}
+/* v157 — 숫자 칸은 같은 너비(머리 글자 · 값이 좁지 않은 한 균등) */
+table.wrt td.mono{width:var(--cw,72px);min-width:var(--cw,72px);box-sizing:border-box}
+table.wrwt{--cw:84px}table.wrcr{--cw:112px}table.wrch{--cw:120px}
 /* 시청률 */
 .wrrts{display:flex;gap:14px;min-width:100%;width:max-content}
 .wrrt{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 10px 4px}
@@ -877,39 +893,46 @@ table.writ .z{color:var(--gline)}
 .wrrt svg{display:block;overflow:visible}
 .wrrt .axl{stroke:var(--gline)}
 .wrrt .av{fill:#8e979f;opacity:.42}
-.wrrt .cw{opacity:.62}
+.wrrt .cw{fill:#1d6fc2}
+.wrrt .rb.tot .cw{fill:#0e3a6b}.wrrt .rb.tot .av{fill:#56606a;opacity:.55}
 .wrrt .rb{cursor:default;animation:wrRise .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d);transform-box:fill-box;transform-origin:bottom}
-.wrrt .rb:hover .cw{opacity:.9}.wrrt .rb:hover .av{opacity:.6}
+.wrrt .rb:hover .av{opacity:.6}
 .wrrt .rb.tot .nm{font-weight:900;fill:var(--ink)}
-.wrrt .iv{font-size:10.5px;font-weight:800;fill:var(--muted)}.wrrt .iv.up{fill:#1d6fc2}
+.wrrt .iv{font-size:10.5px;font-weight:800;fill:var(--ink)}.wrrt .ia{font-size:8.5px;font-weight:600;fill:#a3abb3}
 .wrrt .nm{font-size:10.5px;font-weight:700;fill:var(--ink2)}
 .wrleg{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:11.5px;color:var(--ink2);font-weight:700;margin:2px 4px 6px}
 .wrleg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px;opacity:.7}
 .wrleg i.av{background:#8e979f;opacity:.42}.wrleg .n{color:var(--muted);font-weight:600}
+.wrleg i.cw{background:#1d6fc2;opacity:1}.wrleg i.cw.t{background:#0e3a6b;margin-right:2px}.wrleg i.av.t{background:#56606a;opacity:.55}
+.wrleg.top{margin:0 4px 10px}
 @keyframes wrRise{from{transform:scaleY(0)}to{transform:none}}
 /* 소재 온에어 타임라인 */
-.wrtl{position:relative;height:430px;margin:0 auto}
+.wrtl{position:relative;height:520px;margin:0 auto}
 .wrtl .axis{position:absolute;left:0;right:0;top:50%;height:2px;background:linear-gradient(90deg,transparent,var(--ink2) 4%,var(--ink2) 96%,transparent)}
 .wrtl .tn{position:absolute;top:50%;width:0;animation:wrFade .5s ease both;animation-delay:var(--d)}
-.wrtl .dot{position:absolute;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;background:var(--c);display:grid;place-items:center;
+/* 월 동그라미가 안내선 위로(선은 뒤) */
+.wrtl .dot{position:absolute;z-index:2;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;background:var(--c);display:grid;place-items:center;
   box-shadow:0 0 0 5px var(--surface),0 6px 16px rgba(0,0,0,.18)}
-.wrtl .dot span{color:#fff;font-weight:900;font-size:13px}
+.wrtl .dot span{color:#fff;font-weight:900;font-size:12.5px;letter-spacing:-.3px}
 .wrtl .yr{position:absolute;left:-30px;width:60px;text-align:center;font-size:12px;font-weight:900;color:var(--ink)}
 .wrtl .up .yr{top:32px}.wrtl .dn .yr{top:-52px}
 .wrtl .dt{position:absolute;left:30px;white-space:nowrap;font-size:12px;font-weight:800;color:var(--ink2)}
 .wrtl .up .dt{top:8px}.wrtl .dn .dt{top:-24px}
-.wrtl .stem{position:absolute;left:0;width:1px;background:var(--gline)}
-.wrtl .up .stem{bottom:24px;height:44px}.wrtl .dn .stem{top:24px;height:44px}
-.wrtl .cd{position:absolute;left:-10px;width:178px;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);
-  box-shadow:0 6px 16px rgba(0,0,0,.06)}
-.wrtl .up .cd{bottom:68px}.wrtl .dn .cd{top:68px}
-.wrtl .cd .t{font-size:11px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:6px}
-.wrtl .cd .t i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-.wrtl .cd>b{display:block;font-size:13.5px;font-weight:900;color:var(--ink);margin:3px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wrtl .cd .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px}
+.wrtl .stem{position:absolute;z-index:0;left:0;width:1px;background:var(--gline)}
+.wrtl .up .stem{bottom:30px;height:36px}.wrtl .dn .stem{top:30px;height:36px}
+.wrtl .cd{position:absolute;z-index:1;left:-12px;width:200px;box-sizing:border-box;padding:12px 13px 11px;border-radius:14px;border:1px solid var(--line);background:var(--surface);
+  box-shadow:0 6px 16px rgba(0,0,0,.06);overflow:hidden}
+/* v157 — 스토리보드 장면을 위쪽 절반에만 옅게, 아래로 갈수록 흰 바탕으로 */
+.wrtl .cd.im{padding-top:58px}
+.wrtl .cd.im::before{content:"";position:absolute;inset:0;background:var(--img) center 30%/cover no-repeat;opacity:.5;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.75) 22%,transparent 56%);mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.75) 22%,transparent 56%)}
+.wrtl .cd>*{position:relative}
+.wrtl .up .cd{bottom:66px}.wrtl .dn .cd{top:66px}
+.wrtl .cd .t{font-size:11px;font-weight:800;color:var(--ink2)}
+.wrtl .cd>b{display:block;font-size:14px;font-weight:900;color:var(--ink);margin:2px 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrtl .cd .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11px}
 .wrtl .cd .kv span{color:var(--muted);font-weight:700}.wrtl .cd .kv em{font-style:normal;font-weight:800;color:var(--ink);text-align:right}
-.wrtl .cd .f{margin-top:6px;font-size:9.5px;color:var(--muted);opacity:.7}
-.wrhs.tl .wrhs-in{padding:4px 0}
+.wrhs.tl .wrhs-in{padding:10px 0}
 
 /* 주차별 누적 막대 */
 .wrwk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
@@ -936,11 +959,23 @@ table.writ .z{color:var(--gline)}
 .wrwk .wl{font-size:11px;font-weight:800;fill:var(--ink)}.wrwk .wd{font-size:9.5px;fill:var(--muted)}
 .wrwk .wl.past,.wrwk .wd.past{opacity:.55}
 .wrwk .msep{stroke:var(--gline);stroke-dasharray:2 4}
+/* v157 — 리포트 품목별 집행과 같은 구성 */
+.wrwk .wkiso .wb{animation:none;transform-box:fill-box}
+.wrwk .wkiso .wb path{fill:#5f7a9c}.wrwk .wkiso .wb.past path{fill:#b9c6d5}
+.wrwk .wkiso .wb.past{opacity:1}.wrwk .wkiso .wb.dim{opacity:.35}
+.wrwk .wkiso .iv{font-size:10.5px}.wrwk .wkiso .iv.past{fill:var(--muted);font-weight:700}
+.wrwk .wkiso .r3p.past circle{stroke:#8aa0bb}.wrwk .wkiso .r3p.past text{fill:#6f86a3}
+.wrwk .wkiso .r3p text{font-size:9.5px}
+.wrwk .wkiso .mn{font-size:12px;font-weight:900;fill:var(--ink)}.wrwk .wkiso .mn.past{fill:var(--muted)}
+.wrwk-top:has(.wkleg){justify-content:flex-end}
+.wkleg i.sw{width:10px;height:10px;border-radius:3px;background:#5f7a9c}.wkleg em{font-style:normal;color:var(--muted);font-weight:600}.wkleg .n{color:var(--muted);font-weight:600}
 .wrwk .mn{font-size:11.5px;font-weight:900;fill:var(--ink)}.wrwk .mn.past{fill:var(--muted);font-weight:700}
 table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 @media (prefers-reduced-motion: reduce){.wrsc-in .pt,.wrscc,.wrrt .rb,.wrtl .tn,.wrsc-in .pt.sel .halo{animation:none}.wrg .gt i{transition:none}}
 /* 리포트 (v143) — 연도 · 월 고르기 */
-.rpt-nav{display:flex;flex-direction:column;gap:10px;margin:4px 0 16px}
+.rpt-nav{display:flex;flex-direction:column;gap:10px;margin:4px 0 16px}.rpt-nav.hidden{display:none}
+/* v157 — 리포트 메뉴: 달마다 한 줄 */
+#rptMenuBtn.rpx{display:none!important}.rptml{display:contents}
 .rpt-ys,.rpt-ms{display:flex;flex-wrap:wrap;gap:6px}
 .rpt-y,.rpt-m{font:inherit;font-size:13px;font-weight:700;color:var(--ink2);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;cursor:pointer}
@@ -961,6 +996,21 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpcard>header .t span{font-size:11.5px;font-weight:600;color:var(--muted)}
 .rpcard>.bd{padding:8px 18px 16px;min-width:0}
 .rpgrid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rpgrid2>.rpcard{margin-bottom:0}.rpgrid2{margin-bottom:14px}
+/* v157 — 카드 몸통을 남는 높이만큼 채우고 내용은 세로 가운데 (광고비 점유율 · MPP 비중 도넛) */
+.rpgrid2>.rpcard.rpfill{display:flex;flex-direction:column}.rpcard.rpfill>.bd{flex:1;display:flex;flex-direction:column;justify-content:center}
+.rpcard>header .tools{display:flex;align-items:center;gap:8px}
+.rpmsel{position:relative;display:inline-flex}.rpmsel select{font:inherit;font-size:11.5px;font-weight:700;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;
+  padding:4px 22px 4px 10px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:right 10px top 50%,right 6px top 50%;background-size:4px 4px;background-repeat:no-repeat}
+.rpmsel select:hover{color:var(--ink2);border-color:var(--ink2)}.rpmsel.on select{color:var(--surface);background-color:var(--ink);border-color:var(--ink)}
+/* 범례 단추 — 눌러서 그 광고주 강조 */
+.rplgb{justify-content:center;align-items:center;gap:6px;margin-top:10px}
+.rplgb button{font:inherit;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 11px 4px 9px;cursor:pointer;transition:background .15s,border-color .15s,opacity .15s}
+.rplgb button i{width:9px;height:9px;border-radius:3px}.rplgb button:hover{border-color:var(--ink2);color:var(--ink)}
+.rplgb button.mine{color:var(--ink);font-weight:800}
+.rplgb.any button:not(.on){opacity:.5}.rplgb button.on{background:var(--ink);border-color:var(--ink);color:var(--surface);opacity:1}
+.rplgb .hint{font-size:10.5px;color:var(--muted);font-weight:600;margin-left:4px}
+.rpcols.hl rect[data-b]{opacity:.16!important}.rpcols.hl rect[data-b].hi{opacity:1!important}
 .rpgrid2.w64{grid-template-columns:1.6fr 1fr}.rpgrid2.w55{grid-template-columns:1.25fr 1fr}
 .rpgrid3{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px}.rpgrid3>.rpcard{margin-bottom:0}
 @media (max-width:1100px){.rpgrid2,.rpgrid2.w64,.rpgrid2.w55,.rpgrid3{grid-template-columns:1fr}}
@@ -972,6 +1022,7 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpchip i{width:9px;height:9px;border-radius:3px}.rpchip em{font-style:normal;font-weight:600;color:var(--muted);font-size:11px}
 .rpchip:hover{border-color:var(--ink2)}.rpchip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}.rpchip.on em{color:color-mix(in srgb,var(--surface) 70%,transparent)}
 .rpchips.sm .rpchip{font-size:12px;padding:4px 11px}
+#rpDg .rpchips.sm{gap:4px}#rpDg .rpchips.sm .rpchip{font-size:11.5px;padding:3px 9px;gap:5px}
 .rpmonths{margin-top:-4px}
 .rplg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;font-weight:600;color:var(--ink2);margin-top:6px}
 .rplg span{display:inline-flex;align-items:center;gap:6px}.rplg i{width:9px;height:9px;border-radius:3px}.rplg .mine{color:var(--ink);font-weight:800}
@@ -1000,17 +1051,23 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpcols .cv{font-size:11px;font-weight:700;fill:var(--ink2);opacity:0;transition:opacity .4s ease var(--d)}.go .rpcols .cv{opacity:1}.rpcols .cv.cur{fill:var(--ink);font-weight:900}
 .rpcols .mx{font-size:11px;font-weight:600;fill:var(--muted)}.rpcols .mx.cur{fill:var(--ink);font-weight:900}.rpcols .nil{fill:var(--line)}
 /* 업종 타일 */
-.rpsticky{position:sticky;top:var(--rptop,64px);z-index:20;margin:26px -6px 0;padding:8px 6px;background:color-mix(in srgb,var(--plane) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:0 0 14px 14px}
-.rpcats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}.rpcats::-webkit-scrollbar{display:none}
-.rpcat{font:inherit;flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;cursor:pointer;
-  opacity:0;transform:translateY(6px);transition:opacity .4s ease var(--d),transform .5s var(--rpd) var(--d),border-color .2s,box-shadow .2s,background .2s}
+.rpsticky{position:sticky;top:calc(var(--rptop,64px) + 6px);z-index:20;margin:28px 0 0}
+/* v157 — 업종 고르기: 이름만 · 한 줄 꽉 채움 · 고른 칸은 옅은 바탕 + 아래로 향한 꼭지(아래 영역 전체에 적용) */
+.rpcatw{display:flex;align-items:stretch;gap:6px;padding:6px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 22px rgba(20,30,45,.07)}
+.rpcatl{flex:none;display:flex;flex-direction:column;justify-content:center;padding:0 12px 0 10px;border-right:1px solid var(--line);margin-right:2px;line-height:1.25}
+.rpcatl b{font-size:13px;font-weight:900;color:var(--ink)}.rpcatl em{font-style:normal;font-size:10.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.rpcats{flex:1;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}.rpcats::-webkit-scrollbar{display:none}
+.rpcat{font:inherit;flex:1 0 auto;position:relative;display:flex;align-items:center;justify-content:center;padding:10px 12px;background:none;border:0;border-radius:11px;cursor:pointer;
+  font-size:13px;font-weight:700;color:var(--ink2);white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .4s var(--rpd) var(--d),transform .4s var(--rpd) var(--d),background .18s,color .18s}
 .go .rpcat{opacity:1;transform:none}
-.rpcat .ring{width:36px;height:36px;transform:rotate(-90deg)}.rpcat .ring circle{fill:none;stroke-width:5}.rpcat .ring .bg{stroke:var(--line2)}
-.rpcat .ring .fg{stroke:#1d6fc2;stroke-linecap:round;stroke-dasharray:var(--c);stroke-dashoffset:var(--c);transition:stroke-dashoffset 1.2s var(--rpd) calc(var(--d) + .2s)}
-.go .rpcat .ring .fg{stroke-dashoffset:var(--o)}
-.rpcat .tx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}.rpcat .tx b{font-size:13px;font-weight:800;color:var(--ink)}.rpcat .tx em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted)}
-.rpcat:hover{border-color:var(--ink2)}.rpcat.on{background:var(--ink);border-color:var(--ink);box-shadow:0 6px 16px rgba(20,30,45,.18)}
-.rpcat.on .tx b{color:var(--surface)}.rpcat.on .tx em{color:color-mix(in srgb,var(--surface) 70%,transparent)}.rpcat.on .ring .bg{stroke:rgba(255,255,255,.18)}.rpcat.on .ring .fg{stroke:#6fb0f0}
+.rpcat:hover{background:var(--acc-soft2);color:var(--ink)}
+.rpcat.on{background:var(--acc-soft);color:var(--ink);font-weight:900;box-shadow:inset 0 0 0 1px var(--line)}
+.rpcat.on::after{content:'';position:absolute;left:50%;bottom:3px;margin-left:-4px;border:4px solid transparent;border-top-color:var(--ink2);border-bottom:0}
+/* 업종이 적용되는 영역 — 옅은 바탕 판으로 묶는다 */
+.rpcatpanel{margin-top:14px;padding:2px 18px 22px;border-radius:20px;background:color-mix(in srgb,var(--acc-soft2) 70%,transparent);border:1px solid var(--line2)}
+.rpcatpanel.flash{animation:rpFlash .7s ease}
+@keyframes rpFlash{0%{box-shadow:0 0 0 0 rgba(73,94,114,.0)}30%{box-shadow:0 0 0 4px rgba(73,94,114,.12)}100%{box-shadow:0 0 0 0 rgba(73,94,114,0)}}
 #rpCatBody{animation:rpIn .45s var(--rpd)}
 @keyframes rpIn{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}
 /* 3D 도넛 */
@@ -1041,9 +1098,16 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 /* 버블 · 꺾은선 */
 .rpbub .gl,.rpln .gl{stroke:var(--line2);stroke-width:1}.rpbub .ax,.rpln .ax{font-size:10.5px;fill:var(--muted);font-weight:600}.rpbub .axt{font-size:11px;fill:var(--ink2);font-weight:800}
 .rpbub .bb{transform-box:fill-box;transform-origin:50% 50%;transform:scale(0);transition:transform .8s cubic-bezier(.3,1.5,.5,1) var(--d),opacity .15s}
-.go .rpbub .bb{transform:scale(1)}.rpbub:hover .bb{opacity:.4}.rpbub .bb:hover{opacity:1}
-.rpbub .bl2{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbub .bb.mine .bl2{fill:#1d6fc2;font-size:12.5px}
-.rpbub .pulse{stroke-width:2;transform-box:fill-box;transform-origin:50% 50%;animation:rpPulse 2.2s ease-out infinite 1.2s;opacity:0}
+.go .rpbub .bb{transform:scale(1)}
+.rpbub .bb .core{fill-opacity:.4;transition:fill-opacity .2s}.rpbub .bb.mine .core{fill-opacity:.42}
+.rpbub.hot .bb:not(.on) .core{fill-opacity:.16}.rpbub.hot .bb:not(.on) .bl2{opacity:.5}
+.rpbub .bb.on .core{fill-opacity:.82}.rpbub .bb.on .bl2{font-size:13px;font-weight:900}
+.rpbub .bb:hover .core{fill-opacity:.6}.rpbub .bb.on:hover .core{fill-opacity:.88}
+.rpbub .bl2{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbub .bb.mine .bl2{fill:#1d6fc2}
+.rpbub .pulse{stroke:none;transform-box:fill-box;transform-origin:50% 50%;opacity:0;pointer-events:none}
+/* v157 — 레이더: 선이 아니라 옅은 면이 퍼진다 · 고른 브랜드만 */
+.rpbub .bb.on .pulse{animation:rpPulseF 2.6s ease-out infinite .4s}.rpbub .bb.on .pulse.p2{animation-delay:1.7s}
+@keyframes rpPulseF{0%{transform:scale(1);opacity:.16}100%{transform:scale(2.1);opacity:0}}
 @keyframes rpPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 .rpln .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.75;transition:stroke-dashoffset 1.3s var(--rpd) var(--d)}
 .rpln .ln.mine{stroke-width:3.4;opacity:1}.go .rpln .ln{stroke-dashoffset:0}
@@ -1053,28 +1117,38 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 /* 표 */
 table.rptbl{width:100%;font-size:12.5px;border-collapse:separate;border-spacing:0}
 table.rptbl td,table.rptbl th{text-align:right;white-space:nowrap;padding:7px 10px;font-variant-numeric:tabular-nums}
-table.rptbl th{text-align:center}table.rptbl td.br,table.rptbl td.md{text-align:left}
+table.rptbl th{text-align:center}
+/* v157 — 머리 칸 사이 선은 모두 얇게(1px) 같은 색 */
+table.rptbl thead th{border-left:0!important;border-right:1px solid var(--cell-d)!important}table.rptbl thead th:last-child{border-right:0!important}
+table.rptbl.eqw{table-layout:fixed}table.rptbl td.br,table.rptbl td.md{text-align:left}
 table.rptbl td.br{font-weight:800;color:var(--ink)}table.rptbl td.br i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:0}
 table.rptbl td.md{color:var(--ink2);font-weight:700}
 table.rptbl tr.tot td{font-weight:800;background:var(--plane2)}
 table.rptbl tr.mine td{background:color-mix(in srgb,#1d6fc2 7%,var(--surface))}table.rptbl tr.mine.tot td{background:color-mix(in srgb,#1d6fc2 14%,var(--surface))}
 table.rptbl td.eqc{position:relative;min-width:96px}table.rptbl td.eqc .mb{position:absolute;left:6px;top:50%;height:6px;margin-top:-3px;border-radius:3px;background:var(--c);opacity:.22;width:0;transition:width 1s var(--rpd)}
 .go table.rptbl td.eqc .mb{width:calc((100% - 12px) * var(--w) / 100)}table.rptbl td.eqc b{position:relative}
-table.rpdt th.gh{border-left:2px solid var(--surface)}table.rpdt td.tv{font-weight:800;color:var(--ink)}
+table.rpdt th.gh{border-left:0}table.rpdt td.tv{font-weight:800;color:var(--ink)}
 table.rpdt tr.hl td{font-weight:700}table.rpdt tr.act td{color:#1d6fc2;font-weight:700}
 table.rpdt tr.sbar td{padding:8px 6px 4px;background:none}
-.stk{display:flex;height:12px;border-radius:4px;overflow:hidden;background:var(--plane2)}
-.stk span{width:0;transition:width .9s var(--rpd) var(--d);border-right:1.5px solid var(--surface)}.stk span:last-child{border-right:0}.go .stk span{width:var(--w)}
+.rpstk{display:flex;height:12px;border-radius:4px;overflow:hidden;background:var(--plane2)}
+.rpstk span{width:0;transition:width .9s var(--rpd) var(--d);border-right:1.5px solid var(--surface)}.rpstk span:last-child{border-right:0}.go .rpstk span{width:var(--w)}
 .rppb{display:inline-block;height:6px;border-radius:3px;background:#6b8cc4;width:0;margin-right:8px;vertical-align:1px;transition:width 1s var(--rpd);max-width:70px}
 .go .rppb{width:calc(var(--w) * .7)}
 /* CPRP 막대 */
-.rpcp{display:flex;flex-direction:column;gap:6px;padding-top:4px}
-.rpcp .row{display:grid;grid-template-columns:110px 1fr 120px;gap:10px;align-items:center;font-size:12px;opacity:0;transition:opacity .4s ease var(--d)}.go .rpcp .row{opacity:1}
-.rpcp .nm{font-weight:700;color:var(--ink2);text-align:right}.rpcp .bars{position:relative;height:20px}
-.rpcp .bars i{position:absolute;left:0;height:12px;border-radius:0 4px 4px 0;width:0;transition:width 1s var(--rpd) var(--d)}
-.rpcp .bars i.m{top:0;background:#9aa6b3}.rpcp .bars i.a{top:7px;background:#1d6fc2;opacity:.92}.go .rpcp .bars i{width:var(--w)}
-.rpcp b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}.rpcp b em{font-style:normal;color:#1d6fc2;margin-left:6px}
-/* 라디오 · 신문 · 잡지 */
+.rpcp{display:flex;flex-direction:column;gap:12px;padding:8px 0 6px}
+.rpcp .row{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;font-size:12px;opacity:0;transition:opacity .4s ease var(--d)}.go .rpcp .row{opacity:1}
+.rpcp .nm{font-weight:700;color:var(--ink2);text-align:right}.rpcp .bars{display:flex;flex-direction:column;gap:3px}
+.rpcp .ln{display:flex;align-items:center;gap:8px;height:15px}
+.rpcp .ln i{display:block;height:13px;border-radius:0 4px 4px 0;width:0;transition:width 1s var(--rpd) var(--d)}.go .rpcp .ln i{width:var(--w)}
+.rpcp .ln.m i{background:#9aa6b3}.rpcp .ln.a i{background:#1d6fc2}
+.rpcp .ln b{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .4s ease calc(var(--d) + .7s)}.go .rpcp .ln b{opacity:1}
+.rpcp .ln.m b{color:#7d8995}.rpcp .ln.a b{color:#1d6fc2}
+/* v157 — 지상파 세부: 표 아래 바깥의 비중 막대 · 자사 실집행이 없는 칸 음영 */
+table.rptbl td.na{background:var(--line)!important}
+.rpdtbars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 20px;margin-top:14px}@media (max-width:900px){.rpdtbars{grid-template-columns:1fr 1fr}}
+.rpdtbars .h{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}.rpdtbars .rpstk{height:12px}
+.rpdtbars .lg{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:7px;font-size:11px;color:var(--ink2);font-weight:600}
+.rpdtbars .lg span{display:inline-flex;align-items:center;gap:5px}.rpdtbars .lg i{width:8px;height:8px;border-radius:2px}.rpdtbars .lg b{font-weight:800;color:var(--ink)}
 .rpmeds{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media (max-width:1100px){.rpmeds{grid-template-columns:1fr}}
 .rpmed{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 18px}
 .rpmed .h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--ink);margin-bottom:10px}.rpmed .h i{width:10px;height:10px;border-radius:3px}
@@ -1085,26 +1159,52 @@ table.rpdt tr.sbar td{padding:8px 6px 4px;background:none}
 .rpmed .bars i.y{opacity:.3}.go .rpmed .bars i{width:var(--w)}.rpmed b{font-weight:800;color:var(--ink);text-align:right}
 .rpmed .nil{font-size:12px;color:var(--muted);padding:14px 0;text-align:center}
 /* 소재 아카이브 */
-.rparch{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.rparch{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .rpac{font:inherit;text-align:left;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);
   opacity:0;transform:translateY(12px) scale(.98);transition:opacity .45s ease var(--d),transform .55s var(--rpd) var(--d),box-shadow .2s,border-color .2s}
-.go .rpac{opacity:1;transform:none}.rpac:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(20,30,45,.16);border-color:var(--c)}
-.rpac .th{position:relative;aspect-ratio:4/3;background:var(--plane);overflow:hidden;border-bottom:3px solid var(--c)}
-.rpac .th img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:transform .6s var(--rpd)}.rpac:hover .th img{transform:scale(1.05)}
-.rpac .th .ph{display:flex;align-items:center;justify-content:center;height:100%;font-size:28px;font-weight:900;color:var(--c);opacity:.5}
-.rpac .live{position:absolute;left:10px;top:10px;font-size:10.5px;font-weight:800;color:#fff;background:#2f9b6e;border-radius:999px;padding:3px 9px}
-.rpac .tx{padding:12px 14px 14px}.rpac .tx>b{font-size:14.5px;font-weight:900;color:var(--ink)}
-.rpac .meta{display:flex;gap:8px;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
-.mo{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin:10px 0 8px;min-width:120px}.mo i{height:6px;border-radius:2px;background:var(--line2)}
-.mo i.on{background:var(--c,#1d6fc2)}.mo i.pt{background:var(--gline)}.mo i.fut{opacity:.4}
-.rpac .nb{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)}.rpac .nb b{color:var(--ink);font-weight:800}
-.rpgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:16px}
+.go .rpac{opacity:1;transform:none}.rpac:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(20,30,45,.16);border-color:var(--gline)}
+.rpac .th{position:relative;aspect-ratio:16/10;background:var(--plane);overflow:hidden;border-bottom:1px solid var(--line)}
+.rpac .th img{width:100%;height:100%;object-fit:cover;object-position:top left;transition:transform .6s var(--rpd)}.rpac:hover .th img{transform:scale(1.05)}
+.rpac .th.pg img{object-fit:contain;object-position:center;background:#fff}
+.rpac .th .ph{display:flex;align-items:center;justify-content:center;height:100%;font-size:28px;font-weight:900;color:var(--muted);opacity:.5}
+.rpac .th .cnt{position:absolute;right:8px;bottom:8px;font-size:10.5px;font-weight:800;color:#fff;background:rgba(20,26,34,.62);border-radius:999px;padding:2px 8px}
+.rpac .tx{padding:11px 14px 13px}.rpac .tx>b{display:block;font-size:14.5px;font-weight:900;color:var(--ink);margin:3px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rpac .tg{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden}
+.rpac .tg span{flex:none;padding:1px 7px;border-radius:999px;background:var(--plane);color:var(--ink2);font-weight:800}.rpac .tg span.own{background:#e6effa;color:#1d6fc2}
+.rpac .tg em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
+.rpac .nb{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rpac .nb span{display:flex;flex-direction:column;line-height:1.3}
+.rpac .nb em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted)}.rpac .nb b{font-size:14px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.rpac .nb i{font-style:normal;font-size:10.5px;color:var(--muted);opacity:.8;font-variant-numeric:tabular-nums}
+.rparcbar{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 10px}
+.rpgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}.rpgal.pg{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
 .rpgal figure{margin:0;background:var(--plane2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.rpgal img{display:block;width:100%;height:auto;background:#fff}.rpgal figcaption{font-size:11.5px;color:var(--ink2);padding:7px 10px;font-weight:600}
-table.rpcrt .mo{margin:0}table.rpcrt td{vertical-align:middle}
+.rpgal .zim{position:relative;display:block;width:100%;padding:0;border:0;background:#fff;cursor:zoom-in}
+.rpgal img{display:block;width:100%;height:auto;background:#fff}.rpgal figcaption{font-size:11.5px;color:var(--ink2);padding:7px 10px;font-weight:600;min-height:14px}
+.rpgal .zb{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:50%;background:rgba(20,26,34,.55);display:grid;place-items:center;opacity:0;transition:opacity .2s}
+.rpgal .zb svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round}.rpgal .zim:hover .zb{opacity:1}
+table.rpcrt td{vertical-align:middle}table.rpcrt .cum{font-size:10.5px;color:var(--muted);font-weight:600}
+.rpcrsum{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;padding:4px 2px 2px}.rpcrsum span{display:flex;flex-direction:column}
+.rpcrsum em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted)}.rpcrsum b{font-size:20px;font-weight:900;color:var(--ink)}.rpcrsum i{font-style:normal;font-size:11px;color:var(--muted)}
+.rpcrsum .n{font-size:11px;color:var(--muted);margin-left:auto}
+/* 그림 크게 보기 — 사이트 안 덮개 */
+.rplb{position:fixed;inset:0;z-index:10000;background:rgba(12,16,22,.82);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;padding:40px 70px}
+.rplb.on{opacity:1}.rplb .bx{max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center}
+.rplb img{max-width:min(1300px,calc(100vw - 140px));max-height:calc(100vh - 120px);border-radius:10px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.rplb .cap{margin-top:10px;color:rgba(255,255,255,.85);font-size:12.5px;font-weight:600}.rplb .cap span{margin-left:8px;opacity:.7}
+.rplb button{position:absolute;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:50%;width:44px;height:44px;display:grid;place-items:center;cursor:pointer}
+.rplb button:hover{background:rgba(255,255,255,.26)}.rplb button svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rplb .x{top:18px;right:18px}.rplb .nv{top:50%;margin-top:-22px}.rplb .nv.l{left:14px}.rplb .nv.r{right:14px}
 @media (prefers-reduced-motion: reduce){#rptBody *{transition:none!important;animation:none!important}}
 /* ===== 리포트 v151 — 막대↔도넛 · 기운 3D 도넛 · 영역 그래프 · 브랜드 상세 ===== */
 .rpbd{display:block;overflow:hidden}.rpbd .nil{fill:var(--line)}
+/* v157 — 눌러서 펼치는 막대↔도넛 · 닫기 단추 */
+.rpbdbox{position:relative}
+.rpbdx{position:absolute;top:2px;right:2px;display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12px;font-weight:800;color:var(--ink2);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 9px;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .25s,transform .25s}
+.rpbdx svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.rpbdbox.open .rpbdx{opacity:1;pointer-events:auto;transform:none}.rpbdx:hover{border-color:var(--ink2);color:var(--ink)}
+.rpbd .bd.hv path{filter:brightness(1.08)}.rpbd .bd.hv .bv{fill:var(--ink)}
+#tip .hint{margin-top:6px;font-size:11px;color:var(--muted);font-weight:700}
 .rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bxl{font-size:11px;font-weight:600;fill:var(--muted)}.rpbd .bxl.cur{fill:var(--ink);font-weight:900}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
 .rpbd.hot .bl .bd{opacity:.4;transition:opacity .25s}
 .rpbd .dc1{font-size:12px;font-weight:700;fill:var(--muted)}.rpbd .dc2{font-size:17px;font-weight:900;fill:var(--ink)}
@@ -1122,12 +1222,14 @@ table.rpcrt .mo{margin:0}table.rpcrt td{vertical-align:middle}
 .rpalg button{font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);background:none;border:0;padding:2px 0;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
 .rpalg button i{width:12px;height:12px;border-radius:4px}.rpalg button.mine{color:var(--ink);font-weight:800}.rpalg button.off{opacity:.35}
 .rparea .gl{stroke:var(--line2)}.rparea .ax{font-size:10px;fill:var(--muted);font-weight:600}
-.rparea .ln{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.85;transition:stroke-dashoffset 1.3s var(--rpd) var(--d)}
-.rparea .ln.mine{stroke-width:2.6;opacity:1}.go .rparea .ln{stroke-dashoffset:0}
+.rparea .ln{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.85;transition:stroke-dashoffset 1.3s var(--rpd) var(--d)}
+.rparea .ln.mine{stroke-width:6.5;opacity:1}
+.rparea .ax.mo{font-size:11px;fill:var(--ink2);font-weight:700}.rparea .ax.yr{font-size:10.5px;fill:var(--muted);font-weight:700}
+.rparea .yb{fill:none;stroke:var(--line);stroke-width:1}.rparea .ybg{fill:var(--surface)}.go .rparea .ln{stroke-dashoffset:0}
 .rparea .ar{opacity:0;transition:opacity 1s ease calc(var(--d) + .3s)}.go .rparea .ar{opacity:1}
 .rparea .xh{stroke:var(--ink2);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
 .rpbubw{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}@media (max-width:1100px){.rpbubw{grid-template-columns:1fr}}
-.rpbub.hot .bb:not(.on){opacity:.45}.rpbub .bb.on circle:not(.pulse){stroke-width:2}
+
 .rpbubside .bl{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
 .rpbubside .bl button{font:inherit;display:grid;grid-template-columns:10px 1fr auto auto auto;gap:10px;align-items:center;text-align:left;padding:6px 10px;border:1px solid transparent;border-radius:9px;background:none;cursor:pointer;font-size:12px;color:var(--ink2)}
 .rpbubside .bl button i{width:10px;height:10px;border-radius:50%}.rpbubside .bl button b{color:var(--ink);font-weight:800}.rpbubside .bl button.mine b{color:#1d6fc2}
@@ -2178,6 +2280,10 @@ body.pssave .ccskip{display:none!important}
 .secnav:hover button:hover .snl{color:var(--ink)}
 [data-theme="dark"] .secnav:hover{box-shadow:0 10px 30px rgba(0,0,0,.5)}
 body.booting .secnav,body.pssave .secnav{display:none!important}
+/* v157 — TV 화면: 오른쪽 가장자리, 이름은 왼쪽으로 펼침 */
+.secnav.r{left:auto;right:12px;align-items:flex-end}
+.secnav.r button{flex-direction:row;justify-content:flex-end}
+.secnav.r .snl{transform:translateX(8px)}
 @media (max-width:899px){.secnav{display:none!important}}
 @media print{.secnav{display:none!important}}
 
@@ -4397,7 +4503,6 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
     </div>
     <div class="subgrp" data-area="digital">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.6 3.8h14.8v9.4H2.6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 16.6h6M10 13.4v3.1"/></svg></span><span>디지털</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="subbar">
         <button type="button" data-sub="mix" data-menu="d_mix">미디어믹스</button>
         <button type="button" data-sub="struct" data-menu="d_struct">캠페인 구조</button>
@@ -4412,7 +4517,6 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
     </div>
     <div class="subgrp" data-area="tv">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
         <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
@@ -4428,7 +4532,6 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
     <!-- OTT (v141) — 디지털과 같은 화면(대시보드 · 입력)을 OTT 라인만으로. data-osub · data-otab 는 p8 이 단다 -->
     <div class="subgrp" data-area="ott">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="2.4" y="3.8" width="15.2" height="12.4" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.3 7.4v5.2l4.4-2.6z"/></svg></span><span>OTT</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="ottsubbar">
         <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
         <button type="button" data-osub="struct" data-menu="ot_struct">캠페인 구조</button>
@@ -4443,7 +4546,6 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
     </div>
     <div class="subgrp" data-area="ooh">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 3.2h15.2v8.6H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M6.6 11.8v5.4M13.4 11.8v5.4M4.6 17.2h10.8"/></svg></span><span>OOH</span></div>
-        <div class="subhd">대시보드</div>
         <div class="subbar" id="oohsubbar">
         <button type="button" data-tab="oohdash" data-menu="o_sum">서머리</button>
       </div>
@@ -4455,9 +4557,9 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
     <div class="subgrp" data-area="report">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="3" y="3.2" width="14" height="13.6" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 7.4h14M7 3.2V1.8M13 3.2V1.8M6.6 13.4v-2.6M10 13.4V9.6M13.4 13.4v-1.6"/></svg></span><span>리포트</span></div>
       <div class="subbar">
-        <button type="button" data-tab="report" data-menu="report">연도 · 월별 리포트</button>
+        <button type="button" data-tab="report" data-menu="report" id="rptMenuBtn">월별 리포트</button>
+        <span class="rptml" id="rptMenuList"></span>
       </div>
-      <p class="subnote">연도를 고르고 달마다 리포트를 봅니다</p>
     </div>
     <div class="subgrp" data-area="trend">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 2.6h7.4l3.8 3.8v11H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 10.4h5.6M7.2 13.4h5.6"/></svg></span><span>트렌드 리포트</span></div>
@@ -14425,6 +14527,7 @@ function applyDoc(d,keepToday){
   CAMPAIGN.advertiser=d.campaign?.advertiser||'';
   /* 월별 리포트 (v149) */
   try{RPT_DOC=d.report&&typeof d.report==='object'&&!d.report.omit?d.report:null;}catch(e){}
+  try{if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   CAMPAIGN.today=keepToday&&d.campaign?.today?d.campaign.today:todaySeoul();   /* 서울 날짜 (v78) */
   CAMPAIGN.advLogo=d.campaign?.advLogo||'';
   CAMPAIGN.bgMode=d.campaign?.bgMode||(d.campaign?.bgLogo===false?'none':'adv');
@@ -15383,7 +15486,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_MON=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{TV_WR=null;}catch(e){}
-  try{RPT_DOC=null;}catch(e){}
+  try{RPT_DOC=null;if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}
   try{INF_TBL=null;INF.dim='media';INF.seg=false;INF.step=2;INF.mapSeg='';}catch(e){}
@@ -20117,6 +20220,7 @@ function curDashSub(){
 /* 선택 표시 — 영역 · 하위 메뉴(드롭다운 안) · 상위 버튼 옆 "지금 메뉴" (v74) */
 function paintTabsOn(){
   const T=$('tabs');if(!T)return;
+  try{if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   const name=T.dataset.cur||'dash',area=areaOfTab(name);
   const cs=curDashSub();
   T.querySelectorAll('.area').forEach(b=>{
@@ -24527,6 +24631,8 @@ function snBuild(){
   const secs=w?[...w.querySelectorAll('.sec')].filter(s=>s.getClientRects().length&&!s.closest('.hidden,.modal')):[];
   const items=secs.map(s=>({s,l:snLabel(s)})).filter(x=>x.l);
   const sig=items.map(x=>x.l).join('|');
+  /* v157 — TV 화면에선 오른쪽 가장자리로(왼쪽 카드와 겹치지 않게) */
+  nav.classList.toggle('r',!!(w&&/^tab-tv/.test(w.id)));
   if(nav.__sig===sig&&SN.items.length===items.length&&SN.items.every((x,i)=>x.s===items[i].s)){snPaint();return;}
   nav.__sig=sig;SN.items=items;SN.cur=-1;
   nav.classList.toggle('on',items.length>=3);
@@ -28269,7 +28375,7 @@ function renderTvMonCh(yms,PM){
      own:[{m,t:[예산,GRP,eq,R1,R3],it:[[품목,예산,eq,R3]]}]  (코웨이 위클리 리포트 · 1~m월)
      arch:[{n:품목,cr:[{n,on,mo:[[월,예산,eq,R3,누적eq,누적R3]]}],img:[{id,on,mo,w,h}]}]}  (소재 아카이브 · 스토리보드는 assets/cr/)
    분석 문구는 없다 — 숫자와 그래프만. 업종 · 브랜드 · 월은 칩으로 바꿔 가며 한 화면에서 비교한다. */
-var RPT={dgB:'',dgP:'m',y:0,m:0,cat:'',brand:'코웨이',sos:'ytd',sosMed:'atl',mix:'ytd',bub:'m',tblM:0,arcCat:'all'};
+var RPT={arcScope:'m',arcOwn:'all',bubSel:'',sosHi:'',sosMo:0,oldY:0,dgB:'',dgP:'m',y:0,m:0,cat:'',brand:'코웨이',sos:'ytd',sosMed:'atl',mix:'ytd',bub:'m',tblM:0,arcCat:'all'};
 var RPT_DOC=null;   // var — 09-cloud applyDoc 이 먼저 불러도 되게
 const rptOn=()=>!!(RPT_DOC&&RPT_DOC.v&&!RPT_DOC.none&&Array.isArray(RPT_DOC.cats));
 const RPT_CW='#1d6fc2';
@@ -28291,12 +28397,32 @@ const rpP=(v,d=0)=>isFinite(v)?v.toFixed(d)+'%':'–';
 const rpYm=m=>`${RPT_DOC.y}-${String(m).padStart(2,'0')}`;
 
 function rptYears(){
-  if(rptOn()||(RPT_DOC&&RPT_DOC.y))return [RPT_DOC.y];
+  if(rptOn()||(RPT_DOC&&RPT_DOC.y)){const ys=new Set([RPT_DOC.y]);Object.keys(RPT_DOC.camps||{}).forEach(k=>{const y=+k.slice(0,4);if(y)ys.add(y);});return [...ys].sort((a,b)=>a-b);}
   const t=String(CAMPAIGN.today||iso(new Date())).slice(0,10);
   const ds=[campStart(),campEnd(),t].map(d=>String(d||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)).map(Number);
   const y0=Math.min(...ds),y1=Math.max(...ds);
   const out=[];for(let y=y0;y<=y1&&out.length<10;y++)out.push(y);
   return out.length?out:[new Date().getFullYear()];}
+
+/* ---------- 메뉴 — 올해 발행된 리포트는 달마다 한 줄(최신 달이 위), 올해 이전은 연도 한 줄(누르면 화면 안에서 달을 고른다) (v157) ---------- */
+function rptThisYear(){const t=String(CAMPAIGN.today||iso(new Date())).slice(0,4);return +t||new Date().getFullYear();}
+function rptMenuPaint(){
+  const box=$('rptMenuList'),btn=$('rptMenuBtn');if(!box)return;
+  const camps=(RPT_DOC&&RPT_DOC.camps)||{},Y=rptThisYear();
+  const yms=Object.keys(camps).filter(k=>camps[k]&&camps[k].r).sort().reverse();
+  const cur=yms.filter(k=>+k.slice(0,4)===Y),old=[...new Set(yms.filter(k=>+k.slice(0,4)<Y).map(k=>+k.slice(0,4)))].sort((a,b)=>b-a);
+  /* 올해 리포트가 없으면(예: 1월) 가장 최근 해를 달로 */
+  const ylist=cur.length?cur:yms.filter(k=>k.slice(0,4)===(yms[0]||'').slice(0,4)),olist=cur.length?old:old.filter(y=>String(y)!==(yms[0]||'').slice(0,4));
+  const tab=($('tabs')||{}).dataset?.cur,me=RPT_DOC&&RPT_DOC.y?`${RPT_DOC.y}-${String(RPT_DOC.m).padStart(2,'0')}`:'';
+  box.innerHTML=ylist.map(k=>`<button type="button" data-menu="report" data-rptmenu="${k}" class="${tab==='report'&&k===me&&!RPT.oldY?'on':''}">${L(`${k.slice(0,4)}년 ${k.slice(5,7)}월`,`${k.slice(5,7)}/${k.slice(0,4)}`)}</button>`).join('')
+    +olist.map(y=>`<button type="button" data-menu="report" data-rptyear="${y}" class="${tab==='report'&&RPT.oldY===y?'on':''}">${L(`${y}년`,String(y))}</button>`).join('');
+  if(btn)btn.classList.toggle('rpx',!!(ylist.length||olist.length));
+  /* 메뉴 사용 · 권한 상태는 같은 data-menu 단추를 따라간다 */
+  if(btn)box.querySelectorAll('button').forEach(b=>['menuoff','hidden','vhide'].forEach(c=>b.classList.toggle(c,btn.classList.contains(c))));
+  box.querySelectorAll('[data-rptmenu]').forEach(b=>b.onclick=()=>{RPT.oldY=0;closeMegaPop();const ym=b.dataset.rptmenu;
+    if(ym===me){switchTab('report');rptMenuPaint();}else{rptGo(ym);}});
+  box.querySelectorAll('[data-rptyear]').forEach(b=>b.onclick=()=>{RPT.oldY=+b.dataset.rptyear;RPT.y=RPT.oldY;closeMegaPop();switchTab('report');rptMenuPaint();});}
+function closeMegaPop(){try{if(typeof closeAreaPop==='function')closeAreaPop();}catch(e){}}
 
 /* ---------- 다른 달로 — 그 달 캠페인을 열고 리포트 탭 그대로 ---------- */
 async function rptGo(ym){
@@ -28335,7 +28461,7 @@ function rpHueMap(cat){const m={};let i=0;rpBrands(cat).forEach(b=>{m[b]=b==='�
 function rpAmt(cat,b,per,medKeys){
   const rows=rpSpend(cat)[b];if(!rows)return 0;const M=RPT_DOC.m;
   const idx=(medKeys||RPT_MED.map(x=>x.k)).flatMap(k=>RPT_MED.find(x=>x.k===k).i);
-  const rs=per==='ytd'?rows:[rows[M-1]||[]];
+  const rs=per==='ytd'?rows:/^mo\d+$/.test(per||'')?[rows[+per.slice(2)-1]||[]]:[rows[M-1]||[]];
   return rs.reduce((s,r)=>s+idx.reduce((t,i)=>t+rN(r[i]),0),0);}
 
 /* ---------- 애니메이션 — 그려 넣은 뒤 한 프레임 쉬고 .go 를 붙이면 CSS 가 펼친다 ---------- */
@@ -28359,7 +28485,13 @@ const rpTr=(l,v)=>`<div class="r"><span class="l">${l}</span><b>${v}</b></div>`;
 function renderReport(){
   const host=$('rptBody');if(!host)return;
   const ys=rptYears();
+  /* 보고 있는 리포트가 바뀌면 리포트 안 선택(표 달 · 브랜드 등)을 처음으로 (v157 — 9월에 4월 표가 남던 문제) */
+  if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;}
+  if(RPT.oldY&&ys.includes(RPT.oldY))RPT.y=RPT.oldY;else{RPT.oldY=0;if(RPT_DOC&&RPT_DOC.y)RPT.y=RPT_DOC.y;}
   if(!ys.includes(RPT.y))RPT.y=ys[ys.length-1];
+  /* 달 고르기 줄은 올해 이전 연도를 볼 때만 — 올해 달은 메뉴에서 고른다 */
+  const nav=document.querySelector('#tab-report .rpt-nav');if(nav)nav.classList.toggle('hidden',!RPT.oldY);
+  try{rptMenuPaint();}catch(e){}
   const t=String(CAMPAIGN.today||iso(new Date())).slice(0,10);
   const curM=RPT_DOC&&RPT_DOC.m?RPT_DOC.m:(+t.slice(0,4)===RPT.y?+t.slice(5,7):1);
   RPT.m=curM;
@@ -28382,7 +28514,7 @@ function renderReport(){
   if(!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat=(RPT_DOC.cats.find(c=>c.k==='정수기 일반')||RPT_DOC.cats[0]).k;
   host.innerHTML=`<div id="rpOwn" class="rpblk"></div>
     <div class="rpsticky" id="rpCatBar"></div>
-    <div id="rpCatBody"></div>
+    <div id="rpCatBody" class="rpcatpanel"></div>
     <div id="rpArch" class="rpblk"></div>
     <div class="rpsrc">${esc(RPT_DOC.src||'')}</div>`;
   rpOwn();rpCatBar();rpCatBody();rpArch();
@@ -28408,7 +28540,7 @@ function rpOwn(){
       ${kpi(L('집행 품목','Items'),n,'n',0,L(`GRP ${wrF(grp)}`,`GRP ${wrF(grp)}`),4)}</div>
     <div class="rpgrid2">
       ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),'',`<div id="rpIso" class="rpiso"></div>`,`<div class="rplg rpisolg"><span><i style="background:#5f7a9c"></i>${L('광고비','Spend')}</span><span><i class="ln"></i>R3+</span><span><i class="ar"></i>eq.GRP</span></div>`)}
-      ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대에 마우스를 올리면 그 달 품목별 내역','hover a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
+      ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대를 누르면 그 달 품목별 내역','click a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
   rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkpis'));}
 
 /* 3D 막대(아이소메트릭 프리즘) — 앞면 · 오른면 · 윗면. 아래에서 솟아오른다 */
@@ -28465,14 +28597,13 @@ function rpOwnTrend(){
    ================================================================ */
 function rpCatBar(){
   const h=$('rpCatBar');if(!h)return;
-  const ring=p=>{const r=15,c=2*Math.PI*r,v=isFinite(p)?Math.max(0,Math.min(100,p)):0;
-    return `<svg viewBox="0 0 40 40" class="ring"><circle cx="20" cy="20" r="${r}" class="bg"/><circle cx="20" cy="20" r="${r}" class="fg" style="--c:${c.toFixed(1)};--o:${(c*(1-v/100)).toFixed(1)}"/></svg>`;};
-  h.innerHTML=`<div class="rpcats">${RPT_DOC.cats.map((c,i)=>{
-    const bs=rpBrands(c),tot=bs.reduce((s,b)=>s+rpAmt(c,b,'ytd',RP_ATL),0),mine=rpAmt(c,'코웨이','ytd',RP_ATL),p=rpPct(mine,tot);
-    return `<button type="button" class="rpcat${c.k===RPT.cat?' on':''}" data-rpcat="${esc(c.k)}" style="--d:${i*40}ms">${ring(p)}<span class="tx"><b>${esc(c.lab)}</b><em>SOS ${rpP(p)}</em></span></button>`;}).join('')}</div>`;
+  /* v157 — 업종 이름만 · 한 줄을 꽉 채우는 고르기 줄. 고른 업종 아래로 내려가는 꼭지가 아래 모든 영역을 가리킨다 */
+  h.innerHTML=`<div class="rpcatw"><div class="rpcatl"><b>${L('업종','Category')}</b><em>${L('아래 모든 영역에 적용','applies to everything below')}</em></div>
+    <div class="rpcats" role="tablist">${RPT_DOC.cats.map((c,i)=>`<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpcat${c.k===RPT.cat?' on':''}" data-rpcat="${esc(c.k)}" style="--d:${i*30}ms">${esc(c.lab)}</button>`).join('')}</div></div>`;
   rpGo(h);
   h.querySelectorAll('[data-rpcat]').forEach(b=>b.onclick=()=>{RPT.cat=b.dataset.rpcat;RPT.brand='코웨이';
-    h.querySelectorAll('[data-rpcat]').forEach(x=>x.classList.toggle('on',x===b));rpCatBody();});}
+    h.querySelectorAll('[data-rpcat]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',x===b);});rpCatBody();
+    const body=$('rpCatBody');if(body){body.classList.remove('flash');void body.offsetWidth;body.classList.add('flash');}});}
 
 function rpCatBody(){
   const h=$('rpCatBody');if(!h)return;const c=rpCat();
@@ -28488,35 +28619,49 @@ function rpCatBody(){
 const RP_MEDSET={atl:RP_ATL,all:null,tv:['t','c'],dg:['d'],etc:['r','n','g']};
 function rpSos(){
   const h=$('rpSos');if(!h)return;const c=rpCat(),M=RPT_DOC.m,col=rpColMap(c),bs=rpBrands(c),mk=RP_MEDSET[RPT.sosMed];
-  const segs=bs.map(b=>({n:b,v:rpAmt(c,b,RPT.sos,mk),col:col[b]})).filter(s=>s.v>0).sort((a,b)=>b.v-a.v);
+  if(RPT.sos==='mon'&&!(RPT.sosMo>=1&&RPT.sosMo<=M))RPT.sos='ytd';
+  const per=RPT.sos==='mon'?'mo'+RPT.sosMo:RPT.sos;
+  const segs=bs.map(b=>({n:b,v:rpAmt(c,b,per,mk),col:col[b]})).filter(s=>s.v>0).sort((a,b)=>b.v-a.v);
   const tot=segs.reduce((s,x)=>s+x.v,0);
   const meds=[{k:'atl',l:L('4대 매체','ATL')},{k:'tv',l:'TV'},{k:'etc',l:L('라디오 · 인쇄','Radio · Print')},{k:'dg',l:L('디지털','Digital')},{k:'all',l:L('4대 + 디지털','ATL + digital')}];
   h.innerHTML=`<div class="sec">${L('경쟁사 광고비','Competitor spend')} <span class="note">${esc(c.lab)}${c.sp==='정수기'&&c.k!=='정수기'?L(' · 광고비는 정수기(일반+얼음) 합산',' · spend = water purifier total'):''}</span></div>
     <div class="rpgrid2">
       ${rpCard(L('월별 광고비','Monthly spend'),L(`1~${M}월`,`M1–M${M}`),`<div id="rpSosCols"></div>`,rpSeg(meds,RPT.sosMed,'data-rpsm'))}
-      ${rpCard(L('광고비 점유율','Share of spend'),RPT.sos==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`),
-        tot?`<div id="rpSosDn" class="rp3dbox"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
-        rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.sos,'data-rpsp'))}</div>`;
+      ${rpCard(L('광고비 점유율','Share of spend'),RPT.sos==='ytd'?L(`1~${M}월 누적`,'YTD'):RPT.sos==='mon'?L(`${RPT.sosMo}월`,`M${RPT.sosMo}`):L(`${M}월`,`M${M}`),
+        tot?`<div id="rpSosDn" class="rp3dbox rpmid"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
+        rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.sos,'data-rpsp')
+        /* v157 — 궁금한 사람만: 다른 달 하나를 골라 보는 작은 메뉴 */
+        +`<label class="rpmsel${RPT.sos==='mon'?' on':''}"><select data-rpsmo aria-label="${L('월별 보기','By month')}"><option value="">${L('월별','Month…')}</option>${[...Array(M)].map((_,i)=>`<option value="${i+1}"${RPT.sos==='mon'&&RPT.sosMo===i+1?' selected':''}>${L(`${i+1}월`,`M${i+1}`)}</option>`).join('')}</select></label>`,'rpfill')}</div>`;
   rpSosCols(c,col,bs,mk);
   if(tot)rp3dDonut($('rpSosDn'),segs,'코웨이');
   h.querySelectorAll('[data-rpsm]').forEach(b=>b.onclick=()=>{RPT.sosMed=b.dataset.rpsm;rpSos();});
   h.querySelectorAll('[data-rpsp]').forEach(b=>b.onclick=()=>{RPT.sos=b.dataset.rpsp;rpSos();});
+  h.querySelectorAll('[data-rpsmo]').forEach(sel=>sel.onchange=()=>{const v=+sel.value;if(v){RPT.sos='mon';RPT.sosMo=v;}else RPT.sos='m';rpSos();});
   rpGo(h);}
 function rpSosCols(c,col,bs,mk){
   const box=$('rpSosCols');if(!box)return;const M=RPT_DOC.m,sp=rpSpend(c);
   const idx=(mk||RPT_MED.map(x=>x.k)).flatMap(k=>RPT_MED.find(x=>x.k===k).i);
   const val=(b,m)=>{const r=(sp[b]||[])[m-1]||[];return idx.reduce((s,i)=>s+rN(r[i]),0);};
-  const tots=[...Array(M)].map((_,i)=>bs.reduce((s,b)=>s+val(b,i+1),0));const mx=Math.max(...tots)||1;
+  const tots=[...Array(M)].map((_,i)=>bs.reduce((s,b)=>s+val(b,i+1),0));
+  /* v157 — 같은 업종 안에서는 눈금 고정: 매체를 바꿔도(4대 · TV · 디지털 …) 막대 높이로 크기를 비교할 수 있게 4대+디지털 합계 최대값 기준 */
+  const allIdx=RPT_MED.flatMap(x=>x.i),allTot=[...Array(M)].map((_,i)=>bs.reduce((s,b)=>{const r=(sp[b]||[])[i]||[];return s+allIdx.reduce((t,k)=>t+rN(r[k]),0);},0));
+  const mx=Math.max(...allTot,...tots)||1;
   const W=Math.max(520,box.clientWidth||700),H=310,base=H-40,top=28,gw=(W-20)/Math.max(M,6),bw=Math.min(46,gw*.58);let g='';
   for(let m=1;m<=M;m++){const x=10+gw*(m-1)+(gw-bw)/2;let y=base;
     g+=`<g class="cb${m===M?' cur':''}" style="--d:${m*60}ms">`;
     bs.forEach(b=>{const v=val(b,m);if(v<=0)return;const hh=(base-top)*v/mx;y-=hh;
-      g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(.5,hh-1.5).toFixed(1)}" fill="${col[b]}" data-tip="${m}|${esc(b)}"/>`;});
+      g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(.5,hh-1.5).toFixed(1)}" fill="${col[b]}" data-tip="${m}|${esc(b)}" data-b="${esc(b)}"/>`;});
     g+=`</g>${tots[m-1]>0?`<text class="cv${m===M?' cur':''}" style="--d:${m*60+420}ms" x="${(x+bw/2).toFixed(1)}" y="${(y-6).toFixed(1)}" text-anchor="middle">${wrEok(tots[m-1])}</text>`:''}
       <text class="mx${m===M?' cur':''}" x="${(x+bw/2).toFixed(1)}" y="${base+18}" text-anchor="middle">${m}${L('월','')}</text>`;}
   const used=bs.filter(b=>[...Array(M)].some((_,i)=>val(b,i+1)>0));
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpcols"><line x1="6" x2="${W-6}" y1="${base}" y2="${base}" class="bl"/>${g}</svg>
-    <div class="rplg">${used.map(b=>`<span${b==='코웨이'?' class="mine"':''}><i style="background:${col[b]}"></i>${esc(b)}</span>`).join('')}</div>`;
+    <div class="rplg rplgb" role="group" aria-label="${L('광고주 강조','Highlight advertiser')}">${used.map(b=>`<button type="button" class="${b==='코웨이'?'mine':''}${RPT.sosHi===b?' on':''}" data-rphb="${esc(b)}" aria-pressed="${RPT.sosHi===b}"><i style="background:${col[b]}"></i>${esc(b)}</button>`).join('')}<span class="hint">${L('눌러서 강조','click to highlight')}</span></div>`;
+  /* 범례를 누르면 그 광고주만 또렷하게(다른 광고주는 옅게) · 다시 누르면 해제 */
+  const paintHi=()=>{const svg=box.querySelector('svg');svg.classList.toggle('hl',!!RPT.sosHi);svg.querySelectorAll('rect[data-b]').forEach(r=>r.classList.toggle('hi',r.dataset.b===RPT.sosHi));
+    box.querySelectorAll('[data-rphb]').forEach(x=>{const on=x.dataset.rphb===RPT.sosHi;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});
+    box.querySelector('.rplgb').classList.toggle('any',!!RPT.sosHi);};
+  if(!used.includes(RPT.sosHi))RPT.sosHi='';
+  box.querySelectorAll('[data-rphb]').forEach(x=>x.onclick=()=>{RPT.sosHi=RPT.sosHi===x.dataset.rphb?'':x.dataset.rphb;paintHi();});paintHi();
   rpTipWire(box,k=>{const [m,b]=k.split('|');const r=(sp[b]||[])[+m-1]||[],v=val(b,+m),t=tots[+m-1];
     return `<div class="t">${m}${L('월','')} · ${esc(b)}</div>${rpTr(L('광고비','Spend'),wrEok(v))}${rpTr(L('점유율','Share'),rpP(v/t*100,1))}
       <div class="tsec">${L('매체별','By media')}</div>${RPT_MED.map(md=>{const a=md.i.reduce((s,i)=>s+rN(r[i]),0);return a>0?rpTr(md.l,wrEok(a)):'';}).join('')}`;});}
@@ -28563,7 +28708,7 @@ function rpMix(){
   const bs=rpBrands(c).map(b=>({b,v:MM.map(md=>rpAmt(c,b,RPT.mix,[md.k]))})).map(x=>({...x,t:rpSum(x.v)})).filter(x=>x.t>0)
     .sort((a,b)=>(b.b==='코웨이')-(a.b==='코웨이')||b.t-a.t);
   h.innerHTML=`<div class="sec">${L('브랜드별 광고비','Spend by brand')} <span class="note">${esc(c.lab)} · ${L('4대 매체 · 디지털은 아래 디지털 광고비','ATL · digital below')}</span></div>
-    ${rpCard(L('브랜드별 광고비 · 매체 비중','Spend · media share by brand'),(RPT.mix==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`))+L(' · 막대에 마우스를 올리면 매체별 비중',' · hover a bar for media share'),
+    ${rpCard(L('브랜드별 광고비 · 매체 비중','Spend · media share by brand'),(RPT.mix==='ytd'?L(`1~${M}월 누적`,'YTD'):L(`${M}월`,`M${M}`))+L(' · 막대를 누르면 매체별 비중',' · click a bar for media share'),
       bs.length?`<div id="rpMixBd"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
       rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.mix,'data-rpmx'))}`;
   h.querySelectorAll('[data-rpmx]').forEach(b=>b.onclick=()=>{RPT.mix=b.dataset.rpmx;rpMix();});
@@ -28587,7 +28732,7 @@ function rpTv(){
   const mChips=rpChips(months.map(m=>({k:String(m),l:L(`${m}월`,`M${m}`)})),String(RPT.tblM),'data-rptm2','sm');
   h.innerHTML=`<div class="sec">${L('TV 집행 결과','TV results')} <span class="note">${esc(c.lab)} · F30-45 · ${L('수도권','Seoul metro')}</span></div>
     <div class="rpmonths">${mChips}</div>
-    ${rpCard(L('노출량 × 도달','Exposure × reach'),L('eq.GRP × R3+ · 원 크기 = 광고비 · 브랜드에 마우스를 올리면 월별 실적','eq.GRP × R3+ · size = spend · hover a brand for monthly detail'),
+    ${rpCard(L('노출량 × 도달','Exposure × reach'),L('eq.GRP × R3+ · 원 크기 = 광고비 · 브랜드를 누르면 월별 실적','eq.GRP × R3+ · size = spend · click a brand for monthly detail'),
       `<div class="rpbubw"><div id="rpBub"></div><div id="rpBubSide" class="rpbubside"></div></div>`,segB)}
     ${rpCard(L('TV set 성과','TV set performance'),L(`${RPT.tblM}월 · 실집행은 코웨이 실제 · 경쟁사 추정`,`M${RPT.tblM} · actual = Coway real, competitors est.`),`<div id="rpTvTbl"></div>`)}`;
   h.querySelectorAll('[data-rpbb]').forEach(b=>b.onclick=()=>{RPT.bub=b.dataset.rpbb;rpTv();});
@@ -28600,7 +28745,7 @@ function rpBrandCard(c,b,col){
   if(!rows.length)return `<div class="hint">${L('TV 실적 없음','No TV results')}</div>`;
   const mx=Math.max(...rows.map(r=>rN(r[7])),1);
   return `<div class="bh"><i style="background:${col[b]}"></i><b>${esc(b)}</b>${bub?`<span>${L('연 누적','YTD')} eq ${wrF(bub.eq)} · R3+ ${wrF(bub.r3)}% · ${wrEok(bub.won/1000)}</span>`:''}</div>
-    <table class="tbl lite rptbl rpbt"><thead><tr><th>${L('월','Mo')}</th><th>${L('광고비','Spend')}</th><th>eq.GRP</th><th>R1+</th><th>R3+</th><th>A.F</th></tr></thead>
+    <table class="tbl lite rptbl rpbt eqw"><thead><tr><th>${L('월','Mo')}</th><th>${L('광고비','Spend')}</th><th>eq.GRP</th><th>R1+</th><th>R3+</th><th>A.F</th></tr></thead>
     <tbody>${rows.map(r=>`<tr${r[0]===RPT.tblM?' class="cur"':''}><td class="br">${r[0]}${L('월','')}</td><td>${wrEok(rN(r[4])||rN(r[3]))}</td>
       <td class="eqc"><span class="mb" style="--w:${(rN(r[7])/mx*100).toFixed(1)}%;--c:${col[b]}"></span><b>${wrF(r[7])}</b></td><td>${wrF(r[10],1)}%</td><td>${wrF(r[11],1)}%</td><td>${wrF(r[12],1)}</td></tr>`).join('')}</tbody></table>
     <div class="hint">${L('광고비 = 코웨이 실집행 · 경쟁사 추정 실집행','Spend = Coway actual · competitors estimated')}</div>`;}
@@ -28611,31 +28756,34 @@ function rpBubble(c,col,bub){
   if(!pts.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;if(side)side.innerHTML='';return;}
   const W=Math.max(480,box.clientWidth||720),H=380,L0=46,B=H-34,T=20,R0=W-24;
   const mxX=Math.max(...pts.map(p=>p.x))*1.18||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y))*1.25/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
-  const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>8+Math.sqrt(s/mxS)*38;
+  const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>6+Math.sqrt(s/mxS)*27;   /* v157 — 원을 조금 작게 */
   const nice=m=>{const s2=Math.pow(10,Math.floor(Math.log10(m/4)));const f=m/4/s2;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*s2;};
   const sx=nice(mxX),sy=nice(mxY);let grid='';
   for(let v=0;v<=mxX;v+=sx)grid+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${B}" class="gl"/><text x="${X(v)}" y="${B+16}" text-anchor="middle" class="ax">${wrF(v)}</text>`;
   for(let v=0;v<=mxY;v+=sy)grid+=`<line x1="${L0}" x2="${R0}" y1="${Y(v)}" y2="${Y(v)}" class="gl"/><text x="${L0-6}" y="${Y(v)+4}" text-anchor="end" class="ax">${v}%</text>`;
   const ord=[...pts].sort((a,b)=>b.s-a.s);
   /* v151 — 경쟁사는 회색, 코웨이만 색 · 반투명이라 뒤 눈금이 비친다 */
-  const dots=ord.map((p,i)=>{const cx=X(p.x),cy=Y(p.y),r=RR(p.s),me=p.b==='코웨이',fc=me?RPT_CW:'#9aa3ad';
+  /* v157 — 테두리 없음 · 고른 브랜드만 진하게 + 면이 퍼지는 옅은 레이더(코웨이 고정 강조는 없앰) */
+  const dots=ord.map((p,i)=>{const cx=X(p.x),cy=Y(p.y),r=RR(p.s),me=p.b==='코웨이',fc=me?RPT_CW:'#7d8792';
     return `<g class="bb${me?' mine':''}" style="--d:${i*90}ms" data-b="${esc(p.b)}">
-      ${me?`<circle cx="${cx}" cy="${cy}" r="${r}" class="pulse" fill="none" stroke="${RPT_CW}"/>`:''}
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fc}" fill-opacity="${me?.42:.3}" stroke="${fc}" stroke-opacity="${me?.7:.45}" stroke-width="1"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" class="pulse" fill="${fc}"/><circle cx="${cx}" cy="${cy}" r="${r}" class="pulse p2" fill="${fc}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" class="core" fill="${fc}"/>
       <text x="${cx}" y="${cy-r-6}" text-anchor="middle" class="bl2">${esc(p.b)}</text></g>`;}).join('');
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpbub">${grid}
     <text x="${R0}" y="${B-6}" text-anchor="end" class="axt">eq.GRP →</text><text x="${L0+6}" y="${T+12}" class="axt">↑ R3+</text>${dots}</svg>`;
-  /* 오른쪽 — 브랜드 목록(마우스를 올리면 아래에 월별 카드) */
+  /* 오른쪽 — 브랜드 목록(누르면 아래 월별 카드 · 왼쪽 그래프에서 그 브랜드를 강조) */
   const list=[...pts].sort((a,b)=>(b.b==='코웨이')-(a.b==='코웨이')||b.x-a.x);
-  let cur=list[0].b;
-  const paint=b=>{cur=b;if(!side)return;side.querySelectorAll('[data-sb]').forEach(e=>e.classList.toggle('on',e.dataset.sb===b));
-    const cd=side.querySelector('.bcard');if(cd)cd.innerHTML=rpBrandCard(c,b,col);rpGo(cd);
-    box.querySelectorAll('.bb').forEach(g=>g.classList.toggle('on',g.dataset.b===b));box.querySelector('svg').classList.add('hot');};
+  let cur=list.some(p=>p.b===RPT.bubSel)?RPT.bubSel:list[0].b;
+  const paint=b=>{cur=b;RPT.bubSel=b;if(side){side.querySelectorAll('[data-sb]').forEach(e=>e.classList.toggle('on',e.dataset.sb===b));
+    const cd=side.querySelector('.bcard');if(cd)cd.innerHTML=rpBrandCard(c,b,col);rpGo(cd);}
+    box.querySelectorAll('.bb').forEach(g=>g.classList.toggle('on',g.dataset.b===b));box.querySelector('svg').classList.add('hot');
+    /* 고른 원을 맨 앞으로 */
+    const g=box.querySelector(`.bb[data-b="${CSS.escape(b)}"]`);if(g)g.parentNode.appendChild(g);};
   if(side){side.innerHTML=`<div class="bl">${list.map(p=>`<button type="button" class="${p.b==='코웨이'?'mine':''}" data-sb="${esc(p.b)}"><i style="background:${p.b==='코웨이'?RPT_CW:'#9aa3ad'}"></i><b>${esc(p.b)}</b>
       <span>eq ${wrF(p.x)}</span><span>R3+ ${wrF(p.y,1)}%</span><span>${wrEok(p.s)}</span></button>`).join('')}</div><div class="bcard"></div>`;
-    side.querySelectorAll('[data-sb]').forEach(e=>e.addEventListener('mouseenter',()=>paint(e.dataset.sb)));}
-  box.querySelectorAll('.bb').forEach(g=>g.addEventListener('mouseenter',()=>paint(g.dataset.b)));
-  paint(cur);box.querySelector('svg').classList.remove('hot');}
+    side.querySelectorAll('[data-sb]').forEach(e=>e.addEventListener('click',()=>paint(e.dataset.sb)));}
+  box.querySelectorAll('.bb').forEach(g=>{g.style.cursor='pointer';g.addEventListener('click',()=>paint(g.dataset.b));});
+  paint(cur);}
 function rpTvTbl(c,col){
   const box=$('rpTvTbl');if(!box)return;const rows=rpTvRows(c,RPT.tblM);
   const bs=[...new Set(rows.map(r=>r[1]))].sort((a,b)=>(b==='코웨이')-(a==='코웨이')||rN((rows.find(r=>r[1]===b&&r[2]===2)||[])[7])-rN((rows.find(r=>r[1]===a&&r[2]===2)||[])[7]));
@@ -28647,7 +28795,7 @@ function rpTvTbl(c,col){
       <td class="md">${RPT_MI[r[2]]}</td><td>${wrF(r[3])}</td><td>${r[4]!=null?wrF(r[4]):'–'}</td><td>${wrF(r[5])}</td><td>${wrF(r[6])}</td>
       <td class="eqc"><span class="mb" style="--w:${(rN(r[7])/mxEq*100).toFixed(1)}%;--c:${col[b]}"></span><b>${wrF(r[7])}</b></td>
       <td>${wrF(r[8])}</td><td>${r[9]!=null?wrF(r[9]):'–'}</td><td>${wrF(r[10],1)}%</td><td>${wrF(r[11],1)}%</td><td>${wrF(r[12],1)}</td></tr>`).join('');}).join('');
-  box.innerHTML=wrHs(`<table class="tbl lite rptbl"><thead><tr><th>${L('브랜드','Brand')}</th><th>${L('구분','Type')}</th><th>${L('모니터링 광고비','Monitored')}</th><th>${L('실집행','Actual')}</th>
+  box.innerHTML=wrHs(`<table class="tbl lite rptbl eqw" style="min-width:1080px"><thead><tr><th>${L('브랜드','Brand')}</th><th>${L('구분','Type')}</th><th>${L('모니터링 광고비','Monitored')}</th><th>${L('실집행','Actual')}</th>
     <th>${L('횟수','Spots')}</th><th>GRP</th><th>eq.GRP</th><th>${L('모니터링 CPRP','Mon. CPRP')}</th><th>${L('실집행 CPRP','Act. CPRP')}</th><th>R1+</th><th>R3+</th><th>A.F</th></tr></thead><tbody>${body}</tbody></table>`);
   wrHsWire(box);}
 
@@ -28685,15 +28833,19 @@ function rpDetTerr(c){
   const tones=['#24406f','#3d5f99','#6b8cc4','#9db6e0','#c4d4ee','#dbe5f5'];
   const head1=`<th rowspan="2">${L('구분','Metric')}</th><th rowspan="2">${L('합계','Total')}</th>${G.map(g=>`<th colspan="${g.a.length}" class="gh">${g.l}</th>`).join('')}`;
   const head2=G.map(g=>g.a.map(x=>`<th>${esc(x.k)}</th>`).join('')).join('');
-  const barRow=`<tr class="sbar"><td></td><td></td>${G.map((g,gi)=>`<td colspan="${g.a.length}"><div class="stk">${g.a.map((x,i)=>`<span style="--w:${(x.inv/T.inv*100).toFixed(2)}%;background:${tones[Math.min(i,5)]};--d:${gi*120+i*50}ms" data-tip="${gi}|${i}"></span>`).join('')}</div></td>`).join('')}</tr>`;
   const pc=(v,t)=>rpP(v/t*100);
-  const row=(l,tot,cell,cls)=>`<tr class="${cls||''}"><td class="md">${l}</td><td class="tv">${tot}</td>${G.map(g=>g.a.map(x=>`<td>${cell(x,g)}</td>`).join('')).join('')}</tr>`;
+  /* v157 — 표 안은 글자만. 자사 실집행 금액은 채널별만 나온다(원본도 그렇다) — 나머지 칸은 테두리 색 음영 */
+  const row=(l,tot,cell,cls)=>`<tr class="${cls||''}"><td class="md">${l}</td><td class="tv">${tot}</td>${G.map(g=>g.a.map(x=>{const v=cell(x,g);return v==null?'<td class="na"></td>':`<td>${v}</td>`;}).join('')).join('')}</tr>`;
   const ar=x=>x.ins?wrF(x.grp/x.ins,1):'–',cprp=x=>x.eq?wrF(x.inv/x.eq):'–';
-  const body=(hasAct?row(L('금액(실집행)','Actual'),wrF(actT),(x,g)=>g===G[0]&&det[x.k]&&det[x.k].hasAct?wrF(det[x.k].act):'','act'):'')
+  const body=(hasAct?row(L('금액(실집행)','Actual'),wrF(actT),(x,g)=>g===G[0]?(det[x.k]&&det[x.k].hasAct?wrF(det[x.k].act):'–'):null,'act'):'')
     +row(L('모니터링 광고비','Monitored'),wrF(T.inv),x=>pc(x.inv,T.inv),'hl')+row('Eq GRP',wrF(T.eq),x=>pc(x.eq,T.eq))
     +row(L('횟수','Spots'),wrF(T.ins),x=>pc(x.ins,T.ins))+row('A.R',ar(T),x=>ar(x))+row(L('모니터링 CPRP','Mon. CPRP'),cprp(T),x=>cprp(x));
+  const nc=2+G.reduce((s2,g)=>s2+g.a.length,0);
+  /* 그래프 — 표 아래 바깥에 묶음마다 100% 막대(모니터링 광고비 비중) */
+  const bars=`<div class="rpdtbars">${G.map((g,gi)=>`<div class="g"><div class="h">${g.l}</div><div class="rpstk">${g.a.map((x,i)=>`<span style="--w:${(x.inv/T.inv*100).toFixed(2)}%;background:${tones[Math.min(i,5)]};--d:${gi*120+i*50}ms" data-tip="${gi}|${i}"></span>`).join('')}</div>
+      <div class="lg">${g.a.map((x,i)=>`<span><i style="background:${tones[Math.min(i,5)]}"></i>${esc(x.k)} <b>${pc(x.inv,T.inv)}</b></span>`).join('')}</div></div>`).join('')}</div>`;
   box.innerHTML=rpCard(L('지상파 세부 운영','Terrestrial detail'),L('비중 % · A.R = GRP ÷ 횟수 · CPRP = 모니터링 광고비 ÷ eq.GRP','share % · A.R = GRP/spots'),
-    wrHs(`<table class="tbl lite rptbl rpdt"><thead><tr>${head1}</tr><tr>${head2}</tr></thead><tbody>${barRow}${body}</tbody></table>`));
+    wrHs(`<table class="tbl lite rptbl rpdt eqw" style="min-width:${130+(nc-1)*78}px"><colgroup><col style="width:130px">${'<col>'.repeat(nc-1)}</colgroup><thead><tr>${head1}</tr><tr>${head2}</tr></thead><tbody>${body}</tbody></table>`)+bars);
   wrHsWire(box);
   rpTipWire(box,k=>{const [gi,i]=k.split('|').map(Number),x=G[gi]&&G[gi].a[i];if(!x)return '';
     return `<div class="t">${G[gi].l} · ${esc(x.k)}</div>${rpTr(L('모니터링 광고비','Monitored'),wrF(x.inv)+' · '+pc(x.inv,T.inv))}${rpTr('eq.GRP',wrF(x.eq,1))}${rpTr(L('횟수','Spots'),wrF(x.ins))}${rpTr('A.R',ar(x))}`;});}
@@ -28705,24 +28857,28 @@ function rpDetCable(c){
   const list=Object.values(g).map(x=>({...x,mon:det[x.k]?det[x.k].mon:x.inv,act:det[x.k]&&det[x.k].hasAct?det[x.k].act:null}))
     .sort((a,b)=>(a.k==='기타')-(b.k==='기타')||(hasAct?rN(b.act)-rN(a.act):b.mon-a.mon));
   const share=x=>hasAct?rN(x.act):x.mon,tS=list.reduce((s,x)=>s+share(x),0)||1;
-  const tones=['#3f4a54','#58636e','#6b8cc4','#4f9a8a','#8a949e','#9db6e0','#a3acb5','#c39a4e','#bcc3ca','#d2d7dc','#e1e5e8'];
-  const segs=list.filter(x=>share(x)>0).map((x,i)=>({n:x.k,v:share(x),col:x.k==='기타'?'#d7dce0':tones[i%tones.length]}));
+  /* v157 — 지상파 계열 MPP(KBS · MBC · SBS · EBS)는 푸른 유채색, 그 밖 케이블은 무채색 · 두 묶음은 조각을 서로 떼어 놓는다 */
+  const isT=k=>/^(KBS|MBC|SBS|EBS)/i.test(String(k).trim());
+  const TT=['#2f5d93','#4a78ae','#6e95c5','#97b4d9','#bccfe8'],CT=['#3f4a54','#58636e','#717c87','#8a949e','#a3acb5','#bcc3ca','#d2d7dc'];
+  const sl=list.filter(x=>share(x)>0),tl=sl.filter(x=>isT(x.k)),cl=sl.filter(x=>!isT(x.k));
+  const segs=[...tl.map((x,i)=>({n:x.k,v:share(x),col:TT[Math.min(i,TT.length-1)],grp:'t'})),...cl.map((x,i)=>({n:x.k,v:share(x),col:x.k==='기타'?'#d7dce0':CT[Math.min(i,CT.length-1)],grp:'c'}))];
   const T={mon:rpSum(list.map(x=>x.mon)),act:rpSum(list.map(x=>x.act)),eq:rpSum(list.map(x=>x.eq))};
-  const tb=`<table class="tbl lite rptbl"><thead><tr><th>MPP</th><th>${L('모니터링 광고비','Monitored')}</th>${hasAct?`<th>${L('실집행 광고비','Actual')}</th>`:''}<th>${L('집행 비중','Share')}</th><th>Eq GRP</th><th>${L('모니터링 CPRP','Mon. CPRP')}</th>${hasAct?`<th>${L('실집행 CPRP','Act. CPRP')}</th>`:''}</tr></thead>
+  const ncC=4+(hasAct?2:0);
+  const tb=`<table class="tbl lite rptbl eqw" style="min-width:${ncC*96}px"><thead><tr><th>MPP</th><th>${L('모니터링 광고비','Monitored')}</th>${hasAct?`<th>${L('실집행 광고비','Actual')}</th>`:''}<th>${L('집행 비중','Share')}</th><th>Eq GRP</th><th>${L('모니터링 CPRP','Mon. CPRP')}</th>${hasAct?`<th>${L('실집행 CPRP','Act. CPRP')}</th>`:''}</tr></thead>
     <tbody>${list.map(x=>`<tr><td class="br">${esc(x.k)}</td><td>${wrF(x.mon)}</td>${hasAct?`<td>${x.act!=null?wrF(x.act):'–'}</td>`:''}<td><span class="rppb" style="--w:${(share(x)/tS*100).toFixed(1)}%"></span>${rpP(share(x)/tS*100)}</td>
       <td>${wrF(x.eq)}</td><td>${x.eq?wrF(x.mon/x.eq):'–'}</td>${hasAct?`<td>${x.eq&&x.act!=null?wrF(x.act/x.eq):'–'}</td>`:''}</tr>`).join('')}
     <tr class="tot"><td>Total</td><td>${wrF(T.mon)}</td>${hasAct?`<td>${wrF(T.act)}</td>`:''}<td>100%</td><td>${wrF(T.eq)}</td><td>${T.eq?wrF(T.mon/T.eq):'–'}</td>${hasAct?`<td>${T.eq?wrF(T.act/T.eq):'–'}</td>`:''}</tr></tbody></table>`;
-  /* CPRP 막대 — 모니터링 · 실집행 같은 폭으로 살짝 겹쳐 */
+  /* CPRP 막대 — v157: 모니터링 · 실집행을 겹치지 않고 위아래로 나란히, 값은 막대 끝에 같은 색으로 */
   const cp=list.filter(x=>x.eq>0),mxC=Math.max(...cp.map(x=>Math.max(x.mon/x.eq,x.act!=null?x.act/x.eq:0)))||1;
   const bars=`<div class="rpcp">${cp.map((x,i)=>`<div class="row" style="--d:${i*50}ms"><span class="nm">${esc(x.k)}</span><span class="bars">
-      <i class="m" style="--w:${(x.mon/x.eq/mxC*100).toFixed(1)}%" data-tip="${i}"></i>${x.act!=null?`<i class="a" style="--w:${(x.act/x.eq/mxC*100).toFixed(1)}%" data-tip="${i}"></i>`:''}</span>
-      <b>${wrF(x.mon/x.eq)}${x.act!=null?` <em>${wrF(x.act/x.eq)}</em>`:''}</b></div>`).join('')}</div>
+      <span class="ln m" data-tip="${i}"><i style="--w:${(x.mon/x.eq/mxC*82).toFixed(1)}%"></i><b>${wrF(x.mon/x.eq)}</b></span>
+      ${x.act!=null?`<span class="ln a" data-tip="${i}"><i style="--w:${(x.act/x.eq/mxC*82).toFixed(1)}%"></i><b>${wrF(x.act/x.eq)}</b></span>`:''}</span></div>`).join('')}</div>
     <div class="rplg"><span><i style="background:#9aa6b3"></i>${L('모니터링 CPRP','Mon. CPRP')}</span>${hasAct?`<span><i style="background:${RPT_CW}"></i>${L('실집행 CPRP','Act. CPRP')}</span>`:''}</div>`;
   box.innerHTML=`<div class="rpgrid2">
-    ${rpCard(L('케이블 · 종편 MPP 비중','Cable MPP share'),hasAct?L('실집행 기준','by actual'):L('모니터링 기준','by monitored'),`<div id="rpMppDn" class="rp3dbox"></div>`)}
+    ${rpCard(L('케이블 · 종편 MPP 비중','Cable MPP share'),(hasAct?L('실집행 기준','by actual'):L('모니터링 기준','by monitored'))+L(' · 푸른색 = 지상파 계열 MPP',' · blue = terrestrial-affiliated'),`<div id="rpMppDn" class="rp3dbox"></div>`,'','rpfill')}
     ${rpCard(L('케이블 · 종편 세부 운영','Cable detail'),'',wrHs(tb),'','span2')}</div>
-    ${rpCard(L('MPP별 CPRP','CPRP by MPP'),L('낮을수록 효율적','lower is better'),bars)}`;
-  rp3dDonut($('rpMppDn'),segs,'');wrHsWire(box);
+    ${rpCard(L('MPP별 CPRP','CPRP by MPP'),'',bars)}`;
+  rp3dDonut($('rpMppDn'),segs,'',{grp:true});wrHsWire(box);
   rpTipWire(box.querySelector('.rpcp'),i=>{const x=cp[+i];if(!x)return '';return `<div class="t">${esc(x.k)}</div>${rpTr(L('모니터링 CPRP','Mon. CPRP'),wrF(x.mon/x.eq))}${x.act!=null?rpTr(L('실집행 CPRP','Act. CPRP'),wrF(x.act/x.eq)):''}${rpTr('eq.GRP',wrF(x.eq,1))}`;});}
 
 /* ================================================================
@@ -28733,7 +28889,7 @@ function rpEtc(){
   const meds=RPT_MED.filter(m=>['r','n','g'].includes(m.k));
   const cards=meds.map(md=>{const L2=bs.map(b=>({b,m:rpAmt(c,b,'m',[md.k]),y:rpAmt(c,b,'ytd',[md.k])})).filter(x=>x.y>0).sort((a,b)=>b.y-a.y);
     const mx=Math.max(...L2.map(x=>x.y),1);
-    return `<div class="rpmed"><div class="h"><i style="background:${md.c}"></i>${md.l}<span>${L2.length?wrEok(rpSum(L2.map(x=>x.m)))+L(' · 당월',' · month'):''}</span></div>
+    return `<div class="rpmed"><div class="h">${md.l}<span>${L2.length?wrEok(rpSum(L2.map(x=>x.m)))+L(' · 당월',' · month'):''}</span></div>
       ${L2.length?L2.map((x,i)=>`<div class="row${x.b==='코웨이'?' mine':''}" style="--d:${i*60}ms" data-tip="${md.k}|${esc(x.b)}"><span class="nm">${esc(x.b)}</span>
         <span class="bars"><i class="y" style="--w:${(x.y/mx*100).toFixed(1)}%;background:${col[x.b]}"></i><i class="m" style="--w:${(x.m/mx*100).toFixed(1)}%;background:${col[x.b]}"></i></span>
         <b>${wrEok(x.y)}</b></div>`).join(''):`<div class="nil">${L('집행 없음','None')}</div>`}</div>`;}).join('');
@@ -28749,13 +28905,18 @@ function rpDg(){
   let ai=0;const acol={};ser.forEach(x=>acol[x.b]=x.b==='코웨이'?'#3f86d6':RP_AREA[ai++%RP_AREA.length]);
   if(!bs.includes(RPT.dgB))RPT.dgB=bs.includes('코웨이')&&rN(((sp['코웨이']||[])[M-1]||[])[5])>0?'코웨이':[...bs].sort((x,y)=>rN(((sp[y]||[])[M-1]||[])[5])-rN(((sp[x]||[])[M-1]||[])[5]))[0];
   h.innerHTML=`<div class="sec">${L('디지털 광고비','Digital spend')} <span class="note">${esc(c.lab)}</span></div>
-    <div class="rpgrid2 w64">${rpCard(L('월별 디지털 광고비','Monthly digital'),L(`1~${M}월 · 브랜드별`,'by brand'),`<div id="rpDgLn"></div>`)}
+    <div class="rpgrid2 w55">${rpCard(L('월별 디지털 광고비','Monthly digital'),L(`1~${M}월 · 브랜드별`,'by brand'),`<div id="rpDgLn"></div>`)}
       ${rpCard(L('디지털 세부','Digital detail'),RPT.dgP==='ytd'?L(`1~${M}월 누적 · 동영상 · PC · 모바일`,'YTD'):L(`${M}월 · 동영상 · PC · 모바일`,`M${M}`),
         `${rpChips(bs.map(b=>({k:b,l:b,c:acol[b]})),RPT.dgB,'data-rpdgb','sm')}<div id="rpDgDn" class="rp3dbox"></div><div id="rpDgNote" class="hint"></div>`,
         rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.dgP||'m','data-rpdgp'))}</div>`;
   /* v151 — 부드러운 곡선 영역 + 아래로 옅어지는 그라데이션 · 범례를 눌러 브랜드 켜고 끄기 */
-  rpAreaChart($('rpDgLn'),ser.map(x=>({b:x.b,v:x.v,col:acol[x.b],mine:x.b==='코웨이'})),[...Array(M)].map((_,i)=>`${RPT_DOC.y%100}.${String(i+1).padStart(2,'0')}`),{H:300,title:L('디지털','Digital')});
   rpDgDonut(c,acol);
+  /* v157 — x축 두 줄(월 · 아래 연도) · 그래프 높이는 옆 카드 높이에 맞춰 아래 여백이 남지 않게 */
+  const lnBox=$('rpDgLn'),ARGS=[ser.map(x=>({b:x.b,v:x.v,col:acol[x.b],mine:x.b==='코웨이'})),[...Array(M)].map((_,i)=>L(`${i+1}월`,`M${i+1}`))];
+  rpAreaChart(lnBox,...ARGS,{H:300,years:[...Array(M)].map(()=>RPT_DOC.y),title:L('디지털','Digital')});
+  requestAnimationFrame(()=>{const card=lnBox&&lnBox.closest('.rpcard'),svg=lnBox&&lnBox.querySelector('svg');if(!card||!svg)return;
+    const slack=Math.floor(card.getBoundingClientRect().bottom-svg.getBoundingClientRect().bottom-18);
+    if(slack>12)rpAreaChart(lnBox,...ARGS,{H:Math.min(520,300+slack),years:[...Array(M)].map(()=>RPT_DOC.y),title:L('디지털','Digital')});});
   h.querySelectorAll('[data-rpdgb]').forEach(b=>b.onclick=()=>{RPT.dgB=b.dataset.rpdgb;h.querySelectorAll('[data-rpdgb]').forEach(x=>x.classList.toggle('on',x===b));rpDgDonut(c,acol);});
   h.querySelectorAll('[data-rpdgp]').forEach(b=>b.onclick=()=>{RPT.dgP=b.dataset.rpdgp;rpDg();});
   rpGo(h);}
@@ -28771,43 +28932,90 @@ function rpDgDonut(c,acol){
   if(nt)nt.textContent=est?L('※ 일부 금액은 매체 비율 자료가 없어 임시 비율로 나눈 값입니다 (자료 연결 후 교체)','※ Some values use a provisional split'):L('리포트 디지털 광고비를 매체 비율(동영상 · PC · 모바일)로 나눈 값','Report digital spend split by format');}
 
 /* ================================================================
-   ⑧ 소재 아카이브 — 품목 카드(대표 스토리보드 · 소재 수 · 집행 달) → 누르면 전체 소재
+   ⑧ 소재 아카이브 (v157) — 자사(코웨이 TVC 품목 스토리보드 · 인쇄 · 라디오) + 경쟁사(먼슬리 리포트 '집행 소재' 페이지)
+   기본은 이번 달 소재. 카드 = 보고 있는 달 광고비 · eq.GRP(작은 회색 = 1~이번 달 누적). 그림을 누르면 사이트 안에서 크게
    ================================================================ */
 const rpImg=(id,t)=>`assets/cr/${id}${t?'_t':''}.jpg`;
+const rpImgC=(id,t)=>`assets/cr/ca/${id}${t?'_t':''}.jpg`;
+let RP_COMP=null,RP_COMP_P=null;
+function rpCompLoad(){if(RP_COMP)return Promise.resolve(RP_COMP);if(RP_COMP_P)return RP_COMP_P;
+  RP_COMP_P=fetch('assets/cr/comp.json',{cache:'force-cache'}).then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>(RP_COMP=Array.isArray(d)?d:[]));return RP_COMP_P;}
+const RP_MEDK={'TVC':['t','c'],'신문':['n'],'잡지':['g'],'라디오':['r'],'인쇄':['n','g'],'신문 · 잡지':['n','g']};
 function rpArchItems(){
-  return (RPT_DOC.arch||[]).map(a=>{const mo=new Set();a.cr.forEach(c=>c.mo.forEach(x=>mo.add(x[0])));a.img.forEach(i=>(i.mo||[]).forEach(m=>mo.add(m)));
-    const bud=a.cr.reduce((s,c)=>s+rpSum(c.mo.map(x=>x[1])),0),eq=a.cr.reduce((s,c)=>s+rpSum(c.mo.map(x=>x[2])),0);
-    const last=Math.max(0,...mo),cat=RPT_ICAT[a.n]||'';return {...a,mo,bud,eq,last,cat};})
-    .sort((a,b)=>b.last-a.last||b.bud-a.bud);}
+  const M=RPT_DOC.m,cats=RPT_DOC.cats||[];
+  /* 자사 TVC — 품목 카드 */
+  const own=(RPT_DOC.arch||[]).map(a=>{const mo=new Set();a.cr.forEach(c=>c.mo.forEach(x=>mo.add(x[0])));a.img.forEach(i=>(i.mo||[]).forEach(m=>mo.add(m)));
+    const sumM=(k,f)=>a.cr.reduce((s2,c)=>s2+rpSum(c.mo.filter(f).map(x=>x[k])),0);
+    return {key:'o|'+a.n,own:true,n:a.n,cat:RPT_ICAT[a.n]||'',med:'TVC',mo,img:[...a.img].reverse().map(i=>({src:rpImg(i.id),th:rpImg(i.id,1),w:i.w,h:i.h,on:i.on,mo:i.mo||[]})),
+      bud:sumM(1,x=>x[0]===M),eq:sumM(2,x=>x[0]===M),cbud:sumM(1,x=>x[0]<=M),ceq:sumM(2,x=>x[0]<=M),ncr:a.cr.length,a};});
+  /* 경쟁사 · 자사 인쇄/라디오 — 브랜드 · 업종 · 매체 카드 */
+  const g={};(RP_COMP||[]).filter(x=>x.mo.some(m=>m<=M)).forEach(x=>{const k=[x.br,x.cat,x.med].join('|');(g[k]||(g[k]={br:x.br,cat:x.cat,med:x.med,list:[]})).list.push(x);});
+  const comp=Object.values(g).map(e=>{const c=cats.find(z=>z.k===e.cat)||cats.find(z=>z.sp===e.cat),mk=RP_MEDK[e.med]||['t','c'],mo=new Set();e.list.forEach(x=>x.mo.forEach(m=>{if(m<=M)mo.add(m);}));
+    const bud=c?rpAmt(c,e.br,'mo'+M,mk):0,cbud=c?rpAmt(c,e.br,'ytd',mk):0;
+    const tv=e.med==='TVC'&&c?((RPT_DOC.tvr||{})[c.k]||[]).filter(r=>r[1]===e.br&&r[2]===2):[];
+    const eq=tv.filter(r=>r[0]===M).reduce((s2,r)=>s2+rN(r[7]),0),ceq=tv.filter(r=>r[0]<=M).reduce((s2,r)=>s2+rN(r[7]),0);
+    const own=e.br==='코웨이';
+    return {key:'c|'+e.br+'|'+e.cat+'|'+e.med,own,n:own?`${L('코웨이','Coway')} ${e.med}`:e.br,cat:e.cat,med:e.med,mo,
+      img:[...e.list].sort((a,b)=>Math.max(...b.mo)-Math.max(...a.mo)).map(x=>({src:rpImgC(x.id),th:rpImgC(x.id,1),w:x.w,h:x.h,mo:x.mo.filter(m=>m<=M)})),
+      bud,eq:e.med==='TVC'?eq:NaN,cbud,ceq:e.med==='TVC'?ceq:NaN,tv:e.med==='TVC'};});
+  return [...own,...comp].filter(x=>x.img.length||x.mo.size);}
 function rpArch(){
-  const h=$('rpArch');if(!h)return;const M=RPT_DOC.m,items=rpArchItems();
-  if(!items.length){h.innerHTML='';return;}
-  const cats=[{k:'all',l:L('전체','All'),s:items.length}].concat(RPT_DOC.cats.filter(c=>items.some(i=>i.cat===c.k)).map(c=>({k:c.k,l:c.lab,s:items.filter(i=>i.cat===c.k).length})));
+  const h=$('rpArch');if(!h)return;const M=RPT_DOC.m;
+  if(!RP_COMP){h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')}</div><div class="hint rpnil">${L('불러오는 중…','Loading…')}</div>`;rpCompLoad().then(()=>{if(h.isConnected)rpArch();});return;}
+  const all=rpArchItems();if(!all.length){h.innerHTML='';return;}
+  if(!RPT.arcScope)RPT.arcScope='m';if(!RPT.arcOwn)RPT.arcOwn='all';
+  const inScope=x=>RPT.arcScope==='ytd'||x.mo.has(M),inOwn=x=>RPT.arcOwn==='all'||(RPT.arcOwn==='own')===!!x.own;
+  const base=all.filter(x=>inScope(x)&&inOwn(x));
+  const cats=[{k:'all',l:L('전체 업종','All'),s:base.length}].concat(RPT_DOC.cats.filter(c=>base.some(i=>i.cat===c.k)).map(c=>({k:c.k,l:c.lab,s:base.filter(i=>i.cat===c.k).length})));
   if(!cats.some(x=>x.k===RPT.arcCat))RPT.arcCat='all';
-  const vis=items.filter(i=>RPT.arcCat==='all'||i.cat===RPT.arcCat);
-  h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')} <span class="note">${L(`코웨이 TVC · 1~${M}월`,`Coway TVC · M1–M${M}`)}</span></div>
+  const vis=base.filter(i=>RPT.arcCat==='all'||i.cat===RPT.arcCat).sort((a,b)=>(b.own-a.own)||(rN(b.bud)-rN(a.bud))||(rN(b.cbud)-rN(a.cbud)));
+  const catLab=k=>((RPT_DOC.cats||[]).find(c=>c.k===k)||{}).lab||k;
+  const num=(v,f)=>isFinite(v)&&v>0?f(v):'–';
+  h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')} <span class="note">${L('자사 · 경쟁사 · 먼슬리 리포트 집행 소재','Coway · competitors · from monthly reports')}</span></div>
+    <div class="rparcbar">${rpSeg([{k:'m',l:L(`${M}월 소재`,`M${M}`)},{k:'ytd',l:L(`1~${M}월 전체`,'YTD')}],RPT.arcScope,'data-rparcs')}
+      ${rpSeg([{k:'all',l:L('전체','All')},{k:'own',l:L('자사','Coway')},{k:'comp',l:L('경쟁사','Competitors')}],RPT.arcOwn,'data-rparco')}</div>
     ${rpChips(cats,RPT.arcCat,'data-rparc')}
-    <div class="rparch">${vis.map((a,i)=>{const im=a.img[a.img.length-1];
-      return `<button type="button" class="rpac" data-rpai="${esc(a.n)}" style="--d:${i*45}ms;--c:#8ea3bd">
-        <div class="th">${im?`<img src="${rpImg(im.id,1)}" alt="" decoding="async">`:`<div class="ph">${esc(a.n.slice(0,2))}</div>`}${a.last===M?`<span class="live">${L('이번 달 온에어','On air')}</span>`:''}</div>
-        <div class="tx"><b>${esc(a.n)}</b><div class="meta"><span>${L(`소재 ${a.cr.length}`,`${a.cr.length} creatives`)}</span>${a.img.length?`<span>${L(`스토리보드 ${a.img.length}`,`${a.img.length} boards`)}</span>`:''}</div>
-          <div class="mo">${[...Array(12)].map((_,k)=>`<i class="${a.mo.has(k+1)?'on':''}${k+1>M?' fut':''}" title="${k+1}${L('월','')}"></i>`).join('')}</div>
-          <div class="nb"><span>${L('광고비','Spend')} <b>${wrEok(a.bud)}</b></span><span>eq.GRP <b>${wrF(a.eq)}</b></span></div></div></button>`;}).join('')}</div>`;
+    ${vis.length?`<div class="rparch">${vis.map((a,i)=>{const ims=a.img.slice(0,1);
+      return `<button type="button" class="rpac${a.own?' mine':''}" data-rpai="${esc(a.key)}" style="--d:${i*35}ms">
+        <div class="th${a.own&&a.med==='TVC'?'':' pg'}">${ims.length?`<img src="${ims[0].th}" alt="" decoding="async">`:`<div class="ph">${esc(a.n.slice(0,2))}</div>`}${a.img.length>1?`<span class="cnt">${a.img.length}</span>`:''}</div>
+        <div class="tx"><div class="tg"><span class="${a.own?'own':''}">${a.own?L('자사','Coway'):L('경쟁사','Competitor')}</span><em>${esc(catLab(a.cat))} · ${esc(a.med)}</em></div><b>${esc(a.n)}</b>
+          <div class="nb"><span><em>${L(`${M}월 광고비`,`M${M} spend`)}</em><b>${num(a.bud,wrEok)}</b><i>${L('누적','YTD')} ${num(a.cbud,wrEok)}</i></span>
+            ${a.med==='TVC'?`<span><em>eq.GRP</em><b>${num(a.eq,v=>wrF(v))}</b><i>${L('누적','YTD')} ${num(a.ceq,v=>wrF(v))}</i></span>`:''}</div></div></button>`;}).join('')}</div>`
+      :`<div class="hint rpnil">${L('이 조건의 소재가 없습니다','No creatives for this filter')}</div>`}`;
   h.querySelectorAll('[data-rparc]').forEach(b=>b.onclick=()=>{RPT.arcCat=b.dataset.rparc;rpArch();});
+  h.querySelectorAll('[data-rparcs]').forEach(b=>b.onclick=()=>{RPT.arcScope=b.dataset.rparcs;rpArch();});
+  h.querySelectorAll('[data-rparco]').forEach(b=>b.onclick=()=>{RPT.arcOwn=b.dataset.rparco;rpArch();});
   h.querySelectorAll('[data-rpai]').forEach(b=>b.onclick=()=>rpArchOpen(b.dataset.rpai));
   rpGo(h);}
-function rpArchOpen(n){
-  const a=rpArchItems().find(x=>x.n===n);if(!a)return;const M=RPT_DOC.m;
-  const imgs=[...a.img].reverse();
-  const gal=imgs.length?`<div class="rpgal">${imgs.map(im=>`<figure><a href="${rpImg(im.id)}" target="_blank" rel="noopener"><img loading="lazy" src="${rpImg(im.id)}" alt="" style="aspect-ratio:${im.w}/${im.h}"></a>
-      <figcaption>${im.on?`${L('첫 방영','First aired')} ${wrD(im.on)} · `:''}${L('리포트 수록','In reports')} ${(im.mo||[]).map(m=>m+L('월','')).join(' · ')}</figcaption></figure>`).join('')}</div>`:'';
-  const rows=a.cr.map(c=>{const mo=new Map(c.mo.map(x=>[x[0],x]));const last=c.mo[c.mo.length-1]||[];
-    return `<tr><td class="br">${esc(c.n)}</td><td>${c.on?wrD(c.on):'–'}</td>
-      <td><div class="mo">${[...Array(12)].map((_,k)=>{const x=mo.get(k+1);return `<i class="${x&&rN(x[1])>0?'on':x?'pt':''}${k+1>M?' fut':''}" title="${k+1}${L('월','')}${x?` · ${wrEok(x[1])}`:''}"></i>`;}).join('')}</div></td>
-      <td>${wrEok(rpSum(c.mo.map(x=>x[1])))}</td><td>${wrF(rpSum(c.mo.map(x=>x[2])),1)}</td><td>${last[5]!=null?wrF(last[5],1)+'%':'–'}</td></tr>`;}).join('');
-  openModal(`${a.n} — ${L('전체 소재','All creatives')}`,
-    `${gal}<table class="tbl lite rptbl rpcrt"><thead><tr><th>${L('소재','Creative')}</th><th>${L('온에어','On air')}</th><th>${L('집행 달','Months')}</th><th>${L('광고비','Spend')}</th><th>eq.GRP</th><th>${L('누적 R3+','Cum. R3+')}</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${L('위클리 리포트 소재 없음','No weekly creatives')}</td></tr>`}</tbody></table>`,
-    `<button class="btn primary" data-close>${L('닫기','Close')}</button>`,{w:1080});}
+/* 그림 크게 보기 — 새 창 대신 사이트 안 덮개 */
+function rpLightbox(list,i){
+  let k=i||0;const ov=document.createElement('div');ov.className='rplb';ov.setAttribute('role','dialog');
+  const paint=()=>{const x=list[k];ov.innerHTML=`<div class="bx"><img src="${x.src}" alt=""><div class="cap">${esc(x.cap||'')}${list.length>1?` <span>${k+1} / ${list.length}</span>`:''}</div></div>
+    <button type="button" class="x" aria-label="${L('닫기','Close')}"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+    ${list.length>1?`<button type="button" class="nv l" aria-label="${L('이전','Prev')}"><svg viewBox="0 0 12 12"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg></button><button type="button" class="nv r" aria-label="${L('다음','Next')}"><svg viewBox="0 0 12 12"><path d="M4.5 2.5 8 6 4.5 9.5"/></svg></button>`:''}`;
+    ov.querySelector('.x').onclick=close;const l=ov.querySelector('.nv.l'),r=ov.querySelector('.nv.r');
+    if(l)l.onclick=e=>{e.stopPropagation();k=(k+list.length-1)%list.length;paint();};if(r)r.onclick=e=>{e.stopPropagation();k=(k+1)%list.length;paint();};};
+  const key=e=>{if(e.key==='Escape'){e.stopPropagation();close();}else if(e.key==='ArrowRight'&&list.length>1){k=(k+1)%list.length;paint();}else if(e.key==='ArrowLeft'&&list.length>1){k=(k+list.length-1)%list.length;paint();}};
+  function close(){removeEventListener('keydown',key,true);ov.classList.remove('on');setTimeout(()=>ov.remove(),200);}
+  ov.addEventListener('click',e=>{if(e.target===ov)close();});addEventListener('keydown',key,true);
+  paint();document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('on'));}
+function rpArchOpen(key){
+  const a=rpArchItems().find(x=>x.key===key);if(!a)return;const M=RPT_DOC.m;
+  const capOf=x=>[x.on?`${L('첫 방영','First aired')} ${wrD(x.on)}`:'',x.mo&&x.mo.length?`${L('리포트 수록','In reports')} ${x.mo.map(m=>m+L('월','')).join(' · ')}`:''].filter(Boolean).join(' · ');
+  const gal=a.img.length?`<div class="rpgal${a.own&&a.med==='TVC'?'':' pg'}">${a.img.map((im,i)=>`<figure><button type="button" class="zim" data-zi="${i}" aria-label="${L('크게 보기','Enlarge')}"><img loading="lazy" src="${im.src}" alt="" style="aspect-ratio:${im.w}/${im.h}"><span class="zb"><svg viewBox="0 0 16 16"><path d="M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zM10.4 10.4 14 14M5 7h4M7 5v4"/></svg></span></button>
+      <figcaption>${capOf(im)}</figcaption></figure>`).join('')}</div>`:'';
+  let tbl='';
+  if(a.own&&a.a){const rows=a.a.cr.map(c=>{const m=c.mo.find(x=>x[0]===M),cum=c.mo.filter(x=>x[0]<=M),last=cum[cum.length-1]||[];
+      return `<tr><td class="br">${esc(c.n)}</td><td>${c.on?wrD(c.on):'–'}</td><td>${m?wrEok(m[1]):'–'}<div class="cum">${L('누적','YTD')} ${wrEok(rpSum(cum.map(x=>x[1])))}</div></td>
+        <td>${m?wrF(m[2],1):'–'}<div class="cum">${L('누적','YTD')} ${wrF(rpSum(cum.map(x=>x[2])),1)}</div></td><td>${last[5]!=null?wrF(last[5],1)+'%':'–'}</td></tr>`;}).join('');
+    tbl=`<table class="tbl lite rptbl rpcrt eqw"><thead><tr><th>${L('소재','Creative')}</th><th>${L('온에어','On air')}</th><th>${L(`${M}월 광고비`,`M${M} spend`)}</th><th>${L(`${M}월 eq.GRP`,`M${M} eq.GRP`)}</th><th>${L('누적 R3+','Cum. R3+')}</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="5">${L('위클리 리포트 소재 없음','No weekly creatives')}</td></tr>`}</tbody></table>`;}
+  else tbl=`<div class="rpcrsum"><span><em>${L(`${M}월 광고비`,`M${M} spend`)}</em><b>${isFinite(a.bud)&&a.bud>0?wrEok(a.bud):'–'}</b><i>${L('누적','YTD')} ${a.cbud>0?wrEok(a.cbud):'–'}</i></span>
+      ${a.med==='TVC'?`<span><em>${L(`${M}월 eq.GRP`,`M${M} eq.GRP`)}</em><b>${a.eq>0?wrF(a.eq):'–'}</b><i>${L('누적','YTD')} ${a.ceq>0?wrF(a.ceq):'–'}</i></span>`:''}
+      <span class="n">${L('광고비 = 먼슬리 리포트 업종 · 매체 모니터링 금액','Spend = monitored, by category · media')}</span></div>`;
+  const catLab=((RPT_DOC.cats||[]).find(c=>c.k===a.cat)||{}).lab||a.cat;
+  openModal(`${a.n} — ${esc(catLab)} · ${esc(a.med)}`,`${tbl}${gal}`,`<button class="btn primary" data-close>${L('닫기','Close')}</button>`,{w:1080});
+  setTimeout(()=>document.querySelectorAll('#modalHost .modal:not(.stacked) [data-zi]').forEach(b=>b.onclick=()=>rpLightbox(a.img.map(x=>({src:x.src,cap:`${a.n} · ${capOf(x)}`})),+b.dataset.zi)),0);}
 /* ===== 31. TV 위클리 리포트 화면 (v146) =====
    코웨이처럼 매달 'Weekly Report'(TV 요약 · 당월_품목별 세부 · 당월_주별 · 당월_시청률) 엑셀을 받는 캠페인은
    그 내용을 doc.tv.wr 하나로 들고(TV_WR), TV 미디어믹스 · 서머리 · 주차별 퍼포먼스를 이 리포트 전용 화면으로 그린다.
@@ -28888,6 +29096,21 @@ function wrChips(list,cur,attr){
 /* ================================================================
    미디어믹스 — ① 소재별 월 예산(누적 막대 + 표) ② 채널별 월 예산(3D 도넛 + 표)
    ================================================================ */
+/* v157 — 미디어믹스 품목 색: 그 달 큐시트 지상파 시트의 소재 채움색(조건부 서식)에서. 큐시트가 없는 달은 가까운 달 색 */
+const WR_CUECOL={"2026-06": {"아이콘얼음정수기": "#275d9f", "비데": "#1a3e6a", "스마트매트리스": "#f8a35c", "페블체어2": "#c86562"}, "2026-07": {"아이콘얼음정수기": "#275d9f", "아이콘3": "#999999", "비데": "#1a3e6a", "스마트매트리스": "#f8a35c", "페블체어2": "#c86562"}, "2026-08": {"아이콘얼음정수기": "#275d9f", "아이콘3": "#999999", "스마트매트리스": "#f8a35c"}, "2026-09": {"아이콘얼음정수기": "#275d9f", "아이콘3": "#999999", "카페얼음정수기": "#c86562", "음식물처리기": "#61b6cd", "스마트매트리스": "#f8a35c", "안마매트리스": "#a7c36d", "페블체어2": "#6490c5"}, "2026-10": {"아이콘3": "#999999", "카페얼음정수기": "#c86562", "음식물처리기": "#61b6cd", "안마매트리스": "#a7c36d", "페블체어2": "#8f77ad", "트리플체어2": "#FFFF66"}};
+/* 큐시트 색 그대로는 채도가 높아 어지럽다 — 색상(hue)만 따르고 채도는 낮추고 명도는 가운데로 모은 차분한 톤 */
+function wrCalm(hex){const n=parseInt(String(hex).slice(1),16);let r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,sat=0,l=(mx+mn)/2;
+  if(mx!==mn){const d=mx-mn;sat=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6;}
+  sat=Math.min(sat*.42,.34);l=Math.max(.5,Math.min(.66,l));
+  const q=l<.5?l*(1+sat):l+sat-l*sat,p=2*l-q,f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
+  const hx=v=>Math.round(v*255).toString(16).padStart(2,'0');return '#'+hx(f(h+1/3))+hx(f(h))+hx(f(h-1/3));}
+function wrCueCol(n){const ym=String((TV_WR&&TV_WR.ym)||'').slice(0,7),ks=Object.keys(WR_CUECOL).sort();
+  if(WR_CUECOL[ym]&&WR_CUECOL[ym][n])return wrCalm(WR_CUECOL[ym][n]);
+  const prev=ks.filter(k=>k<=ym).reverse(),next=ks.filter(k=>k>ym);
+  for(const k of [...prev,...next])if(WR_CUECOL[k][n])return wrCalm(WR_CUECOL[k][n]);
+  return '#7f8b97';}
+const wrInk=h=>{const n=parseInt(String(h).slice(1),16),l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;return l>.68?'#2a2f36':'#fff';};
 function renderWrMix(){
   const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
   if(!wrOn()){h.innerHTML='';return false;}
@@ -28897,15 +29120,17 @@ function renderWrMix(){
   const maxB=Math.max(1,...items.map(it=>wrN(it.sub&&it.sub.bud)||it.cr.reduce((s,c)=>s+(wrN(c.bud)||0),0)));
   const bars=items.map((it,ii)=>{
     const crs=it.cr.filter(c=>wrN(c.bud)>0),ib=wrN(it.sub&&it.sub.bud)||crs.reduce((s,c)=>s+c.bud,0);
-    const segs=crs.map((c,j)=>{const w=c.bud/maxB*100,sh=crs.length>1?.62+.38*(j/(crs.length-1)):.8;
-      return `<span class="seg" style="width:${w}%;--d:${(ii*60+j*90)}ms;background:${wrShade('#5b6672',1/sh)}" data-wrtip="${esc(it.n)}|${esc(c.n)}|${c.bud}|${ib}">
+    /* 한 품목 = 한 색(큐시트) · 소재는 같은 색으로 이어 쌓고 사이만 흰 틈 */
+    const ic=wrCueCol(it.n),ink=wrInk(ic);
+    const segs=crs.map((c,j)=>{const w=c.bud/maxB*100;
+      return `<span class="seg" style="width:${w}%;--d:${(ii*60+j*90)}ms;background:${ic};color:${ink}" data-wrtip="${esc(it.n)}|${esc(c.n)}|${c.bud}|${ib}">
         ${w>9?`<b>${esc(c.n)}</b><i>${wrEok(c.bud)}</i>`:''}</span>`;}).join('');
-    return `<div class="wrsb"><div class="nm"><i style="background:${wrCol(it.n)}"></i>${esc(it.n)}</div>
+    return `<div class="wrsb"><div class="nm">${esc(it.n)}</div>
       <div class="bar">${segs}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
   /* 표 — 머리: 품목(맨 위) › 소재 + 온에어(줄바꿈) · 품목마다 맨 오른쪽 '계'(굵게) */
   let hr1='<th class="stk c0" rowspan="2">'+L('구분','')+'</th>',hr2='',r1='',r2='';
   items.forEach(it=>{const crs=it.cr.filter(c=>wrN(c.bud)>0),ib=wrN(it.sub&&it.sub.bud)||crs.reduce((s,c)=>s+c.bud,0);
-    hr1+=`<th colspan="${crs.length+1}" class="gs"><i class="dot" style="background:${wrCol(it.n)}"></i>${esc(it.n)}</th>`;
+    hr1+=`<th colspan="${crs.length+1}" class="gs">${esc(it.n)}</th>`;
     crs.forEach((c,j)=>{hr2+=`<th class="${j===0?'gs':''}">${esc(c.n)}${c.on?`<span class="on">${L('온에어','On-air')} ${wrD(c.on)}</span>`:''}</th>`;
       r1+=`<td class="mono${j===0?' gs':''}">${wrF(c.bud)}</td>`;r2+=`<td class="mono${j===0?' gs':''}">${(c.bud/tot*100).toFixed(1)}%</td>`;});
     hr2+=`<th class="sum">${L('계','Total')}</th>`;r1+=`<td class="mono sum">${wrF(ib)}</td>`;r2+=`<td class="mono sum">${(ib/tot*100).toFixed(1)}%</td>`;});
@@ -29095,7 +29320,7 @@ function renderWrDash(){
       <div id="wrItem"></div>
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 계','Coway (color) over target average (gray) · month total')}</span></div>
       <div id="wrRt"></div>
-      <div class="sec gap sm">${L('소재 온에어 타임라인','Creative on-air timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · creatives without an on-air date are left out')}</span></div>
+      <div class="sec gap sm">${L('소재 온에어 타임라인','Creative on-air timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 배경 = 먼슬리 리포트 스토리보드 · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · background = storyboard · creatives without an on-air date are left out')}</span></div>
       <div id="wrTl"></div>`;
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
   wrScatter(pts);wrItemTbl();wrRatings();wrTimeline();wrHsWire(h);
@@ -29105,54 +29330,102 @@ function renderWrDash(){
 function wrScatter(pts){
   const box=$('wrSc');if(!box)return;
   if(!pts.length){box.innerHTML=`<div class="hint" style="padding:30px;text-align:center">${L('당월 소재 실적이 없습니다','No creative results this month')}</div>`;return;}
-  const Wd=Math.max(980,box.clientWidth||1100),CW=236,CH=92,GAP=10,PAD=46;
-  const x0=CW+PAD,x1=Wd-CW-PAD;
-  const half=Math.ceil(pts.length/2),rows=Math.max(half,4);
-  const Hd=Math.max(440,rows*(CH+GAP)+40),y0=24,y1=Hd-40;
+  /* v157 — 같은 품목 카드는 한 묶음(테두리 · 품목 이름 머리)으로 붙여 놓고, 묶음을 왼쪽 · 오른쪽 열에 나눈다.
+     어느 열 · 어떤 순서로 놓을지는 여러 배치를 견줘 안내선이 서로 · 다른 점과 겹치지 않는 것을 고른다 */
+  const Wd=Math.max(980,box.clientWidth||1100),CW=236,CH=88,IG=6,GG=14,FP=6,LH=22,PAD=40;
+  const COLW=CW+FP*2,x0=COLW+PAD,x1=Wd-COLW-PAD;
+  const gmap={};pts.forEach((p,i)=>{p.i=i;(gmap[p.it]||(gmap[p.it]={n:p.it,ps:[]})).ps.push(p);});
+  const groups=Object.values(gmap);groups.forEach(g=>g.h=LH+g.ps.length*CH+(g.ps.length-1)*IG+FP);
+  const colH=arr=>arr.reduce((s,g)=>s+g.h,0)+Math.max(0,arr.length-1)*GG;
+  const G=groups.length,NA=1<<G;
+  let best0=1e9;for(let m=0;m<NA;m++){const L0=groups.filter((g,j)=>!(m>>j&1)),R0=groups.filter((g,j)=>m>>j&1);best0=Math.min(best0,Math.max(colH(L0),colH(R0)));}
+  /* 높이를 조금 키우면 교차가 풀리는 경우가 있어 몇 가지 높이로 풀어 보고 고른다 */
+  const solve=Hd=>{const y0=26,y1=Hd-40,LIM=Hd-12;
   const mx=Math.max(...pts.map(p=>p.c.eq))*1.12,my=Math.max(...pts.map(p=>p.c.r3))*1.18||10;
   const nice=v=>{const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return (f<=1.5?1.5:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e;};
   const XM=nice(mx),X=v=>x0+(v/XM)*(x1-x0),Y=v=>y1-(v/my)*(y1-y0);
-  pts.forEach(p=>{p.x=X(p.c.eq);p.y=Y(p.c.r3);});
-  /* 왼쪽 · 오른쪽 열 — x 순으로 반씩, 열 안은 점 높이 순 */
-  const byX=[...pts].sort((a,b)=>a.x-b.x),L0=byX.slice(0,Math.floor(pts.length/2)),R0=byX.slice(Math.floor(pts.length/2));
-  const place=(arr)=>{arr.sort((a,b)=>a.y-b.y);const n=arr.length;
-    /* 원하는 높이 = 점 높이, 겹치면 아래로 밀고 넘치면 위로 당긴다 */
-    let ys=arr.map(p=>Math.min(Math.max(p.y-CH/2,8),Hd-CH-8));
-    for(let i=1;i<n;i++)ys[i]=Math.max(ys[i],ys[i-1]+CH+GAP);
-    const over=ys.length?ys[n-1]+CH+8-Hd:0;if(over>0){ys[n-1]-=over;for(let i=n-2;i>=0;i--)ys[i]=Math.min(ys[i],ys[i+1]-CH-GAP);}
-    arr.forEach((p,i)=>p.cy=ys[i]);};
-  place(L0);place(R0);L0.forEach(p=>p.side=-1);R0.forEach(p=>p.side=1);
+  const mxB=Math.max(...pts.map(p=>wrN(p.c.bud)).filter(isFinite),0);
+  const rad=p=>{const b=wrN(p.c.bud);return mxB>0&&b>0?Math.max(5,24*Math.sqrt(b/mxB)):5;};
+  pts.forEach(p=>{p.x=X(p.c.eq);p.y=Y(p.c.r3);p.r=rad(p);});
+  groups.forEach(g=>{g.my=g.ps.reduce((s,p)=>s+p.y,0)/g.ps.length;g.mx=g.ps.reduce((s,p)=>s+p.x,0)/g.ps.length;});
+  /* 열 안 배치 — 묶음 가운데를 점들 평균 높이에 두고, 겹치면 밀고 넘치면 당긴다 */
+  const stack=arr=>{const n=arr.length;let ys=arr.map(g=>Math.min(Math.max(g.my-g.h/2,6),LIM-g.h));
+    for(let i=1;i<n;i++)ys[i]=Math.max(ys[i],ys[i-1]+arr[i-1].h+GG);
+    const over=n?ys[n-1]+arr[n-1].h-LIM:0;if(over>0){ys[n-1]-=over;for(let i=n-2;i>=0;i--)ys[i]=Math.min(ys[i],ys[i+1]-arr[i].h-GG);}
+    return ys;};
+  const sx=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+    const d1=o(c,d,a),d2=o(c,d,b),d3=o(a,b,c),d4=o(a,b,d);return ((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0));};
+  const xpt=(a,b,c,d)=>{const r=[b[0]-a[0],b[1]-a[1]],q=[d[0]-c[0],d[1]-c[1]],den=r[0]*q[1]-r[1]*q[0]||1e-9,t=((c[0]-a[0])*q[1]-(c[1]-a[1])*q[0])/den;return [a[0]+t*r[0],a[1]+t*r[1]];};
+  const psd=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy||1;let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
+  /* 한 열의 선 · 점수 — 교차 1000 · 다른 점을 지남 300 · 2.5px 안으로 붙음 60 · 길이. 왼쪽 · 오른쪽 열은 서로 안 만나니 따로 고른다 */
+  const evalCol=(arr,side,ord)=>{const P=[],ys=stack(arr);
+    arr.forEach((g,gi)=>ord[gi].forEach((p,k)=>{const cy=ys[gi]+LH+k*(CH+IG),ey=cy+CH/2,ex=side<0?FP+CW+2:Wd-COLW+FP-2,elx=side<0?x0-14:x1+14;
+      P.push({p,g,gy:ys[gi],side,cy,ey,ex,elx});}));
+    let cost=0,hit=0,crs=0;
+    for(let i=0;i<P.length;i++){const A=P[i],a1=[A.p.x,A.p.y],a2=[A.elx,A.ey];
+      cost+=Math.hypot(a2[0]-a1[0],a2[1]-a1[1])*.02;
+      /* 서로 겹친 점(거의 같은 자리)은 어쩔 수 없으니 빼고 본다 */
+      pts.forEach(q=>{if(q===A.p||Math.hypot(q.x-A.p.x,q.y-A.p.y)<q.r+A.p.r+2)return;const d=psd([q.x,q.y],a1,a2);if(d<q.r+3){cost+=300;hit++;}});
+      for(let j=i+1;j<P.length;j++){const B=P[j],b1=[B.p.x,B.p.y],b2=[B.elx,B.ey];
+        /* 교차점이 점(원) 안이면 점에 가려 보이지 않으니 셈하지 않는다 */
+        if(sx(a1,a2,b1,b2)){const ip=xpt(a1,a2,b1,b2);if(!pts.some(q=>Math.hypot(q.x-ip[0],q.y-ip[1])<q.r-1)){cost+=1000;crs++;}}else if(Math.min(psd(b1,a1,a2),psd(b2,a1,a2),psd(a1,b1,b2),psd(a2,b1,b2))<2.5)cost+=60;}}
+    return {cost,P,hit,crs};};
+  const perms=a=>a.length<=1?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(r=>[x,...r]));
+  const prod=ls=>ls.reduce((acc,l)=>acc.flatMap(a=>l.map(x=>[...a,x])),[[]]);
+  const memo={};
+  const bestCol=(mask,side)=>{const key=mask+'|'+side;if(memo[key])return memo[key];
+    const arr=groups.filter((g,j)=>mask>>j&1);let bst=null;
+    if(!arr.length)return memo[key]={cost:0,P:[],hit:0,crs:0};
+    let gps=perms(arr);if(gps.length>720){gps=[[...arr].sort((a,b)=>a.my-b.my)];}
+    gps.forEach(ga=>{let ords=prod(ga.map(g=>{const s=[...g.ps].sort((a,b)=>a.y-b.y);return s.length<=3?perms(s):[s,[...s].reverse()];}));
+      if(ords.length>36)ords=ords.slice(0,36);
+      ords.forEach(o=>{const r=evalCol(ga,side,o);if(!bst||r.cost<bst.cost)bst=r;});});
+    return memo[key]=bst;};
+  let best=null;const full=NA-1;
+  for(let m=0;m<NA;m++){
+    const Lg=groups.filter((g,j)=>!(m>>j&1)),Rg=groups.filter((g,j)=>m>>j&1);
+    if(colH(Lg)>LIM-6||colH(Rg)>LIM-6)continue;
+    /* 왼쪽 열은 x 가 작은 묶음, 오른쪽은 큰 묶음이 자연스럽다 — 반대로 가면 조금 벌점 */
+    const sidePen=Lg.reduce((s,g)=>s+Math.max(0,g.mx-(x0+x1)/2),0)*.02+Rg.reduce((s,g)=>s+Math.max(0,(x0+x1)/2-g.mx),0)*.02+Math.abs(Lg.length-Rg.length)*4;
+    const l=bestCol(full&~m,-1),r=bestCol(m,1),c=l.cost+r.cost+sidePen;
+    if(!best||c<best.cost)best={cost:c,P:[...l.P,...r.P],hit:l.hit+r.hit,crs:l.crs+r.crs};}
+    return {best,Hd,y0,y1,XM,X,Y};};
+  let S0=null;[0,90,180,280,400].forEach(e=>{const h=Math.max(460,best0+56)+e,r=solve(h),c=r.best.cost+e*2;if(!S0||c<S0.c)S0={h,c};});
+  const {best,Hd,y0,y1,XM,X,Y}=solve(S0.h);
+  const P=best.P;
   /* 격자 — y 값 표시 없음 */
   let grid='';for(let i=0;i<=5;i++){const yy=y0+(y1-y0)*i/5;grid+=`<line x1="${x0}" x2="${x1}" y1="${yy}" y2="${yy}" class="gl"/>`;}
   for(let i=0;i<=5;i++){const v=XM*i/5,xx=X(v);grid+=`<line x1="${xx}" x2="${xx}" y1="${y0}" y2="${y1}" class="gl"/><text x="${xx}" y="${y1+18}" class="tk" text-anchor="middle">${wrF(v)}</text>`;}
-  const lines=pts.map((p,i)=>{const ex=p.side<0?CW+4:Wd-CW-4,ey=p.cy+CH/2,mx2=p.side<0?x0-16:x1+16;
-    return `<path class="ln" data-i="${i}" d="M${p.x.toFixed(1)},${p.y.toFixed(1)} L${mx2},${ey.toFixed(1)} L${ex},${ey.toFixed(1)}"/>`;}).join('');
-  /* 레이더 효과(퍼지는 원)는 고른 점에만 — 나머지는 테두리 없는 점 하나 */
-  /* v150 — 점 크기 = 월 예산 (넓이가 예산에 비례 · 가장 큰 소재 반지름 24). 큰 점이 작은 점을 덮지 않게 큰 것부터 그린다 */
-  const mxB=Math.max(...pts.map(p=>wrN(p.c.bud)).filter(isFinite),0);
-  const rad=p=>{const b=wrN(p.c.bud);return mxB>0&&b>0?Math.max(5,24*Math.sqrt(b/mxB)):5;};
-  const dots=pts.map((p,i)=>[p,i]).sort((a,b)=>rad(b[0])-rad(a[0])).map(([p,i])=>{const r=rad(p);
+  /* 선은 제 점 가장자리에서 시작 */
+  const lines=P.map(o=>{const dx=o.elx-o.p.x,dy=o.ey-o.p.y,dl=Math.hypot(dx,dy)||1,sx0=o.p.x+dx/dl*o.p.r,sy0=o.p.y+dy/dl*o.p.r;
+    return `<path class="ln" data-i="${o.p.i}" d="M${sx0.toFixed(1)},${sy0.toFixed(1)} L${o.elx},${o.ey.toFixed(1)} L${o.ex},${o.ey.toFixed(1)}"/>`;}).join('');
+  /* 점 크기 = 월 예산(넓이 비례 · 가장 큰 소재 반지름 24) · 큰 점부터 그려 작은 점이 위로 */
+  const dots=[...pts].sort((a,b)=>b.r-a.r).map(p=>{const r=p.r,i=p.i;
     return `<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
       <circle r="${(r*2.4).toFixed(1)}" class="halo" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/><circle r="${(r*2.4).toFixed(1)}" class="halo h2" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/>
       <circle r="${r.toFixed(1)}" class="core" cx="${p.x}" cy="${p.y}"/></g>`;}).join('');
-  const cards=pts.map((p,i)=>{const c=p.c,cc=c.c||{};
-    /* v151 — 소재 이름이 먼저 · R3+ 와 eq.GRP 를 크게, 나머지는 작게 */
-    return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" style="left:${p.side<0?0:Wd-CW}px;top:${p.cy}px;width:${CW}px;height:${CH}px;--d:${200+i*50}ms">
-      <div class="t"><b>${esc(c.n)}</b><span>${esc(p.it)}</span></div>
+  /* 품목 묶음 틀 — 품목 이름 머리 + 옅은 바탕 */
+  const seen=new Set();const frames=P.filter(o=>!seen.has(o.g.n)&&seen.add(o.g.n)).map((o,gi)=>{const g=o.g,l=o.side<0?0:Wd-COLW;
+    return `<div class="wrscg${o.side<0?' l':' r'}" data-g="${esc(g.n)}" style="left:${l}px;top:${o.gy}px;width:${COLW}px;height:${g.h}px;--d:${120+gi*50}ms">
+      <div class="gh"><b>${esc(g.n)}</b>${g.ps.length>1?`<span>${L(g.ps.length+'개 소재',g.ps.length+' creatives')}</span>`:''}</div></div>`;}).join('');
+  const cards=P.map(o=>{const p=o.p,c=p.c,cc=c.c||{},i=p.i;
+    return `<div class="wrscc${WR_SEL.item===p.it&&WR_SEL.cr===c.n?' sel':''}" data-i="${i}" data-it="${esc(p.it)}" data-cr="${esc(c.n)}" style="left:${(o.side<0?0:Wd-COLW)+FP}px;top:${o.cy}px;width:${CW}px;height:${CH}px;--d:${200+i*50}ms">
+      <div class="t"><b>${esc(c.n)}</b></div>
       <div class="big"><span><em>R3+</em><b>${wrF(c.r3,1)}<i>%</i></b></span><span><em>eq.GRP</em><b>${wrF(c.eq,1)}</b></span></div>
       <div class="m"><span>${L('월 예산','Budget')} ${wrEok(c.bud)}</span><span>GRP ${wrF(c.grp,1)}</span><span>R1+ ${wrF(c.r1,1)}%</span></div>
       <div class="cum">${L('온에어 이후','Since on-air')} GRP ${wrF(cc.grp,1)} · eq ${wrF(cc.eq,1)} · R1 ${wrF(cc.r1,1)} · R3 ${wrF(cc.r3,1)}</div></div>`;}).join('');
-  box.innerHTML=`<div class="wrsc-in" style="width:${Wd}px;height:${Hd}px">
+  box.innerHTML=`<div class="wrsc-in" style="width:${Wd}px;height:${Hd}px">${frames}
     <svg width="${Wd}" height="${Hd}" viewBox="0 0 ${Wd} ${Hd}">${grid}
-      <text x="${x0}" y="${y0-8}" class="ax">${L('유효 도달률 (R3+)','Effective reach (R3+)')}</text>
+      <text x="${x0}" y="${y0-10}" class="ax">${L('유효 도달률 (R3+)','Effective reach (R3+)')}</text>
       <text x="${x1}" y="${y1+34}" class="ax" text-anchor="end">${L('15초 환산 노출량 (eq.GRP)','15s-equivalent GRP (eq.GRP)')}</text>
       <line x1="${x0}" x2="${x1}" y1="${y1}" y2="${y1}" class="axl"/><line x1="${x0}" x2="${x0}" y1="${y0}" y2="${y1}" class="axl"/>
       <g class="lns">${lines}</g>${dots}</svg>${cards}</div>`;
+  box.dataset.cost=Math.round(best.cost)+'/x'+best.crs+'/h'+best.hit;box.__best=best;
   const root=box.querySelector('.wrsc-in');
-  const hot=i=>{root.classList.toggle('hot',i!=null);root.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('on',i!=null&&e.dataset.i===String(i)));};
+  const hot=i=>{root.classList.toggle('hot',i!=null);root.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('on',i!=null&&e.dataset.i===String(i)));
+    const it=i!=null?pts[+i].it:null;root.querySelectorAll('.wrscg').forEach(f=>f.classList.toggle('on',f.dataset.g===it));};
   root.querySelectorAll('[data-i]').forEach(e=>{e.addEventListener('mouseenter',()=>hot(e.dataset.i));e.addEventListener('mouseleave',()=>hot(null));
-    e.addEventListener('click',()=>{const p=pts[+e.dataset.i];WR_SEL={item:p.it,cr:p.c.n};
-      root.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));root.querySelectorAll(`[data-i="${e.dataset.i}"]`).forEach(x=>x.classList.add('sel'));
+    e.addEventListener('click',()=>{const p=pts[+e.dataset.i];WR_SEL={item:p.it,cr:p.c.n};wrScSync();
       wrItemTbl();const t=$('wrItem');if(t)t.scrollIntoView({behavior:'smooth',block:'nearest'});});});}
 
 /* ---------- 품목 세부 표 — 품목 · 소재 칩으로 고름 ---------- */
@@ -29189,15 +29462,14 @@ function wrItemTbl(){
     body+=`<tr class="gtot"><td class="stk c1 head" colspan="2">${g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 Total','Cable total')}</td>
       ${blocks.map(b=>{const t=(W.det[b.k].t||{})[g];return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fv(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;});
   body+=`<tr class="total"><td class="stk c0 head" colspan="3">TV Set Total</td>${blocks.map(b=>{const t=(W.det[b.k].t||{}).T;return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fv(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;
-  box.innerHTML=`<div class="wrsel">${chips}</div>`+wrHs(`<table class="tbl lite wrt writ"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl');
+  box.innerHTML=`<div class="wrsel one">${chips}</div>`+wrHs(`<table class="tbl lite wrt writ"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl');
   box.querySelectorAll('[data-wri]').forEach(b=>b.onclick=()=>{const e=ord.find(x=>x.n===b.dataset.wri);WR_SEL={item:e.n,cr:((e.cr.find(c=>c.n!=='계')||{}).n)||''};wrItemTbl();wrScSync();});
   box.querySelectorAll('[data-wrc]').forEach(b=>b.onclick=()=>{const c=ent.cr.find(x=>x.k===b.dataset.wrc);WR_SEL={item:ent.n,cr:c&&c.n!=='계'?c.n:''};wrItemTbl();wrScSync();});
   wrHsWire(box);
   /* 선택한 소재 열로 스크롤 */
   const hi=box.querySelector('th.hi'),sc=box.querySelector('.wrhs-in');if(hi&&sc){const x=hi.offsetLeft-360;if(x>0)sc.scrollTo({left:x,behavior:'smooth'});}}
 function wrScSync(){const root=document.querySelector('#wrSc .wrsc-in');if(!root)return;
-  root.querySelectorAll('.wrscc').forEach(c=>{const t=c.querySelector('.t');const it=t&&t.querySelector('b').textContent,cr=t&&t.querySelector('span').textContent;
-    const on=it===WR_SEL.item&&cr===WR_SEL.cr;c.classList.toggle('sel',on);root.querySelectorAll(`g.pt[data-i="${c.dataset.i}"]`).forEach(g=>g.classList.toggle('sel',on));});}
+  root.querySelectorAll('.wrscc').forEach(c=>{const on=c.dataset.it===WR_SEL.item&&c.dataset.cr===WR_SEL.cr;c.classList.toggle('sel',on);root.querySelectorAll(`g.pt[data-i="${c.dataset.i}"]`).forEach(g=>g.classList.toggle('sel',on));});}
 
 /* ---------- 시청률 — 지상파 · 종편 · 케이블, 무채 막대(타깃 평균) 위에 유채 막대(코웨이) 겹침 ---------- */
 const WR_CW='#1d6fc2';
@@ -29205,44 +29477,62 @@ function wrRatings(){
   const box=$('wrRt');if(!box)return;const R=TV_WR.rt||{};
   const groups=[['지상파',L('지상파','Terrestrial')],['종편',L('종편','General programming')],['케이블',L('케이블','Cable')]].filter(([k])=>(R[k]||[]).length);
   if(!groups.length){box.innerHTML=`<div class="card wrcard hint">${L('시청률 시트가 없습니다','No ratings sheet')}</div>`;return;}
-  const chart=([k,lab])=>{const rows=R[k];const BW=66,H=210,PB=46,PT=26,w=rows.length*BW+16;
+  /* v157 — 막대 위 숫자 = 엑셀 그대로 시청률(0.000) · 코웨이는 진하게, 타깃 평균은 작고 옅은 회색 · 묶음 계는 더 짙은 색 */
+  const f3=v=>isFinite(v)?(+v).toFixed(3):'–';
+  const chart=([k,lab])=>{const rows=R[k];const BW=74,H=226,PB=46,PT=34,w=rows.length*BW+16;
     /* 묶음마다 제 눈금 — 케이블처럼 값이 작은 묶음도 차이가 보이게 */
-    const mx=Math.max(...rows.map(r=>Math.max(wrN(r.cw)||0,wrN(r.avg)||0)))*1.15||1;
-    const bars=rows.map((r,i)=>{const cx=8+i*BW+BW/2,isT=/계/.test(r.ch),a=wrN(r.avg)||0,c=wrN(r.cw)||0,ha=a/mx*(H-PB-PT),hc=c/mx*(H-PB-PT),idx=a>0?c/a*100:NaN;
+    const mx=Math.max(...rows.map(r=>Math.max(wrN(r.cw)||0,wrN(r.avg)||0)))*1.12||1;
+    const bars=rows.map((r,i)=>{const cx=8+i*BW+BW/2,isT=/계/.test(r.ch),a=wrN(r.avg)||0,c=wrN(r.cw)||0,ha=a/mx*(H-PB-PT),hc=c/mx*(H-PB-PT);
+      const ya=H-PB-ha,yc=H-PB-hc,cTall=hc>=ha;
+      /* 라벨 — 높은 막대는 제 막대 위 가운데, 낮은 막대는 옆으로 비켜(겹치지 않게) */
+      const lc=cTall?`<text x="${cx+7}" y="${yc-6}" class="iv" text-anchor="middle">${f3(c)}</text>`:`<text x="${cx+8}" y="${yc-5}" class="iv" text-anchor="start">${f3(c)}</text>`;
+      const la=cTall?`<text x="${cx-8}" y="${ya-4}" class="ia" text-anchor="end">${f3(a)}</text>`:`<text x="${cx-7}" y="${ya-5}" class="ia" text-anchor="middle">${f3(a)}</text>`;
       return `<g class="rb${isT?' tot':''}" data-ch="${esc(r.ch)}" data-a="${a}" data-c="${c}" style="--d:${i*40}ms">
-        <rect class="av" x="${cx-19}" y="${H-PB-ha}" width="24" height="${ha}" rx="3"/>
-        <rect class="cw" x="${cx-5}" y="${H-PB-hc}" width="24" height="${hc}" rx="3" fill="${WR_CW}"/>
-        <text x="${cx}" y="${H-PB-Math.max(ha,hc)-7}" class="iv${isFinite(idx)&&idx>=100?' up':''}" text-anchor="middle">${isFinite(idx)?Math.round(idx):'–'}</text>
+        <rect class="av" x="${cx-19}" y="${ya}" width="24" height="${ha}" rx="3"/>
+        <rect class="cw" x="${cx-5}" y="${yc}" width="24" height="${hc}" rx="3"/>
+        ${a>0?la:''}${c>0?lc:''}
         <text x="${cx}" y="${H-PB+15}" class="nm" text-anchor="middle">${esc(r.ch.length>10?r.ch.slice(0,9)+'…':r.ch)}</text></g>`;}).join('');
     return `<div class="wrrt" style="flex:${rows.length} 0 ${w}px"><div class="h">${lab}</div><svg width="${w}" height="${H}" viewBox="0 0 ${w} ${H}">
       <line x1="0" x2="${w}" y1="${H-PB}" y2="${H-PB}" class="axl"/>${bars}</svg></div>`;};
-  box.innerHTML=wrHs(`<div class="wrrts">${groups.map(chart).join('')}</div>`)+`<div class="wrleg"><span><i class="av"></i>${L('타깃 평균','Target avg')}</span><span><i style="background:${WR_CW}"></i>${L('코웨이','Coway')}</span><span class="n">${L('막대 위 숫자 = 코웨이 ÷ 타깃 평균 × 100','Number = Coway ÷ target avg × 100')}</span></div>`;
+  box.innerHTML=`<div class="wrleg top"><span><i class="cw"></i>${L('코웨이','Coway')}</span><span><i class="av"></i>${L('타깃 평균','Target avg')}</span>
+      <span><i class="cw t"></i><i class="av t"></i>${L('계','Total')}</span><span class="n">${L('막대 위 숫자 = 시청률(%) · 엑셀 그대로','Number = rating (%) as in Excel')}</span></div>`
+    +wrHs(`<div class="wrrts">${groups.map(chart).join('')}</div>`);
   box.querySelectorAll('g.rb').forEach(g=>{g.onmousemove=e=>{const a=+g.dataset.a,c=+g.dataset.c;
     showTip(e.clientX,e.clientY,`<div class="t">${esc(g.dataset.ch)}</div><div class="r"><span class="l">${L('코웨이','Coway')}</span><b>${c.toFixed(3)}%</b></div>
       <div class="r"><span class="l">${L('타깃 평균','Target avg')}</span><b>${a.toFixed(3)}%</b></div><div class="r hi"><span class="l">${L('지수','Index')}</span><b>${a>0?Math.round(c/a*100):'–'}</b></div>`);};g.onmouseleave=hideTip;});}
 
 /* ---------- 소재 온에어 타임라인 ---------- */
+/* v157 — 카드 배경: 먼슬리 리포트 PDF 의 코웨이 TVC 스토리보드 마지막 장면(assets/cr/{id}_k.jpg) · 품목|소재 → 그림 */
+const WR_CRIMG={'아이콘프로|혁신':'6820104d94','아이콘프로|마이워터':'df03f73c74','아이콘프로|종합':'6e77872e62','히티브|눈사람_30초(NA)':'2caa47bf95',
+  '비데|위생':'684461aa5d','비데|뮤지컬 예고편':'63e5861535','스마트매트리스|스마트 경도 조절':'c7c0ebb7ad','스마트매트리스|듀얼 경도 조절':'3398d694ee',
+  '트리플체어2|서재편':'d1888fefd3','마사지셋/코어셋|마사지셋_기능편':'bef70ecb56','마사지셋/코어셋|마사지셋_디자인편':'883a285f5e','마사지셋/코어셋|코어셋_효능편':'ee3f3548bd',
+  '아이콘3|Song편':'bf85cbaf7b','아이콘3|미니미요원편':'c2f60aa16f','노블청정기|라인업':'5e66546471','노블청정기|40평 출시':'f12532f2fe',
+  '아이콘얼음정수기|스탠다드 소비자':'b2a78b9213','아이콘얼음정수기|미니 소비자':'7fef7e7c7c','아이콘얼음정수기|라인업 소비자':'40100454f5',
+  '아이콘얼음정수기|라인업 소비자 (26년)':'1fbf1d7d6b','아이콘얼음정수기|미니 캐릭터':'e0cf37f75d','아이콘얼음정수기|라인업 캐릭터':'e220da2c08',
+  '페블체어2|퍼포먼스':'0a98222e5c','페블체어2|공간':'a72e8ef4bc','코웨이페스타|코웨이페스타':'448718d163','카페얼음정수기|제품':'03a5f17ec7',
+  '음식물처리기|관리':'eb114aa87a','안마매트리스|혁신편':'77869d2cd6','안마매트리스|CEO':'9b65d62606'};
+const wrCrImg=(it,cr)=>{const id=WR_CRIMG[it+'|'+cr];return id?`assets/cr/${id}_k.jpg`:'';};
 function wrTimeline(){
   const box=$('wrTl');if(!box)return;
   const list=[];TV_WR.items.forEach(it=>it.cr.forEach(c=>{if(/^\d{4}-\d\d-\d\d$/.test(c.on||''))list.push({it:it.n,c});}));
   list.sort((a,b)=>a.c.on.localeCompare(b.c.on)||a.it.localeCompare(b.it,'ko'));
   if(!list.length){box.innerHTML=`<div class="card wrcard hint">${L('온에어 날짜가 있는 소재가 없습니다','No creative with an on-air date')}</div>`;return;}
-  /* v147 — 실제 날짜 간격을 반영(가까운 소재는 최소 간격만큼은 벌린다) */
-  const day=d=>Date.parse(d+'T00:00:00')/864e5,d0=day(list[0].c.on),span=Math.max(1,day(list[list.length-1].c.on)-d0);
-  /* 간격 = 최소 간격 + √(벌어진 날 수) — 먼 소재는 멀게, 몰린 소재도 읽히게 */
-  const MIN=110,gaps=list.map((x,i)=>i?Math.sqrt(Math.max(0,day(x.c.on)-day(list[i-1].c.on))):0),gs=gaps.reduce((a,b)=>a+b,0)||1;
-  const room=Math.max(0,Math.max(list.length*175,1100)-80-MIN*(list.length-1)),xs=[];
+  /* 실제 날짜 간격을 반영(가까운 소재는 최소 간격만큼은 벌린다) — 간격 = 최소 간격 + √(벌어진 날 수) */
+  const day=d=>Date.parse(d+'T00:00:00')/864e5;
+  const MIN=118,gaps=list.map((x,i)=>i?Math.sqrt(Math.max(0,day(x.c.on)-day(list[i-1].c.on))):0),gs=gaps.reduce((a,b)=>a+b,0)||1;
+  const room=Math.max(0,Math.max(list.length*185,1100)-80-MIN*(list.length-1)),xs=[];
   list.forEach((x,i)=>xs.push(i?xs[i-1]+MIN+gaps[i]/gs*room:40));
-  const w=xs[xs.length-1]+220;
+  const w=xs[xs.length-1]+240;
   let lastY='';
-  const nodes=list.map((x,i)=>{const up=i%2===0,c=x.c,cc=c.c||{},y=c.on.slice(0,4),showY=y!==lastY;lastY=y;
+  const nodes=list.map((x,i)=>{const up=i%2===0,c=x.c,cc=c.c||{},y=c.on.slice(0,4),mo=+c.on.slice(5,7),showY=y!==lastY;lastY=y;const img=wrCrImg(x.it,c.n);
     return `<div class="tn ${up?'up':'dn'}" style="left:${xs[i].toFixed(0)}px;--c:${WR_NEU2};--d:${i*70}ms">
-      <div class="dot"><span>${String(i+1).padStart(2,'0')}</span></div>${showY?`<div class="yr">${y}</div>`:''}
-      <div class="dt">${wrD(c.on)}</div><div class="stem"></div>
-      <div class="cd"><div class="t"><i></i>${esc(x.it)}</div><b>${esc(c.n)}</b>
-        <div class="kv"><span>GRP</span><em>${wrF(cc.grp,1)}</em><span>eq.GRP</span><em>${wrF(cc.eq,1)}</em><span>R1+</span><em>${wrF(cc.r1,1)}%</em><span>R3+</span><em>${wrF(cc.r3,1)}%</em></div>
-        <div class="f">${L('온에어 이후 누적','Cumulative since on-air')}</div></div></div>`;}).join('');
-  box.innerHTML=wrHs(`<div class="wrtl" style="width:${w}px"><div class="axis"></div>${nodes}</div>`,'tl');}
+      <div class="stem"></div><div class="dot"><span>${L(mo+'월','M'+mo)}</span></div>${showY?`<div class="yr">${y}</div>`:''}
+      <div class="dt">${wrD(c.on)}</div>
+      <div class="cd${img?' im':''}"${img?` style="--img:url('${img}')"`:''}><div class="t">${esc(x.it)}</div><b>${esc(c.n)}</b>
+        <div class="kv"><span>${L('누적','Cum.')} GRP</span><em>${wrF(cc.grp,1)}</em><span>${L('누적','Cum.')} eq.GRP</span><em>${wrF(cc.eq,1)}</em><span>${L('누적','Cum.')} R1+</span><em>${wrF(cc.r1,1)}%</em><span>${L('누적','Cum.')} R3+</span><em>${wrF(cc.r3,1)}%</em></div></div></div>`;}).join('');
+  box.innerHTML=wrHs(`<div class="wrtl" style="width:${w}px"><div class="axis"></div>${nodes}</div>`,'tl');
+  /* 처음엔 가장 최신 소재(오른쪽 끝)가 보이게 */
+  const sc=box.querySelector('.wrhs-in');if(sc){const go=()=>{sc.scrollLeft=sc.scrollWidth;};go();requestAnimationFrame(go);setTimeout(go,150);}}
 
 /* ================================================================
    주차별 퍼포먼스 — PP 별 누적 막대(지상파 · 케이블 톤) 20개 · 지난 캠페인은 흐리게 · 위에 CPRP 꺾은선
@@ -29260,60 +29550,58 @@ function renderWrWeek(){
   if(!wrOn()){h.innerHTML='';return false;}
   const W=TV_WR;
   h.innerHTML=wrHead(L('TV 주차별 퍼포먼스','TV weekly performance'),`${wrMonth()} · ${W.period||''}`)
-    +`<div class="card wrcard"><div class="wrwk-top"><div class="wrleg" id="wrWkLeg"></div>
-        <div class="seg wrseg" role="tablist"><button type="button" data-wrm="eq" class="${WR_WK.mode==='eq'?'on':''}">eq.GRP</button><button type="button" data-wrm="cost" class="${WR_WK.mode==='cost'?'on':''}">${L('집행금액','Spend')}</button></div></div>
+    +`<div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div>
       <div class="wrwk" id="wrWk"></div></div>
     <div class="sec gap sm">${L('채널별 주차 데이터','Weekly data by channel')} <span class="note">${L('당월_주별 · 리포트에 품목별 주차 값이 없어 구분 · PP로 골라 봅니다','Weekly sheet · the report has no weekly split by product, so filter by type · PP')}</span></div>
     <div id="wrWkT"></div>`;
-  h.querySelectorAll('[data-wrm]').forEach(b=>b.onclick=()=>{WR_WK.mode=b.dataset.wrm;h.querySelectorAll('[data-wrm]').forEach(x=>x.classList.toggle('on',x===b));wrWeekChart();});
   wrWeekChart();wrWeekTbl();return true;}
+/* v157 — 리포트 '품목별 집행' 그래프와 같은 구성: 2D 막대(집행금액 · 위만 둥글게) · 뒤에 eq.GRP 연한 회색 영역 · 위쪽 띠에 CPRP 굵은 곡선 + 값이 든 큰 표식 */
 function wrWeekChart(){
   const box=$('wrWk');if(!box)return;const S=wrWeekSeries();if(!S.length){box.innerHTML='';return;}
-  const M=WR_WK.mode,vi=M==='eq'?0:1;
-  /* PP 색 — 지상파 · 케이블 각각 큰 순서로 같은 톤 안에서 밝기 */
   const totK={};S.forEach(b=>Object.entries(b.pp).forEach(([k,x])=>{totK[k]=(totK[k]||0)+(x[0]||0);}));
   const keys=Object.keys(totK).sort((a,b)=>(a.startsWith('지상파')?0:1)-(b.startsWith('지상파')?0:1)||totK[b]-totK[a]);
-  const tk=keys.filter(k=>k.startsWith('지상파')),ck=keys.filter(k=>!k.startsWith('지상파'));
-  const col={};tk.forEach((k,i)=>col[k]=WR_TONE.t[Math.min(i,WR_TONE.t.length-1)]);ck.forEach((k,i)=>col[k]=WR_TONE.c[Math.min(i,WR_TONE.c.length-1)]);
-  const Wd=Math.max(900,box.clientWidth||1100),PL=16,PR=16,TOPB=150,H=500,BOT=58,n=S.length,step=(Wd-PL-PR)/Math.max(n,1),bw=Math.min(46,step*.62);
-  const val=b=>vi?b.cost:b.eq,mx=Math.max(...S.map(val))*1.08||1,Y=v=>H-BOT-(v/mx)*(H-BOT-TOPB);
-  /* CPRP — 최저~최고를 위쪽 띠 높이 전부에 펼쳐 편차가 보이게 */
-  const cprp=S.map(b=>b.eq>0?b.cost/b.eq:NaN),cf=cprp.filter(isFinite),c1=Math.max(...cf),c0=Math.min(...cf),pad=(c1-c0)*.12||c1*.1||1,cm=c1+pad,cn=Math.max(0,c0-pad),CY=v=>30+(1-(v-cn)/((cm-cn)||1))*(TOPB-62);
-  let bars='',labs='',months='',lastYm='',grid='';
-  for(let i=0;i<=4;i++){const yy=TOPB+(H-BOT-TOPB)*i/4;grid+=`<line x1="${PL}" x2="${Wd-PR}" y1="${yy}" y2="${yy}" class="gl"/>`;}
-  /* 평소엔 지상파 · 케이블 두 칸, 마우스를 올리면 그 막대가 PP 별로 갈라진다 (모서리는 각지게) */
-  const GC={t:'#3d5f99',c:'#6d7883'};
-  S.forEach((b,i)=>{const cx=PL+step*(i+.5),x=(cx-bw/2).toFixed(1),bwS=bw.toFixed(1);let acc=0;
-    const segs=keys.filter(k=>b.pp[k]&&b.pp[k][vi]>0).map((k,j)=>{const v=b.pp[k][vi],y=Y(acc+v),hh=Y(acc)-y;acc+=v;
-      return `<rect x="${x}" y="${y.toFixed(1)}" width="${bwS}" height="${Math.max(0,hh-1.5).toFixed(1)}" fill="${col[k]}" style="--j:${j*18}ms"/>`;}).join('');
-    const gT=keys.filter(k=>k.startsWith('지상파')).reduce((s,k)=>s+((b.pp[k]||[])[vi]||0),0),gC=acc-gT;
-    const agg=`${gT>0?`<rect x="${x}" y="${Y(gT).toFixed(1)}" width="${bwS}" height="${Math.max(0,Y(0)-Y(gT)-1.5).toFixed(1)}" fill="${GC.t}"/>`:''}${gC>0?`<rect x="${x}" y="${Y(gT+gC).toFixed(1)}" width="${bwS}" height="${Math.max(0,Y(gT)-Y(gT+gC)).toFixed(1)}" fill="${GC.c}"/>`:''}`;
-    const rest=val(b)-acc;const extra=rest>val(b)*.01?`<rect x="${x}" y="${Y(val(b)).toFixed(1)}" width="${bwS}" height="${(Y(acc)-Y(val(b))).toFixed(1)}" fill="#c9ced3"/>`:'';
-    bars+=`<g class="wb${b.past?' past':''}" data-i="${i}" style="--d:${i*35}ms">${extra}<g class="ag">${agg}</g><g class="pp">${segs}</g><rect class="hit" x="${(cx-step/2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" fill="transparent"/>
-      <text x="${cx}" y="${(Y(val(b))-6).toFixed(1)}" class="tv" text-anchor="middle">${vi?wrEok(b.cost):wrF(b.eq,0)}</text></g>`;
-    labs+=`<text x="${cx}" y="${H-BOT+16}" class="wl${b.past?' past':''}" text-anchor="middle">${esc(b.l)}</text><text x="${cx}" y="${H-BOT+29}" class="wd${b.past?' past':''}" text-anchor="middle">${wrD(b.s).slice(3)}~${wrD(b.e).slice(3).replace(/^\d+\./,'')}</text>`;
-    if(b.ym!==lastYm){lastYm=b.ym;const m=+String(b.ym).slice(5,7);
-      months+=`${i?`<line x1="${(cx-step/2).toFixed(1)}" x2="${(cx-step/2).toFixed(1)}" y1="${TOPB-6}" y2="${H-BOT+40}" class="msep"/>`:''}<text x="${(cx-step/2+6).toFixed(1)}" y="${H-BOT+50}" class="mn${b.past?' past':''}">${L(m+'월','M'+m)}${b.past?'':' · '+L('이번 캠페인','this campaign')}</text>`;}});
-  /* CPRP 꺾은선 — 위쪽 띠. y 값 표시 없이 점 위에 값만 */
-  const pts=S.map((b,i)=>isFinite(cprp[i])?[PL+step*(i+.5),CY(cprp[i]),cprp[i],b.past]:null);
-  let path='';pts.forEach((p,i)=>{if(!p)return;path+=(path&&pts[i-1]?' L':' M')+p[0].toFixed(1)+','+p[1].toFixed(1);});
-  const cdots=pts.map(p=>p?`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.6" class="cd${p[3]?' past':''}"/><text x="${p[0].toFixed(1)}" y="${(p[1]-8).toFixed(1)}" text-anchor="middle" class="cv${p[3]?' past':''}">${wrF(p[2])}</text>`:'').join('');
-  box.innerHTML=`<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}">
-    <text x="${PL}" y="10" class="ax">CPRP <tspan class="u">(${L('천원','K KRW')})</tspan></text>
-    <line x1="${PL}" x2="${Wd-PR}" y1="${TOPB-12}" y2="${TOPB-12}" class="band"/>
-    <path d="${path}" class="cl"/>${cdots}${grid}${months}${bars}${labs}
-    <line x1="${PL}" x2="${Wd-PR}" y1="${H-BOT}" y2="${H-BOT}" class="axl"/></svg>`;
+  const Wd=Math.max(900,box.clientWidth||1100),PL=18,PR=18,H=470,BOT=70,base=H-BOT,top=150,n=S.length,step=(Wd-PL-PR)/Math.max(n,1),bw=Math.min(40,step*.5);
+  const cxs=S.map((_,i)=>PL+step*(i+.5));
+  const mxB=Math.max(...S.map(b=>b.cost))||1,mxE=Math.max(...S.map(b=>b.eq))||1;
+  /* ① 바탕 eq.GRP — 막대 영역 높이 안에서 부드러운 곡선 · 아래로 옅어짐 */
+  const ey=v=>base-(base-top+40)*.92*v/mxE,ePts=S.map((b,i)=>[cxs[i],ey(b.eq)]);
+  const ePath=rpSmooth([[PL-30,base-1],...ePts,[Wd+20,base-1]],false,.2);
+  /* ② CPRP — 위쪽 띠(막대 위) · 최저~최고를 띠 높이에 펼침 */
+  const cprp=S.map(b=>b.eq>0?b.cost/b.eq:NaN),cf=cprp.filter(isFinite),c1=Math.max(...cf),c0=Math.min(...cf),sp=(c1-c0)||c1*.2||1;
+  const ry=v=>30+(1-(v-c0)/sp)*72;
+  let g='',labs='',months='',seps='';
+  S.forEach((b,i)=>{const cx=cxs[i],x=cx-bw/2,v=b.cost,hh=Math.max(2,(base-top)*v/mxB),rr=Math.min(5,hh/2),f=q=>q.toFixed(1);
+    g+=`<g class="ib wb${b.past?' past':''}" data-i="${i}" style="--d:${i*35}ms"><path d="M${f(x)},${f(base)} V${f(base-hh+rr)} Q${f(x)},${f(base-hh)} ${f(x+rr)},${f(base-hh)} H${f(x+bw-rr)} Q${f(x+bw)},${f(base-hh)} ${f(x+bw)},${f(base-hh+rr)} V${f(base)} Z"/></g>
+      <text class="iv${b.past?' past':''}" style="--d:${i*35+380}ms" x="${f(cx)}" y="${f(base-hh-7)}" text-anchor="middle">${wrEok(v)}</text>`;
+    labs+=`<text x="${cx}" y="${base+17}" class="wl${b.past?' past':''}" text-anchor="middle">${esc(b.l)}</text><text x="${cx}" y="${base+30}" class="wd${b.past?' past':''}" text-anchor="middle">${wrD(b.s).slice(3)}~${wrD(b.e).slice(3).replace(/^\d+\./,'')}</text>`;});
+  /* 월 — 그 달 주차들의 가운데에 */
+  const grpM=[];S.forEach((b,i)=>{const l=grpM[grpM.length-1];if(l&&l.ym===b.ym)l.e=i;else grpM.push({ym:b.ym,s:i,e:i,past:b.past});});
+  grpM.forEach((m,k)=>{const x0=cxs[m.s]-step/2,x1=cxs[m.e]+step/2,mo=+String(m.ym).slice(5,7);
+    if(k)seps+=`<line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${top-20}" y2="${base+48}" class="msep"/>`;
+    months+=`<text x="${((x0+x1)/2).toFixed(1)}" y="${base+52}" class="mn${m.past?' past':''}" text-anchor="middle">${L(mo+'월','M'+mo)}${m.past?'':' · '+L('이번 캠페인','this campaign')}</text>`;});
+  const rPts=S.map((b,i)=>isFinite(cprp[i])?[cxs[i],ry(cprp[i]),i]:null).filter(Boolean);
+  const line=`<path d="${rpSmooth(rPts.map(p=>[p[0],p[1]]),true,.2)}" class="r3" pathLength="1"/>`
+    +rPts.map(p=>`<g class="r3p${S[p[2]].past?' past':''}" style="--d:${900+p[2]*40}ms"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${Math.min(18.5,step*.42).toFixed(1)}"/>
+      <text x="${p[0].toFixed(1)}" y="${(p[1]+3.6).toFixed(1)}" text-anchor="middle">${wrF(cprp[p[2]])}</text></g>`).join('');
+  box.innerHTML=`<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" class="rpisosvg wkiso">
+    <defs><linearGradient id="wreqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3ad" stop-opacity=".36"/><stop offset="1" stop-color="#9aa3ad" stop-opacity="0"/></linearGradient>
+      <clipPath id="wrwkc"><rect x="0" y="0" width="${Wd}" height="${base}"/></clipPath></defs>
+    <path d="${ePath} L${Wd+20},${base} L${PL-30},${base} Z" fill="url(#wreqg)" class="eqa" clip-path="url(#wrwkc)"/>
+    ${seps}<line x1="${PL-6}" x2="${Wd-PR+6}" y1="${base}" y2="${base}" class="bl"/>${g}${line}${labs}${months}
+    ${S.map((b,i)=>`<rect class="hit" data-i="${i}" x="${(cxs[i]-step/2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${base}" fill="transparent"/>`).join('')}</svg>`;
   const leg=$('wrWkLeg');
-  if(leg)leg.innerHTML=`<span><i style="background:${GC.t};opacity:1"></i>${L('지상파','Terrestrial')}</span><span><i style="background:${GC.c};opacity:1"></i>${L('케이블 · 종편','Cable · GP')}</span>`
-    +`<span class="n">${L('막대에 마우스를 올리면 PP 별로 나뉨 · 흐린 막대 = 지난 캠페인','Hover a bar to split by PP · faded = past campaigns')}</span>`;
-  box.querySelectorAll('g.wb').forEach(g=>{const b=S[+g.dataset.i];
-    g.onmousemove=e=>{const rows=keys.filter(k=>b.pp[k]&&(b.pp[k][0]>0||b.pp[k][1]>0)).sort((p,q)=>b.pp[q][vi]-b.pp[p][vi]);
+  if(leg)leg.innerHTML=`<span><i class="sw"></i>${L('집행금액','Spend')}</span><span><i class="ln"></i>CPRP <em>(${L('천원','K')})</em></span><span><i class="ar"></i>eq.GRP</span><span class="n">${L('흐린 막대 = 지난 캠페인','faded = past campaigns')}</span>`;
+  rpGo(box);
+  box.querySelectorAll('rect.hit').forEach(r=>{const i=+r.dataset.i,b=S[i];
+    r.onmousemove=e=>{const rows=keys.filter(k=>b.pp[k]&&(b.pp[k][0]>0||b.pp[k][1]>0)).sort((p,q)=>b.pp[q][1]-b.pp[p][1]);
+      const gT=keys.filter(k=>k.startsWith('지상파')).reduce((s2,k)=>s2+((b.pp[k]||[])[1]||0),0),gC=keys.filter(k=>!k.startsWith('지상파')).reduce((s2,k)=>s2+((b.pp[k]||[])[1]||0),0);
       showTip(e.clientX,e.clientY,`<div class="t">${L(+String(b.ym).slice(5,7)+'월','M'+(+String(b.ym).slice(5,7)))} ${esc(b.l)} · ${wrD(b.s)}~${wrD(b.e)}${b.past?' · '+L('지난 캠페인','past'):''}</div>
-        <div class="r hi"><span class="l">eq.GRP</span><b>${wrF(b.eq,1)}</b></div><div class="r"><span class="l">${L('집행금액','Spend')}</span><b>${wrF(b.cost)} ${L('천원','K')}</b></div>
+        <div class="r hi"><span class="l">${L('집행금액','Spend')}</span><b>${wrF(b.cost)} ${L('천원','K')}</b></div><div class="r"><span class="l">eq.GRP</span><b>${wrF(b.eq,1)}</b></div>
         <div class="r"><span class="l">CPRP</span><b>${wrF(b.eq>0?b.cost/b.eq:NaN)} ${L('천원','K')}</b></div>
-        <div class="tsec">PP</div>${rows.map(k=>`<div class="r"><span class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${col[k]}"></i>${esc(k.split('|')[1])}</span><b>${vi?wrEok(b.pp[k][1]):wrF(b.pp[k][0],1)}<span class="sm">${vi?wrF(b.pp[k][0],1)+' eq':wrEok(b.pp[k][1])}</span></b></div>`).join('')}`);
-      box.querySelectorAll('g.wb').forEach(x=>x.classList.toggle('dim',x!==g));};
-    g.onmouseleave=()=>{hideTip();box.querySelectorAll('g.wb').forEach(x=>x.classList.remove('dim'));};});}
+        <div class="r"><span class="l">${L('지상파 · 케이블','Terr. · Cable')}</span><b>${wrEok(gT)} · ${wrEok(gC)}</b></div>
+        <div class="tsec">PP</div>${rows.map(k=>`<div class="r"><span class="l">${esc(k.split('|')[1])}</span><b>${wrEok(b.pp[k][1])}<span class="sm">${wrF(b.pp[k][0],1)} eq</span></b></div>`).join('')}`);
+      box.querySelectorAll('g.wb').forEach(x=>x.classList.toggle('dim',+x.dataset.i!==i));};
+    r.onmouseleave=()=>{hideTip();box.querySelectorAll('g.wb').forEach(x=>x.classList.remove('dim'));};});}
 function wrWeekTbl(){
   const box=$('wrWkT');if(!box)return;const W=TV_WR,wk=W.weeks||[];
   const rows=(W.chs||[]).filter(c=>wrPaid(c)||(wrN(c.eq)>0));
@@ -29367,14 +29655,24 @@ function rpBarDonut(box,bars,opt){
   const mx=Math.max(...bars.map(b=>b.v),1),d=Math.min(30,gw*.5),RB=Math.min(H*.3,(W*.5-150)*.75,118),CX=W/2,CY=B-RB-4;   /* v155 — 도넛도 막대처럼 바닥에 붙어서 */
   /* v154 — 옆 막대는 도넛이 넓어진 만큼만 밀려난다(카드는 막대 위에 겹쳐 띄운다) */
   const fmt=opt.fmt||wrEok,PHI=72*Math.PI/180,RBX=RB*Math.sin(PHI)+12,ZC=Math.min(W/2,RBX+8),PUSH=Math.max(0,RBX+d*.5+8-gw);
-  const st=bars.map((b,i)=>({t:0,tg:0,x:8+gw*i+gw/2,h:Math.max(b.v>0?3:0,(B-T-24)*b.v/mx)}));
+  const st=bars.map((b,i)=>({t:0,tg:0,x:8+gw*i+gw/2,cx:8+gw*i+gw/2,h:Math.max(b.v>0?3:0,(B-T-24)*b.v/mx)}));
+  /* v157 — 카드가 한쪽 열에 다 안 들어가면(조각이 많으면) 도넛을 안쪽으로 더 들여 양쪽에 카드 열을 둔다 */
+  const CWc=150,need2=bars.map(b=>{const k=b.slices.filter(z=>z.v>0).length,ch=b.slices.some(z=>z.sub)?46:34;return k*(ch+6)>H-10;});
+  const ZCi=i=>need2[i]?Math.min(W/2,RBX+18+CWc+6):ZC,cxT=i=>rpClamp(st[i].x,ZCi(i),W-ZCi(i));
+  /* 막대 a 를 다 펼쳤을 때 막대 j 가 비켜설 거리 — 도넛 폭 밖으로, 남는 자리에 고르게 좁혀 앉는다 */
+  const offFor=(j,a)=>{if(j===a)return 0;const c=cxT(a),half=RBX+d/2+8;
+    if(j<a){const lim=c-half,last=st[a-1].x;if(last<=lim)return 0;const l0=8+d/2,k=Math.max(.12,(lim-l0)/Math.max(1,last-l0));return l0+(st[j].x-l0)*k-st[j].x;}
+    const lim=c+half,first=st[a+1].x;if(first>=lim)return 0;const r0=W-8-d/2,k=Math.max(.12,(r0-lim)/Math.max(1,r0-first));return r0-(r0-st[j].x)*k-st[j].x;};
   const svgNS='http://www.w3.org/2000/svg';
   box._uid=(rpBarDonut._n=(rpBarDonut._n||0)+1);
-  box.innerHTML=`<svg class="rpbd" viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><defs><linearGradient id="rpbdhl${box._uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g class="bl"></g><g class="act"></g></svg>
+  box.classList.add('rpbdbox');
+  box.innerHTML=`<svg class="rpbd" viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><defs><linearGradient id="rpbdhl${box._uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <filter id="rpbdsh${box._uid}" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="5"/></filter></defs><g class="bl"></g><g class="act"></g></svg>
+    <button type="button" class="rpbdx" aria-label="${L('닫기','Close')}"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg>${L('닫기','Close')}</button>
     ${opt.legend||''}`;
   const svg=box.querySelector('svg'),gB=svg.querySelector('.bl'),gA=svg.querySelector('.act');
   const t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let act=-1,raf=0,alive=true;
+  let act=-1,raf=0,alive=true;const cardC={};
   /* 한 막대(도넛) 그리기 — t: 0 막대 … 1 펼친 도넛, grow: 처음 솟아오르기.
      v152 — 속이 꽉 찬 하나의 고리처럼: 앞면(조각) · 바깥 옆면(조각마다 같은 색의 어두운 톤) · 구멍 안 벽이
      같은 각도 · 같은 두께로 맞물리게 그린다. 옆면은 앞면 오른쪽 반 타원과 뒷면 오른쪽 반 타원 사이의 띠 */
@@ -29382,7 +29680,7 @@ function rpBarDonut(box,bars,opt){
     const b=bars[i],s=st[i],sx=s.x+(off||0);if(!(b.v>0)&&t<=0)return `<rect x="${(sx-d/2).toFixed(1)}" y="${B-2}" width="${d.toFixed(1)}" height="2" class="nil"/>`;
     const r=rpEase(rpClamp(t/.62,0,1)),q=rpEase(rpClamp((t-.55)/.45,0,1));
     /* 도넛은 제 자리에서 돌고(카드 자리만큼 안쪽으로), 옆 막대들이 밀려난다 */
-    const h0=s.h*grow,R=rpLerp(h0/2,RB,r),cx=rpLerp(sx,rpClamp(s.x,ZC,W-ZC),r),cy=rpLerp(B-h0/2,CY,r);
+    const h0=s.h*grow,R=rpLerp(h0/2,RB,r),cx=rpLerp(sx,cxT(i),r),cy=rpLerp(B-h0/2,CY,r);
     const phi=r*PHI,rx=Math.max(R*Math.sin(phi),.001),dd=rpLerp(d,34,r),dx=dd*Math.cos(phi),col=b.col||'#8ea3bd';
     const f=v=>v.toFixed(2),fx=cx-dx/2,bx=cx+dx/2,ri=.56,HP=Math.PI/2;
     const F=(an,k)=>[fx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k],Bk=(an,k)=>[bx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k];
@@ -29391,11 +29689,15 @@ function rpBarDonut(box,bars,opt){
     if(!segs.length)segs.push({z:{col},a0:-HP,a1:3*HP});
     /* 막대일 때는 막대 색, 돌수록 조각 색으로 */
     const wallC=z=>rpMix(rpShadeC(col,.86),rpShadeC(z.col,.72),r),faceC=z=>rpMix(col,z.col,Math.min(1,r*1.4));
-    let g=`<g class="bd${t>.02?' on':''}" data-i="${i}">`;
+    let g=`<g class="bd${t>.02?' on':''}${hov===i&&act!==i?' hv':''}" data-i="${i}">`;
+    /* 바닥 그림자 — 도넛이 설수록 짙게, 가로로 납작한 부드러운 그림자 */
+    if(r>.04)g+=`<ellipse cx="${f(cx)}" cy="${f(B-1)}" rx="${f(rx+dx*.6+6)}" ry="${f(4+5*r)}" fill="rgba(16,28,44,${(.26*r).toFixed(3)})" filter="url(#rpbdsh${box._uid})"/>`;
     /* ① 바깥 옆면 — 보이는 쪽(오른쪽 반, -90°~90°)을 조각별로 */
     const wallSeg=(c0,c1,z)=>{const [x0,y0]=F(c0,1),[x1,y1]=F(c1,1),[x2,y2]=Bk(c1,1),[x3,y3]=Bk(c0,1);
       return `<path d="M${f(x0)},${f(y0)} A${f(rx)},${f(R)} 0 0 1 ${f(x1)},${f(y1)} L${f(x2)},${f(y2)} A${f(rx)},${f(R)} 0 0 0 ${f(x3)},${f(y3)} Z" fill="${wallC(z)}" stroke="${wallC(z)}" stroke-width=".6" stroke-linejoin="round"/>`;};
-    segs.forEach(sg=>{const A0=Math.max(sg.a0,-HP),A1=Math.min(sg.a1,HP);if(A1>A0+1e-4)g+=wallSeg(A0,A1,sg.z);});
+    /* 막대 상태(아직 돌지 않음)는 한 장의 사각형 — 조각 경계 실선이 비치지 않게 */
+    if(r<.004)g+=`<rect x="${f(cx-dd/2)}" y="${f(cy-R)}" width="${f(dd)}" height="${f(2*R)}" fill="${rpShadeC(col,.86)}"/>`;
+    else segs.forEach(sg=>{const A0=Math.max(sg.a0,-HP),A1=Math.min(sg.a1,HP);if(A1>A0+1e-4)g+=wallSeg(A0,A1,sg.z);});
     /* 옆면 위아래 가장자리 하이라이트 · 그늘 — 둥근 두께감 */
     g+=`<path d="M${f(fx)},${f(cy-R)} L${f(bx)},${f(cy-R)}" stroke="rgba(255,255,255,${(.35*(1-r)+.2).toFixed(2)})" stroke-width="1"/>`;
     if(rx>.4){
@@ -29424,30 +29726,44 @@ function rpBarDonut(box,bars,opt){
     if(q>.01){
       g+=`<text class="dc1" x="${f(fx)}" y="${f(cy-4)}" text-anchor="middle" opacity="${q.toFixed(2)}">${esc(b.label)}</text>
         <text class="dc2" x="${f(fx)}" y="${f(cy+15)}" text-anchor="middle" opacity="${q.toFixed(2)}">${fmt(b.v)}</text>`;
-      g+=rpBdCards(b,fx,cy,rx,R,q,W,H);
+      /* 카드 배치(교차 없는 자리 찾기)는 무거워 — 다 선 도넛이면 한 번만 계산해 두고 불투명도만 바꾼다 */
+      if(r>=.999){if(!cardC[i])cardC[i]=rpBdCards(b,fx,cy,rx,R,'__Q__',W,H);g+=cardC[i].split('__Q__').join(q.toFixed(2));}
+      else g+=rpBdCards(b,fx,cy,rx,R,q,W,H);
     }
     return g+'</g>';}
   function frame(now){
     if(!alive||!box.isConnected)return;
     let busy=false;const el=now-t0;
-    st.forEach((s,i)=>{const sp=.055;if(s.t<s.tg){s.t=Math.min(s.tg,s.t+sp);busy=true;}else if(s.t>s.tg){s.t=Math.max(s.tg,s.t-sp*1.2);busy=true;}});
+    /* v157 — 천천히(약 0.8초) 펼치고 닫는다 */
+    const dtS=Math.min(.1,Math.max(0,(now-(frame._last||now))/1000))||1/60;frame._last=now;
+    st.forEach((s,i)=>{const sp=1.25*dtS;if(s.t<s.tg){s.t=Math.min(s.tg,s.t+sp);busy=true;}else if(s.t>s.tg){s.t=Math.max(s.tg,s.t-sp*1.25);busy=true;}});
     let hb='',ha='';
     const rs=st.map(s=>rpEase(rpClamp(s.t/.62,0,1)));
     st.forEach((s,i)=>{
       const dl=i*70,grow=reduce?1:rpEase(rpClamp((el-dl)/700,0,1));
       if(grow<1)busy=true;
-      let off=0;rs.forEach((r2,j)=>{if(j!==i&&r2>0)off+=Math.sign(i-j)*PUSH*r2;});
+      let off=0;rs.forEach((r2,j)=>{if(j!==i&&r2>0)off+=offFor(i,j)*r2;});s.cx=s.x+off;
       const html=draw(i,s.t,grow,off);
       if(i===act||s.t>.02)ha+=html;else hb+=html;});
-    gB.innerHTML=hb;gA.innerHTML=ha;svg.classList.toggle('hot',act>=0);
+    gB.innerHTML=hb;gA.innerHTML=ha;svg.classList.toggle('hot',act>=0);box.classList.toggle('open',act>=0);
     if(busy)raf=requestAnimationFrame(frame);else raf=0;}
-  const kick=()=>{if(!raf)raf=requestAnimationFrame(frame);};
-  const pick=e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width,y=(e.clientY-pt.top)*H/pt.height;
-    if(act>=0&&st[act].t>.4&&Math.abs(x-rpClamp(st[act].x,ZC,W-ZC))<RBX)return act;
-    const i=Math.floor((x-8)/gw);return i>=0&&i<n&&bars[i].v>0?i:-1;};
-  svg.addEventListener('mousemove',e=>{const i=pick(e);if(i!==act){act=i;st.forEach((s,k)=>s.tg=k===i?1:0);kick();}
-    if(i>=0&&opt.tip){const h=opt.tip(bars[i]);if(h&&st[i].t<.3)showTip(e.clientX,e.clientY,h);else hideTip();}});
-  svg.addEventListener('mouseleave',()=>{act=-1;st.forEach(s=>s.tg=0);hideTip();kick();});
+  const kick=()=>{if(!raf){frame._last=0;raf=requestAnimationFrame(frame);}};
+  let hov=-1;
+  /* v157 — 마우스를 올리면 '누르면 펼친다'만 알리고, 누르면 펼친다. 닫기(×) · Esc · 펼친 도넛을 다시 누르면 막대로 */
+  const pick=e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width;
+    if(act>=0&&st[act].t>.4&&Math.abs(x-cxT(act))<RBX)return act;
+    let bi=-1,bd=1e9;st.forEach((s,k)=>{if(k===act||!(bars[k].v>0))return;const dd=Math.abs(x-s.cx);if(dd<bd){bd=dd;bi=k;}});
+    return bd<=Math.max(d*.9,gw*.45)?bi:-1;};
+  const open=i=>{act=i;st.forEach((s,k)=>s.tg=k===i?1:0);hideTip();kick();};
+  const close=()=>{act=-1;st.forEach(s=>s.tg=0);kick();};
+  svg.addEventListener('mousemove',e=>{const i=pick(e);if(i!==hov){hov=i;kick();}
+    svg.style.cursor=i>=0?'pointer':'';
+    if(i>=0&&i!==act){const h=opt.tip?opt.tip(bars[i]):'';showTip(e.clientX,e.clientY,`${h||`<div class="t">${esc(bars[i].label||'')}</div>${rpTr(L('합계','Total'),fmt(bars[i].v))}`}<div class="hint">${L('누르면 내역이 펼쳐집니다','Click to open the breakdown')}</div>`);}
+    else hideTip();});
+  svg.addEventListener('mouseleave',()=>{hov=-1;svg.style.cursor='';hideTip();kick();});
+  svg.addEventListener('click',e=>{const i=pick(e);if(i<0)return;if(i===act)close();else open(i);});
+  box.querySelector('.rpbdx').onclick=e=>{e.stopPropagation();close();};
+  const esc2=e=>{if(!box.isConnected){removeEventListener('keydown',esc2);return;}if(e.key==='Escape'&&act>=0)close();};addEventListener('keydown',esc2);
   kick();}
 /* ---------- 안내선 — 서로 겹치지 않게 (v156) ----------
    점(조각 가운데 바깥 테두리) → 바깥쪽으로 조금 나간 꺾임점 → 카드 모서리. 같은 쪽 카드 자리들을 놓고
@@ -29507,7 +29823,7 @@ function rpBdCards(b,cx,cy,rx,R,q,W,H){
     const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*(CH+GAP),ys[i]);
     const bx0=sd>0?cx+rx+30:cx-rx-30-CW,ex0=sd>0?bx0:bx0+CW,pl=rpPlace(L,ys,ex0,CH);
     L.forEach((p,i)=>{const bx=bx0,y=ys[pl[i].k],ex=ex0,ey=y+CH/2,f=v=>v.toFixed(1);
-      out.push(`<g class="bdc" opacity="${q.toFixed(2)}"><path d="M${f(p.ax)},${f(p.ay)} L${f(pl[i].ox)},${f(pl[i].oy)} L${f(ex)},${f(ey)}" class="bdl"/>
+      out.push(`<g class="bdc" opacity="${typeof q==='string'?q:q.toFixed(2)}"><path d="M${f(p.ax)},${f(p.ay)} L${f(pl[i].ox)},${f(pl[i].oy)} L${f(ex)},${f(ey)}" class="bdl"/>
         <rect x="${f(bx)}" y="${f(y)}" width="${f(CW)}" height="${CH}" rx="8" class="bdx"/><rect x="${f(bx+8)}" y="${f(y+CH/2-4)}" width="8" height="8" rx="2" fill="${p.z.col}"/>
         <text x="${f(bx+21)}" y="${f(y+14)}" class="bdn">${esc(p.z.n)}</text>
         <text x="${f(bx+21)}" y="${f(y+27)}" class="bds">${wrEok(p.z.v)} · ${(p.z.v/tot*100).toFixed(p.z.v/tot<.1?1:0)}%</text>${p.z.sub?`<text x="${f(bx+21)}" y="${f(y+40)}" class="bds">${esc(p.z.sub)}</text>`:''}</g>`);});});
@@ -29523,6 +29839,9 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
   const n=Math.ceil((nl+nr)/2)+1,Hc=Math.max(n,3)*PITCH+16,cx=W/2,cy=below?R*K+18:Math.max(R*K+30,Hc/2),H=below?cy+R*K+DEP+30+CH+8:Math.max(cy+R*K+DEP+40,Hc+10),rc=cy+DEP/2;
   const rot=([x,y])=>[cx+(x-cx)*cs-(y-rc)*sn,rc+(x-cx)*sn+(y-rc)*cs];
   let a=-Math.PI/2;const S=S0.map((s,i)=>{const sp=s.v/tot*TAU*T,o={...s,i,a0:a,a1:a+sp};a+=sp;const mid=(o.a0+o.a1)/2,E=s.n===meKey?12*T:0;o.ox=Math.cos(mid)*E;o.oy=Math.sin(mid)*E*K;return o;});
+  /* v157 — 묶음(grp) 단위로 떼어 내기: 묶음 전체 호의 가운데 방향으로 조금씩 벌린다 */
+  if(opt&&opt.grp){const gs=[...new Set(S.map(x=>x.grp))];if(gs.length>1)gs.forEach(gk=>{const L2=S.filter(x=>x.grp===gk);if(!L2.length)return;
+    const g0=L2[0].a0,g1=L2[L2.length-1].a1,mid=(g0+g1)/2,E=8*T;L2.forEach((x,k)=>{x.ox=Math.cos(mid)*E;x.oy=Math.sin(mid)*E*K;x.capA=k===0;x.capB=k===L2.length-1;});});}
   const P=(s,an,rr,dz)=>[cx+s.ox+Math.cos(an)*rr,cy+s.oy+Math.sin(an)*rr*K+(dz||0)];
   const arc=(s,rr,b0,b1,dz,rev)=>{const st=rev?b1:b0,en=rev?b0:b1,mid=(b0+b1)/2,[x0,y0]=P(s,st,rr,dz),[xm,ym]=P(s,mid,rr,dz),[x1,y1]=P(s,en,rr,dz),sw=rev?0:1,ry=(rr*K).toFixed(1);
     return [`${x0.toFixed(1)},${y0.toFixed(1)}`,`A${rr},${ry} 0 0 ${sw} ${xm.toFixed(1)},${ym.toFixed(1)} A${rr},${ry} 0 0 ${sw} ${x1.toFixed(1)},${y1.toFixed(1)}`];};
@@ -29532,8 +29851,8 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
   S.forEach(s=>{if(s.a1-s.a0<1e-4)return;
     clips(s.a0,s.a1,Math.PI,TAU).forEach(c=>back+=`<path class="sl" data-k="${s.i}" d="${wall(s,r,c)}" fill="${rpShadeC(s.col,.55)}"/>`);
     clips(s.a0,s.a1,0,Math.PI).forEach(c=>walls+=`<path class="sl" data-k="${s.i}" d="${wall(s,R,c)}" fill="${rpShadeC(s.col,.78)}"/>`);
-    if(s.n===meKey&&T>.5){/* 떼어 낸 조각의 양쪽 단면 */
-      [s.a0,s.a1].forEach(an=>{const p=[P(s,an,r),P(s,an,R),P(s,an,R,DEP),P(s,an,r,DEP)];caps+=`<path class="sl" data-k="${s.i}" d="M${p.map(q=>q.map(z=>z.toFixed(1)).join(',')).join(' L')} Z" fill="${rpShadeC(s.col,.66)}"/>`;});}
+    if((s.n===meKey||s.capA||s.capB)&&T>.5){/* 떼어 낸 조각(묶음)의 양쪽 단면 */
+      (s.n===meKey?[s.a0,s.a1]:[s.capA?s.a0:null,s.capB?s.a1:null].filter(x=>x!=null)).forEach(an=>{const p=[P(s,an,r),P(s,an,R),P(s,an,R,DEP),P(s,an,r,DEP)];caps+=`<path class="sl" data-k="${s.i}" d="M${p.map(q=>q.map(z=>z.toFixed(1)).join(',')).join(' L')} Z" fill="${rpShadeC(s.col,.66)}"/>`;});}
     const [m,aa]=arc(s,R,s.a0,s.a1,0),[mi,ai]=arc(s,r,s.a0,s.a1,0,true);
     tops+=`<path class="sl" data-k="${s.i}" d="M${m} ${aa} L${mi} ${ai} Z" fill="${s.col}" stroke="${s.col}" stroke-width=".5"/>`;});
   /* 카드 — 다 펼친 뒤에만 */
@@ -29565,7 +29884,8 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
     let best=null;for(const c of cands){if(Math.abs(c.filter(x=>x<0).length-c.filter(x=>x>0).length)>3)continue;const r=lay(c);if(!best||r.cr<best.cr||(r.cr===best.cr&&r.bal<best.bal))best=r;if(!best.cr&&c===bal)break;}
     lab+=best.html;}
   return {svg:`<svg class="rp3d${T>=1?' done':''}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-    <g transform="rotate(13 ${cx} ${rc})"><ellipse cx="${cx}" cy="${cy+DEP+10}" rx="${R*1.15}" ry="${R*K*.7}" fill="rgba(12,26,42,.07)"/>${back}${caps}${walls}${tops}
+    <defs><filter id="rp3sh" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+    <g transform="rotate(13 ${cx} ${rc})"><path d="M${cx-R*1.02},${cy+DEP+7} a${R*1.02},${R*K*1.02} 0 1 0 ${R*2.04},0 a${R*1.02},${R*K*1.02} 0 1 0 ${-R*2.04},0 Z M${cx-r*.92},${cy+DEP+7} a${r*.92},${r*K*.92} 0 1 1 ${r*1.84},0 a${r*.92},${r*K*.92} 0 1 1 ${-r*1.84},0 Z" fill-rule="evenodd" fill="rgba(16,28,44,${(.2*Math.min(1,T)).toFixed(3)})" filter="url(#rp3sh)"/>${back}${caps}${walls}${tops}
     <ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="${R*K}" fill="url(#rp3hl)" pointer-events="none" opacity="${Math.min(1,T).toFixed(2)}"/></g>${lab}
     <defs><radialGradient id="rp3hl" cx=".35" cy=".25" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".24"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs></svg>`,S};}
 /* 3% 미만 작은 조각은 '기타'로 묶는다(코웨이는 묶지 않음) — 안내선 · 카드가 엉키지 않게 */
@@ -29574,7 +29894,11 @@ function rpGroupSmall(segs,keep,th){th=th||.04;const tot=segs.reduce((s2,x)=>s2+
   const small=segs.filter(x=>x.v/tot<th&&(x.n!==keep||x.v/tot<.005));if(small.length<2)return segs;
   return segs.filter(x=>!small.includes(x)).concat([{n:L(`기타 ${small.length}개`,`Other (${small.length})`),v:small.reduce((s2,x)=>s2+x.v,0),col:'#c9ced4',etc:small}]);}
 function rp3dDonut(box,segs,meKey,opt){
-  segs=rpGroupSmall(segs,meKey);
+  if(opt&&opt.grp){const gs=[...new Set(segs.map(x=>x.grp))];segs=gs.flatMap(gk=>{const L2=segs.filter(x=>x.grp===gk),tot=segs.reduce((a,x)=>a+x.v,0);
+      /* 묶음마다 작은 조각 합치기 — 비율은 전체 기준 */
+      const small=L2.filter(x=>x.v/tot<.04);if(small.length<2)return L2;
+      return L2.filter(x=>!small.includes(x)).concat([{n:L(`기타 ${small.length}개`,`Other (${small.length})`),v:small.reduce((a,x)=>a+x.v,0),col:gk==='t'?'#c7d5e8':'#d4d8dc',grp:gk,etc:small}]);});}
+  else segs=rpGroupSmall(segs,meKey);
   if(!box)return;const W=Math.max(480,box.clientWidth||600),id=(box._a=(box._a||0)+1),t0=performance.now(),DUR=1100;
   const tot=segs.reduce((s,x)=>s+x.v,0);
   const wire=()=>{const svg=box.querySelector('svg');if(!svg)return;
@@ -29598,11 +29922,14 @@ function rpSmooth(pts,free,tn){if(pts.length<2)return pts.length?`M${pts[0][0]},
 function rpAreaChart(box,ser,labels,opt){
   if(!box)return;opt=opt||{};const off=new Set(box._off||[]);
   const draw=()=>{
-    const vis=ser.filter(s=>!off.has(s.b)),W=Math.max(420,box.clientWidth||600),H=opt.H||300,L0=44,R0=W-14,T=16,B=H-28,N=labels.length,step=(R0-L0)/Math.max(1,N-1);
+    const yrs=opt.years||null,vis=ser.filter(s=>!off.has(s.b)),W=Math.max(420,box.clientWidth||600),H=opt.H||300,L0=44,R0=W-18,T=16,B=H-(yrs?46:28),N=labels.length,step=(R0-L0)/Math.max(1,N-1);
     const mx0=Math.max(1,...vis.flatMap(s=>s.v)),nice=v=>{const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e;},mx=nice(mx0*1.08);
     const X=i=>N===1?(L0+R0)/2:L0+step*i,Y=v=>B-(B-T)*v/mx;let g='',defs='';
     for(let k=0;k<=4;k++){const v=mx*k/4,y=Y(v);g+=`<line x1="${L0}" x2="${R0}" y1="${y}" y2="${y}" class="gl"/><text x="${L0-6}" y="${y+3.5}" text-anchor="end" class="ax">${k?wrEok(v):'0'}</text>`;}
-    labels.forEach((l,i)=>g+=`<text x="${X(i)}" y="${B+18}" text-anchor="middle" class="ax">${esc(l)}</text>`);
+    labels.forEach((l,i)=>g+=`<text x="${X(i)}" y="${B+18}" text-anchor="middle" class="ax${yrs?' mo':''}">${esc(l)}</text>`);
+    /* 둘째 줄 — 연도(그 해 달들 가운데, 양옆 옅은 괄호선) */
+    if(yrs){let i0=0;for(let i=1;i<=N;i++){if(i===N||yrs[i]!==yrs[i0]){const xa=X(i0),xb=X(i-1),xm=(xa+xb)/2;
+      g+=`<path d="M${xa-6},${B+28} v4 H${xb+6} v-4" class="yb"/><rect x="${xm-22}" y="${B+26}" width="44" height="14" class="ybg"/><text x="${xm}" y="${B+37}" text-anchor="middle" class="ax yr">${L(yrs[i0]+'년',String(yrs[i0]))}</text>`;i0=i;}}}
     /* 큰 것부터 뒤에 — 작은 영역이 가려지지 않게 */
     [...vis].sort((a,b)=>rpSum(b.v)-rpSum(a.v)).forEach((s,k)=>{const id='rpag'+Math.random().toString(36).slice(2,8),pts=s.v.map((v,i)=>[X(i),Y(v)]);
       defs+=`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.col}" stop-opacity="${s.mine?.5:.38}"/><stop offset="1" stop-color="${s.col}" stop-opacity="0"/></linearGradient>`;
@@ -29614,7 +29941,7 @@ function rpAreaChart(box,ser,labels,opt){
     const svg=box.querySelector('svg'),xh=svg.querySelector('.xh');
     svg.addEventListener('mousemove',e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width,i=rpClamp(Math.round(N===1?0:(x-L0)/step),0,N-1);
       xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));const list=vis.map(s=>[s,s.v[i]]).filter(z=>z[1]>0).sort((a,b)=>b[1]-a[1]);
-      showTip(e.clientX,e.clientY,`<div class="t">${esc(labels[i])}${opt.title?` · ${esc(opt.title)}`:''}</div>${list.length?list.map(([s,v])=>rpTr(`<i class="dot" style="background:${s.col}"></i>${esc(s.b)}`,wrEok(v))).join(''):`<div class="r">${L('집행 없음','None')}</div>`}`);});
+      showTip(e.clientX,e.clientY,`<div class="t">${yrs?esc(L(yrs[i]+'년 ',yrs[i]+' ')):''}${esc(labels[i])}${opt.title?` · ${esc(opt.title)}`:''}</div>${list.length?list.map(([s,v])=>rpTr(`<i class="dot" style="background:${s.col}"></i>${esc(s.b)}`,wrEok(v))).join(''):`<div class="r">${L('집행 없음','None')}</div>`}`);});
     svg.addEventListener('mouseleave',()=>{xh.setAttribute('x1',-10);xh.setAttribute('x2',-10);hideTip();});};
   draw();}
 
