@@ -41,6 +41,9 @@ jobs:
           if [ -f logo.png ]; then cp logo.png dist/; fi
           # 리포트 소재 아카이브 스토리보드 (v149)
           if [ -d assets ]; then cp -r assets dist/; fi
+          # TV 큐시트 틀 (v167) — cue/ 소스로 다시 만들어 배포
+          python cue/build.py
+          cp cue.html dist/
 
       - name: Check script syntax
         run: |
