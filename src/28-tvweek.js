@@ -213,7 +213,7 @@ function tvwFlow(weeks,A){
   const X0=SX,XW=W-SX*2,step=XW/N,cx=i=>X0+step*i+step/2;
   const pal=pickRamp(series.length);
   const FLC=DARK?[200,168,136]:[150,120,90],FLO=DARK?[.04,.09,.16]:[.08,.17,.28];
-  const INK=DARK?'#e8e8e8':'#262626',INK2=DARK?'#b8ab9c':'#8a7f75',HALO=cssVar('--surface')||(DARK?'#1e1e1e':'#fff');
+  const INK=DARK?'#e8e8e8':'#24262a',INK2=DARK?'#b8ab9c':'#8a7f75',HALO=cssVar('--surface')||(DARK?'#1e1e1e':'#fff');
   const rgbOf=c=>{c=String(c||'').trim();const m=/^rgba?\(([^)]+)\)/.exec(c);if(m)return m[1].split(',').slice(0,3).map(x=>+x);
     try{return hex2rgb(c);}catch(e){return [120,124,130];}};
   const rgba=(c,a,k=1)=>`rgba(${c.map(v=>Math.round(Math.max(0,Math.min(255,v*k)))).join(',')},${a})`;
@@ -287,10 +287,10 @@ function tvwFlow(weeks,A){
       const lTop=44,lBot=Math.max(lTop+44,BASE-barMaxH-DEP-34);
       const LY=v=>lBot-(v-lo)/((hi-lo)||1)*(lBot-lTop);
       const pts=lv.map((v,i)=>isFinite(v)?[cx(i),LY(v)]:null).filter(Boolean);
-      S('path',{d:pts.length>1?smoothPath(pts):`M${pts[0][0]-1} ${pts[0][1]} L${pts[0][0]+1} ${pts[0][1]}`,fill:'none',stroke:DARK?'rgba(240,240,240,.62)':'rgba(32,32,32,.58)',
+      S('path',{d:pts.length>1?smoothPath(pts):`M${pts[0][0]-1} ${pts[0][1]} L${pts[0][0]+1} ${pts[0][1]}`,fill:'none',stroke:DARK?'rgba(240,240,240,.62)':'rgba(30,32,36,.58)',
         'stroke-width':3.2,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},svg);
       lv.forEach((v,i)=>{if(!isFinite(v))return;const y=LY(v);
-        S('circle',{cx:cx(i),cy:y,r:4.2,fill:HALO,stroke:DARK?'#ddd':'#2c2c2c','stroke-width':2,'pointer-events':'none'},svg);
+        S('circle',{cx:cx(i),cy:y,r:4.2,fill:HALO,stroke:DARK?'#ddd':'#2a2c30','stroke-width':2,'pointer-events':'none'},svg);
         const t=S('text',{x:cx(i),y:y-12,'text-anchor':'middle','font-size':12,'font-weight':800,fill:INK,'paint-order':'stroke',stroke:HALO,'stroke-width':3.5,'pointer-events':'none'},svg);
         t.textContent=TVW_LINES[lk].f(v);});
       const lt=S('text',{x:X0,y:22,'font-size':11,'font-weight':800,fill:INK2},svg);lt.textContent=L(TVW_LINES[lk].l,{cprp:'CPRP (K KRW)',brate:'Bonus rate',rtidx:'Rating index'}[lk]||TVW_LINES[lk].l);}
@@ -310,7 +310,7 @@ function tvwFlow(weeks,A){
     hit.addEventListener('mouseleave',()=>{hideTip();if(BARS[i])BARS[i].classList.remove('on');svg.classList.remove('hov');});});
   /* 범례 */
   if(lgBox)lgBox.innerHTML=series.map((s,si)=>`<span class="it"><span class="dot" style="background:${pal[si]}"></span>${esc(s.key)}</span>`).join('')
-    +(lv?`<span class="it"><span class="linekey" style="background:${DARK?'#ccc':'#3c3c3c'}"></span>${esc(TVW_LINES[lk].l)}</span>`:'')
+    +(lv?`<span class="it"><span class="linekey" style="background:${DARK?'#ccc':'#3a3c40'}"></span>${esc(TVW_LINES[lk].l)}</span>`:'')
     +`<span class="it"><span class="dot" style="background:rgba(150,120,90,.35)"></span>${L('주별 집행 광고비 (뒤 언덕)','Weekly spend (hill)')}</span>`
     +(weeks.some(o=>!o.act)?`<span class="it"><span class="dot" style="border:1.2px dashed var(--gline);background:none"></span>${L('방송 예정 주 (계획만)','Upcoming week (plan only)')}</span>`:'');}
 const num0=v=>isFinite(v)?v:0;
@@ -370,7 +370,7 @@ function tvwRating(weeks){
   const lo0=Math.min(...vals),hi0=Math.max(...vals),pad=(hi0-lo0)*.12||1;
   const tk=niceTicks(RAW?Math.max(0,lo0-pad):lo0-pad,hi0+pad,5,RAW);
   const N=ws.length,XW=W-P.l-P.r,X=i=>P.l+(N<=1?XW/2:XW*(i+.5)/N),Y=v=>P.t+(tk.hi-v)/((tk.hi-tk.lo)||1)*(H-P.t-P.b);
-  const INK=DARK?'#e8e8e8':'#262626',INK2=DARK?'#b0b0b0':'#656565',HALO=cssVar('--surface')||'#fff';
+  const INK=DARK?'#e8e8e8':'#24262a',INK2=DARK?'#b0b0b0':'#61656b',HALO=cssVar('--surface')||'#fff';
   /* 주차 띠 — 번갈아 옅은 배경 */
   ws.forEach((o,i)=>{if(i%2)S('rect',{x:P.l+XW*i/N,y:P.t,width:XW/N,height:H-P.t-P.b,fill:'var(--line2)',opacity:.7},svg);});
   tk.ticks.forEach(v=>{S('line',{x1:P.l,x2:W-P.r,y1:Y(v),y2:Y(v),stroke:'var(--line)','stroke-width':1},svg);

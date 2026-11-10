@@ -134,7 +134,13 @@ function rpBarDonut(box,bars,opt){
     if(i>=0&&i!==act){const h=opt.tip?opt.tip(bars[i]):'';showTip(e.clientX,e.clientY,`${h||`<div class="t">${esc(bars[i].label||'')}</div>${rpTr(L('합계','Total'),fmt(bars[i].v))}`}<div class="hint">${L('누르면 내역이 펼쳐집니다','Click to open the breakdown')}</div>`);}
     else hideTip();});
   svg.addEventListener('mouseleave',()=>{hov=-1;svg.style.cursor='';hideTip();kick();});
-  svg.addEventListener('click',e=>{const i=pick(e);if(i<0)return;if(i===act)close();else open(i);});
+  /* v162 — 호버 흔들림이 매 프레임 막대 그림을 새로 그려서 mousedown 과 mouseup 대상이 달라지면 'click' 이 안 생긴다
+     → 누름 · 뗌(pointer)으로 직접 판단 */
+  let pd=null;
+  svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;pd={x:e.clientX,y:e.clientY,i:pick(e)};});
+  svg.addEventListener('pointerup',e=>{const d=pd;pd=null;if(!d||Math.hypot(e.clientX-d.x,e.clientY-d.y)>8)return;
+    const i=pick(e);const k=i>=0?i:d.i;if(k<0)return;if(k===act)close();else open(k);});
+  svg.addEventListener('pointercancel',()=>{pd=null;});
   box.querySelector('.rpbdcl').onclick=e=>{e.stopPropagation();close();};
   const esc2=e=>{if(!box.isConnected){removeEventListener('keydown',esc2);return;}if(e.key==='Escape'&&act>=0)close();};addEventListener('keydown',esc2);
   kick();}
@@ -210,11 +216,19 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
   const tot=S0.reduce((s,x)=>s+x.v,0);if(!tot)return {svg:'',S:[]};
   const CW=Math.min(170,W*.27),below0=!!(opt&&opt.below),R=Math.min((opt&&opt.R)||Math.min(W*.2,118),below0?1e9:(W/2-CW-34)/1.06),K=.56,r=R*.52,DEP=22,ROT=13*Math.PI/180,TAU=Math.PI*2,CH=38,PITCH=48,cs=Math.cos(ROT),sn=Math.sin(ROT);
   /* 카드 줄 수 — 다 펼친 각도로 왼쪽 · 오른쪽에 몇 개씩 가는지 */
-  const A0=(opt&&opt.start!=null)?opt.start:-Math.PI/2;
+  /* v162 — opt.lr: 조각 가운데가 위 · 아래(12시 · 6시)에 몰리지 않고 좌우(3시 · 9시)로 가도록 시작 각을 고른다.
+     자사 조각(meKey)은 오른쪽. 안내선이 위로 꺾여 뭉치지 않게 */
+  const lrStart=()=>{let best=-Math.PI/2,bc=1e9;
+    for(let k=0;k<180;k++){const st=-Math.PI+k*TAU/180;let a=st,c=0;
+      S0.forEach(z=>{const sp=z.v/tot*TAU,m=a+sp/2;a+=sp;const x=Math.cos(m)*cs-Math.sin(m)*K*sn,y=Math.cos(m)*sn+Math.sin(m)*K*cs,yn=y*y/((x*x+y*y)||1);
+        c+=yn*(sp<TAU*.5?1:.3);if(meKey&&z.n===meKey&&x<0)c+=2;});
+      if(c<bc-1e-9){bc=c;best=st;}}
+    return best;};
+  const A0=(opt&&opt.start!=null)?opt.start:(opt&&opt.lr)?lrStart():-Math.PI/2;
   const SG=opt&&opt.sideGrp!=null?opt.sideGrp:null;
   let aa=A0,nl=0,nr=0;S0.forEach(s=>{const sp=s.v/tot*TAU,mid=aa+sp/2;aa+=sp;const x=Math.cos(mid)*cs-Math.sin(mid)*K*sn;if(SG!=null?s.grp!==SG:x>=0)nr++;else nl++;});
   const below=!!(opt&&opt.below);
-  const n=Math.max(Math.ceil((nl+nr)/2)+1,SG!=null?Math.max(nl,nr):0),Hc=Math.max(n,3)*PITCH+16,cx=W/2,cy=below?R*K+18:Math.max(R*K+30,Hc/2),H=below?cy+R*K+DEP+30+CH+8:Math.max(cy+R*K+DEP+40,Hc+10),rc=cy+DEP/2;
+  const n=Math.max(Math.ceil((nl+nr)/2)+1,(SG!=null||(opt&&opt.lr))?Math.max(nl,nr):0),Hc=Math.max(n,3)*PITCH+16,cx=W/2,cy=below?R*K+18:Math.max(R*K+30,Hc/2),H=below?cy+R*K+DEP+30+CH+8:Math.max(cy+R*K+DEP+40,Hc+10),rc=cy+DEP/2;
   const rot=([x,y])=>[cx+(x-cx)*cs-(y-rc)*sn,rc+(x-cx)*sn+(y-rc)*cs];
   let a=A0;const S=S0.map((s,i)=>{const sp=s.v/tot*TAU*T,o={...s,i,a0:a,a1:a+sp};a+=sp;const mid=(o.a0+o.a1)/2,E=s.n===meKey?12*T:0;o.ox=Math.cos(mid)*E;o.oy=Math.sin(mid)*E*K;return o;});
   /* v157 — 묶음(grp) 단위로 떼어 내기: 묶음 전체 호의 가운데 방향으로 조금씩 벌린다 */
@@ -263,6 +277,7 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
       return {html,cr,bal:Math.abs(sides.filter(x=>x<0).length-sides.filter(x=>x>0).length)};};
     const raw=pts.map(p=>p.side);
     if(SG!=null){const fx=pts.map(p=>p.s.grp===SG?-1:1);lab+=lay(fx).html;}
+    else if(opt&&opt.lr){lab+=lay(raw).html;}   /* v162 — 좌우 배치 도넛은 카드도 조각이 있는 쪽 그대로 */
     else{rpBalance(pts,cx);const bal=pts.map(p=>p.side);
     const cands=[bal,raw];const near=pts.map((p,i)=>i).sort((a,b)=>Math.abs(pts[a].ax-cx)-Math.abs(pts[b].ax-cx)).slice(0,3);
     for(let m=1;m<(1<<near.length);m++){const c=bal.slice();near.forEach((i,b)=>{if(m>>b&1)c[i]*=-1;});cands.push(c);}

@@ -242,8 +242,8 @@ function rpCatBar(){
   const st=Object.fromEntries(RPT_DOC.cats.map(c=>[c.k,rpCatState(c)]));
   /* v158 — 처음엔 아무 품목도 고르지 않는다(고르면 아래에 데이터) */
   if(RPT.cat&&st[RPT.cat]!=='on')RPT.cat='';
-  h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목','Product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
-    <div class="rpcats2" role="tablist">${RPT_DOC.cats.map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);
+  h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목 선택','Pick a product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
+    <div class="rpcats2" role="tablist">${RPT_DOC.cats.filter(c=>st[c.k]==='on').map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);   /* v162 — 이번 달 집행이 없는 품목은 카드 자체를 숨김 */
       return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' off':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`disabled title="${L('이번 달 코웨이 집행 없음','No Coway spend this month')}"`:''} style="--d:${i*35}ms">
         <span class="im">${img?`<img src="${img}" alt="" loading="lazy" decoding="async">`:''}</span><span class="nm">${esc(c.lab)}</span>${s2!=='on'?`<span class="tg">${L('이번 달 없음','none this month')}</span>`:''}</button>`;}).join('')}</div></div>`;
   rpGo(h);
@@ -286,7 +286,7 @@ function rpSos(){
         /* v157 — 궁금한 사람만: 다른 달 하나를 골라 보는 작은 메뉴 */
         +`<label class="rpmsel${RPT.sos==='mon'?' on':''}"><select data-rpsmo aria-label="${L('월별 보기','By month')}"><option value="">${L('월별','Month…')}</option>${[...Array(M)].map((_,i)=>`<option value="${i+1}"${RPT.sos==='mon'&&RPT.sosMo===i+1?' selected':''}>${L(`${i+1}월`,`M${i+1}`)}</option>`).join('')}</select></label>`,'rpfill')}</div>`;
   rpSosCols(c,col,bs,mk);
-  if(tot){const bx=$('rpSosDn'),w0=bx.clientWidth||600;rp3dDonut(bx,segs,'코웨이',{R:Math.min(w0*.22,138)});}
+  if(tot){const bx=$('rpSosDn'),w0=bx.clientWidth||600;rp3dDonut(bx,segs,'코웨이',{R:Math.min(w0*.22,138),lr:true});}
   h.querySelectorAll('[data-rpsm]').forEach(b=>b.onclick=()=>{RPT.sosMed=b.dataset.rpsm;rpSos();});
   h.querySelectorAll('[data-rpsp]').forEach(b=>b.onclick=()=>{RPT.sos=b.dataset.rpsp;rpSos();});
   h.querySelectorAll('[data-rpsmo]').forEach(sel=>sel.onchange=()=>{const v=+sel.value;if(v){RPT.sos='mon';RPT.sosMo=v;}else RPT.sos='m';rpSos();});
