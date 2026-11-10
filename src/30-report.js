@@ -229,13 +229,32 @@ function rpOwnTrend(){
 /* ================================================================
    업종 고르기 — 업종 타일(코웨이 점유율 고리)이 곧 선택 칩
    ================================================================ */
+/* v158 — 품목 고르기: 세로로 긴 타일 · 최근 소재 그림을 옅은 회색으로 깔고, 고른 품목만 색이 들어온다(= 아래가 그 품목 데이터).
+   이번 달 코웨이 집행이 있는 품목만 고를 수 있고, 올해 다른 달에만 집행한 품목은 흐리게(비활성) */
+const RP_ALLK=['t','c','r','n','g','d'];
+function rpCatState(c){const M=RPT_DOC.m;let now=0,ytd=0;try{now=rpAmt(c,'코웨이','mo'+M,RP_ALLK.filter(k=>RPT_MED.some(x=>x.k===k)));ytd=rpAmt(c,'코웨이','ytd',RP_ALLK.filter(k=>RPT_MED.some(x=>x.k===k)));}catch(e){}
+  const ownNow=(RPT_DOC.own||[]).some(o=>o.m===M&&(o.it||[]).some(x=>RPT_ICAT[x[0]]===c.k&&x[1]>0));
+  return now>0||ownNow?'on':ytd>0?'off':'none';}
+function rpCatImg(c){
+  /* 코웨이 TVC 품목 스토리보드(가장 최근) → 코웨이 인쇄 · 라디오 → 경쟁사 집행 소재 */
+  const its=(RPT_DOC.arch||[]).filter(a=>RPT_ICAT[a.n]===c.k&&a.img&&a.img.length).map(a=>({a,last:Math.max(0,...a.img.map(i=>Math.max(0,...(i.mo||[0]))))})).sort((x,y)=>y.last-x.last);
+  if(its.length){const im=[...its[0].a.img].sort((x,y)=>Math.max(0,...(y.mo||[0]))-Math.max(0,...(x.mo||[0])))[0];return `assets/cr/${im.id}_k.jpg`;}
+  const L2=(RP_COMP||[]).filter(x=>x.cat===c.k).sort((x,y)=>(y.br==='코웨이')-(x.br==='코웨이')||Math.max(...y.mo)-Math.max(...x.mo));
+  return L2.length?`assets/cr/ca/${L2[0].id}_t.jpg`:'';}
 function rpCatBar(){
   const h=$('rpCatBar');if(!h)return;
-  /* v157 — 업종 이름만 · 한 줄을 꽉 채우는 고르기 줄. 고른 업종 아래로 내려가는 꼭지가 아래 모든 영역을 가리킨다 */
-  h.innerHTML=`<div class="rpcatw"><div class="rpcatl"><b>${L('업종','Category')}</b><em>${L('아래 모든 영역에 적용','applies to everything below')}</em></div>
-    <div class="rpcats" role="tablist">${RPT_DOC.cats.map((c,i)=>`<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpcat${c.k===RPT.cat?' on':''}" data-rpcat="${esc(c.k)}" style="--d:${i*30}ms">${esc(c.lab)}</button>`).join('')}</div></div>`;
+  if(!RP_COMP)rpCompLoad().then(()=>{if(h.isConnected)rpCatBar();});
+  const st=Object.fromEntries(RPT_DOC.cats.map(c=>[c.k,rpCatState(c)]));
+  if(st[RPT.cat]!=='on'){const f=RPT_DOC.cats.find(c=>st[c.k]==='on');if(f){RPT.cat=f.k;}}
+  h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목','Product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
+    <div class="rpcats2" role="tablist">${RPT_DOC.cats.map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);
+      return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' off':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`disabled title="${L('이번 달 코웨이 집행 없음','No Coway spend this month')}"`:''} style="--d:${i*35}ms">
+        <span class="im">${img?`<img src="${img}" alt="" loading="lazy" decoding="async">`:''}</span><span class="nm">${esc(c.lab)}</span>${s2!=='on'?`<span class="tg">${L('이번 달 없음','none this month')}</span>`:''}</button>`;}).join('')}</div></div>`;
   rpGo(h);
-  h.querySelectorAll('[data-rpcat]').forEach(b=>b.onclick=()=>{RPT.cat=b.dataset.rpcat;RPT.brand='코웨이';
+  /* 화면을 내려 줄이 위에 붙으면 그림을 접어 얇게 */
+  if(!h.__io){const sen=document.createElement('div');sen.className='rpcatsen';h.parentNode.insertBefore(sen,h);
+    try{h.__io=new IntersectionObserver(es=>es.forEach(e=>h.classList.toggle('stuck',!e.isIntersecting&&e.boundingClientRect.top<90)),{threshold:0,rootMargin:'-90px 0px 0px 0px'});h.__io.observe(sen);}catch(e){h.__io=1;}}
+  h.querySelectorAll('[data-rpcat]:not([disabled])').forEach(b=>b.onclick=()=>{RPT.cat=b.dataset.rpcat;RPT.brand='코웨이';
     h.querySelectorAll('[data-rpcat]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',x===b);});rpCatBody();
     const body=$('rpCatBody');if(body){body.classList.remove('flash');void body.offsetWidth;body.classList.add('flash');}});}
 
@@ -262,12 +281,12 @@ function rpSos(){
     <div class="rpgrid2">
       ${rpCard(L('월별 광고비','Monthly spend'),L(`1~${M}월`,`M1–M${M}`),`<div id="rpSosCols"></div>`,rpSeg(meds,RPT.sosMed,'data-rpsm'))}
       ${rpCard(L('광고비 점유율','Share of spend'),RPT.sos==='ytd'?L(`1~${M}월 누적`,'YTD'):RPT.sos==='mon'?L(`${RPT.sosMo}월`,`M${RPT.sosMo}`):L(`${M}월`,`M${M}`),
-        tot?`<div id="rpSosDn" class="rp3dbox rpmid"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
+        tot?`<div id="rpSosDn" class="rp3dbox rpmid rpbot"></div>`:`<div class="hint rpnil">${L('이 기간 집행 없음','No spend in this period')}</div>`,
         rpSeg([{k:'m',l:L('당월','Month')},{k:'ytd',l:L('누적','YTD')}],RPT.sos,'data-rpsp')
         /* v157 — 궁금한 사람만: 다른 달 하나를 골라 보는 작은 메뉴 */
         +`<label class="rpmsel${RPT.sos==='mon'?' on':''}"><select data-rpsmo aria-label="${L('월별 보기','By month')}"><option value="">${L('월별','Month…')}</option>${[...Array(M)].map((_,i)=>`<option value="${i+1}"${RPT.sos==='mon'&&RPT.sosMo===i+1?' selected':''}>${L(`${i+1}월`,`M${i+1}`)}</option>`).join('')}</select></label>`,'rpfill')}</div>`;
   rpSosCols(c,col,bs,mk);
-  if(tot)rp3dDonut($('rpSosDn'),segs,'코웨이');
+  if(tot){const bx=$('rpSosDn'),w0=bx.clientWidth||600;rp3dDonut(bx,segs,'코웨이',{R:Math.min(w0*.22,138)});}
   h.querySelectorAll('[data-rpsm]').forEach(b=>b.onclick=()=>{RPT.sosMed=b.dataset.rpsm;rpSos();});
   h.querySelectorAll('[data-rpsp]').forEach(b=>b.onclick=()=>{RPT.sos=b.dataset.rpsp;rpSos();});
   h.querySelectorAll('[data-rpsmo]').forEach(sel=>sel.onchange=()=>{const v=+sel.value;if(v){RPT.sos='mon';RPT.sosMo=v;}else RPT.sos='m';rpSos();});
@@ -280,7 +299,9 @@ function rpSosCols(c,col,bs,mk){
   /* v157 — 같은 업종 안에서는 눈금 고정: 매체를 바꿔도(4대 · TV · 디지털 …) 막대 높이로 크기를 비교할 수 있게 4대+디지털 합계 최대값 기준 */
   const allIdx=RPT_MED.flatMap(x=>x.i),allTot=[...Array(M)].map((_,i)=>bs.reduce((s,b)=>{const r=(sp[b]||[])[i]||[];return s+allIdx.reduce((t,k)=>t+rN(r[k]),0);},0));
   const mx=Math.max(...allTot,...tots)||1;
-  const W=Math.max(520,box.clientWidth||700),H=310,base=H-40,top=28,gw=(W-20)/Math.max(M,6),bw=Math.min(46,gw*.58);let g='';
+  /* v158 — x축은 12월까지(아직 집행 전인 달은 빈 칸) */
+  const MX=12,W=Math.max(520,box.clientWidth||700),H=310,base=H-40,top=28,gw=(W-20)/MX,bw=Math.min(46,gw*.58);let g='';
+  for(let m=M+1;m<=MX;m++){const x=10+gw*(m-1)+(gw-bw)/2;g+=`<rect x="${x.toFixed(1)}" y="${base-26}" width="${bw.toFixed(1)}" height="26" rx="4" class="fut"/><text class="mx fut" x="${(x+bw/2).toFixed(1)}" y="${base+18}" text-anchor="middle">${m}${L('월','')}</text>`;}
   for(let m=1;m<=M;m++){const x=10+gw*(m-1)+(gw-bw)/2;let y=base;
     g+=`<g class="cb${m===M?' cur':''}" style="--d:${m*60}ms">`;
     bs.forEach(b=>{const v=val(b,m);if(v<=0)return;const hh=(base-top)*v/mx;y-=hh;
@@ -600,7 +621,7 @@ function rpArch(){
   if(!RPT.arcScope)RPT.arcScope='m';if(!RPT.arcOwn)RPT.arcOwn='all';
   const inScope=x=>RPT.arcScope==='ytd'||x.mo.has(M),inOwn=x=>RPT.arcOwn==='all'||(RPT.arcOwn==='own')===!!x.own;
   const base=all.filter(x=>inScope(x)&&inOwn(x));
-  const cats=[{k:'all',l:L('전체 업종','All'),s:base.length}].concat(RPT_DOC.cats.filter(c=>base.some(i=>i.cat===c.k)).map(c=>({k:c.k,l:c.lab,s:base.filter(i=>i.cat===c.k).length})));
+  const cats=[{k:'all',l:L('전체 품목','All'),s:base.length}].concat(RPT_DOC.cats.filter(c=>base.some(i=>i.cat===c.k)).map(c=>({k:c.k,l:c.lab,s:base.filter(i=>i.cat===c.k).length})));
   if(!cats.some(x=>x.k===RPT.arcCat))RPT.arcCat='all';
   const vis=base.filter(i=>RPT.arcCat==='all'||i.cat===RPT.arcCat).sort((a,b)=>(b.own-a.own)||(rN(b.bud)-rN(a.bud))||(rN(b.cbud)-rN(a.cbud)));
   const catLab=k=>((RPT_DOC.cats||[]).find(c=>c.k===k)||{}).lab||k;
@@ -646,7 +667,7 @@ function rpArchOpen(key){
       <tbody>${rows||`<tr><td colspan="5">${L('위클리 리포트 소재 없음','No weekly creatives')}</td></tr>`}</tbody></table>`;}
   else tbl=`<div class="rpcrsum"><span><em>${L(`${M}월 광고비`,`M${M} spend`)}</em><b>${isFinite(a.bud)&&a.bud>0?wrEok(a.bud):'–'}</b><i>${L('누적','YTD')} ${a.cbud>0?wrEok(a.cbud):'–'}</i></span>
       ${a.med==='TVC'?`<span><em>${L(`${M}월 eq.GRP`,`M${M} eq.GRP`)}</em><b>${a.eq>0?wrF(a.eq):'–'}</b><i>${L('누적','YTD')} ${a.ceq>0?wrF(a.ceq):'–'}</i></span>`:''}
-      <span class="n">${L('광고비 = 먼슬리 리포트 업종 · 매체 모니터링 금액','Spend = monitored, by category · media')}</span></div>`;
+      <span class="n">${L('광고비 = 먼슬리 리포트 품목 · 매체 모니터링 금액','Spend = monitored, by product · media')}</span></div>`;
   const catLab=((RPT_DOC.cats||[]).find(c=>c.k===a.cat)||{}).lab||a.cat;
   openModal(`${a.n} — ${esc(catLab)} · ${esc(a.med)}`,`${tbl}${gal}`,`<button class="btn primary" data-close>${L('닫기','Close')}</button>`,{w:1080});
   setTimeout(()=>document.querySelectorAll('#modalHost .modal:not(.stacked) [data-zi]').forEach(b=>b.onclick=()=>rpLightbox(a.img.map(x=>({src:x.src,cap:`${a.n} · ${capOf(x)}`})),+b.dataset.zi)),0);}

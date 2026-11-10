@@ -217,7 +217,11 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
   const clips=(b0,b1,lo,hi)=>{const o=[];for(const k of [-1,0,1,2]){const x=Math.max(b0,lo+k*TAU),y=Math.min(b1,hi+k*TAU);if(y>x+1e-6)o.push([x,y]);}return o;};
   const wall=(s,rr,c)=>{const [m,aa]=arc(s,rr,c[0],c[1],0),[mb,ab]=arc(s,rr,c[0],c[1],DEP,true);return `M${m} ${aa} L${mb} ${ab} Z`;};
   let back='',walls='',tops='',caps='';
+  /* v158 — 떼어 낸 조각 옆 이웃 조각의 맞닿은 단면도 그린다(떼어 내면 드러나는 면 — 비어 보이던 곳) */
+  const meI=S.findIndex(x=>x.n===meKey);
+  if(meI>=0&&S.length>1&&T>.5){const pv=S[(meI-1+S.length)%S.length],nx=S[(meI+1)%S.length];pv.capB2=1;nx.capA2=1;}
   S.forEach(s=>{if(s.a1-s.a0<1e-4)return;
+    if((s.capA2||s.capB2)&&s.n!==meKey)[s.capA2?s.a0:null,s.capB2?s.a1:null].filter(x=>x!=null).forEach(an=>{const p=[P(s,an,r),P(s,an,R),P(s,an,R,DEP),P(s,an,r,DEP)];caps+=`<path class="sl" data-k="${s.i}" d="M${p.map(q=>q.map(z=>z.toFixed(1)).join(',')).join(' L')} Z" fill="${rpShadeC(s.col,.62)}"/>`;});
     clips(s.a0,s.a1,Math.PI,TAU).forEach(c=>back+=`<path class="sl" data-k="${s.i}" d="${wall(s,r,c)}" fill="${rpShadeC(s.col,.55)}"/>`);
     clips(s.a0,s.a1,0,Math.PI).forEach(c=>walls+=`<path class="sl" data-k="${s.i}" d="${wall(s,R,c)}" fill="${rpShadeC(s.col,.78)}"/>`);
     if((s.n===meKey||s.capA||s.capB)&&T>.5){/* 떼어 낸 조각(묶음)의 양쪽 단면 */
@@ -288,6 +292,13 @@ function rpSmooth(pts,free,tn){if(pts.length<2)return pts.length?`M${pts[0][0]},
     const lo=free?-1e9:Math.min(p1[1],p2[1]),hi=free?1e9:Math.max(p1[1],p2[1]);
     const c1=[p1[0]+(p2[0]-p0[0])*t,rpClamp(p1[1]+(p2[1]-p0[1])*t,lo,hi)],c2=[p2[0]-(p3[0]-p1[0])*t,rpClamp(p2[1]-(p3[1]-p1[1])*t,lo,hi)];
     d+=` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;}return d;}
+/* v158 — 단조 3차 보간(Fritsch–Carlson): 값 사이를 넘치지 않으면서 꺾임 없이 매끄럽게(봉우리 · 골도 둥글게) */
+function rpMonoPath(pts){const n=pts.length;if(n<2)return n?`M${pts[0][0]},${pts[0][1]}`:'';
+  const dx=[],dy=[],ms=[];for(let i=0;i<n-1;i++){dx.push(pts[i+1][0]-pts[i][0]);dy.push(pts[i+1][1]-pts[i][1]);ms.push(dy[i]/(dx[i]||1));}
+  const t=[ms[0]];for(let i=1;i<n-1;i++){if(ms[i-1]*ms[i]<=0)t.push(0);else{const w1=2*dx[i]+dx[i-1],w2=dx[i]+2*dx[i-1];t.push((w1+w2)/(w1/ms[i-1]+w2/ms[i]));}}t.push(ms[n-2]);
+  let d=`M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for(let i=0;i<n-1;i++){const h=dx[i]/3;d+=` C${(pts[i][0]+h).toFixed(1)},${(pts[i][1]+t[i]*h).toFixed(1)} ${(pts[i+1][0]-h).toFixed(1)},${(pts[i+1][1]-t[i+1]*h).toFixed(1)} ${pts[i+1][0].toFixed(1)},${pts[i+1][1].toFixed(1)}`;}
+  return d;}
 function rpAreaChart(box,ser,labels,opt){
   if(!box)return;opt=opt||{};const off=new Set(box._off||[]);
   const draw=()=>{
@@ -302,7 +313,7 @@ function rpAreaChart(box,ser,labels,opt){
     /* 큰 것부터 뒤에 — 작은 영역이 가려지지 않게 */
     [...vis].sort((a,b)=>rpSum(b.v)-rpSum(a.v)).forEach((s,k)=>{const id='rpag'+Math.random().toString(36).slice(2,8),pts=s.v.map((v,i)=>[X(i),Y(v)]);
       defs+=`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.col}" stop-opacity="${s.mine?.5:.38}"/><stop offset="1" stop-color="${s.col}" stop-opacity="0"/></linearGradient>`;
-      const dl=rpSmooth(pts);g+=`<path d="${dl} L${X(N-1)},${B} L${X(0)},${B} Z" fill="url(#${id})" class="ar" style="--d:${k*90}ms"/><path d="${dl}" class="ln${s.mine?' mine':''}" stroke="${s.col}" style="--d:${k*90}ms" pathLength="1"/>`;});
+      const dl=rpMonoPath(pts);g+=`<path d="${dl} L${X(N-1)},${B} L${X(0)},${B} Z" fill="url(#${id})" class="ar" style="--d:${k*90}ms"/><path d="${dl}" class="ln${s.mine?' mine':''}" stroke="${s.col}" style="--d:${k*90}ms" pathLength="1"/>`;});
     box.innerHTML=`<div class="rpalg">${ser.map(s=>`<button type="button" class="${off.has(s.b)?'off':''}${s.mine?' mine':''}" data-b="${esc(s.b)}"><i style="background:${s.col}"></i>${esc(s.b)}</button>`).join('')}</div>
       <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rparea"><defs>${defs}</defs>${g}<line class="xh" y1="${T}" y2="${B}" x1="-10" x2="-10"/></svg>`;
     rpGo(box);
