@@ -19,7 +19,7 @@ function rpShadeC(c,k){const m=String(c).match(/rgb\((\d+),(\d+),(\d+)\)/);if(m)
 function rpBarDonut(box,bars,opt){
   if(!box)return;opt=opt||{};
   const W=Math.max(420,box.clientWidth||600),H=opt.H||340,B=H-34,T=30,n=bars.length,gw=(W-16)/Math.max(n,1);
-  const mx=Math.max(...bars.map(b=>b.v),1),d=Math.min(30,gw*.5),RB=Math.min(H*.3,(W*.5-150)*.75,118),CX=W/2,CY=T+RB+12;
+  const mx=Math.max(...bars.map(b=>b.v),1),d=Math.min(30,gw*.5),RB=Math.min(H*.3,(W*.5-150)*.75,118),CX=W/2,CY=B-RB-4;   /* v155 — 도넛도 막대처럼 바닥에 붙어서 */
   /* v154 — 옆 막대는 도넛이 넓어진 만큼만 밀려난다(카드는 막대 위에 겹쳐 띄운다) */
   const fmt=opt.fmt||wrEok,PHI=72*Math.PI/180,RBX=RB*Math.sin(PHI)+12,ZC=Math.min(W/2,RBX+8),PUSH=Math.max(0,RBX+d*.5+8-gw);
   const st=bars.map((b,i)=>({t:0,tg:0,x:8+gw*i+gw/2,h:Math.max(b.v>0?3:0,(B-T-24)*b.v/mx)}));

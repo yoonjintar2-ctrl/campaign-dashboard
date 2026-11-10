@@ -165,7 +165,7 @@ function rpIso(){
   const box=$('rpIso');if(!box)return;const M=RPT_DOC.m,cur=(RPT_DOC.own||[]).find(o=>o.m===M);if(!cur)return;
   const it=cur.it.filter(x=>rN(x[1])>0||rN(x[2])>0).sort((a,b)=>rN(b[1])-rN(a[1]));
   if(!it.length){box.innerHTML=`<div class="hint">${L('집행 품목 없음','No items')}</div>`;return;}
-  const W=Math.max(520,box.clientWidth||620),H=360,n=it.length,pad=26,dx=16,dy=9,gap=(W-pad)/(n+.2),bw=Math.min(54,gap*.5),base=H-56,top=100;
+  const W=Math.max(520,box.clientWidth||620),H=360,n=it.length,pad=26,dx=0,dy=0,gap=(W-pad)/(n+.2),bw=Math.min(54,gap*.5),base=H-56,top=100;
   const mxB=Math.max(...it.map(x=>rN(x[1])))||1,mxE=Math.max(...it.map(x=>rN(x[2])))||1,mxR=Math.max(...it.map(x=>rN(x[3])))||1;
   /* v151 — 품목 고유 색은 쓰지 않는다: 회청 한 가지, 순위대로 명도만 */
   const PAL=['#4f6b8f','#5f7a9c','#7089a8','#8198b4','#93a7c0','#a5b6cb','#b7c5d6','#c6d1de'];
@@ -178,8 +178,10 @@ function rpIso(){
   const ry=v=>22+(1-v/mxR)*54,rPts=it.map((x,i)=>[cxs[i],ry(rN(x[3]))]);
   let g='';
   it.forEach((x,i)=>{const v=rN(x[1]),hh=Math.max(2,(base-top)*v/mxB),cx=pad+gap*(i+.2),col=PAL[Math.min(i,7)];
-    g+=`<g class="ib" style="--d:${i*80}ms" data-tip="${i}">${rpPrism(cx,base,bw,hh,col,dx,dy)}</g>
-      <text class="iv" style="--d:${i*80+380}ms" x="${(cx+bw/2+dx/2).toFixed(1)}" y="${(base-hh-dy-6).toFixed(1)}" text-anchor="middle">${wrEok(v)}</text>
+    /* v155 — 2D 막대(위쪽만 둥글게) — 뒤 eq.GRP 영역과 같은 평면 */
+    const rr=Math.min(5,hh/2),f=v2=>v2.toFixed(1);
+    g+=`<g class="ib" style="--d:${i*80}ms" data-tip="${i}"><path d="M${f(cx)},${f(base)} V${f(base-hh+rr)} Q${f(cx)},${f(base-hh)} ${f(cx+rr)},${f(base-hh)} H${f(cx+bw-rr)} Q${f(cx+bw)},${f(base-hh)} ${f(cx+bw)},${f(base-hh+rr)} V${f(base)} Z" fill="${col}"/></g>
+      <text class="iv" style="--d:${i*80+380}ms" x="${(cx+bw/2+dx/2).toFixed(1)}" y="${(base-hh-8).toFixed(1)}" text-anchor="middle">${wrEok(v)}</text>
       <text class="in" x="${(cx+bw/2).toFixed(1)}" y="${base+20}" text-anchor="middle">${rpWrap(x[0]).map((t,j)=>`<tspan x="${(cx+bw/2).toFixed(1)}" dy="${j?14:0}">${esc(t)}</tspan>`).join('')}</text>`;});
   /* R3+ — 굵은 부드러운 곡선 · 값이 표식 안에 들어가는 큰 표식 */
   const line=`<path d="${rpSmooth(rPts,true,.22)}" class="r3" pathLength="1"/>`
@@ -188,7 +190,7 @@ function rpIso(){
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpisosvg">
     <defs><linearGradient id="rpeqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3ad" stop-opacity=".36"/><stop offset="1" stop-color="#9aa3ad" stop-opacity="0"/></linearGradient></defs>
     <path d="${ePath} L${W+30},${base} L${pad-40},${base} Z" fill="url(#rpeqg)" class="eqa"/>
-    <path d="M${pad-8},${base} l${dx},${-dy} H${W-8}" class="flr"/><line x1="${pad-8}" x2="${W-pad}" y1="${base}" y2="${base}" class="bl"/>${g}${line}</svg>`;
+    <line x1="${pad-8}" x2="${W-8}" y1="${base}" y2="${base}" class="bl"/>${g}${line}</svg>`;
   rpGo(box);
   rpTipWire(box,i=>{const x=it[+i];if(!x)return '';return `<div class="t">${esc(x[0])}</div>${rpTr(L('광고비','Spend'),wrEok(x[1]))}${x.length>5?rpTr(L('· 지상파','· Terr.'),wrEok(x[4]))+rpTr(L('· 케이블 · 종편','· Cable'),wrEok(x[5]))+rpTr('GRP',wrF(x[6])):''}${rpTr('eq.GRP',wrF(x[2],1))}${x.length>7?rpTr('R1+',wrF(x[7],1)+'%'):''}${rpTr('R3+',wrF(x[3],1)+'%')}`;});}
 function rpOwnTrend(){
