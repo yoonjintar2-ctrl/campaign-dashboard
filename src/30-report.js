@@ -149,9 +149,8 @@ function renderReport(){
   host.innerHTML=`<div id="rpOwn" class="rpblk"></div>
     <div class="rpsticky" id="rpCatBar"></div>
     <div id="rpCatBody" class="rpcatpanel"></div>
-    <div id="rpArch" class="rpblk"></div>
     <div class="rpsrc">${esc(RPT_DOC.src||'')}</div>`;
-  rpOwn();rpCatBar();rpCatBody();rpArch();
+  rpOwn();rpCatBar();rpCatBody();
   try{const tb=document.querySelector('.topbar');if(tb)host.style.setProperty('--rptop',(tb.getBoundingClientRect().height)+'px');}catch(e){}}
 
 /* ================================================================
@@ -268,8 +267,8 @@ function rpCatBody(){
   const hasTv=!!((RPT_DOC.tvr||{})[c.k]||[]).length,hasDet=hasTv&&!!c.ar;
   h.innerHTML=`<div class="rpblk" id="rpMix"></div><div class="rpblk" id="rpSos"></div>
     ${hasTv?`<div class="rpblk" id="rpTv"></div>`:''}${hasDet?`<div class="rpblk" id="rpDet"></div>`:''}
-    <div class="rpblk" id="rpEtc"></div><div class="rpblk" id="rpDg"></div>`;
-  rpMix();rpSos();if(hasTv)rpTv();if(hasDet)rpDet();rpEtc();rpDg();}
+    <div class="rpblk" id="rpEtc"></div><div class="rpblk" id="rpDg"></div><div class="rpblk" id="rpArch"></div>`;
+  rpMix();rpSos();if(hasTv)rpTv();if(hasDet)rpDet();rpEtc();rpDg();rpArch();}
 
 /* ================================================================
    ② 경쟁사 광고비 — 월별 누적 막대 + 3D 도넛(SOS)
@@ -523,8 +522,10 @@ function rpDetCable(c){
   const sl=list.filter(x=>share(x)>0),tl=sl.filter(x=>isT(x.k)),cl=sl.filter(x=>!isT(x.k));
   const segs=[...tl.map((x,i)=>({n:x.k,v:share(x),col:TT[Math.min(i,TT.length-1)],grp:'t'})),...cl.map((x,i)=>({n:x.k,v:share(x),col:x.k==='기타'?'#d7dce0':CT[Math.min(i,CT.length-1)],grp:'c'}))];
   const T={mon:rpSum(list.map(x=>x.mon)),act:rpSum(list.map(x=>x.act)),eq:rpSum(list.map(x=>x.eq))};
-  const ncC=4+(hasAct?2:0);
-  const tb=`<table class="tbl lite rptbl eqw" style="min-width:${ncC*96}px"><thead><tr><th>MPP</th><th>${L('모니터링 광고비','Monitored')}</th>${hasAct?`<th>${L('실집행 광고비','Actual')}</th>`:''}<th>${L('집행 비중','Share')}</th><th>Eq GRP</th><th>${L('모니터링 CPRP','Mon. CPRP')}</th>${hasAct?`<th>${L('실집행 CPRP','Act. CPRP')}</th>`:''}</tr></thead>
+  const ncC=5+(hasAct?2:0);
+  /* v160 — MPP 칸은 이름 길이에 맞춰 넓히고, 나머지 칸만 균등 */
+  const tw=t=>[...String(t)].reduce((a,ch)=>a+(/[가-힣]/.test(ch)?12.6:7),0),mppW=Math.round(Math.min(230,Math.max(96,Math.max(...list.map(x=>tw(x.k)),tw('Total'))+26)));
+  const tb=`<table class="tbl lite rptbl eqw" style="min-width:${mppW+(ncC-1)*70}px"><colgroup><col style="width:${mppW}px">${'<col>'.repeat(ncC-1)}</colgroup><thead><tr><th>MPP</th><th>${L('모니터링 광고비','Monitored')}</th>${hasAct?`<th>${L('실집행 광고비','Actual')}</th>`:''}<th>${L('집행 비중','Share')}</th><th>Eq GRP</th><th>${L('모니터링 CPRP','Mon. CPRP')}</th>${hasAct?`<th>${L('실집행 CPRP','Act. CPRP')}</th>`:''}</tr></thead>
     <tbody>${list.map(x=>`<tr><td class="br">${esc(x.k)}</td><td>${wrF(x.mon)}</td>${hasAct?`<td>${x.act!=null?wrF(x.act):'–'}</td>`:''}<td><span class="rppb" style="--w:${(share(x)/tS*100).toFixed(1)}%"></span>${rpP(share(x)/tS*100)}</td>
       <td>${wrF(x.eq)}</td><td>${x.eq?wrF(x.mon/x.eq):'–'}</td>${hasAct?`<td>${x.eq&&x.act!=null?wrF(x.act/x.eq):'–'}</td>`:''}</tr>`).join('')}
     <tr class="tot"><td>Total</td><td>${wrF(T.mon)}</td>${hasAct?`<td>${wrF(T.act)}</td>`:''}<td>100%</td><td>${wrF(T.eq)}</td><td>${T.eq?wrF(T.mon/T.eq):'–'}</td>${hasAct?`<td>${T.eq?wrF(T.act/T.eq):'–'}</td>`:''}</tr></tbody></table>`;
@@ -622,29 +623,19 @@ function rpArchItems(){
 function rpArch(){
   const h=$('rpArch');if(!h)return;const M=RPT_DOC.m;
   if(!RP_COMP){h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')}</div><div class="hint rpnil">${L('불러오는 중…','Loading…')}</div>`;rpCompLoad().then(()=>{if(h.isConnected)rpArch();});return;}
-  const all=rpArchItems();if(!all.length){h.innerHTML='';return;}
-  if(!RPT.arcScope)RPT.arcScope='m';if(!RPT.arcOwn)RPT.arcOwn='all';
-  const inScope=x=>RPT.arcScope==='ytd'||x.mo.has(M),inOwn=x=>RPT.arcOwn==='all'||(RPT.arcOwn==='own')===!!x.own;
-  const base=all.filter(x=>inScope(x)&&inOwn(x));
-  const cats=[{k:'all',l:L('전체 품목','All'),s:base.length}].concat(RPT_DOC.cats.filter(c=>base.some(i=>i.cat===c.k)).map(c=>({k:c.k,l:c.lab,s:base.filter(i=>i.cat===c.k).length})));
-  if(!cats.some(x=>x.k===RPT.arcCat))RPT.arcCat='all';
-  const vis=base.filter(i=>RPT.arcCat==='all'||i.cat===RPT.arcCat).sort((a,b)=>(b.own-a.own)||(rN(b.bud)-rN(a.bud))||(rN(b.cbud)-rN(a.cbud)));
-  const catLab=k=>((RPT_DOC.cats||[]).find(c=>c.k===k)||{}).lab||k;
+  /* v160 — 고른 품목 · 이번 달 광고비를 쓴 소재(이번 달 PDF 에 실린 소재)만 · 자사 + 경쟁사 함께 */
+  const c=rpCat(),catLab=c.lab;
+  const vis=rpArchItems().filter(x=>x.cat===c.k&&x.mo.has(M)).map(x=>({...x,img:x.img.filter(i=>!i.mo||!i.mo.length||i.mo.includes(M))}))
+    .sort((a,b)=>(b.own-a.own)||(rN(b.bud)-rN(a.bud))||(rN(b.cbud)-rN(a.cbud)));
   const num=(v,f)=>isFinite(v)&&v>0?f(v):'–';
-  h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')} <span class="note">${L('자사 · 경쟁사 · 먼슬리 리포트 집행 소재','Coway · competitors · from monthly reports')}</span></div>
-    <div class="rparcbar">${rpSeg([{k:'m',l:L(`${M}월 소재`,`M${M}`)},{k:'ytd',l:L(`1~${M}월 전체`,'YTD')}],RPT.arcScope,'data-rparcs')}
-      ${rpSeg([{k:'all',l:L('전체','All')},{k:'own',l:L('자사','Coway')},{k:'comp',l:L('경쟁사','Competitors')}],RPT.arcOwn,'data-rparco')}</div>
-    ${rpChips(cats,RPT.arcCat,'data-rparc')}
+  h.innerHTML=`<div class="sec">${L('소재 아카이브','Creative archive')} <span class="note">${L(`${esc(catLab)} · ${M}월 집행 소재(자사 · 경쟁사) · 먼슬리 리포트 기준`,`${esc(catLab)} · M${M} creatives`)}</span></div>
     ${vis.length?`<div class="rparch">${vis.map((a,i)=>{const ims=a.img.slice(0,1);
       return `<button type="button" class="rpac${a.own?' mine':''}" data-rpai="${esc(a.key)}" style="--d:${i*35}ms">
         <div class="th${a.own&&a.med==='TVC'?'':' pg'}">${ims.length?`<img src="${ims[0].th}" alt="" decoding="async">`:`<div class="ph">${esc(a.n.slice(0,2))}</div>`}${a.img.length>1?`<span class="cnt">${a.img.length}</span>`:''}</div>
-        <div class="tx"><div class="tg"><span class="${a.own?'own':''}">${a.own?L('자사','Coway'):L('경쟁사','Competitor')}</span><em>${esc(catLab(a.cat))} · ${esc(a.med)}</em></div><b>${esc(a.n)}</b>
+        <div class="tx"><div class="tg"><span class="${a.own?'own':''}">${a.own?L('자사','Coway'):L('경쟁사','Competitor')}</span><em>${esc(a.med)}</em></div><b>${esc(a.n)}</b>
           <div class="nb"><span><em>${L(`${M}월 광고비`,`M${M} spend`)}</em><b>${num(a.bud,wrEok)}</b><i>${L('누적','YTD')} ${num(a.cbud,wrEok)}</i></span>
             ${a.med==='TVC'?`<span><em>eq.GRP</em><b>${num(a.eq,v=>wrF(v))}</b><i>${L('누적','YTD')} ${num(a.ceq,v=>wrF(v))}</i></span>`:''}</div></div></button>`;}).join('')}</div>`
-      :`<div class="hint rpnil">${L('이 조건의 소재가 없습니다','No creatives for this filter')}</div>`}`;
-  h.querySelectorAll('[data-rparc]').forEach(b=>b.onclick=()=>{RPT.arcCat=b.dataset.rparc;rpArch();});
-  h.querySelectorAll('[data-rparcs]').forEach(b=>b.onclick=()=>{RPT.arcScope=b.dataset.rparcs;rpArch();});
-  h.querySelectorAll('[data-rparco]').forEach(b=>b.onclick=()=>{RPT.arcOwn=b.dataset.rparco;rpArch();});
+      :`<div class="hint rpnil">${L('이 품목은 이번 달 리포트에 실린 소재가 없습니다','No creatives in this month’s report for this product')}</div>`}`;
   h.querySelectorAll('[data-rpai]').forEach(b=>b.onclick=()=>rpArchOpen(b.dataset.rpai));
   rpGo(h);}
 /* 그림 크게 보기 — 새 창 대신 사이트 안 덮개 */

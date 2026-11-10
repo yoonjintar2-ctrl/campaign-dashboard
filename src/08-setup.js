@@ -1263,6 +1263,8 @@ function switchTab(name){
   if(name==='tvmonthly'){try{renderTvMonthly();}catch(e){}}
   if(name==='tvmix'){try{renderTvMix();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
+  /* 자료 접수함 (v160) */
+  if(name==='tvinput'||name==='input'||name==='report'){try{inbxRender();}catch(e){}}
   if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
   /* OOH · 전체 캠페인 (v81) */
   if(name==='oohdash'){try{renderOohDash();}catch(e){}}

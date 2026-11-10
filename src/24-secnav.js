@@ -23,6 +23,8 @@ function snBuild(){
   const sig=items.map(x=>x.l).join('|');
   /* v157 — TV 화면에선 오른쪽 가장자리로(왼쪽 카드와 겹치지 않게) */
   nav.classList.toggle('r',!!(w&&/^tab-tv/.test(w.id)));
+  /* v160 — TV 서머리에선 숨김(가로 스크롤 단추와 겹침) */
+  nav.classList.toggle('off',!!(w&&w.id==='tab-tvdash'));
   if(nav.__sig===sig&&SN.items.length===items.length&&SN.items.every((x,i)=>x.s===items[i].s)){snPaint();return;}
   nav.__sig=sig;SN.items=items;SN.cur=-1;
   nav.classList.toggle('on',items.length>=3);

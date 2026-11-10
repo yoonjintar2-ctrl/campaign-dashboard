@@ -451,7 +451,7 @@ async function ovGo(r,area){
    관리자만 보이는 [숨기기] — 소재가 적은 광고주는 꺼 둔다(캠페인 문서 views.ovCollage). */
 var OV_COLLAGE=true;
 var OVC={key:'',items:null,busy:false,seq:0};
-const OVC_MAX=48;
+const OVC_MAX=80;
 /* 소재 한 벌 → 칸 목록. src = 캠페인 줄(ovRow) */
 function ovcTiles(src,crs,oohcr){
   const out=[],seen=new Map();
@@ -532,6 +532,15 @@ function ovcOpen(list,i){
     else if(e.key==='Escape'){removeEventListener('keydown',key);closeAllModals();}};
   if(list.length>1)addEventListener('keydown',key);
 }
+/* v160 — TV 소재(먼슬리 리포트 스토리보드 장면)도 콜라주에 — 그 소재가 마지막으로 실린 달의 캠페인에 붙인다.
+   이 광고주(코웨이) 캠페인일 때만(지금 캠페인의 TV 위클리 리포트 품목이 대응표에 있을 때) */
+function ovcTv(rows){
+  try{if(typeof WR_CRIMG==='undefined'||!TV_WR||!(TV_WR.items||[]).some(it=>Object.keys(WR_CRIMG).some(k=>k.startsWith(it.n+'|'))))return [];}catch(e){return [];}
+  const self=rows.find(r=>r.self),ym=r=>String(r.start||'').slice(0,7),seen=new Set(),out=[];
+  Object.entries(WR_CRIMG).forEach(([k,id])=>{if(seen.has(id))return;seen.add(id);const [it,cr]=k.split('|'),ms=WR_CRMO[id]||[],m=ms.length?Math.max(...ms):0;
+    const r=(m&&rows.find(x=>ym(x)===`2026-${String(m).padStart(2,'0')}`))||self;if(!r)return;
+    out.push({r,area:'tv',name:`${it} · ${cr}`,img:`assets/cr/${id}_k.jpg`,yt:'',g:'',media:'TV',medias:['TV'],ratio:'',type:''});});
+  return out;}
 function paintCollage(rows){
   const wrap=$('ovCrWrap'),box=$('ovCollage'),tg=$('ovCrTgl'),nt=$('ovCrNote');if(!wrap||!box)return;
   const client=(typeof isClient==='function'&&isClient());
@@ -548,7 +557,7 @@ function paintCollage(rows){
   const key=ovKey()+'|'+rows.filter(r=>!r.self).map(r=>r.id||r.name).join(',');
   const self=rows.find(r=>r.self);
   const draw=()=>{
-    const items=ovcSelf(self).concat(OVC.items||[]);
+    const items=ovcSelf(self).concat(OVC.items||[]).concat(ovcTv(rows));
     const nCamp=new Set(items.map(t=>t.r.name)).size;
     if(nt)nt.textContent=items.length?L(`소재 ${fmt(items.length)}개 · 캠페인 ${fmt(nCamp)}개 · 누르면 크게 보기`,`${fmt(items.length)} creatives · ${fmt(nCamp)} campaigns · click to enlarge`):'';
     if(!items.length){

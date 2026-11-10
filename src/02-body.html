@@ -52,15 +52,16 @@
 
   /* 4) KPI 도넛 두 개 — 떠 있는 두꺼운 고리 */
   {const don=(cx,cy,S,len,d,lift)=>{
-     const r=S/2-16,C=2*Math.PI*r,layers=[0,3,6,9];
+     /* 옆면은 1px 간격으로 촘촘히 쌓는다 — 3px 간격이면 테두리가 계단(지그재그)처럼 보였다 (v160) */
+     const r=S/2-16,C=2*Math.PI*r,layers=Array.from({length:10},(_,i)=>i);
      let h=`<div class="ldsh" style="left:${cx-S*.6}px;top:${cy-S*.5}px;width:${S*1.2}px;height:${S*1.2}px"></div>`;
      h+=`<div class="lddon" style="left:${cx-S/2}px;top:${cy-S/2}px;width:${S}px;height:${S}px;transform-origin:50% 50%;animation-delay:${d}">`;
      layers.forEach((z,k)=>{const top=k===layers.length-1;
        h+=`<svg viewBox="0 0 ${S} ${S}" style="transform:translateZ(${lift+z}px)">
          <circle cx="${S/2}" cy="${S/2}" r="${r}" fill="none" stroke="${top?'#eceef0':'#d6d9dc'}" stroke-width="22"/>
-         ${top?`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#55595e" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>
+         ${top?`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#55595e" stroke-width="22" style="stroke-linecap:butt;--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>
          <circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="var(--pace)" stroke-width="9" style="--len:${(C*.08).toFixed(1)};--d:${d}" transform="rotate(${-90+360*len} ${S/2} ${S/2})"/>`
-         :`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#3a3e43" stroke-width="22" style="--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>`}
+         :`<circle class="ldarc" cx="${S/2}" cy="${S/2}" r="${r}" stroke="#3a3e43" stroke-width="22" style="stroke-linecap:butt;--len:${(C*len).toFixed(1)};--d:${d}" transform="rotate(-90 ${S/2} ${S/2})"/>`}
        </svg>`;});
      return h+'</div>';};
    add(don(796,252,200,.78,'0s',18));
@@ -522,6 +523,7 @@
 
 <!-- ================= 데이터 입력 ================= -->
 <div class="wrap hidden" id="tab-input">
+  <div id="inbxDg"></div>
   <div class="sec" style="margin-bottom:4px">운영 이슈 <span class="note" id="issueCount"></span></div>
   <div class="secbar">
     <button class="btn sm" id="issueFold">▾ 펼치기</button>
@@ -683,6 +685,7 @@
   <div class="hint tvfoot" id="tvMixReachNote"></div>
 </div>
 <div class="wrap hidden" id="tab-tvinput">
+  <div id="inbxTv"></div>
   <div class="sec">TV 실적 입력 <span class="note">채널별 집행 · 일자별 퍼포먼스</span>
     <div class="tools">
       <button class="btn sm" id="tvResCols">⚙ 열 설정</button>
@@ -892,6 +895,7 @@
 <!-- 리포트 (v143) — 연도 › 월별. 30-report.js -->
 <div class="wrap hidden" id="tab-report">
   <div class="sec">리포트 <span class="note" id="rptNote"></span></div>
+  <div id="inbxRp" class="inbxrp"></div>
   <div class="rpt-nav"><div class="rpt-ys" id="rptYears"></div><div class="rpt-ms" id="rptMonths"></div></div>
   <div id="rptBody"></div>
 </div>
