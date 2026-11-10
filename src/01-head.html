@@ -1104,9 +1104,9 @@ table.rpdt tr.sbar td{padding:8px 6px 4px;background:none}
 table.rpcrt .mo{margin:0}table.rpcrt td{vertical-align:middle}
 @media (prefers-reduced-motion: reduce){#rptBody *{transition:none!important;animation:none!important}}
 /* ===== 리포트 v151 — 막대↔도넛 · 기운 3D 도넛 · 영역 그래프 · 브랜드 상세 ===== */
-.rpbd{display:block;overflow:visible}.rpbd .nil{fill:var(--line)}
-.rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
-.rpbd.hot .bl .bd{opacity:.22;transition:opacity .2s}
+.rpbd{display:block;overflow:hidden}.rpbd .nil{fill:var(--line)}
+.rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bxl{font-size:11px;font-weight:600;fill:var(--muted)}.rpbd .bxl.cur{fill:var(--ink);font-weight:900}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
+.rpbd.hot .bl .bd{opacity:.4;transition:opacity .25s}
 .rpbd .dc1{font-size:12px;font-weight:700;fill:var(--muted)}.rpbd .dc2{font-size:17px;font-weight:900;fill:var(--ink)}
 .rpbd .bdl{fill:none;stroke:var(--gline);stroke-width:.7;opacity:.55}
 .rpbd .bdx{fill:var(--surface);stroke:var(--line)}.rpbd .bdn{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbd .bds{font-size:10.5px;font-weight:600;fill:var(--muted)}
@@ -1140,11 +1140,12 @@ table.rpbt td,table.rpbt th{padding:5px 8px;font-size:11.5px}table.rpbt tr.cur t
 /* 표 — 맨 왼쪽 머리 열(구분 · 브랜드 · MPP · 월)은 가운데 정렬 */
 table.rptbl td.br,table.rptbl td.md{text-align:center}
 .rpisosvg .eqa{opacity:0;transition:opacity 1s ease .2s}.go .rpisosvg .eqa{opacity:1}
-.rpisosvg .r3{fill:none;stroke:#2b4a73;stroke-width:1.8;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.1s var(--rpd) .8s}.go .rpisosvg .r3{stroke-dashoffset:0}
+.rpisosvg .r3{fill:none;stroke:#2b4a73;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.1s var(--rpd) .8s}.go .rpisosvg .r3{stroke-dashoffset:0}
 .rpisosvg .r3p{opacity:0;transition:opacity .35s ease var(--d)}.go .rpisosvg .r3p{opacity:1}
-.rpisosvg .r3p circle{fill:var(--surface);stroke:#2b4a73;stroke-width:2}.rpisosvg .r3p text{font-size:11px;font-weight:800;fill:#2b4a73}
+.rpisosvg .r3p circle{fill:var(--surface);stroke:#2b4a73;stroke-width:3}.rpisosvg .r3p text{font-size:10.5px;font-weight:900;fill:#2b4a73;letter-spacing:-.3px}
 .rplg i.ln{height:2px;width:14px;border-radius:1px;background:#2b4a73}
-#rpDgDn{min-height:230px}#rpDgNote{margin-top:4px;text-align:center}
+#rpDg .rpgrid2>.rpcard:last-child{display:flex;flex-direction:column}#rpDg .rpgrid2>.rpcard:last-child>.bd{flex:1;display:flex;flex-direction:column}
+#rpDgDn{flex:1;min-height:0;align-items:center}#rpDgNote{margin-top:2px;text-align:center}
 #tab-tvdash .wrhost table.tbl tbody td:first-child,#tab-tvmix .wrhost table.tbl tbody td:first-child,#tab-tvweekly .wrhost table.tbl tbody td:first-child,#tab-tvdash .wrhost table.tbl tbody th,#tab-tvmix .wrhost table.tbl tbody th{text-align:center}
 #tab-tvmonthly .tvm-cards+.sec.gap{margin-top:26px}
 table.tvmix2 th{white-space:nowrap;line-height:1.3}
