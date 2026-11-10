@@ -147,7 +147,7 @@ function rpOwn(){
       ${kpi('R1+',r1,'p',0,'',2)}${kpi('R3+',r3,'p',0,'',3)}
       ${kpi(L('집행 품목','Items'),n,'n',0,L(`GRP ${wrF(grp)}`,`GRP ${wrF(grp)}`),4)}</div>
     <div class="rpgrid2">
-      ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),L('막대 = 광고비 · 선 = R3+ · 바탕 = eq.GRP','bars = spend · line = R3+ · area = eq.GRP'),`<div id="rpIso" class="rpiso"></div>`)}
+      ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),'',`<div id="rpIso" class="rpiso"></div>`,`<div class="rplg rpisolg"><span><i style="background:#5f7a9c"></i>${L('광고비','Spend')}</span><span><i class="ln"></i>R3+</span><span><i class="ar"></i>eq.GRP</span></div>`)}
       ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대에 마우스를 올리면 그 달 품목별 내역','hover a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
   rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkpis'));}
 
@@ -183,13 +183,12 @@ function rpIso(){
       <text class="in" x="${(cx+bw/2).toFixed(1)}" y="${base+20}" text-anchor="middle">${rpWrap(x[0]).map((t,j)=>`<tspan x="${(cx+bw/2).toFixed(1)}" dy="${j?14:0}">${esc(t)}</tspan>`).join('')}</text>`;});
   /* R3+ — 굵은 부드러운 곡선 · 값이 표식 안에 들어가는 큰 표식 */
   const line=`<path d="${rpSmooth(rPts,true,.22)}" class="r3" pathLength="1"/>`
-    +rPts.map((p,i)=>`<g class="r3p" style="--d:${900+i*70}ms" data-tip="${i}"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="17"/>
+    +rPts.map((p,i)=>`<g class="r3p" style="--d:${900+i*70}ms" data-tip="${i}"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="18.5"/>
       <text x="${p[0].toFixed(1)}" y="${(p[1]+4).toFixed(1)}" text-anchor="middle">${wrF(it[i][3],rN(it[i][3])%1?1:0)}%</text></g>`).join('');
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpisosvg">
     <defs><linearGradient id="rpeqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3ad" stop-opacity=".36"/><stop offset="1" stop-color="#9aa3ad" stop-opacity="0"/></linearGradient></defs>
     <path d="${ePath} L${W+30},${base} L${pad-40},${base} Z" fill="url(#rpeqg)" class="eqa"/>
-    <path d="M${pad-8},${base} l${dx},${-dy} H${W-8}" class="flr"/><line x1="${pad-8}" x2="${W-pad}" y1="${base}" y2="${base}" class="bl"/>${g}${line}</svg>
-    <div class="rplg"><span><i style="background:#5f7a9c"></i>${L('광고비 (막대)','Spend (bars)')}</span><span><i class="ln"></i>R3+</span><span><i style="background:linear-gradient(#c7ccd2,#eef0f2)"></i>eq.GRP</span></div>`;
+    <path d="M${pad-8},${base} l${dx},${-dy} H${W-8}" class="flr"/><line x1="${pad-8}" x2="${W-pad}" y1="${base}" y2="${base}" class="bl"/>${g}${line}</svg>`;
   rpGo(box);
   rpTipWire(box,i=>{const x=it[+i];if(!x)return '';return `<div class="t">${esc(x[0])}</div>${rpTr(L('광고비','Spend'),wrEok(x[1]))}${x.length>5?rpTr(L('· 지상파','· Terr.'),wrEok(x[4]))+rpTr(L('· 케이블 · 종편','· Cable'),wrEok(x[5]))+rpTr('GRP',wrF(x[6])):''}${rpTr('eq.GRP',wrF(x[2],1))}${x.length>7?rpTr('R1+',wrF(x[7],1)+'%'):''}${rpTr('R3+',wrF(x[3],1)+'%')}`;});}
 function rpOwnTrend(){

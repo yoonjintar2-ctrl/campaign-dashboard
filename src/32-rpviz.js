@@ -20,7 +20,8 @@ function rpBarDonut(box,bars,opt){
   if(!box)return;opt=opt||{};
   const W=Math.max(420,box.clientWidth||600),H=opt.H||340,B=H-34,T=30,n=bars.length,gw=(W-16)/Math.max(n,1);
   const mx=Math.max(...bars.map(b=>b.v),1),d=Math.min(30,gw*.5),RB=Math.min(H*.3,(W*.5-150)*.75,118),CX=W/2,CY=T+RB+12;
-  const fmt=opt.fmt||wrEok,PHI=72*Math.PI/180,CWB=150,ZC=Math.min(W/2,RB*Math.sin(PHI)+30+CWB+6),PUSH=Math.max(0,ZC-gw*.35);
+  /* v154 — 옆 막대는 도넛이 넓어진 만큼만 밀려난다(카드는 막대 위에 겹쳐 띄운다) */
+  const fmt=opt.fmt||wrEok,PHI=72*Math.PI/180,RBX=RB*Math.sin(PHI)+12,ZC=Math.min(W/2,RBX+8),PUSH=Math.max(0,RBX+d*.5+8-gw);
   const st=bars.map((b,i)=>({t:0,tg:0,x:8+gw*i+gw/2,h:Math.max(b.v>0?3:0,(B-T-24)*b.v/mx)}));
   const svgNS='http://www.w3.org/2000/svg';
   box._uid=(rpBarDonut._n=(rpBarDonut._n||0)+1);
@@ -62,9 +63,13 @@ function rpBarDonut(box,bars,opt){
       g+=`<ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx)}" ry="${f(R)}" fill="url(#rpbdhl${box._uid})" pointer-events="none"/>`;
       /* ③ 구멍 — 앞 구멍 안에 안쪽 벽(왼쪽 초승달), 뒤 구멍과 겹치는 곳은 뚫려 보이게 */
       const cid=`rpbdc${box._uid}_${i}`;
-      g+=`<clipPath id="${cid}"><ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}"/></clipPath>
-        <ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}" fill="${rpShadeC(rpMix(col,segs[segs.length-1].z.col,r),.5)}"/>
-        <ellipse cx="${f(bx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}" fill="var(--surface)" clip-path="url(#${cid})"/>`;
+      g+=`<clipPath id="${cid}"><ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}"/></clipPath><g clip-path="url(#${cid})">`;
+      /* 안쪽 벽은 보이는 왼쪽 반(90°~270°)을 조각별 색(어두운 톤)으로 — 조각이 앞면 · 바깥 옆면 · 안쪽 벽까지 한 덩어리 */
+      const inC=z=>rpMix(rpShadeC(col,.62),rpShadeC(z.col,.58),r);
+      segs.forEach(sg=>{const A0=Math.max(sg.a0,HP),A1=Math.min(sg.a1,3*HP);if(A1<=A0+1e-4)return;
+        const [x0,y0]=F(A0,ri),[x1,y1]=F(A1,ri),[x2,y2]=Bk(A1,ri),[x3,y3]=Bk(A0,ri),k=ri;
+        g+=`<path d="M${f(x0)},${f(y0)} A${f(rx*k)},${f(R*k)} 0 0 1 ${f(x1)},${f(y1)} L${f(x2)},${f(y2)} A${f(rx*k)},${f(R*k)} 0 0 0 ${f(x3)},${f(y3)} Z" fill="${inC(sg.z)}" stroke="${inC(sg.z)}" stroke-width=".6"/>`;});
+      g+=`<ellipse cx="${f(bx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}" fill="var(--surface)"/></g>`;
     }
     /* 막대 아래 이름 — 막대와 함께 밀려난다 */
     if(b.lab&&grow>.3)g+=`<text class="bxl${opt.cur===i?' cur':''}" x="${f(sx)}" y="${f(B+20)}" text-anchor="middle" opacity="${(1-r).toFixed(2)}">${esc(b.lab)}</text>`;
@@ -93,7 +98,7 @@ function rpBarDonut(box,bars,opt){
     if(busy)raf=requestAnimationFrame(frame);else raf=0;}
   const kick=()=>{if(!raf)raf=requestAnimationFrame(frame);};
   const pick=e=>{const pt=svg.getBoundingClientRect(),x=(e.clientX-pt.left)*W/pt.width,y=(e.clientY-pt.top)*H/pt.height;
-    if(act>=0&&st[act].t>.4&&Math.abs(x-rpClamp(st[act].x,ZC,W-ZC))<ZC-10)return act;
+    if(act>=0&&st[act].t>.4&&Math.abs(x-rpClamp(st[act].x,ZC,W-ZC))<RBX)return act;
     const i=Math.floor((x-8)/gw);return i>=0&&i<n&&bars[i].v>0?i:-1;};
   svg.addEventListener('mousemove',e=>{const i=pick(e);if(i!==act){act=i;st.forEach((s,k)=>s.tg=k===i?1:0);kick();}
     if(i>=0&&opt.tip){const h=opt.tip(bars[i]);if(h&&st[i].t<.3)showTip(e.clientX,e.clientY,h);else hideTip();}});
@@ -104,12 +109,14 @@ function rpBdCards(b,cx,cy,rx,R,q,W,H){
   const tot=b.slices.reduce((a,x)=>a+x.v,0)||1;let a=-Math.PI/2;const pts=[];
   b.slices.forEach((z,k)=>{const sp=z.v/tot*Math.PI*2;const mid=a+sp/2;a+=sp;if(z.v<=0)return;
     pts.push({k,z,ax:cx+Math.cos(mid)*rx*.98,ay:cy+Math.sin(mid)*R*.98,side:Math.cos(mid)>=0?1:-1});});
-  const CW=Math.min(150,Math.max(cx-rx-34,W-cx-rx-34)),CH=pts.some(p=>p.z.sub)?46:34,GAP=6,out=[];
-  if(CW<90)return '';
+  const CW=150,CH=pts.some(p=>p.z.sub)?46:34,GAP=6,out=[];
+  const roomL=cx-rx-30-CW>=2,roomR=cx+rx+30+CW<=W-2;
+  if(!roomL&&!roomR)return '';
+  pts.forEach(p=>{if(p.side<0&&!roomL)p.side=1;if(p.side>0&&!roomR)p.side=-1;});
   [-1,1].forEach(sd=>{const L=pts.filter(p=>p.side===sd).sort((p,q2)=>p.ay-q2.ay);
     let ys=L.map(p=>p.ay-CH/2);for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+CH+GAP);
     const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*(CH+GAP),ys[i]);
-    L.forEach((p,i)=>{const bx=sd>0?Math.min(W-CW-2,cx+rx+30):Math.max(2,cx-rx-30-CW),y=ys[i],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1);
+    L.forEach((p,i)=>{const bx=sd>0?cx+rx+30:cx-rx-30-CW,y=ys[i],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1);
       out.push(`<g class="bdc" opacity="${q.toFixed(2)}"><path d="M${f(p.ax)},${f(p.ay)} L${f(p.ax+sd*10)},${f(ey)} L${f(ex)},${f(ey)}" class="bdl"/>
         <rect x="${f(bx)}" y="${f(y)}" width="${f(CW)}" height="${CH}" rx="8" class="bdx"/><rect x="${f(bx+8)}" y="${f(y+CH/2-4)}" width="8" height="8" rx="2" fill="${p.z.col}"/>
         <text x="${f(bx+21)}" y="${f(y+14)}" class="bdn">${esc(p.z.n)}</text>
