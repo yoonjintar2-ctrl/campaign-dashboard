@@ -802,6 +802,13 @@ const MENUS=[
   {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
   /* v161 — TV · OTT · 리포트의 입력은 데이터 접수함 하나(데이터 입력 · 예상효율 입력 모두). 받은 엑셀 · PDF 를 올리면
      사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영한다. 화면은 tab-intake 하나를 영역마다 나눠 쓴다(INBX_AREA) */
+  /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
+  {id:'tq_summary',area:'tv',  tab:'tvcue',cue:'summary',l:'큐시트 요약',  kind:'view'},
+  {id:'tq_crev', area:'tv',    tab:'tvcue',cue:'crev',   l:'당월 소재',    kind:'view'},
+  {id:'tq_cueg', area:'tv',    tab:'tvcue',cue:'cueg',   l:'지상파 큐시트',kind:'view'},
+  {id:'tq_cuec', area:'tv',    tab:'tvcue',cue:'cuec',   l:'케이블 큐시트',kind:'view'},
+  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
+  {id:'tq_cueall',area:'tv',   tab:'tvcue',cue:'cueall', l:'전체 큐시트',  kind:'view'},
   {id:'t_inbox',area:'tv',     tab:'intake',             l:'데이터 접수함',  kind:'edit'},
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
@@ -822,7 +829,7 @@ const MENUS=[
   {id:'overview',area:'overview',tab:'overview',         l:'전체 캠페인',  kind:'view',vdef:false}];
 const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
-  tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmonthly:'tv',tvmix:'tv',tvinput:'tv',tvplan:'tv',
+  tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmonthly:'tv',tvmix:'tv',tvcue:'tv',tvinput:'tv',tvplan:'tv',
   oohdash:'ooh',oohplan:'ooh',report:'report',intake:'tv',trend:'trend',overview:'overview'};
 const AREA_LABEL={digital:'디지털',tv:'TV',ott:'OTT',ooh:'OOH',report:'리포트',trend:'트렌드 리포트',overview:'전체 캠페인'};
 /* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */

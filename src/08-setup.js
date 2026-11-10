@@ -1255,13 +1255,14 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvinput','tvplan','oohdash','oohplan','overview','report','intake'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvcue','tvinput','tvplan','oohdash','oohplan','overview','report','intake'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
   if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
   if(name==='tvweekly'){try{renderTvWeekly();}catch(e){}}
   if(name==='tvmonthly'){try{renderTvMonthly();}catch(e){}}
   if(name==='tvmix'){try{renderTvMix();}catch(e){}}
+  if(name==='tvcue'){try{renderTvCue();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
   /* 데이터 접수함 (v160) */
   if(name==='input'||name==='intake'){try{inbxRender();}catch(e){}}
@@ -1293,6 +1294,8 @@ document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>{
 document.querySelectorAll('#tabs [data-osub]').forEach(b=>b.onclick=()=>{setDgArea('ott');dashSubGo(b.dataset.osub);});
 document.querySelectorAll('#tabs [data-otab]').forEach(b=>b.onclick=()=>{setDgArea('ott');switchTab(b.dataset.otab);});
 /* 데이터 접수함 (v161) — TV · OTT · 리포트가 같은 화면을 영역마다 */
+/* TV 큐시트 (v167) — 여섯 메뉴가 화면 하나를 나눠 쓴다 */
+document.querySelectorAll('#tabs [data-cue]').forEach(b=>b.onclick=()=>{try{closeAreaPop();}catch(e){}goMenu(b.dataset.menu);try{paintTabsOn();}catch(e){}try{syncUrl();}catch(e){}});
 document.querySelectorAll('#tabs [data-itab]').forEach(b=>b.onclick=()=>{INBX_AREA=b.dataset.itab;try{closeAreaPop();}catch(e){}switchTab('intake');});
 /* 상위 메뉴 — 누르면 하위 메뉴 드롭다운을 펼친다 (v74 · areaClick 은 p14). 하위가 하나뿐이면 바로 이동 */
 document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=e=>areaClick(b,e));

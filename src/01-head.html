@@ -4369,6 +4369,15 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
   stroke-linecap:round;stroke-linejoin:round}
 [data-theme="dark"] .tu-src .tu-gvp .tu-mksvg,[data-theme="dark"] .tu-shot .tu-gvp .tu-mksvg{fill:none!important;stroke:rgb(var(--tu-accrgb) / .34)!important}
 
+/* v167 — TV 큐시트 틀 */
+#tab-tvcue{max-width:none}
+#cueHost{position:relative}
+#cueFrame{display:block;width:100%;border:0;border-radius:var(--radius);background:transparent;opacity:0;transition:opacity .25s}
+#cueFrame.ready{opacity:1}
+.cue-load{position:absolute;left:0;right:0;top:60px;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}
+#cueFrame.ready~.cue-load,.cue-load:has(~#cueFrame.ready){display:none}
+.cue-empty{padding:44px 24px;text-align:center}.cue-empty b{font-size:16px;color:var(--ink)}
+.cue-empty p{margin:8px 0 16px;color:var(--ink2);font-size:13px}.cue-empty em{font-style:normal;font-weight:700;color:var(--ink)}
 /* v160 — 자료 접수함 (데이터 입력 메뉴) */
 .inbx{margin:0 0 18px;padding:0;overflow:hidden}
 .inbxrp .inbx{margin:4px 0 14px}

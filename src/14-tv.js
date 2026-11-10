@@ -26,6 +26,7 @@ function tabMenu(name,sub){
   const a=areaOfTab(name);
   const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
   if(name==='intake')return MENUS.find(x=>x.tab==='intake'&&x.area===a)||MENUS.find(f);
+  if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f);}
   return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
 /* ---------- 메뉴 목록 ----------
@@ -105,6 +106,7 @@ function paintTabsOn(){
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name&&(!DG_TABS.includes(name)||area==='digital')));
   T.querySelectorAll('.subgrp [data-otab]').forEach(b=>b.classList.toggle('on',b.dataset.otab===name&&area==='ott'));
   T.querySelectorAll('.subgrp [data-itab]').forEach(b=>b.classList.toggle('on',name==='intake'&&b.dataset.itab===area));
+  try{cueMenuPaint();}catch(e){}
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='digital'&&b.dataset.sub===cs));
   T.querySelectorAll('[data-osub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='ott'&&b.dataset.osub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 페이지 저장(v112)은 보기 메뉴(대시보드 · 전체 캠페인)에서만 — 입력 화면은 빼고 */
@@ -197,6 +199,7 @@ function goMenu(id){
   const m=MENU_BY[id];if(!m||!menuVisible(id))return false;
   if(m.area==='digital'||m.area==='ott')setDgArea(m.area);
   if(m.tab==='intake'){try{INBX_AREA=m.area;}catch(e){}}
+  if(m.tab==='tvcue'){try{CUE_TAB=m.cue;}catch(e){}}
   if(m.tab==='dash'){
     if(($('tabs')||{}).dataset?.cur!=='dash')switchTab('dash');
     if(curDashSub()!==m.sub||DG_DIRTY)dashSubGo(m.sub);}
@@ -236,6 +239,7 @@ function applyMenus(){
   T.querySelectorAll('.subgrp .subbar').forEach(sb=>{
     const any=[...sb.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
     sb.classList.toggle('menuoff',!any);});
+  try{cueMenuPaint();}catch(e){}
   /* 보이는 트레이가 없는 영역은 판에서 열째로 감춘다 */
   T.querySelectorAll('.megapop .subgrp').forEach(g=>{
     g.classList.toggle('menuoff',![...g.querySelectorAll('.subbar')].some(x=>!x.classList.contains('menuoff')));});
@@ -1428,6 +1432,8 @@ function tvForDoc(){return {plan:TV_PLAN.map(r=>({...r})),spots:TV_SPOTS.map(r=>
   wkch:TV_WKCH.map(r=>({...r})),wkrt:TV_WKRT.map(r=>({...r})),wkseg:TV_WKSEG.map(r=>({...r})),mon:(typeof TV_MON!=='undefined'?TV_MON:[]).map(r=>({...r})),
   /* v146 — 위클리 리포트 원본 묶음(31-tvwr.js) */
   ...(typeof TV_WR!=='undefined'&&TV_WR?{wr:TV_WR}:{}),
+  /* v167 — TV 큐시트(34-cue.js) — 압축한 한 달 작업 데이터 */
+  ...(typeof TV_CUE!=='undefined'&&TV_CUE&&TV_CUE.z?{cue:TV_CUE}:{}),
   segch:TV_SEGCH.map(r=>({...r})),segcr:TV_SEGCR.map(r=>({...r})),meta:{...TV_META}};}
 function tvFromDoc(d){
   const t=d&&d.tv,arr=k=>Array.isArray(t&&t[k])?t[k].map(r=>({...r})):[];
@@ -1437,7 +1443,8 @@ function tvFromDoc(d){
   TV_META={target:String(m.target||''),planReach:tvHas(m.planReach)?m.planReach:'',reach:tvHas(m.reach)?m.reach:'',reach3:tvHas(m.reach3)?m.reach3:''};
   TV_SEG=arr('seg');TV_WEEK=arr('week');TV_WKCH=arr('wkch');TV_WKRT=arr('wkrt');TV_WKSEG=arr('wkseg');TV_SEGCH=arr('segch');TV_SEGCR=arr('segcr');
   try{TV_MON=arr('mon');}catch(e){}
-  try{TV_WR=(t&&t.wr&&typeof t.wr==='object')?t.wr:null;}catch(e){}}
+  try{TV_WR=(t&&t.wr&&typeof t.wr==='object')?t.wr:null;}catch(e){}
+  try{TV_CUE=(t&&t.cue&&typeof t.cue==='object'&&t.cue.z)?t.cue:null;cueReset();}catch(e){}}
 
 /* ---------- 연결 ---------- */
 (function initTV(){

@@ -50,6 +50,8 @@ const INBX_DETECT=[
     run:f=>importDaily(f)}];
 async function inbxDetect(f,area){
   if(!/\.(xlsx?|csv)$/i.test(f.name))return null;
+  /* v167 — TV set 큐시트 통합 엑셀 (시트 이름으로 알아본다 · 5MB 안팎이라 크기 제한 앞에서) */
+  if(area==='tv'){try{if(await cueIsLegacy(f))return {k:'cue',l:'TV 큐시트 (통합 엑셀)',area:'tv',s:9,run:x=>{cueImportFile(x);}};}catch(e){}}
   if(f.size>8*1048576)return null;            /* 큰 파일은 브라우저에서 훑지 않는다 */
   let best=null;
   for(const d of INBX_DETECT.filter(d=>area==null||d.area===area||(d.area==='digital'&&area==='ott'))){
@@ -183,7 +185,7 @@ function inbxAdd(files,el,area){
   INBX.pend=INBX.pend.concat(add);inbxPaint(el,area);
   add.forEach(p=>inbxDetect(p.f,area).then(d=>{p.det=d;
     /* 사이트가 알아본 형식이면 그 파일의 자료 종류도 맞춰 둔다 */
-    if(d){const o=kinds.find(k=>d.k==='tvres'?/TV 실적/.test(k):/데일리|일별/.test(k));if(o)p.kind=o;}
+    if(d){const o=kinds.find(k=>d.k==='cue'?/큐시트/.test(k):d.k==='tvres'?/TV 실적/.test(k):/데일리|일별/.test(k));if(o)p.kind=o;}
     const keep={mon:el.querySelector('.inbx-mon')?.value,note:el.querySelector('.inbx-note')?.value};
     inbxPaint(el,area);
     const m=el.querySelector('.inbx-mon'),n=el.querySelector('.inbx-note');

@@ -235,11 +235,21 @@
     </div>
     <div class="subgrp" data-area="tv">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
+        <div class="subhd" id="tvperfhd">퍼포먼스</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
         <button type="button" data-tab="tvdash" data-menu="t_sum">누적 퍼포먼스</button>
         <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
+      </div>
+        <div class="subhd" id="tvcuehd">큐시트</div>
+        <div class="subbar" id="tvcuebar">
+        <button type="button" data-cue="summary" data-menu="tq_summary">요약</button>
+        <button type="button" data-cue="crev" data-menu="tq_crev">당월 소재</button>
+        <button type="button" data-cue="cueg" data-menu="tq_cueg">지상파 큐시트</button>
+        <button type="button" data-cue="cuec" data-menu="tq_cuec">케이블 큐시트</button>
+        <button type="button" data-cue="cal" data-menu="tq_cal">큐시트 캘린더</button>
+        <button type="button" data-cue="cueall" data-menu="tq_cueall">전체 큐시트</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
@@ -893,6 +903,11 @@
 <div class="mock" id="mockBadge">디자인 시안 · 더미 데이터</div>
 <!-- ===== 트렌드 리포트 — 모든 캠페인이 함께 쓰는 자료 게시판 (v66) ===== -->
 <!-- 리포트 (v143) — 연도 › 월별. 30-report.js -->
+<!-- TV 큐시트 (v167) — 34-cue.js -->
+<div class="wrap hidden" id="tab-tvcue">
+  <div class="sec" id="cueSec"><span id="cueTitle">큐시트 요약</span> <span class="note" id="cueNote"></span></div>
+  <div id="cueHost"></div>
+</div>
 <div class="wrap hidden" id="tab-intake">
   <div class="sec" id="inbxTitle">데이터 접수함 <span class="note" id="inbxNote"></span></div>
   <div id="inbxMain"></div>

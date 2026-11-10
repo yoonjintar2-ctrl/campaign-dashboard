@@ -1153,6 +1153,7 @@ function resetToBlank(name,advertiser){
   CAMPAIGN.media={digital:true,tv:false,ott:false,ooh:false};CAMPAIGN.menus={};CAMPAIGN.csOrder='';
   try{TV_PLAN=[];TV_SPOTS=[];TV_MIX=[];TV_CH=[];TV_DAY=[];TV_WEEK=[];TV_SEG=[];TV_WKCH=[];TV_WKRT=[];TV_WKSEG=[];TV_SEGCH=[];TV_SEGCR=[];TV_MON=[];TV_META={target:'',planReach:'',reach:'',reach3:''};}catch(e){}
   try{TV_WR=null;}catch(e){}
+  try{TV_CUE=null;cueReset();}catch(e){}
   try{RPT_DOC=null;if(typeof rptMenuPaint==='function')rptMenuPaint();}catch(e){}
   try{OOH_PLAN=[];OOH_CR=[];TBL_CFG={};}catch(e){}
   try{PACE_HIDE=[];PACE_STYLE='basic';DAILY_FIT_ON=false;}catch(e){}

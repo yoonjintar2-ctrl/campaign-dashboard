@@ -1,0 +1,19 @@
+/* ===== 대시보드 안에 들어갈 때의 디자인 (v167) =====
+   머리말 · 메뉴는 대시보드가 맡는다. 색은 대시보드 테마 변수(--p-*, boot.js 가 넘겨 줌)를 따른다. */
+html.embed .shell{display:none!important}
+html.embed{
+  --ground:transparent;--surface:var(--p-surface,#fff);--surface2:var(--p-acc-soft,#eceef1);--surface3:var(--p-plane2,#f7f9fb);
+  --ink:var(--p-ink,#1e2a38);--ink2:var(--p-ink2,#5a6878);--muted:var(--p-muted,#8b98a7);--rule:var(--p-line,#e4e8ee);--rule2:var(--p-line2,#eff2f6);
+  --acc:var(--p-acc,#495e72);--acc-deep:var(--p-acc-d,#354758);--acc-soft:var(--p-acc-soft,#eceef1);--acc-mid:var(--p-acc-lt,#8897a6);
+  --top:var(--p-hdr,#3c4957);--top2:var(--p-hdr2,#4b5966);
+  --shadow:0 1px 2px rgba(31,44,61,.04),0 4px 16px rgba(31,44,61,.05);
+  --font:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+html.embed,html.embed body{background:transparent}
+html.embed body{font-size:13px}
+html.embed main{padding:2px 2px 34px}
+html.embed .card{border-radius:14px;border-color:var(--rule)}
+html.embed .toast{display:none}
+/* 스크롤바 — 대시보드와 같은 얇은 회청 */
+html.embed{scrollbar-width:thin;scrollbar-color:var(--p-gline,#c5ccd6) transparent}
