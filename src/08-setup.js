@@ -1255,7 +1255,7 @@ function switchTab(name){
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')
     &&!$('sub-table').classList.contains('hidden'))rawRemember();}catch(e){}
-  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvinput','tvplan','oohdash','oohplan','overview','report'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
+  ['dash','input','setup','trend','tvdash','tvdaily','tvweekly','tvmonthly','tvmix','tvinput','tvplan','oohdash','oohplan','overview','report','intake'].forEach(n=>{const e=$('tab-'+n);if(e)e.classList.toggle('hidden',n!==name);});
   /* TV 메뉴는 들어갈 때 그린다 (v71) */
   if(name==='tvdash'){try{renderTvDash();}catch(e){}}
   if(name==='tvdaily'){try{renderTvDaily();}catch(e){}}
@@ -1264,7 +1264,7 @@ function switchTab(name){
   if(name==='tvmix'){try{renderTvMix();}catch(e){}}
   if(name==='tvinput'){try{renderTvTable('spot');}catch(e){}}
   /* 자료 접수함 (v160) */
-  if(name==='tvinput'||name==='input'||name==='report'){try{inbxRender();}catch(e){}}
+  if(name==='input'||name==='intake'){try{inbxRender();}catch(e){}}
   if(name==='tvplan'){try{renderTvTable('plan');}catch(e){}}
   /* OOH · 전체 캠페인 (v81) */
   if(name==='oohdash'){try{renderOohDash();}catch(e){}}
@@ -1292,6 +1292,8 @@ document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>{
 /* OTT 펼침판 (v141) — 디지털과 같은 화면(대시보드 하위 · 입력)을 OTT 쪽으로 연다 */
 document.querySelectorAll('#tabs [data-osub]').forEach(b=>b.onclick=()=>{setDgArea('ott');dashSubGo(b.dataset.osub);});
 document.querySelectorAll('#tabs [data-otab]').forEach(b=>b.onclick=()=>{setDgArea('ott');switchTab(b.dataset.otab);});
+/* 자료 접수함 (v161) — TV · OTT · 리포트가 같은 화면을 영역마다 */
+document.querySelectorAll('#tabs [data-itab]').forEach(b=>b.onclick=()=>{INBX_AREA=b.dataset.itab;try{closeAreaPop();}catch(e){}switchTab('intake');});
 /* 상위 메뉴 — 누르면 하위 메뉴 드롭다운을 펼친다 (v74 · areaClick 은 p14). 하위가 하나뿐이면 바로 이동 */
 document.querySelectorAll('#tabs .area').forEach(b=>b.onclick=e=>areaClick(b,e));
 document.querySelectorAll('#subbar button[data-sub]').forEach(b=>b.onclick=()=>{setDgArea('digital');dashSubGo(b.dataset.sub);});

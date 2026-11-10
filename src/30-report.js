@@ -41,21 +41,13 @@ function rptYears(){
 /* ---------- 메뉴 — 올해 발행된 리포트는 달마다 한 줄(최신 달이 위), 올해 이전은 연도 한 줄(누르면 화면 안에서 달을 고른다) (v157) ---------- */
 function rptThisYear(){const t=String(CAMPAIGN.today||iso(new Date())).slice(0,4);return +t||new Date().getFullYear();}
 function rptMenuPaint(){
-  const box=$('rptMenuList'),btn=$('rptMenuBtn');if(!box)return;
-  const camps=(RPT_DOC&&RPT_DOC.camps)||{},Y=rptThisYear();
-  const yms=Object.keys(camps).filter(k=>camps[k]&&camps[k].r).sort().reverse();
-  const cur=yms.filter(k=>+k.slice(0,4)===Y),old=[...new Set(yms.filter(k=>+k.slice(0,4)<Y).map(k=>+k.slice(0,4)))].sort((a,b)=>b-a);
-  /* 올해 리포트가 없으면(예: 1월) 가장 최근 해를 달로 */
-  const ylist=cur.length?cur:yms.filter(k=>k.slice(0,4)===(yms[0]||'').slice(0,4)),olist=cur.length?old:old.filter(y=>String(y)!==(yms[0]||'').slice(0,4));
-  const tab=($('tabs')||{}).dataset?.cur,me=RPT_DOC&&RPT_DOC.y?`${RPT_DOC.y}-${String(RPT_DOC.m).padStart(2,'0')}`:'';
-  box.innerHTML=ylist.map(k=>`<button type="button" data-menu="report" data-rptmenu="${k}" class="${tab==='report'&&k===me&&!RPT.oldY?'on':''}">${L(`${k.slice(0,4)}년 ${k.slice(5,7)}월`,`${k.slice(5,7)}/${k.slice(0,4)}`)}</button>`).join('')
-    +olist.map(y=>`<button type="button" data-menu="report" data-rptyear="${y}" class="${tab==='report'&&RPT.oldY===y?'on':''}">${L(`${y}년`,String(y))}</button>`).join('');
-  if(btn)btn.classList.toggle('rpx',!!(ylist.length||olist.length));
-  /* 메뉴 사용 · 권한 상태는 같은 data-menu 단추를 따라간다 */
-  if(btn)box.querySelectorAll('button').forEach(b=>['menuoff','hidden','vhide'].forEach(c=>b.classList.toggle(c,btn.classList.contains(c))));
-  box.querySelectorAll('[data-rptmenu]').forEach(b=>b.onclick=()=>{RPT.oldY=0;closeMegaPop();const ym=b.dataset.rptmenu;
-    if(ym===me){switchTab('report');rptMenuPaint();}else{rptGo(ym);}});
-  box.querySelectorAll('[data-rptyear]').forEach(b=>b.onclick=()=>{RPT.oldY=+b.dataset.rptyear;RPT.y=RPT.oldY;closeMegaPop();switchTab('report');rptMenuPaint();});}
+  /* v161 — 하위 메뉴는 '먼슬리 리포트' 하나: 지금 고른 캠페인(= 그 달)의 리포트. 아직 없으면 단추는 두되 비활성 + 업데이트 예정 */
+  const btn=$('rptMenuBtn');if(!btn)return;
+  const on=rptOn(),k=on?'1':'0';
+  if(btn.dataset.rpon!==k){btn.dataset.rpon=k;
+    btn.innerHTML=L('먼슬리 리포트','Monthly report')+(on?'':`<small class="rpwait">${L('업데이트 예정','Coming soon')}</small>`);}
+  btn.classList.toggle('rpdis',!on);btn.disabled=!on;btn.setAttribute('aria-disabled',on?'false':'true');
+  btn.title=on?'':L('이 캠페인(달)의 먼슬리 리포트는 업데이트 예정입니다','This month’s report is coming soon');}
 function closeMegaPop(){try{if(typeof closeAreaPop==='function')closeAreaPop();}catch(e){}}
 
 /* ---------- 다른 달로 — 그 달 캠페인을 열고 리포트 탭 그대로 ---------- */
@@ -141,8 +133,8 @@ function renderReport(){
   const nt=$('rptNote');if(nt)nt.textContent=L(`${RPT.y}년 ${RPT.m}월 · 단위 천원`,`${MON[RPT.m-1]} ${RPT.y} · KRW thousand`);
   document.querySelectorAll('#tab-report [data-rptm]').forEach(b=>b.onclick=()=>rptGo(b.dataset.rptm));
   if(!rptOn()){
-    host.innerHTML=`<div class="rpt-empty"><div class="ttl">${L(`${RPT.y}년 ${RPT.m}월 리포트가 아직 없습니다`,`No report for ${MON[RPT.m-1]} ${RPT.y} yet`)}</div>
-      <div class="txt">${Object.values(camps).some(c=>c.r)?L('위의 달 가운데 점이 찍힌 달을 누르면 그 달 리포트로 옮겨 갑니다.','Pick a month with a dot above to open its report.')
+    host.innerHTML=`<div class="rpt-empty"><div class="ttl">${L(`${RPT.y}년 ${RPT.m}월 먼슬리 리포트는 업데이트 예정입니다`,`The ${MON[RPT.m-1]} ${RPT.y} report is coming soon`)}</div>
+      <div class="txt">${Object.values(camps).some(c=>c.r)?L('다른 달 리포트는 위에서 그 달 캠페인을 고르면 볼 수 있습니다.','Pick that month’s campaign at the top to see its report.')
         :L('먼슬리 리포트 데이터가 들어오면 이 자리에 표와 그래프가 채워집니다.','Tables and charts appear here once monthly report data is loaded.')}</div></div>`;
     return;}
   if(RPT.cat&&!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat='';
@@ -163,18 +155,22 @@ function rpOwn(){
   if(!cur){h.innerHTML='';return;}
   const [bud,grp,eq,r1,r3]=cur.t,n=cur.it.filter(x=>rN(x[1])>0).length;
   const ytd=own.reduce((s,o)=>s+rN(o.t[0]),0),ytdEq=own.reduce((s,o)=>s+rN(o.t[2]),0);
-  const kpi=(l,v,f,dp,sub,i)=>`<div class="rpk" style="--d:${i*70}ms"><div class="l">${l}</div><div class="v"><b data-cu="${v}" data-f="${f}" data-dp="${dp||0}" data-d="${i*70}">0</b></div>${sub?`<div class="s">${sub}</div>`:''}</div>`;
+  /* v161 — 카드 아래 게이지는 TV 누적 퍼포먼스 카드(.wrg)와 같은 모양 — 숫자 카운트업은 그대로 */
+  const kpi=(l,v,f,dp,sub,i,p,cls)=>{const pc=isFinite(p)?Math.max(0,Math.min(1,p)):0;
+    return `<div class="wrg rpkg ${cls||''}" style="--p:${Math.max(pc,.0001).toFixed(4)};--d:${i*70}ms"><div class="tx"><span class="l">${l}</span><b data-cu="${v}" data-f="${f}" data-dp="${dp||0}" data-d="${i*70}">0</b>${sub?`<span class="s">${sub}</span>`:'<span class="s">&nbsp;</span>'}</div>
+      <div class="gb"><div class="gt"><i></i></div><span class="pc mono">${isFinite(p)?(p*100).toFixed(1)+'%':'–'}</span></div></div>`;};
+  const nAll=new Set(own.flatMap(o=>(o.it||[]).filter(x=>rN(x[1])>0).map(x=>x[0]))).size;
   const mets=[{k:'bud',l:L('광고비','Spend')},{k:'eq',l:'eq.GRP'},{k:'r3',l:'R3+'}];
   h.innerHTML=`<div class="sec">${L('코웨이 TV 집행 요약','Coway TV summary')} <span class="note">${L(`${M}월 · 먼슬리 리포트 기준`,`M${M} · monthly report`)}</span></div>
-    <div class="rpkpis">
-      ${kpi(L('TV 광고비','TV spend'),bud,'eok',0,L(`연 누적 ${wrEok(ytd)}`,`YTD ${wrEok(ytd)}`),0)}
-      ${kpi('eq.GRP',eq,'n',0,L(`연 누적 ${wrF(ytdEq)}`,`YTD ${wrF(ytdEq)}`),1)}
-      ${kpi('R1+',r1,'p',0,'',2)}${kpi('R3+',r3,'p',0,'',3)}
-      ${kpi(L('집행 품목','Items'),n,'n',0,L(`GRP ${wrF(grp)}`,`GRP ${wrF(grp)}`),4)}</div>
+    <div class="wrgs rpkgs">
+      ${kpi(L('TV 광고비','TV spend'),bud,'eok',0,L(`연 누적 ${wrEok(ytd)} 중`,`of YTD ${wrEok(ytd)}`),0,rN(ytd)>0?bud/ytd:NaN)}
+      ${kpi('eq.GRP',eq,'n',0,L(`연 누적 ${wrF(ytdEq)} 중`,`of YTD ${wrF(ytdEq)}`),1,rN(ytdEq)>0?eq/ytdEq:NaN)}
+      ${kpi('R1+',r1,'p',0,L('타깃 도달률','Target reach'),2,rN(r1)/100,'rch')}${kpi('R3+',r3,'p',0,L('유효 도달률','Effective reach'),3,rN(r3)/100,'rch')}
+      ${kpi(L('집행 품목','Items'),n,'n',0,L(`올해 집행 ${nAll}개 중 · GRP ${wrF(grp)}`,`of ${nAll} this year · GRP ${wrF(grp)}`),4,nAll?n/nAll:NaN)}</div>
     <div class="rpgrid2">
       ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),'',`<div id="rpIso" class="rpiso"></div>`,`<div class="rplg rpisolg"><span><i style="background:#5f7a9c"></i>${L('광고비','Spend')}</span><span><i class="ln"></i>R3+</span><span><i class="ar"></i>eq.GRP</span></div>`)}
       ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대를 누르면 그 달 품목별 내역','click a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
-  rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkpis'));}
+  rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkgs'));}
 
 /* 3D 막대(아이소메트릭 프리즘) — 앞면 · 오른면 · 윗면. 아래에서 솟아오른다 */
 function rpPrism(x,base,w,hgt,col,dx,dy){

@@ -237,14 +237,13 @@
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
-        <button type="button" data-tab="tvdash" data-menu="t_sum">서머리</button>
+        <button type="button" data-tab="tvdash" data-menu="t_sum">누적 퍼포먼스</button>
         <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
-        <button type="button" data-tab="tvinput" data-menu="t_input">데이터 입력</button>
-        <button type="button" data-tab="tvplan" data-menu="t_plan">예상효율 입력</button>
+        <button type="button" data-itab="tv" data-menu="t_inbox">자료 접수함</button>
       </div>
     </div>
     <!-- OTT (v141) — 디지털과 같은 화면(대시보드 · 입력)을 OTT 라인만으로. data-osub · data-otab 는 p8 이 단다 -->
@@ -258,8 +257,7 @@
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
-        <button type="button" data-otab="input" data-menu="ot_input">데이터 입력</button>
-        <button type="button" data-otab="setup" data-menu="ot_plan">예상효율 입력</button>
+        <button type="button" data-itab="ott" data-menu="ot_inbox">자료 접수함</button>
       </div>
     </div>
     <div class="subgrp" data-area="ooh">
@@ -275,8 +273,11 @@
     <div class="subgrp" data-area="report">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><rect x="3" y="3.2" width="14" height="13.6" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 7.4h14M7 3.2V1.8M13 3.2V1.8M6.6 13.4v-2.6M10 13.4V9.6M13.4 13.4v-1.6"/></svg></span><span>리포트</span></div>
       <div class="subbar">
-        <button type="button" data-tab="report" data-menu="report" id="rptMenuBtn">월별 리포트</button>
-        <span class="rptml" id="rptMenuList"></span>
+        <button type="button" data-tab="report" data-menu="report" id="rptMenuBtn">먼슬리 리포트</button>
+      </div>
+        <div class="subhd subinhd">입력</div>
+        <div class="subbar subin">
+        <button type="button" data-itab="report" data-menu="rp_inbox">자료 접수함</button>
       </div>
     </div>
     <div class="subgrp" data-area="trend">
@@ -685,7 +686,6 @@
   <div class="hint tvfoot" id="tvMixReachNote"></div>
 </div>
 <div class="wrap hidden" id="tab-tvinput">
-  <div id="inbxTv"></div>
   <div class="sec">TV 실적 입력 <span class="note">채널별 집행 · 일자별 퍼포먼스</span>
     <div class="tools">
       <button class="btn sm" id="tvResCols">⚙ 열 설정</button>
@@ -893,9 +893,12 @@
 <div class="mock" id="mockBadge">디자인 시안 · 더미 데이터</div>
 <!-- ===== 트렌드 리포트 — 모든 캠페인이 함께 쓰는 자료 게시판 (v66) ===== -->
 <!-- 리포트 (v143) — 연도 › 월별. 30-report.js -->
+<div class="wrap hidden" id="tab-intake">
+  <div class="sec" id="inbxTitle">자료 접수함 <span class="note" id="inbxNote"></span></div>
+  <div id="inbxMain"></div>
+</div>
 <div class="wrap hidden" id="tab-report">
   <div class="sec">리포트 <span class="note" id="rptNote"></span></div>
-  <div id="inbxRp" class="inbxrp"></div>
   <div class="rpt-nav"><div class="rpt-ys" id="rptYears"></div><div class="rpt-ms" id="rptMonths"></div></div>
   <div id="rptBody"></div>
 </div>

@@ -7,12 +7,13 @@
    · 저장 — 비공개 버킷 intake + 표 intake_files (supabase/2026-11-10_intake.sql).
      로그인 전 · 샘플 화면에서는 이 세션 안에서만 보관한다.
    ===================================================================== */
+var INBX_AREA='tv';   // var — 14-tv 의 areaOfTab 이 먼저 볼 수 있게
 const INBX={rows:[],demo:[],cid:null,missing:false,err:'',busy:false,pend:[],open:{}};
 const INBX_BUCKET='intake',INBX_MAX_MB=30;
 const INBX_KINDS={
-  tv:['TV 위클리 리포트','TV 실적 (채널 · 일자 · 주차)','큐시트 · 편성표','먼슬리 리포트 (PDF)','기타'],
+  tv:['TV 위클리 리포트','TV 실적 (채널 · 일자 · 주차)','큐시트 · 편성표 (예상효율)','기타'],
   digital:['디지털 데일리 리포트','미디어믹스','먼슬리 리포트 (PDF)','기타'],
-  ott:['OTT 데일리 리포트','미디어믹스','기타'],
+  ott:['OTT 리포트 (일별 실적)','미디어믹스 · 예상효율','기타'],
   report:['먼슬리 리포트 (PDF)','경쟁사 소재 · 인쇄물','기타']};
 const INBX_ST={wait:'반영 대기',done:'반영 완료',hold:'보류'};
 const inbxMB=b=>b<1048576?Math.max(1,Math.round(b/1024))+'KB':(b/1048576).toFixed(1)+'MB';
@@ -20,7 +21,8 @@ const inbxMB=b=>b<1048576?Math.max(1,Math.round(b/1024))+'KB':(b/1048576).toFixe
 function inbxGuess(name,kinds){const n=String(name||'');
   const pick=re=>kinds.find(k=>re.test(k));
   return (/큐시트|편성/.test(n)&&pick(/큐시트/))||(/위클리|weekly|주간|주차/i.test(n)&&pick(/위클리/))||(/\.pdf$/i.test(n)&&pick(/먼슬리/))
-    ||(/데일리|daily|일별/i.test(n)&&pick(/데일리/))||(/믹스|mix/i.test(n)&&pick(/미디어믹스/))||kinds[kinds.length-1];}
+    ||(/데일리|daily|일별/i.test(n)&&pick(/데일리|일별/))||(/OTT|넷플릭스|리포트|report/i.test(n)&&pick(/OTT 리포트|데일리 리포트/))
+    ||(/믹스|mix|예상/i.test(n)&&pick(/미디어믹스/))||kinds[kinds.length-1];}
 function inbxOn(){try{return !!(CLOUD&&CLOUD.on&&CLOUD.sb&&CLOUD.user&&CLOUD.campaign&&CLOUD.campaign.id&&!CLOUD.shareView);}catch(e){return false;}}
 function inbxEdit(){try{return inbxOn()?CLOUD.role!=='viewer':!(CLOUD&&CLOUD.shareView);}catch(e){return true;}}
 function inbxCid(){try{return inbxOn()?CLOUD.campaign.id:'demo';}catch(e){return 'demo';}}
@@ -35,16 +37,16 @@ const INBX_DETECT=[
     pick:g=>{try{return tvResScore(g);}catch(e){return 0;}},
     test:g=>{try{return tvResScore(g.slice(0,400));}catch(e){return 0;}},
     run:f=>tvResImport(f)},
-  {k:'daily',l:'디지털 일자별 실적',area:'digital',
+  {k:'daily',l:'일자별 실적 (디지털 · OTT 표)',area:'digital',
     pick:null,
     test:g=>{try{const d=hdrDict(dailyColsOf(true),'daily'),h=findHeader(g,d,['date']);
       return h&&h.i>=0&&h.score>=3?h.score:0;}catch(e){return 0;}},
     run:f=>importDaily(f)}];
-async function inbxDetect(f){
+async function inbxDetect(f,area){
   if(!/\.(xlsx?|csv)$/i.test(f.name))return null;
   if(f.size>8*1048576)return null;            /* 큰 파일은 브라우저에서 훑지 않는다 */
   let best=null;
-  for(const d of INBX_DETECT){
+  for(const d of INBX_DETECT.filter(d=>area==null||d.area===area||(d.area==='digital'&&area==='ott'))){
     try{const g=await readGrid(f,d.pick||undefined);const s=+d.test(g)||0;
       if(s>0&&(!best||s>best.s))best={...d,s};}catch(e){}}
   return best;}
@@ -71,7 +73,7 @@ function inbxHost(){
   const tv=$('tab-tvinput'),dg=$('tab-input');
   if(tv&&!tv.classList.contains('hidden'))return {el:$('inbxTv'),area:'tv'};
   if(dg&&!dg.classList.contains('hidden')){let a='digital';try{a=curDgArea();}catch(e){}return {el:$('inbxDg'),area:a};}
-  const rp=$('tab-report');if(rp&&!rp.classList.contains('hidden'))return {el:$('inbxRp'),area:'report'};
+  const ib=$('tab-intake');if(ib&&!ib.classList.contains('hidden'))return {el:$('inbxMain'),area:INBX_AREA||'tv'};
   return null;}
 async function inbxRender(force){
   const h=inbxHost();if(!h||!h.el)return;
@@ -80,14 +82,12 @@ async function inbxRender(force){
 function inbxPaint(el,area){
   const kinds=INBX_KINDS[area]||INBX_KINDS.digital;
   const ed=inbxEdit(),live=inbxOn();
-  /* 리포트 화면 — 광고주(조회 전용) 화면에는 접수함을 두지 않는다. 처음엔 접어 둔다 */
-  if(area==='report'){let cl=false;try{cl=typeof isClient==='function'&&isClient();}catch(e){}
-    if(!ed||cl){el.innerHTML='';return;}
-    if(INBX.open.report==null)INBX.open.report=false;}
+  /* 자료 접수함 화면 제목 — 영역 이름 (v161) */
+  if(el.id==='inbxMain'){const t=$('inbxNote');if(t)t.textContent=`${({tv:'TV',ott:'OTT',report:'먼슬리 리포트'})[area]||''} · 데이터 입력 · 예상효율 입력을 모두 여기서`;}
   const DG=new Set(['digital','ott']);
   const rows=INBX.rows.filter(r=>!r.area||r.area===area||(DG.has(area)&&DG.has(r.area)));
   const wait=rows.filter(r=>r.status==='wait').length;
-  const open=INBX.open[area]!=null?INBX.open[area]:true;
+  const open=el.id==='inbxMain'?true:(INBX.open[area]!=null?INBX.open[area]:true);
   const warn=INBX.missing?`<div class="inbx-warn">접수함 저장소가 아직 준비되지 않았습니다 — Supabase SQL Editor 에서 <code>supabase/2026-11-10_intake.sql</code> 을 한 번 실행해 주세요. 그 전까지는 이 화면을 닫으면 사라지는 임시 보관입니다.</div>`
     :INBX.err?`<div class="inbx-warn">접수 목록을 불러오지 못했습니다 — ${esc(INBX.err)}</div>`
     :!live?`<div class="inbx-warn soft">로그인 전 · 샘플 화면이라 이 세션 안에서만 보관합니다.</div>`:'';
@@ -114,10 +114,10 @@ function inbxPaint(el,area){
     </tr>`).join('')}</tbody></table>`
     :'<div class="inbx-empty">아직 접수된 자료가 없습니다.</div>';
   el.innerHTML=`<div class="inbx card${open?'':' shut'}">
-    <div class="inbx-hd"><button class="inbx-fold" data-inbx-fold="${area}" aria-expanded="${open}">${open?'▾':'▸'}</button>
-      <b>자료 접수함</b>${wait?`<span class="inbx-cnt">반영 대기 ${wait}</span>`:''}
-      <span class="note">${area==='report'?'먼슬리 리포트 PDF 를 그대로 올려 두세요. Claude 가 확인해 이 리포트 메뉴에 일괄 반영합니다.'
-        :'받은 엑셀 · PDF 를 그대로 올려 두세요. 사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영합니다.'}</span></div>
+    <div class="inbx-hd">${el.id==='inbxMain'?'':`<button class="inbx-fold" data-inbx-fold="${area}" aria-expanded="${open}">${open?'▾':'▸'}</button>`}
+      <b>${el.id==='inbxMain'?'파일 올리기':'자료 접수함'}</b>${wait?`<span class="inbx-cnt">반영 대기 ${wait}</span>`:''}
+      <span class="note">${area==='report'?'먼슬리 리포트 PDF 를 그대로 올려 두세요. Claude 가 확인해 리포트 메뉴에 일괄 반영합니다.'
+        :'실적 리포트 · 큐시트 · 미디어믹스 엑셀을 그대로 올려 두세요. 사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영합니다.'}</span></div>
     <div class="inbx-bd">${warn}
       ${ed?`<label class="inbx-drop" tabindex="0"><input type="file" multiple accept="${area==='report'?'.pdf,.zip,.xlsx,.xls':'.xlsx,.xls,.csv,.pdf,.zip'}" hidden>
         <b>파일을 끌어다 놓거나 눌러서 고르세요</b><small>${area==='report'?'pdf · zip · xlsx':'xlsx · xls · csv · pdf · zip'} · 한 개 ${INBX_MAX_MB}MB 까지</small></label>
@@ -168,9 +168,9 @@ function inbxAdd(files,el,area){
   const kinds=INBX_KINDS[area]||INBX_KINDS.digital;
   const add=ok.map(f=>({f,det:undefined,ran:false,kind:inbxGuess(f.name,kinds)}));
   INBX.pend=INBX.pend.concat(add);inbxPaint(el,area);
-  add.forEach(p=>inbxDetect(p.f).then(d=>{p.det=d;
+  add.forEach(p=>inbxDetect(p.f,area).then(d=>{p.det=d;
     /* 사이트가 알아본 형식이면 그 파일의 자료 종류도 맞춰 둔다 */
-    if(d){const o=kinds.find(k=>d.k==='tvres'?/TV 실적/.test(k):/데일리/.test(k));if(o)p.kind=o;}
+    if(d){const o=kinds.find(k=>d.k==='tvres'?/TV 실적/.test(k):/데일리|일별/.test(k));if(o)p.kind=o;}
     const keep={mon:el.querySelector('.inbx-mon')?.value,note:el.querySelector('.inbx-note')?.value};
     inbxPaint(el,area);
     const m=el.querySelector('.inbx-mon'),n=el.querySelector('.inbx-note');

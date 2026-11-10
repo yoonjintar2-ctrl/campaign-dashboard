@@ -26,14 +26,14 @@ const wrD=s=>{const m=String(s||'').match(/(\d{4})-(\d\d)-(\d\d)/);return m?`${m
 const wrPct=(a,b)=>isFinite(a)&&isFinite(b)&&b>0?a/b:NaN;
 /* 품목 색 — 같은 품목은 어느 달에서나 같은 색 (차분한 색 10개) */
 /* v147 — 알록달록하지 않게: 채도를 낮춘 회청 · 청록 · 회갈 계열로 서로 비슷한 톤 */
-const WR_PAL=['#4f6b8f','#8a7b68','#5d8580','#7d7090','#93876f','#5f84a3','#8c6f73','#6c7b8e','#748a6d','#7f8796'];
+const WR_PAL=['#686868','#8a7b68','#7c7c7c','#757575','#93876f','#7e7e7e','#8c6f73','#797979','#748a6d','#868686'];
 const WR_ICOL={'아이콘3':0,'아이콘얼음정수기':1,'카페얼음정수기':5,'안마매트리스':3,'음식물처리기':2,'페블체어2':8,'트리플체어2':6,
   '스마트매트리스':7,'아이콘프로':8,'노블청정기':9,'비데':2,'히티브':6,'마사지셋/코어셋':4,'코웨이페스타':3};
 function wrCol(n){if(n in WR_ICOL)return WR_PAL[WR_ICOL[n]];let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return WR_PAL[h%WR_PAL.length];}
 /* v151 — 서머리에는 품목 고유 색을 쓰지 않는다(색 체계 합의 전) — 차분한 회청 한 가지 */
-const WR_NEU='#9fb2c9',WR_NEU2='#6f86a3';
+const WR_NEU='#b0b0b0',WR_NEU2='#838383';
 /* 지상파 · 케이블 톤 — 지상파는 푸른 기 도는 짙은 회청, 케이블은 무채 회색. 같은 톤 안에서 PP 마다 밝기만 */
-const WR_TONE={t:['#24406f','#3d5f99','#6b8cc4','#9db6e0','#c4d4ee'],c:['#3f4a54','#58636e','#717c87','#8a949e','#a3acb5','#bcc3ca','#d2d7dc','#e1e5e8']};
+const WR_TONE={t:['#3d3d3d','#5c5c5c','#898989','#b4b4b4','#d2d2d2'],c:['#7a7a7a','#8e8e8e','#a0a0a0','#b0b0b0','#bebebe','#cacaca','#d4d4d4','#dddddd']};
 function wrShade(h,k){const n=parseInt(h.slice(1),16),f=c=>Math.max(0,Math.min(255,Math.round(c*k)));return `rgb(${f(n>>16&255)},${f(n>>8&255)},${f(n&255)})`;}
 /* 지상파 방송사 이름 — KBS2 → KBS */
 const wrBc=ch=>String(ch||'').replace(/\d+$/,'').trim()||ch;
@@ -115,12 +115,15 @@ function wrCalm(hex){const n=parseInt(String(hex).slice(1),16);let r=(n>>16&255)
   sat=Math.min(sat*.42,.34);l=Math.max(.5,Math.min(.66,l));
   const q=l<.5?l*(1+sat):l+sat-l*sat,p=2*l-q,f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
   const hx=v=>Math.round(v*255).toString(16).padStart(2,'0');return '#'+hx(f(h+1/3))+hx(f(h))+hx(f(h-1/3));}
+/* v161 — 큐시트에서 회색으로 칠한 품목(아이콘3 #999999 등)은 무채색이라 다른 품목과 안 갈린다 → 고정 색을 입힌다 */
+const WR_COL_FIX={'아이콘3':'#3f9a86'};
 function wrCueCol(n){const ym=String((TV_WR&&TV_WR.ym)||'').slice(0,7),ks=Object.keys(WR_CUECOL).sort();
+  if(WR_COL_FIX[n])return wrCalm(WR_COL_FIX[n]);
   if(WR_CUECOL[ym]&&WR_CUECOL[ym][n])return wrCalm(WR_CUECOL[ym][n]);
   const prev=ks.filter(k=>k<=ym).reverse(),next=ks.filter(k=>k>ym);
   for(const k of [...prev,...next])if(WR_CUECOL[k][n])return wrCalm(WR_CUECOL[k][n]);
-  return '#7f8b97';}
-const wrInk=h=>{const n=parseInt(String(h).slice(1),16),l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;return l>.68?'#2a2f36':'#fff';};
+  return '#898989';}
+const wrInk=h=>{const n=parseInt(String(h).slice(1),16),l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;return l>.68?'#2e2e2e':'#fff';};
 function renderWrMix(){
   const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
   if(!wrOn()){h.innerHTML='';return false;}
@@ -173,7 +176,7 @@ function renderWrMix(){
   h.innerHTML=wrHead(L('TV 미디어믹스','TV media mix'),`${wrMonth()} · ${W.period||''}`)
     +`<div class="sec gap sm">${L('품목별 월 예산','Budget by product')} <span class="note">${L('품목 막대를 소재로 나눠 쌓음 · TV 요약 기준','Each product bar split by creative · from TV summary')}</span></div>
       <div class="card wrcard"><div class="wrsbs">${bars}</div></div>
-      ${wrHs(crTbl,'tbl')}
+      ${wrHs(crTbl,'tbl full')}
       <div class="sec gap sm">${L('채널별 월 예산','Budget by channel')} <span class="note">${L('당월_주별 시트 예산 · PP별 비중 · 5% 미만은 기타로','Weekly sheet budget · share by PP · under 5% grouped as Other')}</span></div>
       <div class="card wrcard"><div class="wrdn" id="wrDn"></div><div class="wrdn-etc hidden" id="wrDnEtc"></div></div>
       ${wrHs(chTbl,'tbl full fit')}`;
@@ -199,9 +202,9 @@ function wrDnSvg(D,T,W){
   const rot=([x,y])=>[cx+(x-cx)*cs-(y-rc)*sn,rc+(x-cx)*sn+(y-rc)*cs],P=(a,rr,ox,dz)=>[cx+(ox||0)+Math.cos(a)*rr,cy+Math.sin(a)*rr*K+(dz||0)];
   const fT=tT/tot,S=[];let a=Math.PI-fT*Math.PI;const sep=GAP?.018:0;
   const tn=D.t.length;
-  D.t.map((x,i)=>[x,i]).reverse().forEach(([[nm,v],i],j)=>{const sp=v/tot*TAU*T;S.push({k:'t'+i,n:nm,v,g:'t',col:nm==='기타'?'#c4d4ee':WR_TONE.t[Math.min(i,3)],ox:-GAP,a0:a+(j===0?sep:0),a1:a+sp-(j===tn-1?sep:0)});a+=sp;});
+  D.t.map((x,i)=>[x,i]).reverse().forEach(([[nm,v],i],j)=>{const sp=v/tot*TAU*T;S.push({k:'t'+i,n:nm,v,g:'t',col:nm==='기타'?'#d2d2d2':WR_TONE.t[Math.min(i,3)],ox:-GAP,a0:a+(j===0?sep:0),a1:a+sp-(j===tn-1?sep:0)});a+=sp;});
   a=-(1-fT)*Math.PI;
-  D.c.forEach(([nm,v],i)=>{const sp=v/tot*TAU*T;S.push({k:'c'+i,n:nm,v,g:'c',col:nm==='기타'?'#d7dce0':WR_TONE.c[Math.min(i,6)],ox:GAP,a0:a+(i===0?sep:0),a1:a+sp-(i===D.c.length-1?sep:0)});a+=sp;});
+  D.c.forEach(([nm,v],i)=>{const sp=v/tot*TAU*T;S.push({k:'c'+i,n:nm,v,g:'c',col:nm==='기타'?'#dbdbdb':WR_TONE.c[Math.min(i,6)],ox:GAP,a0:a+(i===0?sep:0),a1:a+sp-(i===D.c.length-1?sep:0)});a+=sp;});
   if(!(tT&&tC)){const G=S.splice(0);let acc=0,ra=-Math.PI/2,la=-Math.PI/2;
     if(G.length===1){const z=G[0],sp=z.a1-z.a0;z.ox=0;z.side=1;z.a0=-sp/2;z.a1=sp/2;S.push(z);G.length=0;}
     G.forEach(z=>{const sp=z.a1-z.a0;z.ox=0;if(acc<.5||z===G[0]){z.side=1;z.a0=ra;z.a1=ra+sp;ra+=sp;acc+=z.v/tot;}else{z.side=-1;z.a1=la;z.a0=la-sp;la-=sp;}S.push(z);});}
@@ -228,8 +231,8 @@ function wrDnSvg(D,T,W){
   if(T>=1){
     const ordr=a=>[...a].sort((p,q)=>(p.n==='기타')-(q.n==='기타')||q.v-p.v),cols=[];
     const TL=L('지상파','Terrestrial'),CL=L('케이블 · 종편','Cable · GP');
-    if(gT.length&&gC.length)cols.push([-1,ordr(gT),TL,tT,'#24406f'],[1,ordr(gC),CL,tC,'#4a545e']);
-    else{const G=gT.length?gT:gC,nm=gT.length?TL:CL,tc=gT.length?'#24406f':'#4a545e',Lh=G.filter(z=>z.side<0),Rh=G.filter(z=>z.side>0);
+    if(gT.length&&gC.length)cols.push([-1,ordr(gT),TL,tT,'#3d3d3d'],[1,ordr(gC),CL,tC,'#535353']);
+    else{const G=gT.length?gT:gC,nm=gT.length?TL:CL,tc=gT.length?'#3d3d3d':'#535353',Lh=G.filter(z=>z.side<0),Rh=G.filter(z=>z.side>0);
       cols.push([-1,ordr(Lh),gT.length?nm:'',tT+tC,tc],[1,ordr(Rh),gT.length?'':nm,tT+tC,tc]);}
     const rim=(s,f)=>{const m=s.a0+(s.a1-s.a0)*f,fr=Math.sin(m)>0;return {A:rot(P(m,R,s.ox,fr?DEP*.5:0)),E:rot(P(m,R+16,s.ox,fr?DEP*.5+Math.sin(m)*12:-2))};};
     const inDn=(x,y)=>{const u=(x-cx)*cs+(y-rc)*sn,v=-(x-cx)*sn+(y-rc)*cs,e=dv=>(u/(R+GAP+4))**2+((v-dv)/(R*K+4))**2<1;return e(-DEP/2)||e(DEP/2)||(Math.abs(u)<R+GAP&&Math.abs(v)<DEP/2);};
@@ -257,18 +260,18 @@ function wrDnSvg(D,T,W){
       let bestRun=null;for(const sq of cand){const rr=run(sq);if(!bestRun||rr.total<bestRun.total)bestRun=rr;if(rr.total<1000)break;}
       const Lr=bestRun.out;Lr.forEach(q=>ALLSEG.push(...q.sg));
       if(tl)lab+=`<text x="${side<0?bx0:W}" ${side>0?'text-anchor="end"':''} y="${top0-14}" font-size="14.5" font-weight="900" fill="${tc}">${tl} <tspan fill="var(--ink)">${wrEok(tv)}</tspan> <tspan font-size="12" font-weight="700" fill="var(--muted)">${Math.round(tv/tot*100)}%</tspan></text>`;
-      Lr.forEach(q=>{const s=q.s,y=q.y,st=s.g==='t'?'#8fa3c8':'#b3bcc4',f=v=>v.toFixed(1);const etc=s.n==='기타'&&(D.etc[s.g]||[]).length;
+      Lr.forEach(q=>{const s=q.s,y=q.y,st=s.g==='t'?'#a1a1a1':'#bbbbbb',f=v=>v.toFixed(1);const etc=s.n==='기타'&&(D.etc[s.g]||[]).length;
         lab+=`<g class="cd${etc?' etc':''}" data-wrk="${s.k}"><path class="ln" d="M${q.pts.map(p=>f(p[0])+','+f(p[1])).join(' L')}" fill="none" stroke="${st}" stroke-width="1.3" stroke-linejoin="round"/>
           <circle cx="${q.A[0].toFixed(1)}" cy="${q.A[1].toFixed(1)}" r="2.6" fill="${st}"/>
-          <rect class="bx" x="${bx0+.5}" y="${y-BH/2}" width="${BW-1}" height="${BH}" rx="10" fill="var(--surface)" stroke="${s.g==='t'?'#cdd6e8':'#dfe3e7'}"/>
+          <rect class="bx" x="${bx0+.5}" y="${y-BH/2}" width="${BW-1}" height="${BH}" rx="10" fill="var(--surface)" stroke="${s.g==='t'?'#d5d5d5':'#e2e2e2'}"/>
           <rect x="${bx0+11}" y="${y-5}" width="10" height="10" rx="2.5" fill="${s.col}"/>
           <text x="${bx0+29}" y="${y-3}" font-size="12.5" font-weight="800" fill="var(--ink)">${esc(s.n)}</text>
           <text x="${bx0+29}" y="${y+13}" font-size="11.5" font-weight="700" fill="var(--muted)">${wrEok(s.v)} · ${(s.v/tot*100).toFixed(s.v/tot<.1?1:0)}%</text>
           ${etc?`<text x="${bx0+BW-12}" y="${y+4}" text-anchor="end" font-size="10.5" font-weight="800" fill="var(--acc)">${D.etc[s.g].length}${L('개 보기 ›',' more ›')}</text>`:''}</g>`;});});}
   WR_DN_S=S.map(s=>({k:s.k,n:s.n,v:s.v,g:s.g,tot}));
   const defs=`<defs><linearGradient id="wrhl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".55" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <linearGradient id="wrwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#0c1a2a" stop-opacity=".18"/></linearGradient>
-    <radialGradient id="wrsh"><stop offset="0" stop-color="#0c1a2a" stop-opacity=".14"/><stop offset="1" stop-color="#0c1a2a" stop-opacity="0"/></radialGradient></defs>`;
+    <linearGradient id="wrwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#181818" stop-opacity=".18"/></linearGradient>
+    <radialGradient id="wrsh"><stop offset="0" stop-color="#181818" stop-opacity=".14"/><stop offset="1" stop-color="#181818" stop-opacity="0"/></radialGradient></defs>`;
   return `<svg class="wr-dn${T>=1?' done':''}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${defs}<g class="dn" transform="rotate(${ROT} ${cx} ${rc})">
     <ellipse cx="${cx}" cy="${cy+DEP+14}" rx="${R*1.2}" ry="${R*K*.8}" fill="url(#wrsh)" opacity="${Math.min(1,T*1.5).toFixed(2)}"/>${backH}${caps}${walls}${tops}</g>${lab}</svg>`;}
 let WR_DN_S=[];
@@ -325,12 +328,12 @@ function renderWrDash(){
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  h.innerHTML=wrHead(L('TV 서머리','TV summary'),`${wrMonth()} · ${W.period||''}`)+kpis
+  h.innerHTML=wrHead(L('TV 누적 퍼포먼스','TV cumulative performance'),`${wrMonth()} · ${W.period||''}`)+kpis
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
       <div id="wrItem"></div>
-      <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
+      <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(옅은 회색) 위에 코웨이(진한 회색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
       <div id="wrRt"></div>
       <div class="sec gap sm">${L('소재 온에어 타임라인','Creative on-air timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 배경 = 먼슬리 리포트 스토리보드 · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · background = storyboard · creatives without an on-air date are left out')}</span></div>
       <div id="wrTl"></div>`;
@@ -340,7 +343,7 @@ function renderWrDash(){
 
 /* ---------- R3+ × eq.GRP 소재 지도 — 점마다 카드, 선은 서로 닿지 않게 ---------- */
 /* v160 — 소재별 효율: 오른쪽 위 고르기 — 소재별(전체 · 한 품목만) / 품목별(품목 Total 로 묶음) */
-var WR_SC={mode:'cr',item:''};
+var WR_SC={mode:'it',item:''};   // v161 — 기본은 품목별
 function wrScRender(){
   const W=TV_WR;if(!W)return;const items=W.items.filter(it=>it.cr.some(c=>wrN(c.eq)>0));
   if(WR_SC.item&&!items.some(i=>i.n===WR_SC.item))WR_SC.item='';
@@ -361,7 +364,7 @@ function wrScatter(pts){
   /* v158 — 그래프를 영역 전체에 깔고, 카드는 점 바로 옆(오른쪽 아래 · 왼쪽 위)에 붙인다.
      붙일 자리가 다른 카드 · 점과 겹칠 때만 근처 빈 곳으로 옮기고 안내선으로 잇는다 */
   const Wd=Math.max(900,box.clientWidth||1100),Hd=Math.max(600,Math.min(760,Math.round(Wd*.54))),CW=176,CH=60;
-  const x0=58,x1=Wd-24,y0=34,y1=Hd-44;
+  const x0=58,x1=Wd-24,y0=74,y1=Hd-44;   /* v161 — 위쪽 40px 는 고르기 단추 줄(그래프 판 안) */
   const mxE=Math.max(...pts.map(p=>p.c.eq)),mxR=Math.max(...pts.map(p=>p.c.r3))||10;
   /* 눈금 — 최대값에 바짝(너무 크게 올리지 않아 점 사이가 벌어지게) */
   const stepOf=v=>{const e=Math.pow(10,Math.floor(Math.log10(v/7))),f=v/7/e;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e;};
@@ -370,28 +373,36 @@ function wrScatter(pts){
   const mxB=Math.max(...pts.map(p=>wrN(p.c.bud)).filter(isFinite),0);
   const rad=p=>{const b=wrN(p.c.bud);return mxB>0&&b>0?Math.max(5,22*Math.sqrt(b/mxB)):5;};
   pts.forEach((p,i)=>{p.i=i;p.x=X(p.c.eq);p.y=Y(p.c.r3);p.r=rad(p);});
-  /* 후보 자리 — 붙임 4곳(오른쪽 아래 · 왼쪽 위가 먼저) + 떨어진 자리(고리 4겹 × 16방향) */
-  /* v160 — 가까운 자리도 짧은 연결선으로 잇는다(붙임 거리 = 점 반지름 + 18) */
-  const cands=p=>{const o=[],k=p.r*.72+18;
-    o.push({x:p.x+k,y:p.y+k,att:1,pen:0},{x:p.x-k-CW,y:p.y-k-CH,att:1,pen:2},{x:p.x+k,y:p.y-k-CH,att:1,pen:14},{x:p.x-k-CW,y:p.y+k,att:1,pen:14});
-    [60,95,140,200,280,380].forEach(d=>{for(let a=0;a<20;a++){const an=a/20*Math.PI*2,cx=p.x+Math.cos(an)*(d+CW*.35),cy=p.y+Math.sin(an)*(d*.7+CH*.3);o.push({x:cx-CW/2,y:cy-CH/2,att:0,pen:40+d*.35});}});
+  /* v161 — 카드는 오른쪽 아래(먼저) · 왼쪽 위 두 방향만. 안내선은 점에서 대각선으로 나간 뒤 한 번 꺾어 수평으로 카드까지
+     (왼쪽 아래 · 오른쪽 위로 뻗는 선이 없어 덜 복잡하다) */
+  const S2=Math.SQRT1_2;
+  const cands=p=>{const o=[];
+    [0,1].forEach(sd=>{const dir=sd?-1:1;
+      [p.r+12,p.r+30,p.r+54,p.r+84,p.r+120,p.r+165].forEach((dd,di)=>[12,36,70,120,190,280].forEach((hh,hi)=>{
+        const ex=p.x+dir*dd*S2,ey=p.y+dir*dd*S2,cx=sd?ex-hh-CW:ex+hh,cy=ey-CH/2;
+        o.push({x:cx,y:cy,ex,ey,sd,att:di===0&&hi<=1?1:0,pen:(sd?6:0)+dd*.32+hh*.22});}));});
     /* 축 눈금 글자를 가리지 않게 — 그래프 판 안쪽만 */
-    return o.filter(c=>c.x>=x0+3&&c.y>=y0-22&&c.x+CW<=Wd-4&&c.y+CH<=y1-3&&!(c.x+CW>Wd-340&&c.y<44));};   /* 오른쪽 위 고르기 단추 자리는 비움 */
+    const ok=o.filter(c=>c.x>=x0+3&&c.y>=y0+2&&c.x+CW<=x1-2&&c.y+CH<=y1-3&&c.ey>=y0&&c.ey<=y1);
+    if(ok.length)return ok;
+    /* 가장자리 점 — 판 안으로 밀어 넣은 자리 하나라도 */
+    return o.slice(0,12).map(c=>{const nx=Math.max(x0+3,Math.min(x1-2-CW,c.x)),ny=Math.max(y0+2,Math.min(y1-3-CH,c.y));return {...c,x:nx,y:ny,ey:Math.max(ny+6,Math.min(ny+CH-6,c.ey)),pen:c.pen+60};});};
   /* 카드끼리 18px 안으로 붙어도 겹친 것으로 본다(덜 빽빽하게) */
   const ovl=(a,b)=>Math.max(0,Math.min(a.x+CW,b.x+CW)-Math.max(a.x,b.x)+18)*Math.max(0,Math.min(a.y+CH,b.y+CH)-Math.max(a.y,b.y)+18);
   const cHit=(c,q)=>{const nx=Math.max(c.x,Math.min(q.x,c.x+CW)),ny=Math.max(c.y,Math.min(q.y,c.y+CH));return Math.hypot(nx-q.x,ny-q.y)<q.r+4;};
-  const lead=(p,c)=>{const nx=Math.max(c.x,Math.min(p.x,c.x+CW)),ny=Math.max(c.y,Math.min(p.y,c.y+CH)),dx=nx-p.x,dy=ny-p.y,dl=Math.hypot(dx,dy)||1;return [[p.x+dx/dl*p.r,p.y+dy/dl*p.r],[nx,ny]];};
+  /* 안내선 = 점 가장자리 → 꺾는 점 → 카드 가장자리(수평) */
+  const lead=(p,c)=>{const dir=c.sd?-1:1;return [[p.x+dir*p.r*S2,p.y+dir*p.r*S2],[c.ex,c.ey],[c.sd?c.x+CW:c.x,c.ey]];};
+  const segs=L=>[[L[0],L[1]],[L[1],L[2]]];
   const sx=(a,b,c,d)=>{const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);const d1=o(c,d,a),d2=o(c,d,b),d3=o(a,b,c),d4=o(a,b,d);return ((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0));};
   const psd=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy||1;let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
-  const segRect=(a,b,c)=>{if((a[0]>c.x&&a[0]<c.x+CW&&a[1]>c.y&&a[1]<c.y+CH))return true;const R=[[c.x,c.y],[c.x+CW,c.y],[c.x+CW,c.y+CH],[c.x,c.y+CH]];for(let i=0;i<4;i++)if(sx(a,b,R[i],R[(i+1)%4]))return true;return false;};
+  const segRect=(a,b,c)=>{const ins=q=>q[0]>c.x+1&&q[0]<c.x+CW-1&&q[1]>c.y+1&&q[1]<c.y+CH-1;if(ins(a)||ins(b))return true;const R=[[c.x,c.y],[c.x+CW,c.y],[c.x+CW,c.y+CH],[c.x,c.y+CH]];for(let i=0;i<4;i++)if(sx(a,b,R[i],R[(i+1)%4]))return true;return false;};
   const C=pts.map(cands);
   const costOne=(i,c,sel)=>{let v=c.pen;const p=pts[i];
     pts.forEach((q,j)=>{if(j!==i&&cHit(c,q))v+=900;});
-    const L1=lead(p,c);
-    sel.forEach((d,j)=>{if(j===i||!d)return;v+=ovl(c,d)*4;
-      if(segRect(L1[0],L1[1],d))v+=500;const L2=lead(pts[j],d);if(sx(L1[0],L1[1],L2[0],L2[1]))v+=700;
-      if(segRect(L2[0],L2[1],c))v+=500;});
-    pts.forEach((q,j)=>{if(j!==i&&psd([q.x,q.y],L1[0],L1[1])<q.r+3)v+=300;});
+    const S1=segs(lead(p,c));
+    sel.forEach((d,j)=>{if(j===i||!d)return;v+=ovl(c,d)*4;const S3=segs(lead(pts[j],d));
+      S1.forEach(([a1,b1])=>{if(segRect(a1,b1,d))v+=500;S3.forEach(([a3,b3])=>{if(sx(a1,b1,a3,b3))v+=700;});});
+      S3.forEach(([a3,b3])=>{if(segRect(a3,b3,c))v+=500;});});
+    pts.forEach((q,j)=>{if(j===i)return;S1.forEach(([a1,b1])=>{if(psd([q.x,q.y],a1,b1)<q.r+3)v+=300;});});
     return v;};
   /* 큰 점(예산)부터 자리 잡고, 몇 번 돌며 서로 맞춘다 */
   const ord=[...pts].sort((a,b)=>b.r-a.r).map(p=>p.i);const sel=pts.map(()=>null);
@@ -401,7 +412,7 @@ function wrScatter(pts){
   /* 격자 · 축 */
   let grid='';for(let v=0;v<=YM+1e-9;v+=sys){const yy=Y(v);grid+=`<line x1="${x0}" x2="${x1}" y1="${yy}" y2="${yy}" class="gl"/><text x="${x0-8}" y="${yy+4}" class="tk" text-anchor="end">${wrF(v,sys<1?1:0)}%</text>`;}
   for(let v=0;v<=XM+1e-9;v+=sxs){const xx=X(v);grid+=`<line x1="${xx}" x2="${xx}" y1="${y0}" y2="${y1}" class="gl"/><text x="${xx}" y="${y1+18}" class="tk" text-anchor="middle">${wrF(v)}</text>`;}
-  const lines=pts.map((p,i)=>{const c=sel[i];const [a2,b2]=lead(p,c);return `<path class="ln" data-i="${i}" d="M${a2[0].toFixed(1)},${a2[1].toFixed(1)} L${b2[0].toFixed(1)},${b2[1].toFixed(1)}"/><circle class="lnd" data-i="${i}" cx="${b2[0].toFixed(1)}" cy="${b2[1].toFixed(1)}" r="2.2"/>`;}).join('');
+  const lines=pts.map((p,i)=>{const c=sel[i];const [a2,m2,b2]=lead(p,c),f=v=>v.toFixed(1);return `<path class="ln" data-i="${i}" d="M${f(a2[0])},${f(a2[1])} L${f(m2[0])},${f(m2[1])} L${f(b2[0])},${f(b2[1])}"/><circle class="lnd" data-i="${i}" cx="${f(b2[0])}" cy="${f(b2[1])}" r="2.2"/>`;}).join('');
   const dots=[...pts].sort((a,b)=>b.r-a.r).map(p=>{const r=p.r,i=p.i;
     return `<g class="pt${WR_SEL.item===p.it&&WR_SEL.cr===p.c.n?' sel':''}" data-i="${i}" style="--d:${i*60}ms">
       <circle r="${(r*2.4).toFixed(1)}" class="halo" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/><circle r="${(r*2.4).toFixed(1)}" class="halo h2" fill="${WR_NEU}" cx="${p.x}" cy="${p.y}"/>
@@ -462,7 +473,7 @@ function wrItemTbl(){
     body+=`<tr class="gtot"><td class="stk c1 head" colspan="2">${g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 Total','Cable total')}</td>
       ${blocks.map(b=>{const t=(W.det[b.k].t||{})[g];return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fvT(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;});
   body+=`<tr class="total"><td class="stk c0 head" colspan="3">TV Set Total</td>${blocks.map(b=>{const t=(W.det[b.k].t||{}).T;return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fvT(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;
-  box.innerHTML=`<div class="wrsel one">${chips}</div>`+wrHs(`<table class="tbl lite wrt writ"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl');
+  box.innerHTML=`<div class="wrsel one">${chips}</div>`+wrHs(`<table class="tbl lite wrt writ"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl full');
   box.querySelectorAll('[data-wri]').forEach(b=>b.onclick=()=>{const e=ord.find(x=>x.n===b.dataset.wri);WR_SEL={item:e.n,cr:((e.cr.find(c=>c.n!=='계')||{}).n)||''};wrItemTbl();wrScSync();});
   box.querySelectorAll('[data-wrc]').forEach(b=>b.onclick=()=>{const c=ent.cr.find(x=>x.k===b.dataset.wrc);WR_SEL={item:ent.n,cr:c&&c.n!=='계'?c.n:''};wrItemTbl();wrScSync();});
   wrHsWire(box);
@@ -472,7 +483,7 @@ function wrScSync(){const root=document.querySelector('#wrSc .wrsc-in');if(!root
   root.querySelectorAll('.wrscc').forEach(c=>{const on=c.dataset.it===WR_SEL.item&&c.dataset.cr===WR_SEL.cr;c.classList.toggle('sel',on);root.querySelectorAll(`g.pt[data-i="${c.dataset.i}"]`).forEach(g=>g.classList.toggle('sel',on));});}
 
 /* ---------- 시청률 — 지상파 · 종편 · 케이블, 무채 막대(타깃 평균) 위에 유채 막대(코웨이) 겹침 ---------- */
-const WR_CW='#1d6fc2';
+const WR_CW='#646464';
 function wrRatings(){
   const box=$('wrRt');if(!box)return;const R=TV_WR.rt||{};
   const groups=[['지상파',L('지상파','Terrestrial')],['종편',L('종편','General programming')],['케이블',L('케이블','Cable')]].filter(([k])=>(R[k]||[]).length);
@@ -595,8 +606,8 @@ function wrWeekChart(){
     +rPts.map(p=>`<g class="r3p${S[p[2]].past?' past':''}" style="--d:${900+p[2]*40}ms"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${Math.min(18.5,step*.42).toFixed(1)}"/>
       <text x="${p[0].toFixed(1)}" y="${(p[1]+3.6).toFixed(1)}" text-anchor="middle">${wrF(cprp[p[2]])}</text></g>`).join('');
   box.innerHTML=`<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" class="rpisosvg wkiso">
-    <defs><linearGradient id="wreqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3ad" stop-opacity=".36"/><stop offset="1" stop-color="#9aa3ad" stop-opacity="0"/></linearGradient>
-      <linearGradient id="wreqg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7f8a96" stop-opacity=".42"/><stop offset="1" stop-color="#7f8a96" stop-opacity="0"/></linearGradient>
+    <defs><linearGradient id="wreqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a2a2a2" stop-opacity=".36"/><stop offset="1" stop-color="#a2a2a2" stop-opacity="0"/></linearGradient>
+      <linearGradient id="wreqg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#898989" stop-opacity=".42"/><stop offset="1" stop-color="#898989" stop-opacity="0"/></linearGradient>
       <clipPath id="wrwkc"><rect x="0" y="0" width="${Wd}" height="${base}"/></clipPath>
       <clipPath id="wrwkP"><rect x="-20" y="-20" width="${Math.max(0,xCut+20)}" height="${H+40}"/></clipPath>
       <clipPath id="wrwkN"><rect x="${Math.max(-20,xCut)}" y="-20" width="${Wd+40}" height="${H+40}"/></clipPath>

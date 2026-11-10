@@ -21,10 +21,11 @@ function setCampMedia(m){
   return true;}
 /* 디지털 · OTT 가 함께 쓰는 화면(dash · input · setup)의 메뉴 — 지금 보는 쪽(curDgArea)의 것 (v141) */
 const DG_TABS=['dash','input','setup'];
-function areaOfTab(name){return DG_TABS.includes(name)?curDgArea():(AREA_OF_TAB[name]||'digital');}
+function areaOfTab(name){if(name==='intake')return (typeof INBX_AREA!=='undefined'&&INBX_AREA)||'tv';return DG_TABS.includes(name)?curDgArea():(AREA_OF_TAB[name]||'digital');}
 function tabMenu(name,sub){
   const a=areaOfTab(name);
   const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
+  if(name==='intake')return MENUS.find(x=>x.tab==='intake'&&x.area===a)||MENUS.find(f);
   return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
 /* ---------- 메뉴 목록 ----------
@@ -103,6 +104,7 @@ function paintTabsOn(){
      if(src!==lb)ob.textContent=lb;}}
   T.querySelectorAll('.subgrp [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name&&(!DG_TABS.includes(name)||area==='digital')));
   T.querySelectorAll('.subgrp [data-otab]').forEach(b=>b.classList.toggle('on',b.dataset.otab===name&&area==='ott'));
+  T.querySelectorAll('.subgrp [data-itab]').forEach(b=>b.classList.toggle('on',name==='intake'&&b.dataset.itab===area));
   T.querySelectorAll('#subbar [data-sub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='digital'&&b.dataset.sub===cs));
   T.querySelectorAll('[data-osub]').forEach(b=>b.classList.toggle('on',name==='dash'&&area==='ott'&&b.dataset.osub===cs));
   /* 도구 — 영역 관리는 디지털 대시보드에서만, 페이지 저장(v112)은 보기 메뉴(대시보드 · 전체 캠페인)에서만 — 입력 화면은 빼고 */
@@ -194,6 +196,7 @@ function syncUrl(){
 function goMenu(id){
   const m=MENU_BY[id];if(!m||!menuVisible(id))return false;
   if(m.area==='digital'||m.area==='ott')setDgArea(m.area);
+  if(m.tab==='intake'){try{INBX_AREA=m.area;}catch(e){}}
   if(m.tab==='dash'){
     if(($('tabs')||{}).dataset?.cur!=='dash')switchTab('dash');
     if(curDashSub()!==m.sub||DG_DIRTY)dashSubGo(m.sub);}
