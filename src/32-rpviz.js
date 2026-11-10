@@ -18,6 +18,8 @@ function rpShadeC(c,k){const m=String(c).match(/rgb\((\d+),(\d+),(\d+)\)/);if(m)
 /* ---------------- ① 막대 ↔ 도넛 ---------------- */
 function rpBarDonut(box,bars,opt){
   if(!box)return;opt=opt||{};
+  /* 4% 미만 조각은 '기타'로 — 안내선이 엉키지 않게 */
+  bars=bars.map(b=>({...b,slices:rpGroupSmall(b.slices.filter(z=>z.v>0),'')}));
   const W=Math.max(420,box.clientWidth||600),H=opt.H||340,B=H-34,T=30,n=bars.length,gw=(W-16)/Math.max(n,1);
   const mx=Math.max(...bars.map(b=>b.v),1),d=Math.min(30,gw*.5),RB=Math.min(H*.3,(W*.5-150)*.75,118),CX=W/2,CY=B-RB-4;   /* v155 — 도넛도 막대처럼 바닥에 붙어서 */
   /* v154 — 옆 막대는 도넛이 넓어진 만큼만 밀려난다(카드는 막대 위에 겹쳐 띄운다) */
@@ -104,20 +106,65 @@ function rpBarDonut(box,bars,opt){
     if(i>=0&&opt.tip){const h=opt.tip(bars[i]);if(h&&st[i].t<.3)showTip(e.clientX,e.clientY,h);else hideTip();}});
   svg.addEventListener('mouseleave',()=>{act=-1;st.forEach(s=>s.tg=0);hideTip();kick();});
   kick();}
+/* ---------- 안내선 — 서로 겹치지 않게 (v156) ----------
+   점(조각 가운데 바깥 테두리) → 바깥쪽으로 조금 나간 꺾임점 → 카드 모서리. 같은 쪽 카드 자리들을 놓고
+   선끼리 교차하면 두 카드의 자리를 맞바꾼다(교차가 없어질 때까지) */
+function rpSegX(a,b,c,d){const o=(p,q,r)=>{const v=(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);return Math.abs(v)<1e-9?0:Math.sign(v);};
+  return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0;}
+/* 양쪽 카드 수 맞추기 — 한쪽이 너무 많으면 위 · 아래 끝(가운데 세로선에 가까운) 점부터 반대쪽으로 */
+function rpBalance(pts,cx){
+  for(let it=0;it<20;it++){const l=pts.filter(p=>p.side<0),r=pts.filter(p=>p.side>0);
+    if(Math.abs(l.length-r.length)<=1)break;const big=l.length>r.length?l:r;
+    big.sort((a,b)=>Math.abs(a.ax-cx)-Math.abs(b.ax-cx))[0].side*=-1;}
+  return pts;}
+function rpLeaderPath(p,ex,ey){return [[p.ax,p.ay],[p.ox,p.oy],[ex,ey]];}
+/* 교차하거나 2px 안으로 붙으면 겹친 것으로 본다 */
+function rpPtSeg(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l));return Math.hypot(a[0]+t*dx-p[0],a[1]+t*dy-p[1]);}
+function rpSegNear(a,b,c,d,m){return rpSegX(a,b,c,d)||Math.min(rpPtSeg(a,c,d),rpPtSeg(b,c,d),rpPtSeg(c,a,b),rpPtSeg(d,a,b))<m;}
+function rpCrossing(P1,P2){for(let i=0;i<P1.length-1;i++)for(let j=0;j<P2.length-1;j++)if(rpSegNear(P1[i],P1[i+1],P2[j],P2[j+1],2.5))return true;return false;}
+/* 탐색 배치 — 점마다 꺾임 거리(바깥으로 얼마나 나갈지) · 카드 자리를 후보로 놓고, 이미 그린 선과 교차하지 않는 것 중
+   자리 차이가 가장 작은 것을 고른다. 전부 교차하면 교차가 가장 적은 것 */
+function rpPlace(L,ys,ex,CH){
+  const cnt=r=>{const P=r.map(x=>x.P);let c=0;for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++)if(rpCrossing(P[i],P[j]))c++;return c;};
+  const asg=rpUncross(L,ys,ex,CH),A=L.map((p,i)=>({k:asg[i],ox:p.ox,oy:p.oy,P:rpLeaderPath(p,ex,ys[asg[i]]+CH/2)}));
+  let best=A,bc=cnt(A);if(!bc)return A;
+  const ords=[L.map((_,i)=>i),L.map((_,i)=>L.length-1-i)];let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  for(let t=0;t<200;t++){const o=L.map((_,i)=>i);for(let i=o.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[o[i],o[j]]=[o[j],o[i]];}ords.push(o);}
+  for(const ord of ords){const r=rpPlaceG(L,ys,ex,CH,ord),c=cnt(r);if(c<bc){best=r;bc=c;}if(!bc)break;}
+  return best;}
+function rpPlaceG(L,ys,ex,CH,order){
+  const used=new Set(),placed=[],res=new Array(L.length);
+  for(const i of order){const p=L[i];let best=null;
+    for(const dd of [10,14,20,28,38,50,66])for(let k=0;k<ys.length;k++){if(used.has(k))continue;
+      const [ox,oy]=p.out?p.out(dd):[p.ox,p.oy],P=[[p.ax,p.ay],[ox,oy],[ex,ys[k]+CH/2]];
+      let cr=0;for(const Q of placed)if(rpCrossing(P,Q))cr++;
+      const sc=cr*10000+Math.abs(ys[k]+CH/2-oy)+dd*.8+Math.abs(k-i)*3;
+      if(!best||sc<best.sc)best={sc,k,ox,oy,P};}
+    used.add(best.k);placed.push(best.P);res[i]=best;}
+  return res;}
+
+function rpUncross(L,ys,exOf,CH){
+  const asg=L.map((_,i)=>i),path=i=>rpLeaderPath(L[i],exOf,ys[asg[i]]+CH/2);
+  for(let it=0;it<60;it++){let ch=false;
+    for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(rpCrossing(path(i),path(j))){const t=asg[i];asg[i]=asg[j];asg[j]=t;ch=true;}
+    if(!ch)break;}
+  return asg;}
 /* 펼친 도넛의 카드 — 조각 가운데에서 얇은 안내선, 왼쪽 · 오른쪽 열 */
 function rpBdCards(b,cx,cy,rx,R,q,W,H){
   const tot=b.slices.reduce((a,x)=>a+x.v,0)||1;let a=-Math.PI/2;const pts=[];
   b.slices.forEach((z,k)=>{const sp=z.v/tot*Math.PI*2;const mid=a+sp/2;a+=sp;if(z.v<=0)return;
-    pts.push({k,z,ax:cx+Math.cos(mid)*rx*.98,ay:cy+Math.sin(mid)*R*.98,side:Math.cos(mid)>=0?1:-1});});
+    pts.push({k,z,ax:cx+Math.cos(mid)*rx*.98,ay:cy+Math.sin(mid)*R*.98,ox:cx+Math.cos(mid)*(rx+14),oy:cy+Math.sin(mid)*(R+14),out:dd=>[cx+Math.cos(mid)*(rx+dd),cy+Math.sin(mid)*(R+dd)],side:Math.cos(mid)>=0?1:-1});});
   const CW=150,CH=pts.some(p=>p.z.sub)?46:34,GAP=6,out=[];
   const roomL=cx-rx-30-CW>=2,roomR=cx+rx+30+CW<=W-2;
   if(!roomL&&!roomR)return '';
+  if(roomL&&roomR)rpBalance(pts,cx);
   pts.forEach(p=>{if(p.side<0&&!roomL)p.side=1;if(p.side>0&&!roomR)p.side=-1;});
   [-1,1].forEach(sd=>{const L=pts.filter(p=>p.side===sd).sort((p,q2)=>p.ay-q2.ay);
     let ys=L.map(p=>p.ay-CH/2);for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+CH+GAP);
     const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*(CH+GAP),ys[i]);
-    L.forEach((p,i)=>{const bx=sd>0?cx+rx+30:cx-rx-30-CW,y=ys[i],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1);
-      out.push(`<g class="bdc" opacity="${q.toFixed(2)}"><path d="M${f(p.ax)},${f(p.ay)} L${f(p.ax+sd*10)},${f(ey)} L${f(ex)},${f(ey)}" class="bdl"/>
+    const bx0=sd>0?cx+rx+30:cx-rx-30-CW,ex0=sd>0?bx0:bx0+CW,pl=rpPlace(L,ys,ex0,CH);
+    L.forEach((p,i)=>{const bx=bx0,y=ys[pl[i].k],ex=ex0,ey=y+CH/2,f=v=>v.toFixed(1);
+      out.push(`<g class="bdc" opacity="${q.toFixed(2)}"><path d="M${f(p.ax)},${f(p.ay)} L${f(pl[i].ox)},${f(pl[i].oy)} L${f(ex)},${f(ey)}" class="bdl"/>
         <rect x="${f(bx)}" y="${f(y)}" width="${f(CW)}" height="${CH}" rx="8" class="bdx"/><rect x="${f(bx+8)}" y="${f(y+CH/2-4)}" width="8" height="8" rx="2" fill="${p.z.col}"/>
         <text x="${f(bx+21)}" y="${f(y+14)}" class="bdn">${esc(p.z.n)}</text>
         <text x="${f(bx+21)}" y="${f(y+27)}" class="bds">${wrEok(p.z.v)} · ${(p.z.v/tot*100).toFixed(p.z.v/tot<.1?1:0)}%</text>${p.z.sub?`<text x="${f(bx+21)}" y="${f(y+40)}" class="bds">${esc(p.z.sub)}</text>`:''}</g>`);});});
@@ -130,7 +177,7 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
   /* 카드 줄 수 — 다 펼친 각도로 왼쪽 · 오른쪽에 몇 개씩 가는지 */
   let aa=-Math.PI/2,nl=0,nr=0;S0.forEach(s=>{const sp=s.v/tot*TAU,mid=aa+sp/2;aa+=sp;const x=Math.cos(mid)*cs-Math.sin(mid)*K*sn;if(x>=0)nr++;else nl++;});
   const below=!!(opt&&opt.below);
-  const n=Math.max(nl,nr),Hc=Math.max(n,3)*PITCH+16,cx=W/2,cy=below?R*K+18:Math.max(R*K+30,Hc/2),H=below?cy+R*K+DEP+30+CH+8:Math.max(cy+R*K+DEP+40,Hc+10),rc=cy+DEP/2;
+  const n=Math.ceil((nl+nr)/2)+1,Hc=Math.max(n,3)*PITCH+16,cx=W/2,cy=below?R*K+18:Math.max(R*K+30,Hc/2),H=below?cy+R*K+DEP+30+CH+8:Math.max(cy+R*K+DEP+40,Hc+10),rc=cy+DEP/2;
   const rot=([x,y])=>[cx+(x-cx)*cs-(y-rc)*sn,rc+(x-cx)*sn+(y-rc)*cs];
   let a=-Math.PI/2;const S=S0.map((s,i)=>{const sp=s.v/tot*TAU*T,o={...s,i,a0:a,a1:a+sp};a+=sp;const mid=(o.a0+o.a1)/2,E=s.n===meKey?12*T:0;o.ox=Math.cos(mid)*E;o.oy=Math.sin(mid)*E*K;return o;});
   const P=(s,an,rr,dz)=>[cx+s.ox+Math.cos(an)*rr,cy+s.oy+Math.sin(an)*rr*K+(dz||0)];
@@ -155,25 +202,42 @@ function rp3dDonutSvg(S0,T,W,meKey,opt){
       lab+=`<g class="cd" data-k="${s.i}"><rect class="bx" x="${f(bx)}" y="${f(y)}" width="${f(cw)}" height="${CH}" rx="9"/><rect x="${f(bx+10)}" y="${f(y+CH/2-4.5)}" width="9" height="9" rx="2.5" fill="${s.col}"/>
         <text x="${f(bx+26)}" y="${f(y+15)}" class="cn">${esc(s.n)}</text><text x="${f(bx+26)}" y="${f(y+30)}" class="cv">${(s.v/tot*100).toFixed(s.v/tot<.1?1:0)}% · ${wrEok(s.v)}</text></g>`;});}
   else if(T>=1){
-    const pts=S.filter(s=>s.v>0).map(s=>{const mid=(s.a0+s.a1)/2,fr=Math.sin(mid)>0,[x,y]=rot(P(s,mid,R+2,fr?DEP*.45:0));return {s,x,y,side:x>=cx?1:-1};});
-    [-1,1].forEach(sd=>{const L=pts.filter(p=>p.side===sd).sort((p,q)=>p.y-q.y);let ys=L.map(p=>p.y-CH/2);
-      for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+PITCH);const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);
-      for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*PITCH,ys[i]);
-      L.forEach((p,i)=>{const bx=sd>0?W-CW-2:2,y=ys[i],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1),me=p.s.n===meKey,elbow=p.x+sd*Math.max(14,Math.min(40,Math.abs(ex-p.x)*.35));
-        lab+=`<g class="cd${me?' mine':''}" data-k="${p.s.i}"><path class="ln" d="M${f(p.x)},${f(p.y)} L${f(elbow)},${f(ey)} L${f(ex)},${f(ey)}"/><circle cx="${f(p.x)}" cy="${f(p.y)}" r="2" class="lnd"/>
-          <rect class="bx" x="${f(bx)}" y="${f(y)}" width="${f(CW)}" height="${CH}" rx="9"/><rect x="${f(bx+10)}" y="${f(ey-4.5)}" width="9" height="9" rx="2.5" fill="${p.s.col}"/>
-          <text x="${f(bx+26)}" y="${f(y+15)}" class="cn">${esc(p.s.n)}</text><text x="${f(bx+26)}" y="${f(y+30)}" class="cv">${(p.s.v/tot*100).toFixed(p.s.v/tot<.1?1:0)}% · ${wrEok(p.s.v)}</text></g>`;});});}
+    const pts=S.filter(s=>s.v>0).map(s=>{const mid=(s.a0+s.a1)/2,fr=Math.sin(mid)>0,[x,y]=rot(P(s,mid,R+2,fr?DEP*.45:0)),[ox,oy]=rot(P(s,mid,R+16,fr?DEP*.6:0));return {s,x,y,ax:x,ay:y,ox,oy,out:dd=>rot(P(s,mid,R+2+dd,fr?DEP*.6:0)),side:x>=cx?1:-1};});
+    /* 균형 맞춘 배치 · 그대로 배치 · 위아래 끝 점 하나씩 뒤집은 배치 중 교차가 가장 적은 것 */
+    const lay=sides=>{let html='';const paths=[];
+      [-1,1].forEach(sd=>{const L=pts.filter((p,ii)=>sides[ii]===sd).sort((p,q)=>p.oy-q.oy);let ys=L.map(p=>p.oy-CH/2);
+        for(let i=1;i<ys.length;i++)ys[i]=Math.max(ys[i],ys[i-1]+PITCH);const over=ys.length?ys[ys.length-1]+CH-(H-4):0;if(over>0)ys=ys.map(y=>y-over);
+        for(let i=0;i<ys.length;i++)ys[i]=Math.max(4+i*PITCH,ys[i]);
+        const pl=rpPlace(L,ys,sd>0?W-CW-2:2+CW,CH);
+        L.forEach((p,i)=>{const bx=sd>0?W-CW-2:2,y=ys[pl[i].k],ex=sd>0?bx:bx+CW,ey=y+CH/2,f=v=>v.toFixed(1),me=p.s.n===meKey;
+          paths.push([[p.x,p.y],[pl[i].ox,pl[i].oy],[ex,ey]]);
+          html+=`<g class="cd${me?' mine':''}" data-k="${p.s.i}"><path class="ln" d="M${f(p.x)},${f(p.y)} L${f(pl[i].ox)},${f(pl[i].oy)} L${f(ex)},${f(ey)}"/><circle cx="${f(p.x)}" cy="${f(p.y)}" r="2" class="lnd"/>
+            <rect class="bx" x="${f(bx)}" y="${f(y)}" width="${f(CW)}" height="${CH}" rx="9"/><rect x="${f(bx+10)}" y="${f(ey-4.5)}" width="9" height="9" rx="2.5" fill="${p.s.col}"/>
+            <text x="${f(bx+26)}" y="${f(y+15)}" class="cn">${esc(p.s.n)}</text><text x="${f(bx+26)}" y="${f(y+30)}" class="cv">${(p.s.v/tot*100).toFixed(p.s.v/tot<.1?1:0)}% · ${wrEok(p.s.v)}</text></g>`;});});
+      let cr=0;for(let i=0;i<paths.length;i++)for(let j=i+1;j<paths.length;j++)if(rpCrossing(paths[i],paths[j]))cr++;
+      return {html,cr,bal:Math.abs(sides.filter(x=>x<0).length-sides.filter(x=>x>0).length)};};
+    const raw=pts.map(p=>p.side);rpBalance(pts,cx);const bal=pts.map(p=>p.side);
+    const cands=[bal,raw];const near=pts.map((p,i)=>i).sort((a,b)=>Math.abs(pts[a].ax-cx)-Math.abs(pts[b].ax-cx)).slice(0,3);
+    for(let m=1;m<(1<<near.length);m++){const c=bal.slice();near.forEach((i,b)=>{if(m>>b&1)c[i]*=-1;});cands.push(c);}
+    let best=null;for(const c of cands){if(Math.abs(c.filter(x=>x<0).length-c.filter(x=>x>0).length)>3)continue;const r=lay(c);if(!best||r.cr<best.cr||(r.cr===best.cr&&r.bal<best.bal))best=r;if(!best.cr&&c===bal)break;}
+    lab+=best.html;}
   return {svg:`<svg class="rp3d${T>=1?' done':''}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
     <g transform="rotate(13 ${cx} ${rc})"><ellipse cx="${cx}" cy="${cy+DEP+10}" rx="${R*1.15}" ry="${R*K*.7}" fill="rgba(12,26,42,.07)"/>${back}${caps}${walls}${tops}
     <ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="${R*K}" fill="url(#rp3hl)" pointer-events="none" opacity="${Math.min(1,T).toFixed(2)}"/></g>${lab}
     <defs><radialGradient id="rp3hl" cx=".35" cy=".25" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".24"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs></svg>`,S};}
+/* 3% 미만 작은 조각은 '기타'로 묶는다(코웨이는 묶지 않음) — 안내선 · 카드가 엉키지 않게 */
+function rpGroupSmall(segs,keep,th){th=th||.04;const tot=segs.reduce((s2,x)=>s2+x.v,0)||1;
+  /* 코웨이도 0.5% 미만이면(조각이 안 보일 만큼) 함께 묶는다 */
+  const small=segs.filter(x=>x.v/tot<th&&(x.n!==keep||x.v/tot<.005));if(small.length<2)return segs;
+  return segs.filter(x=>!small.includes(x)).concat([{n:L(`기타 ${small.length}개`,`Other (${small.length})`),v:small.reduce((s2,x)=>s2+x.v,0),col:'#c9ced4',etc:small}]);}
 function rp3dDonut(box,segs,meKey,opt){
+  segs=rpGroupSmall(segs,meKey);
   if(!box)return;const W=Math.max(480,box.clientWidth||600),id=(box._a=(box._a||0)+1),t0=performance.now(),DUR=1100;
   const tot=segs.reduce((s,x)=>s+x.v,0);
   const wire=()=>{const svg=box.querySelector('svg');if(!svg)return;
     const hot=k=>{svg.classList.toggle('hot',k!=null);svg.querySelectorAll('[data-k]').forEach(e=>e.classList.toggle('on',e.dataset.k===String(k)));};
     svg.addEventListener('mousemove',e=>{const g=e.target.closest('[data-k]');if(!g){hot(null);hideTip();return;}hot(g.dataset.k);const s=segs[+g.dataset.k];
-      showTip(e.clientX,e.clientY,`<div class="t">${esc(s.n)}</div>${rpTr(L('광고비','Spend'),wrEok(s.v))}${rpTr(L('점유율','Share'),rpP(s.v/tot*100,1))}`);});
+      showTip(e.clientX,e.clientY,`<div class="t">${esc(s.n)}</div>${rpTr(L('광고비','Spend'),wrEok(s.v))}${rpTr(L('점유율','Share'),rpP(s.v/tot*100,1))}${s.etc?`<div class="tsec">${L('묶인 항목','Grouped')}</div>`+s.etc.map(x=>rpTr(esc(x.n),wrEok(x.v))).join(''):''}`);});
     svg.addEventListener('mouseleave',()=>{hot(null);hideTip();});};
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){box.innerHTML=rp3dDonutSvg(segs,1,W,meKey,opt).svg;wire();return;}
   const fr=now=>{if(box._a!==id)return;const x=Math.min(1,(now-t0)/DUR);box.innerHTML=rp3dDonutSvg(segs,x<1?1-Math.pow(1-x,3):1,W,meKey,opt).svg;if(x<1)requestAnimationFrame(fr);else wire();};
