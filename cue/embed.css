@@ -17,3 +17,9 @@ html.embed .card{border-radius:14px;border-color:var(--rule)}
 html.embed .toast{display:none}
 /* 스크롤바 — 대시보드와 같은 얇은 회청 */
 html.embed{scrollbar-width:thin;scrollbar-color:var(--p-gline,#c5ccd6) transparent}
+
+/* 큐시트 캘린더 — 채널 칸 너비 통일 (v168) */
+html.embed .cale .c{display:inline-block;width:56px;max-width:none;overflow:hidden;text-overflow:clip;vertical-align:baseline;letter-spacing:-.2px}
+/* 캘린더 CM 위치 글자 — 분홍 · 붉은 톤 대신 회청 / 중CM 은 강조 파랑 (v168) */
+html.embed .cale .m{color:#7289a3}
+html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
