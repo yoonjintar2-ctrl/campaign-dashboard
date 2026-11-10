@@ -10,6 +10,9 @@ const rpClamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 /* 모노톤 — 경쟁사(회색 명도만) · 품목(회청 명도만) */
 function rpMono(i,n){const a=[0x5b,0x66,0x72],b=[0xc6,0xcc,0xd3],t=n<=1?.35:i/(n-1);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*t)).join(',')})`;}
 function rpSteel(i,n){const a=[0x3d,0x5a,0x80],b=[0xc4,0xd2,0xe2],t=n<=1?.3:i/(n-1);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*t)).join(',')})`;}
+function rpRgb(c){c=String(c);let m=c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);if(m)return [+m[1],+m[2],+m[3]];
+  m=c.replace('#','');if(m.length===3)m=m.split('').map(x=>x+x).join('');const n=parseInt(m,16);return isFinite(n)?[n>>16&255,n>>8&255,n&255]:[140,150,160];}
+function rpMix(a,b,t){const A=rpRgb(a),B2=rpRgb(b);return `rgb(${A.map((v,k)=>Math.round(v+(B2[k]-v)*t)).join(',')})`;}
 function rpShadeC(c,k){const m=String(c).match(/rgb\((\d+),(\d+),(\d+)\)/);if(m)return `rgb(${[m[1],m[2],m[3]].map(v=>Math.round(Math.min(255,v*k))).join(',')})`;return wrShade(c,k);}
 
 /* ---------------- ① 막대 ↔ 도넛 ---------------- */
@@ -20,34 +23,48 @@ function rpBarDonut(box,bars,opt){
   const fmt=opt.fmt||wrEok,PHI=72*Math.PI/180;
   const st=bars.map((b,i)=>({t:0,tg:0,x:8+gw*i+gw/2,h:Math.max(b.v>0?3:0,(B-T-24)*b.v/mx)}));
   const svgNS='http://www.w3.org/2000/svg';
-  box.innerHTML=`<svg class="rpbd" viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><g class="bl"></g><g class="act"></g></svg>
+  box._uid=(rpBarDonut._n=(rpBarDonut._n||0)+1);
+  box.innerHTML=`<svg class="rpbd" viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><defs><linearGradient id="rpbdhl${box._uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g class="bl"></g><g class="act"></g></svg>
     ${opt.legend||''}`;
   const svg=box.querySelector('svg'),gB=svg.querySelector('.bl'),gA=svg.querySelector('.act');
   const t0=performance.now(),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let act=-1,raf=0,alive=true;
-  /* 한 막대(도넛) 그리기 — t: 0 막대 … 1 펼친 도넛, wig: 처음에 살짝 도는 각(라디안), grow: 처음 솟아오르기 */
-  function draw(i,t,wig,grow){
+  /* 한 막대(도넛) 그리기 — t: 0 막대 … 1 펼친 도넛, grow: 처음 솟아오르기.
+     v152 — 속이 꽉 찬 하나의 고리처럼: 앞면(조각) · 바깥 옆면(조각마다 같은 색의 어두운 톤) · 구멍 안 벽이
+     같은 각도 · 같은 두께로 맞물리게 그린다. 옆면은 앞면 오른쪽 반 타원과 뒷면 오른쪽 반 타원 사이의 띠 */
+  function draw(i,t,grow){
     const b=bars[i],s=st[i];if(!(b.v>0)&&t<=0)return `<rect x="${(s.x-d/2).toFixed(1)}" y="${B-2}" width="${d.toFixed(1)}" height="2" class="nil"/>`;
     const r=rpEase(rpClamp(t/.62,0,1)),q=rpEase(rpClamp((t-.55)/.45,0,1));
     const h0=s.h*grow,R=rpLerp(h0/2,RB,r),cx=rpLerp(s.x,CX,r),cy=rpLerp(B-h0/2,CY,r);
-    const phi=Math.min(PHI,r*PHI+wig),rx=R*Math.sin(phi),dd=rpLerp(d,30,r),dx=dd*Math.cos(phi),col=b.col||'#8ea3bd';
-    const f=v=>v.toFixed(1),side=rpShadeC(col,.72),fx=cx-dx/2;
+    const phi=r*PHI,rx=Math.max(R*Math.sin(phi),.001),dd=rpLerp(d,34,r),dx=dd*Math.cos(phi),col=b.col||'#8ea3bd';
+    const f=v=>v.toFixed(2),fx=cx-dx/2,bx=cx+dx/2,ri=.56,HP=Math.PI/2;
+    const F=(an,k)=>[fx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k],Bk=(an,k)=>[bx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k];
+    const tot=b.slices.reduce((a,x)=>a+x.v,0)||1;let a=-HP;
+    const segs=b.slices.filter(z=>z.v>0).map(z=>{const sp=z.v/tot*Math.PI*2,o={z,a0:a,a1:a+sp};a+=sp;return o;});
+    if(!segs.length)segs.push({z:{col},a0:-HP,a1:3*HP});
+    /* 막대일 때는 막대 색, 돌수록 조각 색으로 */
+    const wallC=z=>rpMix(rpShadeC(col,.86),rpShadeC(z.col,.72),r),faceC=z=>rpMix(col,z.col,Math.min(1,r*1.4));
     let g=`<g class="bd${t>.02?' on':''}" data-i="${i}">`;
-    /* 옆면 — 뒷면 타원 + 위아래 테두리 */
-    g+=`<path d="M${f(fx)},${f(cy-R)} L${f(cx+dx/2)},${f(cy-R)} A${f(Math.max(rx,.01))},${f(R)} 0 0 1 ${f(cx+dx/2)},${f(cy+R)} L${f(fx)},${f(cy+R)} Z" fill="${side}"/>`;
-    if(rx>.6){
-      /* 정면 — 조각마다 고리 · 벌어지기(q) */
-      const tot=b.slices.reduce((a,x)=>a+x.v,0)||1,ri=.56;let a=-Math.PI/2;
-      const P=(an,k,ox,oy)=>[fx+ox+Math.cos(an)*rx*k,cy+oy+Math.sin(an)*R*k];
-      b.slices.forEach((z,k)=>{const sp=z.v/tot*Math.PI*2;if(sp<=0)return;const a0=a,a1=a+sp;a=a1;const mid=(a0+a1)/2,E=q*7,ox=Math.cos(mid)*E*Math.sin(phi),oy=Math.sin(mid)*E;
-        const lg=sp>Math.PI?1:0,[x0,y0]=P(a0,1,ox,oy),[x1,y1]=P(a1,1,ox,oy),[x2,y2]=P(a1,ri,ox,oy),[x3,y3]=P(a0,ri,ox,oy);
-        const pth=sp>=Math.PI*2-1e-6?`M${f(x0)},${f(y0)} A${f(rx)},${f(R)} 0 1 1 ${f(x0-.01)},${f(y0)} Z`:
+    /* ① 바깥 옆면 — 보이는 쪽(오른쪽 반, -90°~90°)을 조각별로 */
+    const wallSeg=(c0,c1,z)=>{const [x0,y0]=F(c0,1),[x1,y1]=F(c1,1),[x2,y2]=Bk(c1,1),[x3,y3]=Bk(c0,1);
+      return `<path d="M${f(x0)},${f(y0)} A${f(rx)},${f(R)} 0 0 1 ${f(x1)},${f(y1)} L${f(x2)},${f(y2)} A${f(rx)},${f(R)} 0 0 0 ${f(x3)},${f(y3)} Z" fill="${wallC(z)}" stroke="${wallC(z)}" stroke-width=".6" stroke-linejoin="round"/>`;};
+    segs.forEach(sg=>{const A0=Math.max(sg.a0,-HP),A1=Math.min(sg.a1,HP);if(A1>A0+1e-4)g+=wallSeg(A0,A1,sg.z);});
+    /* 옆면 위아래 가장자리 하이라이트 · 그늘 — 둥근 두께감 */
+    g+=`<path d="M${f(fx)},${f(cy-R)} L${f(bx)},${f(cy-R)}" stroke="rgba(255,255,255,${(.35*(1-r)+.2).toFixed(2)})" stroke-width="1"/>`;
+    if(rx>.4){
+      /* ② 앞면 — 조각 고리. 조각 사이는 아주 가는 틈만 */
+      segs.forEach((sg,k)=>{const sp=sg.a1-sg.a0,lg=sp>Math.PI?1:0,[x0,y0]=F(sg.a0,1),[x1,y1]=F(sg.a1,1),[x2,y2]=F(sg.a1,ri),[x3,y3]=F(sg.a0,ri);
+        const c=faceC(sg.z),pth=sp>=Math.PI*2-1e-6?`M${f(fx)},${f(cy-R)} A${f(rx)},${f(R)} 0 1 1 ${f(fx-.01)},${f(cy-R)} Z M${f(fx)},${f(cy-R*ri)} A${f(rx*ri)},${f(R*ri)} 0 1 0 ${f(fx-.01)},${f(cy-R*ri)} Z`:
           `M${f(x0)},${f(y0)} A${f(rx)},${f(R)} 0 ${lg} 1 ${f(x1)},${f(y1)} L${f(x2)},${f(y2)} A${f(rx*ri)},${f(R*ri)} 0 ${lg} 0 ${f(x3)},${f(y3)} Z`;
-        g+=`<path d="${pth}" fill="${z.col}" stroke="var(--surface)" stroke-width="${(q*1.4).toFixed(2)}" data-s="${k}"/>`;});
-      /* 구멍 안쪽 벽 */
-      g+=`<ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*.56)}" ry="${f(R*.56)}" fill="${rpShadeC(col,.5)}" opacity="${(.35*r).toFixed(2)}"/>
-        <ellipse cx="${f(fx+Math.min(dx,rx*.3))}" cy="${f(cy)}" rx="${f(rx*.56)}" ry="${f(R*.56)}" fill="var(--surface)"/>`;
-    }else g+=`<rect x="${f(fx-.5)}" y="${f(cy-R)}" width="1" height="${f(2*R)}" fill="${rpShadeC(col,1.15)}"/>`;
+        g+=`<path d="${pth}" fill="${c}" fill-rule="evenodd" stroke="${q>.05?'var(--surface)':c}" stroke-width="${q>.05?(q*.9).toFixed(2):.5}" stroke-linejoin="round" data-s="${k}"/>`;});
+      /* 앞면 살짝 빛 — 왼쪽 위가 밝게 */
+      g+=`<ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx)}" ry="${f(R)}" fill="url(#rpbdhl${box._uid})" pointer-events="none"/>`;
+      /* ③ 구멍 — 앞 구멍 안에 안쪽 벽(왼쪽 초승달), 뒤 구멍과 겹치는 곳은 뚫려 보이게 */
+      const cid=`rpbdc${box._uid}_${i}`;
+      g+=`<clipPath id="${cid}"><ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}"/></clipPath>
+        <ellipse cx="${f(fx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}" fill="${rpShadeC(rpMix(col,segs[segs.length-1].z.col,r),.5)}"/>
+        <ellipse cx="${f(bx)}" cy="${f(cy)}" rx="${f(rx*ri)}" ry="${f(R*ri)}" fill="var(--surface)" clip-path="url(#${cid})"/>`;
+    }
     /* 막대일 때 값 */
     if(t<.15&&grow>.98)g+=`<text class="bv${opt.cur===i?' cur':''}" x="${f(s.x)}" y="${f(B-s.h-8)}" text-anchor="middle" opacity="${(1-t/.15).toFixed(2)}">${fmt(b.v)}</text>`;
     /* 펼친 뒤 — 가운데 합계 + 안내선 카드 */
@@ -64,10 +81,8 @@ function rpBarDonut(box,bars,opt){
     let hb='',ha='';
     st.forEach((s,i)=>{
       const dl=i*70,grow=reduce?1:rpEase(rpClamp((el-dl)/700,0,1));
-      /* 처음 한 번 — 살짝 돌다가 막대로 돌아온다 */
-      const w=reduce?0:Math.sin(Math.PI*rpClamp((el-dl-650)/900,0,1))*.15;
-      if(grow<1||(w>0&&el<dl+1600))busy=true;
-      const html=draw(i,s.t,w,grow);
+      if(grow<1)busy=true;
+      const html=draw(i,s.t,grow);
       if(i===act||s.t>.02)ha+=html;else hb+=html;});
     gB.innerHTML=hb;gA.innerHTML=ha;svg.classList.toggle('hot',act>=0);
     if(busy)raf=requestAnimationFrame(frame);else raf=0;}
