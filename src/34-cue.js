@@ -34,7 +34,7 @@ function cueFrameReady(w,imp){
 function cueFrameStats(s){
   if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});let ch=false;
   /* v179 — 품목별 예산(원)도 적어 둔다 → 전체 캠페인 '월별 광고 구분' 표가 큐시트만 있는 달에도 품목을 보여 준다 */
-  try{const D=cueMixData();if(D&&D.items.length){const it=D.items.map(x=>[x.fn||x.n,Math.round(x.sub.bud*1000)]);if(JSON.stringify(it)!==JSON.stringify(st.it||null)){st.it=it;ch=true;}}}catch(e){}
+  try{const D=cueMixData();if(D&&D.items.length){const it=D.items.map(x=>[x.fn||x.n,Math.round(x.sub.bud*1000),x.cat||'']);if(JSON.stringify(it)!==JSON.stringify(st.it||null)){st.it=it;ch=true;}}}catch(e){}
   if(Math.abs((+st.pgrp||0)-s.grp)>=.05){st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;ch=true;}
   if(!ch)return;
   try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
@@ -64,7 +64,7 @@ window.addEventListener('resize',()=>{try{cueSize();}catch(e){}});
 /* v173 — 미디어믹스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프를 큐시트 예산으로 그린다(계획은 미디어믹스, 실제 집행은 캠페인 퍼포먼스) */
 function cueMixData(){
   try{const S=JSON.parse(CUE.json).sheets,B=S['예산']||[],hd=(B[0]||[]).slice(1),nz=x=>String(x||'').replace(/\s+/g,'');
-    const col={},full={};(S['품목']||[]).forEach(r=>{if(r&&r[0]){col[r[0]]=r[3];full[r[0]]=String(r[1]||r[0]).trim();}});   /* v182 — full = 품목 정식 이름 */
+    const col={},full={},catm={};(S['품목']||[]).forEach(r=>{if(r&&r[0]){col[r[0]]=r[3];full[r[0]]=String(r[1]||r[0]).trim();catm[r[0]]=String(r[2]||'').trim();}});   /* v182 — full = 품목 정식 이름 · v183 — catm = 품목 묶음(정수기 · 매트리스 …) */
     const mix=(h,k)=>{const n=parseInt(String(h).slice(1),16),f=v=>Math.round(v+(255-v)*k).toString(16).padStart(2,'0');return '#'+f(n>>16&255)+f(n>>8&255)+f(n&255);};
     const cOf=n=>{let c=col[n];if(!/^#[0-9a-f]{6}$/i.test(c||''))return '';c=wrCalm(c);if(n==='아이콘 얼음'&&col['아이콘3'])c=mix(wrCalm(col['아이콘3']),.42);return c;};
     /* 소재 금액 비중 — 소재 시트(품목 칸이 빈 줄은 윗줄 품목, '… 계' 줄은 뺀다) */
@@ -74,7 +74,7 @@ function cueMixData(){
     B.slice(1).forEach(r=>{let t=0;hd.forEach((h,i)=>{const v=+r[i+1];if(v>0){it[i]+=v;t+=v;}});
       if(t>0){const m=meta[r[0]]||{g:'케이블',pp:r[0]};chs.push({g:m.g,ch:r[0],pp:m.pp,bud:t/1000});}});
     const items=hd.map((h,i)=>{const b=it[i]/1000,cs=cre[nz(h)]||[],ws=cs.reduce((s,x)=>s+x[1],0);
-      return {n:h,fn:full[h]||h,col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
+      return {n:h,fn:full[h]||h,cat:catm[h]||'',col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
       .sort((a,b)=>b.sub.bud-a.sub.bud);
     return {items,tot:items.reduce((s,x)=>s+x.sub.bud,0),chs};}catch(e){return null;}}
 function cueTopPaint(){

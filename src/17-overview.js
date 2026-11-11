@@ -127,7 +127,7 @@ function ovRow(p){
       let it=Array.isArray(p.tvIt)?p.tvIt:[];
       if(!it.length&&m.tvSum&&Array.isArray(m.tvSum.it))it=m.tvSum.it;
       if(!it.length&&p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')it=wrItemBud(p.wr.items);
-      if(ym){if(it.length)it.forEach(x=>{if(x&&x[0]&&+x[1]>0)cats.push(['tv',String(x[0]),ym,+x[1]]);});else if(a.tv.inc&&a.tv.budget>0)cats.push(['tv','',ym,a.tv.budget]);}}
+      if(ym){if(it.length)it.forEach(x=>{if(x&&x[0]&&+x[1]>0)cats.push(['tv',String(x[0]),ym,+x[1],String(x[2]||'')]);});else if(a.tv.inc&&a.tv.budget>0)cats.push(['tv','',ym,a.tv.budget]);}}
     const byMon=(st,en,v)=>{const o={};if(!(ovIso(st)&&ovIso(en)&&en>=st))return o;const D=x=>new Date(x+'T00:00:00'),n=Math.round((D(en)-D(st))/864e5)+1;
       for(const d=D(st);d<=D(en);d.setDate(d.getDate()+1)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');o[k]=(o[k]||0)+v/n;}return o;};
     const addL=(k,L2,scale)=>L2.forEach(l=>{const v=lb(l)*scale;if(!(v>0))return;const o=byMon(l.start,l.end,v),nm=String(l.segment||'').trim();
@@ -803,21 +803,36 @@ function paintOvItems(rows,won0){
   const yms=all.map(c=>c[2]).sort(),months=[];
   for(let [y,m]=yms[0].split('-').map(Number);;){const k=y+'-'+String(m).padStart(2,'0');months.push(k);if(k>=yms[yms.length-1]||months.length>60)break;if(++m>12){m=1;y++;}}
   const AR=[['tv',L('TV 품목','TV products'),L('(품목 자료 없음)','(no product data)')],['ott','OTT',L('OTT 전체','OTT total')],['digital',L('디지털','Digital'),L('(구분 없음)','(no segment)')]];
-  const G={};all.forEach(([k,n,ym,v])=>{const g=G[k]||(G[k]={}),r=g[n]||(g[n]={n,t:0,m:{}});r.m[ym]=(r.m[ym]||0)+v;r.t+=v;});
+  /* v183 — 품목을 묶음(정수기 · 매트리스 · 안마의자 …)으로 모아 보여 준다. 묶음 이름은 큐시트 '품목' 시트에서 온다.
+     OTT · 디지털 구분처럼 묶음이 없는 이름은 같은 이름의 TV 품목 묶음을 따라가고, 그래도 없으면 '기타' */
+  const key=n=>String(n||'').replace(/\s+/g,''),catOf={};all.forEach(c=>{if(c[4])catOf[key(c[1])]=c[4];});
+  const G={};all.forEach(([k,n,ym,v,ct])=>{const g=G[k]||(G[k]={}),r=g[n]||(g[n]={n,t:0,m:{},cat:''});r.m[ym]=(r.m[ym]||0)+v;r.t+=v;if(!r.cat)r.cat=ct||catOf[key(n)]||'';});
   const mt={};all.forEach(c=>{mt[c[2]]=(mt[c[2]]||0)+c[3];});
-  let mx=0;Object.values(G).forEach(g=>Object.values(g).forEach(r=>Object.values(r.m).forEach(v=>{if(v>mx)mx=v;})));
+  let mx=0,gmx=0;Object.values(G).forEach(g=>Object.values(g).forEach(r=>Object.values(r.m).forEach(v=>{if(v>mx)mx=v;})));
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const hd=months.map((k,i)=>{const [y,m]=k.split('-').map(Number),first=i===0||m===1;return `<th>${L(first?`${String(y).slice(2)}년 ${m}월`:`${m}월`,first?`${MON[m-1]} '${String(y).slice(2)}`:MON[m-1])}</th>`;}).join('');
   const tot=sum(Object.values(mt));
   const eok=v=>manUnit(Math.round(v));
+  const ETC=L('기타','Other');
+  /* 묶음 만들기 */
+  const packs={};AR.forEach(([k])=>{const g=G[k];if(!g)return;const P={};Object.values(g).forEach(r=>{const c=r.n===''?'':(r.cat||ETC),p=P[c]||(P[c]={c,t:0,m:{},rs:[]});p.rs.push(r);p.t+=r.t;Object.keys(r.m).forEach(y=>{p.m[y]=(p.m[y]||0)+r.m[y];if(p.m[y]>gmx)gmx=p.m[y];});});
+    packs[k]=Object.values(P).sort((a,b)=>(a.c==='')-(b.c==='')||(a.c===ETC)-(b.c===ETC)||b.t-a.t);});
+  const itemRow=(r,lab,none,sub)=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(String(r.n).replace(/\s+/g,'')):'#6c7b8e');
+    return `<tr${sub?' class="it"':''}><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
+      const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
+      return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')
+      +`<td class="sum mono">${eok(r.t)}</td></tr>`;};
   let body='';
-  AR.forEach(([k,lab,none])=>{const g=G[k];if(!g)return;const rs=Object.values(g).sort((a,b)=>(a.n==='')-(b.n==='')||b.t-a.t);
-    body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${rs.filter(r=>r.n!=='').length?L(`${rs.filter(r=>r.n!=='').length}개`,`${rs.filter(r=>r.n!=='').length}`):''}</span></th></tr>`;
-    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(String(r.n).replace(/\s+/g,'')):'#6c7b8e');
-      body+=`<tr><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
-        const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
-        return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')
-        +`<td class="sum mono">${eok(r.t)}</td></tr>`;});});
+  AR.forEach(([k,lab,none])=>{const ps=packs[k];if(!ps)return;const nIt=ps.reduce((s,p)=>s+p.rs.filter(r=>r.n!=='').length,0),nPk=ps.filter(p=>p.c!=='').length;
+    body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${nIt?L(`${nPk}개 묶음 · ${nIt}개`,`${nPk} groups · ${nIt}`):''}</span></th></tr>`;
+    ps.forEach(p=>{
+      if(p.c===''){p.rs.forEach(r=>{body+=itemRow(r,lab,none,false);});return;}
+      /* 묶음 줄 — 그 달 묶음 합계(무채색). 품목이 하나뿐이고 이름이 묶음과 같으면 품목 줄은 생략 */
+      const solo=p.rs.length===1&&key(p.rs[0].n)===key(p.c);
+      body+=`<tr class="pk"><th class="nm">${esc(p.c)}${solo?'':` <span>${p.rs.length}</span>`}</th>`+months.map(ym=>{const v=p.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
+        const a=(.1+.5*Math.sqrt(v/gmx)).toFixed(3);
+        return `<td data-ovit="${esc(JSON.stringify([lab,p.c,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b style="--c:#5f6973;--a:${a}">${eok(v)}</b></td>`;}).join('')+`<td class="sum mono">${eok(p.t)}</td></tr>`;
+      if(!solo)p.rs.slice().sort((a,b)=>b.t-a.t).forEach(r=>{body+=itemRow(r,lab,none,true);});});});
   body+=`<tr class="tot"><th class="nm">Total</th>${months.map(ym=>`<td class="mono">${mt[ym]>0?eok(mt[ym]):'–'}</td>`).join('')}<td class="sum mono">${eok(tot)}</td></tr>`;
   el.innerHTML=`<div class="ovitw"><table class="ovit"><thead><tr><th class="nm">${L('구분','Category')}</th>${hd}<th class="sum">${L('합계','Total')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
   el.querySelectorAll('[data-ovit]').forEach(td=>{let o=null;try{o=JSON.parse(td.dataset.ovit);}catch(e){return;}
