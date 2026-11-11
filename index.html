@@ -1213,6 +1213,9 @@ table.wrwt .sum{background:color-mix(in srgb,var(--acc-soft) 60%,transparent)}
 .rpbub .bb.on .core{fill-opacity:.82}.rpbub .bb.on .bl2{font-size:13px;font-weight:900}
 .rpbub .bb:hover .core{fill-opacity:.6}.rpbub .bb.on:hover .core{fill-opacity:.88}
 .rpbub .bl2{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbub .bb.mine .bl2{fill:#1d6fc2}
+.rpbub .bgd{opacity:0;transition:opacity .6s ease var(--d)}.go .rpbub .bgd{opacity:1}
+.rpbub .bgd .hit{fill:transparent}.rpbub .bgd .pt{fill:#8b939c;fill-opacity:.3;transition:fill-opacity .15s,r .15s}
+.rpbub .bgd:hover .pt{fill-opacity:.75;r:4.6px}.rpbub .bgn{font-size:10.5px;fill:var(--muted);font-weight:600}
 .rpbub .pulse{stroke:none;transform-box:fill-box;transform-origin:50% 50%;opacity:0;pointer-events:none}
 /* v157 — 레이더: 선이 아니라 옅은 면이 퍼진다 · 고른 브랜드만 */
 .rpbub .bb.on .pulse{animation:rpPulseF 2.6s ease-out infinite .4s}.rpbub .bb.on .pulse.p2{animation-delay:1.7s}
@@ -29153,7 +29156,9 @@ function rpBubble(c,col,bub){
     :rpTvRows(c,RPT.tblM).filter(r=>r[2]===2).map(r=>({b:r[1],x:rN(r[7]),y:rN(r[11]),s:rN(r[4])||rN(r[3]),r})).filter(p=>p.x>0);
   if(!pts.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;if(side)side.innerHTML='';return;}
   const W=Math.max(480,box.clientWidth||720),H=380,L0=46,B=H-34,T=20,R0=W-24;
-  const mxX=Math.max(...pts.map(p=>p.x))*1.18||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y))*1.25/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
+  /* v176 — 같은 업종의 다른 광고주(아리아나 F30-45 · 그 달 집행분)를 아주 옅은 작은 점으로 깐다 · 이름표 없음 */
+  const bg=rpBubBg(c);
+  const mxX=Math.max(...pts.map(p=>p.x),...bg.map(p=>p.x/1.1))*1.18||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y),...bg.map(p=>p.y/1.15))*1.25/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
   const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>6+Math.sqrt(s/mxS)*27;   /* v157 — 원을 조금 작게 */
   const nice=m=>{const s2=Math.pow(10,Math.floor(Math.log10(m/4)));const f=m/4/s2;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*s2;};
   const sx=nice(mxX),sy=nice(mxY);let grid='';
@@ -29167,8 +29172,13 @@ function rpBubble(c,col,bub){
       <circle cx="${cx}" cy="${cy}" r="${r}" class="pulse" fill="${fc}"/><circle cx="${cx}" cy="${cy}" r="${r}" class="pulse p2" fill="${fc}"/>
       <circle cx="${cx}" cy="${cy}" r="${r}" class="core" fill="${fc}"/>
       <text x="${cx}" y="${cy-r-6}" text-anchor="middle" class="bl2">${esc(p.b)}</text></g>`;}).join('');
+  const bgd=bg.map((p,i)=>`<g class="bgd" style="--d:${500+i*22}ms" data-bg="${i}"><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="9" class="hit"/><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.4" class="pt"/></g>`).join('');
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpbub">${grid}
-    <text x="${R0}" y="${B-6}" text-anchor="end" class="axt">eq.GRP →</text><text x="${L0+6}" y="${T+12}" class="axt">↑ R3+</text>${dots}</svg>`;
+    <text x="${R0}" y="${B-6}" text-anchor="end" class="axt">eq.GRP →</text><text x="${L0+6}" y="${T+12}" class="axt">↑ R3+</text>
+    ${bg.length?`<text x="${R0}" y="${T+12}" text-anchor="end" class="bgn">${L(`회색 점 = 같은 업종 다른 광고주 ${bg.length}곳`,`grey dots = ${bg.length} other advertisers`)}</text>`:''}${bgd}${dots}</svg>`;
+  box.querySelectorAll('.bgd').forEach(g=>{const p=bg[+g.dataset.bg];
+    g.onmousemove=e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(p.b)}</div><div class="r"><span class="l">R3+</span><b>${wrF(p.y,1)}%</b></div><div class="r"><span class="l">eq.GRP</span><b>${wrF(p.x,p.x<10?1:0)}</b></div>`);
+    g.onmouseleave=hideTip;});
   /* 오른쪽 — 브랜드 목록(누르면 아래 월별 카드 · 왼쪽 그래프에서 그 브랜드를 강조) */
   const list=[...pts].sort((a,b)=>(b.b==='코웨이')-(a.b==='코웨이')||b.x-a.x);
   let cur=list.some(p=>p.b===RPT.bubSel)?RPT.bubSel:list[0].b;
@@ -29182,6 +29192,12 @@ function rpBubble(c,col,bub){
     side.querySelectorAll('[data-sb]').forEach(e=>e.addEventListener('click',()=>paint(e.dataset.sb)));}
   box.querySelectorAll('.bb').forEach(g=>{g.style.cursor='pointer';g.addEventListener('click',()=>paint(g.dataset.b));});
   paint(cur);}
+/* v176 — 배경 점 자료: RPT_DOC.bg[업종][광고주]=[[월,eq.GRP,R3+],…] (아리아나 F30-45 수도권) · 표에 있는 브랜드는 큰 원으로 이미 그리므로 뺀다 */
+function rpBubBg(c){
+  const all=(RPT_DOC.bg||{})[c.ar];if(!all||RPT.bub==='ytd')return [];
+  const own=new Set(((RPT_DOC.tvr||{})[c.k]||[]).map(r=>r[1]));own.add('코웨이');
+  const o=[];Object.entries(all).forEach(([b,ms])=>{if(own.has(b))return;const r=(ms||[]).find(x=>x[0]===RPT.tblM);if(r&&(rN(r[1])>0||rN(r[2])>0))o.push({b,x:rN(r[1]),y:rN(r[2])});});
+  return o.sort((a,b)=>b.x-a.x);}
 function rpTvTbl(c,col){
   const box=$('rpTvTbl');if(!box)return;const rows=rpTvRows(c,RPT.tblM);
   const bs=[...new Set(rows.map(r=>r[1]))].sort((a,b)=>(b==='코웨이')-(a==='코웨이')||rN((rows.find(r=>r[1]===b&&r[2]===2)||[])[7])-rN((rows.find(r=>r[1]===a&&r[2]===2)||[])[7]));
