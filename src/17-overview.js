@@ -123,9 +123,10 @@ function ovRow(p){
     const ymOf=d=>String(d||'').slice(0,7),okYm=y=>/^\d{4}-\d{2}$/.test(y||'');
     if(a.tv.on){
       const ym=[tvWk&&tvWk.ym,m.tvSum&&m.tvSum.ym,ymOf(tP.start),ymOf(S[0]),ymOf(p.start_date)].find(okYm);
-      let it=(p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')?wrItemBud(p.wr.items):[];
-      if(!it.length&&Array.isArray(p.tvIt))it=p.tvIt;
+      /* v182 — 품목별 금액은 큐시트(최종 편성) 예산 → 저장해 둔 요약 → 위클리 리포트 순 */
+      let it=Array.isArray(p.tvIt)?p.tvIt:[];
       if(!it.length&&m.tvSum&&Array.isArray(m.tvSum.it))it=m.tvSum.it;
+      if(!it.length&&p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')it=wrItemBud(p.wr.items);
       if(ym){if(it.length)it.forEach(x=>{if(x&&x[0]&&+x[1]>0)cats.push(['tv',String(x[0]),ym,+x[1]]);});else if(a.tv.inc&&a.tv.budget>0)cats.push(['tv','',ym,a.tv.budget]);}}
     const byMon=(st,en,v)=>{const o={};if(!(ovIso(st)&&ovIso(en)&&en>=st))return o;const D=x=>new Date(x+'T00:00:00'),n=Math.round((D(en)-D(st))/864e5)+1;
       for(const d=D(st);d<=D(en);d.setDate(d.getDate()+1)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');o[k]=(o[k]||0)+v/n;}return o;};
@@ -145,7 +146,7 @@ function ovSelfRow(){
   const ottAgg=campMedia().ott?ottSumNow():null;
   return ovRow({id:(CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'self',name:CAMPAIGN.name,self:true,media:campMedia(),
     lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS,mix:TV_MIX,ch:TV_CH,day:TV_DAY},ooh:OOH_PLAN,net,imp,click,view,ottAgg,updated_at:new Date().toISOString(),
-    tvIt:(()=>{try{if(typeof wrOn==='function'&&wrOn())return wrItemBud(TV_WR.items);const c=TV_CUE&&TV_CUE.st;return c&&Array.isArray(c.it)?c.it:null;}catch(e){return null;}})()});}
+    tvIt:(()=>{try{const c=TV_CUE&&TV_CUE.st;if(c&&Array.isArray(c.it)&&c.it.length)return c.it;return (typeof wrOn==='function'&&wrOn())?wrItemBud(TV_WR.items):null;}catch(e){return null;}})()});}
 function ovStatus(r,today){
   if(!r.start||!r.end)return '';
   return today<r.start?'pre':today>r.end?'done':'live';}
@@ -812,7 +813,7 @@ function paintOvItems(rows,won0){
   let body='';
   AR.forEach(([k,lab,none])=>{const g=G[k];if(!g)return;const rs=Object.values(g).sort((a,b)=>(a.n==='')-(b.n==='')||b.t-a.t);
     body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${rs.filter(r=>r.n!=='').length?L(`${rs.filter(r=>r.n!=='').length}개`,`${rs.filter(r=>r.n!=='').length}`):''}</span></th></tr>`;
-    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(r.n):'#6c7b8e');
+    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(String(r.n).replace(/\s+/g,'')):'#6c7b8e');
       body+=`<tr><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
         const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
         return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')

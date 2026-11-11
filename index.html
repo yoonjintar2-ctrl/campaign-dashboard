@@ -22377,9 +22377,10 @@ function ovRow(p){
     const ymOf=d=>String(d||'').slice(0,7),okYm=y=>/^\d{4}-\d{2}$/.test(y||'');
     if(a.tv.on){
       const ym=[tvWk&&tvWk.ym,m.tvSum&&m.tvSum.ym,ymOf(tP.start),ymOf(S[0]),ymOf(p.start_date)].find(okYm);
-      let it=(p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')?wrItemBud(p.wr.items):[];
-      if(!it.length&&Array.isArray(p.tvIt))it=p.tvIt;
+      /* v182 — 품목별 금액은 큐시트(최종 편성) 예산 → 저장해 둔 요약 → 위클리 리포트 순 */
+      let it=Array.isArray(p.tvIt)?p.tvIt:[];
       if(!it.length&&m.tvSum&&Array.isArray(m.tvSum.it))it=m.tvSum.it;
+      if(!it.length&&p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')it=wrItemBud(p.wr.items);
       if(ym){if(it.length)it.forEach(x=>{if(x&&x[0]&&+x[1]>0)cats.push(['tv',String(x[0]),ym,+x[1]]);});else if(a.tv.inc&&a.tv.budget>0)cats.push(['tv','',ym,a.tv.budget]);}}
     const byMon=(st,en,v)=>{const o={};if(!(ovIso(st)&&ovIso(en)&&en>=st))return o;const D=x=>new Date(x+'T00:00:00'),n=Math.round((D(en)-D(st))/864e5)+1;
       for(const d=D(st);d<=D(en);d.setDate(d.getDate()+1)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');o[k]=(o[k]||0)+v/n;}return o;};
@@ -22399,7 +22400,7 @@ function ovSelfRow(){
   const ottAgg=campMedia().ott?ottSumNow():null;
   return ovRow({id:(CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'self',name:CAMPAIGN.name,self:true,media:campMedia(),
     lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS,mix:TV_MIX,ch:TV_CH,day:TV_DAY},ooh:OOH_PLAN,net,imp,click,view,ottAgg,updated_at:new Date().toISOString(),
-    tvIt:(()=>{try{if(typeof wrOn==='function'&&wrOn())return wrItemBud(TV_WR.items);const c=TV_CUE&&TV_CUE.st;return c&&Array.isArray(c.it)?c.it:null;}catch(e){return null;}})()});}
+    tvIt:(()=>{try{const c=TV_CUE&&TV_CUE.st;if(c&&Array.isArray(c.it)&&c.it.length)return c.it;return (typeof wrOn==='function'&&wrOn())?wrItemBud(TV_WR.items):null;}catch(e){return null;}})()});}
 function ovStatus(r,today){
   if(!r.start||!r.end)return '';
   return today<r.start?'pre':today>r.end?'done':'live';}
@@ -23066,7 +23067,7 @@ function paintOvItems(rows,won0){
   let body='';
   AR.forEach(([k,lab,none])=>{const g=G[k];if(!g)return;const rs=Object.values(g).sort((a,b)=>(a.n==='')-(b.n==='')||b.t-a.t);
     body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${rs.filter(r=>r.n!=='').length?L(`${rs.filter(r=>r.n!=='').length}개`,`${rs.filter(r=>r.n!=='').length}`):''}</span></th></tr>`;
-    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(r.n):'#6c7b8e');
+    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(String(r.n).replace(/\s+/g,'')):'#6c7b8e');
       body+=`<tr><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
         const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
         return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')
@@ -29563,7 +29564,7 @@ function tvSumNow(){const r=tvSumNow0();
   try{const c=TV_CUE&&TV_CUE.st;if(c&&TV_CUE.z){const o=r||{plan:0,spend:0,grp:0,pgrp:0,mon:{}};
     if(+c.pgrp>0)o.pgrp=+c.pgrp;if(!(o.plan>0)&&+c.budget>0){o.plan=Math.round(+c.budget);o.mon={[TV_CUE.ym]:o.plan};}
     /* v179 — 품목별 금액(원): 리포트가 없으면 큐시트 예산으로 */
-    if(!o.it&&Array.isArray(c.it)&&c.it.length){o.it=c.it;if(!o.ym)o.ym=TV_CUE.ym;}
+    if(Array.isArray(c.it)&&c.it.length){o.it=c.it;if(!o.ym)o.ym=TV_CUE.ym;}   /* v182 — 큐시트(최종 편성) 예산이 있으면 그것을 쓴다 */
     return (o.plan||o.spend||o.pgrp)?o:r;}}catch(e){}
   return r;}
 function wrItemBud(items){return (Array.isArray(items)?items:[]).map(i=>[i&&i.n,Math.round((i&&i.cr||[]).reduce((s,c)=>s+(+c.bud||0),0)*1000)]).filter(x=>x[0]&&x[1]>0);}
@@ -31007,7 +31008,7 @@ function cueFrameReady(w,imp){
 function cueFrameStats(s){
   if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});let ch=false;
   /* v179 — 품목별 예산(원)도 적어 둔다 → 전체 캠페인 '월별 광고 구분' 표가 큐시트만 있는 달에도 품목을 보여 준다 */
-  try{const D=cueMixData();if(D&&D.items.length){const it=D.items.map(x=>[x.n,Math.round(x.sub.bud*1000)]);if(JSON.stringify(it)!==JSON.stringify(st.it||null)){st.it=it;ch=true;}}}catch(e){}
+  try{const D=cueMixData();if(D&&D.items.length){const it=D.items.map(x=>[x.fn||x.n,Math.round(x.sub.bud*1000)]);if(JSON.stringify(it)!==JSON.stringify(st.it||null)){st.it=it;ch=true;}}}catch(e){}
   if(Math.abs((+st.pgrp||0)-s.grp)>=.05){st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;ch=true;}
   if(!ch)return;
   try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
@@ -31037,7 +31038,7 @@ window.addEventListener('resize',()=>{try{cueSize();}catch(e){}});
 /* v173 — 미디어믹스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프를 큐시트 예산으로 그린다(계획은 미디어믹스, 실제 집행은 캠페인 퍼포먼스) */
 function cueMixData(){
   try{const S=JSON.parse(CUE.json).sheets,B=S['예산']||[],hd=(B[0]||[]).slice(1),nz=x=>String(x||'').replace(/\s+/g,'');
-    const col={};(S['품목']||[]).forEach(r=>{if(r&&r[0])col[r[0]]=r[3];});
+    const col={},full={};(S['품목']||[]).forEach(r=>{if(r&&r[0]){col[r[0]]=r[3];full[r[0]]=String(r[1]||r[0]).trim();}});   /* v182 — full = 품목 정식 이름 */
     const mix=(h,k)=>{const n=parseInt(String(h).slice(1),16),f=v=>Math.round(v+(255-v)*k).toString(16).padStart(2,'0');return '#'+f(n>>16&255)+f(n>>8&255)+f(n&255);};
     const cOf=n=>{let c=col[n];if(!/^#[0-9a-f]{6}$/i.test(c||''))return '';c=wrCalm(c);if(n==='아이콘 얼음'&&col['아이콘3'])c=mix(wrCalm(col['아이콘3']),.42);return c;};
     /* 소재 금액 비중 — 소재 시트(품목 칸이 빈 줄은 윗줄 품목, '… 계' 줄은 뺀다) */
@@ -31047,7 +31048,7 @@ function cueMixData(){
     B.slice(1).forEach(r=>{let t=0;hd.forEach((h,i)=>{const v=+r[i+1];if(v>0){it[i]+=v;t+=v;}});
       if(t>0){const m=meta[r[0]]||{g:'케이블',pp:r[0]};chs.push({g:m.g,ch:r[0],pp:m.pp,bud:t/1000});}});
     const items=hd.map((h,i)=>{const b=it[i]/1000,cs=cre[nz(h)]||[],ws=cs.reduce((s,x)=>s+x[1],0);
-      return {n:h,col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
+      return {n:h,fn:full[h]||h,col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
       .sort((a,b)=>b.sub.bud-a.sub.bud);
     return {items,tot:items.reduce((s,x)=>s+x.sub.bud,0),chs};}catch(e){return null;}}
 function cueTopPaint(){
