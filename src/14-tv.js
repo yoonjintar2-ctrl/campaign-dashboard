@@ -21,11 +21,11 @@ function setCampMedia(m){
   return true;}
 /* 디지털 · OTT 가 함께 쓰는 화면(dash · input · setup)의 메뉴 — 지금 보는 쪽(curDgArea)의 것 (v141) */
 const DG_TABS=['dash','input','setup'];
-function areaOfTab(name){if(name==='intake')return (typeof INBX_AREA!=='undefined'&&INBX_AREA)||'tv';return DG_TABS.includes(name)?curDgArea():(AREA_OF_TAB[name]||'digital');}
+function areaOfTab(name){if(name==='intake')return 'inbox';return DG_TABS.includes(name)?curDgArea():(AREA_OF_TAB[name]||'digital');}
 function tabMenu(name,sub){
   const a=areaOfTab(name);
   const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
-  if(name==='intake')return MENUS.find(x=>x.tab==='intake'&&x.area===a)||MENUS.find(f);
+  if(name==='intake')return MENU_BY.inbox;
   if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return c==='summary'?MENU_BY.t_mix:(MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f));}
   return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
@@ -335,7 +335,7 @@ function openMenuSettings(){
      하위 메뉴는 그 영역 펼침판의 순서와 글자 그대로 */
   const T=$('tabs');
   const siteAreas=T?[...T.querySelectorAll('.arearow .area[data-area]')].map(b=>b.dataset.area):[];
-  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'report','trend'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'report','trend'];
+  const areaOrder=siteAreas.length?siteAreas.filter(a=>MENUS.some(m=>m.area===a)).concat(['overview',...MEDIA_AREAS,'report','trend','inbox'].filter(a=>!siteAreas.includes(a))):['overview',...MEDIA_AREAS,'report','trend','inbox'];
   const siteBtn=id=>T&&T.querySelector(`.subgrp [data-menu="${id}"]`);
   const menusOf=a=>{const ms=MENUS.filter(m=>m.area===a);
     const pos=m=>{const b=siteBtn(m.id);if(!b)return 999;return [...T.querySelectorAll(`.subgrp[data-area="${a}"] [data-menu]`)].indexOf(b);};

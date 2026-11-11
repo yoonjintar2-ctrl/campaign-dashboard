@@ -4,7 +4,9 @@
      그 자리에서 "바로 넣기" 로 넣고, 나머지(위클리 · 먼슬리 리포트, 큐시트 …)는 접수만 해 둔다.
    · 접수된 자료는 Claude 가 확인해 일괄 반영하고 상태를 '반영 완료' 로 바꾼다.
      같은 형식이 쌓여 읽는 규칙이 정해지면 그 형식은 "바로 넣기" 목록(INBX_DETECT)에 추가한다.
-   · 저장 — 비공개 버킷 intake + 표 intake_files (supabase/2026-11-10_intake.sql).
+   · v171 — 영역(TV · OTT · 리포트)을 가리지 않는 메뉴 하나. 맨 오른쪽 · 운영 권한 계정만 · 모든 캠페인 공통(목록은 캠페인과 무관하게 전부).
+     파일 없이 요청 글만 남길 수도 있다.
+   · 저장 — 비공개 버킷 intake + 표 intake_files (supabase/2026-11-11_intake.sql).
      로그인 전 · 샘플 화면에서는 이 세션 안에서만 보관한다.
    ===================================================================== */
 var INBX_AREA='tv';   // var — 14-tv 의 areaOfTab 이 먼저 볼 수 있게
@@ -14,10 +16,13 @@ const INBX_KINDS={
   tv:['TV 위클리 리포트','TV 실적 (채널 · 일자 · 주차)','큐시트 · 편성표 (예상효율)','기타'],
   digital:['디지털 데일리 리포트','미디어믹스','먼슬리 리포트 (PDF)','기타'],
   ott:['OTT 리포트 (일별 실적)','미디어믹스 · 예상효율','기타'],
-  report:['먼슬리 리포트 (PDF)','경쟁사 소재 · 인쇄물','기타']};
+  report:['먼슬리 리포트 (PDF)','경쟁사 소재 · 인쇄물','기타'],
+  all:['TV 큐시트 · 편성표','TV 위클리 리포트','TV 실적 (채널 · 일자 · 주차)','OTT 리포트 (일별 실적)','디지털 데일리 리포트','미디어믹스 · 예상효율','먼슬리 리포트 (PDF)','경쟁사 소재 · 인쇄물','기타']};
 /* v166 — 어떤 매체의 자료인지 (고르거나 직접 적는다) */
 const INBX_MEDIA={tv:['TV 전체','지상파','케이블 · 종편'],digital:['디지털 전체'],ott:['OTT 전체','Netflix','TVING','Coupang Play','Wavve'],
-  report:['전체','TV','디지털','OTT','인쇄 · 잡지']};
+  report:['전체','TV','디지털','OTT','인쇄 · 잡지'],all:['TV','OTT','디지털','OOH','먼슬리 리포트','전체 · 기타']};
+/* 지금 캠페인 이름(광고주 · 캠페인) — 접수 줄에 어느 캠페인 자료인지 적어 둔다 */
+function inbxCampName(){try{return [CAMPAIGN.advertiser,(CLOUD.campaign&&CLOUD.campaign.name)||CAMPAIGN.name].filter(Boolean).join(' · ');}catch(e){return '';}}
 function inbxMedias(area){let m=(INBX_MEDIA[area]||[]).slice();
   if(area==='digital'||area==='ott'){try{[...new Set((S.lines||[]).map(l=>String(l.media||'').trim()).filter(Boolean))].forEach(x=>{if(!m.includes(x))m.push(x);});}catch(e){}}
   return m;}
@@ -51,23 +56,23 @@ const INBX_DETECT=[
 async function inbxDetect(f,area){
   if(!/\.(xlsx?|csv)$/i.test(f.name))return null;
   /* v167 — TV set 큐시트 통합 엑셀 (시트 이름으로 알아본다 · 5MB 안팎이라 크기 제한 앞에서) */
-  if(area==='tv'){try{if(await cueIsLegacy(f))return {k:'cue',l:'TV 큐시트 (통합 엑셀)',area:'tv',s:9,run:x=>{cueImportFile(x);}};}catch(e){}}
+  if(area==='tv'||area==='all'){try{if(await cueIsLegacy(f))return {k:'cue',l:'TV 큐시트 (통합 엑셀)',area:'tv',s:9,run:x=>{cueImportFile(x);}};}catch(e){}}
   if(f.size>8*1048576)return null;            /* 큰 파일은 브라우저에서 훑지 않는다 */
   let best=null;
-  for(const d of INBX_DETECT.filter(d=>area==null||d.area===area||(d.area==='digital'&&area==='ott'))){
+  for(const d of INBX_DETECT.filter(d=>area==null||area==='all'||d.area===area||(d.area==='digital'&&area==='ott'))){
     try{const g=await readGrid(f,d.pick||undefined);const s=+d.test(g)||0;
       if(s>0&&(!best||s>best.s))best={...d,s};}catch(e){}}
   return best;}
 
 /* ---------- 불러오기 ---------- */
 async function inbxLoad(force){
-  const cid=inbxCid();
+  const cid=inbxOn()?'all':'demo';   /* v171 — 모든 캠페인 공통 */
   if(!force&&INBX.cid===cid)return;
   INBX.cid=cid;INBX.err='';
   if(!inbxOn()){INBX.rows=INBX.demo;INBX.missing=false;return;}
   try{
     const {data,error}=await CLOUD.sb.from('intake_files').select('*')
-      .eq('campaign_id',cid).order('created_at',{ascending:false}).limit(200);
+      .order('created_at',{ascending:false}).limit(300);
     if(error)throw error;
     INBX.rows=data||[];INBX.missing=false;
   }catch(e){
@@ -79,9 +84,8 @@ async function inbxLoad(force){
 /* ---------- 그리기 ---------- */
 function inbxHost(){
   const tv=$('tab-tvinput'),dg=$('tab-input');
-  if(tv&&!tv.classList.contains('hidden'))return {el:$('inbxTv'),area:'tv'};
-  if(dg&&!dg.classList.contains('hidden')){let a='digital';try{a=curDgArea();}catch(e){}return {el:$('inbxDg'),area:a};}
-  const ib=$('tab-intake');if(ib&&!ib.classList.contains('hidden'))return {el:$('inbxMain'),area:INBX_AREA||'tv'};
+  /* v171 — 접수함은 데이터 접수함 메뉴 하나에서만(입력 화면 안의 접수함은 뺐다) */
+  const ib=$('tab-intake');if(ib&&!ib.classList.contains('hidden'))return {el:$('inbxMain'),area:'all'};
   return null;}
 async function inbxRender(force){
   const h=inbxHost();if(!h||!h.el)return;
@@ -91,12 +95,12 @@ function inbxPaint(el,area){
   const kinds=INBX_KINDS[area]||INBX_KINDS.digital;
   const ed=inbxEdit(),live=inbxOn();
   /* 데이터 접수함 화면 제목 — 영역 이름 (v161) */
-  if(el.id==='inbxMain'){const t=$('inbxNote');if(t)t.textContent=`${({tv:'TV',ott:'OTT',report:'먼슬리 리포트'})[area]||''} · 데이터 입력 · 예상효율 입력을 모두 여기서`;}
+  if(el.id==='inbxMain'){const t=$('inbxNote');if(t)t.textContent='모든 캠페인 공통 · 운영 권한 계정만 보입니다 · 자료와 요청을 모두 여기서';}
   const DG=new Set(['digital','ott']);
-  const rows=INBX.rows.filter(r=>!r.area||r.area===area||(DG.has(area)&&DG.has(r.area)));
+  const rows=area==='all'?INBX.rows:INBX.rows.filter(r=>!r.area||r.area===area||(DG.has(area)&&DG.has(r.area)));
   const wait=rows.filter(r=>r.status==='wait').length;
   const open=el.id==='inbxMain'?true:(INBX.open[area]!=null?INBX.open[area]:true);
-  const warn=INBX.missing?`<div class="inbx-warn">접수함 저장소가 아직 준비되지 않았습니다 — Supabase SQL Editor 에서 <code>supabase/2026-11-10_intake.sql</code> 을 한 번 실행해 주세요. 그 전까지는 이 화면을 닫으면 사라지는 임시 보관입니다.</div>`
+  const warn=INBX.missing?`<div class="inbx-warn">접수함 저장소가 아직 준비되지 않았습니다 — Supabase SQL Editor 에서 <code>supabase/2026-11-11_intake.sql</code> 을 한 번 실행해 주세요. <b>그 전까지는 이 화면을 닫으면 사라지는 임시 보관이라 접수해도 전달되지 않습니다.</b></div>`
     :INBX.err?`<div class="inbx-warn">접수 목록을 불러오지 못했습니다 — ${esc(INBX.err)}</div>`
     :!live?`<div class="inbx-warn soft">로그인 전 · 샘플 화면이라 이 세션 안에서만 보관합니다.</div>`:'';
   const mt=INBX.meta[area]||(INBX.meta[area]={media:inbxMedias(area)[0]||'',mon:'',note:''});
@@ -109,10 +113,11 @@ function inbxPaint(el,area){
         :'<span class="det cl">Claude 확인 후 일괄 반영</span>'}
       <select class="inbx-kind" data-inbx-kind="${i}" aria-label="쓰일 항목" title="이 자료가 쓰일 항목">${kinds.map(k=>`<option${k===p.kind?' selected':''}>${esc(k)}</option>`).join('')}</select>
       <button class="x" data-inbx-drop="${i}" title="빼기">×</button></li>`).join('');
-  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>파일</th><th>매체 · 항목</th><th>기준 월</th><th>올린 사람</th><th>상태</th>${ed?'<th></th>':''}</tr></thead><tbody>${
+  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>캠페인</th><th>파일 · 요청</th><th>매체 · 항목</th><th>기준 월</th><th>올린 사람</th><th>상태</th>${ed?'<th></th>':''}</tr></thead><tbody>${
     rows.map(r=>`<tr data-id="${esc(r.id)}">
       <td class="mono">${esc(inbxWhen(r.created_at))}</td>
-      <td class="fn"><a href="#" data-inbx-get="${esc(r.id)}" title="${esc(r.name)}">${esc(r.name)}</a><small>${inbxMB(+r.size||0)}</small>${r.note?`<small class="say">“${esc(r.note)}”</small>`:''}</td>
+      <td>${esc(r.camp||'')}</td>
+      <td class="fn">${r.path||r.blob?`<a href="#" data-inbx-get="${esc(r.id)}" title="${esc(r.name)}">${esc(r.name)}</a><small>${inbxMB(+r.size||0)}</small>`:'<b>요청</b>'}${r.note?`<small class="say">“${esc(r.note)}”</small>`:''}</td>
       <td>${esc(r.kind||'')}${r.detected?`<small class="ok">사이트 인식</small>`:''}</td>
       <td class="mono">${esc(r.month||'')}</td>
       <td>${esc(r.uploader_name||'')}</td>
@@ -130,7 +135,7 @@ function inbxPaint(el,area){
     <div class="inbx-bd">${warn}
       ${ed?`<label class="inbx-drop" tabindex="0"><input type="file" multiple accept="${area==='report'?'.pdf,.zip,.xlsx,.xls':'.xlsx,.xls,.csv,.pdf,.zip'}" hidden>
         <b>파일을 끌어다 놓거나 눌러서 고르세요</b><small>${area==='report'?'pdf · zip · xlsx':'xlsx · xls · csv · pdf · zip'} · 한 개 ${INBX_MAX_MB}MB 까지</small></label>
-      ${INBX.pend.length?`<div class="inbx-form"><ul>${pend}</ul>
+      ${INBX.pend.length||area==='all'?`<div class="inbx-form">${INBX.pend.length?`<ul>${pend}</ul>`:'<div class="inbx-only">파일 없이 요청만 남겨도 됩니다 — 아래에 매체와 전할 말을 적고 접수하세요.</div>'}
         <div class="inbx-row"><label>매체 <input class="txt inbx-media" list="inbxMediaL" maxlength="40" value="${esc(mt.media)}" placeholder="어떤 매체의 자료인가요">
             <datalist id="inbxMediaL">${inbxMedias(area).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></label>
           <label>기준 월 <input type="month" class="inbx-mon" value="${esc(mt.mon||inbxMonth(area==='report'))}"></label>
@@ -165,6 +170,7 @@ function inbxWire(el,area){
   const mt=INBX.meta[area]||(INBX.meta[area]={media:'',mon:'',note:''});
   [['.inbx-media','media'],['.inbx-mon','mon'],['.inbx-note','note']].forEach(([c,k])=>{const x=q(c);if(x)x.oninput=()=>{mt[k]=x.value;};});
   if(up)up.onclick=()=>{const md=(q('.inbx-media').value||'').trim();
+    if(!INBX.pend.length&&!(q('.inbx-note').value||'').trim()){showToast('전할 말을 적어 주세요','파일 없이 접수할 때는 요청 내용을 적어야 합니다.',{kind:'warn'});q('.inbx-note').focus();return;}
     if(!md){showToast('매체를 적어 주세요','어떤 매체의 자료인지 고르거나 적어야 접수됩니다.',{kind:'warn'});q('.inbx-media').focus();return;}
     inbxUpload(el,area,{media:md,month:q('.inbx-mon').value||'',note:(q('.inbx-note').value||'').trim()});};
   el.querySelectorAll('[data-inbx-get]').forEach(a=>a.onclick=e=>{e.preventDefault();inbxGet(a.dataset.inbxGet);});
@@ -197,7 +203,7 @@ function inbxKey(cid,rid,i,name){
 function inbxRid(){try{return crypto.randomUUID();}catch(e){
   return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g,()=>(Math.random()*16|0).toString(16));}}
 async function inbxUpload(el,area,meta){
-  if(INBX.busy||!INBX.pend.length)return;
+  if(INBX.busy||(!INBX.pend.length&&!(meta&&meta.note)))return;
   INBX.busy=true;
   const say=t=>{const s=el.querySelector('.inbx-say');if(s)s.textContent=t;};
   const live=inbxOn()&&!INBX.missing,cid=inbxCid();
@@ -205,26 +211,28 @@ async function inbxUpload(el,area,meta){
   const done=[];
   try{
     let i=0;
-    for(const p of INBX.pend.slice()){
+    /* v171 — 파일 없이 요청 글만 */
+    const camp=inbxCampName(),only=!INBX.pend.length;
+    for(const p of (only?[{f:{name:'(요청)',size:0},kind:'요청',det:null,ran:false,memo:true}]:INBX.pend.slice())){
       i++;say(`올리는 중… ${i}/${INBX.pend.length} · ${p.f.name}`);
       const rid=inbxRid();
-      const row={id:rid,campaign_id:cid,area,kind:[meta.media,p.kind].filter(Boolean).join(' · '),month:meta.month,note:meta.note,
-        name:p.f.name,size:p.f.size,path:inbxKey(cid,rid,0,p.f.name),detected:p.det?p.det.l:'',
+      const row={id:rid,campaign_id:live?cid:null,camp,area,kind:[meta.media,p.kind].filter(Boolean).join(' · '),month:meta.month,note:meta.note,
+        name:p.f.name,size:p.f.size,path:p.memo?'':inbxKey('all',rid,0,p.f.name),detected:p.det?p.det.l:'',
         status:p.ran?'done':'wait',status_note:p.ran?'사이트에서 바로 넣음':'',
         uploader_name:who||'나',created_at:new Date().toISOString()};
       if(live){
-        const {error:e1}=await CLOUD.sb.storage.from(INBX_BUCKET).upload(row.path,p.f,{upsert:false,contentType:p.f.type||undefined});
-        if(e1)throw new Error(`${p.f.name} — ${e1.message}`);
+        if(!p.memo){const {error:e1}=await CLOUD.sb.storage.from(INBX_BUCKET).upload(row.path,p.f,{upsert:false,contentType:p.f.type||undefined});
+        if(e1)throw new Error(`${p.f.name} — ${e1.message}`);}
         const ins={...row};delete ins.created_at;ins.uploader_id=CLOUD.user.id;
         const {error:e2}=await CLOUD.sb.from('intake_files').insert(ins);
-        if(e2){try{await CLOUD.sb.storage.from(INBX_BUCKET).remove([row.path]);}catch(e){}
+        if(e2){if(!p.memo)try{await CLOUD.sb.storage.from(INBX_BUCKET).remove([row.path]);}catch(e){}
           throw new Error(`${p.f.name} — ${e2.message}`);}
       }else{
-        try{row.blob=URL.createObjectURL(p.f);}catch(e){}
+        if(!p.memo)try{row.blob=URL.createObjectURL(p.f);}catch(e){}
         INBX.demo.unshift(row);}
       done.push(p);}
     if(INBX.meta[area])INBX.meta[area].note='';
-    showToast('접수했습니다',`${done.length}개 파일${live?' · 반영되면 상태가 \'반영 완료\'로 바뀝니다':' (이 세션 안에서만 보관)'}`,{kind:'ok'});
+    showToast(live?'접수했습니다':'임시로만 보관했습니다',`${only?'요청 1건':done.length+'개 파일'}${live?' · 반영되면 상태가 \'반영 완료\'로 바뀝니다':' — 저장소가 준비되지 않아 화면을 닫으면 사라집니다'}`,{kind:live?'ok':'warn',ms:live?3200:7000});
   }catch(e){
     showToast('접수하지 못했습니다',(e&&e.message)||String(e),{kind:'warn',ms:6000});
   }finally{
@@ -234,7 +242,7 @@ async function inbxUpload(el,area,meta){
 async function inbxGet(id){
   const r=INBX.rows.find(x=>x.id===id);if(!r)return;
   if(r.blob){window.open(r.blob,'_blank','noopener');return;}
-  if(!inbxOn())return;
+  if(!inbxOn()||!r.path)return;
   const {data,error}=await CLOUD.sb.storage.from(INBX_BUCKET).createSignedUrl(r.path,600,{download:r.name});
   if(error){showToast('파일을 열지 못했습니다',error.message,{kind:'warn'});return;}
   window.open(data.signedUrl,'_blank','noopener');}
@@ -249,6 +257,6 @@ async function inbxDel(r,el,area){
   if(inbxOn()&&!r.blob){
     const {error}=await CLOUD.sb.from('intake_files').delete().eq('id',r.id);
     if(error){showToast('지우지 못했습니다',error.message,{kind:'warn'});return;}
-    try{await CLOUD.sb.storage.from(INBX_BUCKET).remove([r.path]);}catch(e){}
+    if(r.path)try{await CLOUD.sb.storage.from(INBX_BUCKET).remove([r.path]);}catch(e){}
   }else INBX.demo=INBX.demo.filter(x=>x!==r);
   INBX.rows=INBX.rows.filter(x=>x!==r);inbxPaint(el,area);}

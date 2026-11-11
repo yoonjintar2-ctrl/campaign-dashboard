@@ -808,7 +808,6 @@ const MENUS=[
   {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view'},
   {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
   {id:'tq_cueall',area:'tv',   tab:'tvcue',cue:'cueall', l:'전체 큐시트',  kind:'view'},
-  {id:'t_inbox',area:'tv',     tab:'intake',             l:'데이터 접수함',  kind:'edit'},
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
      입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
@@ -816,20 +815,20 @@ const MENUS=[
   {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'캠페인 퍼포먼스',kind:'view'},
   {id:'ot_daily',area:'ott',   tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
   {id:'ot_mix', area:'ott',    tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
-  {id:'ot_inbox',area:'ott',   tab:'intake',             l:'데이터 접수함',  kind:'edit'},
   /* OOH (v81) — 계획(광고비 · 매체 · 지면 · 지면 정보 · 날짜)과 소재만. 실적 입력 없음 */
   {id:'o_sum',  area:'ooh',    tab:'oohdash',            l:'서머리',       kind:'view'},
   {id:'o_plan', area:'ooh',    tab:'oohplan',            l:'예상효율 입력',kind:'edit'},
   /* 리포트 (v143) — 연도 › 월별. 틀만 있고 내용은 자료 양식이 정해지면. 광고주에게는 기본 숨김 */
   {id:'report', area:'report', tab:'report',             l:'먼슬리 리포트',kind:'view',vdef:false},
-  {id:'rp_inbox',area:'report',tab:'intake',             l:'데이터 접수함',  kind:'edit'},
   {id:'trend',  area:'trend',  tab:'trend',              l:'트렌드 리포트',kind:'view'},
+  /* v171 — 데이터 접수함: 영역(TV · OTT · 리포트)을 가리지 않는 메뉴 하나. 맨 오른쪽 · 운영 권한 계정에게만(kind:'edit') · 모든 캠페인이 함께 쓴다 */
+  {id:'inbox',  area:'inbox',  tab:'intake',             l:'데이터 접수함',kind:'edit'},
   /* 전체 캠페인 (v81) — 같은 광고주의 모든 캠페인 요약. 광고주(뷰어)에게는 기본으로 숨긴다(vdef:false) */
   {id:'overview',area:'overview',tab:'overview',         l:'전체 캠페인',  kind:'view',vdef:false}];
 const MENU_BY={};MENUS.forEach(m=>MENU_BY[m.id]=m);
 const AREA_OF_TAB={dash:'digital',input:'digital',setup:'digital',
   tvdash:'tv',tvdaily:'tv',tvweekly:'tv',tvmonthly:'tv',tvmix:'tv',tvcue:'tv',tvinput:'tv',tvplan:'tv',
-  oohdash:'ooh',oohplan:'ooh',report:'report',intake:'tv',trend:'trend',overview:'overview'};
+  oohdash:'ooh',oohplan:'ooh',report:'report',intake:'inbox',trend:'trend',overview:'overview'};
 const AREA_LABEL={digital:'디지털',tv:'TV',ott:'OTT',ooh:'OOH',report:'리포트',trend:'트렌드 리포트',overview:'전체 캠페인'};
 /* 캠페인 운영 영역(매체) — 메뉴 설정에서 켜고 끈다. 트렌드 · 전체 캠페인은 영역이 아니라 공용 메뉴 */
 const MEDIA_AREAS=['digital','tv','ott','ooh'];

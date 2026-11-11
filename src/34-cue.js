@@ -73,7 +73,7 @@ async function renderTvCue(){
     host.innerHTML=`<div class="card cue-empty"><b>이 캠페인에 올라온 TV 큐시트가 없습니다</b>
       <p>${ed?'데이터 접수함에 그 달의 <em>TV set 큐시트</em> 통합 엑셀을 올리고 ‘바로 넣기’를 누르면 여기에 표시됩니다.':'큐시트가 올라오면 여기에서 볼 수 있습니다.'}</p>
       ${ed?'<button class="btn pri" id="cueGoInbox">데이터 접수함으로</button>':''}</div>`;
-    const b=$('cueGoInbox');if(b)b.onclick=()=>{try{goMenu('t_inbox');}catch(e){}};
+    const b=$('cueGoInbox');if(b)b.onclick=()=>{try{goMenu('inbox');}catch(e){}};
     return;}
   if(note){const s=TV_CUE.st||{};
     note.textContent=`${cueYmLabel(TV_CUE.ym)} · 지상파 ${(s.g||0).toLocaleString()}회 · 케이블 ${(s.c||0).toLocaleString()}회 · 반영 ${inbxWhen(new Date(TV_CUE.at).toISOString())}`;}
