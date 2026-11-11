@@ -4411,6 +4411,17 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
 #cueFrame.ready{opacity:1}
 .cue-load{position:absolute;left:0;right:0;top:60px;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}
 #cueFrame.ready~.cue-load,.cue-load:has(~#cueFrame.ready){display:none}
+.upbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s,transform .12s}
+.upbtn:hover{border-color:var(--acc);color:var(--acc)}.upbtn:active{transform:scale(.97)}
+@media (max-width:900px){.upbtn span{display:none}.upbtn{padding:0 9px}}
+.inbxq .lead{margin:0 0 12px;font-size:12.5px;line-height:1.55;color:var(--ink2)}
+.inbxq .qf{list-style:none;margin:8px 0 4px;padding:0;display:grid;gap:5px}
+.inbxq .qf li{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;font-size:12.5px;background:var(--plane2)}
+.inbxq .qf .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:var(--ink)}.inbxq .qf .sz{color:var(--muted);font-size:11.5px}
+.inbxq .qf .x{border:0;background:none;font-size:15px;color:var(--muted);cursor:pointer}
+.inbxq label.f{display:flex;flex-direction:column;gap:4px;margin-top:12px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.inbxq label.f .txt{font:inherit;font-size:13px;font-weight:500;color:var(--ink);padding:8px 10px}.inbxq label.f textarea{resize:vertical;line-height:1.5}.inbxq label.f.w .txt{max-width:220px;height:34px}
+.inbxq .inbx-say{margin-top:8px;font-size:12px;color:var(--ink2);min-height:16px}
 .inbx-only{padding:2px 2px 10px;font-size:12.5px;color:var(--ink2);font-weight:600}
 .cue-empty{padding:44px 24px;text-align:center}.cue-empty b{font-size:16px;color:var(--ink)}
 .cue-empty p{margin:8px 0 16px;color:var(--ink2);font-size:13px}.cue-empty em{font-style:normal;font-weight:700;color:var(--ink)}

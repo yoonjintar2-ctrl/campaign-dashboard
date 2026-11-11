@@ -37,6 +37,9 @@ function inbxGuess(name,kinds){const n=String(name||'');
 function inbxOn(){try{return !!(CLOUD&&CLOUD.on&&CLOUD.sb&&CLOUD.user&&CLOUD.campaign&&CLOUD.campaign.id&&!CLOUD.shareView);}catch(e){return false;}}
 function inbxEdit(){try{return inbxOn()?CLOUD.role!=='viewer':!(CLOUD&&CLOUD.shareView);}catch(e){return true;}}
 function inbxCid(){try{return inbxOn()?CLOUD.campaign.id:'demo';}catch(e){return 'demo';}}
+/* 요청자 이름 — 마지막에 적은 이름(이 브라우저) → 계정 이름 */
+function inbxWho(){let w='';try{w=localStorage.getItem('inbx_who')||'';}catch(e){}
+  if(!w){try{w=(CLOUD.user&&(CLOUD.user.user_metadata?.name||CLOUD.user.user_metadata?.full_name||String(CLOUD.user.email||'').split('@')[0]))||'';}catch(e){}}return w;}
 function inbxMonth(prev){const d=new Date();if(prev)d.setDate(0);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function inbxWhen(iso){const d=new Date(iso);if(!isFinite(d))return '';
   return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
@@ -113,7 +116,7 @@ function inbxPaint(el,area){
         :'<span class="det cl">Claude 확인 후 일괄 반영</span>'}
       <select class="inbx-kind" data-inbx-kind="${i}" aria-label="쓰일 항목" title="이 자료가 쓰일 항목">${kinds.map(k=>`<option${k===p.kind?' selected':''}>${esc(k)}</option>`).join('')}</select>
       <button class="x" data-inbx-drop="${i}" title="빼기">×</button></li>`).join('');
-  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>캠페인</th><th>파일 · 요청</th><th>매체 · 항목</th><th>기준 월</th><th>올린 사람</th><th>상태</th>${ed?'<th></th>':''}</tr></thead><tbody>${
+  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>캠페인</th><th>파일 · 요청</th><th>매체 · 항목</th><th>기준 월</th><th>요청자</th><th>상태 · 처리 결과</th>${ed?'<th></th>':''}</tr></thead><tbody>${
     rows.map(r=>`<tr data-id="${esc(r.id)}">
       <td class="mono">${esc(inbxWhen(r.created_at))}</td>
       <td>${esc(r.camp||'')}</td>
@@ -138,6 +141,7 @@ function inbxPaint(el,area){
       ${INBX.pend.length||area==='all'?`<div class="inbx-form">${INBX.pend.length?`<ul>${pend}</ul>`:'<div class="inbx-only">파일 없이 요청만 남겨도 됩니다 — 아래에 매체와 전할 말을 적고 접수하세요.</div>'}
         <div class="inbx-row"><label>매체 <input class="txt inbx-media" list="inbxMediaL" maxlength="40" value="${esc(mt.media)}" placeholder="어떤 매체의 자료인가요">
             <datalist id="inbxMediaL">${inbxMedias(area).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></label>
+          <label>요청자 <input class="txt inbx-who" maxlength="30" style="width:110px" value="${esc(mt.who!=null?mt.who:inbxWho())}" placeholder="이름"></label>
           <label>기준 월 <input type="month" class="inbx-mon" value="${esc(mt.mon||inbxMonth(area==='report'))}"></label>
           <label class="grow">전할 말 <textarea class="txt inbx-note" maxlength="500" rows="1" placeholder="${area==='report'?'예) 10월 먼슬리 최종본입니다. 소재 아카이브는 지난달 것 유지해 주세요':'예) 10월 4주차 수정본. 케이블 금액이 바뀌었으니 주차별 퍼포먼스에 반영해 주세요'}">${esc(mt.note)}</textarea></label>
           <button class="btn sm pri" data-inbx-up${INBX.busy?' disabled':''}>${INBX.busy?'올리는 중…':'접수하기'}</button>
@@ -168,11 +172,11 @@ function inbxWire(el,area){
   const up=q('[data-inbx-up]');
   el.querySelectorAll('[data-inbx-kind]').forEach(x=>x.onchange=()=>{const p=INBX.pend[+x.dataset.inbxKind];if(p)p.kind=x.value;});
   const mt=INBX.meta[area]||(INBX.meta[area]={media:'',mon:'',note:''});
-  [['.inbx-media','media'],['.inbx-mon','mon'],['.inbx-note','note']].forEach(([c,k])=>{const x=q(c);if(x)x.oninput=()=>{mt[k]=x.value;};});
+  [['.inbx-media','media'],['.inbx-mon','mon'],['.inbx-note','note'],['.inbx-who','who']].forEach(([c,k])=>{const x=q(c);if(x)x.oninput=()=>{mt[k]=x.value;};});
   if(up)up.onclick=()=>{const md=(q('.inbx-media').value||'').trim();
     if(!INBX.pend.length&&!(q('.inbx-note').value||'').trim()){showToast('전할 말을 적어 주세요','파일 없이 접수할 때는 요청 내용을 적어야 합니다.',{kind:'warn'});q('.inbx-note').focus();return;}
     if(!md){showToast('매체를 적어 주세요','어떤 매체의 자료인지 고르거나 적어야 접수됩니다.',{kind:'warn'});q('.inbx-media').focus();return;}
-    inbxUpload(el,area,{media:md,month:q('.inbx-mon').value||'',note:(q('.inbx-note').value||'').trim()});};
+    inbxUpload(el,area,{media:md,month:q('.inbx-mon').value||'',note:(q('.inbx-note').value||'').trim(),who:((q('.inbx-who')||{}).value||'').trim()});};
   el.querySelectorAll('[data-inbx-get]').forEach(a=>a.onclick=e=>{e.preventDefault();inbxGet(a.dataset.inbxGet);});
   el.querySelectorAll('[data-inbx-st]').forEach(s=>s.onchange=()=>inbxSetSt(s.dataset.inbxSt,s.value,el,area));
   el.querySelectorAll('[data-inbx-del]').forEach(b=>b.onclick=()=>{
@@ -205,10 +209,10 @@ function inbxRid(){try{return crypto.randomUUID();}catch(e){
 async function inbxUpload(el,area,meta){
   if(INBX.busy||(!INBX.pend.length&&!(meta&&meta.note)))return;
   INBX.busy=true;
-  const say=t=>{const s=el.querySelector('.inbx-say');if(s)s.textContent=t;};
+  const say=t=>{const s=(meta&&meta.sayEl)||(el&&el.querySelector('.inbx-say'));if(s)s.textContent=t;};
   const live=inbxOn()&&!INBX.missing,cid=inbxCid();
-  let who='';try{who=(CLOUD.user&&(CLOUD.user.user_metadata?.name||CLOUD.user.email))||'';}catch(e){}
-  const done=[];
+  let who=(meta&&meta.who)||'';if(!who)who=inbxWho();
+  const done=[];let okAll=false;
   try{
     let i=0;
     /* v171 — 파일 없이 요청 글만 */
@@ -231,13 +235,14 @@ async function inbxUpload(el,area,meta){
         if(!p.memo)try{row.blob=URL.createObjectURL(p.f);}catch(e){}
         INBX.demo.unshift(row);}
       done.push(p);}
-    if(INBX.meta[area])INBX.meta[area].note='';
+    if(INBX.meta[area])INBX.meta[area].note='';okAll=true;
     showToast(live?'접수했습니다':'임시로만 보관했습니다',`${only?'요청 1건':done.length+'개 파일'}${live?' · 반영되면 상태가 \'반영 완료\'로 바뀝니다':' — 저장소가 준비되지 않아 화면을 닫으면 사라집니다'}`,{kind:live?'ok':'warn',ms:live?3200:7000});
   }catch(e){
     showToast('접수하지 못했습니다',(e&&e.message)||String(e),{kind:'warn',ms:6000});
   }finally{
     INBX.pend=INBX.pend.filter(p=>!done.includes(p));INBX.busy=false;
-    await inbxLoad(true);inbxPaint(el,area);}
+    await inbxLoad(true);if(el)inbxPaint(el,area);else{try{inbxRender();}catch(e){}}}
+  return okAll;
 }
 async function inbxGet(id){
   const r=INBX.rows.find(x=>x.id===id);if(!r)return;
@@ -260,3 +265,39 @@ async function inbxDel(r,el,area){
     if(r.path)try{await CLOUD.sb.storage.from(INBX_BUCKET).remove([r.path]);}catch(e){}
   }else INBX.demo=INBX.demo.filter(x=>x!==r);
   INBX.rows=INBX.rows.filter(x=>x!==r);inbxPaint(el,area);}
+
+/* ---------- v174 — 설정 옆 '데이터 접수' 버튼: 파일 · 설명 · 요청자 이름만 적는 작은 창 ----------
+   올린 것은 데이터 접수함에 '반영 대기'로 쌓이고, Claude 가 가져가 기존 데이터와 대조해 반영한 뒤 처리 결과를 적는다 */
+function inbxQuick(){
+  const QF=[];
+  const box=openModal('데이터 접수',`<div class="inbxq">
+      <p class="lead">받은 자료(엑셀 · PDF · zip)와 설명을 올려 주세요. Claude 가 기존 데이터와 대조해 사이트에 반영하고, <b>데이터 접수함</b>에 처리 결과를 남깁니다.</p>
+      <label class="inbx-drop" tabindex="0"><input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.zip" hidden>
+        <b>파일을 끌어다 놓거나 눌러서 고르세요</b><small>xlsx · xls · csv · pdf · zip · 한 개 ${INBX_MAX_MB}MB 까지 · 여러 개 가능</small></label>
+      <ul class="qf"></ul>
+      <label class="f">설명 <textarea class="txt q-note" rows="4" maxlength="500" placeholder="예) 코웨이 11월 큐시트 수정본입니다. 3주차 케이블 편성이 바뀌었어요"></textarea></label>
+      <label class="f w">요청자 이름 <input class="txt q-who" maxlength="30" value="${esc(inbxWho())}" placeholder="이름"></label>
+      <div class="inbx-say" aria-live="polite"></div></div>`,
+    `<button class="btn" data-close>취소</button><button class="btn primary" id="inbxqGo">접수하기</button>`,{w:560});
+  const q=s=>box.querySelector(s),drop=q('.inbx-drop'),inp=drop.querySelector('input'),ul=q('.qf');
+  const paint=()=>{ul.innerHTML=QF.map((f,i)=>`<li><span class="nm">${esc(f.name)}</span><span class="sz">${inbxMB(f.size)}</span><button type="button" class="x" data-i="${i}" title="빼기">×</button></li>`).join('');
+    ul.querySelectorAll('.x').forEach(b=>b.onclick=()=>{QF.splice(+b.dataset.i,1);paint();});};
+  const add=fs=>{const bad=[];fs.forEach(f=>{if(!/\.(xlsx?|csv|pdf|zip)$/i.test(f.name))bad.push(`${f.name} — 형식`);else if(f.size>INBX_MAX_MB*1048576)bad.push(`${f.name} — ${INBX_MAX_MB}MB 초과`);else QF.push(f);});
+    if(bad.length)showToast('올릴 수 없는 파일이 있습니다',bad.join(' · '),{kind:'warn',ms:5200});paint();};
+  inp.onchange=()=>{add([...inp.files]);inp.value='';};
+  drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click();}};
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add('on');};drop.ondragleave=()=>drop.classList.remove('on');
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');add([...(e.dataTransfer.files||[])]);};
+  q('#inbxqGo').onclick=async()=>{
+    const note=q('.q-note').value.trim(),who=q('.q-who').value.trim();
+    if(!QF.length&&!note){showToast('파일이나 설명을 넣어 주세요','',{kind:'warn'});return;}
+    if(!who){showToast('요청자 이름을 적어 주세요','',{kind:'warn'});q('.q-who').focus();return;}
+    try{localStorage.setItem('inbx_who',who);}catch(e){}
+    await inbxLoad(true);
+    const kinds=INBX_KINDS.all;
+    INBX.pend=QF.map(f=>({f,det:null,ran:false,kind:inbxGuess(f.name,kinds)}));
+    q('#inbxqGo').disabled=true;
+    const ok=await inbxUpload(null,'all',{media:'',month:inbxMonth(),note,who,sayEl:q('.inbx-say')});
+    if(ok)closeModal();else{const b=q('#inbxqGo');if(b)b.disabled=false;}};
+}
+(function(){const b=document.getElementById('upBtn');if(b)b.onclick=()=>{try{inbxQuick();}catch(e){}};})();
