@@ -4622,6 +4622,18 @@ html.ct-on{overflow:hidden}
   cursor:pointer;color:var(--ink2);transition:border-color .15s,background .15s}
 .inbx-drop b{font-size:13px;font-weight:700}.inbx-drop small{font-size:11.5px;color:var(--muted)}
 .inbx-drop:hover,.inbx-drop:focus-visible,.inbx-drop.on{border-color:#2f6fb5;background:#f3f7fc;outline:0}
+/* v186 — 올리기 전에 먼저 고르는 세 가지(메뉴 · 캠페인 · 자료) */
+.inbx-pick{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1.3fr);gap:10px}
+.inbx-pick label{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:11.5px;font-weight:700;color:var(--muted)}
+.inbx-pick label span{display:flex;align-items:center;gap:6px}
+.inbx-pick label i{font-style:normal;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:800;color:var(--muted);background:var(--plane2);border:1px solid var(--line)}
+.inbx-pick label.set i{color:#fff;background:#5b6066;border-color:#5b6066}
+.inbx-pick select{height:34px;min-width:0;width:100%;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 8px}
+.inbx-pick label:not(.set) select:not(:disabled){border-color:#2f6fb5;box-shadow:0 0 0 3px rgba(47,111,181,.12)}
+.inbx-pick select:disabled{color:var(--muted);background:var(--plane2)}
+.inbx-drop.lock{cursor:not-allowed;opacity:.55;background:var(--plane2)}.inbx-drop.lock:hover,.inbx-drop.lock:focus-visible{border-color:#c9cdd2;background:var(--plane2)}
+.inbxq .q-pick{margin:0 0 10px}.inbxq .inbx-pick{grid-template-columns:1fr;gap:8px}.inbxq .inbx-pick label{flex-direction:row;align-items:center;gap:10px}.inbxq .inbx-pick label span{flex:0 0 76px}
+@media(max-width:640px){.inbx-pick{grid-template-columns:1fr}}
 .inbx-form{border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
 .inbx-form ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .inbx-pf{display:flex;align-items:center;gap:8px;font-size:12.5px;min-width:0}
@@ -31014,6 +31026,37 @@ function inbxMedias(area){let m=(INBX_MEDIA[area]||[]).slice();
   if(area==='digital'||area==='ott'){try{[...new Set((S.lines||[]).map(l=>String(l.media||'').trim()).filter(Boolean))].forEach(x=>{if(!m.includes(x))m.push(x);});}catch(e){}}
   return m;}
 const INBX_ST={wait:'반영 대기',done:'반영 완료',hold:'보류'};
+/* ---------- v186 — 올리기 전에 먼저 고르는 세 가지: ① 메뉴 → ② 캠페인 → ③ 자료 ----------
+   고르기 전에는 파일을 올릴 수 없다. 접수 줄에는 '메뉴 · 자료'와 고른 캠페인이 적힌다 */
+const INBX_MENUS=[['tv','TV'],['ott','OTT'],['digital','디지털'],['report','리포트 (먼슬리)'],['all','기타 · 잘 모르겠음']];
+const inbxMenuL=a=>(INBX_MENUS.find(m=>m[0]===a)||['',''])[1].replace(/ \(.*$/,'').replace(/ · .*$/,'');
+/* 자료 → 그 자료가 쓰이는 화면 (고를 때 옆에 보여 준다) */
+const INBX_TO=[[/큐시트|편성표/,'미디어믹스 · 큐시트'],[/TV 위클리|TV 실적/,'캠페인 퍼포먼스'],[/OTT 리포트/,'OTT 퍼포먼스'],[/데일리/,'데일리 리포트'],[/미디어믹스/,'미디어믹스'],[/먼슬리/,'리포트'],[/경쟁사/,'리포트 · 소재']];
+const inbxTo=k=>{const m=INBX_TO.find(x=>x[0].test(k));return m?m[1]:'';};
+function inbxCamps(){
+  const cur=inbxOn()?CLOUD.campaign.id:'demo';let L=[];
+  try{if(inbxOn())L=(CLOUD.list||[]).map(c=>({id:c.id,label:[c.advertiser,c.name].filter(Boolean).join(' · ')}));}catch(e){}
+  if(!L.some(c=>c.id===cur))L.unshift({id:cur,label:inbxCampName()||'지금 캠페인'});
+  L.push({id:'*',label:'모든 캠페인 공통 · 해당 없음'});
+  return {L,cur};}
+function inbxSel(){
+  const s=INBX.sel||(INBX.sel={area:'',cid:null,kind:''}),{L,cur}=inbxCamps();
+  if(s.cid==null||!L.some(c=>c.id===s.cid))s.cid=cur;
+  if(s.kind&&!(INBX_KINDS[s.area]||[]).includes(s.kind))s.kind='';
+  return s;}
+const inbxSelOk=()=>{const s=inbxSel();return !!(s.area&&s.cid&&s.kind);};
+function inbxPickHtml(){
+  const s=inbxSel(),{L,cur}=inbxCamps(),ks=s.area?INBX_KINDS[s.area]||[]:[];
+  return `<div class="inbx-pick${inbxSelOk()?' ok':''}">
+    <label class="${s.area?'set':''}"><span><i>1</i>메뉴</span><select data-inbx-p="area" aria-label="메뉴"><option value="">어느 메뉴의 자료인가요</option>${INBX_MENUS.map(m=>`<option value="${m[0]}"${m[0]===s.area?' selected':''}>${esc(m[1])}</option>`).join('')}</select></label>
+    <label class="set"><span><i>2</i>캠페인</span><select data-inbx-p="cid" aria-label="캠페인">${L.map(c=>`<option value="${esc(c.id)}"${c.id===s.cid?' selected':''}>${esc(c.label)}${c.id===cur?' (지금 보는 캠페인)':''}</option>`).join('')}</select></label>
+    <label class="${s.kind?'set':''}"><span><i>3</i>자료</span><select data-inbx-p="kind" aria-label="자료"${s.area?'':' disabled'}><option value="">${s.area?'어떤 자료인가요':'메뉴를 먼저 고르세요'}</option>${ks.map(k=>`<option value="${esc(k)}"${k===s.kind?' selected':''}>${esc(k)}${inbxTo(k)?' → '+esc(inbxTo(k)):''}</option>`).join('')}</select></label></div>`;}
+function inbxPickWire(root,onChange){
+  root.querySelectorAll('[data-inbx-p]').forEach(x=>x.onchange=()=>{const s=inbxSel(),k=x.dataset.inbxP;s[k]=x.value;if(k==='area')s.kind='';
+    /* 이미 담아 둔 파일도 새로 고른 자료 종류로 맞춘다 */
+    if(s.kind)INBX.pend.forEach(p=>{p.kind=s.kind;});
+    onChange(k);});}
+const inbxDropTxt=()=>inbxSelOk()?'파일을 끌어다 놓거나 눌러서 고르세요':'위에서 메뉴 · 캠페인 · 자료를 먼저 고르세요';
 const inbxMB=b=>b<1048576?Math.max(1,Math.round(b/1024))+'KB':(b/1048576).toFixed(1)+'MB';
 /* 파일 이름으로 자료 종류 짐작 — 사용자가 고칠 수 있다 */
 function inbxGuess(name,kinds){const n=String(name||'');
@@ -31082,7 +31125,8 @@ async function inbxRender(force){
   await inbxLoad(force);
   inbxPaint(h.el,h.area);}
 function inbxPaint(el,area){
-  const kinds=INBX_KINDS[area]||INBX_KINDS.digital;
+  const SEL=inbxSel(),okSel=inbxSelOk();
+  const kinds=INBX_KINDS[SEL.area]||INBX_KINDS[area]||INBX_KINDS.digital;
   const ed=inbxEdit(),live=inbxOn();
   /* 데이터 접수함 화면 제목 — 영역 이름 (v161) */
   if(el.id==='inbxMain'){const t=$('inbxNote');if(t)t.textContent='모든 캠페인 공통 · 운영 권한 계정만 보입니다 · 자료와 요청을 모두 여기서';}
@@ -31103,7 +31147,7 @@ function inbxPaint(el,area){
         :'<span class="det cl">Claude 확인 후 일괄 반영</span>'}
       <select class="inbx-kind" data-inbx-kind="${i}" aria-label="쓰일 항목" title="이 자료가 쓰일 항목">${kinds.map(k=>`<option${k===p.kind?' selected':''}>${esc(k)}</option>`).join('')}</select>
       <button class="x" data-inbx-drop="${i}" title="빼기">×</button></li>`).join('');
-  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>캠페인</th><th>파일 · 요청</th><th>매체 · 항목</th><th>기준 월</th><th>요청자</th><th>상태 · 처리 결과</th>${ed?'<th></th>':''}</tr></thead><tbody>${
+  const list=rows.length?`<table class="inbx-list"><thead><tr><th>접수</th><th>캠페인</th><th>파일 · 요청</th><th>메뉴 · 자료</th><th>기준 월</th><th>요청자</th><th>상태 · 처리 결과</th>${ed?'<th></th>':''}</tr></thead><tbody>${
     rows.map(r=>`<tr data-id="${esc(r.id)}">
       <td class="mono">${esc(inbxWhen(r.created_at))}</td>
       <td>${esc(r.camp||'')}</td>
@@ -31123,12 +31167,10 @@ function inbxPaint(el,area){
       <span class="note">${area==='report'?'먼슬리 리포트 PDF 를 그대로 올려 두세요. Claude 가 확인해 리포트 메뉴에 일괄 반영합니다.'
         :'실적 리포트 · 큐시트 · 미디어믹스 엑셀을 그대로 올려 두세요. 사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영합니다.'}</span></div>
     <div class="inbx-bd">${warn}
-      ${ed?`<label class="inbx-drop" tabindex="0"><input type="file" multiple accept="${area==='report'?'.pdf,.zip,.xlsx,.xls':'.xlsx,.xls,.csv,.pdf,.zip'}" hidden>
-        <b>파일을 끌어다 놓거나 눌러서 고르세요</b><small>${area==='report'?'pdf · zip · xlsx':'xlsx · xls · csv · pdf · zip'} · 한 개 ${INBX_MAX_MB}MB 까지</small></label>
-      ${INBX.pend.length||area==='all'?`<div class="inbx-form">${INBX.pend.length?`<ul>${pend}</ul>`:'<div class="inbx-only">파일 없이 요청만 남겨도 됩니다 — 아래에 매체와 전할 말을 적고 접수하세요.</div>'}
-        <div class="inbx-row"><label>매체 <input class="txt inbx-media" list="inbxMediaL" maxlength="40" value="${esc(mt.media)}" placeholder="어떤 매체의 자료인가요">
-            <datalist id="inbxMediaL">${inbxMedias(area).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></label>
-          <label>요청자 <input class="txt inbx-who" maxlength="30" style="width:110px" value="${esc(mt.who!=null?mt.who:inbxWho())}" placeholder="이름"></label>
+      ${ed?`${inbxPickHtml()}<label class="inbx-drop${okSel?'':' lock'}" tabindex="${okSel?0:-1}"${okSel?'':' aria-disabled="true"'}><input type="file" multiple accept="${area==='report'?'.pdf,.zip,.xlsx,.xls':'.xlsx,.xls,.csv,.pdf,.zip'}" hidden${okSel?'':' disabled'}>
+        <b>${inbxDropTxt()}</b><small>${area==='report'?'pdf · zip · xlsx':'xlsx · xls · csv · pdf · zip'} · 한 개 ${INBX_MAX_MB}MB 까지</small></label>
+      ${INBX.pend.length||area==='all'?`<div class="inbx-form">${INBX.pend.length?`<ul>${pend}</ul>`:'<div class="inbx-only">파일 없이 요청만 남겨도 됩니다 — 위 세 가지를 고르고 전할 말을 적어 접수하세요.</div>'}
+        <div class="inbx-row"><label>요청자 <input class="txt inbx-who" maxlength="30" style="width:110px" value="${esc(mt.who!=null?mt.who:inbxWho())}" placeholder="이름"></label>
           <label>기준 월 <input type="month" class="inbx-mon" value="${esc(mt.mon||inbxMonth(area==='report'))}"></label>
           <label class="grow">전할 말 <textarea class="txt inbx-note" maxlength="500" rows="1" placeholder="${area==='report'?'예) 10월 먼슬리 최종본입니다. 소재 아카이브는 지난달 것 유지해 주세요':'예) 10월 4주차 수정본. 케이블 금액이 바뀌었으니 주차별 퍼포먼스에 반영해 주세요'}">${esc(mt.note)}</textarea></label>
           <button class="btn sm pri" data-inbx-up${INBX.busy?' disabled':''}>${INBX.busy?'올리는 중…':'접수하기'}</button>
@@ -31144,10 +31186,11 @@ function inbxWire(el,area){
   const fold=q('[data-inbx-fold]');
   if(fold)fold.onclick=()=>{INBX.open[area]=!(INBX.open[area]!=null?INBX.open[area]:true);inbxPaint(el,area);};
   const drop=q('.inbx-drop'),inp=drop&&drop.querySelector('input');
+  inbxPickWire(el,()=>inbxPaint(el,area));
   if(drop){
     inp.onchange=()=>{inbxAdd([...inp.files],el,area);inp.value='';};
     drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click();}};
-    drop.ondragover=e=>{e.preventDefault();drop.classList.add('on');};
+    drop.ondragover=e=>{e.preventDefault();if(inbxSelOk())drop.classList.add('on');};
     drop.ondragleave=()=>drop.classList.remove('on');
     drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');inbxAdd([...(e.dataTransfer.files||[])],el,area);};}
   el.querySelectorAll('[data-inbx-drop]').forEach(b=>b.onclick=()=>{INBX.pend.splice(+b.dataset.inbxDrop,1);inbxPaint(el,area);});
@@ -31159,11 +31202,11 @@ function inbxWire(el,area){
   const up=q('[data-inbx-up]');
   el.querySelectorAll('[data-inbx-kind]').forEach(x=>x.onchange=()=>{const p=INBX.pend[+x.dataset.inbxKind];if(p)p.kind=x.value;});
   const mt=INBX.meta[area]||(INBX.meta[area]={media:'',mon:'',note:''});
-  [['.inbx-media','media'],['.inbx-mon','mon'],['.inbx-note','note'],['.inbx-who','who']].forEach(([c,k])=>{const x=q(c);if(x)x.oninput=()=>{mt[k]=x.value;};});
-  if(up)up.onclick=()=>{const md=(q('.inbx-media').value||'').trim();
+  [['.inbx-mon','mon'],['.inbx-note','note'],['.inbx-who','who']].forEach(([c,k])=>{const x=q(c);if(x)x.oninput=()=>{mt[k]=x.value;};});
+  if(up)up.onclick=()=>{
+    if(!inbxSelOk()){showToast('메뉴 · 캠페인 · 자료를 먼저 골라 주세요','어느 메뉴, 어느 캠페인의 어떤 자료인지 골라야 접수됩니다.',{kind:'warn'});const x=el.querySelector('[data-inbx-p="area"]');if(x&&!inbxSel().area)x.focus();else{const y=el.querySelector('[data-inbx-p="kind"]');if(y)y.focus();}return;}
     if(!INBX.pend.length&&!(q('.inbx-note').value||'').trim()){showToast('전할 말을 적어 주세요','파일 없이 접수할 때는 요청 내용을 적어야 합니다.',{kind:'warn'});q('.inbx-note').focus();return;}
-    if(!md){showToast('매체를 적어 주세요','어떤 매체의 자료인지 고르거나 적어야 접수됩니다.',{kind:'warn'});q('.inbx-media').focus();return;}
-    inbxUpload(el,area,{media:md,month:q('.inbx-mon').value||'',note:(q('.inbx-note').value||'').trim(),who:((q('.inbx-who')||{}).value||'').trim()});};
+    inbxUpload(el,area,{month:q('.inbx-mon').value||'',note:(q('.inbx-note').value||'').trim(),who:((q('.inbx-who')||{}).value||'').trim()});};
   el.querySelectorAll('[data-inbx-get]').forEach(a=>a.onclick=e=>{e.preventDefault();inbxGet(a.dataset.inbxGet);});
   el.querySelectorAll('[data-inbx-st]').forEach(s=>s.onchange=()=>inbxSetSt(s.dataset.inbxSt,s.value,el,area));
   el.querySelectorAll('[data-inbx-del]').forEach(b=>b.onclick=()=>{
@@ -31171,16 +31214,18 @@ function inbxWire(el,area){
     confirmModal('접수한 자료를 지울까요?',`${r.name} — 저장소의 파일도 함께 지워지며 되돌릴 수 없습니다.`,()=>inbxDel(r,el,area),'지우기',false);});
 }
 function inbxAdd(files,el,area){
+  if(!inbxSelOk()){showToast('메뉴 · 캠페인 · 자료를 먼저 골라 주세요','고른 뒤에 파일을 올릴 수 있습니다.',{kind:'warn'});return;}
+  const SEL=inbxSel();
   const ok=[],bad=[];
   files.forEach(f=>{
     if(!/\.(xlsx?|csv|pdf|zip)$/i.test(f.name))bad.push(`${f.name} — 형식`);
     else if(f.size>INBX_MAX_MB*1048576)bad.push(`${f.name} — ${inbxMB(f.size)} (${INBX_MAX_MB}MB 초과)`);
     else ok.push(f);});
   if(bad.length)showToast('올릴 수 없는 파일이 있습니다',bad.join(' · '),{kind:'warn',ms:5200});
-  const kinds=INBX_KINDS[area]||INBX_KINDS.digital;
-  const add=ok.map(f=>({f,det:undefined,ran:false,kind:inbxGuess(f.name,kinds)}));
+  const kinds=INBX_KINDS[SEL.area]||INBX_KINDS.all;
+  const add=ok.map(f=>({f,det:undefined,ran:false,kind:SEL.kind}));
   INBX.pend=INBX.pend.concat(add);inbxPaint(el,area);
-  add.forEach(p=>inbxDetect(p.f,area).then(d=>{p.det=d;
+  add.forEach(p=>inbxDetect(p.f,SEL.area).then(d=>{p.det=d;
     /* 사이트가 알아본 형식이면 그 파일의 자료 종류도 맞춰 둔다 */
     if(d){const o=kinds.find(k=>d.k==='cue'?/큐시트/.test(k):d.k==='tvres'?/TV 실적/.test(k):/데일리|일별/.test(k));if(o)p.kind=o;}
     const keep={mon:el.querySelector('.inbx-mon')?.value,note:el.querySelector('.inbx-note')?.value};
@@ -31203,11 +31248,14 @@ async function inbxUpload(el,area,meta){
   try{
     let i=0;
     /* v171 — 파일 없이 요청 글만 */
-    const camp=inbxCampName(),only=!INBX.pend.length;
-    for(const p of (only?[{f:{name:'(요청)',size:0},kind:'요청',det:null,ran:false,memo:true}]:INBX.pend.slice())){
+    const SEL=inbxSel(),CS=inbxCamps(),co=CS.L.find(c=>c.id===SEL.cid),only=!INBX.pend.length;
+    const camp=SEL.cid==='*'?'모든 캠페인 공통':(co&&co.label)||inbxCampName();
+    const rcid=live&&SEL.cid&&SEL.cid!=='*'&&SEL.cid!=='demo'?SEL.cid:null,ml=inbxMenuL(SEL.area);
+    area=SEL.area||area;
+    for(const p of (only?[{f:{name:'(요청)',size:0},kind:(SEL.kind||'')+' (요청)',det:null,ran:false,memo:true}]:INBX.pend.slice())){
       i++;say(`올리는 중… ${i}/${INBX.pend.length} · ${p.f.name}`);
       const rid=inbxRid();
-      const row={id:rid,campaign_id:live?cid:null,camp,area,kind:[meta.media,p.kind].filter(Boolean).join(' · '),month:meta.month,note:meta.note,
+      const row={id:rid,campaign_id:rcid,camp,area,kind:[ml,p.kind].filter(Boolean).join(' · '),month:meta.month,note:meta.note,
         name:p.f.name,size:p.f.size,path:p.memo?'':inbxKey('all',rid,0,p.f.name),detected:p.det?p.det.l:'',
         status:p.ran?'done':'wait',status_note:p.ran?'사이트에서 바로 넣음':'',
         uploader_name:who||'나',created_at:new Date().toISOString()};
@@ -31222,13 +31270,15 @@ async function inbxUpload(el,area,meta){
         if(!p.memo)try{row.blob=URL.createObjectURL(p.f);}catch(e){}
         INBX.demo.unshift(row);}
       done.push(p);}
-    if(INBX.meta[area])INBX.meta[area].note='';okAll=true;
+    Object.values(INBX.meta).forEach(m=>{if(m)m.note='';});okAll=true;
+    /* 다음 접수 때 다시 고르게 메뉴 · 자료는 비운다(캠페인은 지금 보는 캠페인으로) */
+    INBX.sel={area:'',cid:null,kind:''};
     showToast(live?'접수했습니다':'임시로만 보관했습니다',`${only?'요청 1건':done.length+'개 파일'}${live?' · 반영되면 상태가 \'반영 완료\'로 바뀝니다':' — 저장소가 준비되지 않아 화면을 닫으면 사라집니다'}`,{kind:live?'ok':'warn',ms:live?3200:7000});
   }catch(e){
     showToast('접수하지 못했습니다',(e&&e.message)||String(e),{kind:'warn',ms:6000});
   }finally{
     INBX.pend=INBX.pend.filter(p=>!done.includes(p));INBX.busy=false;
-    await inbxLoad(true);if(el)inbxPaint(el,area);else{try{inbxRender();}catch(e){}}}
+    await inbxLoad(true);if(el)inbxPaint(el,(inbxHost()||{}).area||'all');else{try{inbxRender();}catch(e){}}}
   return okAll;
 }
 async function inbxGet(id){
@@ -31259,8 +31309,9 @@ function inbxQuick(){
   const QF=[];
   const box=openModal('데이터 접수',`<div class="inbxq">
       <p class="lead">받은 자료(엑셀 · PDF · zip)와 설명을 올려 주세요. Claude 가 기존 데이터와 대조해 사이트에 반영하고, <b>데이터 접수함</b>에 처리 결과를 남깁니다.</p>
-      <label class="inbx-drop" tabindex="0"><input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.zip" hidden>
-        <b>파일을 끌어다 놓거나 눌러서 고르세요</b><small>xlsx · xls · csv · pdf · zip · 한 개 ${INBX_MAX_MB}MB 까지 · 여러 개 가능</small></label>
+      <div class="q-pick">${inbxPickHtml()}</div>
+      <label class="inbx-drop${inbxSelOk()?'':' lock'}" tabindex="0"><input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.zip" hidden${inbxSelOk()?'':' disabled'}>
+        <b>${inbxDropTxt()}</b><small>xlsx · xls · csv · pdf · zip · 한 개 ${INBX_MAX_MB}MB 까지 · 여러 개 가능</small></label>
       <ul class="qf"></ul>
       <label class="f">설명 <textarea class="txt q-note" rows="4" maxlength="500" placeholder="예) 코웨이 11월 큐시트 수정본입니다. 3주차 케이블 편성이 바뀌었어요"></textarea></label>
       <label class="f w">요청자 이름 <input class="txt q-who" maxlength="30" value="${esc(inbxWho())}" placeholder="이름"></label>
@@ -31271,22 +31322,29 @@ function inbxQuick(){
   {const lb=(box.closest('.modal')||box.parentNode||document).querySelector('#inbxqList')||document.getElementById('inbxqList');if(lb)lb.addEventListener('click',()=>setTimeout(()=>{try{switchTab('intake');}catch(e){}},0));}
   const paint=()=>{ul.innerHTML=QF.map((f,i)=>`<li><span class="nm">${esc(f.name)}</span><span class="sz">${inbxMB(f.size)}</span><button type="button" class="x" data-i="${i}" title="빼기">×</button></li>`).join('');
     ul.querySelectorAll('.x').forEach(b=>b.onclick=()=>{QF.splice(+b.dataset.i,1);paint();});};
-  const add=fs=>{const bad=[];fs.forEach(f=>{if(!/\.(xlsx?|csv|pdf|zip)$/i.test(f.name))bad.push(`${f.name} — 형식`);else if(f.size>INBX_MAX_MB*1048576)bad.push(`${f.name} — ${INBX_MAX_MB}MB 초과`);else QF.push(f);});
+  /* v186 — 세 가지를 고르면 파일 칸이 열린다 */
+  const pick=()=>{const h=q('.q-pick');h.innerHTML=inbxPickHtml();inbxPickWire(h,pick);const ok=inbxSelOk();
+    drop.classList.toggle('lock',!ok);inp.disabled=!ok;drop.querySelector('b').textContent=inbxDropTxt();};
+  pick();
+  const add=fs=>{if(!inbxSelOk()){showToast('메뉴 · 캠페인 · 자료를 먼저 골라 주세요','고른 뒤에 파일을 올릴 수 있습니다.',{kind:'warn'});return;}
+    const bad=[];fs.forEach(f=>{if(!/\.(xlsx?|csv|pdf|zip)$/i.test(f.name))bad.push(`${f.name} — 형식`);else if(f.size>INBX_MAX_MB*1048576)bad.push(`${f.name} — ${INBX_MAX_MB}MB 초과`);else QF.push(f);});
     if(bad.length)showToast('올릴 수 없는 파일이 있습니다',bad.join(' · '),{kind:'warn',ms:5200});paint();};
   inp.onchange=()=>{add([...inp.files]);inp.value='';};
   drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click();}};
-  drop.ondragover=e=>{e.preventDefault();drop.classList.add('on');};drop.ondragleave=()=>drop.classList.remove('on');
+  drop.ondragover=e=>{e.preventDefault();if(inbxSelOk())drop.classList.add('on');};drop.ondragleave=()=>drop.classList.remove('on');
   drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');add([...(e.dataTransfer.files||[])]);};
   q('#inbxqGo').onclick=async()=>{
     const note=q('.q-note').value.trim(),who=q('.q-who').value.trim();
+    if(!inbxSelOk()){showToast('메뉴 · 캠페인 · 자료를 먼저 골라 주세요','어느 메뉴, 어느 캠페인의 어떤 자료인지 골라야 접수됩니다.',{kind:'warn'});const x=q('[data-inbx-p="'+(inbxSel().area?'kind':'area')+'"]');if(x)x.focus();return;}
     if(!QF.length&&!note){showToast('파일이나 설명을 넣어 주세요','',{kind:'warn'});return;}
     if(!who){showToast('요청자 이름을 적어 주세요','',{kind:'warn'});q('.q-who').focus();return;}
     try{localStorage.setItem('inbx_who',who);}catch(e){}
     await inbxLoad(true);
-    const kinds=INBX_KINDS.all;
-    INBX.pend=QF.map(f=>({f,det:null,ran:false,kind:inbxGuess(f.name,kinds)}));
+    const S0=inbxSel(),cl=(inbxCamps().L.find(c=>c.id===S0.cid)||{}).label||'',ym=/(\d{4})년\s*(\d{1,2})월/.exec(cl);
+    INBX.pend=QF.map(f=>({f,det:null,ran:false,kind:S0.kind}));
     q('#inbxqGo').disabled=true;
-    const ok=await inbxUpload(null,'all',{media:'',month:inbxMonth(),note,who,sayEl:q('.inbx-say')});
+    /* 기준 월 — 고른 캠페인 이름에 '2026년 11월'이 있으면 그 달, 없으면 이번 달 */
+    const ok=await inbxUpload(null,'all',{month:ym?ym[1]+'-'+String(ym[2]).padStart(2,'0'):inbxMonth(),note,who,sayEl:q('.inbx-say')});
     if(ok)closeModal();else{const b=q('#inbxqGo');if(b)b.disabled=false;}};
 }
 (function(){const b=document.getElementById('upBtn');if(b)b.onclick=()=>{try{inbxQuick();}catch(e){}};})();

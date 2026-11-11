@@ -4622,6 +4622,18 @@ html.ct-on{overflow:hidden}
   cursor:pointer;color:var(--ink2);transition:border-color .15s,background .15s}
 .inbx-drop b{font-size:13px;font-weight:700}.inbx-drop small{font-size:11.5px;color:var(--muted)}
 .inbx-drop:hover,.inbx-drop:focus-visible,.inbx-drop.on{border-color:#2f6fb5;background:#f3f7fc;outline:0}
+/* v186 — 올리기 전에 먼저 고르는 세 가지(메뉴 · 캠페인 · 자료) */
+.inbx-pick{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1.3fr);gap:10px}
+.inbx-pick label{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:11.5px;font-weight:700;color:var(--muted)}
+.inbx-pick label span{display:flex;align-items:center;gap:6px}
+.inbx-pick label i{font-style:normal;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:800;color:var(--muted);background:var(--plane2);border:1px solid var(--line)}
+.inbx-pick label.set i{color:#fff;background:#5b6066;border-color:#5b6066}
+.inbx-pick select{height:34px;min-width:0;width:100%;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 8px}
+.inbx-pick label:not(.set) select:not(:disabled){border-color:#2f6fb5;box-shadow:0 0 0 3px rgba(47,111,181,.12)}
+.inbx-pick select:disabled{color:var(--muted);background:var(--plane2)}
+.inbx-drop.lock{cursor:not-allowed;opacity:.55;background:var(--plane2)}.inbx-drop.lock:hover,.inbx-drop.lock:focus-visible{border-color:#c9cdd2;background:var(--plane2)}
+.inbxq .q-pick{margin:0 0 10px}.inbxq .inbx-pick{grid-template-columns:1fr;gap:8px}.inbxq .inbx-pick label{flex-direction:row;align-items:center;gap:10px}.inbxq .inbx-pick label span{flex:0 0 76px}
+@media(max-width:640px){.inbx-pick{grid-template-columns:1fr}}
 .inbx-form{border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
 .inbx-form ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .inbx-pf{display:flex;align-items:center;gap:8px;font-size:12.5px;min-width:0}
