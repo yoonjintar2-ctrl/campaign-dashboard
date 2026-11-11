@@ -22385,8 +22385,10 @@ function ovRow(p){
       for(const d=D(st);d<=D(en);d.setDate(d.getDate()+1)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');o[k]=(o[k]||0)+v/n;}return o;};
     const addL=(k,L2,scale)=>L2.forEach(l=>{const v=lb(l)*scale;if(!(v>0))return;const o=byMon(l.start,l.end,v),nm=String(l.segment||'').trim();
       Object.keys(o).forEach(y=>cats.push([k,nm,y,o[y]]));});
-    if(a.digital.inc)addL('digital',dL,dk);
-    if(a.ott.inc){if(oS){if(oBud>0){const o=byMon(oP.start,oP.end,oBud);Object.keys(o).forEach(y=>cats.push(['ott','',y,o[y]]));}}else addL('ott',oL,1);}
+    const cl=Array.isArray(p.catLines)?p.catLines:null;
+    if(cl){if(a.digital.inc)addL('digital',md.ott?cl.filter(l=>!isO(l)):cl,1);if(a.ott.inc)addL('ott',cl.filter(isO),1);}
+    else{if(a.digital.inc)addL('digital',dL,dk);
+      if(a.ott.inc){if(oS){if(oBud>0){const o=byMon(oP.start,oP.end,oBud);Object.keys(o).forEach(y=>cats.push(['ott','',y,o[y]]));}}else addL('ott',oL,1);}}
   }catch(e){}
   return {cats,tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget,spans};}
@@ -22438,7 +22440,13 @@ async function ovFetch(){
   let rpcErr=null;
   if(code){
     try{const {data,error}=await withTimeout(CLOUD.sb.rpc('overview_by_code',{p_code:code}),20000,'전체 캠페인');
-      if(!error&&Array.isArray(data))return {rows:data.map(d=>ovRow({...d,self:d.is_self})),src:'rpc'};
+      if(!error&&Array.isArray(data)){
+        /* v181 — 운영 계정은 '월별 광고 구분'에 쓸 품목 · 구분만 가볍게 더 읽는다(서버 함수는 품목을 주지 않는다) */
+        let ex={};
+        if(CLOUD.user&&!CLOUD.shareView){try{const ids=data.map(d=>d.id).filter(Boolean);
+          if(ids.length){const r2=await withTimeout(CLOUD.sb.from('campaigns').select('id,wri:doc->tv->wr->items,cit:doc->tv->cue->st->it,lines:doc->lines').in('id',ids),15000,'월별 광고 구분');
+            (r2.data||[]).forEach(x=>{ex[x.id]={wri:x.wri,tvIt:Array.isArray(x.cit)?x.cit:null,catLines:Array.isArray(x.lines)?x.lines:null};});}}catch(e){}}
+        return {rows:data.map(d=>{const x=ex[d.id]||{};return ovRow({...d,self:d.is_self,...(x.wri?{wr:{...(d.wr||{}),items:x.wri}}:{}),...(x.tvIt?{tvIt:x.tvIt}:{}),...(x.catLines?{catLines:x.catLines}:{})});}),src:'rpc'};}
       rpcErr=error;}catch(e){rpcErr={message:String(e&&e.message||e)};}}
   /* ② 시행사 — 내가 볼 수 있는 캠페인을 직접 */
   if(CLOUD.user&&!CLOUD.shareView){
