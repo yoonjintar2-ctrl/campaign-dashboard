@@ -25,7 +25,21 @@ def tint(css):
 PINK = {'#e0005a': '#2a6fba', '#fceef4': '#e9f1fb', '#c00045': '#1f5c9e', '#fffafc': '#f5f9fe'}
 def blue(t):
     return re.sub('|'.join(PINK), lambda m: PINK[m.group(0).lower()], t, flags=re.I)
-app_js = '\n'.join(blue(tint(read(p)) if p.name in ('07-views.js', '10-charts.js', '16-cueall.js', '18-cal.js') else read(p)) for p in sorted((ROOT / 'src').glob('*.js')))
+# v169 — 큐시트 요약 도넛을 대시보드 도넛 톤으로 (조각 흰 테두리 · 매체 바깥 띠 없앰, 회청 · 파랑 계열 색)
+PATCH = [
+  ("ctx.fill(p); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.stroke(p); }", "ctx.fill(p); }"),
+  ("if (nb && st.sweep > 0.98) for (const e of grpEnds) {", "if (false) for (const e of grpEnds) {"),
+  ("const DN_BASE = '#3a3a3c';", "const DN_BASE = '#2c4a73';"),
+  ("const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#cbcbcb', wd: '#7563a8', we: '#d97f74' };", "const MIXC = { s15: '#a9bdd6', s30: '#34557f', etc: '#d7dde5', wd: '#34557f', we: '#a9bdd6' };"),
+  ("const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#6d6d6d' };", "const SECC = { 10: '#cdd8e6', 15: '#a9bdd6', 20: '#6f8fb8', 30: '#34557f', 40: '#223a59', 45: '#8794a5', 60: '#5b6676' };"),
+]
+USED = set()
+def patch(js):
+    for a, b in PATCH:
+        if a in js: js = js.replace(a, b); USED.add(a)
+    return js
+app_js = ('\n'.join(blue(tint(patch(read(p))) if p.name in ('07-views.js', '10-charts.js', '16-cueall.js', '18-cal.js') else patch(read(p))) for p in sorted((ROOT / 'src').glob('*.js'))))
+if len(USED) != len(PATCH): sys.exit('패치 대상이 없어요: ' + str([a[:40] for a, _ in PATCH if a not in USED]))
 extra = '\n'.join(read(ROOT / p) for p in ['tools/legacy.js', 'tools/import.js', 'bridge.js'])
 parts = ['<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">',

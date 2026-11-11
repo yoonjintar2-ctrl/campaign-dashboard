@@ -933,7 +933,7 @@ table.wrwt{--cw:84px}table.wrcr{--cw:112px}table.wrch{--cw:120px}
 .wrrts{display:flex;gap:14px;min-width:100%;width:max-content}
 .wrrt{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 10px 10px;display:flex;flex-direction:column;align-items:center}
 .wrrt .h{align-self:stretch}
-.wrrt .tt{align-self:stretch;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:4px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink2)}
+.wrrt .tt{align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;margin-top:4px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink2)}
 .wrrt .tt .k{font-weight:800;color:var(--ink)}.wrrt .tt b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}.wrrt .tt b.c{color:#1d6fc2}
 .wrrt .h{font-size:13px;font-weight:900;color:var(--ink);margin:0 4px 4px}
 .wrrt svg{display:block;overflow:visible}
@@ -1013,7 +1013,28 @@ table.wrwt{--cw:84px}table.wrcr{--cw:112px}table.wrch{--cw:120px}
 .wrwk .wkiso .r3p.past circle{stroke:#8aa0bb}.wrwk .wkiso .r3p.past text{fill:#6f86a3}
 .wrwk .wkiso .r3p text{font-size:9.5px}
 .wrwk .wkiso .r3.past{stroke:#a9b8ca}
-.wrwk .wkiso .nxb{fill:none;stroke:var(--gline);stroke-dasharray:3 4;stroke-width:1.2}.wrwk .wkiso .mn.nx{fill:var(--muted)}.wrwk .wkiso .wl.nx{fill:var(--muted);font-size:10.5px;font-weight:700}
+.wrwk .wkiso .wb.nx path{fill:#b9c6d5;opacity:.5}.wrwk .wkiso .iv.nx{fill:var(--muted);font-weight:700;opacity:.7}
+.wrwk .wkiso .mn.nx{fill:var(--muted)}.wrwk .wl.nx,.wrwk .wd.nx{opacity:.45}
+.wrwk .wkiso .r3.nx{stroke:#a9b8ca;stroke-dasharray:none;opacity:.6}.wrwk .wkiso .r3p.nx{opacity:.55}.wrwk .wkiso .r3p.nx circle{stroke:#8aa0bb}.wrwk .wkiso .r3p.nx text{fill:#6f86a3}
+/* v169 — 소재 타임라인 카드 → 자세히 창 */
+.wrtl .cd[data-i]{cursor:pointer;transition:transform .16s,box-shadow .16s}.wrtl .cd[data-i]:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,0,0,.1)}
+.wrtl .cd[data-i]:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.wrcp{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.wrcp .sb{flex:1 1 380px;min-width:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--plane)}.wrcp .sb img{display:block;width:100%;height:auto}
+.wrcp .inf{flex:1 1 320px;min-width:0}
+.wrcp .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.wrcp .chips span{display:inline-flex;gap:6px;align-items:baseline;padding:5px 10px;border-radius:999px;background:var(--plane);border:1px solid var(--line);font-size:12px;font-weight:800;color:var(--ink)}
+.wrcp .chips i{font-style:normal;font-weight:700;color:var(--muted);font-size:11px}
+.wrcp .kt{width:100%;border-collapse:collapse;font-size:13px}
+.wrcp .kt th,.wrcp .kt td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.wrcp .kt thead th{font-size:11px;font-weight:800;color:var(--muted);background:var(--plane)}
+.wrcp .kt tbody th{text-align:left;font-weight:800;color:var(--ink2)}.wrcp .kt td{font-weight:800;color:var(--ink)}
+.wrcp .sh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-top:12px;font-size:12px;color:var(--ink2);font-weight:700}
+.wrcp .sh em{font-style:normal;color:var(--muted);font-weight:600}.wrcp .sh b{color:var(--ink);font-weight:900}
+.wrcp .mh{margin:16px 0 6px;font-size:11px;font-weight:800;color:var(--muted)}
+.wrcp .mb{display:flex;gap:8px;align-items:flex-end}
+.wrcp .mb .m{flex:1 1 0;max-width:44px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px}
+.wrcp .mb .m i{display:block;width:100%;border-radius:4px 4px 0 0;background:#5f7a9c}.wrcp .mb .m em{font-style:normal;font-weight:800;color:var(--ink2);font-variant-numeric:tabular-nums}.wrcp .mb .m span{color:var(--muted);font-weight:700}
 .wrwk .wkiso .mn{font-size:12px;font-weight:900;fill:var(--ink)}.wrwk .wkiso .mn.past{fill:var(--muted)}
 .wrwk-top:has(.wkleg){justify-content:flex-end}
 .wkleg i.sw{width:10px;height:10px;border-radius:3px;background:#5f7a9c}.wkleg em{font-style:normal;color:var(--muted);font-weight:600}.wkleg .n{color:var(--muted);font-weight:600}

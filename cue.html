@@ -1429,8 +1429,15 @@ html.embed .toast{display:none}
 /* 스크롤바 — 대시보드와 같은 얇은 회청 */
 html.embed{scrollbar-width:thin;scrollbar-color:var(--p-gline,#c5ccd6) transparent}
 
-/* 큐시트 캘린더 — 채널 칸 너비 통일 (v168) */
-html.embed .cale .c{display:inline-block;width:56px;max-width:none;overflow:hidden;text-overflow:clip;vertical-align:baseline;letter-spacing:-.2px}
+/* 큐시트 캘린더 (v168 · v169) — 시간 · 채널 · 품목 · CM 칸은 좁고 일정하게, 남는 폭은 프로그램 이름(한글 10자 이상)에 */
+html.embed table.calt{min-width:1770px;font-size:10px}
+html.embed .cale.one{gap:3px;padding:1px 2px;overflow:hidden}
+html.embed .cale.one .t{width:27px;font-size:9.5px;letter-spacing:-.3px}
+html.embed .cale .c,html.embed .cale.one .c{display:inline-block;flex:none;width:41px;max-width:none;overflow:hidden;text-overflow:clip;font-size:9px;letter-spacing:-.35px}
+html.embed .cale.one .ic{width:21px;padding:0;text-align:center;font-size:9px}
+html.embed .cale.one .p{min-width:104px;font-size:10px;letter-spacing:-.2px}
+html.embed .cale.one .m{width:31px;text-align:right;font-size:9px;letter-spacing:-.4px;overflow:hidden;margin-left:0}
+html.embed .cale.one .x{font-size:9px;padding:0 2px}
 /* 캘린더 CM 위치 글자 — 분홍 · 붉은 톤 대신 회청 / 중CM 은 강조 파랑 (v168) */
 html.embed .cale .m{color:#7289a3}
 html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
@@ -1449,6 +1456,10 @@ html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
     var hx = function (v) { return Math.round(v * 255).toString(16).padStart(2, '0'); }; return '#' + hx(f(h + 1 / 3)) + hx(f(h)) + hx(f(h - 1 / 3));
   }
   try { if (d && d.ws && d.ws.sheets && Array.isArray(d.ws.sheets['품목'])) d.ws.sheets['품목'].forEach(function (r) { if (r && r[3]) r[3] = calm(r[3]); }); } catch (e) { }
+  /* 아이콘 얼음 = 아이콘3 와 같은 계열의 더 연한 색 (v169) */
+  try { if (d && d.ws) { var rows = d.ws.sheets['품목'], a3 = rows.find(function (r) { return r && r[0] === '아이콘3'; }), ic = rows.find(function (r) { return r && r[0] === '아이콘 얼음'; });
+    if (ic) { var base = (a3 && a3[3]) || '#4f73a3', n = parseInt(base.slice(1), 16), mix = function (v) { return Math.round(v + (255 - v) * .42).toString(16).padStart(2, '0'); };
+      ic[3] = '#' + mix(n >> 16 & 255) + mix(n >> 8 & 255) + mix(n & 255); } } } catch (e) { }
   if (d && d.ws) { window.__REPORT__ = { ws: d.ws, title: d.title || '', at: d.at || Date.now() }; window.__CUE_TAB__ = q.get('t') || 'summary'; }
   document.documentElement.classList.add('embed');
   /* 대시보드 테마 색을 그대로 받는다 */
@@ -3928,8 +3939,8 @@ function bindOpsEdit(root) {
   });
 }
 // 송출 구성 도넛 (SVG) — 가운데 큰 비중, 오른쪽에 막대 범례
-const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#bfcad7', wd: '#7563a8', we: '#d97f74' };   // 색약 구분 검사 통과 (기타는 회색)
-const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#5e6b7c' };   // 초수 색은 초수마다 고정 (순서가 바뀌어도 같은 색)
+const MIXC = { s15: '#a9bdd6', s30: '#34557f', etc: '#d7dde5', wd: '#34557f', we: '#a9bdd6' };   // 색약 구분 검사 통과 (기타는 회색)
+const SECC = { 10: '#cdd8e6', 15: '#a9bdd6', 20: '#6f8fb8', 30: '#34557f', 40: '#223a59', 45: '#8794a5', 60: '#5b6676' };   // 초수 색은 초수마다 고정 (순서가 바뀌어도 같은 색)
 function secColor(x) { return SECC[x] || '#96a2b0'; }
 function mixDonut(title, parts, size = 132, center) {
   const tot = sum(parts, p => p[1]) || 1, R = 46, r = 30, C = 2 * Math.PI;
@@ -6364,7 +6375,7 @@ function ftipHide() { if (FTIP) FTIP.style.display = 'none'; }
 
 // ---------- 3D 도넛 : 각도 = 예산 비중, 위로 솟은 반투명 기둥 = 보너스 금액(끄면 기둥 없음) ----------
 // 조각에 grp(매체)가 있으면 묶음 사이를 살짝 띄우고 묶음째 바깥으로 조금 밀어냄 (지상파 / 케이블 규모가 한눈에)
-const DN_BASE = '#2f3a47';
+const DN_BASE = '#2c4a73';
 const DN_MEDC = { 지상파: '#242c36', 케이블: '#97a2b0' };   // 17차: 매체 띠·상자 색 (지상파 진하게 · 케이블 옅게 — 매체 꼬리표와 같은 규칙)
 // 처음엔 12시부터 펼친 뒤 기둥이 솟고(intro), 품목·매체를 바꾸면 이전 모양에서 새 값으로 부드럽게 바뀜
 const DN = { last: null };
@@ -6439,9 +6450,9 @@ function dnDraw(st) {
   const grpEnds = nb ? vg.map(g => { const ss = S.filter(s => (s.grp || '') === g && s.value > 0); return ss.length ? { g, ss, a0: ss[0].a0, a1: ss[ss.length - 1].a1, o: ss[0].o } : null; }).filter(Boolean) : [];
   for (const e of grpEnds) for (const [s, ang] of [[e.ss[0], e.a0], [e.ss[e.ss.length - 1], e.a1]]) { const i = S.indexOf(s); ctx.fillStyle = shade(s.color, -0.3); ctx.fill(G.poly([G.P(ang, r, lift(i), s.o), G.P(ang, R, lift(i), s.o), G.P(ang, R, H0 + lift(i), s.o), G.P(ang, r, H0 + lift(i), s.o)])); }
   for (const [i, s] of S.entries()) for (const [x0, x1] of G.clip(s.a0, s.a1, true)) { ctx.fillStyle = shade(s.color, -0.22); ctx.fill(G.wall(x0, x1, R, lift(i), H0 + lift(i), s.o)); }
-  for (const [i, s] of S.entries()) { if (s.a1 - s.a0 < 0.002) continue; const p = G.top(s, H0 + lift(i)); ctx.fillStyle = i === hover ? shade(s.color, 0.08) : s.color; ctx.fill(p); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.stroke(p); }
+  for (const [i, s] of S.entries()) { if (s.a1 - s.a0 < 0.002) continue; const p = G.top(s, H0 + lift(i)); ctx.fillStyle = i === hover ? shade(s.color, 0.08) : s.color; ctx.fill(p); }
   // 17차: 매체 묶음(지상파/케이블)마다 바깥을 따라 굵은 띠 (지상파 = 진한 회색 · 케이블 = 옅은 회색, 위 모서리의 매체 상자와 같은 색)
-  if (nb && st.sweep > 0.98) for (const e of grpEnds) {
+  if (false) for (const e of grpEnds) {
     if (!e.g) continue; const n = Math.max(8, Math.ceil((e.a1 - e.a0) / 0.03));
     ctx.strokeStyle = DN_MEDC[e.g] || '#818fa0'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath();
     for (let k = 0; k <= n; k++) { const ang = e.a0 + 0.02 + (e.a1 - e.a0 - 0.04) * k / n; const q = G.P(ang, R + 8, H0 * (1 - Math.sin(ang)) / 2, e.o); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
@@ -10963,8 +10974,23 @@ function cueChAbbr(n) {
   do { a = head + ' ' + tail.slice(0, k).toUpperCase(); k++; } while (taken[a] && taken[a] !== n && k <= tail.length + 1);
   CUE_CH_USED[n] = a; CUE_CH_AB[n] = a; return a;
 }
+/* 품목 약칭(v169) — 기본은 앞 두 글자. 같은 약칭이 둘이면 뒤 낱말의 두 글자('아이콘 얼음' → '얼음') */
+var CUE_IT_AB = { '아이콘 얼음': '얼음' }, CUE_IT_DONE = false;
+function cueItemAbbr(nm) {
+  if (!CUE_IT_DONE) { CUE_IT_DONE = true; try { var seen = {}; Array.from(M.MS.items.keys()).forEach(function (k) {
+    var a = CUE_IT_AB[k] || Array.from(k.replace(/\s+/g, '')).slice(0, 2).join('');
+    if (seen[a] && !CUE_IT_AB[k]) { var w = k.trim().split(/\s+/); a = Array.from(w[w.length - 1]).slice(0, 2).join(''); if (seen[a]) a = Array.from(k.replace(/\s+/g, '')).slice(-2).join(''); }
+    seen[a] = k; CUE_IT_AB[k] = a; }); } catch (e) { CUE_IT_DONE = false; } }
+  return CUE_IT_AB[nm];
+}
+var CUE_CM_AB = { '전후CM': '전후' };
 function cueCalFix(root) {
-  (root || document).querySelectorAll('.cale .c:not([data-ab])').forEach(function (e) { var n = e.textContent; e.setAttribute('data-ab', '1'); var a = cueChAbbr(n); if (a !== n) e.textContent = a; });
+  (root || document).querySelectorAll('.cale:not([data-ab])').forEach(function (row) {
+    row.setAttribute('data-ab', '1');
+    var c = row.querySelector('.c'); if (c) { var n = c.textContent, a = cueChAbbr(n); if (a !== n) c.textContent = a; }
+    var ic = row.querySelector('.ic'); if (ic) { var nm = (row.getAttribute('title') || '').split(' · ')[2], b = nm && cueItemAbbr(nm); if (b && b !== ic.textContent) ic.textContent = b; }
+    var m = row.querySelector('.m'); if (m && CUE_CM_AB[m.textContent]) m.textContent = CUE_CM_AB[m.textContent];
+  });
 }
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;

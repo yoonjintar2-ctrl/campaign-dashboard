@@ -30,8 +30,23 @@ function cueChAbbr(n) {
   do { a = head + ' ' + tail.slice(0, k).toUpperCase(); k++; } while (taken[a] && taken[a] !== n && k <= tail.length + 1);
   CUE_CH_USED[n] = a; CUE_CH_AB[n] = a; return a;
 }
+/* 품목 약칭(v169) — 기본은 앞 두 글자. 같은 약칭이 둘이면 뒤 낱말의 두 글자('아이콘 얼음' → '얼음') */
+var CUE_IT_AB = { '아이콘 얼음': '얼음' }, CUE_IT_DONE = false;
+function cueItemAbbr(nm) {
+  if (!CUE_IT_DONE) { CUE_IT_DONE = true; try { var seen = {}; Array.from(M.MS.items.keys()).forEach(function (k) {
+    var a = CUE_IT_AB[k] || Array.from(k.replace(/\s+/g, '')).slice(0, 2).join('');
+    if (seen[a] && !CUE_IT_AB[k]) { var w = k.trim().split(/\s+/); a = Array.from(w[w.length - 1]).slice(0, 2).join(''); if (seen[a]) a = Array.from(k.replace(/\s+/g, '')).slice(-2).join(''); }
+    seen[a] = k; CUE_IT_AB[k] = a; }); } catch (e) { CUE_IT_DONE = false; } }
+  return CUE_IT_AB[nm];
+}
+var CUE_CM_AB = { '전후CM': '전후' };
 function cueCalFix(root) {
-  (root || document).querySelectorAll('.cale .c:not([data-ab])').forEach(function (e) { var n = e.textContent; e.setAttribute('data-ab', '1'); var a = cueChAbbr(n); if (a !== n) e.textContent = a; });
+  (root || document).querySelectorAll('.cale:not([data-ab])').forEach(function (row) {
+    row.setAttribute('data-ab', '1');
+    var c = row.querySelector('.c'); if (c) { var n = c.textContent, a = cueChAbbr(n); if (a !== n) c.textContent = a; }
+    var ic = row.querySelector('.ic'); if (ic) { var nm = (row.getAttribute('title') || '').split(' · ')[2], b = nm && cueItemAbbr(nm); if (b && b !== ic.textContent) ic.textContent = b; }
+    var m = row.querySelector('.m'); if (m && CUE_CM_AB[m.textContent]) m.textContent = CUE_CM_AB[m.textContent];
+  });
 }
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;

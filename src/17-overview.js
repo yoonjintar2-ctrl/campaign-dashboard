@@ -110,7 +110,10 @@ function ovRow(p){
   else if(a.tv.inc&&a.tv.budget>0){
     const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
     if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
-  return {id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
+  /* v169 — TV 주차별 값(다음 달 캠페인을 앞 달 그래프에 비출 때) */
+  let tvWk=null;try{const w=p.wr;if(w&&w.ym&&Array.isArray(w.weeks)&&w.wtot&&Array.isArray(w.wtot.w))tvWk={ym:w.ym,wk:w.weeks.map((k,i)=>{const x=w.wtot.w[i]||[];return [k.l,k.s,k.e,+x[0]||0,+x[1]||0];})};
+    else if(m.tvSum&&m.tvSum.ym&&Array.isArray(m.tvSum.wk))tvWk={ym:m.tvSum.ym,wk:m.tvSum.wk};}catch(e){}
+  return {tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget,spans};}
 /* 지금 캠페인 — 화면의 값 그대로 */
 function ovSelfRow(){
@@ -166,7 +169,8 @@ async function ovFetch(){
     const adv=ovNorm(CAMPAIGN.advertiser);
     const ids=[...new Set((CLOUD.list||[]).filter(c=>adv&&ovNorm(c.advertiser)===adv).map(c=>c.id).concat([selfId]))];
     const {data,error}=await withTimeout(CLOUD.sb.from('campaigns')
-      .select('id,name,start_date,end_date,updated_at,media:doc->campaign->media,lines:doc->lines,tv:doc->tv,ooh:doc->ooh->plan')
+      /* v169 — TV 는 쓰는 표만(큐시트 묶음 tv.cue 는 커서 빼고 읽는다) */
+      .select('id,name,start_date,end_date,updated_at,media:doc->campaign->media,lines:doc->lines,tvp:doc->tv->plan,tvs:doc->tv->spots,tvm:doc->tv->mix,tvc:doc->tv->ch,tvd:doc->tv->day,wry:doc->tv->wr->ym,wrw:doc->tv->wr->weeks,wrt:doc->tv->wr->wtot,ooh:doc->ooh->plan')
       .in('id',ids),20000,'전체 캠페인');
     if(error)return {rows:null,err:error.message};
     const agg={};
@@ -177,7 +181,7 @@ async function ovFetch(){
       (st||[]).forEach(r=>{const o=agg[r.campaign_id]||(agg[r.campaign_id]={net:0,imp:0,click:0,view:0});
         o.net+=+r.net||0;o.imp+=+r.imp||0;o.click+=+r.click||0;o.view+=+r.view||0;});
       if(!st||st.length<1000)break;}
-    return {rows:(data||[]).map(d=>ovRow({...d,...(agg[d.id]||{}),self:d.id===selfId})),src:'direct',
+    return {rows:(data||[]).map(d=>ovRow({...d,tv:{plan:d.tvp,spots:d.tvs,mix:d.tvm,ch:d.tvc,day:d.tvd},wr:{ym:d.wry,weeks:d.wrw,wtot:d.wrt},...(agg[d.id]||{}),self:d.id===selfId})),src:'direct',
       rpcMissing:ovNoFn(rpcErr)};}
   /* ③ 광고주 화면인데 서버 함수가 없거나 막혀 있다 — 이 캠페인만 */
   return {rows:[],src:'none',err:rpcErr?(ovNoFn(rpcErr)?'nofn':rpcErr.message):''};}

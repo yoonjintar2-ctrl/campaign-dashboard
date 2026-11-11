@@ -12,6 +12,10 @@
     var hx = function (v) { return Math.round(v * 255).toString(16).padStart(2, '0'); }; return '#' + hx(f(h + 1 / 3)) + hx(f(h)) + hx(f(h - 1 / 3));
   }
   try { if (d && d.ws && d.ws.sheets && Array.isArray(d.ws.sheets['품목'])) d.ws.sheets['품목'].forEach(function (r) { if (r && r[3]) r[3] = calm(r[3]); }); } catch (e) { }
+  /* 아이콘 얼음 = 아이콘3 와 같은 계열의 더 연한 색 (v169) */
+  try { if (d && d.ws) { var rows = d.ws.sheets['품목'], a3 = rows.find(function (r) { return r && r[0] === '아이콘3'; }), ic = rows.find(function (r) { return r && r[0] === '아이콘 얼음'; });
+    if (ic) { var base = (a3 && a3[3]) || '#4f73a3', n = parseInt(base.slice(1), 16), mix = function (v) { return Math.round(v + (255 - v) * .42).toString(16).padStart(2, '0'); };
+      ic[3] = '#' + mix(n >> 16 & 255) + mix(n >> 8 & 255) + mix(n & 255); } } } catch (e) { }
   if (d && d.ws) { window.__REPORT__ = { ws: d.ws, title: d.title || '', at: d.at || Date.now() }; window.__CUE_TAB__ = q.get('t') || 'summary'; }
   document.documentElement.classList.add('embed');
   /* 대시보드 테마 색을 그대로 받는다 */
