@@ -411,10 +411,9 @@ function rpBubble(c,col,bub){
   if(!pts.length){box.innerHTML=`<div class="hint rpnil">${L('TV 집행 없음','No TV')}</div>`;if(side)side.innerHTML='';return;}
   const W=Math.max(480,box.clientWidth||720),H=380,L0=46,B=H-34,T=20,R0=W-24;
   /* v176 — 같은 업종의 다른 광고주(아리아나 F30-45 · 그 달 집행분)를 아주 옅은 작은 점으로 깐다 · 이름표 없음 */
-  /* v177 — 전체 캠페인 배경은 가늠용이라 축은 비교 브랜드(큰 원)에 맞추고, 축 밖 점은 그리지 않는다 */
-  const bg0=rpBubBg(c),wide=bg0.some(p=>p.all);
-  const mxX=Math.max(...pts.map(p=>p.x),...(wide?[]:bg0.map(p=>p.x/1.1)))*1.18||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y),...(wide?[]:bg0.map(p=>p.y/1.15)))*1.25/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
-  const bg=wide?bg0.filter(p=>p.x<=mxX&&p.y<=mxY):bg0;
+  /* v178 — 그 달 전체 캠페인 배경이 있으면 축도 전체 캠페인 범위에 맞춘다(품목을 바꿔도 같은 축) */
+  const bg=rpBubBg(c),wide=bg.some(p=>p.all);
+  const mxX=Math.max(...pts.map(p=>p.x*1.18),...bg.map(p=>p.x*(wide?1.04:1.07)))||1,mxY=Math.max(10,Math.ceil(Math.max(...pts.map(p=>p.y*1.25),...bg.map(p=>p.y*1.08))/10)*10),mxS=Math.max(...pts.map(p=>p.s))||1;
   const X=v=>L0+(R0-L0)*v/mxX,Y=v=>B-(B-T)*v/mxY,RR=s=>6+Math.sqrt(s/mxS)*27;   /* v157 — 원을 조금 작게 */
   const nice=m=>{const s2=Math.pow(10,Math.floor(Math.log10(m/4)));const f=m/4/s2;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*s2;};
   const sx=nice(mxX),sy=nice(mxY);let grid='';
@@ -431,7 +430,7 @@ function rpBubble(c,col,bub){
   const bgd=bg.map((p,i)=>`<g class="bgd${wide?' all':''}" style="--d:${500+Math.min(900,i*(wide?2:22))}ms" data-bg="${i}"><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${wide?6:9}" class="hit"/><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${wide?2.8:3.4}" class="pt"/></g>`).join('');
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpbub">${grid}
     <text x="${R0}" y="${B-6}" text-anchor="end" class="axt">eq.GRP →</text><text x="${L0+6}" y="${T+12}" class="axt">↑ R3+</text>
-    ${bg.length?`<text x="${R0}" y="${T+12}" text-anchor="end" class="bgn">${wide?L(`회색 점 = 그 달 TV 집행 전체 캠페인 ${bg.length}개 · 가늠용`,`grey dots = ${bg.length} TV campaigns that month (reference)`):L(`회색 점 = 같은 업종 다른 광고주 ${bg.length}곳`,`grey dots = ${bg.length} other advertisers`)}</text>`:''}${bgd}${dots}</svg>`;
+    ${bg.length?`<text x="${R0}" y="${T+12}" text-anchor="end" class="bgn">${wide?L(`회색 점 = ${RPT.tblM}월 TV 집행 전체 캠페인 ${bg.length}개`,`grey dots = all ${bg.length} TV campaigns in M${RPT.tblM}`):L(`회색 점 = 같은 업종 다른 광고주 ${bg.length}곳`,`grey dots = ${bg.length} other advertisers`)}</text>`:''}${bgd}${dots}</svg>`;
   box.querySelectorAll('.bgd').forEach(g=>{const p=bg[+g.dataset.bg];
     g.onmousemove=e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(p.b)}${p.sub?` <span style="font-weight:600;opacity:.6">· ${esc(p.sub)}</span>`:''}</div><div class="r"><span class="l">R3+</span><b>${wrF(p.y,1)}%</b></div><div class="r"><span class="l">eq.GRP</span><b>${wrF(p.x,p.x<10?1:0)}</b></div>`);
     g.onmouseleave=hideTip;});
@@ -452,7 +451,7 @@ function rpBubble(c,col,bub){
 function rpBubBg(c){
   if(RPT.bub==='ytd')return [];
   const own=new Set(((RPT_DOC.tvr||{})[c.k]||[]).map(r=>r[1]));own.add('코웨이');
-  /* v177 — 그 달 TV 를 집행한 전체 캠페인(업종 × 광고주 · 아리아나 F30-45)이 있으면 그것을 가늠용 배경으로 쓴다
+  /* v177 — 그 달 TV 를 집행한 전체 캠페인(업종 × 광고주 · 아리아나 F30-45)이 있으면 그것을 배경 점으로 쓴다
      RPT_DOC.bgAll[월]={s:[업종…],p:[[eq.GRP,R3+,광고주,업종번호],…],k:{리포트 업종:[업종번호…]}} · 큰 원으로 이미 그린 브랜드(같은 업종)는 뺀다 */
   const A=(RPT_DOC.bgAll||{})[RPT.tblM];
   if(A&&A.p){const mine=new Set((A.k||{})[c.ar]||[]);
