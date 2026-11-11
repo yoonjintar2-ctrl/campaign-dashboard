@@ -140,7 +140,7 @@ function wrMixBars(items,tot){
   const bars=items.map((it,ii)=>{
     const crs=it.cr.filter(c=>wrN(c.bud)>0),ib=wrN(it.sub&&it.sub.bud)||crs.reduce((s,c)=>s+c.bud,0);
     /* 한 품목 = 한 색(큐시트) · 소재는 같은 색으로 이어 쌓고 사이만 흰 틈 */
-    const ic=wrCueCol(it.n),ink=wrInk(ic);
+    const ic=it.col||wrCueCol(it.n),ink=wrInk(ic);
     const segs=crs.map((c,j)=>{const w=c.bud/maxB*100;
       return `<span class="seg" style="width:${w}%;--d:${(ii*60+j*90)}ms;background:${ic};color:${ink}" data-wrtip="${esc(it.n)}|${esc(c.n)}|${c.bud}|${ib}">
         ${w>9?`<b>${esc(c.n)}</b><i>${wrEok(c.bud)}</i>`:''}</span>`;}).join('');
@@ -150,12 +150,12 @@ function wrMixBars(items,tot){
       <div class="bar">${segs}${outs?`<span class="out">${outs}</span>`:''}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
   return bars;}
 /* v170 — 캠페인 퍼포먼스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프 */
-function wrMixTopHtml(){
-  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
-  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
-  return `<div class="sec gap sm">${L('품목별 월 예산','Budget by product')} <span class="note">${L('품목 막대를 소재로 나눠 쌓음 · TV 요약 기준','Each product bar split by creative · from TV summary')}</span></div>
+function wrMixTopHtml(src){
+  const W=TV_WR,items=src?src.items:W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
+  const tot=src?src.tot:(W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0));
+  return `<div class="sec gap sm">${L('품목별 월 예산','Budget by product')} <span class="note">${src?L('큐시트 예산 · 품목 막대를 소재 금액 비중으로 나눠 쌓음','Cue sheet budget · split by creative share'):L('품목 막대를 소재로 나눠 쌓음 · TV 요약 기준','Each product bar split by creative · from TV summary')}</span></div>
       <div class="card wrcard"><div class="wrsbs">${wrMixBars(items,tot)}</div></div>
-      <div class="sec gap sm">${L('채널별 월 예산','Budget by channel')} <span class="note">${L('당월_주별 시트 예산 · PP별 비중 · 5% 미만은 기타로','Weekly sheet budget · share by PP · under 5% grouped as Other')}</span></div>
+      <div class="sec gap sm">${L('채널별 월 예산','Budget by channel')} <span class="note">${src?L('큐시트 예산 · PP별 비중 · 5% 미만은 기타로','Cue sheet budget · share by PP · under 5% grouped as Other'):L('당월_주별 시트 예산 · PP별 비중 · 5% 미만은 기타로','Weekly sheet budget · share by PP · under 5% grouped as Other')}</span></div>
       <div class="card wrcard"><div class="wrdn" id="wrDn"></div><div class="wrdn-etc hidden" id="wrDnEtc"></div></div>`;}
 function wrMixTipWire(h){
   h.querySelectorAll('[data-wrtip]').forEach(el=>{el.onmousemove=e=>{const [it,cr,b,ib]=el.dataset.wrtip.split('|');
@@ -165,7 +165,7 @@ var WR_GOWK=0;
 function renderWrMix(){
   const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
   if(!wrOn()){h.innerHTML='';return false;}
-  {const d=$('wrDash');if(d)d.innerHTML='';}   // 같은 id(wrDn)를 쓰는 캠페인 퍼포먼스 쪽은 비운다 — 열 때 다시 그린다
+  {const d=$('cueTop');if(d)d.innerHTML='';WR_DN_SRC=null;}   // 같은 id(wrDn)를 쓰는 미디어믹스(큐시트) 쪽은 비운다
   const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
   const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
   const bars=wrMixBars(items,tot);
@@ -216,8 +216,9 @@ function renderWrMix(){
   return true;}
 
 /* ---------- 3D 도넛 — 경쟁사 분석 대시보드(v41) 방식: 왼쪽 지상파 · 오른쪽 케이블, 앞뒤 순서대로 벽 → 윗면 ---------- */
+var WR_DN_SRC=null;   // v173 — 큐시트 예산으로 그릴 때(미디어믹스 화면)
 function wrDnData(){
-  const chs=(TV_WR.chs||[]).filter(c=>wrN(c.bud)>0);
+  const chs=(WR_DN_SRC||(TV_WR&&TV_WR.chs)||[]).filter(c=>wrN(c.bud)>0);
   const t={},c={};chs.forEach(x=>{const o=x.g==='지상파'?t:c,k=x.g==='지상파'?x.ch:x.pp||x.ch;o[k]=(o[k]||0)+x.bud;});
   const tot=chs.reduce((s,x)=>s+x.bud,0)||1;
   const pack=o=>{let a=Object.entries(o).filter(([,v])=>v>0).sort((p,q)=>q[1]-p[1]);const small=a.filter(([,v])=>v/tot<.05);
@@ -358,7 +359,7 @@ function renderWrDash(){
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis+wrMixTopHtml()
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
@@ -371,7 +372,6 @@ function renderWrDash(){
       <div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div><div class="wrwk" id="wrWk"></div></div>
       <div id="wrWkT" style="margin-top:14px"></div>`;
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
-  wrDnMount();wrMixTipWire(h);
   wrScRender();wrItemTbl();wrRatings();wrTimeline();wrWeekChart();wrWeekTbl();wrHsWire(h);wrNextLoad();
   if(WR_GOWK){WR_GOWK=0;setTimeout(()=>{const e=$('wrWkSec');if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-110});},120);}
   return true;}

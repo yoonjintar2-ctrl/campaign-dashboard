@@ -58,6 +58,31 @@ function cueScrollTo(y,x,smooth){
   const f=$('cueFrame');if(!f)return;const r=f.getBoundingClientRect();
   window.scrollTo({top:Math.max(0,window.scrollY+r.top+y-window.innerHeight*.42),behavior:smooth?'smooth':'auto'});}
 window.addEventListener('resize',()=>{try{cueSize();}catch(e){}});
+/* v173 — 미디어믹스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프를 큐시트 예산으로 그린다(계획은 미디어믹스, 실제 집행은 캠페인 퍼포먼스) */
+function cueMixData(){
+  try{const S=JSON.parse(CUE.json).sheets,B=S['예산']||[],hd=(B[0]||[]).slice(1),nz=x=>String(x||'').replace(/\s+/g,'');
+    const col={};(S['품목']||[]).forEach(r=>{if(r&&r[0])col[r[0]]=r[3];});
+    const mix=(h,k)=>{const n=parseInt(String(h).slice(1),16),f=v=>Math.round(v+(255-v)*k).toString(16).padStart(2,'0');return '#'+f(n>>16&255)+f(n>>8&255)+f(n&255);};
+    const cOf=n=>{let c=col[n];if(!/^#[0-9a-f]{6}$/i.test(c||''))return '';c=wrCalm(c);if(n==='아이콘 얼음'&&col['아이콘3'])c=mix(wrCalm(col['아이콘3']),.42);return c;};
+    /* 소재 금액 비중 — 소재 시트(품목 칸이 빈 줄은 윗줄 품목, '… 계' 줄은 뺀다) */
+    const cre={};let cur='';(S['소재']||[]).forEach(r=>{if(!r)return;if(r[0])cur=nz(r[0]);const nm=String(r[3]||'');if(!cur||!nm||/\s계$/.test(nm))return;const w=+r[4];if(w>0)(cre[cur]||(cre[cur]=[])).push([nm,w]);});
+    const meta={};(S['채널']||[]).forEach(r=>{if(r&&r[0])meta[r[0]]={g:r[2]==='지상파'?'지상파':'케이블',pp:r[3]||r[0]};});
+    const it=hd.map(()=>0),chs=[];
+    B.slice(1).forEach(r=>{let t=0;hd.forEach((h,i)=>{const v=+r[i+1];if(v>0){it[i]+=v;t+=v;}});
+      if(t>0){const m=meta[r[0]]||{g:'케이블',pp:r[0]};chs.push({g:m.g,ch:r[0],pp:m.pp,bud:t/1000});}});
+    const items=hd.map((h,i)=>{const b=it[i]/1000,cs=cre[nz(h)]||[],ws=cs.reduce((s,x)=>s+x[1],0);
+      return {n:h,col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
+      .sort((a,b)=>b.sub.bud-a.sub.bud);
+    return {items,tot:items.reduce((s,x)=>s+x.sub.bud,0),chs};}catch(e){return null;}}
+function cueTopPaint(){
+  const el=$('cueTop');if(!el)return;
+  if(CUE_TAB!=='summary'||!CUE.json){if(el.firstChild){el.innerHTML='';WR_DN_SRC=null;}return;}
+  if(el.dataset.k===CUE.key&&el.firstChild)return;
+  const D=cueMixData();if(!D||!D.items.length){el.innerHTML='';return;}
+  ['wrMix','wrDash'].forEach(id=>{const d=$(id);if(d&&d.querySelector('#wrDn'))d.innerHTML='';});
+  el.dataset.k=CUE.key;WR_DN_SRC=D.chs;
+  el.innerHTML=wrMixTopHtml(D);
+  try{wrDnMount();wrMixTipWire(el);}catch(e){}}
 function cueYmLabel(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');return m?`${m[1]}년 ${+m[2]}월`:'';}
 async function renderTvCue(){
   const host=$('cueHost');if(!host)return;
@@ -71,6 +96,7 @@ async function renderTvCue(){
   const ftab=CUE_TAB==='cue'?CUE_SUB:CUE_TAB;
   let ed=false;try{ed=!isClient()&&inbxEdit();}catch(e){}
   if(!TV_CUE||!TV_CUE.z){
+    {const t=$('cueTop');if(t)t.innerHTML='';WR_DN_SRC=null;}
     if(note)note.textContent='';
     host.innerHTML=`<div class="card cue-empty"><b>이 캠페인에 올라온 TV 큐시트가 없습니다</b>
       <p>${ed?'데이터 접수함에 그 달의 <em>TV set 큐시트</em> 통합 엑셀을 올리고 ‘바로 넣기’를 누르면 여기에 표시됩니다.':'큐시트가 올라오면 여기에서 볼 수 있습니다.'}</p>
@@ -86,6 +112,7 @@ async function renderTvCue(){
     try{CUE.json=await cueUngz(TV_CUE.z);CUE.key=key;}
     catch(e){CUE.busy=false;host.innerHTML=`<div class="card cue-empty"><b>큐시트를 열지 못했습니다</b><p>${esc((e&&e.message)||String(e))}</p></div>`;return;}
     CUE.busy=false;}
+  cueTopPaint();
   if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.style.height=Math.max(420,window.innerHeight-Math.round(f.getBoundingClientRect().top+window.scrollY)-10)+'px';f.src=`${CUE_URL}?t=${encodeURIComponent(ftab)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
   else{try{f.contentWindow.cueGo(ftab);f.contentWindow.cueTellH&&f.contentWindow.cueTellH();}catch(e){}}
   cueSize();}
