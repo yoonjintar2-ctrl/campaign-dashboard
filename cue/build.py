@@ -22,7 +22,7 @@ def tint(css):
         return '#%02x%02x%02x' % (round(r * 255), round(g * 255), round(b * 255))
     return re.sub(r'#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])', f, css)
 # 분홍 강조(본방 · 중CM · 오늘) → 대시보드 강조색에 맞춘 푸른 계열 (v168)
-PINK = {'#e0005a': '#2a6fba', '#fceef4': '#e9f1fb', '#c00045': '#1f5c9e', '#fffafc': '#f5f9fe'}
+PINK = {'#e0005a': '#2a6fba', '#fceef4': '#e9f1fb', '#c00045': '#1f5c9e', '#fffafc': '#f5f9fe', '#f9dde9': '#d5e5f7', '#fbf4f6': '#eef4fb', '#b0607e': '#2a6fba', '#5a2b3a': '#2b2b2b'}
 def blue(t):
     return re.sub('|'.join(PINK), lambda m: PINK[m.group(0).lower()], t, flags=re.I)
 # v169 — 큐시트 요약 도넛을 대시보드 도넛 톤으로 (조각 흰 테두리 · 매체 바깥 띠 없앰, 회청 · 파랑 계열 색)
@@ -31,6 +31,9 @@ PATCH = [
   ("if (nb && st.sweep > 0.98) for (const e of grpEnds) {", "if (false) for (const e of grpEnds) {"),
   ("const DN_BASE = '#3a3a3c';", "const DN_BASE = '#2c4a73';"),
   ("const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#cbcbcb', wd: '#7563a8', we: '#d97f74' };", "const MIXC = { s15: '#a9bdd6', s30: '#34557f', etc: '#d7dde5', wd: '#34557f', we: '#a9bdd6' };"),
+  # v170 — 요약 화면 아래에 당월 소재를 잇는다(bridge.js 의 renderSummary 가 감싼다) · 캘린더 '지금' 위치로는 대시보드(부모 창)를 움직인다
+  ("function renderSummary(root) {", "function renderSummary0(root) {"),
+  ("const goToday = smooth => { const td", "const goToday = smooth => { if (window.cueCalJump) return window.cueCalJump(root, smooth); const td"),
   ("const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#6d6d6d' };", "const SECC = { 10: '#cdd8e6', 15: '#a9bdd6', 20: '#6f8fb8', 30: '#34557f', 40: '#223a59', 45: '#8794a5', 60: '#5b6676' };"),
 ]
 USED = set()

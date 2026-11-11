@@ -57,6 +57,8 @@ function ovRow(p){
   if(!(TP.amt>0)&&!(TA.cost>0)&&m.tvSum&&typeof m.tvSum==='object'){const s=m.tvSum;
     TP.amt=+s.plan||0;TP.grp=+s.pgrp||0;TA.cost=+s.spend||0;TA.grp=+s.grp||0;tvn=Math.max(tvn,1);
     Object.entries(s.mon||{}).forEach(([ym,v])=>{if(/^\d{4}-\d{2}$/.test(ym)&&+v)tvMon[ym]=(tvMon[ym]||0)+(+v);});}
+  /* v170 — 계획 GRP: 큐시트(예산 ÷ 목표 CPRP)에서 온 값 */
+  if(!(TP.grp>0)&&m.tvSum&&+m.tvSum.pgrp>0)TP.grp=+m.tvSum.pgrp;
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
   const tD=tvs.map(r=>r.date);let tP=per(tD,tD);
@@ -106,13 +108,16 @@ function ovRow(p){
   if(a.ott.inc){if(oS){if(oBud>0&&oP.start&&oP.end&&oP.end>=oP.start)spans.push([oP.start,oP.end,oBud,'ott']);}
     else oL.forEach(l=>{const v=lb(l);if(v>0&&ovIso(l.start)&&ovIso(l.end)&&l.end>=l.start)spans.push([l.start,l.end,v,'ott']);});}
   if(a.ooh.inc)oo.forEach(r=>{const v=tvNum(r.cost);if(v>0&&ovIso(r.start)&&ovIso(r.end)&&r.end>=r.start)spans.push([r.start,r.end,v,'ooh']);});
-  if(a.tv.inc&&tvMonSpan.length&&a.tv.plan>0)tvMonSpan.forEach(x=>spans.push(x));
-  else if(a.tv.inc&&a.tv.budget>0){
-    const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
-    if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
   /* v169 — TV 주차별 값(다음 달 캠페인을 앞 달 그래프에 비출 때) */
   let tvWk=null;try{const w=p.wr;if(w&&w.ym&&Array.isArray(w.weeks)&&w.wtot&&Array.isArray(w.wtot.w))tvWk={ym:w.ym,wk:w.weeks.map((k,i)=>{const x=w.wtot.w[i]||[];return [k.l,k.s,k.e,+x[0]||0,+x[1]||0];})};
     else if(m.tvSum&&m.tvSum.ym&&Array.isArray(m.tvSum.wk))tvWk={ym:m.tvSum.ym,wk:m.tvSum.wk};}catch(e){}
+  /* v170 — TV 일별 흐름: 주차별 집행금액(천원)이 있으면 그 주 안에서 고르게 */
+  const wkSp=tvWk?tvWk.wk.filter(k=>+k[4]>0&&ovIso(k[1])&&ovIso(k[2])&&k[2]>=k[1]).map(k=>[k[1],k[2],k[4]*1000,'tv']):[];
+  if(a.tv.inc&&wkSp.length)wkSp.forEach(x=>spans.push(x));
+  else if(a.tv.inc&&tvMonSpan.length&&a.tv.plan>0)tvMonSpan.forEach(x=>spans.push(x));
+  else if(a.tv.inc&&a.tv.budget>0){
+    const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
+    if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
   return {tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget,spans};}
 /* 지금 캠페인 — 화면의 값 그대로 */
@@ -310,7 +315,7 @@ function paintOverview(loading){
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
    +tree
    +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_VIS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
-   +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div></div>`;
+   +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div><div class="flnote">${L('일별 예산 = 캠페인 · 매체별 예산을 집행 기간의 날 수로 고르게 나눈 값(TV는 주차별 집행금액이 있으면 그 주 안에서 나눔) · 선은 흐름이 보이게 다듬은 것, 마우스를 올리면 그날 값','Daily budget = each budget spread evenly over its flight (TV by week when weekly spend exists) · the line is smoothed, hover for the day')}</div></div>`;
   paintOvFlow($('ovFlow'),rows,won0);
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
@@ -323,7 +328,7 @@ function paintOverview(loading){
   const hl=(k,on)=>box.querySelectorAll(`[data-ovk="${k}"],circle[data-ovpie="${k}"]`).forEach(e=>e.classList.toggle('hl',on));
   box.querySelectorAll('.ovm[data-ovk],[data-ovpie]').forEach(el=>{const k=el.dataset.ovk||el.dataset.ovpie;
     el.addEventListener('mouseenter',()=>hl(k,true));el.addEventListener('mouseleave',()=>hl(k,false));});
-  const nt=$('ovNote');if(nt)nt.textContent=L('광고비 = 디지털 예산 + TV 계획 금액 + OTT 예산 + OOH 광고비 · 집행 = 디지털 소진 + TV 방송 광고비 + OTT 소진','Ad spend = digital budget + TV plan + OTT budget + OOH · Spent = digital spend + TV aired + OTT spend');
+  const nt=$('ovNote');if(nt)nt.textContent='';
   /* 타임라인 */
   const tl=$('ovTimeline');
   if(tl){
@@ -354,8 +359,8 @@ function paintOverview(loading){
         const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
           a:OV_AREAS.filter(x=>r.a[x.k].inc).map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
         /* v82 — 타임라인은 보기만: 이름은 누를 수 없고, '지금 캠페인' · 진행 상태 표시는 뺐다(날짜 축으로 보인다) */
-        return `<div class="ovrow">
-          <div class="ovl"><span class="ovname">${esc(r.name)}</span><div class="ovsub">${tags}</div></div>
+        return `<div class="ovrow${ovStatus(r,today)==='live'?' live':''}">
+          <div class="ovl one"><span class="ovname">${esc(r.name)}</span><div class="ovsub">${tags}</div></div>
           <div class="ovtrack">${isFinite(l)?`<b class="ovbar" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%;background:linear-gradient(90deg,${grad})" data-ovtip="${tip}"></b>`:''}</div>
           <div class="ovr mono">${r.budget?manUnit(r.budget):'–'}</div></div>`;};
       tl.innerHTML=`<div class="ovtl"><div class="ovrow axis"><div class="ovl"></div><div class="ovtrack ovaxis">${ticks}</div><div class="ovr">${L('광고비','Ad spend')}</div></div>
@@ -383,7 +388,7 @@ function paintOverview(loading){
       return `<div class="card ovcard"><div class="ovch"><i class="ovdot ${x.c}"></i><b>${L(`${x.l} 캠페인`,`${x.l} campaigns`)}</b>
           <span class="hint">${L(`${fmt(rs.length)}개`,`${fmt(rs.length)}`)}${rs.length?` · ${won0(tot[x.k].budget)}`:''}</span></div>
         ${rs.length?`<div class="tbl-wrap noy"><table class="tbl lite ovtbl"><thead><tr>${head.map(h=>`<th${h[1]?' class="num"':''}>${h[0]}</th>`).join('')}</tr></thead>
-          <tbody>${rs.map(r=>`<tr${r.self?' class="self"':''}>${body(r)}</tr>`).join('')}${rs.length>1?`<tr class="total">${foot(rs)}</tr>`:''}</tbody></table></div>`
+          <tbody>${rs.map(r=>`<tr class="${r.self?'self':''}${ovStatus(r,today)==='live'?' live':''}">${body(r)}</tr>`).join('')}${rs.length>1?`<tr class="total">${foot(rs)}</tr>`:''}</tbody></table></div>`
           :`<div class="hint ovnone">${L(`이 광고주의 ${x.l} 캠페인이 아직 없습니다.`,`No ${x.l} campaigns for this advertiser yet.`)}</div>`}</div>`;};
     /* 디지털 · OTT 목록은 같은 모양 (v143) */
     const dgSect=k=>{const X=OV_AREAS.find(x=>x.k===k);
@@ -693,7 +698,7 @@ function paintOvFlow(host,rows,won0){
     for(let i=a;i<=b;i++){const o=day[i];o.t+=per;o.k[x.k]+=per;o.c[x.ri]=(o.c[x.ri]||0)+per;}});
   /* 흐름선 — 가우스 평활(기간이 길수록 넓게). 캠페인 시작 · 종료의 계단이 완만한 언덕이 된다.
      정확한 그날 값은 툴팁으로 */
-  const sg=N>60?Math.max(3,N/45):N>20?1.6:0,R=Math.ceil(sg*3);
+  const sg=N>60?Math.max(4,N/32):N>20?2:0,R=Math.ceil(sg*3);
   const sm=sg?day.map((_,i)=>{let s=0,c=0;for(let j=i-R;j<=i+R;j++){if(j<0||j>=N)continue;const w=Math.exp(-((j-i)*(j-i))/(2*sg*sg));s+=day[j].t*w;c+=w;}return s/c;})
     :day.map(d=>d.t);
   const W=Math.max(host.clientWidth,240),H=Math.max(host.clientHeight,150);
@@ -702,7 +707,7 @@ function paintOvFlow(host,rows,won0){
   const X=i=>PL+(N>1?i/(N-1):.5)*(W-PL-PR),Y=v=>PT+(1-v/top)*(H-PT-PB);
   const pts=sm.map((v,i)=>[X(i),Y(v)]);
   /* 선은 몇 날 간격으로 짚어 그린다 (점이 너무 촘촘하면 잔물결이 생긴다) */
-  const stp=Math.max(1,Math.round(N/90)),pp=pts.filter((_,i)=>i%stp===0||i===N-1);
+  const stp=Math.max(1,Math.round(N/60)),pp=pts.filter((_,i)=>i%stp===0||i===N-1);
   const line=ovMonoPath(pp);
   const area=line+` L${X(N-1).toFixed(1)} ${H-PB} L${X(0).toFixed(1)} ${H-PB} Z`;
   const gid='ovfg'+Math.random().toString(36).slice(2,7);

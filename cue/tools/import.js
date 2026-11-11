@@ -231,7 +231,7 @@ async function cueLegacyImport(ab, YEAR) {
       return {
         ym: WS.ym, notes: R.notes.concat(planNotes), fixed,
         unkItems: [...unk.items], unkChs: [...unk.chs],
-        stats: { g: g.length, c: sum(c, s => s.cnt), budget: A.budget, value: A.value, bonus: A.bonus, err: M.issues.filter(i => i.sev === 'err').length, warn: M.issues.filter(i => i.sev === 'warn').length, kindEmpty, items: M.activeItems, start: WS.start, end: WS.end },
+        stats: { g: g.length, c: sum(c, s => s.cnt), grp: A.grp, eq: A.eq, budget: A.budget, value: A.value, bonus: A.bonus, err: M.issues.filter(i => i.sev === 'err').length, warn: M.issues.filter(i => i.sev === 'warn').length, kindEmpty, items: M.activeItems, start: WS.start, end: WS.end },
         errSample: M.issues.filter(i => i.sev === 'err').slice(0, 8).map(i => `${i.sheet} ${i.row + 1} ${i.msg}`),
         warnSample: M.issues.filter(i => i.sev === 'warn').slice(0, 12).map(i => `${i.sheet} ${i.row + 1} ${i.msg}`),
         cmp, cableByCh: cv, cellsOut: M.cells.map(c => [c.ch, c.item, c.budget, c.value, c.bonus, c.cnt]),

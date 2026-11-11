@@ -8,7 +8,8 @@
    ===================================================================== */
 var TV_CUE=null;        // var — 14-tv 의 tvForDoc · tvFromDoc 이 typeof 로 본다
 var CUE_TAB='summary';
-const CUE_TABS=[['summary','요약'],['crev','당월 소재'],['cueg','지상파 큐시트'],['cuec','케이블 큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
+var CUE_SUB='cueg';      // 큐시트 메뉴 안에서 고른 쪽(지상파 · 케이블)
+const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
 async function cuePipe(bytes,stream){
@@ -29,18 +30,43 @@ function cueFrameData(){
 function cueFrameReady(w,imp){
   if(imp){CUE.imp=w;if(CUE.impWait){CUE.impWait(w);CUE.impWait=null;}return;}
   const f=$('cueFrame');if(f)f.classList.add('ready');}
+/* 예전에 넣은 큐시트에는 계획 GRP 가 없다 — 틀이 계산해 알려 주면 채워 둔다(편집 권한이 있을 때만 저장 대상) */
+function cueFrameStats(s){
+  if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});
+  if(Math.abs((+st.pgrp||0)-s.grp)<.05)return;st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;
+  try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
 function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame');if(f){f.classList.remove('ready');f.removeAttribute('src');}}
+/* v170 — 틀 높이 = 내용 높이(틀이 알려 준다) → 페이지 스크롤 하나만. 캘린더는 화면 폭을 넓게 쓴다 */
 function cueSize(){
+  const f=$('cueFrame'),host=$('cueHost');if(!f||!host||f.offsetParent===null)return;
+  if(CUE_TAB==='cal'){const r=host.getBoundingClientRect(),vw=document.documentElement.clientWidth,w=Math.min(vw-28,2400);
+    if(w>r.width+8){f.style.width=w+'px';f.style.marginLeft=Math.round((vw-w)/2-r.left)+'px';}else{f.style.width='';f.style.marginLeft='';}}
+  else{f.style.width='';f.style.marginLeft='';}
+  cueStickNow();}
+function cueFrameH(h){const f=$('cueFrame');if(!f)return;h=Math.max(360,Math.round(h));if(Math.abs((parseFloat(f.style.height)||0)-h)>1)f.style.height=h+'px';}
+/* 표 머리줄 고정 — 대시보드 머리(메뉴 줄) 아래에 붙도록 틀에 알려 준다 */
+function cueStickNow(){
   const f=$('cueFrame');if(!f||f.offsetParent===null)return;
-  const top=f.getBoundingClientRect().top+window.scrollY;
-  f.style.height=Math.max(420,window.innerHeight-Math.round(top)-10)+'px';}
+  try{const tb=document.querySelector('.topbar'),hb=tb?tb.getBoundingClientRect().bottom:0;
+    const t2=$('tabs'),b2=t2?t2.getBoundingClientRect().bottom:0,top=Math.max(hb,b2>0&&b2<200?b2:0);
+    f.contentWindow.cueStick&&f.contentWindow.cueStick(top-f.getBoundingClientRect().top);}catch(e){}}
+(function(){let q=0;window.addEventListener('scroll',()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;cueStickNow();});},{passive:true});})();
+/* 틀 안의 한 지점(y — 틀 기준)이 화면 가운데쯤 오도록 */
+function cueScrollTo(y,x,smooth){
+  const f=$('cueFrame');if(!f)return;const r=f.getBoundingClientRect();
+  window.scrollTo({top:Math.max(0,window.scrollY+r.top+y-window.innerHeight*.42),behavior:smooth?'smooth':'auto'});}
 window.addEventListener('resize',()=>{try{cueSize();}catch(e){}});
 function cueYmLabel(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');return m?`${m[1]}년 ${+m[2]}월`:'';}
 async function renderTvCue(){
   const host=$('cueHost');if(!host)return;
   const ttl=$('cueTitle'),note=$('cueNote');
+  if(!CUE_TABS.some(t=>t[0]===CUE_TAB))CUE_TAB='summary';
   const lb=(CUE_TABS.find(t=>t[0]===CUE_TAB)||CUE_TABS[0])[1];
-  if(ttl)ttl.textContent=CUE_TAB==='summary'?'큐시트 요약':lb;
+  if(ttl)ttl.textContent=CUE_TAB==='cue'?(CUE_SUB==='cueg'?'지상파 큐시트':'케이블 큐시트'):lb;
+  const seg=$('cueSeg');
+  if(seg){seg.classList.toggle('hidden',CUE_TAB!=='cue'||!TV_CUE);
+    seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.cs===CUE_SUB);b.onclick=()=>{if(CUE_SUB===b.dataset.cs)return;CUE_SUB=b.dataset.cs;renderTvCue();};});}
+  const ftab=CUE_TAB==='cue'?CUE_SUB:CUE_TAB;
   let ed=false;try{ed=!isClient()&&inbxEdit();}catch(e){}
   if(!TV_CUE||!TV_CUE.z){
     if(note)note.textContent='';
@@ -58,21 +84,20 @@ async function renderTvCue(){
     try{CUE.json=await cueUngz(TV_CUE.z);CUE.key=key;}
     catch(e){CUE.busy=false;host.innerHTML=`<div class="card cue-empty"><b>큐시트를 열지 못했습니다</b><p>${esc((e&&e.message)||String(e))}</p></div>`;return;}
     CUE.busy=false;}
-  if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.src=`${CUE_URL}?t=${encodeURIComponent(CUE_TAB)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
-  else{try{f.contentWindow.cueGo(CUE_TAB);f.contentWindow.scrollTo(0,0);}catch(e){}}
+  if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.style.height=Math.max(420,window.innerHeight-Math.round(f.getBoundingClientRect().top+window.scrollY)-10)+'px';f.src=`${CUE_URL}?t=${encodeURIComponent(ftab)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
+  else{try{f.contentWindow.cueGo(ftab);f.contentWindow.cueTellH&&f.contentWindow.cueTellH();}catch(e){}}
   cueSize();}
 /* 메뉴 줄 — 고른 큐시트 메뉴 표시 · 큐시트가 없으면 광고주 화면에서는 묶음을 감춘다 */
 function cueMenuPaint(){
   const T=$('tabs');if(!T)return;
   const cur=(T.dataset.cur||'')==='tvcue';
-  T.querySelectorAll('[data-cue]').forEach(b=>b.classList.toggle('on',cur&&b.dataset.cue===CUE_TAB));
-  let cl=false;try{cl=isClient();}catch(e){}
-  const bar=$('tvcuebar'),hd=$('tvcuehd');
-  if(bar){const any=[...bar.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
-    const off=!any||(cl&&!TV_CUE);
-    bar.classList.toggle('menuoff',off);if(hd)hd.classList.toggle('hidden',off);}
-  const ph=$('tvperfhd'),pb=$('tvsubbar');
-  if(ph&&pb)ph.classList.toggle('hidden',pb.classList.contains('menuoff')||!bar||bar.classList.contains('menuoff'));}
+  T.querySelectorAll('[data-cue]').forEach(b=>{b.classList.toggle('on',cur&&b.dataset.cue===CUE_TAB);
+    /* 큐시트가 없는 캠페인 — 광고주 화면에서는 큐시트 메뉴를 감춘다 */
+    let cl=false;try{cl=isClient();}catch(e){}b.classList.toggle('hidden',cl&&!TV_CUE);});
+  /* 미디어믹스 = 큐시트 요약(큐시트가 있을 때) */
+  const mx=T.querySelector('[data-menu="t_mix"]');if(mx&&cur)mx.classList.toggle('on',CUE_TAB==='summary');
+  /* 주차별 퍼포먼스 — 리포트형(코웨이)은 캠페인 퍼포먼스 맨 아래로 들어갔다 */
+  const wk=T.querySelector('[data-menu="t_week"]');if(wk){let w=false;try{w=wrOn();}catch(e){}wk.classList.toggle('hidden',w);}}
 
 /* ---------- 통합 큐시트 엑셀 넣기 ---------- */
 function cueImpFrame(){
@@ -105,7 +130,7 @@ async function cueImportFile(file){
   catch(e){say('큐시트를 읽지 못했습니다',(e&&e.message)||String(e),{kind:'warn',ms:7000});return false;}
   const put=async()=>{
     TV_CUE={v:1,ym:r.ym,z:await cueGz(r.ws),at:Date.now(),name:file.name,
-      st:{g:r.stats.g,c:r.stats.c,budget:r.stats.budget,value:r.stats.value,items:r.stats.items,cmpN:r.cmpN,cmpBad:r.cmpBad}};
+      st:{g:r.stats.g,c:r.stats.c,pgrp:Math.round((r.stats.grp||0)*10)/10,peq:Math.round((r.stats.eq||0)*10)/10,budget:r.stats.budget,value:r.stats.value,items:r.stats.items,cmpN:r.cmpN,cmpBad:r.cmpBad}};
     cueReset();try{markDirty();}catch(e){}try{applyMenus();}catch(e){}
     say('큐시트를 넣었습니다',`${cueYmLabel(r.ym)} · 지상파 ${r.stats.g.toLocaleString()}회 · 케이블 ${r.stats.c.toLocaleString()}회 · 엑셀 운영 요약 대조 ${r.cmpN-r.cmpBad}/${r.cmpN}칸 일치`
       +((r.unkItems||[]).length||(r.unkChs||[]).length?` · 모르는 이름 ${[...(r.unkItems||[]),...(r.unkChs||[])].slice(0,4).join(', ')}`:''),{kind:r.cmpBad?'warn':'ok',ms:8000});};

@@ -1235,6 +1235,9 @@ function buildSelects(){
 }
 let pendingLeave=false;
 function switchTab(name){
+  /* v170 — 큐시트가 있는 캠페인의 미디어믹스 = 큐시트 요약 화면 · 리포트형의 주차별 = 캠페인 퍼포먼스 맨 아래 */
+  try{if(name==='tvmix'&&TV_CUE&&TV_CUE.z){CUE_TAB='summary';name='tvcue';}
+    else if(name==='tvweekly'&&wrOn()){WR_GOWK=1;name='tvdash';}}catch(e){}
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
     const n=SHEET.filter(rowBad).length,nc=badCellCount();
     /* 숫자로 읽을 수 없는 칸은 따로 센다 — 그 행은 집계되지만 그 칸만 0 이 된다 (v78) */

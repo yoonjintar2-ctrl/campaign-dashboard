@@ -43,7 +43,13 @@ const wrPaid=c=>(wrN(c.bud)>0)||(wrN(c.cost)>0);
 function wrEqTarget(){let t=0,ok=false;(TV_WR.chs||[]).forEach(c=>{if(wrN(c.bud)>0&&wrN(c.tc)>0){t+=c.bud/c.tc;ok=true;}});return ok?t:NaN;}
 
 /* 전체 캠페인(광고주 화면)용 TV 요약 — 저장할 때 media.tvSum 으로 (v148). 금액은 원 */
-function tvSumNow(){
+function tvSumNow(){const r=tvSumNow0();
+  /* v170 — 큐시트가 있으면 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산)를, 리포트가 아직 없는 달은 계획 금액도 큐시트 예산으로 */
+  try{const c=TV_CUE&&TV_CUE.st;if(c&&TV_CUE.z){const o=r||{plan:0,spend:0,grp:0,pgrp:0,mon:{}};
+    if(+c.pgrp>0)o.pgrp=+c.pgrp;if(!(o.plan>0)&&+c.budget>0){o.plan=Math.round(+c.budget);o.mon={[TV_CUE.ym]:o.plan};}
+    return (o.plan||o.spend||o.pgrp)?o:r;}}catch(e){}
+  return r;}
+function tvSumNow0(){
   if(wrOn()){const W=TV_WR,t=W.wtot||{};return {plan:Math.round((+t.bud||+W.tot.bud||0)*1000),spend:Math.round((+t.cost||0)*1000),grp:+W.tot.grp||0,pgrp:0,mon:{[W.ym]:Math.round((+t.bud||+W.tot.bud||0)*1000)},
     /* v169 — 주차별 값(천원) — 앞 달 캠페인의 주차별 그래프 오른쪽에 '다음 달'로 비친다 */
     ym:W.ym,wk:(W.weeks||[]).map((w,i)=>{const x=(t.w||[])[i]||[];return [w.l,w.s,w.e,+x[0]||0,+x[1]||0];})};}
@@ -59,7 +65,9 @@ function wrHsWire(root){
     const sc=w.querySelector('.wrhs-in'),l=w.querySelector('.wrhs-b.l'),r=w.querySelector('.wrhs-b.r');if(!sc||w.__w)return;w.__w=1;
     const paint=()=>{const max=sc.scrollWidth-sc.clientWidth;l.classList.toggle('on',sc.scrollLeft>2);r.classList.toggle('on',sc.scrollLeft<max-2);};
     const go=d=>sc.scrollBy({left:d*Math.max(220,sc.clientWidth*.7),behavior:'smooth'});
-    l.onclick=()=>go(-1);r.onclick=()=>go(1);sc.addEventListener('scroll',paint,{passive:true});
+    l.onclick=()=>go(-1);r.onclick=()=>go(1);
+    /* v170 — 긴 표에서도 찾기 쉽게: 좌우 버튼이 마우스 높이를 따라온다 */
+    w.addEventListener('mousemove',e=>{const rc=w.getBoundingClientRect(),y=Math.max(28,Math.min(rc.height-28,e.clientY-rc.top))+'px';l.style.top=y;r.style.top=y;},{passive:true});sc.addEventListener('scroll',paint,{passive:true});
     /* v158 — 머리 둘째 줄의 고정 위치 = 실제 첫 줄 높이(두 줄짜리 소재 이름 · 날짜가 가려지던 문제) */
     const fit=()=>sc.querySelectorAll('table.wrt').forEach(t=>{const r=t.tHead&&t.tHead.rows[0];if(r)t.style.setProperty('--wrh1',Math.round(r.getBoundingClientRect().height)+'px');});
     fit();try{new ResizeObserver(()=>{paint();fit();}).observe(sc);}catch(e){}paint();setTimeout(()=>{paint();fit();},120);
@@ -126,11 +134,7 @@ function wrCueCol(n){const ym=String((TV_WR&&TV_WR.ym)||'').slice(0,7),ks=Object
   for(const k of [...prev,...next])if(WR_CUECOL[k][n])return wrCalm(WR_CUECOL[k][n]);
   return '#7f8b97';}
 const wrInk=h=>{const n=parseInt(String(h).slice(1),16),l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;return l>.68?'#2a2f36':'#fff';};
-function renderWrMix(){
-  const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
-  if(!wrOn()){h.innerHTML='';return false;}
-  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
-  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+function wrMixBars(items,tot){
   /* ① 소재별 월 예산 — 품목마다 막대 하나, 소재로 나눠 쌓는다(단색 톤) */
   const maxB=Math.max(1,...items.map(it=>wrN(it.sub&&it.sub.bud)||it.cr.reduce((s,c)=>s+(wrN(c.bud)||0),0)));
   const bars=items.map((it,ii)=>{
@@ -140,8 +144,31 @@ function renderWrMix(){
     const segs=crs.map((c,j)=>{const w=c.bud/maxB*100;
       return `<span class="seg" style="width:${w}%;--d:${(ii*60+j*90)}ms;background:${ic};color:${ink}" data-wrtip="${esc(it.n)}|${esc(c.n)}|${c.bud}|${ib}">
         ${w>9?`<b>${esc(c.n)}</b><i>${wrEok(c.bud)}</i>`:''}</span>`;}).join('');
+    /* v170 — 막대가 좁아 안에 못 적은 소재는 막대 오른쪽 바깥에 */
+    const outs=crs.filter(c=>c.bud/maxB*100<=9).map(c=>`${esc(c.n)} <i>${wrEok(c.bud)}</i>`).join(' · ');
     return `<div class="wrsb"><div class="nm">${esc(it.n)}</div>
-      <div class="bar">${segs}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
+      <div class="bar">${segs}${outs?`<span class="out">${outs}</span>`:''}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
+  return bars;}
+/* v170 — 캠페인 퍼포먼스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프 */
+function wrMixTopHtml(){
+  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
+  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+  return `<div class="sec gap sm">${L('품목별 월 예산','Budget by product')} <span class="note">${L('품목 막대를 소재로 나눠 쌓음 · TV 요약 기준','Each product bar split by creative · from TV summary')}</span></div>
+      <div class="card wrcard"><div class="wrsbs">${wrMixBars(items,tot)}</div></div>
+      <div class="sec gap sm">${L('채널별 월 예산','Budget by channel')} <span class="note">${L('당월_주별 시트 예산 · PP별 비중 · 5% 미만은 기타로','Weekly sheet budget · share by PP · under 5% grouped as Other')}</span></div>
+      <div class="card wrcard"><div class="wrdn" id="wrDn"></div><div class="wrdn-etc hidden" id="wrDnEtc"></div></div>`;}
+function wrMixTipWire(h){
+  h.querySelectorAll('[data-wrtip]').forEach(el=>{el.onmousemove=e=>{const [it,cr,b,ib]=el.dataset.wrtip.split('|');
+    showTip(e.clientX,e.clientY,`<div class="t">${esc(it)} · ${esc(cr)}</div><div class="r"><span class="l">${L('월 예산','Budget')}</span><b>${wrF(+b)} ${L('천원','K')}</b></div>
+      <div class="r"><span class="l">${L('품목 안 비중','Share in product')}</span><b>${(b/ib*100).toFixed(1)}%</b></div>`);};el.onmouseleave=hideTip;});}
+var WR_GOWK=0;
+function renderWrMix(){
+  const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
+  if(!wrOn()){h.innerHTML='';return false;}
+  {const d=$('wrDash');if(d)d.innerHTML='';}   // 같은 id(wrDn)를 쓰는 캠페인 퍼포먼스 쪽은 비운다 — 열 때 다시 그린다
+  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
+  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+  const bars=wrMixBars(items,tot);
   /* 표 — 머리: 품목(맨 위) › 소재 + 온에어(줄바꿈) · 품목마다 맨 오른쪽 '계'(굵게) */
   let hr1='<th class="stk c0" rowspan="2">'+L('구분','')+'</th>',hr2='',r1='',r2='';
   items.forEach(it=>{const crs=it.cr.filter(c=>wrN(c.bud)>0),ib=wrN(it.sub&&it.sub.bud)||crs.reduce((s,c)=>s+c.bud,0);
@@ -312,6 +339,7 @@ function wrDnEtc(g,D){const box=$('wrDnEtc');if(!box)return;const list=D.etc[g]|
 function renderWrDash(){
   const h=wrHost('tab-tvdash','wrDash');if(!h)return false;
   if(!wrOn()){h.innerHTML='';return false;}
+  ['wrMix','wrWeek'].forEach(id=>{const d=$(id);if(d)d.innerHTML='';});
   const W=TV_WR,T=W.tot||{},wt=W.wtot||{};
   /* 게이지 카드 */
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=wrEqTarget();
@@ -330,7 +358,7 @@ function renderWrDash(){
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  h.innerHTML=wrHead(L('TV 누적 퍼포먼스','TV cumulative performance'),`${wrMonth()} · ${W.period||''}`)+kpis
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis+wrMixTopHtml()
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
@@ -338,9 +366,14 @@ function renderWrDash(){
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
       <div id="wrRt"></div>
       <div class="sec gap sm">${L('소재 타임라인','Creative timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 배경 = 소재 영상 장면(없으면 먼슬리 리포트 스토리보드) · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · background = storyboard · creatives without an on-air date are left out')}</span></div>
-      <div id="wrTl"></div>`;
+      <div id="wrTl"></div>
+      <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 아래 표는 구분 · PP로 골라 봅니다','Weekly sheet · spend · eq.GRP · CPRP · filter the table by type · PP')}</span></div>
+      <div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div><div class="wrwk" id="wrWk"></div></div>
+      <div id="wrWkT" style="margin-top:14px"></div>`;
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
-  wrScRender();wrItemTbl();wrRatings();wrTimeline();wrHsWire(h);
+  wrDnMount();wrMixTipWire(h);
+  wrScRender();wrItemTbl();wrRatings();wrTimeline();wrWeekChart();wrWeekTbl();wrHsWire(h);wrNextLoad();
+  if(WR_GOWK){WR_GOWK=0;setTimeout(()=>{const e=$('wrWkSec');if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-110});},120);}
   return true;}
 
 /* ---------- R3+ × eq.GRP 소재 지도 — 점마다 카드, 선은 서로 닿지 않게 ---------- */
@@ -607,11 +640,13 @@ function renderWrWeek(){
       <div class="wrwk" id="wrWk"></div></div>
     <div class="sec gap sm">${L('채널별 주차 데이터','Weekly data by channel')} <span class="note">${L('당월_주별 · 리포트에 품목별 주차 값이 없어 구분 · PP로 골라 봅니다','Weekly sheet · the report has no weekly split by product, so filter by type · PP')}</span></div>
     <div id="wrWkT"></div>`;
-  wrWeekChart();wrWeekTbl();
-  /* 다음 달 캠페인 값은 전체 캠페인 목록에서 — 아직 안 읽었으면 읽고 다시 그린다 */
-  try{if(typeof ovLoad==='function'&&typeof OV!=='undefined'&&!OV.rows&&!WR_NXQ){WR_NXQ=1;const ym=W.ym;
-    Promise.resolve(ovLoad()).then(()=>{WR_NXQ=0;if(TV_WR&&TV_WR.ym===ym&&$('wrWk')&&wrNextWeeks().length)wrWeekChart();}).catch(()=>{WR_NXQ=0;});}}catch(e){}
+  wrWeekChart();wrWeekTbl();wrNextLoad();
   return true;}
+/* 다음 달 캠페인 값은 전체 캠페인 목록에서 — 아직 안 읽었으면 읽고 다시 그린다 */
+function wrNextLoad(){
+  const W=TV_WR;
+  try{if(typeof ovLoad==='function'&&typeof OV!=='undefined'&&!OV.rows&&!WR_NXQ){WR_NXQ=1;const ym=W.ym;
+    Promise.resolve(ovLoad()).then(()=>{WR_NXQ=0;if(TV_WR&&TV_WR.ym===ym&&$('wrWk')&&wrNextWeeks().length)wrWeekChart();}).catch(()=>{WR_NXQ=0;});}}catch(e){}}
 let WR_NXQ=0;
 /* v157 — 리포트 '품목별 집행' 그래프와 같은 구성: 2D 막대(집행금액 · 위만 둥글게) · 뒤에 eq.GRP 연한 회색 영역 · 위쪽 띠에 CPRP 굵은 곡선 + 값이 든 큰 표식 */
 function wrWeekChart(){
@@ -687,16 +722,21 @@ function wrWeekTbl(){
   const totRow=(lab,X,cls,span)=>`<tr class="${cls}"><td class="stk ${span===3?'c0':'c1'} head" colspan="${span}">${lab}</td><td class="mono gs">${wrF(X.bud)}</td><td class="mono gs">${wrF(X.eq,1)}</td><td class="mono">${wrF(X.cost)}</td><td class="mono">${wrF(cp(X.cost,X.eq))}</td>
     ${X.w.map(x=>`<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`).join('')}</tr>`;
   let body='';let lastG='',lastPP='';
-  sel.forEach((c,ri)=>{const gN=c.g==='지상파'?L('지상파','Terrestrial'):L('케이블 · 종편','Cable · GP'),ppN=c.g==='지상파'?wrBc(c.pp||c.ch):c.pp;
+  let P=mkT();const ppMulti=k=>k.startsWith('케이블')&&sel.filter(x=>wrPPKey(x)===k).length>1;
+  sel.forEach((c,ri)=>{const gN=c.g==='지상파'?L('지상파','Terrestrial'):L('케이블<br>·<br>종편','Cable<br>·<br>GP'),ppN=c.g==='지상파'?wrBc(c.pp||c.ch):c.pp;
     /* v160 — 묶음(지상파 · 케이블 · 종편)마다 Total 줄 — 구분 칸은 그 줄까지 합친다 */
-    const gSpan=sel.filter(x=>x.g===c.g).length+1,ppSpan=sel.filter(x=>wrPPKey(x)===wrPPKey(c)).length;
+    const gSpan=sel.filter(x=>x.g===c.g).length+1+[...new Set(sel.filter(x=>x.g===c.g).map(wrPPKey))].filter(ppMulti).length,ppSpan=sel.filter(x=>wrPPKey(x)===wrPPKey(c)).length+(ppMulti(wrPPKey(c))?1:0);
+    P.bud+=wrN(c.bud)||0;P.eq+=wrN(c.eq)||0;P.cost+=wrN(c.cost)||0;(c.w||[]).forEach((x,i)=>{if(P.w[i]){P.w[i][0]+=wrN((x||[])[0])||0;P.w[i][1]+=wrN((x||[])[1])||0;}});
     T.bud+=wrN(c.bud)||0;T.eq+=wrN(c.eq)||0;T.cost+=wrN(c.cost)||0;G.bud+=wrN(c.bud)||0;G.eq+=wrN(c.eq)||0;G.cost+=wrN(c.cost)||0;
     (c.w||[]).forEach((x,i)=>{if(G.w[i]){G.w[i][0]+=wrN((x||[])[0])||0;G.w[i][1]+=wrN((x||[])[1])||0;}});
     body+=`<tr>${c.g!==lastG?`<td class="stk c0 head g" rowspan="${gSpan}">${gN}</td>`:''}${wrPPKey(c)!==lastPP?`<td class="stk c1 head" rowspan="${ppSpan}">${esc(ppN)}</td>`:''}<td class="stk c2 head">${esc(c.ch)}</td>
       <td class="mono gs">${wrF(c.bud)}</td><td class="mono gs sum">${wrF(c.eq,1)}</td><td class="mono sum">${wrF(c.cost)}</td><td class="mono sum">${wrF(cp(c.cost,c.eq))}</td>
       ${wk.map((w,i)=>{const x=(c.w||[])[i]||[];T.w[i][0]+=wrN(x[0])||0;T.w[i][1]+=wrN(x[1])||0;return `<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`;}).join('')}</tr>`;
     lastG=c.g;lastPP=wrPPKey(c);
-    const nx=sel[ri+1];if(!nx||nx.g!==c.g){body+=totRow(c.g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 · 종편 Total','Cable · GP total'),G,'gtot',2);G=mkT();}});
+    const nx=sel[ri+1];
+    /* v170 — 케이블 PP(채널 둘 이상)마다 소계 줄 */
+    if(!nx||wrPPKey(nx)!==wrPPKey(c)){if(ppMulti(wrPPKey(c)))body+=totRow(esc(ppN)+' Total',P,'sub',1).replace('class="stk c1 head" colspan="1"','class="stk c2 head"');P=mkT();}
+    if(!nx||nx.g!==c.g){body+=totRow(c.g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 · 종편 Total','Cable · GP total'),G,'gtot',2);G=mkT();}});
   body+=totRow('TOTAL',T,'total',3);
   /* 페이지 맨 아래 표 — 표 안 세로 스크롤 없이 전체를 펼치고 머리만 화면 위에 고정 */
   box.innerHTML=`<div class="wrsel">${wrChips(opts,WR_WK.pp,'data-wrp')}</div>`+wrHs(`<table class="tbl lite wrt writ wrwt"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl full');

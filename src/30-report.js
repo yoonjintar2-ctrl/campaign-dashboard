@@ -219,7 +219,7 @@ function rpOwnTrend(){
   const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1);const it=o?o.it.filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
     return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),lab:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#4f6b8f':'#9fb2c9',
       slices:it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지상파','Terr.')} ${wrEok(x[4])} · ${L('케이블','Cable')} ${wrEok(x[5])}`:''}))};});
-  rpBarDonut(box,bars,{H:340,cur:M-1});}
+  rpBarDonut(box,bars,{H:340,cur:M-1,topLab:true});}
 
 /* ================================================================
    업종 고르기 — 업종 타일(코웨이 점유율 고리)이 곧 선택 칩

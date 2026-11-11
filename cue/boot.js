@@ -18,6 +18,7 @@
       ic[3] = '#' + mix(n >> 16 & 255) + mix(n >> 8 & 255) + mix(n & 255); } } } catch (e) { }
   if (d && d.ws) { window.__REPORT__ = { ws: d.ws, title: d.title || '', at: d.at || Date.now() }; window.__CUE_TAB__ = q.get('t') || 'summary'; }
   document.documentElement.classList.add('embed');
+  try { if (parent !== window) document.documentElement.style.setProperty('--pvh', Math.max(480, parent.innerHeight - 170) + 'px'); } catch (e) { }
   /* 대시보드 테마 색을 그대로 받는다 */
   try { if (parent !== window) { var cs = parent.getComputedStyle(parent.document.documentElement), st = document.documentElement.style;
     ['plane', 'plane2', 'surface', 'ink', 'ink2', 'muted', 'sec', 'line', 'line2', 'gline', 'cell', 'acc', 'acc-d', 'acc-lt', 'acc-soft', 'acc-soft2', 'hdr', 'hdr2', 'tot', 'hdr-sub', 'tot-sub', 'sub0', 'sub1', 'sub2', 'sub3', 'b1', 'b2', 'b3', 'b4', 'b5'].forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) st.setProperty('--p-' + k, v); });

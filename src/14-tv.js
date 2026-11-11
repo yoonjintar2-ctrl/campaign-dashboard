@@ -26,7 +26,7 @@ function tabMenu(name,sub){
   const a=areaOfTab(name);
   const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
   if(name==='intake')return MENUS.find(x=>x.tab==='intake'&&x.area===a)||MENUS.find(f);
-  if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f);}
+  if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return c==='summary'?MENU_BY.t_mix:(MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f));}
   return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
 /* ---------- 메뉴 목록 ----------

@@ -5,12 +5,14 @@ window.cueImport = async function (ab, year) {
   const r = await cueLegacyImport(ab, year);
   const bad = r.cmp.filter(x => x.bad.length);
   return JSON.parse(JSON.stringify({ ym: r.ym, ws: r.ws, notes: r.notes, fixed: r.fixed, unkItems: r.unkItems, unkChs: r.unkChs, cmpN: r.cmp.length, cmpBad: bad.length,
-    stats: { g: r.stats.g, c: r.stats.c, budget: r.stats.budget, value: r.stats.value, bonus: r.stats.bonus, err: r.stats.err, items: r.stats.items } }));
+    stats: { g: r.stats.g, c: r.stats.c, grp: r.stats.grp, eq: r.stats.eq, budget: r.stats.budget, value: r.stats.value, bonus: r.stats.bonus, err: r.stats.err, items: r.stats.items } }));
 };
 window.addEventListener('DOMContentLoaded', function () {
   setTimeout(function () {
     try { if (window.__REPORT__ && window.__CUE_TAB__) window.cueGo(window.__CUE_TAB__); } catch (e) { }
     try { if (parent !== window && parent.cueFrameReady) parent.cueFrameReady(window, !!window.__CUE_IMP__); } catch (e) { }
+    /* v170 — 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산) · eq.GRP 를 대시보드에 알려 준다(전체 캠페인 표) */
+    try { if (window.__REPORT__ && parent.cueFrameStats) { var A = aggCells(M.cells); parent.cueFrameStats({ grp: A.grp, eq: A.eq, budget: A.budget }); } } catch (e) { }
   }, 0);
 });
 
@@ -51,4 +53,43 @@ function cueCalFix(root) {
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;
   new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueCalFix(v); }, 30); }).observe(v, { childList: true, subtree: true });
+});
+
+/* ===== v170 — 대시보드 안에서는 틀 높이 = 내용 높이(틀 안 세로 스크롤 없음 → 이중 스크롤 없음) ===== */
+var CUE_EMB = false; try { CUE_EMB = parent !== window && !!window.__REPORT__; } catch (e) { }
+function cueTellH() {
+  if (!CUE_EMB) return; var m = document.querySelector('main') || document.body;
+  var h = Math.ceil(m.getBoundingClientRect().bottom + (window.scrollY || 0)) + 4;
+  try { parent.cueFrameH && parent.cueFrameH(h); } catch (e) { }
+}
+/* 요약 = 큐시트 요약 + 당월 소재 */
+function renderSummary(root) {
+  if (!CUE_EMB || root.classList.contains('cue-part')) return renderSummary0(root);
+  var a = root.querySelector(':scope>.cue-part.s0'), b = root.querySelector(':scope>.cue-part.s1');
+  if (!a) { root.innerHTML = '<div class="cue-part s0"></div><h3 class="cue-sec">당월 소재</h3><div class="cue-part s1"></div>'; a = root.querySelector('.s0'); b = root.querySelector('.s1'); }
+  renderSummary0(a); try { renderCreView(b); } catch (e) { }
+}
+/* 표 머리 고정 — 틀이 스크롤되지 않으므로 대시보드 스크롤 위치를 받아 머리줄을 내려 붙인다 */
+window.cueStick = function (off) {
+  document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t.cue').forEach(function (tb) {
+    var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
+    if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
+  });
+};
+/* 캘린더 — 오늘 · 지금 시간대로 가서 3초 강조 */
+window.cueCalJump = function (root, smooth) {
+  setTimeout(function () {
+    var td = root.querySelector('#cal-td-today'); if (!td) return; var now = td.querySelector('[data-now]') || td;
+    try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, true); } catch (e) { }
+    [td, now].forEach(function (x) { x.classList.remove('cue-flash'); void x.offsetWidth; x.classList.add('cue-flash'); });
+    setTimeout(function () { [td, now].forEach(function (x) { x.classList.remove('cue-flash'); }); }, 3200);
+  }, 420);
+};
+/* 캘린더 폭 — 프로그램 이름 칸은 화면 폭에 따라 늘고 줄되 한글 8자까지만 줄인다(그 아래로는 가로 스크롤) */
+window.addEventListener('DOMContentLoaded', function () {
+  if (!CUE_EMB) return;
+  try { new ResizeObserver(cueTellH).observe(document.querySelector('main') || document.body); } catch (e) { }
+  var v = document.getElementById('view') || document.body, t = 0;
+  new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueTellH(); }, 60); }).observe(v, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('resize', cueTellH); setTimeout(cueTellH, 300); setTimeout(cueTellH, 1200);
 });

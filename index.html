@@ -800,6 +800,7 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsb{display:grid;grid-template-columns:150px 1fr 96px;gap:12px;align-items:center}
 .wrsb .nm{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wrsb .bar{display:flex;height:34px;gap:2px;align-items:stretch}
+.wrsb .bar .out{align-self:center;margin-left:8px;font-size:11.5px;font-weight:800;color:var(--ink2);white-space:nowrap}.wrsb .bar .out i{font-style:normal;font-weight:700;color:var(--muted)}
 .wrsb .bar .seg{box-shadow:none}
 .wrsb .seg{position:relative;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 9px;color:#fff;min-width:3px;
   transform-origin:left center;animation:wrGrow .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0ms)}
@@ -1319,6 +1320,7 @@ table.rpcrt td{vertical-align:middle}table.rpcrt .cum{font-size:10.5px;color:var
 .rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bxl{font-size:11px;font-weight:600;fill:var(--muted)}.rpbd .bxl.cur{fill:var(--ink);font-weight:900}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
 .rpbd.hot .bl .bd{opacity:.16;transition:opacity .25s}.rpbd.hot .bl .bd .bv,.rpbd.hot .bl .bd .bxl{opacity:0}
 .rpbd .dc1{font-size:12px;font-weight:700;fill:var(--muted)}.rpbd .dc2{font-size:17px;font-weight:900;fill:var(--ink)}
+.rpbd .dtl{fill:var(--ink)}.rpbd .dtlt{fill:var(--surface);font-size:14px;font-weight:900}
 .rpbd .bdl{fill:none;stroke:var(--gline);stroke-width:.7;opacity:.55}
 .rpbd .bdx{fill:var(--surface);stroke:var(--line)}.rpbd .bdn{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbd .bds{font-size:10.5px;font-weight:600;fill:var(--muted)}
 .rpbdx{display:flex;justify-content:space-around;margin:-4px 8px 0;font-size:11px;font-weight:600;color:var(--muted)}.rpbdx span{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1504,6 +1506,13 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovrow.axis .ovtrack{min-height:38px}
 .ovrow.self{background:linear-gradient(90deg,var(--acc-soft2),transparent 70%)}
 .ovl{min-width:0;padding:6px 0 6px 4px}
+/* v170 — 타임라인 줄 높이 줄임: 매체 딱지를 캠페인 이름 오른쪽에 · 진행 중 캠페인 강조 */
+.ovrows .ovrow{min-height:30px}
+.ovl.one{display:flex;align-items:center;gap:8px;padding:3px 0 3px 6px}.ovl.one .ovname{flex:0 1 auto;min-width:0}.ovl.one .ovsub{margin-top:0;flex:none;flex-wrap:nowrap}
+.ovrow.live{background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 13%,transparent),transparent 75%);box-shadow:inset 3px 0 0 var(--acc)}
+.ovrow.live .ovname{color:var(--acc-d)}
+table.ovtbl tr.live td{background:color-mix(in srgb,var(--acc) 9%,var(--surface))}
+table.ovtbl tr.live td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 .ovname{display:block;font-weight:800;color:var(--ink);font-size:12.8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   border:0;background:none;padding:0;font-family:inherit;text-align:left;max-width:100%}
 .ovname.lnk{cursor:pointer}
@@ -1607,7 +1616,8 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovflow .flc{flex:1;min-height:170px;position:relative}
 .ovflow .flc>svg{position:absolute;inset:0;display:block;overflow:visible}
 .ovflow .flempty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
-.ovflow .flline{fill:none;stroke:var(--fl-line);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ovflow .flnote{margin-top:6px;font-size:10.5px;line-height:1.45;color:var(--muted);font-weight:600}
+.ovflow .flline{fill:none;stroke:var(--fl-line);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .ovflow .flx{font-size:10.5px;font-weight:600;fill:var(--muted)}
 .ovflow .fltoday{stroke:var(--gline);stroke-width:1;stroke-dasharray:3 3}
 .ovflow .fltd{font-size:9.5px;font-weight:700;fill:var(--muted)}
@@ -4393,6 +4403,9 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
 /* v167 — TV 큐시트 틀 */
 #tab-tvcue{max-width:none}
 #cueHost{position:relative}
+.cueseg{display:inline-flex;margin-left:14px;vertical-align:middle;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.cueseg button{border:0;background:none;padding:6px 16px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink2);cursor:pointer}
+.cueseg button.on{background:var(--ink);color:var(--surface)}.cueseg button:not(.on):hover{background:var(--acc-soft)}
 #cueFrame{display:block;width:100%;border:0;border-radius:var(--radius);background:transparent;opacity:0;transition:opacity .25s}
 #cueFrame.ready{opacity:1}
 .cue-load{position:absolute;left:0;right:0;top:60px;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}
@@ -4703,19 +4716,12 @@ table.tbl.wrt thead th[rowspan="2"]{height:76px}
     </div>
     <div class="subgrp" data-area="tv">
       <div class="subttl"><span class="aic"><svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.4 6.2h15.2v10.2H2.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.8 2.6L10 6l3.2-3.4"/></svg></span><span>TV</span></div>
-        <div class="subhd" id="tvperfhd">퍼포먼스</div>
         <div class="subbar" id="tvsubbar">
         <button type="button" data-tab="tvmix" data-menu="t_mix">미디어믹스</button>
-        <button type="button" data-tab="tvdash" data-menu="t_sum">누적 퍼포먼스</button>
+        <button type="button" data-tab="tvdash" data-menu="t_sum">캠페인 퍼포먼스</button>
         <button type="button" data-tab="tvweekly" data-menu="t_week">주차별 퍼포먼스</button>
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
-      </div>
-        <div class="subhd" id="tvcuehd">큐시트</div>
-        <div class="subbar" id="tvcuebar">
-        <button type="button" data-cue="summary" data-menu="tq_summary">요약</button>
-        <button type="button" data-cue="crev" data-menu="tq_crev">당월 소재</button>
-        <button type="button" data-cue="cueg" data-menu="tq_cueg">지상파 큐시트</button>
-        <button type="button" data-cue="cuec" data-menu="tq_cuec">케이블 큐시트</button>
+        <button type="button" data-cue="cue" data-menu="tq_cue">큐시트</button>
         <button type="button" data-cue="cal" data-menu="tq_cal">큐시트 캘린더</button>
         <button type="button" data-cue="cueall" data-menu="tq_cueall">전체 큐시트</button>
       </div>
@@ -4730,7 +4736,7 @@ table.tbl.wrt thead th[rowspan="2"]{height:76px}
         <div class="subbar" id="ottsubbar">
         <button type="button" data-osub="mix" data-menu="ot_mix">미디어믹스</button>
         <button type="button" data-osub="struct" data-menu="ot_struct">캠페인 구조</button>
-        <button type="button" data-osub="perf" data-menu="ot_sum">서머리</button>
+        <button type="button" data-osub="perf" data-menu="ot_sum">캠페인 퍼포먼스</button>
         <button type="button" data-osub="table" data-menu="ot_daily">일자별 효율</button>
       </div>
         <div class="subhd subinhd">입력</div>
@@ -5373,7 +5379,7 @@ table.tbl.wrt thead th[rowspan="2"]{height:76px}
 <!-- 리포트 (v143) — 연도 › 월별. 30-report.js -->
 <!-- TV 큐시트 (v167) — 34-cue.js -->
 <div class="wrap hidden" id="tab-tvcue">
-  <div class="sec" id="cueSec"><span id="cueTitle">큐시트 요약</span> <span class="note" id="cueNote"></span></div>
+  <div class="sec" id="cueSec"><span id="cueTitle">큐시트</span> <span class="note" id="cueNote"></span><span class="cueseg hidden" id="cueSeg"><button type="button" data-cs="cueg">지상파</button><button type="button" data-cs="cuec">케이블</button></span></div>
   <div id="cueHost"></div>
 </div>
 <div class="wrap hidden" id="tab-intake">
@@ -6194,19 +6200,18 @@ const MENUS=[
   {id:'d_mix',  area:'digital',tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
   {id:'d_input',area:'digital',tab:'input',              l:'데이터 입력',  kind:'edit'},
   {id:'d_plan', area:'digital',tab:'setup',              l:'예상효율 입력',kind:'edit'},
-  {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'누적 퍼포먼스',kind:'view'},
+  {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
+  {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'캠페인 퍼포먼스',kind:'view'},
   {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
   /* 주차별 퍼포먼스 (v135) — 일별 값이 없는 리포트(코웨이 등)용. 기본은 꺼 두고 메뉴 설정에서 켠다(udef:false) */
   {id:'t_week', area:'tv',     tab:'tvweekly',           l:'주차별 퍼포먼스',kind:'view',udef:false},
   /* 월별 퍼포먼스(v142)는 v144 에서 메뉴를 뺐다 — 먼슬리 리포트가 따로 나간다(화면 코드 29-tvmonth.js 는 남겨 둠) */
-  {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
+  /* v170 — 미디어믹스(t_mix): 큐시트가 있는 캠페인은 큐시트 요약 화면(+당월 소재)이 미디어믹스. 없는 캠페인은 예전 표(tab-tvmix) 그대로 */
   /* v161 — TV · OTT · 리포트의 입력은 데이터 접수함 하나(데이터 입력 · 예상효율 입력 모두). 받은 엑셀 · PDF 를 올리면
      사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영한다. 화면은 tab-intake 하나를 영역마다 나눠 쓴다(INBX_AREA) */
   /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
-  {id:'tq_summary',area:'tv',  tab:'tvcue',cue:'summary',l:'큐시트 요약',  kind:'view'},
-  {id:'tq_crev', area:'tv',    tab:'tvcue',cue:'crev',   l:'당월 소재',    kind:'view'},
-  {id:'tq_cueg', area:'tv',    tab:'tvcue',cue:'cueg',   l:'지상파 큐시트',kind:'view'},
-  {id:'tq_cuec', area:'tv',    tab:'tvcue',cue:'cuec',   l:'케이블 큐시트',kind:'view'},
+  /* v170 — 큐시트는 메뉴 하나(화면 안에서 지상파 · 케이블을 고른다). 요약 · 당월 소재는 미디어믹스로 */
+  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view'},
   {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
   {id:'tq_cueall',area:'tv',   tab:'tvcue',cue:'cueall', l:'전체 큐시트',  kind:'view'},
   {id:'t_inbox',area:'tv',     tab:'intake',             l:'데이터 접수함',  kind:'edit'},
@@ -6214,7 +6219,7 @@ const MENUS=[
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
      입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
   {id:'ot_struct',area:'ott',  tab:'dash',   sub:'struct',l:'캠페인 구조', kind:'view'},
-  {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
+  {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'캠페인 퍼포먼스',kind:'view'},
   {id:'ot_daily',area:'ott',   tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
   {id:'ot_mix', area:'ott',    tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
   {id:'ot_inbox',area:'ott',   tab:'intake',             l:'데이터 접수함',  kind:'edit'},
@@ -14199,6 +14204,9 @@ function buildSelects(){
 }
 let pendingLeave=false;
 function switchTab(name){
+  /* v170 — 큐시트가 있는 캠페인의 미디어믹스 = 큐시트 요약 화면 · 리포트형의 주차별 = 캠페인 퍼포먼스 맨 아래 */
+  try{if(name==='tvmix'&&TV_CUE&&TV_CUE.z){CUE_TAB='summary';name='tvcue';}
+    else if(name==='tvweekly'&&wrOn()){WR_GOWK=1;name='tvdash';}}catch(e){}
   if(!$('tab-input').classList.contains('hidden')&&name!=='input'&&SHEET.some(rowBad)&&!pendingLeave){
     const n=SHEET.filter(rowBad).length,nc=badCellCount();
     /* 숫자로 읽을 수 없는 칸은 따로 센다 — 그 행은 집계되지만 그 칸만 0 이 된다 (v78) */
@@ -20393,7 +20401,7 @@ function tabMenu(name,sub){
   const a=areaOfTab(name);
   const f=x=>x.tab===name&&(name!=='dash'||x.sub===sub);
   if(name==='intake')return MENUS.find(x=>x.tab==='intake'&&x.area===a)||MENUS.find(f);
-  if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f);}
+  if(name==='tvcue'){let c='summary';try{c=CUE_TAB;}catch(e){}return c==='summary'?MENU_BY.t_mix:(MENUS.find(x=>x.tab==='tvcue'&&x.cue===c)||MENUS.find(f));}
   return MENUS.find(x=>f(x)&&x.area===a)||MENUS.find(f);}
 
 /* ---------- 메뉴 목록 ----------
@@ -22168,6 +22176,8 @@ function ovRow(p){
   if(!(TP.amt>0)&&!(TA.cost>0)&&m.tvSum&&typeof m.tvSum==='object'){const s=m.tvSum;
     TP.amt=+s.plan||0;TP.grp=+s.pgrp||0;TA.cost=+s.spend||0;TA.grp=+s.grp||0;tvn=Math.max(tvn,1);
     Object.entries(s.mon||{}).forEach(([ym,v])=>{if(/^\d{4}-\d{2}$/.test(ym)&&+v)tvMon[ym]=(tvMon[ym]||0)+(+v);});}
+  /* v170 — 계획 GRP: 큐시트(예산 ÷ 목표 CPRP)에서 온 값 */
+  if(!(TP.grp>0)&&m.tvSum&&+m.tvSum.pgrp>0)TP.grp=+m.tvSum.pgrp;
   const per=(s,e)=>{s=s.filter(ovIso).sort();e=e.filter(ovIso).sort();return {start:s[0]||'',end:e[e.length-1]||''};};
   const dP=per(lines.map(l=>l.start),lines.map(l=>l.end));
   const tD=tvs.map(r=>r.date);let tP=per(tD,tD);
@@ -22217,13 +22227,16 @@ function ovRow(p){
   if(a.ott.inc){if(oS){if(oBud>0&&oP.start&&oP.end&&oP.end>=oP.start)spans.push([oP.start,oP.end,oBud,'ott']);}
     else oL.forEach(l=>{const v=lb(l);if(v>0&&ovIso(l.start)&&ovIso(l.end)&&l.end>=l.start)spans.push([l.start,l.end,v,'ott']);});}
   if(a.ooh.inc)oo.forEach(r=>{const v=tvNum(r.cost);if(v>0&&ovIso(r.start)&&ovIso(r.end)&&r.end>=r.start)spans.push([r.start,r.end,v,'ooh']);});
-  if(a.tv.inc&&tvMonSpan.length&&a.tv.plan>0)tvMonSpan.forEach(x=>spans.push(x));
-  else if(a.tv.inc&&a.tv.budget>0){
-    const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
-    if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
   /* v169 — TV 주차별 값(다음 달 캠페인을 앞 달 그래프에 비출 때) */
   let tvWk=null;try{const w=p.wr;if(w&&w.ym&&Array.isArray(w.weeks)&&w.wtot&&Array.isArray(w.wtot.w))tvWk={ym:w.ym,wk:w.weeks.map((k,i)=>{const x=w.wtot.w[i]||[];return [k.l,k.s,k.e,+x[0]||0,+x[1]||0];})};
     else if(m.tvSum&&m.tvSum.ym&&Array.isArray(m.tvSum.wk))tvWk={ym:m.tvSum.ym,wk:m.tvSum.wk};}catch(e){}
+  /* v170 — TV 일별 흐름: 주차별 집행금액(천원)이 있으면 그 주 안에서 고르게 */
+  const wkSp=tvWk?tvWk.wk.filter(k=>+k[4]>0&&ovIso(k[1])&&ovIso(k[2])&&k[2]>=k[1]).map(k=>[k[1],k[2],k[4]*1000,'tv']):[];
+  if(a.tv.inc&&wkSp.length)wkSp.forEach(x=>spans.push(x));
+  else if(a.tv.inc&&tvMonSpan.length&&a.tv.plan>0)tvMonSpan.forEach(x=>spans.push(x));
+  else if(a.tv.inc&&a.tv.budget>0){
+    const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
+    if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
   return {tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget,spans};}
 /* 지금 캠페인 — 화면의 값 그대로 */
@@ -22421,7 +22434,7 @@ function paintOverview(loading){
     `<div class="ovk ovall">${all?donut():`<div class="kh"><span class="tt">${L('총 광고비','Total ad spend')}</span></div><div class="kfill"></div><div class="hint">${L('광고비가 아직 없습니다.','No ad spend yet.')}</div>`}</div>`
    +tree
    +`<div class="ovrows" style="grid-template-rows:repeat(${NR},minmax(0,1fr))">${OV_VIS.map(x=>rowCard(x,x.k==='ooh'?oohCard():spentCard(x.k))).join('')}</div>`
-   +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div></div>`;
+   +`<div class="ovk ovflow"><div class="flh"><span class="tt">${L('일별 집행 예산','Daily budget')}</span><span class="fln" id="ovFlowRange"></span></div><div class="flc" id="ovFlow"></div><div class="flnote">${L('일별 예산 = 캠페인 · 매체별 예산을 집행 기간의 날 수로 고르게 나눈 값(TV는 주차별 집행금액이 있으면 그 주 안에서 나눔) · 선은 흐름이 보이게 다듬은 것, 마우스를 올리면 그날 값','Daily budget = each budget spread evenly over its flight (TV by week when weekly spend exists) · the line is smoothed, hover for the day')}</div></div>`;
   paintOvFlow($('ovFlow'),rows,won0);
   /* 도넛 · 범례에 마우스를 올리면 그 매체 금액 */
   box.querySelectorAll('[data-ovpie]').forEach(el=>{const k=el.dataset.ovpie,x=OV_AREAS.find(a=>a.k===k);
@@ -22434,7 +22447,7 @@ function paintOverview(loading){
   const hl=(k,on)=>box.querySelectorAll(`[data-ovk="${k}"],circle[data-ovpie="${k}"]`).forEach(e=>e.classList.toggle('hl',on));
   box.querySelectorAll('.ovm[data-ovk],[data-ovpie]').forEach(el=>{const k=el.dataset.ovk||el.dataset.ovpie;
     el.addEventListener('mouseenter',()=>hl(k,true));el.addEventListener('mouseleave',()=>hl(k,false));});
-  const nt=$('ovNote');if(nt)nt.textContent=L('광고비 = 디지털 예산 + TV 계획 금액 + OTT 예산 + OOH 광고비 · 집행 = 디지털 소진 + TV 방송 광고비 + OTT 소진','Ad spend = digital budget + TV plan + OTT budget + OOH · Spent = digital spend + TV aired + OTT spend');
+  const nt=$('ovNote');if(nt)nt.textContent='';
   /* 타임라인 */
   const tl=$('ovTimeline');
   if(tl){
@@ -22465,8 +22478,8 @@ function paintOverview(loading){
         const tip=esc(JSON.stringify({n:r.name,p:r.start?`${r.start.replace(/-/g,'.')} – ${r.end.replace(/-/g,'.')}`:'',
           a:OV_AREAS.filter(x=>r.a[x.k].inc).map(x=>[x.l,r.a[x.k].budget]),t:r.budget}));
         /* v82 — 타임라인은 보기만: 이름은 누를 수 없고, '지금 캠페인' · 진행 상태 표시는 뺐다(날짜 축으로 보인다) */
-        return `<div class="ovrow">
-          <div class="ovl"><span class="ovname">${esc(r.name)}</span><div class="ovsub">${tags}</div></div>
+        return `<div class="ovrow${ovStatus(r,today)==='live'?' live':''}">
+          <div class="ovl one"><span class="ovname">${esc(r.name)}</span><div class="ovsub">${tags}</div></div>
           <div class="ovtrack">${isFinite(l)?`<b class="ovbar" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%;background:linear-gradient(90deg,${grad})" data-ovtip="${tip}"></b>`:''}</div>
           <div class="ovr mono">${r.budget?manUnit(r.budget):'–'}</div></div>`;};
       tl.innerHTML=`<div class="ovtl"><div class="ovrow axis"><div class="ovl"></div><div class="ovtrack ovaxis">${ticks}</div><div class="ovr">${L('광고비','Ad spend')}</div></div>
@@ -22494,7 +22507,7 @@ function paintOverview(loading){
       return `<div class="card ovcard"><div class="ovch"><i class="ovdot ${x.c}"></i><b>${L(`${x.l} 캠페인`,`${x.l} campaigns`)}</b>
           <span class="hint">${L(`${fmt(rs.length)}개`,`${fmt(rs.length)}`)}${rs.length?` · ${won0(tot[x.k].budget)}`:''}</span></div>
         ${rs.length?`<div class="tbl-wrap noy"><table class="tbl lite ovtbl"><thead><tr>${head.map(h=>`<th${h[1]?' class="num"':''}>${h[0]}</th>`).join('')}</tr></thead>
-          <tbody>${rs.map(r=>`<tr${r.self?' class="self"':''}>${body(r)}</tr>`).join('')}${rs.length>1?`<tr class="total">${foot(rs)}</tr>`:''}</tbody></table></div>`
+          <tbody>${rs.map(r=>`<tr class="${r.self?'self':''}${ovStatus(r,today)==='live'?' live':''}">${body(r)}</tr>`).join('')}${rs.length>1?`<tr class="total">${foot(rs)}</tr>`:''}</tbody></table></div>`
           :`<div class="hint ovnone">${L(`이 광고주의 ${x.l} 캠페인이 아직 없습니다.`,`No ${x.l} campaigns for this advertiser yet.`)}</div>`}</div>`;};
     /* 디지털 · OTT 목록은 같은 모양 (v143) */
     const dgSect=k=>{const X=OV_AREAS.find(x=>x.k===k);
@@ -22804,7 +22817,7 @@ function paintOvFlow(host,rows,won0){
     for(let i=a;i<=b;i++){const o=day[i];o.t+=per;o.k[x.k]+=per;o.c[x.ri]=(o.c[x.ri]||0)+per;}});
   /* 흐름선 — 가우스 평활(기간이 길수록 넓게). 캠페인 시작 · 종료의 계단이 완만한 언덕이 된다.
      정확한 그날 값은 툴팁으로 */
-  const sg=N>60?Math.max(3,N/45):N>20?1.6:0,R=Math.ceil(sg*3);
+  const sg=N>60?Math.max(4,N/32):N>20?2:0,R=Math.ceil(sg*3);
   const sm=sg?day.map((_,i)=>{let s=0,c=0;for(let j=i-R;j<=i+R;j++){if(j<0||j>=N)continue;const w=Math.exp(-((j-i)*(j-i))/(2*sg*sg));s+=day[j].t*w;c+=w;}return s/c;})
     :day.map(d=>d.t);
   const W=Math.max(host.clientWidth,240),H=Math.max(host.clientHeight,150);
@@ -22813,7 +22826,7 @@ function paintOvFlow(host,rows,won0){
   const X=i=>PL+(N>1?i/(N-1):.5)*(W-PL-PR),Y=v=>PT+(1-v/top)*(H-PT-PB);
   const pts=sm.map((v,i)=>[X(i),Y(v)]);
   /* 선은 몇 날 간격으로 짚어 그린다 (점이 너무 촘촘하면 잔물결이 생긴다) */
-  const stp=Math.max(1,Math.round(N/90)),pp=pts.filter((_,i)=>i%stp===0||i===N-1);
+  const stp=Math.max(1,Math.round(N/60)),pp=pts.filter((_,i)=>i%stp===0||i===N-1);
   const line=ovMonoPath(pp);
   const area=line+` L${X(N-1).toFixed(1)} ${H-PB} L${X(0).toFixed(1)} ${H-PB} Z`;
   const gid='ovfg'+Math.random().toString(36).slice(2,7);
@@ -28839,7 +28852,7 @@ function rpOwnTrend(){
   const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1);const it=o?o.it.filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
     return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),lab:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#4f6b8f':'#9fb2c9',
       slices:it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지상파','Terr.')} ${wrEok(x[4])} · ${L('케이블','Cable')} ${wrEok(x[5])}`:''}))};});
-  rpBarDonut(box,bars,{H:340,cur:M-1});}
+  rpBarDonut(box,bars,{H:340,cur:M-1,topLab:true});}
 
 /* ================================================================
    업종 고르기 — 업종 타일(코웨이 점유율 고리)이 곧 선택 칩
@@ -29328,7 +29341,13 @@ const wrPaid=c=>(wrN(c.bud)>0)||(wrN(c.cost)>0);
 function wrEqTarget(){let t=0,ok=false;(TV_WR.chs||[]).forEach(c=>{if(wrN(c.bud)>0&&wrN(c.tc)>0){t+=c.bud/c.tc;ok=true;}});return ok?t:NaN;}
 
 /* 전체 캠페인(광고주 화면)용 TV 요약 — 저장할 때 media.tvSum 으로 (v148). 금액은 원 */
-function tvSumNow(){
+function tvSumNow(){const r=tvSumNow0();
+  /* v170 — 큐시트가 있으면 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산)를, 리포트가 아직 없는 달은 계획 금액도 큐시트 예산으로 */
+  try{const c=TV_CUE&&TV_CUE.st;if(c&&TV_CUE.z){const o=r||{plan:0,spend:0,grp:0,pgrp:0,mon:{}};
+    if(+c.pgrp>0)o.pgrp=+c.pgrp;if(!(o.plan>0)&&+c.budget>0){o.plan=Math.round(+c.budget);o.mon={[TV_CUE.ym]:o.plan};}
+    return (o.plan||o.spend||o.pgrp)?o:r;}}catch(e){}
+  return r;}
+function tvSumNow0(){
   if(wrOn()){const W=TV_WR,t=W.wtot||{};return {plan:Math.round((+t.bud||+W.tot.bud||0)*1000),spend:Math.round((+t.cost||0)*1000),grp:+W.tot.grp||0,pgrp:0,mon:{[W.ym]:Math.round((+t.bud||+W.tot.bud||0)*1000)},
     /* v169 — 주차별 값(천원) — 앞 달 캠페인의 주차별 그래프 오른쪽에 '다음 달'로 비친다 */
     ym:W.ym,wk:(W.weeks||[]).map((w,i)=>{const x=(t.w||[])[i]||[];return [w.l,w.s,w.e,+x[0]||0,+x[1]||0];})};}
@@ -29344,7 +29363,9 @@ function wrHsWire(root){
     const sc=w.querySelector('.wrhs-in'),l=w.querySelector('.wrhs-b.l'),r=w.querySelector('.wrhs-b.r');if(!sc||w.__w)return;w.__w=1;
     const paint=()=>{const max=sc.scrollWidth-sc.clientWidth;l.classList.toggle('on',sc.scrollLeft>2);r.classList.toggle('on',sc.scrollLeft<max-2);};
     const go=d=>sc.scrollBy({left:d*Math.max(220,sc.clientWidth*.7),behavior:'smooth'});
-    l.onclick=()=>go(-1);r.onclick=()=>go(1);sc.addEventListener('scroll',paint,{passive:true});
+    l.onclick=()=>go(-1);r.onclick=()=>go(1);
+    /* v170 — 긴 표에서도 찾기 쉽게: 좌우 버튼이 마우스 높이를 따라온다 */
+    w.addEventListener('mousemove',e=>{const rc=w.getBoundingClientRect(),y=Math.max(28,Math.min(rc.height-28,e.clientY-rc.top))+'px';l.style.top=y;r.style.top=y;},{passive:true});sc.addEventListener('scroll',paint,{passive:true});
     /* v158 — 머리 둘째 줄의 고정 위치 = 실제 첫 줄 높이(두 줄짜리 소재 이름 · 날짜가 가려지던 문제) */
     const fit=()=>sc.querySelectorAll('table.wrt').forEach(t=>{const r=t.tHead&&t.tHead.rows[0];if(r)t.style.setProperty('--wrh1',Math.round(r.getBoundingClientRect().height)+'px');});
     fit();try{new ResizeObserver(()=>{paint();fit();}).observe(sc);}catch(e){}paint();setTimeout(()=>{paint();fit();},120);
@@ -29411,11 +29432,7 @@ function wrCueCol(n){const ym=String((TV_WR&&TV_WR.ym)||'').slice(0,7),ks=Object
   for(const k of [...prev,...next])if(WR_CUECOL[k][n])return wrCalm(WR_CUECOL[k][n]);
   return '#7f8b97';}
 const wrInk=h=>{const n=parseInt(String(h).slice(1),16),l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;return l>.68?'#2a2f36':'#fff';};
-function renderWrMix(){
-  const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
-  if(!wrOn()){h.innerHTML='';return false;}
-  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
-  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+function wrMixBars(items,tot){
   /* ① 소재별 월 예산 — 품목마다 막대 하나, 소재로 나눠 쌓는다(단색 톤) */
   const maxB=Math.max(1,...items.map(it=>wrN(it.sub&&it.sub.bud)||it.cr.reduce((s,c)=>s+(wrN(c.bud)||0),0)));
   const bars=items.map((it,ii)=>{
@@ -29425,8 +29442,31 @@ function renderWrMix(){
     const segs=crs.map((c,j)=>{const w=c.bud/maxB*100;
       return `<span class="seg" style="width:${w}%;--d:${(ii*60+j*90)}ms;background:${ic};color:${ink}" data-wrtip="${esc(it.n)}|${esc(c.n)}|${c.bud}|${ib}">
         ${w>9?`<b>${esc(c.n)}</b><i>${wrEok(c.bud)}</i>`:''}</span>`;}).join('');
+    /* v170 — 막대가 좁아 안에 못 적은 소재는 막대 오른쪽 바깥에 */
+    const outs=crs.filter(c=>c.bud/maxB*100<=9).map(c=>`${esc(c.n)} <i>${wrEok(c.bud)}</i>`).join(' · ');
     return `<div class="wrsb"><div class="nm">${esc(it.n)}</div>
-      <div class="bar">${segs}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
+      <div class="bar">${segs}${outs?`<span class="out">${outs}</span>`:''}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
+  return bars;}
+/* v170 — 캠페인 퍼포먼스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프 */
+function wrMixTopHtml(){
+  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
+  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+  return `<div class="sec gap sm">${L('품목별 월 예산','Budget by product')} <span class="note">${L('품목 막대를 소재로 나눠 쌓음 · TV 요약 기준','Each product bar split by creative · from TV summary')}</span></div>
+      <div class="card wrcard"><div class="wrsbs">${wrMixBars(items,tot)}</div></div>
+      <div class="sec gap sm">${L('채널별 월 예산','Budget by channel')} <span class="note">${L('당월_주별 시트 예산 · PP별 비중 · 5% 미만은 기타로','Weekly sheet budget · share by PP · under 5% grouped as Other')}</span></div>
+      <div class="card wrcard"><div class="wrdn" id="wrDn"></div><div class="wrdn-etc hidden" id="wrDnEtc"></div></div>`;}
+function wrMixTipWire(h){
+  h.querySelectorAll('[data-wrtip]').forEach(el=>{el.onmousemove=e=>{const [it,cr,b,ib]=el.dataset.wrtip.split('|');
+    showTip(e.clientX,e.clientY,`<div class="t">${esc(it)} · ${esc(cr)}</div><div class="r"><span class="l">${L('월 예산','Budget')}</span><b>${wrF(+b)} ${L('천원','K')}</b></div>
+      <div class="r"><span class="l">${L('품목 안 비중','Share in product')}</span><b>${(b/ib*100).toFixed(1)}%</b></div>`);};el.onmouseleave=hideTip;});}
+var WR_GOWK=0;
+function renderWrMix(){
+  const h=wrHost('tab-tvmix','wrMix');if(!h)return false;
+  if(!wrOn()){h.innerHTML='';return false;}
+  {const d=$('wrDash');if(d)d.innerHTML='';}   // 같은 id(wrDn)를 쓰는 캠페인 퍼포먼스 쪽은 비운다 — 열 때 다시 그린다
+  const W=TV_WR,items=W.items.filter(it=>wrN(it.sub&&it.sub.bud)>0||it.cr.some(c=>wrN(c.bud)>0));
+  const tot=W.tot&&wrN(W.tot.bud)>0?W.tot.bud:items.reduce((s,it)=>s+(wrN(it.sub&&it.sub.bud)||0),0);
+  const bars=wrMixBars(items,tot);
   /* 표 — 머리: 품목(맨 위) › 소재 + 온에어(줄바꿈) · 품목마다 맨 오른쪽 '계'(굵게) */
   let hr1='<th class="stk c0" rowspan="2">'+L('구분','')+'</th>',hr2='',r1='',r2='';
   items.forEach(it=>{const crs=it.cr.filter(c=>wrN(c.bud)>0),ib=wrN(it.sub&&it.sub.bud)||crs.reduce((s,c)=>s+c.bud,0);
@@ -29597,6 +29637,7 @@ function wrDnEtc(g,D){const box=$('wrDnEtc');if(!box)return;const list=D.etc[g]|
 function renderWrDash(){
   const h=wrHost('tab-tvdash','wrDash');if(!h)return false;
   if(!wrOn()){h.innerHTML='';return false;}
+  ['wrMix','wrWeek'].forEach(id=>{const d=$(id);if(d)d.innerHTML='';});
   const W=TV_WR,T=W.tot||{},wt=W.wtot||{};
   /* 게이지 카드 */
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=wrEqTarget();
@@ -29615,7 +29656,7 @@ function renderWrDash(){
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  h.innerHTML=wrHead(L('TV 누적 퍼포먼스','TV cumulative performance'),`${wrMonth()} · ${W.period||''}`)+kpis
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis+wrMixTopHtml()
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
@@ -29623,9 +29664,14 @@ function renderWrDash(){
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
       <div id="wrRt"></div>
       <div class="sec gap sm">${L('소재 타임라인','Creative timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 배경 = 소재 영상 장면(없으면 먼슬리 리포트 스토리보드) · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · background = storyboard · creatives without an on-air date are left out')}</span></div>
-      <div id="wrTl"></div>`;
+      <div id="wrTl"></div>
+      <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 아래 표는 구분 · PP로 골라 봅니다','Weekly sheet · spend · eq.GRP · CPRP · filter the table by type · PP')}</span></div>
+      <div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div><div class="wrwk" id="wrWk"></div></div>
+      <div id="wrWkT" style="margin-top:14px"></div>`;
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
-  wrScRender();wrItemTbl();wrRatings();wrTimeline();wrHsWire(h);
+  wrDnMount();wrMixTipWire(h);
+  wrScRender();wrItemTbl();wrRatings();wrTimeline();wrWeekChart();wrWeekTbl();wrHsWire(h);wrNextLoad();
+  if(WR_GOWK){WR_GOWK=0;setTimeout(()=>{const e=$('wrWkSec');if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-110});},120);}
   return true;}
 
 /* ---------- R3+ × eq.GRP 소재 지도 — 점마다 카드, 선은 서로 닿지 않게 ---------- */
@@ -29892,11 +29938,13 @@ function renderWrWeek(){
       <div class="wrwk" id="wrWk"></div></div>
     <div class="sec gap sm">${L('채널별 주차 데이터','Weekly data by channel')} <span class="note">${L('당월_주별 · 리포트에 품목별 주차 값이 없어 구분 · PP로 골라 봅니다','Weekly sheet · the report has no weekly split by product, so filter by type · PP')}</span></div>
     <div id="wrWkT"></div>`;
-  wrWeekChart();wrWeekTbl();
-  /* 다음 달 캠페인 값은 전체 캠페인 목록에서 — 아직 안 읽었으면 읽고 다시 그린다 */
-  try{if(typeof ovLoad==='function'&&typeof OV!=='undefined'&&!OV.rows&&!WR_NXQ){WR_NXQ=1;const ym=W.ym;
-    Promise.resolve(ovLoad()).then(()=>{WR_NXQ=0;if(TV_WR&&TV_WR.ym===ym&&$('wrWk')&&wrNextWeeks().length)wrWeekChart();}).catch(()=>{WR_NXQ=0;});}}catch(e){}
+  wrWeekChart();wrWeekTbl();wrNextLoad();
   return true;}
+/* 다음 달 캠페인 값은 전체 캠페인 목록에서 — 아직 안 읽었으면 읽고 다시 그린다 */
+function wrNextLoad(){
+  const W=TV_WR;
+  try{if(typeof ovLoad==='function'&&typeof OV!=='undefined'&&!OV.rows&&!WR_NXQ){WR_NXQ=1;const ym=W.ym;
+    Promise.resolve(ovLoad()).then(()=>{WR_NXQ=0;if(TV_WR&&TV_WR.ym===ym&&$('wrWk')&&wrNextWeeks().length)wrWeekChart();}).catch(()=>{WR_NXQ=0;});}}catch(e){}}
 let WR_NXQ=0;
 /* v157 — 리포트 '품목별 집행' 그래프와 같은 구성: 2D 막대(집행금액 · 위만 둥글게) · 뒤에 eq.GRP 연한 회색 영역 · 위쪽 띠에 CPRP 굵은 곡선 + 값이 든 큰 표식 */
 function wrWeekChart(){
@@ -29972,16 +30020,21 @@ function wrWeekTbl(){
   const totRow=(lab,X,cls,span)=>`<tr class="${cls}"><td class="stk ${span===3?'c0':'c1'} head" colspan="${span}">${lab}</td><td class="mono gs">${wrF(X.bud)}</td><td class="mono gs">${wrF(X.eq,1)}</td><td class="mono">${wrF(X.cost)}</td><td class="mono">${wrF(cp(X.cost,X.eq))}</td>
     ${X.w.map(x=>`<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`).join('')}</tr>`;
   let body='';let lastG='',lastPP='';
-  sel.forEach((c,ri)=>{const gN=c.g==='지상파'?L('지상파','Terrestrial'):L('케이블 · 종편','Cable · GP'),ppN=c.g==='지상파'?wrBc(c.pp||c.ch):c.pp;
+  let P=mkT();const ppMulti=k=>k.startsWith('케이블')&&sel.filter(x=>wrPPKey(x)===k).length>1;
+  sel.forEach((c,ri)=>{const gN=c.g==='지상파'?L('지상파','Terrestrial'):L('케이블<br>·<br>종편','Cable<br>·<br>GP'),ppN=c.g==='지상파'?wrBc(c.pp||c.ch):c.pp;
     /* v160 — 묶음(지상파 · 케이블 · 종편)마다 Total 줄 — 구분 칸은 그 줄까지 합친다 */
-    const gSpan=sel.filter(x=>x.g===c.g).length+1,ppSpan=sel.filter(x=>wrPPKey(x)===wrPPKey(c)).length;
+    const gSpan=sel.filter(x=>x.g===c.g).length+1+[...new Set(sel.filter(x=>x.g===c.g).map(wrPPKey))].filter(ppMulti).length,ppSpan=sel.filter(x=>wrPPKey(x)===wrPPKey(c)).length+(ppMulti(wrPPKey(c))?1:0);
+    P.bud+=wrN(c.bud)||0;P.eq+=wrN(c.eq)||0;P.cost+=wrN(c.cost)||0;(c.w||[]).forEach((x,i)=>{if(P.w[i]){P.w[i][0]+=wrN((x||[])[0])||0;P.w[i][1]+=wrN((x||[])[1])||0;}});
     T.bud+=wrN(c.bud)||0;T.eq+=wrN(c.eq)||0;T.cost+=wrN(c.cost)||0;G.bud+=wrN(c.bud)||0;G.eq+=wrN(c.eq)||0;G.cost+=wrN(c.cost)||0;
     (c.w||[]).forEach((x,i)=>{if(G.w[i]){G.w[i][0]+=wrN((x||[])[0])||0;G.w[i][1]+=wrN((x||[])[1])||0;}});
     body+=`<tr>${c.g!==lastG?`<td class="stk c0 head g" rowspan="${gSpan}">${gN}</td>`:''}${wrPPKey(c)!==lastPP?`<td class="stk c1 head" rowspan="${ppSpan}">${esc(ppN)}</td>`:''}<td class="stk c2 head">${esc(c.ch)}</td>
       <td class="mono gs">${wrF(c.bud)}</td><td class="mono gs sum">${wrF(c.eq,1)}</td><td class="mono sum">${wrF(c.cost)}</td><td class="mono sum">${wrF(cp(c.cost,c.eq))}</td>
       ${wk.map((w,i)=>{const x=(c.w||[])[i]||[];T.w[i][0]+=wrN(x[0])||0;T.w[i][1]+=wrN(x[1])||0;return `<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`;}).join('')}</tr>`;
     lastG=c.g;lastPP=wrPPKey(c);
-    const nx=sel[ri+1];if(!nx||nx.g!==c.g){body+=totRow(c.g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 · 종편 Total','Cable · GP total'),G,'gtot',2);G=mkT();}});
+    const nx=sel[ri+1];
+    /* v170 — 케이블 PP(채널 둘 이상)마다 소계 줄 */
+    if(!nx||wrPPKey(nx)!==wrPPKey(c)){if(ppMulti(wrPPKey(c)))body+=totRow(esc(ppN)+' Total',P,'sub',1).replace('class="stk c1 head" colspan="1"','class="stk c2 head"');P=mkT();}
+    if(!nx||nx.g!==c.g){body+=totRow(c.g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 · 종편 Total','Cable · GP total'),G,'gtot',2);G=mkT();}});
   body+=totRow('TOTAL',T,'total',3);
   /* 페이지 맨 아래 표 — 표 안 세로 스크롤 없이 전체를 펼치고 머리만 화면 위에 고정 */
   box.innerHTML=`<div class="wrsel">${wrChips(opts,WR_WK.pp,'data-wrp')}</div>`+wrHs(`<table class="tbl lite wrt writ wrwt"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl full');
@@ -30123,7 +30176,11 @@ function rpBarDonut(box,bars,opt){
     if(t<.15&&grow>.98)g+=`<text class="bv${opt.cur===i?' cur':''}" x="${f(sx)}" y="${f(B-s.h-8)}" text-anchor="middle" opacity="${(1-t/.15).toFixed(2)}">${fmt(b.v)}</text>`;
     /* 펼친 뒤 — 가운데 합계 + 안내선 카드 */
     if(q>.01){
-      g+=`<text class="dc1" x="${f(fx)}" y="${f(cy-4)}" text-anchor="middle" opacity="${q.toFixed(2)}">${esc(b.label)}</text>
+      /* v170 — topLab: 이름(월)은 도넛 위에 크게, 도넛 안에는 값만 */
+      if(opt.topLab){const tw=String(b.label||'').length*17+30,ty=Math.max(17,cy-R-24);
+        g+=`<g opacity="${q.toFixed(2)}"><rect class="dtl" x="${f(fx-tw/2)}" y="${f(ty-15)}" width="${tw}" height="28" rx="14"/><text class="dtlt" x="${f(fx)}" y="${f(ty+5)}" text-anchor="middle">${esc(b.label)}</text></g>
+          <text class="dc2" x="${f(fx)}" y="${f(cy+6)}" text-anchor="middle" opacity="${q.toFixed(2)}">${fmt(b.v)}</text>`;}
+      else g+=`<text class="dc1" x="${f(fx)}" y="${f(cy-4)}" text-anchor="middle" opacity="${q.toFixed(2)}">${esc(b.label)}</text>
         <text class="dc2" x="${f(fx)}" y="${f(cy+15)}" text-anchor="middle" opacity="${q.toFixed(2)}">${fmt(b.v)}</text>`;
       /* 카드 배치(교차 없는 자리 찾기)는 무거워 — 다 선 도넛이면 한 번만 계산해 두고 불투명도만 바꾼다 */
       if(r>=.999){if(!cardC[i])cardC[i]=rpBdCards(b,fx,cy,rx,R,'__Q__',W,H);g+=cardC[i].split('__Q__').join(q.toFixed(2));}
@@ -30651,7 +30708,8 @@ async function inbxDel(r,el,area){
    ===================================================================== */
 var TV_CUE=null;        // var — 14-tv 의 tvForDoc · tvFromDoc 이 typeof 로 본다
 var CUE_TAB='summary';
-const CUE_TABS=[['summary','요약'],['crev','당월 소재'],['cueg','지상파 큐시트'],['cuec','케이블 큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
+var CUE_SUB='cueg';      // 큐시트 메뉴 안에서 고른 쪽(지상파 · 케이블)
+const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
 async function cuePipe(bytes,stream){
@@ -30672,18 +30730,43 @@ function cueFrameData(){
 function cueFrameReady(w,imp){
   if(imp){CUE.imp=w;if(CUE.impWait){CUE.impWait(w);CUE.impWait=null;}return;}
   const f=$('cueFrame');if(f)f.classList.add('ready');}
+/* 예전에 넣은 큐시트에는 계획 GRP 가 없다 — 틀이 계산해 알려 주면 채워 둔다(편집 권한이 있을 때만 저장 대상) */
+function cueFrameStats(s){
+  if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});
+  if(Math.abs((+st.pgrp||0)-s.grp)<.05)return;st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;
+  try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
 function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame');if(f){f.classList.remove('ready');f.removeAttribute('src');}}
+/* v170 — 틀 높이 = 내용 높이(틀이 알려 준다) → 페이지 스크롤 하나만. 캘린더는 화면 폭을 넓게 쓴다 */
 function cueSize(){
+  const f=$('cueFrame'),host=$('cueHost');if(!f||!host||f.offsetParent===null)return;
+  if(CUE_TAB==='cal'){const r=host.getBoundingClientRect(),vw=document.documentElement.clientWidth,w=Math.min(vw-28,2400);
+    if(w>r.width+8){f.style.width=w+'px';f.style.marginLeft=Math.round((vw-w)/2-r.left)+'px';}else{f.style.width='';f.style.marginLeft='';}}
+  else{f.style.width='';f.style.marginLeft='';}
+  cueStickNow();}
+function cueFrameH(h){const f=$('cueFrame');if(!f)return;h=Math.max(360,Math.round(h));if(Math.abs((parseFloat(f.style.height)||0)-h)>1)f.style.height=h+'px';}
+/* 표 머리줄 고정 — 대시보드 머리(메뉴 줄) 아래에 붙도록 틀에 알려 준다 */
+function cueStickNow(){
   const f=$('cueFrame');if(!f||f.offsetParent===null)return;
-  const top=f.getBoundingClientRect().top+window.scrollY;
-  f.style.height=Math.max(420,window.innerHeight-Math.round(top)-10)+'px';}
+  try{const tb=document.querySelector('.topbar'),hb=tb?tb.getBoundingClientRect().bottom:0;
+    const t2=$('tabs'),b2=t2?t2.getBoundingClientRect().bottom:0,top=Math.max(hb,b2>0&&b2<200?b2:0);
+    f.contentWindow.cueStick&&f.contentWindow.cueStick(top-f.getBoundingClientRect().top);}catch(e){}}
+(function(){let q=0;window.addEventListener('scroll',()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;cueStickNow();});},{passive:true});})();
+/* 틀 안의 한 지점(y — 틀 기준)이 화면 가운데쯤 오도록 */
+function cueScrollTo(y,x,smooth){
+  const f=$('cueFrame');if(!f)return;const r=f.getBoundingClientRect();
+  window.scrollTo({top:Math.max(0,window.scrollY+r.top+y-window.innerHeight*.42),behavior:smooth?'smooth':'auto'});}
 window.addEventListener('resize',()=>{try{cueSize();}catch(e){}});
 function cueYmLabel(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');return m?`${m[1]}년 ${+m[2]}월`:'';}
 async function renderTvCue(){
   const host=$('cueHost');if(!host)return;
   const ttl=$('cueTitle'),note=$('cueNote');
+  if(!CUE_TABS.some(t=>t[0]===CUE_TAB))CUE_TAB='summary';
   const lb=(CUE_TABS.find(t=>t[0]===CUE_TAB)||CUE_TABS[0])[1];
-  if(ttl)ttl.textContent=CUE_TAB==='summary'?'큐시트 요약':lb;
+  if(ttl)ttl.textContent=CUE_TAB==='cue'?(CUE_SUB==='cueg'?'지상파 큐시트':'케이블 큐시트'):lb;
+  const seg=$('cueSeg');
+  if(seg){seg.classList.toggle('hidden',CUE_TAB!=='cue'||!TV_CUE);
+    seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.cs===CUE_SUB);b.onclick=()=>{if(CUE_SUB===b.dataset.cs)return;CUE_SUB=b.dataset.cs;renderTvCue();};});}
+  const ftab=CUE_TAB==='cue'?CUE_SUB:CUE_TAB;
   let ed=false;try{ed=!isClient()&&inbxEdit();}catch(e){}
   if(!TV_CUE||!TV_CUE.z){
     if(note)note.textContent='';
@@ -30701,21 +30784,20 @@ async function renderTvCue(){
     try{CUE.json=await cueUngz(TV_CUE.z);CUE.key=key;}
     catch(e){CUE.busy=false;host.innerHTML=`<div class="card cue-empty"><b>큐시트를 열지 못했습니다</b><p>${esc((e&&e.message)||String(e))}</p></div>`;return;}
     CUE.busy=false;}
-  if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.src=`${CUE_URL}?t=${encodeURIComponent(CUE_TAB)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
-  else{try{f.contentWindow.cueGo(CUE_TAB);f.contentWindow.scrollTo(0,0);}catch(e){}}
+  if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.style.height=Math.max(420,window.innerHeight-Math.round(f.getBoundingClientRect().top+window.scrollY)-10)+'px';f.src=`${CUE_URL}?t=${encodeURIComponent(ftab)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
+  else{try{f.contentWindow.cueGo(ftab);f.contentWindow.cueTellH&&f.contentWindow.cueTellH();}catch(e){}}
   cueSize();}
 /* 메뉴 줄 — 고른 큐시트 메뉴 표시 · 큐시트가 없으면 광고주 화면에서는 묶음을 감춘다 */
 function cueMenuPaint(){
   const T=$('tabs');if(!T)return;
   const cur=(T.dataset.cur||'')==='tvcue';
-  T.querySelectorAll('[data-cue]').forEach(b=>b.classList.toggle('on',cur&&b.dataset.cue===CUE_TAB));
-  let cl=false;try{cl=isClient();}catch(e){}
-  const bar=$('tvcuebar'),hd=$('tvcuehd');
-  if(bar){const any=[...bar.querySelectorAll('button')].some(x=>!x.classList.contains('menuoff')&&!x.classList.contains('hidden'));
-    const off=!any||(cl&&!TV_CUE);
-    bar.classList.toggle('menuoff',off);if(hd)hd.classList.toggle('hidden',off);}
-  const ph=$('tvperfhd'),pb=$('tvsubbar');
-  if(ph&&pb)ph.classList.toggle('hidden',pb.classList.contains('menuoff')||!bar||bar.classList.contains('menuoff'));}
+  T.querySelectorAll('[data-cue]').forEach(b=>{b.classList.toggle('on',cur&&b.dataset.cue===CUE_TAB);
+    /* 큐시트가 없는 캠페인 — 광고주 화면에서는 큐시트 메뉴를 감춘다 */
+    let cl=false;try{cl=isClient();}catch(e){}b.classList.toggle('hidden',cl&&!TV_CUE);});
+  /* 미디어믹스 = 큐시트 요약(큐시트가 있을 때) */
+  const mx=T.querySelector('[data-menu="t_mix"]');if(mx&&cur)mx.classList.toggle('on',CUE_TAB==='summary');
+  /* 주차별 퍼포먼스 — 리포트형(코웨이)은 캠페인 퍼포먼스 맨 아래로 들어갔다 */
+  const wk=T.querySelector('[data-menu="t_week"]');if(wk){let w=false;try{w=wrOn();}catch(e){}wk.classList.toggle('hidden',w);}}
 
 /* ---------- 통합 큐시트 엑셀 넣기 ---------- */
 function cueImpFrame(){
@@ -30748,7 +30830,7 @@ async function cueImportFile(file){
   catch(e){say('큐시트를 읽지 못했습니다',(e&&e.message)||String(e),{kind:'warn',ms:7000});return false;}
   const put=async()=>{
     TV_CUE={v:1,ym:r.ym,z:await cueGz(r.ws),at:Date.now(),name:file.name,
-      st:{g:r.stats.g,c:r.stats.c,budget:r.stats.budget,value:r.stats.value,items:r.stats.items,cmpN:r.cmpN,cmpBad:r.cmpBad}};
+      st:{g:r.stats.g,c:r.stats.c,pgrp:Math.round((r.stats.grp||0)*10)/10,peq:Math.round((r.stats.eq||0)*10)/10,budget:r.stats.budget,value:r.stats.value,items:r.stats.items,cmpN:r.cmpN,cmpBad:r.cmpBad}};
     cueReset();try{markDirty();}catch(e){}try{applyMenus();}catch(e){}
     say('큐시트를 넣었습니다',`${cueYmLabel(r.ym)} · 지상파 ${r.stats.g.toLocaleString()}회 · 케이블 ${r.stats.c.toLocaleString()}회 · 엑셀 운영 요약 대조 ${r.cmpN-r.cmpBad}/${r.cmpN}칸 일치`
       +((r.unkItems||[]).length||(r.unkChs||[]).length?` · 모르는 이름 ${[...(r.unkItems||[]),...(r.unkChs||[])].slice(0,4).join(', ')}`:''),{kind:r.cmpBad?'warn':'ok',ms:8000});};

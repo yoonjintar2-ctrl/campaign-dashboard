@@ -19,14 +19,43 @@ html.embed .toast{display:none}
 html.embed{scrollbar-width:thin;scrollbar-color:var(--p-gline,#c5ccd6) transparent}
 
 /* 큐시트 캘린더 (v168 · v169) — 시간 · 채널 · 품목 · CM 칸은 좁고 일정하게, 남는 폭은 프로그램 이름(한글 10자 이상)에 */
-html.embed table.calt{min-width:1770px;font-size:10px}
+html.embed table.calt{min-width:1590px;font-size:10px}
 html.embed .cale.one{gap:3px;padding:1px 2px;overflow:hidden}
 html.embed .cale.one .t{width:27px;font-size:9.5px;letter-spacing:-.3px}
 html.embed .cale .c,html.embed .cale.one .c{display:inline-block;flex:none;width:41px;max-width:none;overflow:hidden;text-overflow:clip;font-size:9px;letter-spacing:-.35px}
 html.embed .cale.one .ic{width:21px;padding:0;text-align:center;font-size:9px}
-html.embed .cale.one .p{min-width:104px;font-size:10px;letter-spacing:-.2px}
+html.embed .cale.one .p{min-width:80px;font-size:10px;letter-spacing:-.2px}
 html.embed .cale.one .m{width:31px;text-align:right;font-size:9px;letter-spacing:-.4px;overflow:hidden;margin-left:0}
 html.embed .cale.one .x{font-size:9px;padding:0 2px}
 /* 캘린더 CM 위치 글자 — 분홍 · 붉은 톤 대신 회청 / 중CM 은 강조 파랑 (v168) */
 html.embed .cale .m{color:#7289a3}
 html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
+
+/* ===== v170 ===== */
+/* 틀 높이 = 내용 높이 — 안쪽 세로 스크롤을 없앤다(창 높이에 맞추던 max-height 는 푼다) */
+html.embed,html.embed body{overflow-y:hidden;height:auto;min-height:0}
+html.embed .tw{max-height:none;overflow-y:hidden}
+html.embed .tw.caw,html.embed .tw.cgw{max-height:var(--pvh,760px);overflow-y:auto}
+html.embed .bud{max-height:none}
+html.embed table thead.stuck{position:relative;z-index:6}
+html.embed table thead.stuck th{box-shadow:0 6px 12px -8px rgba(20,30,45,.45)}
+/* 요약 아래 당월 소재 */
+html.embed .cue-sec{margin:34px 2px 12px;font-size:17px;font-weight:900;color:var(--ink)}
+html.embed .cue-part.s1 .viewhead{display:none}
+/* 큐시트 — 품목별 예산 표와 주차별 일정 표를 각각의 영역으로(묶던 카드는 푼다) */
+html.embed section.card:has(table.cue.qm){background:none;border:0;box-shadow:none;overflow:visible;margin-top:22px!important}
+html.embed section.card:has(table.cue.qm)>.hd{padding:0 2px 8px;border:0;background:none}
+html.embed section.card:has(table.cue.qm)>.bd{padding:0}
+html.embed section.card:has(table.cue.qm)>.bd>.tw,html.embed section.card:has(table.cue.qm)>.tw{border:1px solid var(--rule)!important;border-radius:14px!important;background:var(--surface);box-shadow:var(--shadow)}
+html.embed section.card:has(table.cue.qm)>.tw{margin-top:12px}
+html.embed section.card:has(table.cue.qm) table.t thead th{background:var(--top);color:#fff;font-weight:700;font-size:12px}
+/* 본방 · 생방이 아닌 프로그램 이름은 무채색 */
+html.embed table.t.cue.qm tr:not(.bon):not(.sub):not(.tot) td.pg{color:#8b95a1;font-weight:500}
+html.embed table.t.cue.qm tr.bon td.pg{color:var(--ink);font-weight:800}
+/* 캘린더 — 주말 머리도 평일과 같은 색 · 오늘/지금 강조 */
+html.embed table.calt th,html.embed table.calt th.we,html.embed table.calt th.sat,html.embed table.calt th.sun{background:var(--top)}
+html.embed .calw{overflow-x:auto}
+html.embed .calcard{overflow:hidden}
+@keyframes cueFlash{0%,100%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 0 rgba(42,111,186,0)}20%,60%{box-shadow:inset 0 0 0 3px #2a6fba,0 0 0 8px rgba(42,111,186,.28)}40%,80%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 2px rgba(42,111,186,.1)}}
+html.embed td.cue-flash{animation:cueFlash 3s ease-in-out;position:relative;z-index:3}
+html.embed .calnow.cue-flash span{animation:cueFlash 3s ease-in-out;border-radius:8px}

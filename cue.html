@@ -641,7 +641,7 @@ table.t.cue.qm tr.same td.pg span .ptag{color:transparent}
 table.t.cue.qm tr.bon td{background:#e9f1fb;font-weight:600}
 table.t.cue.qm tr.bon td:first-child{box-shadow:inset 3px 0 0 #2a6fba}
 table.t.cue.qm tr:hover td:not(.tsel){background-color:#f0f3f6}
-table.t.cue.qm tr.bon:hover td:not(.tsel){background-color:#f9dde9}
+table.t.cue.qm tr.bon:hover td:not(.tsel){background-color:#d5e5f7}
 table.t.cue.qm td.wk{min-width:150px;padding:3px 6px}
 table.t.cue.qm td.grip{background:#eff2f5;color:#afb8c3}
 .ptag{font-weight:700;margin-left:3px}.ptag.bon{color:#2a6fba}.ptag.live{color:#2a6fba}.ptag.sp{color:#b45309}
@@ -982,7 +982,7 @@ table.t.ctr th.grph{background:#e2e7ee;color:var(--acc-deep)}
 .calw{overflow-x:auto}
 table.calt{width:100%;min-width:1080px;border-collapse:collapse;table-layout:fixed;font-size:11.5px}
 table.calt th{background:#222a34;color:#fff;font-weight:600;padding:7px 6px;border-right:1px solid #2f3a47;position:sticky;top:0;z-index:2}
-table.calt th.sat{background:#313c49}table.calt th.sun{background:#5a2b3a}
+table.calt th.sat{background:#313c49}table.calt th.sun{background:#2b2b2b}
 table.calt td{vertical-align:top;border:1px solid #e0e5ec;padding:4px 5px 6px;background:#fff}
 table.calt td.sat,table.calt td.sun{background:#fafbfc}
 table.calt td.off{background:#f3f5f7}
@@ -1011,7 +1011,7 @@ table.t.eqw thead tr:nth-child(2) th{top:31px}
 table.t.ops th.pgh{width:100%}
 table.t.ops td[data-list]{white-space:nowrap;overflow:hidden}
 /* 큐시트 캘린더: 토·일 머리글 모두 붉게 · 오늘 칸 · 지금 줄 · 방송 중 */
-table.calt th.we{background:#5a2b3a}
+table.calt th.we{background:#2b2b2b}
 table.calt td.today{box-shadow:inset 0 0 0 2px #2a6fba;background:#fcfcfd}
 .cald em{font-style:normal;font-size:10.5px;font-weight:700;color:#fff;background:#2a6fba;border-radius:4px;padding:0 5px;margin-left:6px;margin-right:auto;line-height:16px}
 .cald b+span{margin-left:auto}
@@ -1163,7 +1163,7 @@ table.t.budget td.ppc{vertical-align:middle}
 .cale.one{border-left:0;padding:1px 3px;border-radius:3px}
 .cale.one .ic{flex:none;display:inline-block;font-size:9.5px;font-weight:700;line-height:14px;padding:0 3px;border-radius:3px;letter-spacing:-.02em;align-self:center}
 .cale.mid{background:#f6f7f9}
-.cale.mid .m{color:#b0607e;font-weight:600}
+.cale.mid .m{color:#2a6fba;font-weight:600}
 td.sat .cald b,td.sun .cald b{color:#d6453d}
 /* 품목 칩 필터 */
 .calits{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -1430,17 +1430,46 @@ html.embed .toast{display:none}
 html.embed{scrollbar-width:thin;scrollbar-color:var(--p-gline,#c5ccd6) transparent}
 
 /* 큐시트 캘린더 (v168 · v169) — 시간 · 채널 · 품목 · CM 칸은 좁고 일정하게, 남는 폭은 프로그램 이름(한글 10자 이상)에 */
-html.embed table.calt{min-width:1770px;font-size:10px}
+html.embed table.calt{min-width:1590px;font-size:10px}
 html.embed .cale.one{gap:3px;padding:1px 2px;overflow:hidden}
 html.embed .cale.one .t{width:27px;font-size:9.5px;letter-spacing:-.3px}
 html.embed .cale .c,html.embed .cale.one .c{display:inline-block;flex:none;width:41px;max-width:none;overflow:hidden;text-overflow:clip;font-size:9px;letter-spacing:-.35px}
 html.embed .cale.one .ic{width:21px;padding:0;text-align:center;font-size:9px}
-html.embed .cale.one .p{min-width:104px;font-size:10px;letter-spacing:-.2px}
+html.embed .cale.one .p{min-width:80px;font-size:10px;letter-spacing:-.2px}
 html.embed .cale.one .m{width:31px;text-align:right;font-size:9px;letter-spacing:-.4px;overflow:hidden;margin-left:0}
 html.embed .cale.one .x{font-size:9px;padding:0 2px}
 /* 캘린더 CM 위치 글자 — 분홍 · 붉은 톤 대신 회청 / 중CM 은 강조 파랑 (v168) */
 html.embed .cale .m{color:#7289a3}
 html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
+
+/* ===== v170 ===== */
+/* 틀 높이 = 내용 높이 — 안쪽 세로 스크롤을 없앤다(창 높이에 맞추던 max-height 는 푼다) */
+html.embed,html.embed body{overflow-y:hidden;height:auto;min-height:0}
+html.embed .tw{max-height:none;overflow-y:hidden}
+html.embed .tw.caw,html.embed .tw.cgw{max-height:var(--pvh,760px);overflow-y:auto}
+html.embed .bud{max-height:none}
+html.embed table thead.stuck{position:relative;z-index:6}
+html.embed table thead.stuck th{box-shadow:0 6px 12px -8px rgba(20,30,45,.45)}
+/* 요약 아래 당월 소재 */
+html.embed .cue-sec{margin:34px 2px 12px;font-size:17px;font-weight:900;color:var(--ink)}
+html.embed .cue-part.s1 .viewhead{display:none}
+/* 큐시트 — 품목별 예산 표와 주차별 일정 표를 각각의 영역으로(묶던 카드는 푼다) */
+html.embed section.card:has(table.cue.qm){background:none;border:0;box-shadow:none;overflow:visible;margin-top:22px!important}
+html.embed section.card:has(table.cue.qm)>.hd{padding:0 2px 8px;border:0;background:none}
+html.embed section.card:has(table.cue.qm)>.bd{padding:0}
+html.embed section.card:has(table.cue.qm)>.bd>.tw,html.embed section.card:has(table.cue.qm)>.tw{border:1px solid var(--rule)!important;border-radius:14px!important;background:var(--surface);box-shadow:var(--shadow)}
+html.embed section.card:has(table.cue.qm)>.tw{margin-top:12px}
+html.embed section.card:has(table.cue.qm) table.t thead th{background:var(--top);color:#fff;font-weight:700;font-size:12px}
+/* 본방 · 생방이 아닌 프로그램 이름은 무채색 */
+html.embed table.t.cue.qm tr:not(.bon):not(.sub):not(.tot) td.pg{color:#8b95a1;font-weight:500}
+html.embed table.t.cue.qm tr.bon td.pg{color:var(--ink);font-weight:800}
+/* 캘린더 — 주말 머리도 평일과 같은 색 · 오늘/지금 강조 */
+html.embed table.calt th,html.embed table.calt th.we,html.embed table.calt th.sat,html.embed table.calt th.sun{background:var(--top)}
+html.embed .calw{overflow-x:auto}
+html.embed .calcard{overflow:hidden}
+@keyframes cueFlash{0%,100%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 0 rgba(42,111,186,0)}20%,60%{box-shadow:inset 0 0 0 3px #2a6fba,0 0 0 8px rgba(42,111,186,.28)}40%,80%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 2px rgba(42,111,186,.1)}}
+html.embed td.cue-flash{animation:cueFlash 3s ease-in-out;position:relative;z-index:3}
+html.embed .calnow.cue-flash span{animation:cueFlash 3s ease-in-out;border-radius:8px}
 </style>
 <script id="cue-boot">(function () {
   var q = new URLSearchParams(location.search); window.__CUE_IMP__ = q.get('imp') === '1';
@@ -1462,6 +1491,7 @@ html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
       ic[3] = '#' + mix(n >> 16 & 255) + mix(n >> 8 & 255) + mix(n & 255); } } } catch (e) { }
   if (d && d.ws) { window.__REPORT__ = { ws: d.ws, title: d.title || '', at: d.at || Date.now() }; window.__CUE_TAB__ = q.get('t') || 'summary'; }
   document.documentElement.classList.add('embed');
+  try { if (parent !== window) document.documentElement.style.setProperty('--pvh', Math.max(480, parent.innerHeight - 170) + 'px'); } catch (e) { }
   /* 대시보드 테마 색을 그대로 받는다 */
   try { if (parent !== window) { var cs = parent.getComputedStyle(parent.document.documentElement), st = document.documentElement.style;
     ['plane', 'plane2', 'surface', 'ink', 'ink2', 'muted', 'sec', 'line', 'line2', 'gline', 'cell', 'acc', 'acc-d', 'acc-lt', 'acc-soft', 'acc-soft2', 'hdr', 'hdr2', 'tot', 'hdr-sub', 'tot-sub', 'sub0', 'sub1', 'sub2', 'sub3', 'b1', 'b2', 'b3', 'b4', 'b5'].forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) st.setProperty('--p-' + k, v); });
@@ -3748,7 +3778,7 @@ function opsSheet() {
 }
 // ---------- 요약 (통합 요약 + 운영 요약) ----------
 const ANIM = { seen: false, kpi: null };
-function renderSummary(root) {
+function renderSummary0(root) {
   if (CHARTS._daily) { if (CHARTS._daily.stop) CHARTS._daily.stop(); if (CHARTS._daily.destroy) CHARTS._daily.destroy(); }
   killCharts('item', '_daily');
   if (!M.spots.length && !M.cells.length) { root.innerHTML = onboardingHtml(); bindOnboarding(root); return; }
@@ -9730,7 +9760,7 @@ function renderCal(root) {
   const re = () => { const y = window.scrollY; renderCal(root); window.scrollTo(0, y); };
   bindSeg(root, 'calmedia', v => { f.media = v; re(); });
   // 오늘이 있는 주(행)가 고정된 요일 머리글 바로 아래에 오도록
-  const goToday = smooth => { const td = root.querySelector('#cal-td-today'); if (!td) return; const shellH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100; const th = root.querySelector('table.calt thead'); const top = td.closest('tr').getBoundingClientRect().top + window.scrollY - shellH - (th ? th.offsetHeight : 30) - 6; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
+  const goToday = smooth => { if (window.cueCalJump) return window.cueCalJump(root, smooth); const td = root.querySelector('#cal-td-today'); if (!td) return; const shellH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100; const th = root.querySelector('table.calt thead'); const top = td.closest('tr').getBoundingClientRect().top + window.scrollY - shellH - (th ? th.offsetHeight : 30) - 6; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
   const tb = root.querySelector('#cal-today'); if (tb) tb.onclick = () => goToday(true);
   // 캘린더를 열 때마다(사이트를 처음 열 때 포함) 오늘이 있는 주로 · 필터를 바꿀 때는 그 자리 그대로
   if (isNowMonth && f.jump !== false) { f.jump = false; requestAnimationFrame(() => requestAnimationFrame(() => goToday(false))); }
@@ -10934,7 +10964,7 @@ async function cueLegacyImport(ab, YEAR) {
       return {
         ym: WS.ym, notes: R.notes.concat(planNotes), fixed,
         unkItems: [...unk.items], unkChs: [...unk.chs],
-        stats: { g: g.length, c: sum(c, s => s.cnt), budget: A.budget, value: A.value, bonus: A.bonus, err: M.issues.filter(i => i.sev === 'err').length, warn: M.issues.filter(i => i.sev === 'warn').length, kindEmpty, items: M.activeItems, start: WS.start, end: WS.end },
+        stats: { g: g.length, c: sum(c, s => s.cnt), grp: A.grp, eq: A.eq, budget: A.budget, value: A.value, bonus: A.bonus, err: M.issues.filter(i => i.sev === 'err').length, warn: M.issues.filter(i => i.sev === 'warn').length, kindEmpty, items: M.activeItems, start: WS.start, end: WS.end },
         errSample: M.issues.filter(i => i.sev === 'err').slice(0, 8).map(i => `${i.sheet} ${i.row + 1} ${i.msg}`),
         warnSample: M.issues.filter(i => i.sev === 'warn').slice(0, 12).map(i => `${i.sheet} ${i.row + 1} ${i.msg}`),
         cmp, cableByCh: cv, cellsOut: M.cells.map(c => [c.ch, c.item, c.budget, c.value, c.bonus, c.cnt]),
@@ -10949,12 +10979,14 @@ window.cueImport = async function (ab, year) {
   const r = await cueLegacyImport(ab, year);
   const bad = r.cmp.filter(x => x.bad.length);
   return JSON.parse(JSON.stringify({ ym: r.ym, ws: r.ws, notes: r.notes, fixed: r.fixed, unkItems: r.unkItems, unkChs: r.unkChs, cmpN: r.cmp.length, cmpBad: bad.length,
-    stats: { g: r.stats.g, c: r.stats.c, budget: r.stats.budget, value: r.stats.value, bonus: r.stats.bonus, err: r.stats.err, items: r.stats.items } }));
+    stats: { g: r.stats.g, c: r.stats.c, grp: r.stats.grp, eq: r.stats.eq, budget: r.stats.budget, value: r.stats.value, bonus: r.stats.bonus, err: r.stats.err, items: r.stats.items } }));
 };
 window.addEventListener('DOMContentLoaded', function () {
   setTimeout(function () {
     try { if (window.__REPORT__ && window.__CUE_TAB__) window.cueGo(window.__CUE_TAB__); } catch (e) { }
     try { if (parent !== window && parent.cueFrameReady) parent.cueFrameReady(window, !!window.__CUE_IMP__); } catch (e) { }
+    /* v170 — 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산) · eq.GRP 를 대시보드에 알려 준다(전체 캠페인 표) */
+    try { if (window.__REPORT__ && parent.cueFrameStats) { var A = aggCells(M.cells); parent.cueFrameStats({ grp: A.grp, eq: A.eq, budget: A.budget }); } } catch (e) { }
   }, 0);
 });
 
@@ -10995,6 +11027,45 @@ function cueCalFix(root) {
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;
   new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueCalFix(v); }, 30); }).observe(v, { childList: true, subtree: true });
+});
+
+/* ===== v170 — 대시보드 안에서는 틀 높이 = 내용 높이(틀 안 세로 스크롤 없음 → 이중 스크롤 없음) ===== */
+var CUE_EMB = false; try { CUE_EMB = parent !== window && !!window.__REPORT__; } catch (e) { }
+function cueTellH() {
+  if (!CUE_EMB) return; var m = document.querySelector('main') || document.body;
+  var h = Math.ceil(m.getBoundingClientRect().bottom + (window.scrollY || 0)) + 4;
+  try { parent.cueFrameH && parent.cueFrameH(h); } catch (e) { }
+}
+/* 요약 = 큐시트 요약 + 당월 소재 */
+function renderSummary(root) {
+  if (!CUE_EMB || root.classList.contains('cue-part')) return renderSummary0(root);
+  var a = root.querySelector(':scope>.cue-part.s0'), b = root.querySelector(':scope>.cue-part.s1');
+  if (!a) { root.innerHTML = '<div class="cue-part s0"></div><h3 class="cue-sec">당월 소재</h3><div class="cue-part s1"></div>'; a = root.querySelector('.s0'); b = root.querySelector('.s1'); }
+  renderSummary0(a); try { renderCreView(b); } catch (e) { }
+}
+/* 표 머리 고정 — 틀이 스크롤되지 않으므로 대시보드 스크롤 위치를 받아 머리줄을 내려 붙인다 */
+window.cueStick = function (off) {
+  document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t.cue').forEach(function (tb) {
+    var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
+    if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
+  });
+};
+/* 캘린더 — 오늘 · 지금 시간대로 가서 3초 강조 */
+window.cueCalJump = function (root, smooth) {
+  setTimeout(function () {
+    var td = root.querySelector('#cal-td-today'); if (!td) return; var now = td.querySelector('[data-now]') || td;
+    try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, true); } catch (e) { }
+    [td, now].forEach(function (x) { x.classList.remove('cue-flash'); void x.offsetWidth; x.classList.add('cue-flash'); });
+    setTimeout(function () { [td, now].forEach(function (x) { x.classList.remove('cue-flash'); }); }, 3200);
+  }, 420);
+};
+/* 캘린더 폭 — 프로그램 이름 칸은 화면 폭에 따라 늘고 줄되 한글 8자까지만 줄인다(그 아래로는 가로 스크롤) */
+window.addEventListener('DOMContentLoaded', function () {
+  if (!CUE_EMB) return;
+  try { new ResizeObserver(cueTellH).observe(document.querySelector('main') || document.body); } catch (e) { }
+  var v = document.getElementById('view') || document.body, t = 0;
+  new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueTellH(); }, 60); }).observe(v, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('resize', cueTellH); setTimeout(cueTellH, 300); setTimeout(cueTellH, 1200);
 });
 </script>
 </head><body><div id="root"></div></body></html>

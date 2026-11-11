@@ -800,6 +800,7 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrsb{display:grid;grid-template-columns:150px 1fr 96px;gap:12px;align-items:center}
 .wrsb .nm{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wrsb .bar{display:flex;height:34px;gap:2px;align-items:stretch}
+.wrsb .bar .out{align-self:center;margin-left:8px;font-size:11.5px;font-weight:800;color:var(--ink2);white-space:nowrap}.wrsb .bar .out i{font-style:normal;font-weight:700;color:var(--muted)}
 .wrsb .bar .seg{box-shadow:none}
 .wrsb .seg{position:relative;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 9px;color:#fff;min-width:3px;
   transform-origin:left center;animation:wrGrow .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0ms)}
@@ -1319,6 +1320,7 @@ table.rpcrt td{vertical-align:middle}table.rpcrt .cum{font-size:10.5px;color:var
 .rpbd .bv{font-size:11px;font-weight:700;fill:var(--ink2)}.rpbd .bxl{font-size:11px;font-weight:600;fill:var(--muted)}.rpbd .bxl.cur{fill:var(--ink);font-weight:900}.rpbd .bv.cur{fill:var(--ink);font-weight:900}
 .rpbd.hot .bl .bd{opacity:.16;transition:opacity .25s}.rpbd.hot .bl .bd .bv,.rpbd.hot .bl .bd .bxl{opacity:0}
 .rpbd .dc1{font-size:12px;font-weight:700;fill:var(--muted)}.rpbd .dc2{font-size:17px;font-weight:900;fill:var(--ink)}
+.rpbd .dtl{fill:var(--ink)}.rpbd .dtlt{fill:var(--surface);font-size:14px;font-weight:900}
 .rpbd .bdl{fill:none;stroke:var(--gline);stroke-width:.7;opacity:.55}
 .rpbd .bdx{fill:var(--surface);stroke:var(--line)}.rpbd .bdn{font-size:11.5px;font-weight:800;fill:var(--ink)}.rpbd .bds{font-size:10.5px;font-weight:600;fill:var(--muted)}
 .rpbdx{display:flex;justify-content:space-around;margin:-4px 8px 0;font-size:11px;font-weight:600;color:var(--muted)}.rpbdx span{flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1504,6 +1506,13 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovrow.axis .ovtrack{min-height:38px}
 .ovrow.self{background:linear-gradient(90deg,var(--acc-soft2),transparent 70%)}
 .ovl{min-width:0;padding:6px 0 6px 4px}
+/* v170 — 타임라인 줄 높이 줄임: 매체 딱지를 캠페인 이름 오른쪽에 · 진행 중 캠페인 강조 */
+.ovrows .ovrow{min-height:30px}
+.ovl.one{display:flex;align-items:center;gap:8px;padding:3px 0 3px 6px}.ovl.one .ovname{flex:0 1 auto;min-width:0}.ovl.one .ovsub{margin-top:0;flex:none;flex-wrap:nowrap}
+.ovrow.live{background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 13%,transparent),transparent 75%);box-shadow:inset 3px 0 0 var(--acc)}
+.ovrow.live .ovname{color:var(--acc-d)}
+table.ovtbl tr.live td{background:color-mix(in srgb,var(--acc) 9%,var(--surface))}
+table.ovtbl tr.live td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 .ovname{display:block;font-weight:800;color:var(--ink);font-size:12.8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   border:0;background:none;padding:0;font-family:inherit;text-align:left;max-width:100%}
 .ovname.lnk{cursor:pointer}
@@ -1607,7 +1616,8 @@ table.csgrid .mtag{display:inline-block;font-size:10px;font-weight:700;color:var
 .ovflow .flc{flex:1;min-height:170px;position:relative}
 .ovflow .flc>svg{position:absolute;inset:0;display:block;overflow:visible}
 .ovflow .flempty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
-.ovflow .flline{fill:none;stroke:var(--fl-line);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ovflow .flnote{margin-top:6px;font-size:10.5px;line-height:1.45;color:var(--muted);font-weight:600}
+.ovflow .flline{fill:none;stroke:var(--fl-line);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .ovflow .flx{font-size:10.5px;font-weight:600;fill:var(--muted)}
 .ovflow .fltoday{stroke:var(--gline);stroke-width:1;stroke-dasharray:3 3}
 .ovflow .fltd{font-size:9.5px;font-weight:700;fill:var(--muted)}
@@ -4393,6 +4403,9 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
 /* v167 — TV 큐시트 틀 */
 #tab-tvcue{max-width:none}
 #cueHost{position:relative}
+.cueseg{display:inline-flex;margin-left:14px;vertical-align:middle;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.cueseg button{border:0;background:none;padding:6px 16px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink2);cursor:pointer}
+.cueseg button.on{background:var(--ink);color:var(--surface)}.cueseg button:not(.on):hover{background:var(--acc-soft)}
 #cueFrame{display:block;width:100%;border:0;border-radius:var(--radius);background:transparent;opacity:0;transition:opacity .25s}
 #cueFrame.ready{opacity:1}
 .cue-load{position:absolute;left:0;right:0;top:60px;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}

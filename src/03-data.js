@@ -794,19 +794,18 @@ const MENUS=[
   {id:'d_mix',  area:'digital',tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
   {id:'d_input',area:'digital',tab:'input',              l:'데이터 입력',  kind:'edit'},
   {id:'d_plan', area:'digital',tab:'setup',              l:'예상효율 입력',kind:'edit'},
-  {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'누적 퍼포먼스',kind:'view'},
+  {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
+  {id:'t_sum',  area:'tv',     tab:'tvdash',             l:'캠페인 퍼포먼스',kind:'view'},
   {id:'t_daily',area:'tv',     tab:'tvdaily',            l:'일자별 퍼포먼스',kind:'view'},
   /* 주차별 퍼포먼스 (v135) — 일별 값이 없는 리포트(코웨이 등)용. 기본은 꺼 두고 메뉴 설정에서 켠다(udef:false) */
   {id:'t_week', area:'tv',     tab:'tvweekly',           l:'주차별 퍼포먼스',kind:'view',udef:false},
   /* 월별 퍼포먼스(v142)는 v144 에서 메뉴를 뺐다 — 먼슬리 리포트가 따로 나간다(화면 코드 29-tvmonth.js 는 남겨 둠) */
-  {id:'t_mix',  area:'tv',     tab:'tvmix',              l:'미디어믹스',   kind:'view'},
+  /* v170 — 미디어믹스(t_mix): 큐시트가 있는 캠페인은 큐시트 요약 화면(+당월 소재)이 미디어믹스. 없는 캠페인은 예전 표(tab-tvmix) 그대로 */
   /* v161 — TV · OTT · 리포트의 입력은 데이터 접수함 하나(데이터 입력 · 예상효율 입력 모두). 받은 엑셀 · PDF 를 올리면
      사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영한다. 화면은 tab-intake 하나를 영역마다 나눠 쓴다(INBX_AREA) */
   /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
-  {id:'tq_summary',area:'tv',  tab:'tvcue',cue:'summary',l:'큐시트 요약',  kind:'view'},
-  {id:'tq_crev', area:'tv',    tab:'tvcue',cue:'crev',   l:'당월 소재',    kind:'view'},
-  {id:'tq_cueg', area:'tv',    tab:'tvcue',cue:'cueg',   l:'지상파 큐시트',kind:'view'},
-  {id:'tq_cuec', area:'tv',    tab:'tvcue',cue:'cuec',   l:'케이블 큐시트',kind:'view'},
+  /* v170 — 큐시트는 메뉴 하나(화면 안에서 지상파 · 케이블을 고른다). 요약 · 당월 소재는 미디어믹스로 */
+  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view'},
   {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
   {id:'tq_cueall',area:'tv',   tab:'tvcue',cue:'cueall', l:'전체 큐시트',  kind:'view'},
   {id:'t_inbox',area:'tv',     tab:'intake',             l:'데이터 접수함',  kind:'edit'},
@@ -814,7 +813,7 @@ const MENUS=[
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
      입력(데이터 입력 · 예상효율 입력)은 디지털과 같은 화면 — 모든 라인을 한 표에서 넣는다 */
   {id:'ot_struct',area:'ott',  tab:'dash',   sub:'struct',l:'캠페인 구조', kind:'view'},
-  {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'서머리',       kind:'view'},
+  {id:'ot_sum', area:'ott',    tab:'dash',   sub:'perf', l:'캠페인 퍼포먼스',kind:'view'},
   {id:'ot_daily',area:'ott',   tab:'dash',   sub:'table',l:'일자별 효율',  kind:'view'},
   {id:'ot_mix', area:'ott',    tab:'dash',   sub:'mix',  l:'미디어믹스',   kind:'view'},
   {id:'ot_inbox',area:'ott',   tab:'intake',             l:'데이터 접수함',  kind:'edit'},

@@ -95,7 +95,11 @@ function rpBarDonut(box,bars,opt){
     if(t<.15&&grow>.98)g+=`<text class="bv${opt.cur===i?' cur':''}" x="${f(sx)}" y="${f(B-s.h-8)}" text-anchor="middle" opacity="${(1-t/.15).toFixed(2)}">${fmt(b.v)}</text>`;
     /* 펼친 뒤 — 가운데 합계 + 안내선 카드 */
     if(q>.01){
-      g+=`<text class="dc1" x="${f(fx)}" y="${f(cy-4)}" text-anchor="middle" opacity="${q.toFixed(2)}">${esc(b.label)}</text>
+      /* v170 — topLab: 이름(월)은 도넛 위에 크게, 도넛 안에는 값만 */
+      if(opt.topLab){const tw=String(b.label||'').length*17+30,ty=Math.max(17,cy-R-24);
+        g+=`<g opacity="${q.toFixed(2)}"><rect class="dtl" x="${f(fx-tw/2)}" y="${f(ty-15)}" width="${tw}" height="28" rx="14"/><text class="dtlt" x="${f(fx)}" y="${f(ty+5)}" text-anchor="middle">${esc(b.label)}</text></g>
+          <text class="dc2" x="${f(fx)}" y="${f(cy+6)}" text-anchor="middle" opacity="${q.toFixed(2)}">${fmt(b.v)}</text>`;}
+      else g+=`<text class="dc1" x="${f(fx)}" y="${f(cy-4)}" text-anchor="middle" opacity="${q.toFixed(2)}">${esc(b.label)}</text>
         <text class="dc2" x="${f(fx)}" y="${f(cy+15)}" text-anchor="middle" opacity="${q.toFixed(2)}">${fmt(b.v)}</text>`;
       /* 카드 배치(교차 없는 자리 찾기)는 무거워 — 다 선 도넛이면 한 번만 계산해 두고 불투명도만 바꾼다 */
       if(r>=.999){if(!cardC[i])cardC[i]=rpBdCards(b,fx,cy,rx,R,'__Q__',W,H);g+=cardC[i].split('__Q__').join(q.toFixed(2));}
