@@ -1511,7 +1511,8 @@ html.embed .cue-dd li b{font-weight:800;color:var(--ink);font-variant-numeric:ta
 html.embed table.t.cue td.wk .spot.ibox{white-space:nowrap!important}
 </style>
 <script id="cue-boot">(function () {
-  var q = new URLSearchParams(location.search); window.__CUE_IMP__ = q.get('imp') === '1';
+  var q = new URLSearchParams(location.search), qh = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); /* v184 — 탭·열쇠는 # 뒤로(주소가 같아야 브라우저가 cue.html 을 다시 받지 않는다) */
+  var qget = q.get.bind(q); q.get = function (k) { var v = qh.get(k); return v != null ? v : qget(k); }; window.__CUE_IMP__ = q.get('imp') === '1';
   var d = null; try { d = !window.__CUE_IMP__ && parent !== window && parent.cueFrameData && parent.cueFrameData(); } catch (e) { }
   /* 품목 색 — 큐시트 엑셀의 색상(hue)은 그대로, 톤만 대시보드 미디어믹스 시트처럼 차분하게 (채도 ↓ · 명도는 가운데로) */
   function calm(hex) {

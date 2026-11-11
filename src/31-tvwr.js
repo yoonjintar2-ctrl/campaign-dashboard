@@ -339,6 +339,126 @@ function wrDnEtc(g,D){const box=$('wrDnEtc');if(!box)return;const list=D.etc[g]|
   box.classList.remove('hidden');box.querySelector('.x').onclick=()=>{box.classList.add('hidden');WR_ETC=null;};}
 
 /* ================================================================
+   GRP 달성 현황 (v184) — 위클리 리포트 '당월_광고비 기준별 효율' 시트. 화면 이름은 엑셀처럼 'GRP 달성률'(노출량 ÷ Total 목표).
+   TV_WR.eff = {asof:'~11/8', days:집행일수, span:운영 일, prog:진척률,
+                rows:[[구분, 이름, 목표 CPRP, 예산(천원), eq.GRP, 목표 eq.GRP, 달성률]…],   ← 지상파는 채널, 케이블은 PP Total 줄
+                gt:{지상파:[…5], 케이블:[…5]}, tot:[…5]}
+   시트 값을 그대로 쓰고, 옛 양식처럼 합계 줄에 목표 · 달성률이 비어 있으면 줄들을 더해 채운다.
+   eff 가 아직 없는 캠페인은 당월_주별 채널 값(예산 ÷ 목표 CPRP)으로 같은 모양을 만든다.
+   ================================================================ */
+function wrEff(){
+  const W=TV_WR||{},E=W.eff,num=v=>{const n=wrN(v);return isFinite(n)?n:NaN;};
+  let rows=[],prog=NaN,days=NaN,span=NaN,asof='',src='eff';
+  if(E&&Array.isArray(E.rows)&&E.rows.length){
+    rows=E.rows.map(r=>({g:r[0],n:r[1],tc:num(r[2]),bud:num(r[3]),eq:num(r[4])||0,tg:num(r[5]),rate:num(r[6])}));
+    prog=num(E.prog);days=num(E.days);span=num(E.span);asof=E.asof||'';
+  }else{src='chs';const m={};(W.chs||[]).forEach(c=>{const k=c.g+'|'+(c.g==='지상파'?c.ch:(c.pp||c.ch)),o=m[k]||(m[k]={g:c.g,n:c.g==='지상파'?c.ch:(c.pp||c.ch),bud:0,eq:0,tg:0});
+      o.bud+=wrN(c.bud)||0;o.eq+=wrN(c.eq)||0;if(wrN(c.bud)>0&&wrN(c.tc)>0)o.tg+=c.bud/c.tc;});
+    rows=Object.values(m).filter(o=>o.bud>0||o.eq>0).map(o=>({...o,tc:o.tg>0?o.bud/o.tg:NaN,tg:o.tg>0?o.tg:NaN,rate:NaN}));}
+  rows.forEach(r=>{if(!isFinite(r.rate))r.rate=r.tg>0?r.eq/r.tg:NaN;});
+  rows=rows.filter(r=>r.tg>0||r.eq>0);if(!rows.length)return null;
+  const grp=g=>{const rs=rows.filter(r=>r.g===g),x=E&&E.gt&&E.gt[g]||[];let bud=num(x[1]),eq=num(x[2]),tg=num(x[3]),rate=num(x[4]);
+    if(!isFinite(bud))bud=rs.reduce((s,r)=>s+(r.bud||0),0);if(!isFinite(eq))eq=rs.reduce((s,r)=>s+r.eq,0);
+    if(!(tg>0))tg=rs.reduce((s,r)=>s+(r.tg>0?r.tg:0),0);if(!isFinite(rate))rate=tg>0?eq/tg:NaN;return {g,n:g+' Total',bud,eq,tg,rate,tot:1,k:rs.length};};
+  const G=['지상파','케이블'].map(grp).filter(x=>x.k);
+  const x=E&&E.tot||[];let bud=num(x[1]),eq=num(x[2]),tg=num(x[3]),rate=num(x[4]);
+  if(!isFinite(bud))bud=G.reduce((s,g)=>s+g.bud,0);if(!isFinite(eq))eq=wrN((W.wtot||{}).eq)>0?W.wtot.eq:G.reduce((s,g)=>s+g.eq,0);
+  if(!(tg>0))tg=G.reduce((s,g)=>s+g.tg,0);if(!isFinite(rate))rate=tg>0?eq/tg:NaN;
+  /* 진척률 — 시트에 없으면 리포트 기간으로 */
+  if(!(span>0)){try{const [y,m]=String(W.ym).split('-').map(Number);span=new Date(y,m,0).getDate();}catch(e){}}
+  if(!(days>0)){const we=(W.weeks||[]).map(w=>w.e).filter(Boolean).sort().pop();days=we?+String(we).slice(8,10):span;}
+  if(!isFinite(prog))prog=span>0?Math.min(1,days/span):1;
+  return {rows,G,tot:{bud,eq,tg,rate},prog,days,span,asof,src};}
+
+/* 맨 위 큰 막대 — 디지털 '캠페인 진행 현황'과 같은 틀(날짜 칸 · 막대 · 목표 페이스 점) */
+function wrPaceHtml(F){
+  const W=TV_WR,[y,m]=String(W.ym).split('-').map(Number),WDK=['일','월','화','수','목','금','토'];
+  const cells=[...Array(F.span)].map((_,i)=>{const d=new Date(y,m-1,i+1),hol=(typeof holName==='function')?holName(d):null,rest=d.getDay()===0||d.getDay()===6||!!hol;
+    return `<i class="${i<F.days?'on':''}${rest?' rest':''}" data-wrd="${esc(`${m}/${i+1} (${WDK[d.getDay()]})${hol?' · '+hol:''}`)}"></i>`;}).join('');
+  const T=F.tot,r=isFinite(T.rate)?T.rate:0,f=Math.min(Math.max(r,0),1)*100,pace=Math.min(Math.max(F.prog,0),1)*100;
+  const pr=F.prog>0?r/F.prog:1,ahead=pr>=1,c=PACE_SEG[0],amb=ambLevel(pr),C=ahead?AMB_OK:AMB_NG;
+  const tone=mixHex(PACE_TONE,ahead?TONE_OK:TONE_NG,Math.min(Math.abs(pr-1)/.06,1));
+  const segT=F.rows.reduce((s,x)=>s+x.eq,0)||1;
+  const segs=F.rows.filter(x=>x.eq>0).map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.n)}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
+  const last=new Date(y,m-1,F.span);
+  return `<div class="pacescroll"><div class="pacebody">
+      <div class="phead">${L(`집행 ${F.days}일차`,`Day ${F.days}`)} <span class="sep">/</span> ${L(`총 ${F.span}일`,`of ${F.span}`)}
+        <span class="el">${Math.round(F.prog*100)}% ${L('경과','elapsed')}</span></div>
+      <div class="pline days">
+        <div class="pside"><div class="nm1">${L('시작일','Start')}</div><div class="sub1">${y}.${String(m).padStart(2,'0')}.01(${WDK[new Date(y,m-1,1).getDay()]})</div></div>
+        <div class="pmid"><div class="dgauge">${cells}</div></div>
+        <div class="pside r"><div class="nm1">${L('종료일','End')}</div><div class="sub1">${y}.${String(m).padStart(2,'0')}.${String(F.span).padStart(2,'0')}(${WDK[last.getDay()]})</div></div>
+      </div>
+      <div class="pline">
+        <div class="pside"><div class="nm1">GRP</div><div class="sub1">${L('노출량','Delivered')} ${wrF(T.eq,1)}</div></div>
+        <div class="pmid">
+          <div class="pdotrow"><i style="left:${pace}%"></i></div>
+          <div class="pbar" id="wrPaceBar">
+            <div class="mstack" style="width:${f}%;--segbg:linear-gradient(150deg,${adjust(c,.08,.05)},${c});--ambc:transparent;--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:${(amb*.62).toFixed(3)}">${segs}</div>
+            <div class="sheen" style="width:${f}%"></div>
+          </div>
+        </div>
+        <div class="pside r"><div class="nm1" style="color:${tone}">${isFinite(T.rate)?(T.rate*100).toFixed(1)+'%':'–'}</div><div class="sub1">${L('Total 목표','Total target')} ${wrF(T.tg,0)}</div></div>
+      </div>
+      <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
+        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) — 엑셀 '당월_광고비 기준별 효율' 값 그대로 · 점은 ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준(진척률 ${Math.round(F.prog*100)}%) · 막대 구간은 채널 · PP가 채운 양`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP), as in the Excel sheet · dot = share due by now (${Math.round(F.prog*100)}%) · segments = channels / PPs`)}</span></div>
+    </div></div>`;}
+
+/* PP별 도넛 카드 — 디지털 'KPI 달성 현황' 카드와 같은 틀 */
+function wrEffCards(box,F){
+  if(!box)return;box.innerHTML='';
+  const list=[];F.G.forEach(g=>{list.push(g);F.rows.filter(r=>r.g===g.g).forEach(r=>list.push(r));});
+  const pf=Math.min(Math.max(F.prog,0),1),CC=136,VB=272,TH=27,rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
+  const pxy=(deg,rr)=>{const a=(deg-90)*Math.PI/180;return [CC+Math.cos(a)*rr,CC+Math.sin(a)*rr];};
+  const arcPath=(d1,d2)=>{const [x1,y1]=pxy(d1,rad),[x2,y2]=pxy(d2,rad);return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${rad} ${rad} 0 ${Math.abs(d2-d1)>180?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;};
+  list.forEach((r,i)=>{
+    const c=el('div','card donut wrdn'+(r.tot?' tot':''),box);
+    const af=Math.min(Math.max(isFinite(r.rate)?r.rate:0,0),1);
+    c.innerHTML=`<div class="dhd"><div class="k">${esc(r.n)}</div><div class="kpitag">${r.tot?L(`${r.k}개 ${r.g==='지상파'?'채널':'PP'}`,`${r.k} ${r.g==='지상파'?'channels':'PPs'}`):esc(r.g)}</div></div><div class="ring"></div>`;
+    const ring=c.querySelector('.ring'),svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:'100%',height:'100%'}),defs=S('defs',{},svg);
+    S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:DONUT_TRACK,'stroke-width':TH},svg);
+    if(pf<.9995)S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+    S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),'data-axarc':`${cir},${af},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
+    /* 호를 따라 흐르는 글 — 집행 eq.GRP */
+    const label=`${L('노출량','Delivered')} ${wrF(r.eq,1)}`,need=label.length*7.4+18,inArc=cir*af>need,id='wrdn'+(++WR_DNID);
+    const d0=inArc?0:360*af;S('path',{id,d:arcPath(d0,d0+179),fill:'none'},defs);
+    const t=S('text',{'font-size':inArc?12:11.5,'font-weight':800,fill:'#fff','dominant-baseline':'central'},svg);
+    if(!inArc){t.setAttribute('stroke','rgba(38,52,68,.42)');t.setAttribute('stroke-width','2.4');t.setAttribute('paint-order','stroke');}
+    const tp=document.createElementNS(NS,'textPath');tp.setAttribute('href','#'+id);tp.setAttribute('startOffset',inArc?'12':'10');tp.textContent=label;t.appendChild(tp);
+    if(pf>.0005&&pf<.9995){const [dx,dy]=pxy(360*pf,rad+TH/2+4.5);S('circle',{cx:dx.toFixed(2),cy:dy.toFixed(2),r:3.1,fill:PACE,stroke:'var(--surface)','stroke-width':1.2,class:'pacedot'},svg);}
+    const hit=S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:'transparent','stroke-width':TH,style:'pointer-events:stroke;cursor:default'},svg);
+    hit.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.n)}</div>`
+      +(r.bud>0?`<div class="r"><span class="l">${L('예산','Budget')}</span><b>${wrEok(r.bud)}</b></div>`:'')
+      +(isFinite(r.tc)&&r.tc>0?`<div class="r"><span class="l">${L('목표 CPRP','Target CPRP')}</span><b>${wrF(r.tc*1000,0)}${L('원','')}</b></div>`:'')
+      +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
+      +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +(isFinite(r.rate)?`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${(r.rate-pf>=0?'+':'−')+Math.abs((r.rate-pf)*100).toFixed(1)}%p</b></div>`:'')));
+    hit.addEventListener('mouseleave',hideTip);
+    ring.appendChild(svg);
+    const ctr=el('div','ctr',ring);ctr.innerHTML=`<div class="ctrbox"><span class="achk">${L('달성률','Achieved')}</span><b class="achv mono">${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`;
+    const lg=el('div','dlgd',c);lg.innerHTML=`<span class="lg ach"><span class="sw"></span>${L('GRP 달성률','GRP achievement')}</span><span class="lg mute"><span class="sw"></span>${L('목표 페이스','Target pace')} ${Math.round(pf*100)}%</span>`;});}
+var WR_DNID=0;
+/* 막대 구간 글자 — 좁으면 % → 이름 순으로 지운다 · 날짜 칸 · 구간 툴팁 */
+function wrPaceWire(h,F){
+  const bar=h.querySelector('#wrPaceBar');if(!bar)return;
+  const fit=()=>bar.querySelectorAll('.mstack>i').forEach(i=>{const w=i.getBoundingClientRect().width,nm=i.querySelector('.nm');i.classList.remove('nolb','nopc','nopad');
+    const need=nm?nm.textContent.length*7.2+20:40;if(w<need){i.classList.add('nolb','nopad');}else if(w<need+6){i.classList.add('nopc');}});
+  fit();setTimeout(fit,400);
+  if(!WR_PACE_RO&&typeof ResizeObserver!=='undefined'){WR_PACE_RO=new ResizeObserver(()=>{const b=document.getElementById('wrPaceBar');if(b)b.querySelectorAll('.mstack>i').forEach(i=>{const w=i.getBoundingClientRect().width,nm=i.querySelector('.nm');i.classList.remove('nolb','nopc','nopad');const need=nm?nm.textContent.length*7.2+20:40;if(w<need)i.classList.add('nolb','nopad');});});}
+  try{WR_PACE_RO&&WR_PACE_RO.observe(bar);}catch(e){}
+  const segs=F.rows.filter(x=>x.eq>0);
+  bar.querySelectorAll('[data-wrseg]').forEach(i=>{const r=segs[+i.dataset.wrseg];if(!r)return;
+    i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.n)} <span style="font-weight:600;opacity:.6">· ${esc(r.g)}</span></div>`
+      +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
+      +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('전체 목표 중','Of total target')}</span><b>${F.tot.tg>0?(r.eq/F.tot.tg*100).toFixed(1)+'%':'–'}</b></div>`));
+    i.addEventListener('mouseleave',hideTip);});
+  h.querySelectorAll('[data-wrd]').forEach(i=>{i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(i.dataset.wrd)}</div><div class="r"><span class="l">${L('리포트','Report')}</span><b>${i.classList.contains('on')?L('반영','included'):L('아직','not yet')}</b></div>`));i.addEventListener('mouseleave',hideTip);});}
+var WR_PACE_RO=null;
+
+/* ================================================================
    서머리 — 게이지 카드 · R3+ × eq.GRP 소재 지도 · 품목 세부 표 · 시청률 · 소재 타임라인
    (모든 그래프는 y축 값 표시 없음)
    ================================================================ */
@@ -364,7 +484,14 @@ function renderWrDash(){
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis
+  /* v184 — 맨 위: 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 */
+  let F=null;try{F=wrEff();}catch(e){console.warn(e);}
+  const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
+      <div class="card"><div class="bd" id="wrPace">${wrPaceHtml(F)}</div></div>
+      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('엑셀의 GRP 달성률 그대로 · Total 목표 = 예산 ÷ 목표 CPRP · 지상파는 채널, 케이블은 PP · 고리에 올리면 예산 · 목표 · 노출량','GRP achievement as in the Excel · total target = budget ÷ target CPRP · hover a ring for details')}</span></div>
+      <div class="grid donuts" id="wrEffDn"></div>
+      <div class="sec gap sm">${L('주요 지표','Key metrics')}</div>`:'';
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+eff+kpis
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
@@ -376,6 +503,7 @@ function renderWrDash(){
       <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 아래 표는 구분 · PP로 골라 봅니다','Weekly sheet · spend · eq.GRP · CPRP · filter the table by type · PP')}</span></div>
       <div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div><div class="wrwk" id="wrWk"></div></div>
       <div id="wrWkT" style="margin-top:14px"></div>`;
+  if(F){try{wrEffCards($('wrEffDn'),F);wrPaceWire(h,F);}catch(e){console.warn(e);}}
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
   wrScRender();wrItemTbl();wrRatings();wrTimeline();wrWeekChart();wrWeekTbl();wrHsWire(h);wrNextLoad();
   if(WR_GOWK){WR_GOWK=0;setTimeout(()=>{const e=$('wrWkSec');if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-110});},120);}

@@ -12,6 +12,8 @@ var CUE_SUB='cueg';      // 큐시트 메뉴 안에서 고른 쪽(지상파 · �
 const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
+/* v184 — 큐시트 틀 주소는 버전만 붙인다. 달 · 탭은 # 뒤에 실어 같은 파일을 캐시에서 다시 쓴다(예전에는 캠페인마다 1.5MB 를 새로 받았다) */
+const CUE_VER='184';
 async function cuePipe(bytes,stream){
   const wr=stream.writable.getWriter();wr.write(bytes);wr.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());}
@@ -38,7 +40,9 @@ function cueFrameStats(s){
   if(Math.abs((+st.pgrp||0)-s.grp)>=.05){st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;ch=true;}
   if(!ch)return;
   try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
-function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame');if(f){f.classList.remove('ready');f.removeAttribute('src');}}
+function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame');if(f){f.classList.remove('ready');f.removeAttribute('src');}
+  /* v184 — 큐시트 화면을 보고 있는 중에 캠페인이 바뀌면 바로 다시 그린다(예전에는 앞 캠페인 머리글이 남고 '여는 중'에서 멈췄다) */
+  try{const T=$('tabs');if(T&&T.dataset.cur==='tvcue'){clearTimeout(CUE.rt);CUE.rt=setTimeout(()=>{try{renderTvCue();}catch(e){}},30);}}catch(e){}}
 /* v170 — 틀 높이 = 내용 높이(틀이 알려 준다) → 페이지 스크롤 하나만. 캘린더는 화면 폭을 넓게 쓴다 */
 function cueSize(){
   const f=$('cueFrame'),host=$('cueHost');if(!f||!host||f.offsetParent===null)return;
@@ -108,15 +112,23 @@ async function renderTvCue(){
     return;}
   if(note){const s=TV_CUE.st||{};
     note.textContent=`${cueYmLabel(TV_CUE.ym)} · 지상파 ${(s.g||0).toLocaleString()}회 · 케이블 ${(s.c||0).toLocaleString()}회 · 반영 ${inbxWhen(new Date(TV_CUE.at).toISOString())}`;}
-  if(!$('cueFrame'))host.innerHTML='<div class="cue-load" id="cueLoad">큐시트를 여는 중…</div><iframe id="cueFrame" title="TV 큐시트" allow="clipboard-write"></iframe>';
-  const f=$('cueFrame'),key=cueKeyOf();
+  /* v184 — 여는 동안 잘 보이는 로딩 화면(도는 고리 + 그 달 · 건수) */
+  if(!$('cueFrame'))host.innerHTML='<div class="cue-load" id="cueLoad"><i class="sp"></i><b>큐시트를 여는 중…</b><span id="cueLoadSub"></span></div><iframe id="cueFrame" title="TV 큐시트" allow="clipboard-write"></iframe>';
+  {const ls=$('cueLoadSub'),s=TV_CUE.st||{};if(ls)ls.textContent=`${cueYmLabel(TV_CUE.ym)} · ${((s.g||0)+(s.c||0)).toLocaleString()}건`;}
+  let f=$('cueFrame');const key=cueKeyOf();
   if(CUE.key!==key){
-    if(CUE.busy)return;CUE.busy=true;
-    try{CUE.json=await cueUngz(TV_CUE.z);CUE.key=key;}
+    /* v184 — 푸는 도중에 캠페인이 바뀌면 끝난 뒤 한 번 더 그린다(예전에는 그냥 돌아가서 '여는 중'에 멈췄다) */
+    if(CUE.busy){CUE.again=true;return;}CUE.busy=true;
+    try{const z=TV_CUE.z,js=await cueUngz(z);
+      if(!TV_CUE||TV_CUE.z!==z||cueKeyOf()!==key){CUE.busy=false;CUE.again=false;return renderTvCue();}
+      CUE.json=js;CUE.key=key;}
     catch(e){CUE.busy=false;host.innerHTML=`<div class="card cue-empty"><b>큐시트를 열지 못했습니다</b><p>${esc((e&&e.message)||String(e))}</p></div>`;return;}
-    CUE.busy=false;}
+    CUE.busy=false;if(CUE.again){CUE.again=false;if(cueKeyOf()!==key)return renderTvCue();}}
   cueTopPaint();
-  if(CUE.frameKey!==key){CUE.frameKey=key;f.classList.remove('ready');f.style.height=Math.max(420,window.innerHeight-Math.round(f.getBoundingClientRect().top+window.scrollY)-10)+'px';f.src=`${CUE_URL}?t=${encodeURIComponent(ftab)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
+  if(CUE.frameKey!==key){CUE.frameKey=key;
+    /* 주소가 # 뒤만 다르면 틀이 다시 열리지 않는다 → 틀을 새로 만들어 그 달 자료로 확실히 다시 연다 */
+    {const nf=document.createElement('iframe');nf.id='cueFrame';nf.title='TV 큐시트';nf.setAttribute('allow','clipboard-write');f.replaceWith(nf);f=nf;}
+    f.classList.remove('ready');f.style.height=Math.max(420,window.innerHeight-Math.round(f.getBoundingClientRect().top+window.scrollY)-10)+'px';f.src=`${CUE_URL}?v=${CUE_VER}#t=${encodeURIComponent(ftab)}&k=${encodeURIComponent(String(TV_CUE.at))}`;}
   else{try{f.contentWindow.cueGo(ftab);f.contentWindow.cueTellH&&f.contentWindow.cueTellH();}catch(e){}}
   cueSize();}
 /* 메뉴 줄 — 고른 큐시트 메뉴 표시 · 큐시트가 없으면 광고주 화면에서는 묶음을 감춘다 */
