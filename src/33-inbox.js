@@ -278,8 +278,10 @@ function inbxQuick(){
       <label class="f">설명 <textarea class="txt q-note" rows="4" maxlength="500" placeholder="예) 코웨이 11월 큐시트 수정본입니다. 3주차 케이블 편성이 바뀌었어요"></textarea></label>
       <label class="f w">요청자 이름 <input class="txt q-who" maxlength="30" value="${esc(inbxWho())}" placeholder="이름"></label>
       <div class="inbx-say" aria-live="polite"></div></div>`,
-    `<button class="btn" data-close>취소</button><button class="btn primary" id="inbxqGo">접수하기</button>`,{w:560});
+    /* v180 — 접수함은 메인 메뉴 줄에서 빼고, 운영 계정은 여기서 들어간다 */
+    `${inbxEdit()?`<button class="btn" data-close id="inbxqList" style="margin-right:auto">접수함 보기</button>`:''}<button class="btn" data-close>취소</button><button class="btn primary" id="inbxqGo">접수하기</button>`,{w:560});
   const q=s=>box.querySelector(s),drop=q('.inbx-drop'),inp=drop.querySelector('input'),ul=q('.qf');
+  {const lb=(box.closest('.modal')||box.parentNode||document).querySelector('#inbxqList')||document.getElementById('inbxqList');if(lb)lb.addEventListener('click',()=>setTimeout(()=>{try{switchTab('intake');}catch(e){}},0));}
   const paint=()=>{ul.innerHTML=QF.map((f,i)=>`<li><span class="nm">${esc(f.name)}</span><span class="sz">${inbxMB(f.size)}</span><button type="button" class="x" data-i="${i}" title="빼기">×</button></li>`).join('');
     ul.querySelectorAll('.x').forEach(b=>b.onclick=()=>{QF.splice(+b.dataset.i,1);paint();});};
   const add=fs=>{const bad=[];fs.forEach(f=>{if(!/\.(xlsx?|csv|pdf|zip)$/i.test(f.name))bad.push(`${f.name} — 형식`);else if(f.size>INBX_MAX_MB*1048576)bad.push(`${f.name} — ${INBX_MAX_MB}MB 초과`);else QF.push(f);});
