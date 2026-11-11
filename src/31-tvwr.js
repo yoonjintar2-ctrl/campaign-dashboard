@@ -368,22 +368,79 @@ function wrEff(){
   if(!(span>0)){try{const [y,m]=String(W.ym).split('-').map(Number);span=new Date(y,m,0).getDate();}catch(e){}}
   if(!(days>0)){const we=(W.weeks||[]).map(w=>w.e).filter(Boolean).sort().pop();days=we?+String(we).slice(8,10):span;}
   if(!isFinite(prog))prog=span>0?Math.min(1,days/span):1;
-  return {rows,G,tot:{bud,eq,tg,rate},prog,days,span,asof,src};}
+  /* v185 — 목표 페이스 = 미디어믹스(큐시트)의 채널×품목 예산을 품목(소재)별 집행 기간으로 일할한 값.
+     (11/10 에 시작하는 품목의 예산은 11/8 까지 0% · 11/1~9 품목은 8/9) 큐시트가 없으면 달 전체 일할(진척률) */
+  const X=wrCueX();let psrc='prog';
+  rows.forEach(r=>{const p=X?X.pace(r.g,r.n,days):NaN;if(isFinite(p)){r.pace=p;psrc='cue';}else r.pace=prog;});
+  const wp=rs=>{let a=0,b=0;rs.forEach(r=>{const w=r.tg>0?r.tg:0;a+=w*r.pace;b+=w;});return b>0?a/b:prog;};
+  G.forEach(g=>{g.pace=wp(rows.filter(r=>r.g===g.g));});
+  return {rows,G,tot:{bud,eq,tg,rate,pace:wp(rows)},prog,days,span,asof,src,psrc};}
+
+/* ---------- v185 — 미디어믹스(큐시트)에서 읽는 값: 채널×품목 예산 · 품목(소재)별 집행 기간 ---------- */
+var WR_CX={key:'',d:null,q:''};
+const wrNz=s=>String(s==null?'':s).replace(/\s+/g,'').toLowerCase();
+const WR_CHAL={kbs:'kbs2','tv조선':'tvchosun'};   /* 큐시트 채널 이름 → 위클리 채널 이름 */
+const wrChK=s=>{const k=wrNz(s);return WR_CHAL[k]||k;};
+function wrCueX(){
+  try{
+    if(typeof TV_CUE==='undefined'||!TV_CUE||!TV_CUE.z||!TV_WR||String(TV_CUE.ym)!==String(TV_WR.ym).slice(0,7))return null;
+    const key=cueKeyOf();
+    if(WR_CX.key===key)return WR_CX.d;
+    if(typeof CUE!=='undefined'&&CUE.json&&CUE.key===key){WR_CX={key,d:wrCueParse(CUE.json,TV_CUE.ym),q:''};return WR_CX.d;}
+    if(WR_CX.q!==key){WR_CX.q=key;const z=TV_CUE.z,ym=TV_CUE.ym;
+      cueUngz(z).then(js=>{if(cueKeyOf()!==key)return;WR_CX={key,d:wrCueParse(js,ym),q:''};
+        /* 다 읽으면 달성 현황만 다시 그린다(페이지 전체를 다시 그리지 않는다) */
+        try{if($('wrPace'))wrEffPaint();}catch(e){}}).catch(()=>{WR_CX={key,d:null,q:''};});}
+    return null;
+  }catch(e){return null;}}
+function wrCueParse(js,ym){
+  const S=JSON.parse(js).sheets||{},B=S['예산']||[],hd=(B[0]||[]).slice(1).map(x=>String(x||'').trim());
+  const [Y,M]=String(ym).split('-').map(Number),last=new Date(Y,M,0).getDate();
+  const full={},cat={};(S['품목']||[]).forEach(r=>{if(r&&r[0]){full[r[0]]=String(r[1]||r[0]).trim();cat[r[0]]=String(r[2]||'').trim();}});
+  /* 소재 시트 — 품목 칸이 빈 줄은 윗줄 품목 · 기간 칸이 빈 줄은 윗줄 기간 · '… 계' 줄은 뺀다. 기간은 '11/10~30' · '9/18~9/30' */
+  const per={};let cur='',pd=null;
+  (S['소재']||[]).forEach(r=>{if(!r)return;if(r[0]){cur=wrNz(r[0]);pd=null;}
+    const m=String(r[1]||'').match(/(\d{1,2})\s*\/\s*(\d{1,2})\s*[~\-–]\s*(?:(\d{1,2})\s*\/\s*)?(\d{1,2})/);
+    if(m){const m1=+m[1],m2=m[3]?+m[3]:m1;pd=(m1>M||m2<M)?null:[m1<M?1:Math.min(+m[2],last),m2>M?last:Math.min(+m[4],last)];}
+    const nm=String(r[3]||'').trim();if(!cur||!nm||/\s계$/.test(nm))return;
+    const w=+r[4];(per[cur]||(per[cur]=[])).push({n:nm,s:pd?pd[0]:1,e:pd?Math.max(pd[0],pd[1]):last,w:w>0?w:0,has:!!pd});});
+  const pk=Object.keys(per);
+  const items=hd.map(h=>{const a=wrNz(h),f=wrNz(full[h]||h),c=wrNz(cat[h]||'');
+    let k=pk.find(x=>x===a)||pk.find(x=>x===f)||pk.find(x=>x.startsWith(a)||a.startsWith(x))||(c?pk.find(x=>x.includes(c)&&!hd.some(o=>wrNz(o)===x)):null);
+    const cr=k?per[k]:[];const ws=cr.reduce((s,x)=>s+x.w,0);
+    const frac=d=>{if(!cr.length)return Math.min(1,Math.max(0,d/last));let t=0,W=0;
+      cr.forEach(x=>{const w=ws>0?x.w:1;W+=w;t+=w*Math.min(1,Math.max(0,(d-x.s+1)/(x.e-x.s+1)));});return W>0?t/W:0;};
+    return {n:h,fn:full[h]||h,cat:cat[h]||'',cr,frac,s:cr.length?Math.min(...cr.map(x=>x.s)):1,e:cr.length?Math.max(...cr.map(x=>x.e)):last};});
+  const meta={};(S['채널']||[]).forEach(r=>{if(r&&r[0])meta[r[0]]={g:r[2]==='지상파'?'지상파':'케이블',pp:String(r[3]||r[0])};});
+  const rows=B.slice(1).map(r=>{const m=meta[r[0]]||{g:'케이블',pp:String(r[0])};return {ch:String(r[0]),k:wrChK(r[0]),g:m.g,pp:m.pp,v:hd.map((_,i)=>{const v=+r[i+1];return v>0?v:0;})};}).filter(r=>r.v.some(v=>v>0));
+  /* 위클리 품목 이름(카페얼음정수기 · 노블청정기 …) → 큐시트 품목(카페 얼음 · 노블 …) */
+  const itemIx=n=>{const a=wrNz(n);let i=items.findIndex(x=>wrNz(x.fn)===a||wrNz(x.n)===a);
+    if(i<0)i=items.findIndex(x=>a.startsWith(wrNz(x.n))||wrNz(x.fn).startsWith(a)||a.startsWith(wrNz(x.fn)));return i;};
+  const PPAL={kbs:'kbsn',mbc:'mbc+',sbs:'sbs미디어넷'};
+  return {items,rows,last,itemIx,
+    /* 위클리의 채널(지상파) · PP(케이블) 한 칸의 목표 페이스 */
+    pace(g,n,day){const want=wrNz(n),wpp={};((TV_WR&&TV_WR.chs)||[]).forEach(c=>{wpp[wrNz(c.ch)]=wrNz(c.pp||c.ch);});let a=0,b=0;
+      rows.forEach(r=>{if(r.g!==g)return;const hit=g==='지상파'?r.k===want:(wpp[r.k]||PPAL[wrNz(r.pp)]||wrNz(r.pp))===want;if(!hit)return;
+        r.v.forEach((v,i)=>{if(v>0){a+=v*items[i].frac(day);b+=v;}});});
+      return b>0?a/b:NaN;},
+    /* 품목 × 채널 예산(천원) */
+    bud(item,ch){const i=itemIx(item);if(i<0)return NaN;const k=wrNz(ch),r=rows.find(x=>x.k===k);return r?r.v[i]/1000:0;},
+    item(n){const i=itemIx(n);return i<0?null:items[i];}};}
 
 /* 맨 위 큰 막대 — 디지털 '캠페인 진행 현황'과 같은 틀(날짜 칸 · 막대 · 목표 페이스 점) */
 function wrPaceHtml(F){
   const W=TV_WR,[y,m]=String(W.ym).split('-').map(Number),WDK=['일','월','화','수','목','금','토'];
   const cells=[...Array(F.span)].map((_,i)=>{const d=new Date(y,m-1,i+1),hol=(typeof holName==='function')?holName(d):null,rest=d.getDay()===0||d.getDay()===6||!!hol;
     return `<i class="${i<F.days?'on':''}${rest?' rest':''}" data-wrd="${esc(`${m}/${i+1} (${WDK[d.getDay()]})${hol?' · '+hol:''}`)}"></i>`;}).join('');
-  const T=F.tot,r=isFinite(T.rate)?T.rate:0,f=Math.min(Math.max(r,0),1)*100,pace=Math.min(Math.max(F.prog,0),1)*100;
-  const pr=F.prog>0?r/F.prog:1,ahead=pr>=1,c=PACE_SEG[0],amb=ambLevel(pr),C=ahead?AMB_OK:AMB_NG;
+  const T=F.tot,r=isFinite(T.rate)?T.rate:0,f=Math.min(Math.max(r,0),1)*100,pv=isFinite(T.pace)?T.pace:F.prog,pace=Math.min(Math.max(pv,0),1)*100;
+  const pr=pv>0?r/pv:1,ahead=pr>=1,c=PACE_SEG[0],amb=ambLevel(pr),C=ahead?AMB_OK:AMB_NG;
   const tone=mixHex(PACE_TONE,ahead?TONE_OK:TONE_NG,Math.min(Math.abs(pr-1)/.06,1));
   const segT=F.rows.reduce((s,x)=>s+x.eq,0)||1;
   const segs=F.rows.filter(x=>x.eq>0).map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.n)}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
   const last=new Date(y,m-1,F.span);
   return `<div class="pacescroll"><div class="pacebody">
       <div class="phead">${L(`집행 ${F.days}일차`,`Day ${F.days}`)} <span class="sep">/</span> ${L(`총 ${F.span}일`,`of ${F.span}`)}
-        <span class="el">${Math.round(F.prog*100)}% ${L('경과','elapsed')}</span></div>
+        <span class="el">${Math.round(F.prog*100)}% ${L('경과','elapsed')} · ${L('목표 페이스','target pace')} ${(pv*100).toFixed(1)}%</span></div>
       <div class="pline days">
         <div class="pside"><div class="nm1">${L('시작일','Start')}</div><div class="sub1">${y}.${String(m).padStart(2,'0')}.01(${WDK[new Date(y,m-1,1).getDay()]})</div></div>
         <div class="pmid"><div class="dgauge">${cells}</div></div>
@@ -401,18 +458,21 @@ function wrPaceHtml(F){
         <div class="pside r"><div class="nm1" style="color:${tone}">${isFinite(T.rate)?(T.rate*100).toFixed(1)+'%':'–'}</div><div class="sub1">${L('Total 목표','Total target')} ${wrF(T.tg,0)}</div></div>
       </div>
       <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
-        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) — 엑셀 '당월_광고비 기준별 효율' 값 그대로 · 점은 ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준(진척률 ${Math.round(F.prog*100)}%) · 막대 구간은 채널 · PP가 채운 양`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP), as in the Excel sheet · dot = share due by now (${Math.round(F.prog*100)}%) · segments = channels / PPs`)}</span></div>
+        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 미디어믹스의 품목별 집행 기간으로 일할(늦게 시작하는 품목은 그만큼 뺌)':' (달 전체 일할)'} · 막대 구간은 채널 · PP가 채운 양`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
     </div></div>`;}
 
 /* PP별 도넛 카드 — 디지털 'KPI 달성 현황' 카드와 같은 틀 */
-function wrEffCards(box,F){
+function wrEffCards(box,F,grp){
   if(!box)return;box.innerHTML='';
-  const list=[];F.G.forEach(g=>{list.push(g);F.rows.filter(r=>r.g===g.g).forEach(r=>list.push(r));});
-  const pf=Math.min(Math.max(F.prog,0),1),CC=136,VB=272,TH=27,rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
+  /* v185 — 한 줄에 한 묶음: 맨 앞에 Total, 그 오른쪽으로 채널(지상파) · PP(케이블) */
+  const list=[];F.G.filter(g=>!grp||g.g===grp).forEach(g=>{list.push(g);F.rows.filter(r=>r.g===g.g).forEach(r=>list.push(r));});
+  box.classList.toggle('hidden',!list.length);
+  const CC=136,VB=272,TH=27,rad=VB/2-TH/2-24,cir=2*Math.PI*rad;
   const pxy=(deg,rr)=>{const a=(deg-90)*Math.PI/180;return [CC+Math.cos(a)*rr,CC+Math.sin(a)*rr];};
   const arcPath=(d1,d2)=>{const [x1,y1]=pxy(d1,rad),[x2,y2]=pxy(d2,rad);return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${rad} ${rad} 0 ${Math.abs(d2-d1)>180?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;};
   list.forEach((r,i)=>{
     const c=el('div','card donut wrdn'+(r.tot?' tot':''),box);
+    const pf=Math.min(Math.max(isFinite(r.pace)?r.pace:F.prog,0),1);
     const af=Math.min(Math.max(isFinite(r.rate)?r.rate:0,0),1);
     c.innerHTML=`<div class="dhd"><div class="k">${esc(r.n)}</div><div class="kpitag">${r.tot?L(`${r.k}개 ${r.g==='지상파'?'채널':'PP'}`,`${r.k} ${r.g==='지상파'?'channels':'PPs'}`):esc(r.g)}</div></div><div class="ring"></div>`;
     const ring=c.querySelector('.ring'),svg=S('svg',{viewBox:`0 0 ${VB} ${VB}`,width:'100%',height:'100%'}),defs=S('defs',{},svg);
@@ -433,11 +493,20 @@ function wrEffCards(box,F){
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
       +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${(pf*100).toFixed(1)}%</b></div>`
       +(isFinite(r.rate)?`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${(r.rate-pf>=0?'+':'−')+Math.abs((r.rate-pf)*100).toFixed(1)}%p</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);
     ring.appendChild(svg);
     const ctr=el('div','ctr',ring);ctr.innerHTML=`<div class="ctrbox"><span class="achk">${L('달성률','Achieved')}</span><b class="achv mono">${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`;
-    const lg=el('div','dlgd',c);lg.innerHTML=`<span class="lg ach"><span class="sw"></span>${L('GRP 달성률','GRP achievement')}</span><span class="lg mute"><span class="sw"></span>${L('목표 페이스','Target pace')} ${Math.round(pf*100)}%</span>`;});}
+    const lg=el('div','dlgd',c);lg.innerHTML=`<span class="lg ach"><span class="sw"></span>${L('GRP 달성률','GRP achievement')}</span><span class="lg mute"><span class="sw"></span>${L('목표 페이스','Target pace')} ${(pf*100).toFixed(1)}%</span>`;});}
+/* v185 — 달성 막대 + 카드 두 줄(지상파 · 케이블)을 그린다. 큐시트를 뒤늦게 읽었을 때도 이것만 다시 부른다 */
+function wrEffPaint(){
+  const h=$('wrDash');if(!h||!$('wrPace'))return;let F=null;try{F=wrEff();}catch(e){console.warn(e);}if(!F)return;
+  $('wrPace').innerHTML=wrPaceHtml(F);
+  wrEffCards($('wrEffT'),F,'지상파');wrEffCards($('wrEffC'),F,'케이블');
+  wrPaceWire(h,F);
+  /* 가로로 넘치면 양옆에 ‹ › 단추(디지털 KPI 카드 줄과 같은 것) */
+  try{hpStrip('wrEffT');hpStrip('wrEffC');}catch(e){}}
 var WR_DNID=0;
 /* 막대 구간 글자 — 좁으면 % → 이름 순으로 지운다 · 날짜 칸 · 구간 툴팁 */
 function wrPaceWire(h,F){
@@ -487,25 +556,23 @@ function renderWrDash(){
   /* v184 — 맨 위: 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 */
   let F=null;try{F=wrEff();}catch(e){console.warn(e);}
   const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
-      <div class="card"><div class="bd" id="wrPace">${wrPaceHtml(F)}</div></div>
-      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('엑셀의 GRP 달성률 그대로 · Total 목표 = 예산 ÷ 목표 CPRP · 지상파는 채널, 케이블은 PP · 고리에 올리면 예산 · 목표 · 노출량','GRP achievement as in the Excel · total target = budget ÷ target CPRP · hover a ring for details')}</span></div>
-      <div class="grid donuts" id="wrEffDn"></div>
+      <div class="card"><div class="bd" id="wrPace"></div></div>
+      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(품목별 집행 기간 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
+      <div class="grid donuts wrefs" id="wrEffT"></div>
+      <div class="grid donuts wrefs" id="wrEffC"></div>
       <div class="sec gap sm">${L('주요 지표','Key metrics')}</div>`:'';
   h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+eff+kpis
-    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 아래 표가 그 품목으로','x eq.GRP · y R3+ · dot size = budget · click to show its table below')}</span></div>
+    +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 그 품목의 채널별 그래프가 펼쳐집니다','x eq.GRP · y R3+ · dot size = budget · click a dot to open its channel view')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
-      <div class="sec gap sm">${L('품목 세부','Product detail')} <span class="note">${L('당월_품목별 세부 · 광고비를 쓴 채널만 · 채널 순서는 엑셀 그대로','Product detail sheet · paid channels only · Excel order')}</span></div>
-      <div id="wrItem"></div>
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
       <div id="wrRt"></div>
       <div class="sec gap sm">${L('소재 타임라인','Creative timeline')} <span class="note">${L('카드 = 온에어 이후 누적 효율 · 배경 = 소재 영상 장면(없으면 먼슬리 리포트 스토리보드) · 온에어 날짜를 알 수 없는 소재는 뺌','Cards = cumulative since on-air · background = storyboard · creatives without an on-air date are left out')}</span></div>
       <div id="wrTl"></div>
-      <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 아래 표는 구분 · PP로 골라 봅니다','Weekly sheet · spend · eq.GRP · CPRP · filter the table by type · PP')}</span></div>
-      <div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div><div class="wrwk" id="wrWk"></div></div>
-      <div id="wrWkT" style="margin-top:14px"></div>`;
-  if(F){try{wrEffCards($('wrEffDn'),F);wrPaceWire(h,F);}catch(e){console.warn(e);}}
+      <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 오른쪽 도넛 = 이번 달 누적 PP별 금액','Weekly sheet · spend · eq.GRP · CPRP · donut = month-to-date by PP')}</span></div>
+      ${wrWkCard()}`;
+  if(F){try{wrEffPaint();}catch(e){console.warn(e);}}
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
-  wrScRender();wrItemTbl();wrRatings();wrTimeline();wrWeekChart();wrWeekTbl();wrHsWire(h);wrNextLoad();
+  wrScRender();wrRatings();wrTimeline();wrWeekChart();wrWkDonut();wrHsWire(h);wrNextLoad();
   if(WR_GOWK){WR_GOWK=0;setTimeout(()=>{const e=$('wrWkSec');if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-110});},120);}
   return true;}
 
@@ -600,55 +667,92 @@ function wrScatter(pts){
   const root=box.querySelector('.wrsc-in');
   const hot=i=>{root.classList.toggle('hot',i!=null);root.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('on',i!=null&&e.dataset.i===String(i)));};
   root.querySelectorAll('[data-i]').forEach(e=>{e.addEventListener('mouseenter',()=>hot(e.dataset.i));e.addEventListener('mouseleave',()=>hot(null));
-    e.addEventListener('click',()=>{const p=pts[+e.dataset.i];WR_SEL={item:p.it,cr:p.grp?'':p.c.n};wrScSync();
-      wrItemTbl();const t=$('wrItem');if(t){t.scrollIntoView({behavior:'smooth',block:'start'});
-        /* 내려간 뒤 그 소재 머리(두 줄)를 잠깐 색으로 깜빡여 어느 값인지 알려 준다 */
-        setTimeout(()=>{t.querySelectorAll('thead th.hi').forEach(th=>{th.classList.remove('flash');void th.offsetWidth;th.classList.add('flash');});},650);}});});}
+    e.addEventListener('click',()=>{const p=pts[+e.dataset.i];WR_SEL={item:p.it,cr:p.grp?'':p.c.n};wrScSync();wrItemPop(p.it,p.x,p.y);});});}
 
-/* ---------- 품목 세부 표 — 품목 · 소재 칩으로 고름 ---------- */
-function wrItemTbl(){
-  const box=$('wrItem');if(!box)return;const W=TV_WR;
-  const ord=(W.dorder||[]).filter(e=>e.n!=='__ALL__');
-  if(!ord.length){box.innerHTML=`<div class="card wrcard hint">${L('이 달 리포트에는 품목별 세부 시트가 없습니다','No product detail sheet in this report')}</div>`;return;}
-  let ent=ord.find(e=>e.n===WR_SEL.item)||ord[0];
-  const crs=ent.cr.filter(c=>c.n!=='계'),sumK=(ent.cr.find(c=>c.n==='계')||{}).k,allK=(((W.dorder||[]).find(e=>e.n==='__ALL__')||{}).cr||[{}])[0].k;
-  let selK=(crs.find(c=>c.n===WR_SEL.cr||c.sn===WR_SEL.cr)||{}).k||'';
-  /* v158 — 품목 칩만(소재별 값은 아래 표에 다 나온다) */
-  const chips=wrChips(ord.map(e=>({k:e.n,l:e.n})),ent.n,'data-wri');
-  const blocks=[...crs.map(c=>({k:c.k,l:c.n,on:c.on})),{k:sumK,l:L('품목 계','Product total'),sum:1},{k:allK,l:L('전체 합계','All products'),all:1}].filter(b=>b.k&&W.det[b.k]);
-  const chs=W.chs||[];
-  /* 광고비를 쓴 채널만 · 엑셀 순서 */
-  const ppKey=c=>c.g+'|'+(c.g==='지상파'?wrBc(c.pp||c.ch):c.pp);
-  const ppFirst={};chs.forEach((c,i)=>{const k=ppKey(c);if(!(k in ppFirst))ppFirst[k]=i;});
-  /* PP 묶음이 이어지게 — 주별 시트에만 있는 채널(뒤에 붙음)도 제 PP 자리로 */
-  const used=chs.map((c,i)=>({c,i})).filter(({c})=>wrPaid(c)).sort((a,b)=>(a.c.g===b.c.g?0:a.c.g==='지상파'?-1:1)||ppFirst[ppKey(a.c)]-ppFirst[ppKey(b.c)]||a.i-b.i);
-  const cellOf=(k,i)=>{const d=W.det[k];if(!d)return null;return d.cells.find(x=>x[0]===i)||null;};
-  const M=['cnt','grp','eq','r1','r3'],ML={cnt:L('횟수','Spots'),grp:'GRP',eq:'eq.GRP',r1:'R1+',r3:'R3+'};
-  /* 합계 줄 — 값이 없으면(0) 0 대신 – */
-  const fvT=(v,m)=>!isFinite(wrN(v))||+v===0?'<span class="z">–</span>':fv(v,m);
-  const fv=(v,m)=>!isFinite(wrN(v))||(+v===0&&m!=='cnt')?'<span class="z">–</span>':m==='cnt'?wrF(v):m==='r1'||m==='r3'?wrF(v,1):wrF(v,1);
-  let h1=`<th class="stk c0" rowspan="2">${L('구분','Type')}</th><th class="stk c1" rowspan="2">PP</th><th class="stk c2" rowspan="2">${L('채널','Channel')}</th>`,h2='';
-  blocks.forEach(b=>{h1+=`<th colspan="5" class="gs${b.k===selK?' hi':''}${b.sum?' sum':''}">${esc(b.l)}${b.on?`<span class="on">${L('온에어','On-air')} ${wrD(b.on)}</span>`:''}</th>`;
-    M.forEach((m,j)=>h2+=`<th class="${j===0?'gs':''}${b.k===selK?' hi':''}${b.sum?' sum':''}">${ML[m]}</th>`);});
-  let body='';let lastG='',lastPP='';
-  const gRows=g=>used.filter(x=>x.c.g===g);
-  ['지상파','케이블'].forEach(g=>{const rs=gRows(g);if(!rs.length)return;
-    rs.forEach(({c,i},ri)=>{const ppN=g==='지상파'?wrBc(c.pp||c.ch):c.pp;const ppRows=rs.filter(x=>(g==='지상파'?wrBc(x.c.pp||x.c.ch):x.c.pp)===ppN);
-      const firstPP=ppRows[0].i===i;
-      body+=`<tr>${ri===0?`<td class="stk c0 head g" rowspan="${rs.length+1}">${g==='지상파'?L('지상파','Terrestrial'):L('케이블 · 종편','Cable · GP')}</td>`:''}
-        ${firstPP?`<td class="stk c1 head" rowspan="${ppRows.length}">${esc(ppN)}</td>`:''}<td class="stk c2 head">${esc(c.ch)}</td>
-        ${blocks.map(b=>{const x=cellOf(b.k,i);return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}${b.sum?' sum':''}">${x?fv(x[j+1],m):'<span class="z">–</span>'}</td>`).join('');}).join('')}</tr>`;});
-    body+=`<tr class="gtot"><td class="stk c1 head" colspan="2">${g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 Total','Cable total')}</td>
-      ${blocks.map(b=>{const t=(W.det[b.k].t||{})[g];return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fvT(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;});
-  body+=`<tr class="total"><td class="stk c0 head" colspan="3">TV Set Total</td>${blocks.map(b=>{const t=(W.det[b.k].t||{}).T;return M.map((m,j)=>`<td class="mono${j===0?' gs':''}${b.k===selK?' hi':''}">${t?fvT(t[j],m):'–'}</td>`).join('');}).join('')}</tr>`;
-  /* v162 — 왼쪽 3열(구분 · PP · 채널)은 너비 고정 · 숫자 열은 남은 폭을 똑같이 → 품목을 바꿔도 표가 움직이지 않는다 */
-  const nNum=blocks.length*M.length,cg=`<colgroup><col style="width:112px"><col style="width:132px"><col style="width:132px">${'<col>'.repeat(nNum)}</colgroup>`;
-  box.innerHTML=`<div class="wrsel one">${chips}</div>`+wrHs(`<table class="tbl lite wrt writ eqw" style="min-width:${376+nNum*62}px">${cg}<thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl full');
-  box.querySelectorAll('[data-wri]').forEach(b=>b.onclick=()=>{const e=ord.find(x=>x.n===b.dataset.wri);WR_SEL={item:e.n,cr:((e.cr.find(c=>c.n!=='계')||{}).n)||''};wrItemTbl();wrScSync();});
-  box.querySelectorAll('[data-wrc]').forEach(b=>b.onclick=()=>{const c=ent.cr.find(x=>x.k===b.dataset.wrc);WR_SEL={item:ent.n,cr:c&&c.n!=='계'?c.n:''};wrItemTbl();wrScSync();});
-  wrHsWire(box);
-  /* 선택한 소재 열로 스크롤 */
-  const hi=box.querySelector('th.hi'),sc=box.querySelector('.wrhs-in');if(hi&&sc){const x=hi.offsetLeft-360;if(x>0)sc.scrollTo({left:x,behavior:'smooth'});}}
+/* ---------- v185 — 품목 팝업: 누른 점이 커지며 그래프를 덮는다(배경색이 바뀌고 오른쪽 끝에 × 단추).
+   그 품목의 채널마다 점 하나 — 가로 eq.GRP · 세로 R3+ · 점 크기 = 예산(미디어믹스의 채널×품목 예산을 소재 비중으로 나눔) · 색 = 소재.
+   모든 점을 감싸는 아주 옅은 큰 동그라미 = 품목 전체. (예전의 '품목 세부' 표를 대신한다) ---------- */
+const WR_CRC=['#2f7fd0','#e08a2e','#2f9f7d','#9363c4','#cf5a7c','#6f7b88'];
+function wrPopData(itn){
+  const W=TV_WR,ent=(W.dorder||[]).find(e=>e.n===itn),it=(W.items||[]).find(i=>i.n===itn)||{cr:[]};
+  const X=wrCueX(),pts=[],crs=ent?ent.cr.filter(c=>c.n!=='계'&&W.det&&W.det[c.k]):[];
+  const bOf=c=>{const m=it.cr.find(x=>x.n===c.n||x.n===c.sn);return m&&wrN(m.bud)>0?m.bud:0;},bs=crs.reduce((s,c)=>s+bOf(c),0);
+  crs.forEach((c,ci)=>{const sh=bs>0?bOf(c)/bs:1/crs.length;
+    (W.det[c.k].cells||[]).forEach(x=>{const ch=(W.chs||[])[x[0]];if(!ch||!(wrN(x[3])>0))return;
+      const cb=X?X.bud(itn,ch.ch):NaN;
+      pts.push({ci,cr:c.n,ch:ch.ch,pp:ch.pp||ch.ch,g:ch.g,cnt:x[1],grp:x[2],eq:x[3],r1:x[4],r3:wrN(x[5])||0,bud:isFinite(cb)?cb*sh:NaN});});});
+  return {it,crs,pts,per:X?X.item(itn):null,hasBud:pts.some(p=>p.bud>0)};}
+function wrPopClose(now){
+  const box=$('wrSc');if(!box)return;const pop=box.querySelector('.wrpop');box.classList.remove('pop');
+  if(WR_POPK){document.removeEventListener('keydown',WR_POPK);WR_POPK=null;}
+  if(!pop)return;hideTip();if(now){pop.remove();return;}
+  pop.classList.remove('open');setTimeout(()=>pop.remove(),480);}
+var WR_POPK=null;
+function wrItemPop(itn,ox,oy){
+  const box=$('wrSc'),root=box&&box.querySelector('.wrsc-in');if(!root)return;
+  wrPopClose(true);
+  const D=wrPopData(itn),sb=D.it.sub||{},col=wrCueCol(itn),Wd=root.offsetWidth,Hd=root.offsetHeight,f=v=>v.toFixed(1);
+  const pop=document.createElement('div');pop.className='wrpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label',itn);
+  pop.style.cssText=`--c:${col};--ox:${Math.round(ox)}px;--oy:${Math.round(oy)}px`;
+  const [,mm]=String(TV_WR.ym).split('-').map(Number),per=D.per&&D.per.cr.length?` · ${L('집행 기간','Flight')} ${mm}/${D.per.s}~${D.per.e}`:'';
+  const st=[['eq.GRP',wrF(sb.eq,1)],['R3+',isFinite(wrN(sb.r3))?wrF(sb.r3,1)+'%':'–'],['R1+',isFinite(wrN(sb.r1))?wrF(sb.r1,1)+'%':'–'],['GRP',wrF(sb.grp,1)],[L('월 예산','Budget'),wrEok(sb.bud)]];
+  const lg=D.crs.map((c,i)=>{const m=D.it.cr.find(x=>x.n===c.n||x.n===c.sn)||{};
+    return `<button type="button" class="lg" data-ci="${i}"><i style="background:${WR_CRC[i%WR_CRC.length]}"></i>${esc(c.n)}<em>eq.GRP ${wrF(m.eq,1)} · R3+ ${isFinite(wrN(m.r3))?wrF(m.r3,1)+'%':'–'}</em></button>`;}).join('');
+  let svg='';
+  const x0=64,x1=Wd-34,y0=132,y1=Hd-46,P=D.pts;
+  if(P.length){
+    const mxE=Math.max(...P.map(p=>p.eq)),mxR=Math.max(...P.map(p=>p.r3),.5);
+    const stepOf=v=>{const e=Math.pow(10,Math.floor(Math.log10(v/6))),q=v/6/e;return (q<=1?1:q<=2?2:q<=2.5?2.5:q<=5?5:10)*e;};
+    const sxs=stepOf(mxE*1.12),XM=Math.ceil(mxE*1.12/sxs)*sxs,sys=stepOf(mxR*1.18),YM=Math.ceil(mxR*1.18/sys)*sys;
+    const X=v=>x0+(v/XM)*(x1-x0),Y=v=>y1-(v/YM)*(y1-y0);
+    const mxB=Math.max(...P.map(p=>p.bud).filter(isFinite),0);
+    P.forEach((p,i)=>{p.i=i;p.x=X(p.eq);p.y=Y(p.r3);p.r=!D.hasBud?8:p.bud>0?Math.max(5.5,28*Math.sqrt(p.bud/mxB)):4;});
+    let grid='';const dy=sys<1?(sys<.1?2:1):0,dx=sxs<1?1:0;
+    for(let v=0;v<=YM+1e-9;v+=sys){const yy=Y(v);grid+=`<line x1="${x0}" x2="${x1}" y1="${f(yy)}" y2="${f(yy)}" class="gl"/><text x="${x0-8}" y="${f(yy+4)}" class="tk" text-anchor="end">${wrF(v,dy)}%</text>`;}
+    for(let v=0;v<=XM+1e-9;v+=sxs){const xx=X(v);grid+=`<line x1="${f(xx)}" x2="${f(xx)}" y1="${y0}" y2="${y1}" class="gl"/><text x="${f(xx)}" y="${y1+18}" class="tk" text-anchor="middle">${wrF(v,dx)}</text>`;}
+    /* 품목 전체 — 모든 점을 감싸는 옅은 동그라미 */
+    const bx0=Math.min(...P.map(p=>p.x-p.r)),bx1=Math.max(...P.map(p=>p.x+p.r)),by0=Math.min(...P.map(p=>p.y-p.r)),by1=Math.max(...P.map(p=>p.y+p.r));
+    const ecx=(bx0+bx1)/2,ecy=(by0+by1)/2,er=Math.max(...P.map(p=>Math.hypot(p.x-ecx,p.y-ecy)+p.r))+22;
+    const cap=`${itn} ${L('전체','total')} · eq.GRP ${wrF(sb.eq,1)} · R3+ ${isFinite(wrN(sb.r3))?wrF(sb.r3,1)+'%':'–'}`;
+    const capY=Math.max(y0+16,Math.min(y1-10,ecy-er+20));
+    const all=`<circle class="all" cx="${f(ecx)}" cy="${f(ecy)}" r="${f(er)}"/><circle class="all2" cx="${f(ecx)}" cy="${f(ecy)}" r="${f(er)}"/>
+      <text class="allt" x="${f(Math.max(x0+90,Math.min(x1-90,ecx)))}" y="${f(capY)}" text-anchor="middle">${esc(cap)}</text>`;
+    /* 채널 이름 — 큰 점부터, 서로 · 점과 겹치지 않는 자리에만 */
+    const ord=[...P].sort((a,b)=>b.r-a.r||b.eq-a.eq),placed=[];let labs='';
+    ord.slice(0,26).forEach(p=>{const w=String(p.ch).length*6.6+8;
+      const tries=[[p.x+p.r+5,p.y+4,'start'],[p.x-p.r-5,p.y+4,'end'],[p.x,p.y-p.r-6,'middle'],[p.x,p.y+p.r+13,'middle']];
+      for(const [tx,ty,an] of tries){const lx=an==='start'?tx:an==='end'?tx-w:tx-w/2,box2={x:lx,y:ty-11,w,h:14};
+        if(box2.x<x0+2||box2.x+w>x1+26||box2.y<y0-4||box2.y+14>y1+2)continue;
+        if(placed.some(q=>box2.x<q.x+q.w+3&&q.x<box2.x+w+3&&box2.y<q.y+q.h+1&&q.y<box2.y+15))continue;
+        if(P.some(q=>q!==p&&q.x+q.r>box2.x-1&&q.x-q.r<box2.x+w+1&&q.y+q.r>box2.y&&q.y-q.r<box2.y+14))continue;
+        placed.push(box2);labs+=`<text class="nm" data-i="${p.i}" x="${f(tx)}" y="${f(ty)}" text-anchor="${an}">${esc(p.ch)}</text>`;break;}});
+    const dots=ord.map(p=>`<g class="pd" data-i="${p.i}" data-ci="${p.ci}" style="--d:${260+p.i*14}ms"><circle class="core" cx="${f(p.x)}" cy="${f(p.y)}" r="${f(p.r)}" fill="${WR_CRC[p.ci%WR_CRC.length]}"/><circle class="hit" cx="${f(p.x)}" cy="${f(p.y)}" r="${f(Math.max(p.r,9))}"/></g>`).join('');
+    svg=`<svg width="${Wd}" height="${Hd}" viewBox="0 0 ${Wd} ${Hd}"><defs><clipPath id="wrpopc"><rect x="0" y="${y0-34}" width="${Wd}" height="${Hd-y0+34}"/></clipPath></defs>
+      <g clip-path="url(#wrpopc)">${all}</g>${grid}
+      <text x="${x0}" y="${y0-14}" class="ax">${L('유효 도달률 (R3+)','Effective reach (R3+)')}</text>
+      <text x="${x1}" y="${y1+36}" class="ax" text-anchor="end">${L('15초 환산 노출량 (eq.GRP)','15s-equivalent GRP (eq.GRP)')}</text>
+      <line x1="${x0}" x2="${x1}" y1="${y1}" y2="${y1}" class="axl"/><line x1="${x0}" x2="${x0}" y1="${y0}" y2="${y1}" class="axl"/>
+      ${dots}<g class="nms">${labs}</g></svg>`;
+  }else svg=`<div class="none">${L('이 품목은 아직 채널별 실적이 없습니다','No channel results for this product yet')}</div>`;
+  pop.innerHTML=`<div class="hd"><i class="sw"></i><div class="ttl"><b>${esc(itn)}</b><span>${L(`채널별 R3+ × eq.GRP · 점 = 채널 · 점 크기 = ${D.hasBud?'예산':'같은 크기(예산 자료 없음)'} · 색 = 소재${per}`,'R3+ × eq.GRP by channel · dot = channel · size = budget · colour = creative')}</span></div>
+      <div class="st">${st.map(x=>`<span><em>${x[0]}</em><b>${x[1]}</b></span>`).join('')}</div>
+      <button type="button" class="x" aria-label="${L('닫기','Close')}" title="${L('닫기 (Esc)','Close (Esc)')}"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+    <div class="lgs">${lg}<span class="lg tot"><i></i>${L('옅은 큰 동그라미 = 품목 전체','faint large circle = product total')}</span></div>${svg}`;
+  root.appendChild(pop);box.classList.add('pop');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>pop.classList.add('open')));
+  pop.querySelector('.x').onclick=()=>wrPopClose();
+  WR_POPK=e=>{if(e.key==='Escape')wrPopClose();};document.addEventListener('keydown',WR_POPK);
+  const hot=(i,ci)=>{pop.classList.toggle('hot',i!=null||ci!=null);pop.querySelectorAll('.pd,.nm').forEach(e=>{const p=P[+e.dataset.i];e.classList.toggle('on',i!=null?+e.dataset.i===i:ci!=null&&p&&p.ci===ci);});
+    pop.querySelectorAll('.lg[data-ci]').forEach(e=>e.classList.toggle('on',ci!=null?+e.dataset.ci===ci:i!=null&&P[i].ci===+e.dataset.ci));};
+  pop.querySelectorAll('.pd').forEach(g=>{const p=P[+g.dataset.i];
+    g.addEventListener('mousemove',e=>{hot(p.i,null);showTip(e.clientX,e.clientY,`<div class="t">${esc(p.ch)} <span style="font-weight:600;opacity:.6">· ${esc(p.g==='지상파'?L('지상파','Terrestrial'):p.pp)}</span></div>
+      <div class="r"><span class="l">${L('소재','Creative')}</span><b><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${WR_CRC[p.ci%WR_CRC.length]};margin-right:5px"></i>${esc(p.cr)}</b></div>
+      ${isFinite(p.bud)?`<div class="r"><span class="l">${L('예산','Budget')}</span><b>${p.bud>0?wrEok(p.bud):L('없음(보너스)','none (bonus)')}</b></div>`:''}
+      <div class="r hi"><span class="l">eq.GRP</span><b>${wrF(p.eq,1)}</b></div><div class="r hi"><span class="l">R3+</span><b>${wrF(p.r3,1)}%</b></div>
+      <div class="r"><span class="l">R1+</span><b>${wrF(p.r1,1)}%</b></div><div class="r"><span class="l">GRP</span><b>${wrF(p.grp,1)}</b></div>
+      <div class="r"><span class="l">${L('횟수','Spots')}</span><b>${wrF(p.cnt)}</b></div>`);});
+    g.addEventListener('mouseleave',()=>{hot(null,null);hideTip();});});
+  pop.querySelectorAll('.lg[data-ci]').forEach(b=>{b.addEventListener('mouseenter',()=>hot(null,+b.dataset.ci));b.addEventListener('mouseleave',()=>hot(null,null));});}
 function wrScSync(){const root=document.querySelector('#wrSc .wrsc-in');if(!root)return;
   root.querySelectorAll('.wrscc').forEach(c=>{const on=c.dataset.it===WR_SEL.item&&c.dataset.cr===WR_SEL.cr;c.classList.toggle('sel',on);root.querySelectorAll(`g.pt[data-i="${c.dataset.i}"]`).forEach(g=>g.classList.toggle('sel',on));});}
 
@@ -758,7 +862,44 @@ function wrWeekSeries(){
     const t=hm.tot&&hm.tot.w&&hm.tot.w[i]?hm.tot.w[i]:null;out.push({ym:hm.ym,...wk,pp,eq:t?t[0]:Object.values(pp).reduce((s,x)=>s+(x[0]||0),0),cost:t?t[1]:Object.values(pp).reduce((s,x)=>s+(x[1]||0),0),past:true});}));
   (W.weeks||[]).forEach((wk,i)=>{const pp={};(W.chs||[]).forEach(c=>{const x=c.w&&c.w[i];if(!x)return;const k=wrPPKey(c),o=pp[k]||(pp[k]=[0,0]);o[0]+=wrN(x[0])||0;o[1]+=wrN(x[1])||0;});
     const t=W.wtot&&W.wtot.w&&W.wtot.w[i];out.push({ym:W.ym,...wk,pp,eq:t?t[0]:Object.values(pp).reduce((s,x)=>s+x[0],0),cost:t?t[1]:Object.values(pp).reduce((s,x)=>s+x[1],0),past:false});});
-  return out.slice(-20).concat(wrNextWeeks());}
+  /* v185 — 가장 오래된 달 하나를 뺀다(그 자리에 누적 PP 도넛) */
+  let a=out.slice(-20);const yms=[...new Set(a.map(b=>b.ym))];if(yms.length>=3)a=a.filter(b=>b.ym!==yms[0]);
+  return a.concat(wrNextWeeks());}
+function wrWkCard(){return `<div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div>
+    <div class="wrwk-row"><div class="wrwk" id="wrWk"></div><div class="wrwkdn" id="wrWkDn"></div></div></div>`;}
+/* v185 — 이번 달 누적 PP별 금액 도넛(집행금액 · 예산 고르기). 지상파는 채널(파랑 계열) · 케이블은 PP(회색 계열) */
+var WR_WKDN='cost';
+function wrWkDonut(){
+  const box=$('wrWkDn');if(!box)return;const W=TV_WR,m={};
+  (W.chs||[]).forEach(c=>{const k=wrPPKey(c),o=m[k]||(m[k]={k,g:c.g==='지상파'?'지상파':'케이블',n:c.g==='지상파'?(c.ch||c.pp):(c.pp||c.ch),cost:0,bud:0,eq:0});o.cost+=wrN(c.cost)||0;o.bud+=wrN(c.bud)||0;o.eq+=wrN(c.eq)||0;});
+  const all=Object.values(m),has=k=>all.some(o=>o[k]>0);
+  if(!has('cost')&&!has('bud')){box.innerHTML='';box.classList.add('hidden');return;}box.classList.remove('hidden');
+  if(!has(WR_WKDN))WR_WKDN=has('cost')?'cost':'bud';const K=WR_WKDN;
+  const rows=all.filter(o=>o[K]>0).sort((a,b)=>(a.g===b.g?0:a.g==='지상파'?-1:1)||b[K]-a[K]),T=rows.reduce((s,o)=>s+o[K],0)||1;
+  let it=0,ic=0;rows.forEach(o=>{o.col=o.g==='지상파'?WR_TONE.t[Math.min(it++,WR_TONE.t.length-1)]:WR_TONE.c[Math.min(ic++,WR_TONE.c.length-1)];});
+  const S=236,C=S/2,R=104,r0=64,gap=.012,f=v=>v.toFixed(2);let a0=-Math.PI/2,arcs='',labs='';
+  const xy=(a,rr)=>[C+Math.cos(a)*rr,C+Math.sin(a)*rr];
+  rows.forEach((o,i)=>{const sw=o[K]/T*Math.PI*2,g=Math.min(gap,sw*.3),s1=a0+g,e1=a0+sw-g,big=e1-s1>Math.PI?1:0;
+    const [ax,ay]=xy(s1,R),[bx,by]=xy(e1,R),[cx,cy]=xy(e1,r0),[dx,dy]=xy(s1,r0);
+    arcs+=`<path class="sl" data-i="${i}" fill="${o.col}" d="M${f(ax)} ${f(ay)} A${R} ${R} 0 ${big} 1 ${f(bx)} ${f(by)} L${f(cx)} ${f(cy)} A${r0} ${r0} 0 ${big} 0 ${f(dx)} ${f(dy)} Z" style="--d:${i*30}ms"/>`;
+    if(o[K]/T>=.075){const [tx,ty]=xy(a0+sw/2,(R+r0)/2);labs+=`<text class="pc" data-i="${i}" x="${f(tx)}" y="${f(ty+3.5)}" text-anchor="middle" fill="${wrInk(o.col)}">${Math.round(o[K]/T*100)}%</text>`;}
+    a0+=sw;});
+  const gT=rows.filter(o=>o.g==='지상파').reduce((s,o)=>s+o[K],0);
+  const seg=has('cost')&&has('bud')?`<div class="seg wrseg" role="tablist"><button type="button" data-wkdn="cost" class="${K==='cost'?'on':''}">${L('집행금액','Spend')}</button><button type="button" data-wkdn="bud" class="${K==='bud'?'on':''}">${L('예산','Budget')}</button></div>`:'';
+  box.innerHTML=`<div class="hd"><b>${wrMonth()} ${K==='cost'?L('누적 · PP별 집행금액','to date · spend by PP'):L('PP별 예산','budget by PP')}</b>${seg}</div>
+    <div class="rg"><svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">${arcs}${labs}</svg>
+      <div class="ctr"><span>${K==='cost'?L('누적 집행','Spent'):L('예산','Budget')}</span><b>${wrEok(T)}</b><em>${L('지상파','Terr.')} ${Math.round(gT/T*100)}% · ${L('케이블','Cable')} ${Math.round((1-gT/T)*100)}%</em></div></div>
+    <div class="ls">${rows.map((o,i)=>`<div class="li" data-i="${i}"><i style="background:${o.col}"></i><span>${esc(o.n)}</span><b>${wrEok(o[K])}</b><em>${(o[K]/T*100).toFixed(1)}%</em></div>`).join('')}</div>`;
+  box.querySelectorAll('[data-wkdn]').forEach(b=>b.onclick=()=>{WR_WKDN=b.dataset.wkdn;wrWkDonut();});
+  const hot=i=>{box.classList.toggle('hot',i!=null);box.querySelectorAll('[data-i]').forEach(e=>e.classList.toggle('on',i!=null&&+e.dataset.i===i));};
+  box.querySelectorAll('.sl,.li,.pc').forEach(e=>{const i=+e.dataset.i,o=rows[i];
+    e.addEventListener('mousemove',ev=>{hot(i);showTip(ev.clientX,ev.clientY,`<div class="t">${esc(o.n)} <span style="font-weight:600;opacity:.6">· ${o.g==='지상파'?L('지상파','Terrestrial'):L('케이블','Cable')}</span></div>
+      <div class="r${K==='cost'?' hi':''}"><span class="l">${L('누적 집행금액','Spend to date')}</span><b>${wrEok(o.cost)}</b></div>
+      <div class="r${K==='bud'?' hi':''}"><span class="l">${L('예산','Budget')}</span><b>${o.bud>0?wrEok(o.bud):'–'}</b></div>
+      <div class="r"><span class="l">${L('소진율','Spent')}</span><b>${o.bud>0?(o.cost/o.bud*100).toFixed(1)+'%':'–'}</b></div>
+      <div class="r"><span class="l">${L('비중','Share')}</span><b>${(o[K]/T*100).toFixed(1)}%</b></div>
+      <div class="r"><span class="l">eq.GRP</span><b>${wrF(o.eq,1)}</b></div>`);});
+    e.addEventListener('mouseleave',()=>{hot(null);hideTip();});});}
 /* v169 — 다음 달 캠페인(같은 광고주)에 주차 데이터가 있을 때만 오른쪽에 흐리게. 없으면 아무것도 그리지 않는다 */
 function wrNextWeeks(){
   try{const W=TV_WR,y=+String(W.ym).slice(0,4),m=+String(W.ym).slice(5,7),ny=m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`;
@@ -769,11 +910,8 @@ function renderWrWeek(){
   if(!wrOn()){h.innerHTML='';return false;}
   const W=TV_WR;
   h.innerHTML=wrHead(L('TV 주차별 퍼포먼스','TV weekly performance'),`${wrMonth()} · ${W.period||''}`)
-    +`<div class="card wrcard"><div class="wrwk-top"><div class="rplg rpisolg wkleg" id="wrWkLeg"></div></div>
-      <div class="wrwk" id="wrWk"></div></div>
-    <div class="sec gap sm">${L('채널별 주차 데이터','Weekly data by channel')} <span class="note">${L('당월_주별 · 리포트에 품목별 주차 값이 없어 구분 · PP로 골라 봅니다','Weekly sheet · the report has no weekly split by product, so filter by type · PP')}</span></div>
-    <div id="wrWkT"></div>`;
-  wrWeekChart();wrWeekTbl();wrNextLoad();
+    +wrWkCard();
+  wrWeekChart();wrWkDonut();wrNextLoad();
   return true;}
 /* 다음 달 캠페인 값은 전체 캠페인 목록에서 — 아직 안 읽었으면 읽고 다시 그린다 */
 function wrNextLoad(){
@@ -786,7 +924,7 @@ function wrWeekChart(){
   const box=$('wrWk');if(!box)return;const S=wrWeekSeries();if(!S.length){box.innerHTML='';return;}
   const totK={};S.forEach(b=>Object.entries(b.pp).forEach(([k,x])=>{totK[k]=(totK[k]||0)+(x[0]||0);}));
   const keys=Object.keys(totK).sort((a,b)=>(a.startsWith('지상파')?0:1)-(b.startsWith('지상파')?0:1)||totK[b]-totK[a]);
-  const NX=0,Wd=Math.max(900,box.clientWidth||1100),PL=18,PR=18,H=470,BOT=70,base=H-BOT,top=150,n=S.length,step=(Wd-PL-PR)/Math.max(n+NX,1),bw=Math.min(40,step*.5);
+  const NX=0,Wd=Math.max(600,box.clientWidth||1100),PL=18,PR=18,H=470,BOT=70,base=H-BOT,top=150,n=S.length,step=(Wd-PL-PR)/Math.max(n+NX,1),bw=Math.min(40,step*.5);
   const iCur=Math.max(0,S.findIndex(b=>!b.past)),xCut=iCur>0?PL+step*iCur:-1,iNx=S.findIndex(b=>b.next),xNx=iNx>0?PL+step*iNx:Wd+60;
   const fc=b=>b.past?' past':b.next?' nx':'';
   const cxs=S.map((_,i)=>PL+step*(i+.5));
@@ -838,44 +976,6 @@ function wrWeekChart(){
         ${rows.length?'<div class="tsec">PP</div>':''}${rows.map(k=>`<div class="r"><span class="l">${esc(k.split('|')[1])}</span><b>${wrEok(b.pp[k][1])}<span class="sm">${wrF(b.pp[k][0],1)} eq</span></b></div>`).join('')}`);
       box.querySelectorAll('g.wb').forEach(x=>x.classList.toggle('dim',+x.dataset.i!==i));};
     r.onmouseleave=()=>{hideTip();box.querySelectorAll('g.wb').forEach(x=>x.classList.remove('dim'));};});}
-function wrWeekTbl(){
-  const box=$('wrWkT');if(!box)return;const W=TV_WR,wk=W.weeks||[];
-  const rows=(W.chs||[]).filter(c=>wrPaid(c)||(wrN(c.eq)>0));
-  const pps=[];rows.forEach(c=>{const k=wrPPKey(c);if(!pps.includes(k))pps.push(k);});
-  const opts=[{k:'all',l:L('전체','All')},{k:'g:지상파',l:L('지상파','Terrestrial')},{k:'g:케이블',l:L('케이블 · 종편','Cable · GP')},...pps.filter(k=>k.startsWith('케이블')).map(k=>({k,l:k.split('|')[1]}))];
-  if(!opts.some(o=>o.k===WR_WK.pp))WR_WK.pp='all';
-  const f=WR_WK.pp,sel=rows.filter(c=>f==='all'||(f.startsWith('g:')?c.g===f.slice(2):wrPPKey(c)===f));
-  const ppFirst={};(W.chs||[]).forEach((c,i)=>{const k=wrPPKey(c);if(!(k in ppFirst))ppFirst[k]=i;});
-  sel.sort((a,b)=>(a.g===b.g?0:a.g==='지상파'?-1:1)||ppFirst[wrPPKey(a)]-ppFirst[wrPPKey(b)]);
-  const cp=(c,e)=>e>0&&c>0?c/e:NaN;
-  let h1=`<th class="stk c0" rowspan="2">${L('구분','Type')}</th><th class="stk c1" rowspan="2">PP</th><th class="stk c2" rowspan="2">${L('채널','Channel')}</th><th rowspan="2" class="gs">${L('예산','Budget')}<br><span class="u">(${L('천원','K')})</span></th>
-    <th colspan="3" class="gs sum">${wrMonth()} ${L('누적','total')}</th>`,h2=`<th class="gs sum">eq.GRP</th><th class="sum">${L('집행금액','Spend')}</th><th class="sum">CPRP</th>`;
-  wk.forEach(w=>{h1+=`<th colspan="3" class="gs">${esc(w.l)}<span class="on">${wrD(w.s)}~${wrD(w.e).replace(/^\d+\.\d+\./,'')}</span></th>`;h2+=`<th class="gs">eq.GRP</th><th>${L('집행금액','Spend')}</th><th>CPRP</th>`;});
-  const T={bud:0,eq:0,cost:0,w:wk.map(()=>[0,0])};const mkT=()=>({bud:0,eq:0,cost:0,w:wk.map(()=>[0,0])});let G=mkT();
-  const totRow=(lab,X,cls,span)=>`<tr class="${cls}"><td class="stk ${span===3?'c0':'c1'} head" colspan="${span}">${lab}</td><td class="mono gs">${wrF(X.bud)}</td><td class="mono gs">${wrF(X.eq,1)}</td><td class="mono">${wrF(X.cost)}</td><td class="mono">${wrF(cp(X.cost,X.eq))}</td>
-    ${X.w.map(x=>`<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`).join('')}</tr>`;
-  let body='';let lastG='',lastPP='';
-  let P=mkT();const ppMulti=k=>k.startsWith('케이블')&&sel.filter(x=>wrPPKey(x)===k).length>1;
-  sel.forEach((c,ri)=>{const gN=c.g==='지상파'?L('지상파','Terrestrial'):L('케이블<br>·<br>종편','Cable<br>·<br>GP'),ppN=c.g==='지상파'?wrBc(c.pp||c.ch):c.pp;
-    /* v160 — 묶음(지상파 · 케이블 · 종편)마다 Total 줄 — 구분 칸은 그 줄까지 합친다 */
-    const gSpan=sel.filter(x=>x.g===c.g).length+1+[...new Set(sel.filter(x=>x.g===c.g).map(wrPPKey))].filter(ppMulti).length,ppSpan=sel.filter(x=>wrPPKey(x)===wrPPKey(c)).length+(ppMulti(wrPPKey(c))?1:0);
-    P.bud+=wrN(c.bud)||0;P.eq+=wrN(c.eq)||0;P.cost+=wrN(c.cost)||0;(c.w||[]).forEach((x,i)=>{if(P.w[i]){P.w[i][0]+=wrN((x||[])[0])||0;P.w[i][1]+=wrN((x||[])[1])||0;}});
-    T.bud+=wrN(c.bud)||0;T.eq+=wrN(c.eq)||0;T.cost+=wrN(c.cost)||0;G.bud+=wrN(c.bud)||0;G.eq+=wrN(c.eq)||0;G.cost+=wrN(c.cost)||0;
-    (c.w||[]).forEach((x,i)=>{if(G.w[i]){G.w[i][0]+=wrN((x||[])[0])||0;G.w[i][1]+=wrN((x||[])[1])||0;}});
-    body+=`<tr>${c.g!==lastG?`<td class="stk c0 head g" rowspan="${gSpan}">${gN}</td>`:''}${wrPPKey(c)!==lastPP?`<td class="stk c1 head" rowspan="${ppSpan}">${esc(ppN)}</td>`:''}<td class="stk c2 head">${esc(c.ch)}</td>
-      <td class="mono gs">${wrF(c.bud)}</td><td class="mono gs sum">${wrF(c.eq,1)}</td><td class="mono sum">${wrF(c.cost)}</td><td class="mono sum">${wrF(cp(c.cost,c.eq))}</td>
-      ${wk.map((w,i)=>{const x=(c.w||[])[i]||[];T.w[i][0]+=wrN(x[0])||0;T.w[i][1]+=wrN(x[1])||0;return `<td class="mono gs">${wrF(x[0],1)}</td><td class="mono">${wrF(x[1])}</td><td class="mono">${wrF(cp(x[1],x[0]))}</td>`;}).join('')}</tr>`;
-    lastG=c.g;lastPP=wrPPKey(c);
-    const nx=sel[ri+1];
-    /* v170 — 케이블 PP(채널 둘 이상)마다 소계 줄 */
-    if(!nx||wrPPKey(nx)!==wrPPKey(c)){if(ppMulti(wrPPKey(c)))body+=totRow(esc(ppN)+' Total',P,'sub',1).replace('class="stk c1 head" colspan="1"','class="stk c2 head"');P=mkT();}
-    if(!nx||nx.g!==c.g){body+=totRow(c.g==='지상파'?L('지상파 Total','Terrestrial total'):L('케이블 · 종편 Total','Cable · GP total'),G,'gtot',2);G=mkT();}});
-  body+=totRow('TOTAL',T,'total',3);
-  /* 페이지 맨 아래 표 — 표 안 세로 스크롤 없이 전체를 펼치고 머리만 화면 위에 고정 */
-  box.innerHTML=`<div class="wrsel">${wrChips(opts,WR_WK.pp,'data-wrp')}</div>`+wrHs(`<table class="tbl lite wrt writ wrwt"><thead><tr>${h1}</tr><tr>${h2}</tr></thead><tbody>${body}</tbody></table>`,'tbl full');
-  box.querySelectorAll('[data-wrp]').forEach(b=>b.onclick=()=>{WR_WK.pp=b.dataset.wrp;wrWeekTbl();});
-  wrHsWire(box);}
-
 /* ---------- '계' → 'Total' 표기 통일 (v160) ----------
    엑셀 · PDF 에서 그대로 온 이름('지상파 계' · '스마트매트리스 계' · '코웨이 총 합계' · '계')과
    화면 문구('예산 계' · '소계' · '합계')를 화면에 그릴 때만 Total 로 바꾼다. 데이터 열쇠는 그대로 둔다.

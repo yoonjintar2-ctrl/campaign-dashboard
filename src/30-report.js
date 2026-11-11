@@ -241,11 +241,11 @@ function rpCatBar(){
   if(!RP_COMP)rpCompLoad().then(()=>{if(h.isConnected)rpCatBar();});
   const st=Object.fromEntries(RPT_DOC.cats.map(c=>[c.k,rpCatState(c)]));
   /* v158 — 처음엔 아무 품목도 고르지 않는다(고르면 아래에 데이터) */
-  if(RPT.cat&&st[RPT.cat]!=='on')RPT.cat='';
+  if(RPT.cat&&!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat='';
   h.innerHTML=`<div class="rpcatw2"><div class="rpcatl"><b>${L('품목 선택','Pick a product')}</b><em>${L('고른 품목의 데이터가 아래에 나옵니다','Data below follows the product you pick')}</em></div>
-    <div class="rpcats2" role="tablist">${RPT_DOC.cats.filter(c=>st[c.k]==='on').map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);   /* v162 — 이번 달 집행이 없는 품목은 카드 자체를 숨김 */
-      return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' off':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`disabled title="${L('이번 달 코웨이 집행 없음','No Coway spend this month')}"`:''} style="--d:${i*35}ms">
-        <span class="im">${img?`<img src="${img}" alt="" loading="lazy" decoding="async">`:''}</span><span class="nm">${esc(c.lab)}</span>${s2!=='on'?`<span class="tg">${L('이번 달 없음','none this month')}</span>`:''}</button>`;}).join('')}</div></div>`;
+    <div class="rpcats2" role="tablist">${[...RPT_DOC.cats].sort((a,b)=>(st[a.k]==='on'?0:1)-(st[b.k]==='on'?0:1)).map((c,i)=>{const s2=st[c.k],img=rpCatImg(c);   /* v185 — 코웨이 집행이 없는 품목도 고를 수 있다(코웨이 집행 품목이 앞) */
+      return `<button type="button" role="tab" aria-selected="${c.k===RPT.cat}" class="rpct${c.k===RPT.cat?' on':''}${s2!=='on'?' nocw':''}" data-rpcat="${esc(c.k)}" data-cue="${L('아래 데이터','Below')}" ${s2!=='on'?`title="${L('이번 달 코웨이 집행 없음 — 경쟁사 데이터를 봅니다','No Coway spend this month — competitor data')}"`:''} style="--d:${i*35}ms">
+        <span class="im">${img?`<img src="${img}" alt="" loading="lazy" decoding="async">`:''}</span><span class="nm">${esc(c.lab)}</span>${s2!=='on'?`<span class="tg">${L('코웨이 없음','no Coway')}</span>`:''}</button>`;}).join('')}</div></div>`;
   rpGo(h);
   /* 화면을 내려 줄이 위에 붙으면 그림을 접어 얇게 */
   if(!h.__io){const sen=document.createElement('div');sen.className='rpcatsen';h.parentNode.insertBefore(sen,h);

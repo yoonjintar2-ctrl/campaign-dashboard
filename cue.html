@@ -1509,6 +1509,9 @@ html.embed .cue-dd li i{width:10px;height:10px;border-radius:3px}html.embed .cue
 html.embed .cue-dd li b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}html.embed .cue-dd li em{font-style:normal;text-align:right;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 @keyframes cueDdIn{from{opacity:0}}@keyframes cueDdPop{from{transform:scale(.25);opacity:0}}@keyframes cueDdArc{from{opacity:0;stroke-width:4}}
 html.embed table.t.cue td.wk .spot.ibox{white-space:nowrap!important}
+
+/* v185 — 미디어믹스 맨 아래 '송출 횟수' 표는 대시보드 안에서는 숨긴다(주차별 송출 수 그래프가 바로 위에 있다) */
+html.embed section.card:has(#tc){display:none!important}
 </style>
 <script id="cue-boot">(function () {
   var q = new URLSearchParams(location.search), qh = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); /* v184 — 탭·열쇠는 # 뒤로(주소가 같아야 브라우저가 cue.html 을 다시 받지 않는다) */
