@@ -39,9 +39,11 @@ function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame')
 /* v170 — 틀 높이 = 내용 높이(틀이 알려 준다) → 페이지 스크롤 하나만. 캘린더는 화면 폭을 넓게 쓴다 */
 function cueSize(){
   const f=$('cueFrame'),host=$('cueHost');if(!f||!host||f.offsetParent===null)return;
-  if(CUE_TAB==='cal'){const r=host.getBoundingClientRect(),vw=document.documentElement.clientWidth,w=Math.min(vw-28,2400);
+  /* v172 — 큐시트 · 캘린더 · 전체 큐시트는 화면 폭을 넓게(가로 스크롤을 줄인다) */
+  if(CUE_TAB!=='summary'){const r=host.getBoundingClientRect(),vw=document.documentElement.clientWidth,w=Math.min(vw-28,2400);
     if(w>r.width+8){f.style.width=w+'px';f.style.marginLeft=Math.round((vw-w)/2-r.left)+'px';}else{f.style.width='';f.style.marginLeft='';}}
   else{f.style.width='';f.style.marginLeft='';}
+  {const sc=$('cueSec');if(sc){sc.style.marginLeft=f.style.marginLeft;sc.style.width=f.style.width;}}
   cueStickNow();}
 function cueFrameH(h){const f=$('cueFrame');if(!f)return;h=Math.max(360,Math.round(h));if(Math.abs((parseFloat(f.style.height)||0)-h)>1)f.style.height=h+'px';}
 /* 표 머리줄 고정 — 대시보드 머리(메뉴 줄) 아래에 붙도록 틀에 알려 준다 */

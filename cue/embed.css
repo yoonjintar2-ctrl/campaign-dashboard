@@ -35,7 +35,6 @@ html.embed .cale.mid .m{color:#2a6fba;font-weight:700}
 /* 틀 높이 = 내용 높이 — 안쪽 세로 스크롤을 없앤다(창 높이에 맞추던 max-height 는 푼다) */
 html.embed,html.embed body{overflow-y:hidden;height:auto;min-height:0}
 html.embed .tw{max-height:none;overflow-y:hidden}
-html.embed .tw.caw,html.embed .tw.cgw{max-height:var(--pvh,760px);overflow-y:auto}
 html.embed .bud{max-height:none}
 html.embed table thead.stuck{position:relative;z-index:6}
 html.embed table thead.stuck th{box-shadow:0 6px 12px -8px rgba(20,30,45,.45)}
@@ -47,7 +46,7 @@ html.embed section.card:has(table.cue.qm){background:none;border:0;box-shadow:no
 html.embed section.card:has(table.cue.qm)>.hd{padding:0 2px 8px;border:0;background:none}
 html.embed section.card:has(table.cue.qm)>.bd{padding:0}
 html.embed section.card:has(table.cue.qm)>.bd>.tw,html.embed section.card:has(table.cue.qm)>.tw{border:1px solid var(--rule)!important;border-radius:14px!important;background:var(--surface);box-shadow:var(--shadow)}
-html.embed section.card:has(table.cue.qm)>.tw{margin-top:12px}
+html.embed section.card:has(table.cue.qm)>.tw{margin-top:30px}
 html.embed section.card:has(table.cue.qm) table.t thead th{background:var(--top);color:#fff;font-weight:700;font-size:12px}
 /* 본방 · 생방이 아닌 프로그램 이름은 무채색 */
 html.embed table.t.cue.qm tr:not(.bon):not(.sub):not(.tot) td.pg{color:#8b95a1;font-weight:500}
@@ -59,3 +58,43 @@ html.embed .calcard{overflow:hidden}
 @keyframes cueFlash{0%,100%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 0 rgba(42,111,186,0)}20%,60%{box-shadow:inset 0 0 0 3px #2a6fba,0 0 0 8px rgba(42,111,186,.28)}40%,80%{box-shadow:inset 0 0 0 2px #2a6fba,0 0 0 2px rgba(42,111,186,.1)}}
 html.embed td.cue-flash{animation:cueFlash 3s ease-in-out;position:relative;z-index:3}
 html.embed .calnow.cue-flash span{animation:cueFlash 3s ease-in-out;border-radius:8px}
+
+/* ===== v172 ===== */
+/* 제목은 영역(카드) 위에 — 캠페인 퍼포먼스 화면과 같은 방식. 카드 모양은 내용 쪽에 */
+html.embed section.card:has(>.hd){background:none;border:0;box-shadow:none;overflow:visible;margin-top:38px!important;margin-bottom:0!important}
+html.embed .pane>section.card:has(>.hd):first-child,html.embed .cue-part>section.card:has(>.hd):first-child{margin-top:8px!important}
+html.embed section.card:has(>.hd)>.hd{padding:0 2px 11px;border:0;background:none;gap:10px}
+html.embed section.card:has(>.hd)>.hd h3{font-size:16px;font-weight:900;color:var(--ink);letter-spacing:-.2px}
+html.embed section.card:has(>.hd)>.hd .sub{font-size:12px;color:var(--muted);font-weight:600}
+html.embed section.card:has(>.hd)>:not(.hd){background:var(--surface);border:1px solid var(--rule);border-radius:14px;box-shadow:var(--shadow)}
+html.embed section.card:has(>.hd)>.bd>.tw{border:0}
+html.embed section.card:has(table.cue.qm)>.bd{background:none;border:0;box-shadow:none}
+html.embed section.card:has(table.cue.qm)>.bd>.tw{border:1px solid var(--rule)}
+/* 요약(미디어믹스) — 영역 사이를 넉넉히 */
+html.embed .cue-part>*+*{margin-top:38px!important}
+html.embed .cue-part .grid,html.embed .cue-part .row,html.embed .cue-part [class*="grid"]{row-gap:38px}
+html.embed .cue-sec{margin:46px 2px 12px}
+/* 큐시트 — 세로 스크롤 없이 전부 펼침 · 프로그램 이름과 주차 칸의 카드는 한 줄 */
+html.embed .tw.caw,html.embed .tw.cgw{max-height:none;overflow-y:hidden}
+html.embed table.t.cue td.pg,html.embed table.t.cue.qm td.pg{white-space:nowrap;word-break:keep-all}
+html.embed table.t.cue td.wk>*,html.embed table.t.cue td.wk{white-space:nowrap}
+html.embed table.t.cue td.wk>*{max-width:none}
+/* 케이블 PP 전체 — 표 하나, 채널 열 */
+html.embed table.merged .fx{position:static}
+html.embed table.merged td.cuech{background:var(--surface)!important;text-align:center;vertical-align:middle;font-weight:800;color:var(--ink);border-right:1px solid var(--rule);white-space:nowrap;padding:6px 10px}
+html.embed table.merged td.cuech small{display:block;margin-top:2px;font-size:10.5px;font-weight:600;color:var(--muted)}
+html.embed table.merged tr.chtop>td{border-top:2px solid var(--rule)}
+/* 일별 막대 → 그날 도넛 */
+html.embed .cue-dd{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(2px);border-radius:12px;animation:cueDdIn .28s ease both}
+html.embed .cue-dd .in{position:relative;display:flex;align-items:center;gap:26px;padding:34px 8px 4px;transform-origin:var(--ox) 100%;animation:cueDdPop .45s cubic-bezier(.2,.8,.2,1) both}
+html.embed .cue-dd .pill{position:absolute;left:100px;top:0;transform:translateX(-50%);background:var(--ink);color:var(--surface);font-size:13px;font-weight:900;padding:4px 14px;border-radius:999px;white-space:nowrap}
+html.embed .cue-dd .cl{position:absolute;right:0;top:-2px;border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:4px 11px;font:inherit;font-size:11.5px;font-weight:800;color:var(--ink2);cursor:pointer}
+html.embed .cue-dd .cl kbd{font:inherit;font-size:10px;color:var(--muted);margin-left:4px}
+html.embed .cue-dd svg circle{animation:cueDdArc .7s ease both;animation-delay:var(--d)}
+html.embed .cue-dd .t1{font-size:21px;font-weight:900;fill:var(--ink)}html.embed .cue-dd .t2{font-size:11px;font-weight:700;fill:var(--muted)}
+html.embed .cue-dd ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:12.5px;min-width:230px}
+html.embed .cue-dd li{display:grid;grid-template-columns:12px 1fr auto 48px;gap:8px;align-items:center}
+html.embed .cue-dd li i{width:10px;height:10px;border-radius:3px}html.embed .cue-dd li span{font-weight:700;color:var(--ink)}
+html.embed .cue-dd li b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}html.embed .cue-dd li em{font-style:normal;text-align:right;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+@keyframes cueDdIn{from{opacity:0}}@keyframes cueDdPop{from{transform:scale(.25);opacity:0}}@keyframes cueDdArc{from{opacity:0;stroke-width:4}}
+html.embed table.t.cue td.wk .spot.ibox{white-space:nowrap!important}

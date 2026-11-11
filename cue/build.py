@@ -10,6 +10,8 @@ def safe(js, name):
     return js
 import colorsys
 def tint(css):
+    return css   # v172 — 표 머리 · 소계 · 그래프 바탕은 무채색 그대로(큐시트 원본 회색). 강조만 파랑(PINK 맵)
+def tint_old(css):
     """무채색 회색을 대시보드의 회청 톤으로 — 밝기는 그대로, 색상만 살짝 (큐시트 원본 CSS 는 고치지 않는다)"""
     def f(m):
         h = m.group(1)
@@ -29,12 +31,16 @@ def blue(t):
 PATCH = [
   ("ctx.fill(p); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.stroke(p); }", "ctx.fill(p); }"),
   ("if (nb && st.sweep > 0.98) for (const e of grpEnds) {", "if (false) for (const e of grpEnds) {"),
-  ("const DN_BASE = '#3a3a3c';", "const DN_BASE = '#2c4a73';"),
-  ("const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#cbcbcb', wd: '#7563a8', we: '#d97f74' };", "const MIXC = { s15: '#a9bdd6', s30: '#34557f', etc: '#d7dde5', wd: '#34557f', we: '#a9bdd6' };"),
+  ("const DN_BASE = '#3a3a3c';", "const DN_BASE = '#3d4046';"),
+  ("const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#cbcbcb', wd: '#7563a8', we: '#d97f74' };", "const MIXC = { s15: '#b9bcc1', s30: '#4a4e55', etc: '#dcdee1', wd: '#4a4e55', we: '#b9bcc1' };"),
   # v170 — 요약 화면 아래에 당월 소재를 잇는다(bridge.js 의 renderSummary 가 감싼다) · 캘린더 '지금' 위치로는 대시보드(부모 창)를 움직인다
   ("function renderSummary(root) {", "function renderSummary0(root) {"),
+  # v172 — 케이블: PP 전체를 고르면 채널별 표 대신 표 하나(bridge.js 가 합친다) · 일별 막대를 누르면 그날 품목 비중 도넛
+  ("function renderCueC(root) {", "function renderCueC0(root) {"),
+  ("cv.addEventListener('click', e => { const rc = cv.getBoundingClientRect(); const d = Math.floor((e.clientX - rc.left - left) / bw) + 1; if (d >= 1 && d <= days) {",
+   "cv.addEventListener('click', e => { const rc = cv.getBoundingClientRect(); const d = Math.floor((e.clientX - rc.left - left) / bw) + 1; if (window.cueDayDonut && e.clientY - rc.top >= topP && d >= 1 && d <= days && tot[d] > 0) { tip.style.display = 'none'; window.cueDayDonut(pane, { title: `${ym.m}/${d} (${dowOf(ym.y, ym.m, d)})`, total: tot[d], x: left + (d - .5) * bw, rows: order.filter(k => byDay[d].get(k)).map(k => ({ n: k, v: byDay[d].get(k), c: itemColor(k) })) }); return; } if (d >= 1 && d <= days) {"),
   ("const goToday = smooth => { const td", "const goToday = smooth => { if (window.cueCalJump) return window.cueCalJump(root, smooth); const td"),
-  ("const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#6d6d6d' };", "const SECC = { 10: '#cdd8e6', 15: '#a9bdd6', 20: '#6f8fb8', 30: '#34557f', 40: '#223a59', 45: '#8794a5', 60: '#5b6676' };"),
+  ("const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#6d6d6d' };", "const SECC = { 10: '#d6d8db', 15: '#b9bcc1', 20: '#8b9097', 30: '#4a4e55', 40: '#2f3237', 45: '#9a9ea4', 60: '#666a70' };"),
 ]
 USED = set()
 def patch(js):

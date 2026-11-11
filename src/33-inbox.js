@@ -139,7 +139,7 @@ function inbxPaint(el,area){
         <div class="inbx-row"><label>매체 <input class="txt inbx-media" list="inbxMediaL" maxlength="40" value="${esc(mt.media)}" placeholder="어떤 매체의 자료인가요">
             <datalist id="inbxMediaL">${inbxMedias(area).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></label>
           <label>기준 월 <input type="month" class="inbx-mon" value="${esc(mt.mon||inbxMonth(area==='report'))}"></label>
-          <label class="grow">전할 말 <textarea class="txt inbx-note" maxlength="500" rows="2" placeholder="${area==='report'?'예) 10월 먼슬리 최종본입니다. 소재 아카이브는 지난달 것 유지해 주세요':'예) 10월 4주차 수정본. 케이블 금액이 바뀌었으니 주차별 퍼포먼스에 반영해 주세요'}">${esc(mt.note)}</textarea></label>
+          <label class="grow">전할 말 <textarea class="txt inbx-note" maxlength="500" rows="1" placeholder="${area==='report'?'예) 10월 먼슬리 최종본입니다. 소재 아카이브는 지난달 것 유지해 주세요':'예) 10월 4주차 수정본. 케이블 금액이 바뀌었으니 주차별 퍼포먼스에 반영해 주세요'}">${esc(mt.note)}</textarea></label>
           <button class="btn sm pri" data-inbx-up${INBX.busy?' disabled':''}>${INBX.busy?'올리는 중…':'접수하기'}</button>
           <button class="btn sm" data-inbx-cancel>취소</button></div>
         <div class="inbx-say" aria-live="polite"></div></div>`:''}`

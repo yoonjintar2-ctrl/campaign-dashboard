@@ -9,7 +9,7 @@ const rpLerp=(a,b,t)=>a+(b-a)*t;
 const rpClamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 /* 모노톤 — 경쟁사(회색 명도만) · 품목(회청 명도만) */
 function rpMono(i,n){const a=[0x5b,0x66,0x72],b=[0xc6,0xcc,0xd3],t=n<=1?.35:i/(n-1);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*t)).join(',')})`;}
-function rpSteel(i,n){const a=[0x3d,0x5a,0x80],b=[0xc4,0xd2,0xe2],t=n<=1?.3:i/(n-1);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*t)).join(',')})`;}
+function rpSteel(i,n){const a=[0x3e,0x42,0x48],b=[0xd2,0xd4,0xd8],t=n<=1?.3:i/(n-1);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*t)).join(',')})`;}
 function rpRgb(c){c=String(c);let m=c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);if(m)return [+m[1],+m[2],+m[3]];
   m=c.replace('#','');if(m.length===3)m=m.split('').map(x=>x+x).join('');const n=parseInt(m,16);return isFinite(n)?[n>>16&255,n>>8&255,n&255]:[140,150,160];}
 function rpMix(a,b,t){const A=rpRgb(a),B2=rpRgb(b);return `rgb(${A.map((v,k)=>Math.round(v+(B2[k]-v)*t)).join(',')})`;}
@@ -52,7 +52,7 @@ function rpBarDonut(box,bars,opt){
     const r=rpEase(rpClamp(t/.62,0,1)),q=rpEase(rpClamp((t-.55)/.45,0,1));
     /* 도넛은 제 자리에서 돌고(카드 자리만큼 안쪽으로), 옆 막대들이 밀려난다 */
     const h0=s.h*grow,R=rpLerp(h0/2,RB,r),cx=rpLerp(sx,cxT(i),r),cy=rpLerp(B-h0/2,CY,r);
-    const phi=r*PHI,rx=Math.max(R*Math.sin(phi),.001),dd=rpLerp(d,34,r),dx=dd*Math.cos(phi),col=b.col||'#8ea3bd';
+    const phi=r*PHI,rx=Math.max(R*Math.sin(phi),.001),dd=rpLerp(d,34,r),dx=dd*Math.cos(phi),col=b.col||'#a0a0a2';
     const f=v=>v.toFixed(2),fx=cx-dx/2,bx=cx+dx/2,ri=.56,HP=Math.PI/2;
     const F=(an,k)=>[fx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k],Bk=(an,k)=>[bx+Math.cos(an)*rx*k,cy+Math.sin(an)*R*k];
     const tot=b.slices.reduce((a,x)=>a+x.v,0)||1;let a=-HP;

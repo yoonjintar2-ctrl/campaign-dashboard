@@ -168,7 +168,7 @@ function rpOwn(){
       ${kpi('R1+',r1,'p',0,L('타깃 도달률','Target reach'),2,rN(r1)/100,'rch')}${kpi('R3+',r3,'p',0,L('유효 도달률','Effective reach'),3,rN(r3)/100,'rch')}
       ${kpi(L('집행 품목','Items'),n,'n',0,L(`올해 집행 ${nAll}개 중 · GRP ${wrF(grp)}`,`of ${nAll} this year · GRP ${wrF(grp)}`),4,nAll?n/nAll:NaN)}</div>
     <div class="rpgrid2">
-      ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),'',`<div id="rpIso" class="rpiso"></div>`,`<div class="rplg rpisolg"><span><i style="background:#5f7a9c"></i>${L('광고비','Spend')}</span><span><i class="ln"></i>R3+</span><span><i class="ar"></i>eq.GRP</span></div>`)}
+      ${rpCard(L(`${M}월 캠페인 품목별 집행`,`M${M} campaign by item`),'',`<div id="rpIso" class="rpiso"></div>`,`<div class="rplg rpisolg"><span><i style="background:#767678"></i>${L('광고비','Spend')}</span><span><i class="ln"></i>R3+</span><span><i class="ar"></i>eq.GRP</span></div>`)}
       ${rpCard(L('월별 TV 광고비','Monthly TV spend'),L('막대를 누르면 그 달 품목별 내역','click a bar for the month by item'),`<div id="rpOwnTr"></div>`)}</div>`;
   rpIso();rpOwnTrend();rpGo(h.querySelector('.rpkgs'));}
 
@@ -189,7 +189,7 @@ function rpIso(){
   const W=Math.max(520,box.clientWidth||620),H=360,n=it.length,pad=26,dx=0,dy=0,gap=(W-pad)/(n+.2),bw=Math.min(54,gap*.5),base=H-56,top=100;
   const mxB=Math.max(...it.map(x=>rN(x[1])))||1,mxE=Math.max(...it.map(x=>rN(x[2])))||1,mxR=Math.max(...it.map(x=>rN(x[3])))||1;
   /* v151 — 품목 고유 색은 쓰지 않는다: 회청 한 가지, 순위대로 명도만 */
-  const PAL=['#4f6b8f','#5f7a9c','#7089a8','#8198b4','#93a7c0','#a5b6cb','#b7c5d6','#c6d1de'];
+  const PAL=['#676769','#767678','#858587','#949496','#a4a4a6','#b3b3b5','#c3c3c5','#cfcfd1'];
   const cxs=it.map((_,i)=>pad+gap*(i+.2)+bw/2+dx/2);
   /* ① 바탕 — eq.GRP 연한 회색 영역(부드러운 곡선 · 선 없음 · 아래로 옅어지는 그라데이션) */
   /* 양 끝은 바닥에서 부드럽게 솟아 — 왼쪽 위가 잘려 보이지 않게, 높이는 막대 영역의 80% 안 */
@@ -217,7 +217,7 @@ function rpIso(){
 function rpOwnTrend(){
   const box=$('rpOwnTr');if(!box)return;const own=RPT_DOC.own||[],M=RPT_DOC.m;
   const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1);const it=o?o.it.filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
-    return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),lab:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#4f6b8f':'#9fb2c9',
+    return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),lab:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#676769':'#afafb1',
       slices:it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지상파','Terr.')} ${wrEok(x[4])} · ${L('케이블','Cable')} ${wrEok(x[5])}`:''}))};});
   rpBarDonut(box,bars,{H:340,cur:M-1,topLab:true});}
 

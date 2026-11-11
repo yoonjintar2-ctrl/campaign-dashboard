@@ -71,7 +71,7 @@ function renderSummary(root) {
 }
 /* 표 머리 고정 — 틀이 스크롤되지 않으므로 대시보드 스크롤 위치를 받아 머리줄을 내려 붙인다 */
 window.cueStick = function (off) {
-  document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t.cue').forEach(function (tb) {
+  document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t').forEach(function (tb) {
     var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
     if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
   });
@@ -93,3 +93,48 @@ window.addEventListener('DOMContentLoaded', function () {
   new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueTellH(); }, 60); }).observe(v, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   window.addEventListener('resize', cueTellH); setTimeout(cueTellH, 300); setTimeout(cueTellH, 1200);
 });
+
+/* ===== v172 ===== */
+/* 케이블 큐시트 — PP 만 고르고 채널은 '전체'면 채널별 표 여러 개 대신 표 하나(채널 열을 앞에 둔다) */
+function renderCueC(root) {
+  renderCueC0(root);
+  try { if (CUE_EMB && UI.cabCh === 'all') cueCabMerge(root); } catch (e) { }
+}
+function cueCabMerge(root) {
+  var secs = Array.prototype.filter.call(root.querySelectorAll('section.card'), function (s) { return s.querySelector('table.cue.qm[data-ch]'); });
+  if (secs.length < 2) return;
+  var first = secs[0], b0 = first.querySelector('.bd table.t'), q0 = first.querySelector('table.cue.qm');
+  var chCell = function (name, n, sub) { var td = document.createElement('td'); td.className = 'cuech'; td.rowSpan = n; td.innerHTML = '<b></b>' + (sub ? '<small></small>' : ''); td.firstChild.textContent = name; if (sub) td.lastChild.textContent = sub; return td; };
+  var th = function (t) { var x = document.createElement('th'); x.textContent = t; x.className = 'cuechh'; return x; };
+  b0.tHead.rows[0].insertBefore(th('채널'), b0.tHead.rows[0].firstChild);
+  q0.tHead.rows[0].insertBefore(th('채널'), q0.tHead.rows[0].firstChild);
+  var tot = 0;
+  secs.forEach(function (sec, i) {
+    var name = sec.querySelector('.hd h3').textContent, sub = (sec.querySelector('.hd .sub') || {}).textContent || '';
+    var cnt = (/([\d,]+)회/.exec(sub) || [])[1] || ''; tot += +(cnt.replace(/,/g, '')) || 0;
+    var br = Array.prototype.slice.call(sec.querySelector('.bd table.t').tBodies[0].rows), qr = Array.prototype.slice.call(sec.querySelector('table.cue.qm').tBodies[0].rows);
+    if (br.length) br[0].insertBefore(chCell(name, br.length), br[0].firstChild);
+    if (qr.length) { qr[0].insertBefore(chCell(name, qr.length, cnt ? cnt + '회' : ''), qr[0].firstChild); qr[0].classList.add('chtop'); }
+    if (br.length) br[0].classList.add('chtop');
+    if (i) { br.forEach(function (r) { b0.tBodies[0].appendChild(r); }); qr.forEach(function (r) { q0.tBodies[0].appendChild(r); }); sec.remove(); }
+  });
+  b0.classList.add('merged'); q0.classList.add('merged'); q0.removeAttribute('data-ch');
+  first.querySelector('.hd h3').textContent = UI.cabPP + ' 전체';
+  var sb = first.querySelector('.hd .sub'); if (sb) sb.textContent = secs.length + '개 채널 · ' + tot.toLocaleString() + '회';
+}
+/* 주차별 송출 수 — 일별 막대를 누르면 그날 품목 비중을 도넛으로 */
+window.cueDayDonut = function (pane, o) {
+  var old = pane.querySelector('.cue-dd'); if (old) old.remove();
+  var R = 78, r = 46, C = 2 * Math.PI * ((R + r) / 2), W = R - r, acc = 0, tot = o.total || 1;
+  var arcs = o.rows.map(function (x, i) { var len = x.v / tot * C, s = '<circle cx="100" cy="100" r="' + ((R + r) / 2) + '" fill="none" stroke="' + x.c + '" stroke-width="' + W + '" stroke-dasharray="' + Math.max(0, len - 1.5).toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-acc).toFixed(2) + '" style="--d:' + (i * 60) + 'ms"/>'; acc += len; return s; }).join('');
+  var leg = o.rows.slice().sort(function (a, b) { return b.v - a.v; }).map(function (x) { return '<li><i style="background:' + x.c + '"></i><span></span><b>' + x.v.toLocaleString() + '회</b><em>' + (x.v / tot * 100).toFixed(1) + '%</em></li>'; }).join('');
+  var el = document.createElement('div'); el.className = 'cue-dd'; el.style.setProperty('--ox', Math.round(o.x) + 'px');
+  el.innerHTML = '<div class="in"><span class="pill"></span><button type="button" class="cl" aria-label="닫기">✕ 닫기 <kbd>Esc</kbd></button>'
+    + '<svg viewBox="0 0 200 200" width="200" height="200"><g transform="rotate(-90 100 100)">' + arcs + '</g><text x="100" y="97" text-anchor="middle" class="t1">' + tot.toLocaleString() + '회</text><text x="100" y="116" text-anchor="middle" class="t2">품목 비중</text></svg><ul>' + leg + '</ul></div>';
+  el.querySelector('.pill').textContent = o.title;
+  var names = o.rows.slice().sort(function (a, b) { return b.v - a.v; }); el.querySelectorAll('li span').forEach(function (s, i) { s.textContent = names[i].n; });
+  var close = function () { el.remove(); document.removeEventListener('keydown', key); };
+  var key = function (e) { if (e.key === 'Escape') close(); };
+  el.onclick = function (e) { if (e.target === el || e.target.closest('.cl')) close(); };
+  document.addEventListener('keydown', key); pane.appendChild(el);
+};
