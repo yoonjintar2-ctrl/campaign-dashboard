@@ -32,8 +32,11 @@ function cueFrameReady(w,imp){
   const f=$('cueFrame');if(f)f.classList.add('ready');}
 /* 예전에 넣은 큐시트에는 계획 GRP 가 없다 — 틀이 계산해 알려 주면 채워 둔다(편집 권한이 있을 때만 저장 대상) */
 function cueFrameStats(s){
-  if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});
-  if(Math.abs((+st.pgrp||0)-s.grp)<.05)return;st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;
+  if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});let ch=false;
+  /* v179 — 품목별 예산(원)도 적어 둔다 → 전체 캠페인 '월별 광고 구분' 표가 큐시트만 있는 달에도 품목을 보여 준다 */
+  try{const D=cueMixData();if(D&&D.items.length){const it=D.items.map(x=>[x.n,Math.round(x.sub.bud*1000)]);if(JSON.stringify(it)!==JSON.stringify(st.it||null)){st.it=it;ch=true;}}}catch(e){}
+  if(Math.abs((+st.pgrp||0)-s.grp)>=.05){st.pgrp=Math.round(s.grp*10)/10;st.peq=Math.round(s.eq*10)/10;ch=true;}
+  if(!ch)return;
   try{if(!isClient()&&inbxEdit())markDirty();}catch(e){}}
 function cueReset(){CUE.json='';CUE.key='';CUE.frameKey='';const f=$('cueFrame');if(f){f.classList.remove('ready');f.removeAttribute('src');}}
 /* v170 — 틀 높이 = 내용 높이(틀이 알려 준다) → 페이지 스크롤 하나만. 캘린더는 화면 폭을 넓게 쓴다 */

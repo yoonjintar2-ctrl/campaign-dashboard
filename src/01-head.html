@@ -1537,6 +1537,23 @@ table.ovtbl tr.live td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 .ovtoday{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--pace);z-index:2}
 .ovtoday span{position:absolute;top:-37px;left:0;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--surface);
   background:var(--pace);padding:1px 6px;border-radius:5px;white-space:nowrap;line-height:15px}
+/* 월별 광고 구분 (v179) */
+.ovitw{overflow-x:auto}
+.ovit{width:100%;border-collapse:separate;border-spacing:3px;font-size:12px;table-layout:fixed;min-width:860px}
+.ovit thead th{font-size:10.5px;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 6px;white-space:nowrap}
+.ovit th.nm{width:190px;text-align:left;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px 0 2px}
+.ovit thead th.nm{color:var(--muted)}.ovit th.sum,.ovit td.sum{width:74px;text-align:right;padding-right:4px}
+.ovit th.nm i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.ovit tr.grp th{text-align:left;font-size:10.5px;font-weight:800;color:var(--muted);padding:10px 2px 3px;letter-spacing:.02em}
+.ovit tr.grp th span{font-weight:600;opacity:.7;margin-left:4px}
+.ovit td{height:28px;padding:0;text-align:center;border-radius:6px}
+.ovit td.z{background:var(--plane2)}
+.ovit td b{display:flex;align-items:center;justify-content:center;height:28px;border-radius:6px;font-weight:800;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink);
+  background:color-mix(in srgb,var(--c) calc(var(--a)*100%),var(--surface));cursor:default}
+.ovit td b.hi{color:#fff}
+.ovit td.sum{font-weight:800;color:var(--ink);font-size:12px}
+.ovit tr.tot th,.ovit tr.tot td{border-top:0;padding-top:8px;font-weight:800;color:var(--ink2);font-size:11.5px}
+.ovit tr.tot td.sum{color:var(--ink)}
 .ovleg{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:flex-end;margin-top:10px;font-size:11px;color:var(--muted);font-weight:700}
 .ovleg span{display:inline-flex;align-items:center;white-space:nowrap}
 .ovlists{display:flex;flex-direction:column;gap:14px}

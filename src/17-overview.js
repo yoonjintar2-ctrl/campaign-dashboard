@@ -118,7 +118,23 @@ function ovRow(p){
   else if(a.tv.inc&&a.tv.budget>0){
     const ts=[tP.start,dP.start,p.start_date].find(ovIso),te=[tP.end,dP.end,p.end_date].find(ovIso);
     if(ts&&te&&te>=ts)spans.push([ts,te,a.tv.budget,'tv']);}
-  return {tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
+  /* v179 — 월별 광고 구분: TV 는 품목별 금액(위클리 리포트 → 저장해 둔 요약 → 없으면 품목 미상), 디지털 · OTT 는 라인의 구분 */
+  const cats=[];try{
+    const ymOf=d=>String(d||'').slice(0,7),okYm=y=>/^\d{4}-\d{2}$/.test(y||'');
+    if(a.tv.on){
+      const ym=[tvWk&&tvWk.ym,m.tvSum&&m.tvSum.ym,ymOf(tP.start),ymOf(S[0]),ymOf(p.start_date)].find(okYm);
+      let it=(p.wr&&Array.isArray(p.wr.items)&&typeof wrItemBud==='function')?wrItemBud(p.wr.items):[];
+      if(!it.length&&Array.isArray(p.tvIt))it=p.tvIt;
+      if(!it.length&&m.tvSum&&Array.isArray(m.tvSum.it))it=m.tvSum.it;
+      if(ym){if(it.length)it.forEach(x=>{if(x&&x[0]&&+x[1]>0)cats.push(['tv',String(x[0]),ym,+x[1]]);});else if(a.tv.inc&&a.tv.budget>0)cats.push(['tv','',ym,a.tv.budget]);}}
+    const byMon=(st,en,v)=>{const o={};if(!(ovIso(st)&&ovIso(en)&&en>=st))return o;const D=x=>new Date(x+'T00:00:00'),n=Math.round((D(en)-D(st))/864e5)+1;
+      for(const d=D(st);d<=D(en);d.setDate(d.getDate()+1)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');o[k]=(o[k]||0)+v/n;}return o;};
+    const addL=(k,L2,scale)=>L2.forEach(l=>{const v=lb(l)*scale;if(!(v>0))return;const o=byMon(l.start,l.end,v),nm=String(l.segment||'').trim();
+      Object.keys(o).forEach(y=>cats.push([k,nm,y,o[y]]));});
+    if(a.digital.inc)addL('digital',dL,dk);
+    if(a.ott.inc){if(oS){if(oBud>0){const o=byMon(oP.start,oP.end,oBud);Object.keys(o).forEach(y=>cats.push(['ott','',y,o[y]]));}}else addL('ott',oL,1);}
+  }catch(e){}
+  return {cats,tvWk,id:p.id||null,code:p.code||'',name:p.name||'(이름 없음)',self:!!p.self,updated:p.updated_at||'',
     start:S[0]||'',end:E[E.length-1]||'',a,budget,spans};}
 /* 지금 캠페인 — 화면의 값 그대로 */
 function ovSelfRow(){
@@ -126,7 +142,8 @@ function ovSelfRow(){
   (FACTS||[]).forEach(f=>{net+=+f.cost||0;imp+=+f.imp||0;click+=+f.click||0;view+=+f.view||0;});
   const ottAgg=campMedia().ott?ottSumNow():null;
   return ovRow({id:(CLOUD&&CLOUD.campaign&&CLOUD.campaign.id)||'self',name:CAMPAIGN.name,self:true,media:campMedia(),
-    lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS,mix:TV_MIX,ch:TV_CH,day:TV_DAY},ooh:OOH_PLAN,net,imp,click,view,ottAgg,updated_at:new Date().toISOString()});}
+    lines:LINES,tv:{plan:TV_PLAN,spots:TV_SPOTS,mix:TV_MIX,ch:TV_CH,day:TV_DAY},ooh:OOH_PLAN,net,imp,click,view,ottAgg,updated_at:new Date().toISOString(),
+    tvIt:(()=>{try{if(typeof wrOn==='function'&&wrOn())return wrItemBud(TV_WR.items);const c=TV_CUE&&TV_CUE.st;return c&&Array.isArray(c.it)?c.it:null;}catch(e){return null;}})()});}
 function ovStatus(r,today){
   if(!r.start||!r.end)return '';
   return today<r.start?'pre':today>r.end?'done':'live';}
@@ -175,7 +192,7 @@ async function ovFetch(){
     const ids=[...new Set((CLOUD.list||[]).filter(c=>adv&&ovNorm(c.advertiser)===adv).map(c=>c.id).concat([selfId]))];
     const {data,error}=await withTimeout(CLOUD.sb.from('campaigns')
       /* v169 — TV 는 쓰는 표만(큐시트 묶음 tv.cue 는 커서 빼고 읽는다) */
-      .select('id,name,start_date,end_date,updated_at,media:doc->campaign->media,lines:doc->lines,tvp:doc->tv->plan,tvs:doc->tv->spots,tvm:doc->tv->mix,tvc:doc->tv->ch,tvd:doc->tv->day,wry:doc->tv->wr->ym,wrw:doc->tv->wr->weeks,wrt:doc->tv->wr->wtot,ooh:doc->ooh->plan')
+      .select('id,name,start_date,end_date,updated_at,media:doc->campaign->media,lines:doc->lines,tvp:doc->tv->plan,tvs:doc->tv->spots,tvm:doc->tv->mix,tvc:doc->tv->ch,tvd:doc->tv->day,wry:doc->tv->wr->ym,wrw:doc->tv->wr->weeks,wrt:doc->tv->wr->wtot,wri:doc->tv->wr->items,ooh:doc->ooh->plan')
       .in('id',ids),20000,'전체 캠페인');
     if(error)return {rows:null,err:error.message};
     const agg={};
@@ -186,7 +203,7 @@ async function ovFetch(){
       (st||[]).forEach(r=>{const o=agg[r.campaign_id]||(agg[r.campaign_id]={net:0,imp:0,click:0,view:0});
         o.net+=+r.net||0;o.imp+=+r.imp||0;o.click+=+r.click||0;o.view+=+r.view||0;});
       if(!st||st.length<1000)break;}
-    return {rows:(data||[]).map(d=>ovRow({...d,tv:{plan:d.tvp,spots:d.tvs,mix:d.tvm,ch:d.tvc,day:d.tvd},wr:{ym:d.wry,weeks:d.wrw,wtot:d.wrt},...(agg[d.id]||{}),self:d.id===selfId})),src:'direct',
+    return {rows:(data||[]).map(d=>ovRow({...d,tv:{plan:d.tvp,spots:d.tvs,mix:d.tvm,ch:d.tvc,day:d.tvd},wr:{ym:d.wry,weeks:d.wrw,wtot:d.wrt,items:d.wri},...(agg[d.id]||{}),self:d.id===selfId})),src:'direct',
       rpcMissing:ovNoFn(rpcErr)};}
   /* ③ 광고주 화면인데 서버 함수가 없거나 막혀 있다 — 이 캠페인만 */
   return {rows:[],src:'none',err:rpcErr?(ovNoFn(rpcErr)?'nofn':rpcErr.message):''};}
@@ -342,7 +359,7 @@ function paintOverview(loading){
       const A=a0.getTime(),Z=a1.getTime(),W=Z-A;
       const X=s=>(D(s)-A)/W*100;
       const months=[];for(const d=new Date(a0);d<a1;d.setMonth(d.getMonth()+1))months.push(new Date(d));
-      const step=months.length>18?3:months.length>9?2:1;
+      const step=1;   /* v179 — 달을 건너뛰지 않고 모두 적는다 */
       const ticks=months.map((d,i)=>{const l=(d.getTime()-A)/W*100;
         const yy=String(d.getFullYear()).slice(2),mo=d.getMonth(),first=mo===0||i===0;
         const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -374,6 +391,7 @@ function paintOverview(loading){
           +o.a.map(([l,v])=>`<div class="r"><span class="l">${esc(l)}</span><b>${won0(v)}</b></div>`).join('')
           +`<div class="r"><span class="l">${L('합계','Total')}</span><b>${won0(o.t)}</b></div>`));
         b.addEventListener('mouseleave',hideTip);});}}
+  try{paintOvItems(rows,won0);}catch(e){console.warn(e);}
   /* 매체별 목록 — 캠페인 이름을 누르면 묻고 나서 그 캠페인의 그 매체 서머리로 (v82) */
   const ls=$('ovLists');
   if(ls){
@@ -762,3 +780,39 @@ window.addEventListener('resize',(()=>{let t=0;return ()=>{clearTimeout(t);t=set
   const fl=$('ovFlow'),tab=$('tab-overview');
   if(!fl||!OVFLOW_LAST||!tab||tab.classList.contains('hidden')||fl.clientWidth===OVFLOW_LAST.w)return;
   paintOvFlow(fl,OVFLOW_LAST.rows,OVFLOW_LAST.won0);},160);};})());
+
+/* ================================================================
+   월별 광고 구분 (v179) — 달마다 어떤 품목 · 구분을 집행했는지 한 표로.
+   행 = TV 품목 / OTT · 디지털 구분, 열 = 달, 칸 = 그 달 광고비(색이 진할수록 큼).
+   ================================================================ */
+function paintOvItems(rows,won0){
+  const el=$('ovItems');if(!el)return;
+  const all=[];rows.forEach(r=>(r.cats||[]).forEach(c=>{if(c&&/^\d{4}-\d{2}$/.test(c[2])&&+c[3]>0)all.push(c);}));
+  const wrap=el.closest('.card'),sec=$('ovItemsSec');
+  if(!all.length){el.innerHTML='';if(wrap)wrap.classList.add('hidden');if(sec)sec.classList.add('hidden');return;}
+  if(wrap)wrap.classList.remove('hidden');if(sec)sec.classList.remove('hidden');
+  const yms=all.map(c=>c[2]).sort(),months=[];
+  for(let [y,m]=yms[0].split('-').map(Number);;){const k=y+'-'+String(m).padStart(2,'0');months.push(k);if(k>=yms[yms.length-1]||months.length>60)break;if(++m>12){m=1;y++;}}
+  const AR=[['tv',L('TV 품목','TV products'),L('(품목 자료 없음)','(no product data)')],['ott','OTT',L('OTT 전체','OTT total')],['digital',L('디지털','Digital'),L('(구분 없음)','(no segment)')]];
+  const G={};all.forEach(([k,n,ym,v])=>{const g=G[k]||(G[k]={}),r=g[n]||(g[n]={n,t:0,m:{}});r.m[ym]=(r.m[ym]||0)+v;r.t+=v;});
+  const mt={};all.forEach(c=>{mt[c[2]]=(mt[c[2]]||0)+c[3];});
+  let mx=0;Object.values(G).forEach(g=>Object.values(g).forEach(r=>Object.values(r.m).forEach(v=>{if(v>mx)mx=v;})));
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hd=months.map((k,i)=>{const [y,m]=k.split('-').map(Number),first=i===0||m===1;return `<th>${L(first?`${String(y).slice(2)}년 ${m}월`:`${m}월`,first?`${MON[m-1]} '${String(y).slice(2)}`:MON[m-1])}</th>`;}).join('');
+  const tot=sum(Object.values(mt));
+  const eok=v=>manUnit(Math.round(v));
+  let body='';
+  AR.forEach(([k,lab,none])=>{const g=G[k];if(!g)return;const rs=Object.values(g).sort((a,b)=>(a.n==='')-(b.n==='')||b.t-a.t);
+    body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${rs.filter(r=>r.n!=='').length?L(`${rs.filter(r=>r.n!=='').length}개`,`${rs.filter(r=>r.n!=='').length}`):''}</span></th></tr>`;
+    rs.forEach(r=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(r.n):'#6c7b8e');
+      body+=`<tr><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
+        const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
+        return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')
+        +`<td class="sum mono">${eok(r.t)}</td></tr>`;});});
+  body+=`<tr class="tot"><th class="nm">Total</th>${months.map(ym=>`<td class="mono">${mt[ym]>0?eok(mt[ym]):'–'}</td>`).join('')}<td class="sum mono">${eok(tot)}</td></tr>`;
+  el.innerHTML=`<div class="ovitw"><table class="ovit"><thead><tr><th class="nm">${L('구분','Category')}</th>${hd}<th class="sum">${L('합계','Total')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  el.querySelectorAll('[data-ovit]').forEach(td=>{let o=null;try{o=JSON.parse(td.dataset.ovit);}catch(e){return;}
+    td.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(o[1])} <span style="font-weight:600;opacity:.6">· ${esc(o[0])}</span></div>`
+      +`<div class="r"><span class="l">${esc(o[2].replace('-','.'))}</span><b>${won0(o[3])}</b></div>`
+      +(o[4]>0?`<div class="r"><span class="l">${L('그 달 비중','Share of month')}</span><b>${(o[3]/o[4]*100).toFixed(1)}%</b></div>`:'')));
+    td.addEventListener('mouseleave',hideTip);});}

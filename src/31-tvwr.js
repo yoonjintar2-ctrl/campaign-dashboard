@@ -47,12 +47,17 @@ function tvSumNow(){const r=tvSumNow0();
   /* v170 — 큐시트가 있으면 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산)를, 리포트가 아직 없는 달은 계획 금액도 큐시트 예산으로 */
   try{const c=TV_CUE&&TV_CUE.st;if(c&&TV_CUE.z){const o=r||{plan:0,spend:0,grp:0,pgrp:0,mon:{}};
     if(+c.pgrp>0)o.pgrp=+c.pgrp;if(!(o.plan>0)&&+c.budget>0){o.plan=Math.round(+c.budget);o.mon={[TV_CUE.ym]:o.plan};}
+    /* v179 — 품목별 금액(원): 리포트가 없으면 큐시트 예산으로 */
+    if(!o.it&&Array.isArray(c.it)&&c.it.length){o.it=c.it;if(!o.ym)o.ym=TV_CUE.ym;}
     return (o.plan||o.spend||o.pgrp)?o:r;}}catch(e){}
   return r;}
+function wrItemBud(items){return (Array.isArray(items)?items:[]).map(i=>[i&&i.n,Math.round((i&&i.cr||[]).reduce((s,c)=>s+(+c.bud||0),0)*1000)]).filter(x=>x[0]&&x[1]>0);}
 function tvSumNow0(){
   if(wrOn()){const W=TV_WR,t=W.wtot||{};return {plan:Math.round((+t.bud||+W.tot.bud||0)*1000),spend:Math.round((+t.cost||0)*1000),grp:+W.tot.grp||0,pgrp:0,mon:{[W.ym]:Math.round((+t.bud||+W.tot.bud||0)*1000)},
     /* v169 — 주차별 값(천원) — 앞 달 캠페인의 주차별 그래프 오른쪽에 '다음 달'로 비친다 */
-    ym:W.ym,wk:(W.weeks||[]).map((w,i)=>{const x=(t.w||[])[i]||[];return [w.l,w.s,w.e,+x[0]||0,+x[1]||0];})};}
+    ym:W.ym,wk:(W.weeks||[]).map((w,i)=>{const x=(t.w||[])[i]||[];return [w.l,w.s,w.e,+x[0]||0,+x[1]||0];}),
+    /* v179 — 품목별 금액(원) — 전체 캠페인 '월별 광고 구분' */
+    it:wrItemBud(W.items)};}
   try{const T=tvMixTotal?tvMixTotal():null;let plan=0,mon={};(TV_MIX||[]).forEach(r=>{const a=tvMixCalc(r).amt||0;plan+=a;if(/^\d{4}-\d{2}$/.test(r.ym||''))mon[r.ym]=(mon[r.ym]||0)+a;});
     const spend=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.cost)||0),0),grp=(TV_CH||[]).reduce((s,r)=>s+(tvNum(r.grp)||0),0);
     return plan||spend?{plan,spend,grp,pgrp:0,mon}:null;}catch(e){return null;}}
