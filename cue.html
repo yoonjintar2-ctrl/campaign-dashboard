@@ -1512,6 +1512,8 @@ html.embed table.t.cue td.wk .spot.ibox{white-space:nowrap!important}
 
 /* v185 — 미디어믹스 맨 아래 '송출 횟수' 표는 대시보드 안에서는 숨긴다(주차별 송출 수 그래프가 바로 위에 있다) */
 html.embed section.card:has(#tc){display:none!important}
+/* v192: 운영 요약 · 예산 및 보너스 표도 숨김 */
+html.embed section.card:has(table.t.ops),html.embed section.card:has(#t1){display:none!important}
 
 /* ===== v188 — 큐시트 캘린더 여는 속도 =====
    달력은 2,000줄이 넘어 한 번 다시 칠하는 데 오래 걸린다. 그래서 ① 머리줄을 내려 붙이는 이동과 ② '오늘' 칸 강조 깜빡임을
