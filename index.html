@@ -850,6 +850,11 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrk .ch .pc{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 4;vector-effect:non-scaling-stroke;opacity:.75}
 .wrk .ch .pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ink2);transition:transform .12s;animation:wrPtPulse 2.8s ease-in-out var(--pd,0ms) infinite}
 .wrk .ch .pt.end{width:8px;height:8px;margin:-4px 0 0 -4px}.wrk .ch .pt.on{animation:none;transform:scale(1.6)}
+/* v199 — TV 진행 현황 막대의 색 물결(디지털과 같은 13초 왕복) */
+#wrPace .pbar .mstack>i{animation:wrAmbT 6.5s ease-in-out infinite alternate,wrAmbP 6.5s cubic-bezier(.7,0,.6,1) infinite alternate}
+@keyframes wrAmbT{from{--ambt:0}to{--ambt:1}}
+@keyframes wrAmbP{from{--ambp:0}to{--ambp:1}}
+@media (prefers-reduced-motion:reduce){#wrPace .pbar .mstack>i{animation:none}}
 @keyframes wrPtPulse{0%,100%{transform:scale(.88)}50%{transform:scale(1.22)}}
 @media (prefers-reduced-motion:reduce){.wrk .ch .pt{animation:none}}
 .wrk .ch .ax{position:absolute;bottom:4px;left:18px;font-size:10px;font-weight:600;color:var(--muted);opacity:.8}.wrk .ch .ax.r{left:auto;right:18px}
@@ -30121,7 +30126,7 @@ function wrPaceHtml(F){
   const CX=wrCueX(),cT=CX&&CX.cntTot>0?CX.cntTot:NaN,cA=(()=>{const D=W.det||{},al=D['__ALL__|계'];if(al&&al.t&&al.t.T)return wrN(al.t.T[0])||0;   /* v198 — 전체 합계 줄만(소재+품목계+전체계를 다 더하면 3배) */
     return Object.entries(D).reduce((s2,[k,v])=>/\|계$/.test(k)?s2:s2+(wrN(v&&v.t&&v.t.T&&v.t.T[0])||0),0);})();
   const hasC=isFinite(cT)&&cA>0,cR=hasC?cA/cT:NaN,cP=hasC?CX.cntAt(F.days)/cT:NaN,cUp=hasC&&cR>=cP;
-  const cTone=hasC?mixHex(PACE_TONE,cUp?TONE_OK:TONE_NG,Math.min(Math.abs(cR/Math.max(cP,1e-9)-1)/.06,1)):'',cc2='#6b7078';
+  const cTone=hasC?mixHex(PACE_TONE,cUp?TONE_OK:TONE_NG,Math.min(Math.abs(cR/Math.max(cP,1e-9)-1)/.06,1)):'',cc2=PACE_SEG[1]||c,cAmb=hasC?ambLevel(cP>0?cR/cP:1):0,cC=cUp?AMB_OK:AMB_NG;
   const segs=SG.map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.g==='지상파'?L('지상파','Terrestrial'):L('케이블','Cable'))}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
   const last=new Date(y,m-1,F.span);
   return `<div class="pacescroll"><div class="pacebody">
@@ -30137,7 +30142,7 @@ function wrPaceHtml(F){
         <div class="pmid">
           <div class="pdotrow"><i style="left:${pace}%"></i></div>
           <div class="pbar" id="wrPaceBar">
-            <div class="mstack" style="width:${f}%;--segbg:linear-gradient(150deg,${adjust(c,.08,.05)},${c});--ambc:transparent;--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:${(amb*.62).toFixed(3)}">${segs}</div>
+            <div class="mstack" style="width:${f}%;--segbg:linear-gradient(150deg,${adjust(c,.08,.05)},${c});--ambc:rgba(${C[0]},${C[1]},${C[2]},${amb.toFixed(3)});--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:${(amb*.62).toFixed(3)}">${segs}</div>
             <div class="sheen" style="width:${f}%"></div>
           </div>
         </div>
@@ -30148,7 +30153,7 @@ function wrPaceHtml(F){
         <div class="pmid">
           <div class="pdotrow"><i style="left:${(Math.min(cP,1)*100).toFixed(2)}%"></i></div>
           <div class="pbar" id="wrCntBar">
-            <div class="mstack" style="width:${(Math.min(cR,1)*100).toFixed(2)}%;--segbg:linear-gradient(150deg,${adjust(cc2,.08,.05)},${cc2});--ambc:transparent;--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:0"><i style="width:100%"><span class="nm">${L('위클리 송출','Aired')}</span><span class="pc">${Math.round(cA).toLocaleString()}${L('회','')}</span></i></div>
+            <div class="mstack" style="width:${(Math.min(cR,1)*100).toFixed(2)}%;--segbg:linear-gradient(150deg,${adjust(cc2,.08,.05)},${cc2});--ambc:rgba(${cC[0]},${cC[1]},${cC[2]},${cAmb.toFixed(3)});--ambrgb:${cC[0]} ${cC[1]} ${cC[2]};--amba:${(cAmb*.62).toFixed(3)}"><i style="width:100%"><span class="nm">${L('위클리 송출','Aired')}</span><span class="pc">${Math.round(cA).toLocaleString()}${L('회','')}</span></i></div>
           </div>
         </div>
         <div class="pside r"><div class="nm1" style="color:${cTone}">${(cR*100).toFixed(1)}%</div><div class="sub1">${L('큐시트 편성','Planned')} ${cT.toLocaleString()}${L('회','')}</div></div>
@@ -30168,6 +30173,12 @@ function wrSmooth(P){
   let d='M'+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);
   for(let i=0;i<n-1;i++){const h=dx[i]/3;d+='C'+(P[i][0]+h).toFixed(1)+' '+(P[i][1]+t[i]*h).toFixed(1)+' '+(P[i+1][0]-h).toFixed(1)+' '+(P[i+1][1]-t[i+1]*h).toFixed(1)+' '+P[i+1][0].toFixed(1)+' '+P[i+1][1].toFixed(1);}
   return d;}
+/* v199 — 디지털 진행 현황과 같은 색 물결: 막대 폭 · 물결 폭 · 구간 시작 위치를 재서 넣는다(움직임은 CSS 가 돌림) */
+function wrAmbFit(){const box=$('wrPace');if(!box||box.getBoundingClientRect().width<10)return;
+  box.querySelectorAll('.pline:not(.days) .pbar').forEach(bar=>{const W=bar.getBoundingClientRect().width,st=bar.querySelector('.mstack');if(!st)return;const x0=st.getBoundingClientRect().left;
+    bar.style.setProperty('--barw',W.toFixed(1)+'px');bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
+    st.querySelectorAll(':scope>i').forEach(seg=>seg.style.setProperty('--segoff',(seg.getBoundingClientRect().left-x0).toFixed(1)+'px'));});}
+addEventListener('resize',()=>{try{wrAmbFit();}catch(e){}});
 function wrKpiPaint(F){
   const el=$('wrKs');if(!el)return;const W=TV_WR,T=W.tot||{},wt=W.wtot||{};
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=F&&F.tot.tg>0?F.tot.tg:wrEqTarget();
@@ -30258,7 +30269,7 @@ function wrEffCards(box,F,grp){
 /* v185 — 달성 막대 + 카드 두 줄(지상파 · 케이블)을 그린다. 큐시트를 뒤늦게 읽었을 때도 이것만 다시 부른다 */
 function wrEffPaint(){
   const h=$('wrDash');if(!h||!$('wrPace'))return;let F=null;try{F=wrEff();}catch(e){console.warn(e);}if(!F)return;
-  $('wrPace').innerHTML=wrPaceHtml(F);
+  $('wrPace').innerHTML=wrPaceHtml(F);wrAmbFit();
   try{wrKpiPaint(F);}catch(e){}
   wrEffCards($('wrEffT'),F,'지상파');wrEffCards($('wrEffC'),F,'케이블');
   wrPaceWire(h,F);
@@ -30303,12 +30314,12 @@ function renderWrDash(){
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
   /* v184 — 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 (v189 — 주요 지표 아래로) */
-  const eff=F?`<div class="sec gap sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`eq.GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
-      <div class="card"><div class="bd" id="wrPace"></div></div>
-      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
+  const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`eq.GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
+      <div class="card"><div class="bd" id="wrPace"></div></div>`:'';
+  const effB=F?`<div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
       <div class="grid donuts wrefs" id="wrEffT"></div>
       <div class="grid donuts wrefs" id="wrEffC"></div>`:'';
-  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis+eff
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+(eff?eff+kpis.replace('class="sec sm"','class="sec gap sm"'):kpis)+effB
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 그 품목의 채널별 그래프가 펼쳐집니다','x eq.GRP · y R3+ · dot size = budget · click a dot to open its channel view')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
