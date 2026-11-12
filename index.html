@@ -30118,7 +30118,8 @@ function wrPaceHtml(F){
   const SG=F.G.filter(x=>x.eq>0),segT=SG.reduce((s,x)=>s+x.eq,0)||1;
   const R1=wrN((W.tot||{}).r1),R3=wrN((W.tot||{}).r3);
   /* v197 — 송출 횟수 막대: 위클리 송출 횟수 ÷ 큐시트 편성 횟수(월 전체) · 점 = 큐시트상 그날까지 편성된 횟수 */
-  const CX=wrCueX(),cT=CX&&CX.cntTot>0?CX.cntTot:NaN,cA=Object.values(W.det||{}).reduce((s2,v)=>s2+(wrN(v&&v.t&&v.t.T&&v.t.T[0])||0),0);
+  const CX=wrCueX(),cT=CX&&CX.cntTot>0?CX.cntTot:NaN,cA=(()=>{const D=W.det||{},al=D['__ALL__|계'];if(al&&al.t&&al.t.T)return wrN(al.t.T[0])||0;   /* v198 — 전체 합계 줄만(소재+품목계+전체계를 다 더하면 3배) */
+    return Object.entries(D).reduce((s2,[k,v])=>/\|계$/.test(k)?s2:s2+(wrN(v&&v.t&&v.t.T&&v.t.T[0])||0),0);})();
   const hasC=isFinite(cT)&&cA>0,cR=hasC?cA/cT:NaN,cP=hasC?CX.cntAt(F.days)/cT:NaN,cUp=hasC&&cR>=cP;
   const cTone=hasC?mixHex(PACE_TONE,cUp?TONE_OK:TONE_NG,Math.min(Math.abs(cR/Math.max(cP,1e-9)-1)/.06,1)):'',cc2='#6b7078';
   const segs=SG.map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.g==='지상파'?L('지상파','Terrestrial'):L('케이블','Cable'))}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
@@ -30152,17 +30153,8 @@ function wrPaceHtml(F){
         </div>
         <div class="pside r"><div class="nm1" style="color:${cTone}">${(cR*100).toFixed(1)}%</div><div class="sub1">${L('큐시트 편성','Planned')} ${cT.toLocaleString()}${L('회','')}</div></div>
       </div>`:''}
-      ${isFinite(R3)?`<div class="pline">
-        <div class="pside"><div class="nm1">R3+</div><div class="sub1">${isFinite(R1)?'R1+ '+R1.toFixed(1)+'%':L('유효 도달률','Effective reach')}</div></div>
-        <div class="pmid">
-          <div class="pbar rch" id="wrRchBar">${isFinite(R1)?`<div class="r1" style="width:${Math.min(R1,100).toFixed(2)}%"><span>R1+ ${R1.toFixed(1)}%</span></div>`:''}
-            <div class="mstack" style="width:${Math.min(Math.max(R3,0),100).toFixed(2)}%;--segbg:linear-gradient(150deg,${adjust(c,.08,.05)},${c});--ambc:transparent;--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:0"><i style="width:100%"><span class="nm">R3+</span><span class="pc">${R3.toFixed(1)}%</span></i></div>
-          </div>
-        </div>
-        <div class="pside r"><div class="nm1">${R3.toFixed(1)}%</div><div class="sub1">${L('유효 도달률 · 목표 없음','Effective reach · no target')}</div></div>
-      </div>`:''}
       <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
-        <span>${L(`eq.GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · ${hasC?`송출 횟수 = 위클리 송출 횟수 ÷ 큐시트 편성 횟수 · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}큐시트에 편성된 ${CX.cntAt(F.days).toLocaleString()}회(${(cP*100).toFixed(1)}%) · `:''}R3+ 는 도달률 그대로(옅은 막대 = R1+)`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
+        <span>${L(`eq.GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · ${hasC?`송출 횟수 = 위클리 송출 횟수 ÷ 큐시트 편성 횟수 · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}큐시트에 편성된 ${CX.cntAt(F.days).toLocaleString()}회(${(cP*100).toFixed(1)}%) `:''}`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
     </div></div>`;}
 
 /* ---------- v189 — 주요 지표 카드: 소진 예산 · GRP · Reach 1+ · Reach 3+ (eq.GRP 는 뺐다)
