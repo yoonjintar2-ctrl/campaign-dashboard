@@ -50,9 +50,13 @@ function cueCalFix(root) {
     var m = row.querySelector('.m'); if (m && CUE_CM_AB[m.textContent]) m.textContent = CUE_CM_AB[m.textContent];
   });
 }
+/* v188 — 캘린더를 그리자마자 같은 차례에 약칭을 넣는다.
+   예전에는 30ms 뒤에 2,000줄의 글자를 바꿔서 달력 전체를 한 번 더 배치하고 다시 칠했다(여는 데 걸리는 시간의 큰 몫) */
+function renderCal(root) { var x = renderCal0(root); try { cueCalFix(root); } catch (e) { } return x; }
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;
-  new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; cueCalFix(v); }, 30); }).observe(v, { childList: true, subtree: true });
+  /* 혹시 다른 길로 그려진 줄이 있으면 그때만 고친다(없으면 아무 일도 하지 않는다) */
+  new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; if (v.querySelector('.cale:not([data-ab])')) cueCalFix(v); }, 30); }).observe(v, { childList: true, subtree: true });
 });
 
 /* ===== v170 — 대시보드 안에서는 틀 높이 = 내용 높이(틀 안 세로 스크롤 없음 → 이중 스크롤 없음) ===== */
@@ -78,12 +82,14 @@ window.cueStick = function (off) {
 };
 /* 캘린더 — 오늘 · 지금 시간대로 가서 3초 강조 */
 window.cueCalJump = function (root, smooth) {
+  /* v188 — 캘린더를 열 때는 바로 그 자리로(부드럽게 내려가면 지나가는 구간마다 달력을 다시 칠해 버벅인다). '오늘로' 단추만 부드럽게 */
   setTimeout(function () {
     var td = root.querySelector('#cal-td-today'); if (!td) return; var now = td.querySelector('[data-now]') || td;
-    try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, true); } catch (e) { }
+    try { cueTellH(); } catch (e) { }
+    try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, !!smooth); } catch (e) { }
     [td, now].forEach(function (x) { x.classList.remove('cue-flash'); void x.offsetWidth; x.classList.add('cue-flash'); });
     setTimeout(function () { [td, now].forEach(function (x) { x.classList.remove('cue-flash'); }); }, 3200);
-  }, 420);
+  }, smooth ? 0 : 150);
 };
 /* 캘린더 폭 — 프로그램 이름 칸은 화면 폭에 따라 늘고 줄되 한글 8자까지만 줄인다(그 아래로는 가로 스크롤) */
 window.addEventListener('DOMContentLoaded', function () {

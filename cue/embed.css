@@ -101,3 +101,13 @@ html.embed table.t.cue td.wk .spot.ibox{white-space:nowrap!important}
 
 /* v185 — 미디어믹스 맨 아래 '송출 횟수' 표는 대시보드 안에서는 숨긴다(주차별 송출 수 그래프가 바로 위에 있다) */
 html.embed section.card:has(#tc){display:none!important}
+
+/* ===== v188 — 큐시트 캘린더 여는 속도 =====
+   달력은 2,000줄이 넘어 한 번 다시 칠하는 데 오래 걸린다. 그래서 ① 머리줄을 내려 붙이는 이동과 ② '오늘' 칸 강조 깜빡임을
+   달력을 다시 칠하지 않고(합성 단계에서만) 움직이게 한다 */
+html.embed table.calt thead,html.embed table.t thead{will-change:transform}
+@keyframes cueFlashO{0%,100%{opacity:0}20%,60%{opacity:1}40%,80%{opacity:.3}}
+html.embed td.cue-flash{animation:none;position:relative;z-index:3}
+html.embed td.cue-flash::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 3px #2a6fba,0 0 0 8px rgba(42,111,186,.28);opacity:0;will-change:opacity;animation:cueFlashO 3s ease-in-out}
+html.embed .calnow.cue-flash span{animation:none}
+html.embed .calnow.cue-flash span::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:0 0 0 6px rgba(42,111,186,.3);opacity:0;will-change:opacity;animation:cueFlashO 3s ease-in-out}

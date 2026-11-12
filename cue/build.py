@@ -37,6 +37,8 @@ PATCH = [
   ("function renderSummary(root) {", "function renderSummary0(root) {"),
   # v172 — 케이블: PP 전체를 고르면 채널별 표 대신 표 하나(bridge.js 가 합친다) · 일별 막대를 누르면 그날 품목 비중 도넛
   ("function renderCueC(root) {", "function renderCueC0(root) {"),
+  # v188 — 캘린더: 그린 직후(화면에 나가기 전)에 약칭을 넣는다(bridge.js 의 renderCal 이 감싼다)
+  ("function renderCal(root) {", "function renderCal0(root) {"),
   ("cv.addEventListener('click', e => { const rc = cv.getBoundingClientRect(); const d = Math.floor((e.clientX - rc.left - left) / bw) + 1; if (d >= 1 && d <= days) {",
    "cv.addEventListener('click', e => { const rc = cv.getBoundingClientRect(); const d = Math.floor((e.clientX - rc.left - left) / bw) + 1; if (window.cueDayDonut && e.clientY - rc.top >= topP && d >= 1 && d <= days && tot[d] > 0) { tip.style.display = 'none'; window.cueDayDonut(pane, { title: `${ym.m}/${d} (${dowOf(ym.y, ym.m, d)})`, total: tot[d], x: left + (d - .5) * bw, rows: order.filter(k => byDay[d].get(k)).map(k => ({ n: k, v: byDay[d].get(k), c: itemColor(k) })) }); return; } if (d >= 1 && d <= days) {"),
   ("const goToday = smooth => { const td", "const goToday = smooth => { if (window.cueCalJump) return window.cueCalJump(root, smooth); const td"),
