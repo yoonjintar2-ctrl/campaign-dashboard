@@ -74,7 +74,18 @@ function renderSummary(root) {
   renderSummary0(a); try { renderCreView(b); } catch (e) { }
 }
 /* 표 머리 고정 — 틀이 스크롤되지 않으므로 대시보드 스크롤 위치를 받아 머리줄을 내려 붙인다 */
+/* v190 — 전체 큐시트(수천 줄)는 보이는 줄만 그린다. 틀 안에서는 스크롤이 일어나지 않아 처음 그린 줄 아래가 비어 보였다
+   → 대시보드(부모 창)가 알려 주는 보이는 위치(cueStick 의 off)로 보이는 범위를 정하고, 스크롤할 때마다 다시 그린다 */
+var CUE_OFF = 0;
+window.cueAllVp = function (wrap) {
+  if (!CUE_EMB) return null;
+  var vh = 900; try { vh = parent.innerHeight || vh; } catch (e) { }
+  var top = wrap.getBoundingClientRect().top;          /* 틀 안에서 표가 시작하는 높이 */
+  return [Math.max(0, CUE_OFF - top - 40), vh + 80];
+};
 window.cueStick = function (off) {
+  CUE_OFF = off;
+  try { var w = document.querySelector('.pane:not([hidden]) .caw') || document.querySelector('.caw'); if (w && w.__paint && w.offsetParent) w.__paint(); } catch (e) { }
   document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t').forEach(function (tb) {
     var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
     if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);

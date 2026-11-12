@@ -216,9 +216,13 @@ function rpIso(){
   rpTipWire(box,i=>{const x=it[+i];if(!x)return '';return `<div class="t">${esc(x[0])}</div>${rpTr(L('광고비','Spend'),wrEok(x[1]))}${x.length>5?rpTr(L('· 지상파','· Terr.'),wrEok(x[4]))+rpTr(L('· 케이블 · 종편','· Cable'),wrEok(x[5]))+rpTr('GRP',wrF(x[6])):''}${rpTr('eq.GRP',wrF(x[2],1))}${x.length>7?rpTr('R1+',wrF(x[7],1)+'%'):''}${rpTr('R3+',wrF(x[3],1)+'%')}`;});}
 function rpOwnTrend(){
   const box=$('rpOwnTr');if(!box)return;const own=RPT_DOC.own||[],M=RPT_DOC.m;
-  const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1);const it=o?o.it.filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
-    return {k:i+1,label:L(`${i+1}월`,`M${i+1}`),lab:L(`${i+1}월`,`M${i+1}`),v:o?rN(o.t[0]):0,col:i+1===M?'#676769':'#afafb1',
-      slices:it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지상파','Terr.')} ${wrEok(x[4])} · ${L('케이블','Cable')} ${wrEok(x[5])}`:''}))};});
+  /* v190 — 이 리포트보다 뒤의 달도 막대로: ownF = 뒤 달 리포트의 값(먼슬리가 아직 없는 달은 위클리 리포트 값, src:'wk' · part = 진행 중인 달의 기준일) */
+  const fut=(RPT_DOC.ownF||[]).filter(z=>z&&z.m>M);
+  const bars=[...Array(12)].map((_,i)=>{const o=own.find(z=>z.m===i+1)||fut.find(z=>z.m===i+1);const it=o?(o.it||[]).filter(x=>rN(x[1])>0).sort((a,b)=>rN(b[1])-rN(a[1])):[];
+    const f=!!o&&i+1>M,v=o?rN(o.t[0]):0,lab=L(`${i+1}월`,`M${i+1}`)+(o&&o.part?` (~${o.part})`:'');
+    const sl=it.map((x,j)=>({n:x[0],v:rN(x[1]),col:rpSteel(j,it.length),sub:x.length>5&&(rN(x[4])||rN(x[5]))?`${L('지상파','Terr.')} ${wrEok(x[4])} · ${L('케이블','Cable')} ${wrEok(x[5])}`:''}));
+    return {k:i+1,label:lab,lab,v,col:i+1===M?'#676769':f?'#c6c6c8':'#afafb1',
+      slices:sl.length||!(v>0)?sl:[{n:o.part?L(`집행 중 · ${o.part}까지`,`in flight · to ${o.part}`):L('TV 전체','TV total'),v,col:rpSteel(0,1),sub:o.src==='wk'?L('위클리 리포트 기준','weekly report'):''}]};});
   rpBarDonut(box,bars,{H:340,cur:M-1,topLab:true});}
 
 /* ================================================================
