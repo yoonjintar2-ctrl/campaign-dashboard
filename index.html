@@ -848,8 +848,10 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrk .ch .ar{fill:var(--ink2);fill-opacity:.09;stroke:none}
 .wrk .ch .ln{fill:none;stroke:var(--ink2);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
 .wrk .ch .pc{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 4;vector-effect:non-scaling-stroke;opacity:.75}
-.wrk .ch .pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--surface);border:2px solid var(--ink2);box-sizing:border-box;transition:transform .12s}
-.wrk .ch .pt.end{background:var(--ink2)}.wrk .ch .pt.on{transform:scale(1.6)}
+.wrk .ch .pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ink2);box-shadow:0 0 0 2px var(--surface);transition:transform .12s;animation:wrPtPulse 2.8s ease-in-out var(--pd,0ms) infinite}
+.wrk .ch .pt.end{width:8px;height:8px;margin:-4px 0 0 -4px}.wrk .ch .pt.on{animation:none;transform:scale(1.6)}
+@keyframes wrPtPulse{0%,100%{transform:scale(.88)}50%{transform:scale(1.22)}}
+@media (prefers-reduced-motion:reduce){.wrk .ch .pt{animation:none}}
 .wrk .ch .ax{position:absolute;bottom:4px;left:18px;font-size:10px;font-weight:600;color:var(--muted);opacity:.8}.wrk .ch .ax.r{left:auto;right:18px}
 .wrk .ch .none{position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;color:var(--muted)}
 /* 달성 현황의 R3+ 줄 — 옅은 막대 = R1+, 진한 막대 = R3+ */
@@ -30124,7 +30126,7 @@ function wrPaceHtml(F){
         <div class="pside r"><div class="nm1">${L('종료일','End')}</div><div class="sub1">${y}.${String(m).padStart(2,'0')}.${String(F.span).padStart(2,'0')}(${WDK[last.getDay()]})</div></div>
       </div>
       <div class="pline">
-        <div class="pside"><div class="nm1">GRP</div><div class="sub1">${L('노출량','Delivered')} ${wrF(T.eq,1)}</div></div>
+        <div class="pside"><div class="nm1">eq.GRP</div><div class="sub1">${L('노출량','Delivered')} ${wrF(T.eq,1)}</div></div>
         <div class="pmid">
           <div class="pdotrow"><i style="left:${pace}%"></i></div>
           <div class="pbar" id="wrPaceBar">
@@ -30144,11 +30146,20 @@ function wrPaceHtml(F){
         <div class="pside r"><div class="nm1">${R3.toFixed(1)}%</div><div class="sub1">${L('유효 도달률 · 목표 없음','Effective reach · no target')}</div></div>
       </div>`:''}
       <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
-        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · R3+ 는 도달률 그대로(옅은 막대 = R1+)`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
+        <span>${L(`eq.GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · R3+ 는 도달률 그대로(옅은 막대 = R1+)`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
     </div></div>`;}
 
 /* ---------- v189 — 주요 지표 카드: 소진 예산 · GRP · Reach 1+ · Reach 3+ (eq.GRP 는 뺐다)
    값 · 페이스 판정(우세/저조) · 아래에 주차별 누적 그래프(실선 = 실제 누적, 점선 = 목표 페이스) ---------- */
+/* v193 — 점들을 지나는 부드러운 곡선. 단조 3차 보간이라 누적값이 중간에 꺼지거나 튀지 않음 */
+function wrSmooth(P){
+  const n=P.length;if(n<3)return P.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
+  const dx=[],sl=[],t=[];for(let i=0;i<n-1;i++){dx[i]=P[i+1][0]-P[i][0];sl[i]=dx[i]?(P[i+1][1]-P[i][1])/dx[i]:0;}
+  t[0]=sl[0];t[n-1]=sl[n-2];
+  for(let i=1;i<n-1;i++){if(sl[i-1]*sl[i]<=0)t[i]=0;else{const w1=2*dx[i]+dx[i-1],w2=dx[i]+2*dx[i-1];t[i]=(w1+w2)/(w1/sl[i-1]+w2/sl[i]);}}
+  let d='M'+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);
+  for(let i=0;i<n-1;i++){const h=dx[i]/3;d+='C'+(P[i][0]+h).toFixed(1)+' '+(P[i][1]+t[i]*h).toFixed(1)+' '+(P[i+1][0]-h).toFixed(1)+' '+(P[i+1][1]-t[i+1]*h).toFixed(1)+' '+P[i+1][0].toFixed(1)+' '+P[i+1][1].toFixed(1);}
+  return d;}
 function wrKpiPaint(F){
   const el=$('wrKs');if(!el)return;const W=TV_WR,T=W.tot||{},wt=W.wtot||{};
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=F&&F.tot.tg>0?F.tot.tg:wrEqTarget();
@@ -30174,12 +30185,12 @@ function wrKpiPaint(F){
     const pts=c.pts.filter(p=>p.d<=span),pace=[];
     if(c.pf&&c.tg>0)for(let d=0;d<=span;d++)pace.push({d,v:c.tg*c.pf(d)});
     const mx=Math.max(...pts.map(p=>p.v),...pace.map(p=>p.v),c.tg>0?c.tg:0,1e-9)*1.08,Y=v=>VH-4-(v/mx)*(VH-12);
-    const ln=pts.length>1?pts.map((p,i)=>(i?'L':'M')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)).join(''):'';
+    const ln=pts.length>1?wrSmooth(pts.map(p=>[X(p.d),Y(p.v)])):'';   /* v193 — 부드러운 곡선(넘치지 않는 단조 보간) */
     const last=pts[pts.length-1];
     const svg=ln?`<svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="none" aria-hidden="true">
         ${pace.length?`<path class="pc" d="${pace.map((p,i)=>(i?'L':'M')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)).join('')}"/>`:''}
         <path class="ar" d="${ln}L${X(last.d).toFixed(1)} ${VH}L0 ${VH}Z"/><path class="ln" d="${ln}"/></svg>
-        ${pts.slice(1).map((p,i)=>`<i class="pt${i===pts.length-2?' end':''}" style="left:${(p.d/span*100).toFixed(2)}%;top:${(Y(p.v)/VH*100).toFixed(2)}%"></i>`).join('')}
+        ${pts.slice(1).map((p,i)=>`<i class="pt${i===pts.length-2?' end':''}" style="--pd:${i*180}ms;left:${(p.d/span*100).toFixed(2)}%;top:${(Y(p.v)/VH*100).toFixed(2)}%"></i>`).join('')}
         <span class="ax">${m}/1</span><span class="ax r">${m}/${span}</span>`:`<span class="none">${L('주차별 값 없음','No weekly values')}</span>`;
     return `<div class="wrk" data-k="${c.k}" style="--d:${ci*60}ms">
       <span class="l">${c.l}</span><b class="v">${c.v}</b>${bd}
@@ -30284,7 +30295,7 @@ function renderWrDash(){
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
   /* v184 — 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 (v189 — 주요 지표 아래로) */
-  const eff=F?`<div class="sec gap sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
+  const eff=F?`<div class="sec gap sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`eq.GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
       <div class="card"><div class="bd" id="wrPace"></div></div>
       <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
       <div class="grid donuts wrefs" id="wrEffT"></div>
