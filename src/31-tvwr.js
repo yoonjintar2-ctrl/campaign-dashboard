@@ -479,7 +479,7 @@ function wrPaceHtml(F){
         <div class="pside r"><div class="nm1">${L('종료일','End')}</div><div class="sub1">${y}.${String(m).padStart(2,'0')}.${String(F.span).padStart(2,'0')}(${WDK[last.getDay()]})</div></div>
       </div>
       <div class="pline">
-        <div class="pside"><div class="nm1">eq.GRP</div><div class="sub1">${L('노출량','Delivered')} ${wrF(T.eq,1)}</div></div>
+        <div class="pside"><div class="nm1">eq.GRP</div><div class="sub1">${'eq.GRP'} ${wrF(T.eq,1)}</div></div>
         <div class="pmid">
           <div class="pdotrow"><i style="left:${pace}%"></i></div>
           <div class="pbar" id="wrPaceBar">
@@ -500,7 +500,7 @@ function wrPaceHtml(F){
         <div class="pside r"><div class="nm1" style="color:${cTone}">${(cR*100).toFixed(1)}%</div><div class="sub1">${L('큐시트 편성','Planned')} ${cT.toLocaleString()}${L('회','')}</div></div>
       </div>`:''}
       <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
-        <span>${L(`eq.GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · ${hasC?`송출 횟수 = 위클리 송출 횟수 ÷ 큐시트 편성 횟수 · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}큐시트에 편성된 ${CX.cntAt(F.days).toLocaleString()}회(${(cP*100).toFixed(1)}%) `:''}`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
+        <span>${L(`eq.GRP 달성률 = eq.GRP ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 채널마다 시작일(큐시트 첫 편성일)부터 월말까지 일할해 더한 값':' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · ${hasC?`송출 횟수 = 위클리 송출 횟수 ÷ 큐시트 편성 횟수 · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}큐시트에 편성된 ${CX.cntAt(F.days).toLocaleString()}회(${(cP*100).toFixed(1)}%) `:''}`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
     </div></div>`;}
 
 /* ---------- v189 — 주요 지표 카드: 소진 예산 · GRP · Reach 1+ · Reach 3+ (eq.GRP 는 뺐다)
@@ -587,7 +587,7 @@ function wrEffCards(box,F,grp){
     if(pf<.9995)S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:PACE,'stroke-width':TH,opacity:.9,...capDash(cir,pf,TH),'data-axarc':`${cir},${pf},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
     S('circle',{cx:CC,cy:CC,r:rad,fill:'none',stroke:ringGrad(defs,KPI_RING[0]),'stroke-width':TH,'stroke-opacity':af>=1?1:ACH_OPACITY,...capDash(cir,af,TH),'data-axarc':`${cir},${af},${TH}`,transform:`rotate(-90 ${CC} ${CC})`},svg);
     /* 호를 따라 흐르는 글 — 집행 eq.GRP */
-    const label=`${L('노출량','Delivered')} ${wrF(r.eq,1)}`,need=label.length*7.4+18,inArc=cir*af>need,id='wrdn'+(++WR_DNID);
+    const label=`${'eq.GRP'} ${wrF(r.eq,1)}`,need=label.length*7.4+18,inArc=cir*af>need,id='wrdn'+(++WR_DNID);
     const d0=inArc?0:360*af;S('path',{id,d:arcPath(d0,d0+179),fill:'none'},defs);
     const t=S('text',{'font-size':inArc?12:11.5,'font-weight':800,fill:'#fff','dominant-baseline':'central'},svg);
     if(!inArc){t.setAttribute('stroke','rgba(38,52,68,.42)');t.setAttribute('stroke-width','2.4');t.setAttribute('paint-order','stroke');}
@@ -598,7 +598,7 @@ function wrEffCards(box,F,grp){
       +(r.bud>0?`<div class="r"><span class="l">${L('예산','Budget')}</span><b>${wrEok(r.bud)}</b></div>`:'')
       +(isFinite(r.tc)&&r.tc>0?`<div class="r"><span class="l">${L('목표 CPRP','Target CPRP')}</span><b>${wrF(r.tc*1000,0)}${L('원','')}</b></div>`:'')
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
-      +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
+      +`<div class="r"><span class="l">${'eq.GRP'}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('eq.GRP 달성률','eq.GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${(pf*100).toFixed(1)}%</b></div>`
       +(r.span?`<div class="r"><span class="l">${L('집행 기간','Flight')}</span><b>${String(TV_WR.ym).slice(5)*1}/${r.span[0]}~${r.span[1]}</b></div>`:'')
@@ -628,7 +628,7 @@ function wrPaceWire(h,F){
   const segs=F.G.filter(x=>x.eq>0);
   bar.querySelectorAll('[data-wrseg]').forEach(i=>{const r=segs[+i.dataset.wrseg];if(!r)return;
     i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.g)}</div>`
-      +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
+      +`<div class="r"><span class="l">${'eq.GRP'}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
       +`<div class="r"><span class="l">${L('eq.GRP 달성률','eq.GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${isFinite(r.pace)?(r.pace*100).toFixed(1)+'%':'–'}</b></div>`
@@ -657,7 +657,7 @@ function renderWrDash(){
   /* v184 — 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 (v189 — 주요 지표 아래로) */
   const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`eq.GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
       <div class="card"><div class="bd" id="wrPace"></div></div>`:'';
-  const effB=F?`<div class="sec gap sm">${L('PP별 eq.GRP 달성 현황','eq.GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
+  const effB=F?`<div class="sec gap sm">${L('PP별 eq.GRP 달성 현황','eq.GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · eq.GRP','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
       <div class="grid donuts wrefs" id="wrEffT"></div>
       <div class="grid donuts wrefs" id="wrEffC"></div>`:'';
   h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+(eff?eff+kpis.replace('class="sec sm"','class="sec gap sm"'):kpis)+effB
