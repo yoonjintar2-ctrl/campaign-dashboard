@@ -818,21 +818,22 @@ function paintOvItems(rows,won0){
   const packs={};AR.forEach(([k])=>{const g=G[k];if(!g)return;const P={};Object.values(g).forEach(r=>{const c=r.n===''?'':(r.cat||ETC),p=P[c]||(P[c]={c,t:0,m:{},rs:[]});p.rs.push(r);p.t+=r.t;Object.keys(r.m).forEach(y=>{p.m[y]=(p.m[y]||0)+r.m[y];if(p.m[y]>gmx)gmx=p.m[y];});});
     packs[k]=Object.values(P).sort((a,b)=>(a.c==='')-(b.c==='')||(a.c===ETC)-(b.c===ETC)||b.t-a.t);});
   const itemRow=(r,lab,none,sub)=>{const nm=r.n===''?none:r.n,col=r.n===''?'#9aa3ad':(typeof wrCol==='function'?wrCol(String(r.n).replace(/\s+/g,'')):'#6c7b8e');
-    return `<tr${sub?' class="it"':''}><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
+    return `<tr${sub?` class="${sub}"`:''}><th class="nm"><i style="background:${col}"></i>${esc(nm)}</th>`+months.map(ym=>{const v=r.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
       const a=(.16+.74*Math.sqrt(v/mx)).toFixed(3);
       return `<td data-ovit="${esc(JSON.stringify([lab,nm,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b${a>.62?' class="hi"':''} style="--c:${col};--a:${a}">${eok(v)}</b></td>`;}).join('')
       +`<td class="sum mono">${eok(r.t)}</td></tr>`;};
   let body='';
   AR.forEach(([k,lab,none])=>{const ps=packs[k];if(!ps)return;const nIt=ps.reduce((s,p)=>s+p.rs.filter(r=>r.n!=='').length,0),nPk=ps.filter(p=>p.c!=='').length;
     body+=`<tr class="grp"><th colspan="${months.length+2}">${esc(lab)} <span>${nIt?L(`${nPk}개 묶음 · ${nIt}개`,`${nPk} groups · ${nIt}`):''}</span></th></tr>`;
-    ps.forEach(p=>{
+    ps.forEach((p,pi)=>{
       if(p.c===''){p.rs.forEach(r=>{body+=itemRow(r,lab,none,false);});return;}
-      /* 묶음 줄 — 그 달 묶음 합계(무채색). 품목이 하나뿐이고 이름이 묶음과 같으면 품목 줄은 생략 */
+      /* v187 — 묶음 줄에는 금액을 쓰지 않는다(이름만 · 품목 수). 묶음 사이는 한 칸 띄운다.
+         품목이 하나뿐이고 이름이 묶음과 같으면(음식물처리기 · 비데) 묶음 이름으로 된 품목 줄 하나만 */
+      if(pi)body+=`<tr class="sp" aria-hidden="true"><td colspan="${months.length+2}"></td></tr>`;
       const solo=p.rs.length===1&&key(p.rs[0].n)===key(p.c);
-      body+=`<tr class="pk"><th class="nm">${esc(p.c)}${solo?'':` <span>${p.rs.length}</span>`}</th>`+months.map(ym=>{const v=p.m[ym]||0;if(!(v>0))return '<td class="z"></td>';
-        const a=(.1+.5*Math.sqrt(v/gmx)).toFixed(3);
-        return `<td data-ovit="${esc(JSON.stringify([lab,p.c,ym,Math.round(v),Math.round(mt[ym]||0)]))}"><b style="--c:#5f6973;--a:${a}">${eok(v)}</b></td>`;}).join('')+`<td class="sum mono">${eok(p.t)}</td></tr>`;
-      if(!solo)p.rs.slice().sort((a,b)=>b.t-a.t).forEach(r=>{body+=itemRow(r,lab,none,true);});});});
+      if(solo){body+=itemRow(p.rs[0],lab,none,'it solo');return;}
+      body+=`<tr class="pk"><th class="nm" colspan="${months.length+2}">${esc(p.c)} <span>${p.rs.length}</span></th></tr>`;
+      p.rs.slice().sort((a,b)=>b.t-a.t).forEach(r=>{body+=itemRow(r,lab,none,'it');});});});
   body+=`<tr class="tot"><th class="nm">Total</th>${months.map(ym=>`<td class="mono">${mt[ym]>0?eok(mt[ym]):'–'}</td>`).join('')}<td class="sum mono">${eok(tot)}</td></tr>`;
   el.innerHTML=`<div class="ovitw"><table class="ovit"><thead><tr><th class="nm">${L('구분','Category')}</th>${hd}<th class="sum">${L('합계','Total')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
   el.querySelectorAll('[data-ovit]').forEach(td=>{let o=null;try{o=JSON.parse(td.dataset.ovit);}catch(e){return;}
