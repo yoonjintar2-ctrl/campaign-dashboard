@@ -599,14 +599,14 @@ function wrEffCards(box,F,grp){
       +(isFinite(r.tc)&&r.tc>0?`<div class="r"><span class="l">${L('목표 CPRP','Target CPRP')}</span><b>${wrF(r.tc*1000,0)}${L('원','')}</b></div>`:'')
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
       +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
-      +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('eq.GRP 달성률','eq.GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${(pf*100).toFixed(1)}%</b></div>`
       +(r.span?`<div class="r"><span class="l">${L('집행 기간','Flight')}</span><b>${String(TV_WR.ym).slice(5)*1}/${r.span[0]}~${r.span[1]}</b></div>`:'')
       +(isFinite(r.rate)?`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${(r.rate-pf>=0?'+':'−')+Math.abs((r.rate-pf)*100).toFixed(1)}%p</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);
     ring.appendChild(svg);
     const ctr=el('div','ctr',ring);ctr.innerHTML=`<div class="ctrbox"><span class="achk">${L('달성률','Achieved')}</span><b class="achv mono">${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`;
-    const lg=el('div','dlgd',c);lg.innerHTML=`<span class="lg ach"><span class="sw"></span>${L('GRP 달성률','GRP achievement')}</span><span class="lg mute"><span class="sw"></span>${L('목표 페이스','Target pace')} ${(pf*100).toFixed(1)}%</span>`;});}
+    const lg=el('div','dlgd',c);lg.innerHTML=`<span class="lg ach"><span class="sw"></span>${L('eq.GRP 달성률','eq.GRP achievement')}</span><span class="lg mute"><span class="sw"></span>${L('목표 페이스','Target pace')} ${(pf*100).toFixed(1)}%</span>`;});}
 /* v185 — 달성 막대 + 카드 두 줄(지상파 · 케이블)을 그린다. 큐시트를 뒤늦게 읽었을 때도 이것만 다시 부른다 */
 function wrEffPaint(){
   const h=$('wrDash');if(!h||!$('wrPace'))return;let F=null;try{F=wrEff();}catch(e){console.warn(e);}if(!F)return;
@@ -630,7 +630,7 @@ function wrPaceWire(h,F){
     i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.g)}</div>`
       +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
-      +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('eq.GRP 달성률','eq.GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${isFinite(r.pace)?(r.pace*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('전체 목표 중','Of total target')}</span><b>${F.tot.tg>0?(r.eq/F.tot.tg*100).toFixed(1)+'%':'–'}</b></div>`));
     i.addEventListener('mouseleave',hideTip);});
@@ -657,7 +657,7 @@ function renderWrDash(){
   /* v184 — 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 (v189 — 주요 지표 아래로) */
   const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`eq.GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
       <div class="card"><div class="bd" id="wrPace"></div></div>`:'';
-  const effB=F?`<div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
+  const effB=F?`<div class="sec gap sm">${L('PP별 eq.GRP 달성 현황','eq.GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(채널 시작일부터 월말까지 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
       <div class="grid donuts wrefs" id="wrEffT"></div>
       <div class="grid donuts wrefs" id="wrEffC"></div>`:'';
   h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+(eff?eff+kpis.replace('class="sec sm"','class="sec gap sm"'):kpis)+effB
