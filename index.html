@@ -832,6 +832,29 @@ table.wrt tr.total td{font-weight:900;background:color-mix(in srgb,var(--acc-sof
 .wrchip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}.wrchip.on em{color:color-mix(in srgb,var(--surface) 70%,transparent)}
 @media (prefers-reduced-motion: reduce){.wrsb .seg,.wr-dn.done .cd{animation:none}}
 /* 게이지 카드 (v147) — 카드 바탕은 그대로, 안에 작은 게이지 막대(왼쪽 연한 회색 → 오른쪽 짙은 회청) */
+/* v189 — TV 주요 지표 카드(값 · 페이스 판정 · 주차별 누적 그래프) */
+.wrks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:4px 0 6px}
+@media (max-width:1100px){.wrks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.wrks{grid-template-columns:1fr}}
+.wrk{position:relative;border-radius:16px;border:1px solid var(--line);background:var(--surface);padding:16px 18px 0;display:flex;flex-direction:column;gap:3px;overflow:hidden;min-width:0}
+.wrk .l{font-size:12px;font-weight:800;color:var(--ink2)}
+.wrk .v{font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-.4px;line-height:1.2;font-variant-numeric:tabular-nums}
+.wrk .bd{align-self:flex-start;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;margin:2px 0 5px;white-space:nowrap}
+.wrk .bd.up{color:#1f6b45;background:#e3f3ea}.wrk .bd.dn{color:#a8433a;background:#fbe9e6}.wrk .bd.no{color:var(--muted);background:var(--plane2);font-weight:700}
+[data-theme="dark"] .wrk .bd.up{color:#7fd0a3;background:rgba(60,150,100,.18)}[data-theme="dark"] .wrk .bd.dn{color:#f0a097;background:rgba(200,80,70,.18)}
+.wrk .s{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wrk .s b{color:var(--ink);font-weight:800}
+.wrk .ch{position:relative;height:112px;margin:10px -18px 0;cursor:default}
+.wrk .ch svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.wrk .ch .ar{fill:var(--ink2);fill-opacity:.09;stroke:none}
+.wrk .ch .ln{fill:none;stroke:var(--ink2);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.wrk .ch .pc{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 4;vector-effect:non-scaling-stroke;opacity:.75}
+.wrk .ch .pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--surface);border:2px solid var(--ink2);box-sizing:border-box;transition:transform .12s}
+.wrk .ch .pt.end{background:var(--ink2)}.wrk .ch .pt.on{transform:scale(1.6)}
+.wrk .ch .ax{position:absolute;bottom:4px;left:18px;font-size:10px;font-weight:600;color:var(--muted);opacity:.8}.wrk .ch .ax.r{left:auto;right:18px}
+.wrk .ch .none{position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;color:var(--muted)}
+/* 달성 현황의 R3+ 줄 — 옅은 막대 = R1+, 진한 막대 = R3+ */
+.pbar.rch .r1{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:color-mix(in srgb,var(--ink2) 16%,transparent);display:flex;align-items:center;justify-content:flex-end}
+.pbar.rch .r1 span{font-size:10.5px;font-weight:700;color:var(--ink2);padding-right:9px;white-space:nowrap;opacity:.8}
 .wrgs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:4px 0 6px}
 @media (max-width:1100px){.wrgs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.wrgs{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -29999,7 +30022,12 @@ function wrEff(){
   rows.forEach(r=>{const p=X?X.pace(r.g,r.n,days):NaN;if(isFinite(p)){r.pace=p;psrc='cue';}else r.pace=prog;});
   const wp=rs=>{let a=0,b=0;rs.forEach(r=>{const w=r.tg>0?r.tg:0;a+=w*r.pace;b+=w;});return b>0?a/b:prog;};
   G.forEach(g=>{g.pace=wp(rows.filter(r=>r.g===g.g));});
-  return {rows,G,tot:{bud,eq,tg,rate,pace:wp(rows)},prog,days,span,asof,src,psrc};}
+  /* v189 — 날짜별 목표 페이스(주요 지표 카드의 점선) · 예산 기준 페이스 */
+  const pBud=X?X.paceBud(days):NaN;
+  const paceAt=d=>{if(!X)return span>0?Math.min(1,d/span):1;let a=0,b=0;rows.forEach(r=>{const w=r.tg>0?r.tg:0;if(!w)return;const p=X.pace(r.g,r.n,d);a+=w*(isFinite(p)?p:Math.min(1,d/span));b+=w;});return b>0?a/b:Math.min(1,d/span);};
+  const paceBudAt=d=>{const p=X?X.paceBud(d):NaN;return isFinite(p)?p:(span>0?Math.min(1,d/span):1);};
+  rows.forEach(r=>{r.span=X?X.span(r.g,r.n):null;});
+  return {rows,G,tot:{bud,eq,tg,rate,pace:wp(rows),paceB:isFinite(pBud)?pBud:prog},prog,days,span,asof,src,psrc,paceAt,paceBudAt,spots:!!(X&&X.hasSpots)};}
 
 /* ---------- v185 — 미디어믹스(큐시트)에서 읽는 값: 채널×품목 예산 · 품목(소재)별 집행 기간 ---------- */
 var WR_CX={key:'',d:null,q:''};
@@ -30029,6 +30057,13 @@ function wrCueParse(js,ym){
     if(m){const m1=+m[1],m2=m[3]?+m[3]:m1;pd=(m1>M||m2<M)?null:[m1<M?1:Math.min(+m[2],last),m2>M?last:Math.min(+m[4],last)];}
     const nm=String(r[3]||'').trim();if(!cur||!nm||/\s계$/.test(nm))return;
     const w=+r[4];(per[cur]||(per[cur]=[])).push({n:nm,s:pd?pd[0]:1,e:pd?Math.max(pd[0],pd[1]):last,w:w>0?w:0,has:!!pd});});
+  /* v189 — 매체(채널)별 집행 기간 = 큐시트 편성의 첫 날~마지막 날 (채널×품목 · 없으면 채널 전체 · 그래도 없으면 소재 시트의 품목 기간)
+     지상파 시트: [채널,…,일자(10),품목(11)] · 케이블 시트: [채널,품목(1),…,일자(18)] */
+  const sp={},spc={};
+  const addSp=(ch,it,dt)=>{const m=/^(\d{1,2})\/(\d{1,2})$/.exec(String(dt||'').trim());if(!m||+m[1]!==M)return;const d=Math.min(+m[2],last),c=wrChK(ch),k=c+'|'+wrNz(it);
+    const o=sp[k]||(sp[k]=[d,d]);if(d<o[0])o[0]=d;if(d>o[1])o[1]=d;const q=spc[c]||(spc[c]=[d,d]);if(d<q[0])q[0]=d;if(d>q[1])q[1]=d;};
+  (S['지상파']||[]).forEach(r=>{if(r&&r[0])addSp(r[0],r[11],r[10]);});
+  (S['케이블']||[]).forEach(r=>{if(r&&r[0])addSp(r[0],r[1],r[18]);});
   const pk=Object.keys(per);
   const items=hd.map(h=>{const a=wrNz(h),f=wrNz(full[h]||h),c=wrNz(cat[h]||'');
     let k=pk.find(x=>x===a)||pk.find(x=>x===f)||pk.find(x=>x.startsWith(a)||a.startsWith(x))||(c?pk.find(x=>x.includes(c)&&!hd.some(o=>wrNz(o)===x)):null);
@@ -30042,11 +30077,19 @@ function wrCueParse(js,ym){
   const itemIx=n=>{const a=wrNz(n);let i=items.findIndex(x=>wrNz(x.fn)===a||wrNz(x.n)===a);
     if(i<0)i=items.findIndex(x=>a.startsWith(wrNz(x.n))||wrNz(x.fn).startsWith(a)||a.startsWith(wrNz(x.fn)));return i;};
   const PPAL={kbs:'kbsn',mbc:'mbc+',sbs:'sbs미디어넷'};
-  return {items,rows,last,itemIx,
+  /* 한 채널 × 한 품목이 그 날까지 집행했어야 할 비율 */
+  const spanOf=(r,i)=>sp[r.k+'|'+wrNz(items[i].n)]||spc[r.k]||null;
+  const fr=(r,i,day)=>{const x=spanOf(r,i);return x?Math.min(1,Math.max(0,(day-x[0]+1)/(x[1]-x[0]+1))):items[i].frac(day);};
+  const hitOf=(g,n)=>{const want=wrNz(n),wpp={};((TV_WR&&TV_WR.chs)||[]).forEach(c=>{wpp[wrNz(c.ch)]=wrNz(c.pp||c.ch);});
+    return rows.filter(r=>r.g===g&&(g==='지상파'?r.k===want:(wpp[r.k]||PPAL[wrNz(r.pp)]||wrNz(r.pp))===want));};
+  return {items,rows,last,itemIx,hasSpots:Object.keys(spc).length>0,
+    /* 예산 기준 전체 페이스(소진 예산 카드) */
+    paceBud(day){let a=0,b=0;rows.forEach(r=>r.v.forEach((v,i)=>{if(v>0){a+=v*fr(r,i,day);b+=v;}}));return b>0?a/b:NaN;},
+    /* 채널(지상파) · PP(케이블) 한 칸의 집행 기간(첫 날~마지막 날) */
+    span(g,n){let s=99,e=0;hitOf(g,n).forEach(r=>r.v.forEach((v,i)=>{if(!(v>0))return;const x=spanOf(r,i)||[items[i].s,items[i].e];if(x[0]<s)s=x[0];if(x[1]>e)e=x[1];}));return e?[s,e]:null;},
     /* 위클리의 채널(지상파) · PP(케이블) 한 칸의 목표 페이스 */
-    pace(g,n,day){const want=wrNz(n),wpp={};((TV_WR&&TV_WR.chs)||[]).forEach(c=>{wpp[wrNz(c.ch)]=wrNz(c.pp||c.ch);});let a=0,b=0;
-      rows.forEach(r=>{if(r.g!==g)return;const hit=g==='지상파'?r.k===want:(wpp[r.k]||PPAL[wrNz(r.pp)]||wrNz(r.pp))===want;if(!hit)return;
-        r.v.forEach((v,i)=>{if(v>0){a+=v*items[i].frac(day);b+=v;}});});
+    pace(g,n,day){let a=0,b=0;
+      hitOf(g,n).forEach(r=>{r.v.forEach((v,i)=>{if(v>0){a+=v*fr(r,i,day);b+=v;}});});
       return b>0?a/b:NaN;},
     /* 품목 × 채널 예산(천원) */
     bud(item,ch){const i=itemIx(item);if(i<0)return NaN;const k=wrNz(ch),r=rows.find(x=>x.k===k);return r?r.v[i]/1000:0;},
@@ -30060,8 +30103,10 @@ function wrPaceHtml(F){
   const T=F.tot,r=isFinite(T.rate)?T.rate:0,f=Math.min(Math.max(r,0),1)*100,pv=isFinite(T.pace)?T.pace:F.prog,pace=Math.min(Math.max(pv,0),1)*100;
   const pr=pv>0?r/pv:1,ahead=pr>=1,c=PACE_SEG[0],amb=ambLevel(pr),C=ahead?AMB_OK:AMB_NG;
   const tone=mixHex(PACE_TONE,ahead?TONE_OK:TONE_NG,Math.min(Math.abs(pr-1)/.06,1));
-  const segT=F.rows.reduce((s,x)=>s+x.eq,0)||1;
-  const segs=F.rows.filter(x=>x.eq>0).map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.n)}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
+  /* v189 — 막대는 지상파 · 케이블 두 구간만(PP 로 쪼개면 너무 잘다) */
+  const SG=F.G.filter(x=>x.eq>0),segT=SG.reduce((s,x)=>s+x.eq,0)||1;
+  const R1=wrN((W.tot||{}).r1),R3=wrN((W.tot||{}).r3);
+  const segs=SG.map((x,i)=>`<i style="width:${(x.eq/segT*100).toFixed(4)}%" data-wrseg="${i}"><span class="nm">${esc(x.g==='지상파'?L('지상파','Terrestrial'):L('케이블','Cable'))}</span><span class="pc">${T.tg>0?(x.eq/T.tg*100).toFixed(1)+'%':''}</span></i>`).join('');
   const last=new Date(y,m-1,F.span);
   return `<div class="pacescroll"><div class="pacebody">
       <div class="phead">${L(`집행 ${F.days}일차`,`Day ${F.days}`)} <span class="sep">/</span> ${L(`총 ${F.span}일`,`of ${F.span}`)}
@@ -30082,9 +30127,68 @@ function wrPaceHtml(F){
         </div>
         <div class="pside r"><div class="nm1" style="color:${tone}">${isFinite(T.rate)?(T.rate*100).toFixed(1)+'%':'–'}</div><div class="sub1">${L('Total 목표','Total target')} ${wrF(T.tg,0)}</div></div>
       </div>
+      ${isFinite(R3)?`<div class="pline">
+        <div class="pside"><div class="nm1">R3+</div><div class="sub1">${isFinite(R1)?'R1+ '+R1.toFixed(1)+'%':L('유효 도달률','Effective reach')}</div></div>
+        <div class="pmid">
+          <div class="pbar rch" id="wrRchBar">${isFinite(R1)?`<div class="r1" style="width:${Math.min(R1,100).toFixed(2)}%"><span>R1+ ${R1.toFixed(1)}%</span></div>`:''}
+            <div class="mstack" style="width:${Math.min(Math.max(R3,0),100).toFixed(2)}%;--segbg:linear-gradient(150deg,${adjust(c,.08,.05)},${c});--ambc:transparent;--ambrgb:${C[0]} ${C[1]} ${C[2]};--amba:0"><i style="width:100%"><span class="nm">R3+</span><span class="pc">${R3.toFixed(1)}%</span></i></div>
+          </div>
+        </div>
+        <div class="pside r"><div class="nm1">${R3.toFixed(1)}%</div><div class="sub1">${L('유효 도달률 · 목표 없음','Effective reach · no target')}</div></div>
+      </div>`:''}
       <div class="pfoot"><i></i>${L('막대 위의 점 =','Dot above the bar =')} <b>${L('목표 페이스','target pace')}</b>
-        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — 미디어믹스의 품목별 집행 기간으로 일할(늦게 시작하는 품목은 그만큼 뺌)':' (달 전체 일할)'} · 막대 구간은 채널 · PP가 채운 양`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
+        <span>${L(`GRP 달성률 = 노출량 ÷ Total 목표(예산 ÷ 목표 CPRP) · 점 = ${F.asof?F.asof.replace('~','')+'까지 ':''}채웠어야 할 수준 ${(pv*100).toFixed(1)}%${F.psrc==='cue'?(F.spots?' — 매체(채널)마다 큐시트의 첫 편성일~마지막 편성일로 일할해 더한 값':' — 미디어믹스의 품목별 집행 기간으로 일할'):' (달 전체 일할)'} · 막대 구간 = 지상파 · 케이블이 채운 양 · R3+ 는 도달률 그대로(옅은 막대 = R1+)`,`GRP achievement = delivered ÷ total target (budget ÷ target CPRP) · dot = share due by now ${(pv*100).toFixed(1)}%${F.psrc==='cue'?' — prorated by each product\'s flight in the media mix':''} · segments = channels / PPs`)}</span></div>
     </div></div>`;}
+
+/* ---------- v189 — 주요 지표 카드: 소진 예산 · GRP · Reach 1+ · Reach 3+ (eq.GRP 는 뺐다)
+   값 · 페이스 판정(우세/저조) · 아래에 주차별 누적 그래프(실선 = 실제 누적, 점선 = 목표 페이스) ---------- */
+function wrKpiPaint(F){
+  const el=$('wrKs');if(!el)return;const W=TV_WR,T=W.tot||{},wt=W.wtot||{};
+  const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=F&&F.tot.tg>0?F.tot.tg:wrEqTarget();
+  const k=wrN(T.eq)>0&&wrN(T.grp)>0?T.grp/T.eq:NaN,grpT=isFinite(eqT)&&isFinite(k)?eqT*k:NaN;
+  const [y,m]=String(W.ym).split('-').map(Number),span=F?F.span:new Date(y,m,0).getDate(),days=F?F.days:span;
+  const wks=(W.weeks||[]).map((w,i)=>({l:w.l,s:+String(w.s).slice(8,10),e:+String(w.e).slice(8,10),v:(wt.w||[])[i]||[0,0]}));
+  /* 주차 끝 날짜마다 누적 */
+  const cum=f=>{let a=0;const o=[{d:0,v:0,l:''}];wks.forEach(w=>{a+=f(w.v)||0;o.push({d:w.e,v:a,l:`${w.l} (${m}/${w.s}${w.e>w.s?'~'+w.e:''})`});});return o;};
+  const rs=(W.rs||[]).filter(x=>x&&x[0]>0&&x[0]<days).sort((a,b)=>a[0]-b[0]);   /* 지난 위클리의 도달률(있으면) [일,R1,R3] */
+  const rch=i=>[{d:0,v:0,l:''}].concat(rs.map(x=>({d:x[0],v:x[i],l:`${m}/${x[0]}`})),[{d:days,v:wrN(T[i===1?'r1':'r3']),l:`${m}/${days}`}]).filter(p=>isFinite(p.v));
+  const paceG=F?F.tot.pace:NaN,paceB=F?F.tot.paceB:NaN;
+  const C=[
+    {k:'bud',l:L('소진 예산','Budget spent'),v:wrEok(spent),rate:wrPct(spent,bud),pace:paceB,tg:bud,fmt:wrEok,pts:cum(x=>x[1]),pf:F&&F.paceBudAt,
+      s1:`${L('목표','Target')} <b>${wrEok(bud)}</b>`,rl:L('소진율','Spent')},
+    {k:'grp',l:'GRP',v:wrF(T.grp,1),rate:F&&isFinite(F.tot.rate)?F.tot.rate:wrPct(T.grp,grpT),pace:paceG,tg:grpT,fmt:v=>wrF(v,1),pts:isFinite(k)?cum(x=>x[0]*k):[],pf:F&&F.paceAt,
+      s1:isFinite(grpT)?`${L('목표(환산)','Target(conv.)')} <b>${wrF(grpT,0)}</b>`:L('목표 없음','No target'),rl:L('달성률','Achieved')},
+    {k:'r1',l:'Reach 1+',v:isFinite(wrN(T.r1))?T.r1.toFixed(1)+'%':'–',fmt:v=>v.toFixed(1)+'%',pts:rch(1),s1:L('타깃 도달률','Target reach'),pct:1},
+    {k:'r3',l:'Reach 3+',v:isFinite(wrN(T.r3))?T.r3.toFixed(1)+'%':'–',fmt:v=>v.toFixed(1)+'%',pts:rch(2),s1:L('유효 도달률','Effective reach'),pct:1}];
+  const VW=300,VH=104,X=d=>d/span*VW;
+  el.innerHTML=C.map((c,ci)=>{
+    const has=isFinite(c.rate)&&isFinite(c.pace),df=has?(c.rate-c.pace)*100:NaN,up=df>=0;
+    const bd=has&&Math.abs(df)<.05?`<span class="bd no">${L('페이스와 같음','on pace')}</span>`:has?`<span class="bd ${up?'up':'dn'}">${L('페이스 대비','vs pace')} ${up?'+':'−'}${Math.abs(df).toFixed(1)}%p ${up?'↑':'↓'} · ${up?L('우세','ahead'):L('저조','behind')}</span>`:(c.pct?`<span class="bd no">${L('목표 없음','no target')}</span>`:'');
+    const pts=c.pts.filter(p=>p.d<=span),pace=[];
+    if(c.pf&&c.tg>0)for(let d=0;d<=span;d++)pace.push({d,v:c.tg*c.pf(d)});
+    const mx=Math.max(...pts.map(p=>p.v),...pace.map(p=>p.v),c.tg>0?c.tg:0,1e-9)*1.08,Y=v=>VH-4-(v/mx)*(VH-12);
+    const ln=pts.length>1?pts.map((p,i)=>(i?'L':'M')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)).join(''):'';
+    const last=pts[pts.length-1];
+    const svg=ln?`<svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="none" aria-hidden="true">
+        ${pace.length?`<path class="pc" d="${pace.map((p,i)=>(i?'L':'M')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)).join('')}"/>`:''}
+        <path class="ar" d="${ln}L${X(last.d).toFixed(1)} ${VH}L0 ${VH}Z"/><path class="ln" d="${ln}"/></svg>
+        ${pts.slice(1).map((p,i)=>`<i class="pt${i===pts.length-2?' end':''}" style="left:${(p.d/span*100).toFixed(2)}%;top:${(Y(p.v)/VH*100).toFixed(2)}%"></i>`).join('')}
+        <span class="ax">${m}/1</span><span class="ax r">${m}/${span}</span>`:`<span class="none">${L('주차별 값 없음','No weekly values')}</span>`;
+    return `<div class="wrk" data-k="${c.k}" style="--d:${ci*60}ms">
+      <span class="l">${c.l}</span><b class="v">${c.v}</b>${bd}
+      <span class="s">${c.s1}</span>
+      <span class="s">${has?`${c.rl} <b>${(c.rate*100).toFixed(1)}%</b> (${L('목표 페이스','target pace')} ${(c.pace*100).toFixed(1)}%)`:(c.pct?L(`${m}/${days} 기준 누적`,`cumulative as of ${m}/${days}`):'&nbsp;')}</span>
+      <div class="ch" data-ci="${ci}">${svg}</div></div>`;}).join('');
+  el.querySelectorAll('.ch').forEach(ch=>{const c=C[+ch.dataset.ci],pts=c.pts.filter(p=>p.d>0&&p.d<=span);if(!pts.length)return;
+    ch.addEventListener('mousemove',e=>{const r=ch.getBoundingClientRect(),d=(e.clientX-r.left)/r.width*span;let b=pts[0];pts.forEach(p=>{if(Math.abs(p.d-d)<Math.abs(b.d-d))b=p;});
+      ch.querySelectorAll('.pt').forEach((x,i)=>x.classList.toggle('on',pts[i]===b));
+      const pv=c.pf&&c.tg>0?c.tg*c.pf(b.d):NaN;
+      showTip(e.clientX,e.clientY,`<div class="t">${esc(c.l)} <span style="font-weight:600;opacity:.6">· ${esc(b.l)}</span></div>
+        <div class="r hi"><span class="l">${L('누적','Cumulative')}</span><b>${c.fmt(b.v)}</b></div>
+        ${isFinite(pv)?`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${c.fmt(pv)}</b></div><div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${pv>0?(b.v/pv*100).toFixed(0)+'%':'–'}</b></div>`:''}
+        ${c.tg>0?`<div class="r"><span class="l">${L('목표 대비','Of target')}</span><b>${(b.v/c.tg*100).toFixed(1)}%</b></div>`:''}
+        ${c.k==='grp'?`<div class="r"><span class="l" style="opacity:.7">${L('주차별 GRP 는 eq.GRP 비율로 나눈 값','weekly GRP split by eq.GRP share')}</span></div>`:''}`);});
+    ch.addEventListener('mouseleave',()=>{hideTip();ch.querySelectorAll('.pt').forEach(x=>x.classList.remove('on'));});});}
 
 /* PP별 도넛 카드 — 디지털 'KPI 달성 현황' 카드와 같은 틀 */
 function wrEffCards(box,F,grp){
@@ -30119,6 +30223,7 @@ function wrEffCards(box,F,grp){
       +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${(pf*100).toFixed(1)}%</b></div>`
+      +(r.span?`<div class="r"><span class="l">${L('집행 기간','Flight')}</span><b>${String(TV_WR.ym).slice(5)*1}/${r.span[0]}~${r.span[1]}</b></div>`:'')
       +(isFinite(r.rate)?`<div class="r"><span class="l">${L('페이스 대비','vs pace')}</span><b>${(r.rate-pf>=0?'+':'−')+Math.abs((r.rate-pf)*100).toFixed(1)}%p</b></div>`:'')));
     hit.addEventListener('mouseleave',hideTip);
     ring.appendChild(svg);
@@ -30128,6 +30233,7 @@ function wrEffCards(box,F,grp){
 function wrEffPaint(){
   const h=$('wrDash');if(!h||!$('wrPace'))return;let F=null;try{F=wrEff();}catch(e){console.warn(e);}if(!F)return;
   $('wrPace').innerHTML=wrPaceHtml(F);
+  try{wrKpiPaint(F);}catch(e){}
   wrEffCards($('wrEffT'),F,'지상파');wrEffCards($('wrEffC'),F,'케이블');
   wrPaceWire(h,F);
   /* 가로로 넘치면 양옆에 ‹ › 단추(디지털 KPI 카드 줄과 같은 것) */
@@ -30141,12 +30247,13 @@ function wrPaceWire(h,F){
   fit();setTimeout(fit,400);
   if(!WR_PACE_RO&&typeof ResizeObserver!=='undefined'){WR_PACE_RO=new ResizeObserver(()=>{const b=document.getElementById('wrPaceBar');if(b)b.querySelectorAll('.mstack>i').forEach(i=>{const w=i.getBoundingClientRect().width,nm=i.querySelector('.nm');i.classList.remove('nolb','nopc','nopad');const need=nm?nm.textContent.length*7.2+20:40;if(w<need)i.classList.add('nolb','nopad');});});}
   try{WR_PACE_RO&&WR_PACE_RO.observe(bar);}catch(e){}
-  const segs=F.rows.filter(x=>x.eq>0);
+  const segs=F.G.filter(x=>x.eq>0);
   bar.querySelectorAll('[data-wrseg]').forEach(i=>{const r=segs[+i.dataset.wrseg];if(!r)return;
-    i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.n)} <span style="font-weight:600;opacity:.6">· ${esc(r.g)}</span></div>`
+    i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(r.g)}</div>`
       +`<div class="r"><span class="l">${L('노출량','Delivered')}</span><b>${wrF(r.eq,1)}</b></div>`
       +`<div class="r"><span class="l">${L('Total 목표','Total target')}</span><b>${r.tg>0?wrF(r.tg,1):'–'}</b></div>`
       +`<div class="r"><span class="l">${L('GRP 달성률','GRP achievement')}</span><b>${isFinite(r.rate)?(r.rate*100).toFixed(1)+'%':'–'}</b></div>`
+      +`<div class="r"><span class="l">${L('목표 페이스','Target pace')}</span><b>${isFinite(r.pace)?(r.pace*100).toFixed(1)+'%':'–'}</b></div>`
       +`<div class="r"><span class="l">${L('전체 목표 중','Of total target')}</span><b>${F.tot.tg>0?(r.eq/F.tot.tg*100).toFixed(1)+'%':'–'}</b></div>`));
     i.addEventListener('mouseleave',hideTip);});
   h.querySelectorAll('[data-wrd]').forEach(i=>{i.addEventListener('mousemove',e=>showTip(e.clientX,e.clientY,`<div class="t">${esc(i.dataset.wrd)}</div><div class="r"><span class="l">${L('리포트','Report')}</span><b>${i.classList.contains('on')?L('반영','included'):L('아직','not yet')}</b></div>`));i.addEventListener('mouseleave',hideTip);});}
@@ -30164,29 +30271,18 @@ function renderWrDash(){
   /* 게이지 카드 */
   const bud=wrN(wt.bud)>0?wt.bud:wrN(T.bud),spent=wrN(wt.cost),eqT=wrEqTarget();
   const grpT=isFinite(eqT)&&wrN(T.eq)>0&&wrN(T.grp)>0?eqT*T.grp/T.eq:NaN;
-  /* v147 — 카드 바탕은 그대로, 카드 안에 작은 게이지 막대 */
-  const card=(l,v,p,sub,cls)=>{const pp=isFinite(p)?Math.max(0,p):0,pc=Math.min(pp,1);
-    return `<div class="wrg ${cls||''}" style="--p:${Math.max(pc,.0001).toFixed(4)}">
-      <div class="tx"><span class="l">${l}</span><b>${v}</b><span class="s">${sub}</span></div>
-      <div class="gb"><div class="gt"><i></i></div><span class="pc mono">${isFinite(p)?(p*100).toFixed(1)+'%':'–'}</span></div></div>`;};
-  const kpis=`<div class="wrgs">
-    ${card(L('목표 대비 소진 예산','Budget spent vs target'),wrEok(spent),wrPct(spent,bud),`${L('목표','Target')} ${wrEok(bud)}`)}
-    ${card('GRP',wrF(T.grp,1),wrPct(T.grp,grpT),isFinite(grpT)?`${L('목표(환산)','Target(conv.)')} ${wrF(grpT,0)}`:L('목표 없음','No target'))}
-    ${card('eq.GRP',wrF(T.eq,1),wrPct(T.eq,eqT),isFinite(eqT)?`${L('목표','Target')} ${wrF(eqT,0)} · ${L('예산÷목표 CPRP','budget÷target CPRP')}`:L('목표 없음','No target'))}
-    ${card('Reach 1+',isFinite(wrN(T.r1))?T.r1.toFixed(1)+'%':'–',wrN(T.r1)/100,L('타깃 도달률','Target reach'),'rch')}
-    ${card('Reach 3+',isFinite(wrN(T.r3))?T.r3.toFixed(1)+'%':'–',wrN(T.r3)/100,L('유효 도달률','Effective reach'),'rch')}</div>`;
+  let F=null;try{F=wrEff();}catch(e){console.warn(e);}
+  const kpis=`<div class="sec sm">${L('주요 지표','Key metrics')} <span class="note">${L('아래 그래프 = 주차별 누적 · 점선 = 목표 페이스(매체별 집행 기간 일할) · 페이스보다 앞서면 우세, 뒤지면 저조','chart = cumulative by week · dashed = target pace')}</span></div><div class="wrks" id="wrKs"></div>`;
   /* 소재 목록 (당월 값이 있는 것) */
   const pts=[];W.items.forEach(it=>it.cr.forEach(c=>{if(wrN(c.eq)>0&&isFinite(wrN(c.r3)))pts.push({it:it.n,c});}));
   if(!WR_SEL.item||!W.items.some(i=>i.n===WR_SEL.item)){const f=pts[0]||{it:W.items[0].n,c:W.items[0].cr[0]};WR_SEL={item:f.it,cr:f.c?f.c.n:''};}
-  /* v184 — 맨 위: 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 */
-  let F=null;try{F=wrEff();}catch(e){console.warn(e);}
-  const eff=F?`<div class="sec sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
+  /* v184 — 캠페인 전체 GRP 달성 막대 + PP별 도넛 카드 (v189 — 주요 지표 아래로) */
+  const eff=F?`<div class="sec gap sm">${L('캠페인 진행 현황','Campaign progress')} <span class="note">${L(`GRP 달성률 · 당월_광고비 기준별 효율${F.asof?' · '+F.asof.replace('~','')+' 기준':''}`,'GRP achievement · efficiency sheet')}</span></div>
       <div class="card"><div class="bd" id="wrPace"></div></div>
-      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(품목별 집행 기간 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
+      <div class="sec gap sm">${L('PP별 GRP 달성 현황','GRP achievement by PP')} <span class="note">${L('Total 목표 = 예산 ÷ 목표 CPRP · 윗줄 지상파(Total → 채널) · 아랫줄 케이블(Total → PP) · 회색 고리 = 목표 페이스(매체별 집행 기간 일할) · 고리에 올리면 예산 · 목표 · 노출량','total target = budget ÷ target CPRP · top row terrestrial, bottom row cable · grey ring = prorated target pace · hover a ring for details')}</span></div>
       <div class="grid donuts wrefs" id="wrEffT"></div>
-      <div class="grid donuts wrefs" id="wrEffC"></div>
-      <div class="sec gap sm">${L('주요 지표','Key metrics')}</div>`:'';
-  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+eff+kpis
+      <div class="grid donuts wrefs" id="wrEffC"></div>`:'';
+  h.innerHTML=wrHead(L('TV 캠페인 퍼포먼스','TV campaign performance'),`${wrMonth()} · ${W.period||''}`)+kpis+eff
     +`<div class="sec gap sm">${L('소재별 효율','Efficiency by creative')} <span class="note">${L('가로 eq.GRP(15초 환산 노출량) · 세로 R3+(유효 도달률) · 점 크기 = 월 예산 · 점이나 카드를 누르면 그 품목의 채널별 그래프가 펼쳐집니다','x eq.GRP · y R3+ · dot size = budget · click a dot to open its channel view')}</span></div>
       <div class="card wrcard"><div class="wrsc" id="wrSc"></div></div>
       <div class="sec gap sm">${L('시청률','Ratings')} <span class="note">${L('타깃 평균(회색) 위에 코웨이(색)를 겹침 · 월 Total','Coway (color) over target average (gray) · month total')}</span></div>
@@ -30195,6 +30291,7 @@ function renderWrDash(){
       <div id="wrTl"></div>
       <div class="sec gap sm" id="wrWkSec">${L('주차별 데이터','Weekly data')} <span class="note">${L('당월_주별 · 집행금액 · eq.GRP · CPRP · 오른쪽 도넛 = 이번 달 누적 PP별 금액','Weekly sheet · spend · eq.GRP · CPRP · donut = month-to-date by PP')}</span></div>
       ${wrWkCard()}`;
+  try{wrKpiPaint(F);}catch(e){console.warn(e);}
   if(F){try{wrEffPaint();}catch(e){console.warn(e);}}
   requestAnimationFrame(()=>h.querySelectorAll('.wrg').forEach(g=>g.classList.add('go')));
   wrScRender();wrRatings();wrTimeline();wrWeekChart();wrWkDonut();wrHsWire(h);wrNextLoad();
