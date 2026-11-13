@@ -13,7 +13,7 @@ const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
 /* v184 — 큐시트 틀 주소는 버전만 붙인다. 달 · 탭은 # 뒤에 실어 같은 파일을 캐시에서 다시 쓴다(예전에는 캠페인마다 1.5MB 를 새로 받았다) */
-const CUE_VER='192';
+const CUE_VER='202';
 async function cuePipe(bytes,stream){
   const wr=stream.writable.getWriter();wr.write(bytes);wr.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());}
@@ -78,8 +78,7 @@ function cueMixData(){
     B.slice(1).forEach(r=>{let t=0;hd.forEach((h,i)=>{const v=+r[i+1];if(v>0){it[i]+=v;t+=v;}});
       if(t>0){const m=meta[r[0]]||{g:'케이블',pp:r[0]};chs.push({g:m.g,ch:r[0],pp:m.pp,bud:t/1000});}});
     const items=hd.map((h,i)=>{const b=it[i]/1000,cs=cre[nz(h)]||[],ws=cs.reduce((s,x)=>s+x[1],0);
-      return {n:h,fn:full[h]||h,cat:catm[h]||'',col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0)
-      .sort((a,b)=>b.sub.bud-a.sub.bud);
+      return {n:h,fn:full[h]||h,cat:catm[h]||'',col:cOf(h)||undefined,sub:{bud:b},cr:cs.length&&ws>0?cs.map(x=>({n:x[0],bud:b*x[1]/ws})):[{n:h,bud:b}]};}).filter(x=>x.sub.bud>0);   /* v202 — 순서는 큐시트 예산 시트의 품목 순서 그대로(금액순 정렬 없앰) */
     return {items,tot:items.reduce((s,x)=>s+x.sub.bud,0),chs};}catch(e){return null;}}
 function cueTopPaint(){
   const el=$('cueTop');if(!el)return;
@@ -100,6 +99,9 @@ async function renderTvCue(){
   const seg=$('cueSeg');
   if(seg){seg.classList.toggle('hidden',CUE_TAB!=='cue'||!TV_CUE);
     seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.cs===CUE_SUB);b.onclick=()=>{if(CUE_SUB===b.dataset.cs)return;CUE_SUB=b.dataset.cs;renderTvCue();};});}
+  /* v202 — 전체 큐시트는 캘린더의 '전체 보기' 팝업으로(예전 주소 · 메뉴로 들어오면 캘린더 + 팝업) */
+  if(CUE_TAB==='cueall'){CUE_TAB='cal';setTimeout(()=>{try{cueAllOpen();}catch(e){}},400);return renderTvCue();}
+  {const ab=$('cueAllBtn');if(ab){ab.classList.toggle('hidden',CUE_TAB!=='cal'||!TV_CUE||!TV_CUE.z);ab.onclick=()=>cueAllOpen();}}
   const ftab=CUE_TAB==='cue'?CUE_SUB:CUE_TAB;
   let ed=false;try{ed=!isClient()&&inbxEdit();}catch(e){}
   if(!TV_CUE||!TV_CUE.z){
@@ -133,6 +135,23 @@ async function renderTvCue(){
   else{try{cueSize();   /* v188 — 폭을 먼저 맞춘 뒤에 그린다(그린 다음 폭이 바뀌면 달력 전체를 다시 배치한다) */
     f.contentWindow.cueGo(ftab);f.contentWindow.cueTellH&&f.contentWindow.cueTellH();}catch(e){}}
   cueSize();}
+/* v202 — 전체 큐시트 팝업. 같은 큐시트 틀을 '팝업 모드'(pop=1)로 띄운다 — 틀 안에서 스스로 스크롤 */
+function cueAllOpen(){
+  if(!TV_CUE||!TV_CUE.z||!CUE.json)return;
+  cueAllClose(true);
+  const el=document.createElement('div');el.className='cuepop';el.id='cuePop';el.setAttribute('role','dialog');el.setAttribute('aria-label','전체 큐시트');
+  el.innerHTML=`<div class="cuepop-in"><div class="hd"><div class="ttl"><b>전체 큐시트</b><span>${esc(($('cueNote')||{}).textContent||'')}</span></div>
+    <button type="button" class="x" aria-label="닫기"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+    <div class="bd"><div class="cue-load"><i class="sp"></i><b>전체 큐시트를 여는 중…</b></div><iframe title="전체 큐시트" allow="clipboard-write"></iframe></div></div>`;
+  document.body.appendChild(el);document.documentElement.classList.add('cuepop-on');
+  const f=el.querySelector('iframe');f.onload=()=>setTimeout(()=>el.classList.add('ready'),250);
+  f.src=`${CUE_URL}?v=${CUE_VER}#t=cueall&pop=1&k=${encodeURIComponent(String(TV_CUE.at))}`;
+  el.querySelector('.x').onclick=()=>cueAllClose();
+  el.addEventListener('mousedown',e=>{if(e.target===el)cueAllClose();});
+  requestAnimationFrame(()=>el.classList.add('in'));}
+function cueAllClose(now){const el=$('cuePop');if(!el)return;document.documentElement.classList.remove('cuepop-on');
+  if(now){el.remove();return;}el.classList.remove('in');setTimeout(()=>el.remove(),200);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('cuePop'))cueAllClose();});
 /* 메뉴 줄 — 고른 큐시트 메뉴 표시 · 큐시트가 없으면 광고주 화면에서는 묶음을 감춘다 */
 function cueMenuPaint(){
   const T=$('tabs');if(!T)return;

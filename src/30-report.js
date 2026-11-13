@@ -158,7 +158,7 @@ function rpOwn(){
   /* v161 — 카드 아래 게이지는 TV 누적 퍼포먼스 카드(.wrg)와 같은 모양 — 숫자 카운트업은 그대로 */
   const kpi=(l,v,f,dp,sub,i,p,cls)=>{const pc=isFinite(p)?Math.max(0,Math.min(1,p)):0;
     return `<div class="wrg rpkg ${cls||''}" style="--p:${Math.max(pc,.0001).toFixed(4)};--d:${i*70}ms"><div class="tx"><span class="l">${l}</span><b data-cu="${v}" data-f="${f}" data-dp="${dp||0}" data-d="${i*70}">0</b>${sub?`<span class="s">${sub}</span>`:'<span class="s">&nbsp;</span>'}</div>
-      <div class="gb"><div class="gt"><i></i></div><span class="pc mono">${isFinite(p)?(p*100).toFixed(1)+'%':'–'}</span></div></div>`;};
+</div>`;};   /* v202 — 아래 게이지 바 · % 없앰(달성률처럼 보여서) */
   const nAll=new Set(own.flatMap(o=>(o.it||[]).filter(x=>rN(x[1])>0).map(x=>x[0]))).size;
   const mets=[{k:'bud',l:L('광고비','Spend')},{k:'eq',l:'eq.GRP'},{k:'r3',l:'R3+'}];
   h.innerHTML=`<div class="sec">${L('코웨이 TV 집행 요약','Coway TV summary')} <span class="note">${L(`${M}월 · 먼슬리 리포트 기준`,`M${M} · monthly report`)}</span></div>
@@ -510,24 +510,21 @@ function rpDetTerr(c){
     {l:L('초수별','Length'),a:ordr(rpGroupBy(rows,r=>r[4]+'"'),[])}];
   const T=rpGroupBy(rows,()=>'T').T,det=rpDetRows(c,RPT.brand,0),actT=Object.values(det).reduce((s,e)=>s+(e.hasAct?e.act:0),0),hasAct=Object.values(det).some(e=>e.hasAct);
   const tones=['#24406f','#3d5f99','#6b8cc4','#9db6e0','#c4d4ee','#dbe5f5'];
-  const head1=`<th rowspan="2">${L('구분','Metric')}</th><th rowspan="2">${L('합계','Total')}</th>${G.map(g=>`<th colspan="${g.a.length}" class="gh">${g.l}</th>`).join('')}`;
-  const head2=G.map(g=>g.a.map(x=>`<th>${esc(x.k)}</th>`).join('')).join('');
   const pc=(v,t)=>rpP(v/t*100);
-  /* v157 — 표 안은 글자만. 자사 실집행 금액은 채널별만 나온다(원본도 그렇다) — 나머지 칸은 테두리 색 음영 */
-  const row=(l,tot,cell,cls)=>`<tr class="${cls||''}"><td class="md">${l}</td><td class="tv">${tot}</td>${G.map(g=>g.a.map(x=>{const v=cell(x,g);return v==null?'<td class="na"></td>':`<td>${v}</td>`;}).join('')).join('')}</tr>`;
   const ar=x=>x.ins?wrF(x.grp/x.ins,1):'–',cprp=x=>x.eq?wrF(x.inv/x.eq):'–';
-  const body=(hasAct?row(L('금액(실집행)','Actual'),wrF(actT),(x,g)=>g===G[0]?(det[x.k]&&det[x.k].hasAct?wrF(det[x.k].act):'–'):null,'act'):'')
-    +row(L('모니터링 광고비','Monitored'),wrF(T.inv),x=>pc(x.inv,T.inv),'hl')+row('Eq GRP',wrF(T.eq),x=>pc(x.eq,T.eq))
-    +row(L('횟수','Spots'),wrF(T.ins),x=>pc(x.ins,T.ins))+row('A.R',ar(T),x=>ar(x))+row(L('모니터링 CPRP','Mon. CPRP'),cprp(T),x=>cprp(x));
-  const nc=2+G.reduce((s2,g)=>s2+g.a.length,0);
-  /* 그래프 — 표 아래 바깥에 묶음마다 100% 막대(모니터링 광고비 비중) */
-  const bars=`<div class="rpdtbars">${G.map((g,gi)=>`<div class="g"><div class="h">${g.l}</div><div class="rpstk">${g.a.map((x,i)=>`<span style="--w:${(x.inv/T.inv*100).toFixed(2)}%;background:${tones[Math.min(i,5)]};--d:${gi*120+i*50}ms" data-tip="${gi}|${i}"></span>`).join('')}</div>
-      <div class="lg">${g.a.map((x,i)=>`<span><i style="background:${tones[Math.min(i,5)]}"></i>${esc(x.k)} <b>${pc(x.inv,T.inv)}</b></span>`).join('')}</div></div>`).join('')}</div>`;
-  box.innerHTML=rpCard(L('지상파 세부 운영','Terrestrial detail'),L('비중 % · A.R = GRP ÷ 횟수 · CPRP = 모니터링 광고비 ÷ eq.GRP','share % · A.R = GRP/spots'),
-    wrHs(`<table class="tbl lite rptbl rpdt eqw" style="min-width:${130+(nc-1)*78}px"><colgroup><col style="width:130px">${'<col>'.repeat(nc-1)}</colgroup><thead><tr>${head1}</tr><tr>${head2}</tr></thead><tbody>${body}</tbody></table>`)+bars);
-  wrHsWire(box);
-  rpTipWire(box,k=>{const [gi,i]=k.split('|').map(Number),x=G[gi]&&G[gi].a[i];if(!x)return '';
-    return `<div class="t">${G[gi].l} · ${esc(x.k)}</div>${rpTr(L('모니터링 광고비','Monitored'),wrF(x.inv)+' · '+pc(x.inv,T.inv))}${rpTr('eq.GRP',wrF(x.eq,1))}${rpTr(L('횟수','Spots'),wrF(x.ins))}${rpTr('A.R',ar(x))}`;});}
+  /* v202 — 표 없이 그래프로: 위 = 합계 숫자 줄, 아래 = 묶음(채널 · 시급 · 광고유형 · 초수)마다 광고비 · eq.GRP · 횟수(· 실집행) 비중 100% 막대 */
+  const stat=(l,v)=>`<span><em>${l}</em><b>${v}</b></span>`;
+  const top=`<div class="rpdtst">${hasAct?stat(L('실집행 금액','Actual'),wrF(actT)):''}${stat(L('모니터링 광고비','Monitored'),wrF(T.inv))}${stat('eq.GRP',wrF(T.eq))}${stat(L('횟수','Spots'),wrF(T.ins))}${stat('A.R',ar(T))}${stat(L('모니터링 CPRP','Mon. CPRP'),cprp(T))}</div>`;
+  const mets=[{k:'inv',l:L('광고비','Spend')},{k:'eq',l:'eq.GRP'},{k:'ins',l:L('횟수','Spots')}];
+  const panel=(g,gi)=>{const acts=gi===0&&hasAct?g.a.map(x=>det[x.k]&&det[x.k].hasAct?det[x.k].act:0):null,aT=acts?acts.reduce((s2,v)=>s2+v,0):0;
+    const rows=[...(acts&&aT>0?[{l:L('실집행','Actual'),v:acts,t:aT,k:'act'}]:[]),...mets.map(m=>({l:m.l,v:g.a.map(x=>x[m.k]),t:T[m.k],k:m.k}))];
+    return `<div class="rpdtg"><div class="h">${g.l}</div>
+      ${rows.map((r,ri)=>`<div class="rw"><span class="ml">${r.l}</span><div class="rpstk">${g.a.map((x,i)=>{const w=r.t?r.v[i]/r.t*100:0;return `<span style="--w:${w.toFixed(2)}%;background:${tones[Math.min(i,5)]};--d:${gi*120+ri*60+i*40}ms" data-tip="${gi}|${i}">${w>=11?`<i${i>=3?' style="color:rgba(25,45,80,.78)"':''}>${rpP(w)}</i>`:''}</span>`;}).join('')}</div></div>`).join('')}
+      <div class="lg">${g.a.map((x,i)=>`<span data-tip="${gi}|${i}"><i style="background:${tones[Math.min(i,5)]}"></i><b>${esc(x.k)}</b><small>A.R ${ar(x)} · CPRP ${cprp(x)}</small></span>`).join('')}</div></div>`;};
+  box.innerHTML=rpCard(L('지상파 세부 운영','Terrestrial detail'),L('막대 = 묶음 안 비중 · A.R = GRP ÷ 횟수 · CPRP = 모니터링 광고비 ÷ eq.GRP','bars = share within group · A.R = GRP/spots'),
+    top+`<div class="rpdtbars v2">${G.map(panel).join('')}</div>`);
+  rpTipWire(box,k=>{const [gi,i]=k.split('|').map(Number),x=G[gi]&&G[gi].a[i];if(!x)return '';const ac=gi===0&&det[x.k]&&det[x.k].hasAct?det[x.k].act:null;
+    return `<div class="t">${G[gi].l} · ${esc(x.k)}</div>${ac!=null?rpTr(L('실집행 금액','Actual'),wrF(ac)):''}${rpTr(L('모니터링 광고비','Monitored'),wrF(x.inv)+' · '+pc(x.inv,T.inv))}${rpTr('eq.GRP',wrF(x.eq,1)+' · '+pc(x.eq,T.eq))}${rpTr(L('횟수','Spots'),wrF(x.ins)+' · '+pc(x.ins,T.ins))}${rpTr('A.R',ar(x))}${rpTr(L('모니터링 CPRP','Mon. CPRP'),cprp(x))}`;});}
 function rpDetCable(c){
   const box=$('rpDetC');if(!box)return;const rows=rpArRows(c,RPT.brand).filter(r=>r[0]===1);
   if(!rows.length){box.innerHTML=rpCard(L('케이블 · 종편 세부 운영','Cable detail'),'',`<div class="hint rpnil">${L('케이블 집행 없음','No cable')}</div>`);return;}
@@ -557,10 +554,8 @@ function rpDetCable(c){
     <div class="rplg"><span><i style="background:#9aa6b3"></i>${L('모니터링 CPRP','Mon. CPRP')}</span>${hasAct?`<span><i style="background:${RPT_CW}"></i>${L('실집행 CPRP','Act. CPRP')}</span>`:''}</div>`;
   box.innerHTML=`<div class="rpgrid2">
     ${rpCard(L('케이블 · 종편 MPP 비중','Cable MPP share'),(hasAct?L('실집행 기준','by actual'):L('모니터링 기준','by monitored'))+L(' · 푸른색 = 지상파 계열 MPP',' · blue = terrestrial-affiliated'),`<div id="rpMppDn" class="rp3dbox"></div>`,'','rpfill')}
-    ${rpCard(L('케이블 · 종편 세부 운영','Cable detail'),'',wrHs(tb),'','span2')}</div>
-    ${rpCard(L('MPP별 CPRP','CPRP by MPP'),'',bars)}`;
-  rp3dDonut($('rpMppDn'),segs,'',{grp:true});wrHsWire(box);
-  rpTipWire(box.querySelector('.rpcp'),i=>{const x=cp[+i];if(!x)return '';return `<div class="t">${esc(x.k)}</div>${rpTr(L('모니터링 CPRP','Mon. CPRP'),wrF(x.mon/x.eq))}${x.act!=null?rpTr(L('실집행 CPRP','Act. CPRP'),wrF(x.act/x.eq)):''}${rpTr('eq.GRP',wrF(x.eq,1))}`;});}
+    ${rpCard(L('MPP별 CPRP','CPRP by MPP'),'',bars,'','rpfill')}</div>`;   /* v202 — 케이블 · 종편 세부 운영 표는 없앰(도넛 · CPRP 막대에 같은 내용) */
+  rp3dDonut($('rpMppDn'),segs,'',{grp:true});rpTipWire(box.querySelector('.rpcp'),i=>{const x=cp[+i];if(!x)return '';return `<div class="t">${esc(x.k)}</div>${rpTr(L('모니터링 CPRP','Mon. CPRP'),wrF(x.mon/x.eq))}${x.act!=null?rpTr(L('실집행 CPRP','Act. CPRP'),wrF(x.act/x.eq)):''}${rpTr('eq.GRP',wrF(x.eq,1))}`;});}
 
 /* ================================================================
    ⑥ 라디오 · 신문 · 잡지 / ⑦ 디지털 광고비

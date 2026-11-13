@@ -19,6 +19,8 @@
       ic[3] = '#' + mix(n >> 16 & 255) + mix(n >> 8 & 255) + mix(n & 255); } } } catch (e) { }
   if (d && d.ws) { window.__REPORT__ = { ws: d.ws, title: d.title || '', at: d.at || Date.now() }; window.__CUE_TAB__ = q.get('t') || 'summary'; }
   document.documentElement.classList.add('embed');
+  /* v202 — 팝업 모드(전체 큐시트 팝업): 틀이 스스로 스크롤한다 */
+  window.__CUE_POP__ = q.get('pop') === '1'; if (window.__CUE_POP__) document.documentElement.classList.add('pop');
   try { if (parent !== window) document.documentElement.style.setProperty('--pvh', Math.max(480, parent.innerHeight - 170) + 'px'); } catch (e) { }
   /* 대시보드 테마 색을 그대로 받는다 */
   try { if (parent !== window) { var cs = parent.getComputedStyle(parent.document.documentElement), st = document.documentElement.style;

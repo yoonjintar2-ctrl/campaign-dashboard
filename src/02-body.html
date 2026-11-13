@@ -245,7 +245,6 @@
         <button type="button" data-tab="tvdaily" data-menu="t_daily">일자별 퍼포먼스</button>
         <button type="button" data-cue="cue" data-menu="tq_cue">큐시트</button>
         <button type="button" data-cue="cal" data-menu="tq_cal">큐시트 캘린더</button>
-        <button type="button" data-cue="cueall" data-menu="tq_cueall">전체 큐시트</button>
       </div>
         <div class="subhd subinhd">입력</div>
         <div class="subbar subin">
@@ -317,10 +316,6 @@
       <span>PDF</span></button>
   </span>
   <!-- 데이터 투어(v116) — 서머리 그래프를 한 장씩 전체 화면 발표로. 디지털 대시보드 › 서머리에서만 보인다 -->
-  <!-- 캠페인 투어(v175) — TV · OTT 등 캠페인 전체를 요약 → 매체별 목표 → 실제 집행 순으로 보여 주는 전체 화면 애니메이션 -->
-  <button class="pill dl tourbtn" id="ctBtn" type="button" title="캠페인 투어 — 캠페인 요약, 매체별 목표와 실제 집행(달성 현황)을 한 장씩 전체 화면으로">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.4" y="2.1" width="13.2" height="9.4" rx="2.2" fill="#3a3d42"/><path d="M6.6 4.6v4.4l3.7-2.2z" fill="#fff"/><path d="M8 11.5v2.3M5.4 14.3h5.2" stroke="#3a3d42" stroke-width="1.4" stroke-linecap="round"/></svg>
-    <span class="lb">캠페인 투어</span></button>
   <button class="pill dl tourbtn" id="tourBtn" type="button" title="서머리 그래프를 한 장씩 전체 화면으로 보여 주는 발표 모드 · 마지막에 PPT 로 저장할 수 있습니다">
     <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.4" y="2.1" width="13.2" height="9.4" rx="2.2" fill="#5b57d1"/><path d="M6.6 4.6v4.4l3.7-2.2z" fill="#fff"/><path d="M8 11.5v2.3M5.4 14.3h5.2" stroke="#5b57d1" stroke-width="1.4" stroke-linecap="round"/></svg>
     <span class="lb">데이터 투어</span></button>
@@ -912,7 +907,7 @@
 <!-- 리포트 (v143) — 연도 › 월별. 30-report.js -->
 <!-- TV 큐시트 (v167) — 34-cue.js -->
 <div class="wrap hidden" id="tab-tvcue">
-  <div class="sec" id="cueSec"><span id="cueTitle">큐시트</span> <span class="note" id="cueNote"></span><span class="cueseg hidden" id="cueSeg"><button type="button" data-cs="cueg">지상파</button><button type="button" data-cs="cuec">케이블</button></span></div>
+  <div class="sec" id="cueSec"><span id="cueTitle">큐시트</span> <span class="note" id="cueNote"></span><span class="cueseg hidden" id="cueSeg"><button type="button" data-cs="cueg">지상파</button><button type="button" data-cs="cuec">케이블</button></span><button type="button" class="cueallbtn hidden" id="cueAllBtn" title="전체 큐시트를 팝업으로 봅니다"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.2" width="12.4" height="11.6" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.8 6h12.4M6 6v7.8" stroke="currentColor" stroke-width="1.5"/></svg>전체 보기</button></div>
   <div id="cueTop"></div>
   <div id="cueHost"></div>
 </div>

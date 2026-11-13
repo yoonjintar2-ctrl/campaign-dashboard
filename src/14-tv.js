@@ -116,8 +116,7 @@ function paintTabsOn(){
    const dl=T.querySelector('.dlgrp');if(dl)dl.classList.toggle('tooloff',mk!=='view'||name==='trend');
    /* 데이터 투어(v116)는 디지털 대시보드 › 서머리에서만 */
    const tb=$('tourBtn');if(tb)tb.classList.toggle('tooloff',!(name==='dash'&&cs==='perf'));
-   /* 캠페인 투어(v175) — 보기 화면이면 어디서나(자료 게시판 · 리포트 제외). TV · OTT 가 있는 캠페인에서 주로 쓴다 */
-   const cb=$('ctBtn');if(cb)cb.classList.toggle('tooloff',mk!=='view'||name==='trend'||name==='report');}
+   /* 캠페인 투어(v175)는 v202 에서 삭제 — 데이터 투어는 디지털 서머리에만 */}
   /* "지금 메뉴" 글자 길이가 바뀌면 줄이 넘칠 수 있다 — 한 번 더 잰다 */
   cancelAnimationFrame(window.__fitTabsR);window.__fitTabsR=requestAnimationFrame(()=>{try{fitTabs();}catch(e){}});
   syncUrl();}

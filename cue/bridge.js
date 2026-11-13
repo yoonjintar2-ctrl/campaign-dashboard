@@ -10,9 +10,9 @@ window.cueImport = async function (ab, year) {
 window.addEventListener('DOMContentLoaded', function () {
   setTimeout(function () {
     try { if (window.__REPORT__ && window.__CUE_TAB__) window.cueGo(window.__CUE_TAB__); } catch (e) { }
-    try { if (parent !== window && parent.cueFrameReady) parent.cueFrameReady(window, !!window.__CUE_IMP__); } catch (e) { }
+    try { if (!window.__CUE_POP__ && parent !== window && parent.cueFrameReady) parent.cueFrameReady(window, !!window.__CUE_IMP__); } catch (e) { }
     /* v170 — 계획 GRP(예산 ÷ 목표 CPRP × 초수 환산) · eq.GRP 를 대시보드에 알려 준다(전체 캠페인 표) */
-    try { if (window.__REPORT__ && parent.cueFrameStats) { var A = aggCells(M.cells); parent.cueFrameStats({ grp: A.grp, eq: A.eq, budget: A.budget }); } } catch (e) { }
+    try { if (window.__REPORT__ && !window.__CUE_POP__ && parent.cueFrameStats) { var A = aggCells(M.cells); parent.cueFrameStats({ grp: A.grp, eq: A.eq, budget: A.budget }); } } catch (e) { }
   }, 0);
 });
 
@@ -60,7 +60,7 @@ window.addEventListener('DOMContentLoaded', function () {
 });
 
 /* ===== v170 — 대시보드 안에서는 틀 높이 = 내용 높이(틀 안 세로 스크롤 없음 → 이중 스크롤 없음) ===== */
-var CUE_EMB = false; try { CUE_EMB = parent !== window && !!window.__REPORT__; } catch (e) { }
+var CUE_EMB = false; try { CUE_EMB = parent !== window && !!window.__REPORT__ && !window.__CUE_POP__; } catch (e) { }
 function cueTellH() {
   if (!CUE_EMB) return; var m = document.querySelector('main') || document.body;
   var h = Math.ceil(m.getBoundingClientRect().bottom + (window.scrollY || 0)) + 4;
