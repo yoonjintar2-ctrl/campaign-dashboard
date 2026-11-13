@@ -114,10 +114,9 @@ html.embed td.cue-flash::after{content:'';position:absolute;inset:0;pointer-even
 html.embed .calnow.cue-flash span{animation:none}
 html.embed .calnow.cue-flash span::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:0 0 0 6px rgba(42,111,186,.3);opacity:0;will-change:opacity;animation:cueFlashO 3s ease-in-out}
 
-/* v209 — 전체 큐시트: 표가 스스로 스크롤(화면 높이만큼) · 머리줄은 표 안에서 고정 */
-html.embed .tw.caw{max-height:var(--pvh,640px)!important;overflow:auto!important}
-html.embed .caw table thead{position:sticky;top:0;z-index:6;transform:none!important}
-html.embed .caw table thead th{box-shadow:0 6px 10px -8px rgba(20,30,45,.4)}
+/* v212 — 전체 큐시트: 표 하나를 길게(틀 안 스크롤 없음 → 이중 스크롤 없음) · 품목은 대시보드 위 품목 줄에서 고른다 */
+html.embed:not(.pop) .cafilter .msel[data-msel="item"]{display:none}
+html.embed .casel{height:30px;border:1px solid var(--rule,#dcdfe3);border-radius:8px;padding:0 26px 0 10px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface,#fff);cursor:pointer}
 /* 팝업 모드(캘린더로 보기): 틀 안에서 스크롤 · 캘린더 머리줄 고정 */
 html.embed.pop,html.embed.pop body{height:100%;overflow:hidden}
 html.embed.pop body{overflow-y:auto!important}

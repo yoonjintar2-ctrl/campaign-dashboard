@@ -29,6 +29,11 @@ def blue(t):
     return re.sub('|'.join(PINK), lambda m: PINK[m.group(0).lower()], t, flags=re.I)
 # v169 — 큐시트 요약 도넛을 대시보드 도넛 톤으로 (조각 흰 테두리 · 매체 바깥 띠 없앰, 회청 · 파랑 계열 색)
 PATCH = [
+  # v212 — 전체 큐시트 '구분': 체크 목록 대신 드롭다운(고르면 바로 적용)
+  ("${mselHtml('media', '구분', [{ v: '지상파', t: '지상파' }, { v: '케이블', t: '케이블' }], f.media)}",
+   "<div class=\"msel\"><span class=\"ml\">구분</span><select class=\"casel\" id=\"ca-media\"><option value=\"\">전체</option>${['지상파', '케이블'].map(v => `<option value=\"${v}\"${f.media && f.media.size === 1 && f.media.has(v) ? ' selected' : ''}>${v}</option>`).join('')}</select></div>"),
+  ("bindMsel(root, 'media', [{ v: '지상파', t: '지상파' }, { v: '케이블', t: '케이블' }], f.media, v => { f.media = v; re(); });",
+   "root.querySelector('#ca-media').onchange = e => { f.media = e.target.value ? new Set([e.target.value]) : null; re(); };"),
   ("ctx.fill(p); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.stroke(p); }", "ctx.fill(p); }"),
   ("if (nb && st.sweep > 0.98) for (const e of grpEnds) {", "if (false) for (const e of grpEnds) {"),
   ("const DN_BASE = '#3a3a3c';", "const DN_BASE = '#3d4046';"),

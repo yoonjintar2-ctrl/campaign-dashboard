@@ -52,7 +52,7 @@ function cueCalFix(root) {
 }
 /* v188 — 캘린더를 그리자마자 같은 차례에 약칭을 넣는다.
    예전에는 30ms 뒤에 2,000줄의 글자를 바꿔서 달력 전체를 한 번 더 배치하고 다시 칠했다(여는 데 걸리는 시간의 큰 몫) */
-function renderCal(root) { var x = renderCal0(root); try { cueCalFix(root); } catch (e) { } return x; }
+function renderCal(root) { var x = renderCal0(root); try { cueCalFix(root); } catch (e) { } try { cuePopFit(); } catch (e) { } return x; }
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;
   /* 혹시 다른 길로 그려진 줄이 있으면 그때만 고친다(없으면 아무 일도 하지 않는다) */
@@ -78,7 +78,9 @@ function renderSummary(root) {
    → 대시보드(부모 창)가 알려 주는 보이는 위치(cueStick 의 off)로 보이는 범위를 정하고, 스크롤할 때마다 다시 그린다 */
 var CUE_OFF = 0;
 window.cueAllVp = function (wrap) {
-  /* v209 — 전체 큐시트는 표 안에서 스스로 스크롤한다(대시보드 스크롤에 기대던 방식은 필터를 바꾸거나 빨리 내리면 줄이 비었다) */
+  /* v212 — 대시보드 안에서는 모든 줄을 한 번에 그린다(표 하나가 길게 · 이중 스크롤 없음).
+     v190 의 '보이는 줄만' 방식은 필터를 바꾸거나 빨리 내리면 위치가 어긋나 줄이 비었다 */
+  if (CUE_EMB) return [0, 1e9];
   return null;
   var vh = 900; try { vh = parent.innerHeight || vh; } catch (e) { }
   var top = wrap.getBoundingClientRect().top;          /* 틀 안에서 표가 시작하는 높이 */
@@ -87,7 +89,7 @@ window.cueAllVp = function (wrap) {
 window.cueStick = function (off) {
   CUE_OFF = off;
   document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t').forEach(function (tb) {
-    var hd = tb.tHead; if (!hd || tb.closest('.caw')) return;   /* 전체 큐시트 머리줄은 표 안에서 sticky */ var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
+    var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
     if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
   });
 };
@@ -159,9 +161,22 @@ window.cueDayDonut = function (pane, o) {
 };
 
 /* v210 — 대시보드 품목 선택 줄 → 전체 큐시트 '품목' 필터 */
-window.cueSetItems = function (list) {
+window.__CUE_NONE = false;
+window.cueSetItems = function (list, none) {
   try { var f = cueAllUI(), want = list && list.length ? new Set(list) : null, cur = f.item;
-    var same = (!want && !cur) || (want && cur && want.size === cur.size && [...want].every(function (x) { return cur.has(x); }));
-    if (same) return; f.item = want; f.scroll = 0;
+    var same = !!none === window.__CUE_NONE && ((!want && !cur) || (want && cur && want.size === cur.size && [...want].every(function (x) { return cur.has(x); })));
+    if (same) return; f.item = want; f.scroll = 0; window.__CUE_NONE = !!none;
     if (App.tab === 'cueall') { var r = document.querySelector('.pane:not([hidden])'); if (r) renderCueAll(r); } } catch (e) { }
 };
+
+/* v212 — 고른 품목이 이 달 큐시트에 없으면 빈 표(전체로 돌아가지 않게) */
+(function () { var o = cueAllFilter; cueAllFilter = function (rows) { return window.__CUE_NONE ? [] : o(rows); }; })();
+/* v212 — 캘린더 팝업: 가로 스크롤 없이 팝업 폭에 맞춘다 */
+function cuePopFit() {
+  if (!window.__CUE_POP__) return; var d = document.documentElement, b = document.body; d.style.zoom = '';
+  /* 세로 스크롤바 폭까지 빼고, 줄인 뒤 다시 재서 한두 번 더 맞춘다 */
+  var z = 1;
+  for (var k = 0; k < 3; k++) { var w = Math.max(d.scrollWidth, b.scrollWidth), vw = d.clientWidth - 6; if (w <= vw + 1) break; z = z * vw / w; d.style.zoom = z.toFixed(4); }
+}
+window.addEventListener('resize', function () { clearTimeout(window.__pf); window.__pf = setTimeout(cuePopFit, 120); });
+window.addEventListener('DOMContentLoaded', function () { if (window.__CUE_POP__) { setTimeout(cuePopFit, 200); setTimeout(cuePopFit, 900); } });

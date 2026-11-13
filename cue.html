@@ -1525,10 +1525,9 @@ html.embed td.cue-flash::after{content:'';position:absolute;inset:0;pointer-even
 html.embed .calnow.cue-flash span{animation:none}
 html.embed .calnow.cue-flash span::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:0 0 0 6px rgba(42,111,186,.3);opacity:0;will-change:opacity;animation:cueFlashO 3s ease-in-out}
 
-/* v209 — 전체 큐시트: 표가 스스로 스크롤(화면 높이만큼) · 머리줄은 표 안에서 고정 */
-html.embed .tw.caw{max-height:var(--pvh,640px)!important;overflow:auto!important}
-html.embed .caw table thead{position:sticky;top:0;z-index:6;transform:none!important}
-html.embed .caw table thead th{box-shadow:0 6px 10px -8px rgba(20,30,45,.4)}
+/* v212 — 전체 큐시트: 표 하나를 길게(틀 안 스크롤 없음 → 이중 스크롤 없음) · 품목은 대시보드 위 품목 줄에서 고른다 */
+html.embed:not(.pop) .cafilter .msel[data-msel="item"]{display:none}
+html.embed .casel{height:30px;border:1px solid var(--rule,#dcdfe3);border-radius:8px;padding:0 26px 0 10px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface,#fff);cursor:pointer}
 /* 팝업 모드(캘린더로 보기): 틀 안에서 스크롤 · 캘린더 머리줄 고정 */
 html.embed.pop,html.embed.pop body{height:100%;overflow:hidden}
 html.embed.pop body{overflow-y:auto!important}
@@ -9437,7 +9436,7 @@ function renderCueAll(root) {
   const W = { media: 74, ch: 128, item: 122, prog: 0, date: 62, dow: 46, start: 76, end: 76, sec: 50, cre: 120, cm: 120, grade: 52, price: 100 };
   root.innerHTML = `<div class="viewhead"><div><h2>전체 큐시트</h2><div class="sub">${ymLabel()} · 지상파·케이블을 섞어 <b>날짜 → 시작 시간</b> 순으로, 1행 = 1회 송출 · 광고주에게 주는 결과 데이터 형식</div></div></div>
     <section class="card cafilter"><div class="bd">
-      ${mselHtml('media', '구분', [{ v: '지상파', t: '지상파' }, { v: '케이블', t: '케이블' }], f.media)}
+      <div class="msel"><span class="ml">구분</span><select class="casel" id="ca-media"><option value="">전체</option>${['지상파', '케이블'].map(v => `<option value="${v}"${f.media && f.media.size === 1 && f.media.has(v) ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
       ${mselHtml('ch', '방송사', chOpts, f.ch)}
       ${mselHtml('item', '품목', itOpts, f.item)}
       <div class="msel"><span class="ml">날짜</span><button type="button" class="mbtn${f.a ? ' on' : ''}" id="ca-date"><span class="mtag${f.a ? '' : ' all'}">${dTxt}</span><span class="car">▾</span></button></div>
@@ -9476,7 +9475,7 @@ function renderCueAll(root) {
   wrap.__paint = paint; paint(true); if (f.scroll) { wrap.scrollTop = f.scroll; paint(true); }
   wrap.addEventListener('scroll', () => { f.scroll = wrap.scrollTop; cancelAnimationFrame(wrap.__raf); wrap.__raf = requestAnimationFrame(() => paint()); }, { passive: true });
   const re = keep => { const y = window.scrollY; if (!keep) f.scroll = 0; renderCueAll(root); window.scrollTo(0, y); };
-  bindMsel(root, 'media', [{ v: '지상파', t: '지상파' }, { v: '케이블', t: '케이블' }], f.media, v => { f.media = v; re(); });
+  root.querySelector('#ca-media').onchange = e => { f.media = e.target.value ? new Set([e.target.value]) : null; re(); };
   bindMsel(root, 'ch', chOpts, f.ch, v => { f.ch = v; re(); });
   bindMsel(root, 'item', itOpts, f.item, v => { f.item = v; re(); });
   root.querySelector('#ca-date').onclick = e => { e.stopPropagation(); openRangeCal(e.currentTarget, { ym: M.ym, a: f.a, b: f.b, onPick: (a, b) => { f.a = a; f.b = b; re(); } }); };
@@ -11095,7 +11094,7 @@ function cueCalFix(root) {
 }
 /* v188 — 캘린더를 그리자마자 같은 차례에 약칭을 넣는다.
    예전에는 30ms 뒤에 2,000줄의 글자를 바꿔서 달력 전체를 한 번 더 배치하고 다시 칠했다(여는 데 걸리는 시간의 큰 몫) */
-function renderCal(root) { var x = renderCal0(root); try { cueCalFix(root); } catch (e) { } return x; }
+function renderCal(root) { var x = renderCal0(root); try { cueCalFix(root); } catch (e) { } try { cuePopFit(); } catch (e) { } return x; }
 window.addEventListener('DOMContentLoaded', function () {
   var v = document.getElementById('view') || document.body, t = 0;
   /* 혹시 다른 길로 그려진 줄이 있으면 그때만 고친다(없으면 아무 일도 하지 않는다) */
@@ -11121,7 +11120,9 @@ function renderSummary(root) {
    → 대시보드(부모 창)가 알려 주는 보이는 위치(cueStick 의 off)로 보이는 범위를 정하고, 스크롤할 때마다 다시 그린다 */
 var CUE_OFF = 0;
 window.cueAllVp = function (wrap) {
-  /* v209 — 전체 큐시트는 표 안에서 스스로 스크롤한다(대시보드 스크롤에 기대던 방식은 필터를 바꾸거나 빨리 내리면 줄이 비었다) */
+  /* v212 — 대시보드 안에서는 모든 줄을 한 번에 그린다(표 하나가 길게 · 이중 스크롤 없음).
+     v190 의 '보이는 줄만' 방식은 필터를 바꾸거나 빨리 내리면 위치가 어긋나 줄이 비었다 */
+  if (CUE_EMB) return [0, 1e9];
   return null;
   var vh = 900; try { vh = parent.innerHeight || vh; } catch (e) { }
   var top = wrap.getBoundingClientRect().top;          /* 틀 안에서 표가 시작하는 높이 */
@@ -11130,7 +11131,7 @@ window.cueAllVp = function (wrap) {
 window.cueStick = function (off) {
   CUE_OFF = off;
   document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t').forEach(function (tb) {
-    var hd = tb.tHead; if (!hd || tb.closest('.caw')) return;   /* 전체 큐시트 머리줄은 표 안에서 sticky */ var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
+    var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
     if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
   });
 };
@@ -11202,11 +11203,24 @@ window.cueDayDonut = function (pane, o) {
 };
 
 /* v210 — 대시보드 품목 선택 줄 → 전체 큐시트 '품목' 필터 */
-window.cueSetItems = function (list) {
+window.__CUE_NONE = false;
+window.cueSetItems = function (list, none) {
   try { var f = cueAllUI(), want = list && list.length ? new Set(list) : null, cur = f.item;
-    var same = (!want && !cur) || (want && cur && want.size === cur.size && [...want].every(function (x) { return cur.has(x); }));
-    if (same) return; f.item = want; f.scroll = 0;
+    var same = !!none === window.__CUE_NONE && ((!want && !cur) || (want && cur && want.size === cur.size && [...want].every(function (x) { return cur.has(x); })));
+    if (same) return; f.item = want; f.scroll = 0; window.__CUE_NONE = !!none;
     if (App.tab === 'cueall') { var r = document.querySelector('.pane:not([hidden])'); if (r) renderCueAll(r); } } catch (e) { }
 };
+
+/* v212 — 고른 품목이 이 달 큐시트에 없으면 빈 표(전체로 돌아가지 않게) */
+(function () { var o = cueAllFilter; cueAllFilter = function (rows) { return window.__CUE_NONE ? [] : o(rows); }; })();
+/* v212 — 캘린더 팝업: 가로 스크롤 없이 팝업 폭에 맞춘다 */
+function cuePopFit() {
+  if (!window.__CUE_POP__) return; var d = document.documentElement, b = document.body; d.style.zoom = '';
+  /* 세로 스크롤바 폭까지 빼고, 줄인 뒤 다시 재서 한두 번 더 맞춘다 */
+  var z = 1;
+  for (var k = 0; k < 3; k++) { var w = Math.max(d.scrollWidth, b.scrollWidth), vw = d.clientWidth - 6; if (w <= vw + 1) break; z = z * vw / w; d.style.zoom = z.toFixed(4); }
+}
+window.addEventListener('resize', function () { clearTimeout(window.__pf); window.__pf = setTimeout(cuePopFit, 120); });
+window.addEventListener('DOMContentLoaded', function () { if (window.__CUE_POP__) { setTimeout(cuePopFit, 200); setTimeout(cuePopFit, 900); } });
 </script>
 </head><body><div id="root"></div></body></html>
