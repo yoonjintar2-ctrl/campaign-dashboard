@@ -805,8 +805,9 @@ const MENUS=[
      사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영한다. 화면은 tab-intake 하나를 영역마다 나눠 쓴다(INBX_AREA) */
   /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
   /* v170 — 큐시트는 메뉴 하나(화면 안에서 지상파 · 케이블을 고른다). 요약 · 당월 소재는 미디어믹스로 */
-  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view'},
-  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
+  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view',vdef:false},
+  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view',vdef:false},
+  /* v203 — 큐시트 · 큐시트 캘린더는 모든 캠페인에서 광고주에게 기본 숨김(vdef:false — 메뉴 설정에서 켠 캠페인만 보인다) */
   /* v202 — 전체 큐시트는 메뉴에서 빼고 큐시트 캘린더 오른쪽 위 '전체 보기' 단추(팝업)로 */
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
