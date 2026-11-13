@@ -32,18 +32,20 @@ function rpTvx(){
   rpxBars(cat,M);rpxDonut(cat,M);rpGo(h);}
 function rpxBars(cat,M){
   const box=$('rpxBars');if(!box)return;const {bs,m:col}=rpxCols(cat);
-  const W=Math.max(560,box.clientWidth||700),H=270,padL=14,padR=14,base=H-30,top=44,slot=(W-padL-padR)/12,bw=Math.min(46,slot*.56);
+  const W=Math.max(560,box.clientWidth||700),H=270,padL=14,padR=14,base=H-30,top=44,slot=(W-padL-padR)/12,bw=Math.round(Math.min(46,slot*.56));
   const tot=[...Array(12)].map((_,i)=>rpSum(bs.map(b=>rN(cat.b[b][i])))),mx=Math.max(...tot,1);
   const y=v=>base-(base-top)*v/mx,f=v=>v.toFixed(1),tw2=t=>[...String(t)].reduce((a,ch)=>a+(/[가-힣]/.test(ch)?12:7.4),0);
   let g='';
-  for(let i=0;i<12;i++){const cx=padL+slot*(i+.5),x0=cx-bw/2,cur=i===M-1,fut=i>=M,t=tot[i];
+  for(let i=0;i<12;i++){const cx=padL+slot*(i+.5),x0=Math.round(cx-bw/2),cur=i===M-1,fut=i>=M,t=tot[i];   /* v217 — 정수 좌표로 옆면을 또렷하게 */
     if(fut){g+=`<rect class="fut" x="${f(x0)}" y="${base-26}" width="${f(bw)}" height="26" rx="5"/>`;}
     else if(t>0){let acc=0,rects='',txts='';const ord=bs.filter(b=>rN(cat.b[b][i])>0);
       ord.forEach((b,k)=>{const v=rN(cat.b[b][i]),y1=y(acc+v),y0=y(acc),last=k===ord.length-1,ext=last?0:3;acc+=v;
         /* 아래 블록부터 그리고 위 블록이 아래 블록 꼭대기(3px)를 덮는다 → 평소에는 한 덩어리 막대 */
         rects+=`<rect class="sg" x="${f(x0)}" y="${f(y1-ext)}" width="${f(bw)}" height="${f(Math.max(1,y0-y1+ext))}" rx="${last?5:2}" style="--bc:${col[b]};--k:${k}"/>`;
         if(y0-y1>=15)txts+=`<text class="sl" x="${f(cx)}" y="${f((y0+y1)/2+3.5)}" text-anchor="middle" style="--k:${k}">${esc(Array.from(b).slice(0,4).join(''))}</text>`;});
-      g+=`<g class="tb${cur?' cur':''}" data-tip="${i}" style="--d:${i*45}ms">${rects}${txts}</g>`
+      /* v217 — 평소에는 한 장짜리 막대(wh) · 마우스 오버 때만 블록(sg)이 보인다 → 겹친 블록 경계로 옆면이 울퉁불퉁하던 문제 */
+      const wh=`<rect class="wh" x="${f(x0)}" y="${f(y(t))}" width="${f(bw)}" height="${f(base-y(t))}" rx="5"/><rect class="wh" x="${f(x0)}" y="${f(Math.max(y(t)+5,base-6))}" width="${f(bw)}" height="${f(Math.min(6,base-y(t)-5))}"/>`;
+      g+=`<g class="tb${cur?' cur':''}" data-tip="${i}" style="--d:${i*45}ms">${rects}${wh}${txts}</g>`
         +(cur?(()=>{const tx=wrEok(t),w2=tw2(tx)+18,yy=y(t)-30;return `<g class="tvc" style="--d:${i*45+300}ms"><rect x="${f(cx-w2/2)}" y="${f(yy)}" width="${f(w2)}" height="22" rx="11"/><path d="M${f(cx-5)},${f(yy+21.5)} L${f(cx)},${f(yy+27)} L${f(cx+5)},${f(yy+21.5)} Z"/><text x="${f(cx)}" y="${f(yy+15.5)}" text-anchor="middle">${tx}</text></g>`;})()
           :`<text class="tv" x="${f(cx)}" y="${f(y(t)-9)}" text-anchor="middle" style="--d:${i*45+300}ms">${wrEok(t)}</text>`);}
     else g+=`<text class="tv nil" x="${f(cx)}" y="${base-8}" text-anchor="middle">–</text>`;
