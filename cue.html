@@ -11200,5 +11200,13 @@ window.cueDayDonut = function (pane, o) {
   el.onclick = function (e) { if (e.target === el || e.target.closest('.cl')) close(); };
   document.addEventListener('keydown', key); pane.appendChild(el);
 };
+
+/* v210 — 대시보드 품목 선택 줄 → 전체 큐시트 '품목' 필터 */
+window.cueSetItems = function (list) {
+  try { var f = cueAllUI(), want = list && list.length ? new Set(list) : null, cur = f.item;
+    var same = (!want && !cur) || (want && cur && want.size === cur.size && [...want].every(function (x) { return cur.has(x); }));
+    if (same) return; f.item = want; f.scroll = 0;
+    if (App.tab === 'cueall') { var r = document.querySelector('.pane:not([hidden])'); if (r) renderCueAll(r); } } catch (e) { }
+};
 </script>
 </head><body><div id="root"></div></body></html>

@@ -13,7 +13,7 @@ const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
 /* v184 — 큐시트 틀 주소는 버전만 붙인다. 달 · 탭은 # 뒤에 실어 같은 파일을 캐시에서 다시 쓴다(예전에는 캠페인마다 1.5MB 를 새로 받았다) */
-const CUE_VER='209';
+const CUE_VER='210';
 async function cuePipe(bytes,stream){
   const wr=stream.writable.getWriter();wr.write(bytes);wr.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());}
@@ -31,7 +31,8 @@ function cueFrameData(){
   try{return {ws:JSON.parse(CUE.json),at:TV_CUE.at,title:''};}catch(e){return null;}}
 function cueFrameReady(w,imp){
   if(imp){CUE.imp=w;if(CUE.impWait){CUE.impWait(w);CUE.impWait=null;}return;}
-  const f=$('cueFrame');if(f)f.classList.add('ready');}
+  const f=$('cueFrame');if(f)f.classList.add('ready');
+  try{itemApply(false);}catch(e){}}
 /* 예전에 넣은 큐시트에는 계획 GRP 가 없다 — 틀이 계산해 알려 주면 채워 둔다(편집 권한이 있을 때만 저장 대상) */
 function cueFrameStats(s){
   if(!TV_CUE||!s||!(s.grp>0))return;const st=TV_CUE.st||(TV_CUE.st={});let ch=false;

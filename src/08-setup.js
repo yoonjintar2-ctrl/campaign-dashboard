@@ -1259,6 +1259,7 @@ function switchTab(name){
     return;}
   /* 선택 표시는 paintTabsOn() 이 한다 (v72 — 영역 · 하위 메뉴 두 줄) */
   {const T=$('tabs');if(T)T.dataset.cur=name;}
+  try{itemApply(false);}catch(e){}   /* v210 — 품목 선택 줄: 그리기 전에 그 메뉴의 필터를 건다 */
   if(['tvdash','tvdaily','tvweekly','tvmonthly','tvmix'].includes(name)){try{TV_LAST=name;}catch(e){}}
   /* 일자별 상세 효율을 보던 중이면 그 자리를 기억해 둔다 */
   try{if(typeof rawRemember==='function'&&!$('tab-dash').classList.contains('hidden')

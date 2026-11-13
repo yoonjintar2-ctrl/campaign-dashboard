@@ -113,6 +113,8 @@ function renderReport(){
   const ys=rptYears();
   /* 보고 있는 리포트가 바뀌면 리포트 안 선택(표 달 · 브랜드 등)을 처음으로 (v157 — 9월에 4월 표가 남던 문제) */
   if(RPT._doc!==RPT_DOC){RPT._doc=RPT_DOC;RPT.tblM=0;RPT.brand='코웨이';RPT.dgB='';RPT.sosMo=0;RPT.cat='';}
+  /* v210 — 품목 선택 줄에서 고른 품목의 업종 */
+  try{if(ITEM_SEL&&RPT_DOC){const c=itemCat(ITEM_SEL);if(c&&(RPT_DOC.cats||[]).some(x=>x.k===c))RPT.cat=c;if(c&&RPT_DOC.tvx&&RPT_DOC.tvx.cats.some(x=>x.k===c))RPX.c=c;}}catch(e){}
   if(RPT.oldY&&ys.includes(RPT.oldY))RPT.y=RPT.oldY;else{RPT.oldY=0;if(RPT_DOC&&RPT_DOC.y)RPT.y=RPT_DOC.y;}
   if(!ys.includes(RPT.y))RPT.y=ys[ys.length-1];
   /* 달 고르기 줄은 올해 이전 연도를 볼 때만 — 올해 달은 메뉴에서 고른다 */
@@ -202,9 +204,9 @@ function rpIso(){
   it.forEach((x,i)=>{const v=rN(x[1]),hh=Math.max(2,(base-top)*v/mxB),cx=pad+gap*(i+.2),col=PAL[Math.min(i,7)];
     /* v155 — 2D 막대(위쪽만 둥글게) — 뒤 eq.GRP 영역과 같은 평면 */
     const rr=Math.min(5,hh/2),f=v2=>v2.toFixed(1);
-    g+=`<g class="ib" style="--d:${i*80}ms" data-tip="${i}"><path d="M${f(cx)},${f(base)} V${f(base-hh+rr)} Q${f(cx)},${f(base-hh)} ${f(cx+rr)},${f(base-hh)} H${f(cx+bw-rr)} Q${f(cx+bw)},${f(base-hh)} ${f(cx+bw)},${f(base-hh+rr)} V${f(base)} Z" fill="${col}"/></g>
+    g+=`<g class="ib${itemOn(x[0])?' ion':''}" style="--d:${i*80}ms" data-tip="${i}"><path d="M${f(cx)},${f(base)} V${f(base-hh+rr)} Q${f(cx)},${f(base-hh)} ${f(cx+rr)},${f(base-hh)} H${f(cx+bw-rr)} Q${f(cx+bw)},${f(base-hh)} ${f(cx+bw)},${f(base-hh+rr)} V${f(base)} Z" fill="${col}"/></g>
       <text class="iv" style="--d:${i*80+380}ms" x="${(cx+bw/2+dx/2).toFixed(1)}" y="${(base-hh-8).toFixed(1)}" text-anchor="middle">${wrEok(v)}</text>
-      <text class="in" x="${(cx+bw/2).toFixed(1)}" y="${base+20}" text-anchor="middle">${rpWrap(x[0]).map((t,j)=>`<tspan x="${(cx+bw/2).toFixed(1)}" dy="${j?14:0}">${esc(t)}</tspan>`).join('')}</text>`;});
+      <text class="in${itemOn(x[0])?' ion':''}" x="${(cx+bw/2).toFixed(1)}" y="${base+20}" text-anchor="middle">${rpWrap(x[0]).map((t,j)=>`<tspan x="${(cx+bw/2).toFixed(1)}" dy="${j?14:0}">${esc(t)}</tspan>`).join('')}</text>`;});
   /* R3+ — 굵은 부드러운 곡선 · 값이 표식 안에 들어가는 큰 표식 */
   const line=`<path d="${rpSmooth(rPts,true,.22)}" class="r3" pathLength="1"/>`
     +rPts.map((p,i)=>`<g class="r3p" style="--d:${900+i*70}ms" data-tip="${i}"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="18.5"/>

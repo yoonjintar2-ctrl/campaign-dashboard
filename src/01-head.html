@@ -1357,6 +1357,18 @@ table.rptbl td.na{background:var(--line)!important}
 .rpdtbars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 20px;margin-top:14px}@media (max-width:900px){.rpdtbars{grid-template-columns:1fr 1fr}}
 .rpdtbars .h{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}.rpdtbars .rpstk{height:12px}
 .rpdtbars .lg{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:7px;font-size:11px;color:var(--ink2);font-weight:600}
+/* v210 — 품목 선택 줄 */
+.wrap.itemwrap{padding-top:12px;padding-bottom:0}
+.itembar-in{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line2);border-radius:16px;padding:9px 14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.itembar-in .lb{font-size:12.5px;font-weight:900;color:var(--ink);flex:none}
+.ichips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ichip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font:inherit;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .1s}
+.ichip:hover{border-color:var(--acc);color:var(--acc)}.ichip:active{transform:scale(.97)}
+.ichip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.ichip.na{opacity:.5}.ichips .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+body.ihl .wrsb:not(.ion){opacity:.3;transition:opacity .25s}
+body.ihl .rpisosvg .ib:not(.ion){opacity:.28}body.ihl .rpisosvg .in:not(.ion){opacity:.4}
+body.ihl .rpisosvg .in.ion{font-weight:900;fill:var(--ink)}
 /* v205 — 리포트 › TV 실집행 추정금액 · KPI 요약 (36-rptvx.js) */
 .rpxhl{font-size:13px;font-weight:700;color:var(--ink2);margin:2px 2px 12px;line-height:1.5}
 .rpxsvg .bl{stroke:var(--gline);stroke-width:1}
@@ -4605,7 +4617,8 @@ body.pssave .pfx,body.pssave .pdown{animation:none!important;scale:1!important}
 #cueHost{position:relative}
 .cueseg{display:inline-flex;margin-left:14px;vertical-align:middle;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
 .cueseg button{border:0;background:none;padding:6px 16px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink2);cursor:pointer}
-.cueallbtn{float:right;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:6px 14px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink2);cursor:pointer;margin-top:-3px}
+#cueSec{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 8px}
+.cueallbtn{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:6px 14px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink2);cursor:pointer;margin-top:-3px}
 .cueallbtn svg{width:14px;height:14px}.cueallbtn:hover{background:var(--acc-soft);color:var(--ink)}.cueallbtn:active{transform:scale(.97)}
 /* v202 — 전체 큐시트 팝업 */
 html.cuepop-on{overflow:hidden}

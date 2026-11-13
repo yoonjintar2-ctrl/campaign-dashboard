@@ -874,6 +874,7 @@ function setDgArea(a){
   if(curDgArea()===before)return;
   /* 구분 · 매체 · 제품 필터는 영역마다 값이 달라 풀어 둔다 */
   try{const ls=areaLines();['segment','media','line'].forEach(k=>{if(FILTER[k]!=='all'&&!ls.some(l=>l[k]===FILTER[k]))FILTER[k]='all';});}catch(e){}
+  try{itemApply(false);}catch(e){}   /* v210 — OTT 로 오면 고른 품목을 구분 필터로 */
   try{if(typeof CR_FILTER!=='undefined'){const cs=CREATIVES.filter(c=>crInArea(c));
     ['segment','media'].forEach(k=>{if(CR_FILTER[k]&&CR_FILTER[k]!=='all'&&!cs.some(c=>c[k]===CR_FILTER[k]))CR_FILTER[k]='all';});}}catch(e){}
   DG_DIRTY=true;}

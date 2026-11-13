@@ -151,7 +151,7 @@ function wrMixBars(items,tot){
         ${w>9?`<b>${esc(c.n)}</b><i>${wrEok(c.bud)}</i>`:''}</span>`;}).join('');
     /* v170 — 막대가 좁아 안에 못 적은 소재는 막대 오른쪽 바깥에 */
     const outs=crs.filter(c=>c.bud/maxB*100<=9).map(c=>`${esc(c.n)} <i>${wrEok(c.bud)}</i>`).join(' · ');
-    return `<div class="wrsb"><div class="nm">${esc(it.n)}</div>
+    return `<div class="wrsb${itemOn(it.fn||it.n)||itemOn(it.n)?' ion':''}"><div class="nm">${esc(it.n)}</div>
       <div class="bar">${segs}${outs?`<span class="out">${outs}</span>`:''}</div><div class="v"><b>${wrEok(ib)}</b><em>${(ib/tot*100).toFixed(0)}%</em></div></div>`;}).join('');
   return bars;}
 /* v170 — 캠페인 퍼포먼스 맨 위: 품목별 월 예산 · 채널별 월 예산 그래프 */
