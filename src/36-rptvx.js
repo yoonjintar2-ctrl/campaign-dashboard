@@ -94,17 +94,14 @@ function rpKpiChart(box,K,M){
     const mxV=Math.max(...vs.map(x=>x.v)),mnV=Math.min(...vs.map(x=>x.v));let y1=by(mxV)-5,y2=by(mnV)+5;
     const L2=vs.slice().sort((a,b)=>b.v-a.v).map(x=>({...x,y:by(x.v),ty:by(x.v)}));
     const GAP=cur?12.5:9;for(let k=1;k<L2.length;k++)if(L2[k].ty-L2[k-1].ty<GAP)L2[k].ty=L2[k-1].ty+GAP;
-    if(L2.length&&!cur){y1=Math.min(y1,L2[0].ty-7);const ov=L2[L2.length-1].ty+7-y2;if(ov>0)y2+=ov;}
+    /* v215 — 지난달 막대 안 PP 선·이름은 그리지 않는다(마우스 오버 카드로 확인) */
     let lines='',outs='';
     /* 이번 달은 이름 + % 를 막대 오른쪽 바깥에(다음 달 칸은 비어 있다) — 12월이면 왼쪽 */
     const rt=i<11;
     L2.forEach(x=>{
       if(cur){lines+=`<line class="pl" x1="${f(x0+4)}" x2="${f(x0+bw-4)}" y1="${f(x.y)}" y2="${f(x.y)}"/>`;
         const lx=rt?x0+bw+6:x0-6;outs+=`<text class="po" x="${f(lx)}" y="${f(x.ty+3)}" text-anchor="${rt?'start':'end'}"><tspan class="n">${esc(sh(x.r.n))}</tspan> ${x.v.toLocaleString()}%</text>`;}
-      else{const lw=Math.max(6,bw-8-tw(sh(x.r.n))-5);
-        lines+=`<line class="pl" x1="${f(x0+4)}" x2="${f(x0+4+lw)}" y1="${f(x.y)}" y2="${f(x.y)}"/>`
-          +(Math.abs(x.ty-x.y)>1?`<line class="pk" x1="${f(x0+4+lw)}" y1="${f(x.y)}" x2="${f(x0+6+lw)}" y2="${f(x.ty)}"/>`:'')
-          +`<text class="pn" x="${f(x0+bw-4)}" y="${f(x.ty+3)}" text-anchor="end">${esc(sh(x.r.n))}</text>`;}});
+      });
     /* 맨 위 · 맨 아래 값 */
     const dl=cur?'':`<text class="dv" x="${f(cx)}" y="${f(y1-5)}" text-anchor="middle">${mxV.toLocaleString()}%</text>`+(vs.length>1?`<text class="dv" x="${f(cx)}" y="${f(y2+11)}" text-anchor="middle">${mnV.toLocaleString()}%</text>`:'');
     s+=`<g class="fb${cur?' cur':''}" data-tip="b${i}" style="--d:${i*50}ms"><rect class="fr" x="${f(x0)}" y="${f(y1)}" width="${f(bw)}" height="${f(y2-y1)}" rx="8"/>${lines}</g>${dl}${outs}`;}
