@@ -1535,6 +1535,9 @@ html.embed.pop main{padding-top:4px!important}
 html.embed.pop section.card{margin-top:0!important}
 html.embed.pop table.calt thead{position:sticky;top:0;z-index:6;transform:none!important}
 html.embed.pop .calw,html.embed.pop .calcard{overflow:visible!important}
+/* v213 — 전체 큐시트: 안내 문구 줄 없앰 · 제목(대시보드 쪽)과 필터를 가깝게 */
+html.embed .pane[data-pane="cueall"] .viewhead{display:none}
+html.embed .pane[data-pane="cueall"] section.card.cafilter{margin-top:0!important}
 </style>
 <script id="cue-boot">(function () {
   var q = new URLSearchParams(location.search), qh = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); /* v184 — 탭·열쇠는 # 뒤로(주소가 같아야 브라우저가 cue.html 을 다시 받지 않는다) */

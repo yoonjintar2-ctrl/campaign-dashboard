@@ -114,12 +114,11 @@ function rpKpiChart(box,K,M){
   /* 아래 — 시급 · CM 위치(작은 꺾은선) */
   const sm=rows.filter(r=>['prime','cmpos','midcm'].includes(r.t));
   const lab=r=>r.t==='prime'?L('프라임타임 (SA+A)','Prime time'):r.t==='cmpos'?L('CM위치 · ','CM pos · ')+r.n.replace(/^.*·\s*/,''):L('중CM · ','Mid-CM · ')+r.n.replace(/^중CM\s*·\s*/,'');
-  const mini=r=>{const w=200,h=46,vs=r.v.map(v=>has(v)?+v:null),nums=vs.filter(v=>v!=null).concat([rN(r.tg)]),mn=Math.min(...nums)*.85,mx=Math.max(...nums)*1.08,
-      X=i=>4+(w-8)*i/11,Y=v=>h-4-(h-10)*(v-mn)/(mx-mn||1),pts=vs.map((v,i)=>v!=null&&i<M?[X(i),Y(v)]:null).filter(Boolean),last=vs[M-1];
-    return `<div class="rpkm"><div class="h"><b>${esc(lab(r))}</b><span>${L('목표','tgt')} ${r.tg}%</span><em>${last!=null?last+'%':'–'}</em></div>
-      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="rpkmsvg"><line x1="0" x2="${w}" y1="${f(Y(rN(r.tg)))}" y2="${f(Y(rN(r.tg)))}" class="t"/>
-      <path d="${rpSmooth(pts,true,.2)}" class="l"/>${pts.length&&last!=null?`<circle cx="${f(X(M-1))}" cy="${f(Y(last))}" r="3.2" class="d"/>`:''}</svg></div>`;};
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpkpisvg">${s}</svg>${sm.length?`<div class="rpkms" style="--n:${sm.length}">${sm.map(mini).join('')}</div>`:''}`;
+  /* v213 — 이번 달 값만: 100% 막대(채운 만큼 = 비중) + 목표 눈금 */
+  const mini=r=>{const v=has(r.v[M-1])?+r.v[M-1]:null,tg=rN(r.tg);if(v==null)return '';
+    return `<div class="rpkb"><span class="n">${esc(lab(r))}</span><span class="bar"><i style="width:${Math.min(100,v).toFixed(1)}%"></i>${tg>0?`<em style="left:${Math.min(100,tg).toFixed(1)}%" title="${L('목표','Target')} ${tg}%"></em>`:''}</span><b>${v}%</b><span class="t">${tg>0?L('목표 ','tgt ')+tg+'%':''}</span></div>`;};
+  const smH=sm.map(mini).join('');
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" class="rpkpisvg">${s}</svg>${smH?`<div class="rpkbs"><div class="hd">${g==='t'?L('시급 · CM 위치','Time class · CM position'):L('중CM 비중','Mid-CM share')} <span>${L(`${M}월`,`M${M}`)}</span></div>${smH}</div>`:''}`;
   const gl=g==='t'?L('지상파','Terrestrial'):L('케이블','Cable');
   const row=(l,v,tg,sfx)=>`<div class="r"><span class="l">${l}${tg?` <small>(${L('목표','tgt')} ${tg})</small>`:''}</span><b>${v}${sfx||''}</b></div>`;
   rpTipWire(box.querySelector('svg'),k=>{const i=+k.slice(1);
