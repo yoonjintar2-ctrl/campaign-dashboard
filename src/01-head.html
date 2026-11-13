@@ -2561,7 +2561,7 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 [data-theme="dark"] .axdelta.dn{color:#f0a98a;background:rgba(240,169,138,.13)}
 /* 도넛 가운데 · 진행 현황 오른쪽 숫자는 자리가 좁다 — 아래 / 왼쪽에 */
 .ctr .axdelta{left:50%;top:100%;margin:4px 0 0;transform:translateX(-50%)}
-.pside.r .axdelta{left:auto;right:100%;margin:0 8px 0 0}
+.pside.r .axdelta{left:0;right:auto;top:-5px;transform:translateY(-100%);margin:0;z-index:5}   /* v211 — 막대 끝에 겹쳐 잘리던 것 → 숫자 위로 */
 .ax-wait .axdelta{animation-play-state:paused}
 @keyframes axDelta{0%{opacity:0;filter:blur(2px)}7%{opacity:1;filter:none}82%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.axdelta{animation-duration:4.6s;animation-timing-function:steps(1,end)}}

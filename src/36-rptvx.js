@@ -89,7 +89,7 @@ function rpKpiChart(box,K,M){
   const tw=t=>[...String(t)].reduce((a,ch)=>a+(/[가-힣]/.test(ch)?8.6:5.6),0);
   for(let i=0;i<12;i++){const cx=padL+slot*(i+.5),bw=Math.min(66,slot*.8),x0=cx-bw/2,cur=i===M-1;
     s+=`<text class="mo${cur?' cur':''}${i>=M?' fut':''}" x="${f(cx)}" y="${mY}" text-anchor="middle">${L(`${i+1}월`,String(i+1))}</text>`;
-    if(i>=M){s+=`<rect class="fut" x="${f(x0)}" y="${f((bTop+bBot)/2-14)}" width="${f(bw)}" height="28" rx="7"/>`;continue;}
+    if(i>=M)continue;   /* v211 — 다음 달 빈 칸(점선 상자)은 그리지 않는다(이번 달 PP 이름을 가렸다) */
     const vs=bo.map(r=>({r,v:+r.v[i]})).filter(x=>has(x.r.v[i])&&x.v>0);if(!vs.length)continue;
     const mxV=Math.max(...vs.map(x=>x.v)),mnV=Math.min(...vs.map(x=>x.v));let y1=by(mxV)-5,y2=by(mnV)+5;
     const L2=vs.slice().sort((a,b)=>b.v-a.v).map(x=>({...x,y:by(x.v),ty:by(x.v)}));
@@ -100,7 +100,7 @@ function rpKpiChart(box,K,M){
     const rt=i<11;
     L2.forEach(x=>{
       if(cur){lines+=`<line class="pl" x1="${f(x0+4)}" x2="${f(x0+bw-4)}" y1="${f(x.y)}" y2="${f(x.y)}"/>`;
-        const lx=rt?x0+bw+6:x0-6;outs+=`<line class="pk2" x1="${f(rt?x0+bw:x0)}" y1="${f(x.y)}" x2="${f(rt?lx-2:lx+2)}" y2="${f(x.ty)}"/><text class="po" x="${f(lx)}" y="${f(x.ty+3)}" text-anchor="${rt?'start':'end'}"><tspan class="n">${esc(sh(x.r.n))}</tspan> ${x.v.toLocaleString()}%</text>`;}
+        const lx=rt?x0+bw+6:x0-6;outs+=`<text class="po" x="${f(lx)}" y="${f(x.ty+3)}" text-anchor="${rt?'start':'end'}"><tspan class="n">${esc(sh(x.r.n))}</tspan> ${x.v.toLocaleString()}%</text>`;}
       else{const lw=Math.max(6,bw-8-tw(sh(x.r.n))-5);
         lines+=`<line class="pl" x1="${f(x0+4)}" x2="${f(x0+4+lw)}" y1="${f(x.y)}" y2="${f(x.y)}"/>`
           +(Math.abs(x.ty-x.y)>1?`<line class="pk" x1="${f(x0+4+lw)}" y1="${f(x.y)}" x2="${f(x0+6+lw)}" y2="${f(x.ty)}"/>`:'')

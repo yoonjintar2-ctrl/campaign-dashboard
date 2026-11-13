@@ -28,7 +28,8 @@ function itemCat(k){
 function itemCueRows(){try{return (JSON.parse(CUE.json).sheets['품목']||[]).filter(r=>r&&r[0]);}catch(e){return [];}}
 function itemAreaNow(){
   const T=$('tabs'),cur=T?(T.dataset.cur||''):'';
-  if(['tvdash','tvdaily','tvweekly','tvmix','tvcue','tvmonthly'].includes(cur))return 'tv';
+  /* v211 — 캠페인 퍼포먼스 · 일자별 · 주차별에는 품목으로 강조할 그래프가 없어 줄을 감춘다 */
+  if(['tvmix','tvcue'].includes(cur))return 'tv';
   if(cur==='report')return 'report';
   if(cur==='dash'){try{return curDgArea()==='ott'?'ott':'';}catch(e){return '';}}
   return '';}
@@ -66,7 +67,7 @@ function itemApply(redraw){
     try{if(k&&typeof TV_WR!=='undefined'&&TV_WR&&TV_WR.items){const it=TV_WR.items.find(x=>itemKey(x.n)===k);if(it)WR_SEL={item:it.n,cr:''};}}catch(e){}
     /* 큐시트 틀 안 품목 필터 */
     try{const f=$('cueFrame');if(f&&f.contentWindow&&f.contentWindow.cueSetItems){const sh=itemCueRows().filter(r=>itemKey(r[1]||r[0])===k||itemKey(r[0])===k).map(r=>r[0]);f.contentWindow.cueSetItems(k&&sh.length?sh:null);}}catch(e){}
-    if(redraw){const T=$('tabs'),cur=T?T.dataset.cur:'';try{if(cur==='tvdash')renderTvDash();else if(cur==='tvmix'||cur==='tvcue'){const el=$('cueTop');if(el)el.dataset.k='';cueTopPaint();try{renderWrMix();}catch(e){}}}catch(e){console.warn('item tv',e);}}}
+    if(redraw){const T=$('tabs'),cur=T?T.dataset.cur:'';try{if(cur==='tvdash')renderTvDash();else if(cur==='tvcue'){const el=$('cueTop');if(el)el.dataset.k='';cueTopPaint();}else if(cur==='tvmix'){try{renderWrMix();}catch(e){}}}catch(e){console.warn('item tv',e);}}}
   if(ar==='report'){
     const c=k?itemCat(k):'';
     try{if(c&&RPT_DOC&&RPT_DOC.cats.some(x=>x.k===c)){RPT.cat=c;RPT.brand='코웨이';}
