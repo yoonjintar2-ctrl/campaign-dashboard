@@ -2370,9 +2370,10 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pdotrow>i{position:absolute;bottom:2px;width:8px;height:8px;border-radius:50%;
   transform:translateX(-50%);background:var(--acc);display:block;
   animation:pacedot 2.6s ease-in-out infinite}
+/* v204 — 그림자(box-shadow)를 바꾸면 매 프레임 다시 칠한다 → 투명도 · 크기만(합성기에서 처리) */
 @keyframes pacedot{
-  0%,100%{box-shadow:0 0 2px 0 rgba(var(--accrgb,73 94 114)/.40);opacity:.76}
-  45%    {box-shadow:0 0 5px 1px rgba(var(--accrgb,73 94 114)/.62);opacity:1}}
+  0%,100%{opacity:.72;transform:translateX(-50%) scale(.9)}
+  45%    {opacity:1;transform:translateX(-50%) scale(1.12)}}
 @media (prefers-reduced-motion: reduce){.pdotrow>i{animation:none}}
 .pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
@@ -2431,7 +2432,7 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pbar .sheen{position:absolute;left:0;top:0;bottom:0;pointer-events:none;border-radius:9px;
   background:linear-gradient(104deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.13) 26%,
     rgba(255,255,255,0) 50%,rgba(255,255,255,.11) 76%,rgba(255,255,255,0) 100%);
-  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate;z-index:3}
+  background-size:260% 100%;z-index:3}   /* v204 — 흐르는 광택 애니메이션(background-position → 매 프레임 다시 칠함)은 멈춤 */
 @keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
 @media (prefers-reduced-motion:reduce){.pbar .sheen{animation:none}}
 

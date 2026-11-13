@@ -853,7 +853,12 @@ function mixRows(){
   return base.map(r=>({...r,vals:dims.map(d=>d==='creative'?r.creative:r.l[d]),
     key:dims.map(d=>d==='creative'?r.creative:r.l[d]).join(SEP)}));
 }
-function renderMix(){
+/* v204 — 미디어믹스 표는 보이지 않을 때 그리지 않는다(데이터가 바뀔 때마다 숨은 표를 다시 그려 첫 화면이 느렸다).
+   미디어믹스를 열 때(dashSubGo) · PDF 로 저장할 때(renderMix(true)) 그린다 */
+var MIX_STALE=false;
+function renderMix(force){
+  if(!force){const sm=$('sub-mix'),td=$('tab-dash');if(sm&&(sm.classList.contains('hidden')||(td&&td.classList.contains('hidden')))){MIX_STALE=true;return;}}
+  MIX_STALE=false;
   const dims=MIX_CFG.rows.map(r=>r.k),cols=cfgCols(MIX_CFG),seps=gsepSet(MIX_CFG);
   const rows=mixRows();
   const grouped=new Map();
@@ -1549,7 +1554,7 @@ function renderAll(){
   /* 캠페인 구조 (v119 → v120 별도 메뉴) — 숨어 있으면(폭 0) 그리지 않고, 보이게 될 때 스스로 다시 그린다 */
   try{renderStruct();}catch(e){console.warn('struct',e);}
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
-  renderCampForm();renderMix();
+  renderMix();   /* v204 — renderCampForm 은 위에서 이미 그렸다(두 번 그리던 것) */
   let drew=false;
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();drew=true;}

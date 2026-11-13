@@ -2370,9 +2370,10 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pdotrow>i{position:absolute;bottom:2px;width:8px;height:8px;border-radius:50%;
   transform:translateX(-50%);background:var(--acc);display:block;
   animation:pacedot 2.6s ease-in-out infinite}
+/* v204 — 그림자(box-shadow)를 바꾸면 매 프레임 다시 칠한다 → 투명도 · 크기만(합성기에서 처리) */
 @keyframes pacedot{
-  0%,100%{box-shadow:0 0 2px 0 rgba(var(--accrgb,73 94 114)/.40);opacity:.76}
-  45%    {box-shadow:0 0 5px 1px rgba(var(--accrgb,73 94 114)/.62);opacity:1}}
+  0%,100%{opacity:.72;transform:translateX(-50%) scale(.9)}
+  45%    {opacity:1;transform:translateX(-50%) scale(1.12)}}
 @media (prefers-reduced-motion: reduce){.pdotrow>i{animation:none}}
 .pbar{position:relative;height:44px;border-radius:9px;background:var(--acc-soft);overflow:hidden}
 /* 마우스를 올리면 막대 전체가 지금 페이스를 나타내는 색으로 바뀐다 */
@@ -2431,7 +2432,7 @@ table.sheet td.badflash{background:rgba(190,110,100,.3)!important;
 .pbar .sheen{position:absolute;left:0;top:0;bottom:0;pointer-events:none;border-radius:9px;
   background:linear-gradient(104deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.13) 26%,
     rgba(255,255,255,0) 50%,rgba(255,255,255,.11) 76%,rgba(255,255,255,0) 100%);
-  background-size:260% 100%;animation:pacedrift 22s ease-in-out infinite alternate;z-index:3}
+  background-size:260% 100%;z-index:3}   /* v204 — 흐르는 광택 애니메이션(background-position → 매 프레임 다시 칠함)은 멈춤 */
 @keyframes pacedrift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
 @media (prefers-reduced-motion:reduce){.pbar .sheen{animation:none}}
 
@@ -6322,9 +6323,9 @@ const MENUS=[
      사이트가 아는 형식은 바로 넣고, 나머지는 Claude 가 확인해 일괄 반영한다. 화면은 tab-intake 하나를 영역마다 나눠 쓴다(INBX_AREA) */
   /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
   /* v170 — 큐시트는 메뉴 하나(화면 안에서 지상파 · 케이블을 고른다). 요약 · 당월 소재는 미디어믹스로 */
-  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view',vdef:false},
-  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view',vdef:false},
-  /* v203 — 큐시트 · 큐시트 캘린더는 모든 캠페인에서 광고주에게 기본 숨김(vdef:false — 메뉴 설정에서 켠 캠페인만 보인다) */
+  {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view',vdef:false,udef:false},
+  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view',vdef:false,udef:false},
+  /* v203 — 큐시트 · 큐시트 캘린더는 모든 캠페인에서 광고주에게 기본 숨김(vdef:false) · v204 — 메뉴 자체도 기본 꺼짐(udef:false — 메뉴 설정에서 '사용'을 켠 캠페인만) */
   /* v202 — 전체 큐시트는 메뉴에서 빼고 큐시트 캘린더 오른쪽 위 '전체 보기' 단추(팝업)로 */
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.
      OTT 매체는 고정 — 넷플릭스 · 쿠팡플레이 · 티빙 · 디즈니플러스(OTT_RE). OTT 영역을 켜면 그 매체 라인이 OTT 로 간다.
@@ -7921,15 +7922,12 @@ function fitPaceLabels(){
      탭을 열고 나서도 매체 이름이 영영 안 나왔다. */
   const box=$('paceBox');
   if(!box||!box.offsetParent||box.getBoundingClientRect().width<10)return;
-  document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
-    const W=bar.getBoundingClientRect().width;
-    const st=bar.querySelector('.mstack');if(!st)return;
-    const x0=st.getBoundingClientRect().left;
-    bar.style.setProperty('--barw',W.toFixed(1)+'px');
-    bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
-    st.querySelectorAll(':scope>i').forEach(seg=>{
-      seg.style.setProperty('--segoff',
-        (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
+  /* v204 — 먼저 모두 재고(읽기) 그다음 한꺼번에 쓴다. 재고 쓰고를 번갈아 하면 막대마다 배치를 다시 계산했다 */
+  {const W2=[];document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
+    const st=bar.querySelector('.mstack');if(!st)return;const W=bar.getBoundingClientRect().width,x0=st.getBoundingClientRect().left;
+    W2.push([bar,W,[...st.querySelectorAll(':scope>i')].map(seg=>[seg,seg.getBoundingClientRect().left-x0])]);});
+   W2.forEach(([bar,W,segs])=>{bar.style.setProperty('--barw',W.toFixed(1)+'px');bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
+     segs.forEach(([seg,o])=>seg.style.setProperty('--segoff',o.toFixed(1)+'px'));});}
   /* 구간 안쪽 여백(9px×2)과 간격 때문에 짧은 막대가 실제 달성률보다 길어 보였다.
      구간 하나당 22px 도 확보되지 않으면 여백을 모두 버리고 비율만 남긴다. */
   document.querySelectorAll('#paceBox .mstack').forEach(st=>{
@@ -9436,17 +9434,19 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     if(g.solo&&g.cols.length===1)ths.push(soloThs[si++]);
     else g.cols.forEach(()=>ths.push(row2[ri++]));});
   /* 행 머리 열 — 키는 '_row0','_row1' … 로 저장한다 */
-  leadThs.forEach((th,i)=>grip(th,'_row'+i,i));
-  ths.forEach((th,i)=>grip(th,cols[i],leadN+i));
-  function grip(th,key,colIdx){
-    if(!th||th.querySelector('.colgrip'))return;
+  /* v204 — 위치(static 인지)를 먼저 한꺼번에 읽고 나서 손잡이를 붙인다(번갈아 하면 칸마다 스타일을 다시 계산 — 첫 화면에서 0.4초) */
+  const todo=[...leadThs.map((th,i)=>[th,'_row'+i,i]),...ths.map((th,i)=>[th,cols[i],leadN+i])].filter(x=>x[0]&&!x[0].querySelector('.colgrip'));
+  const stat=todo.map(x=>getComputedStyle(x[0]).position==='static');
+  todo.forEach((x,i)=>grip(x[0],x[1],x[2],stat[i]));
+  function grip(th,key,colIdx,isStatic){
+    if(!th)return;
     th.classList.add('cresz');
     /* 손잡이는 th 를 기준으로 붙어야 한다 — 머리글이 static 이면 표 전체 오른쪽 끝에 붙어
        실제로는 잡히지 않았다 (sticky 인 머리글은 그대로 둔다) */
     /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
        다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
        그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
-    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
+    if(isStatic){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
@@ -13933,7 +13933,12 @@ function mixRows(){
   return base.map(r=>({...r,vals:dims.map(d=>d==='creative'?r.creative:r.l[d]),
     key:dims.map(d=>d==='creative'?r.creative:r.l[d]).join(SEP)}));
 }
-function renderMix(){
+/* v204 — 미디어믹스 표는 보이지 않을 때 그리지 않는다(데이터가 바뀔 때마다 숨은 표를 다시 그려 첫 화면이 느렸다).
+   미디어믹스를 열 때(dashSubGo) · PDF 로 저장할 때(renderMix(true)) 그린다 */
+var MIX_STALE=false;
+function renderMix(force){
+  if(!force){const sm=$('sub-mix'),td=$('tab-dash');if(sm&&(sm.classList.contains('hidden')||(td&&td.classList.contains('hidden')))){MIX_STALE=true;return;}}
+  MIX_STALE=false;
   const dims=MIX_CFG.rows.map(r=>r.k),cols=cfgCols(MIX_CFG),seps=gsepSet(MIX_CFG);
   const rows=mixRows();
   const grouped=new Map();
@@ -14629,7 +14634,7 @@ function renderAll(){
   /* 캠페인 구조 (v119 → v120 별도 메뉴) — 숨어 있으면(폭 0) 그리지 않고, 보이게 될 때 스스로 다시 그린다 */
   try{renderStruct();}catch(e){console.warn('struct',e);}
   renderPace();renderDonuts();renderStrip();renderDaily();renderSummaries();
-  renderCampForm();renderMix();
+  renderMix();   /* v204 — renderCampForm 은 위에서 이미 그렸다(두 번 그리던 것) */
   let drew=false;
   if(!$('sub-perf').classList.contains('hidden')){renderGantt();renderHeat();renderCreatives();renderBubble();
     equalizeDuo();renderTreemap();drew=true;}
@@ -18355,6 +18360,7 @@ function buildPrintDoc(){
   host.appendChild(head);
   const groups=[];
   const perf=$('sub-perf'); if(perf)printBlocks(perf).forEach(g=>groups.push(g));
+  try{if(MIX_STALE)renderMix(true);}catch(e){}
   const mix=$('sub-mix');   if(mix) printBlocks(mix).forEach(g=>groups.push(g));
   groups.forEach(g=>{
     const bk=document.createElement('div');bk.className='pbk';

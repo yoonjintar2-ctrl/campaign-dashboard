@@ -630,6 +630,7 @@ function buildPrintDoc(){
   host.appendChild(head);
   const groups=[];
   const perf=$('sub-perf'); if(perf)printBlocks(perf).forEach(g=>groups.push(g));
+  try{if(MIX_STALE)renderMix(true);}catch(e){}
   const mix=$('sub-mix');   if(mix) printBlocks(mix).forEach(g=>groups.push(g));
   groups.forEach(g=>{
     const bk=document.createElement('div');bk.className='pbk';

@@ -1382,15 +1382,12 @@ function fitPaceLabels(){
      탭을 열고 나서도 매체 이름이 영영 안 나왔다. */
   const box=$('paceBox');
   if(!box||!box.offsetParent||box.getBoundingClientRect().width<10)return;
-  document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
-    const W=bar.getBoundingClientRect().width;
-    const st=bar.querySelector('.mstack');if(!st)return;
-    const x0=st.getBoundingClientRect().left;
-    bar.style.setProperty('--barw',W.toFixed(1)+'px');
-    bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
-    st.querySelectorAll(':scope>i').forEach(seg=>{
-      seg.style.setProperty('--segoff',
-        (seg.getBoundingClientRect().left-x0).toFixed(1)+'px');});});
+  /* v204 — 먼저 모두 재고(읽기) 그다음 한꺼번에 쓴다. 재고 쓰고를 번갈아 하면 막대마다 배치를 다시 계산했다 */
+  {const W2=[];document.querySelectorAll('#paceBox .pline:not(.days) .pbar').forEach(bar=>{
+    const st=bar.querySelector('.mstack');if(!st)return;const W=bar.getBoundingClientRect().width,x0=st.getBoundingClientRect().left;
+    W2.push([bar,W,[...st.querySelectorAll(':scope>i')].map(seg=>[seg,seg.getBoundingClientRect().left-x0])]);});
+   W2.forEach(([bar,W,segs])=>{bar.style.setProperty('--barw',W.toFixed(1)+'px');bar.style.setProperty('--wavew',(W*2.4).toFixed(1)+'px');
+     segs.forEach(([seg,o])=>seg.style.setProperty('--segoff',o.toFixed(1)+'px'));});}
   /* 구간 안쪽 여백(9px×2)과 간격 때문에 짧은 막대가 실제 달성률보다 길어 보였다.
      구간 하나당 22px 도 확보되지 않으면 여백을 모두 버리고 비율만 남긴다. */
   document.querySelectorAll('#paceBox .mstack').forEach(st=>{

@@ -763,17 +763,19 @@ function wirePivotColResize(tbl,cfg,cols,rerender){
     if(g.solo&&g.cols.length===1)ths.push(soloThs[si++]);
     else g.cols.forEach(()=>ths.push(row2[ri++]));});
   /* 행 머리 열 — 키는 '_row0','_row1' … 로 저장한다 */
-  leadThs.forEach((th,i)=>grip(th,'_row'+i,i));
-  ths.forEach((th,i)=>grip(th,cols[i],leadN+i));
-  function grip(th,key,colIdx){
-    if(!th||th.querySelector('.colgrip'))return;
+  /* v204 — 위치(static 인지)를 먼저 한꺼번에 읽고 나서 손잡이를 붙인다(번갈아 하면 칸마다 스타일을 다시 계산 — 첫 화면에서 0.4초) */
+  const todo=[...leadThs.map((th,i)=>[th,'_row'+i,i]),...ths.map((th,i)=>[th,cols[i],leadN+i])].filter(x=>x[0]&&!x[0].querySelector('.colgrip'));
+  const stat=todo.map(x=>getComputedStyle(x[0]).position==='static');
+  todo.forEach((x,i)=>grip(x[0],x[1],x[2],stat[i]));
+  function grip(th,key,colIdx,isStatic){
+    if(!th)return;
     th.classList.add('cresz');
     /* 손잡이는 th 를 기준으로 붙어야 한다 — 머리글이 static 이면 표 전체 오른쪽 끝에 붙어
        실제로는 잡히지 않았다 (sticky 인 머리글은 그대로 둔다) */
     /* 그립은 절대 배치라 부모 th 가 배치 기준이어야 한다.
        다만 static -> relative 로 바꾸면 sticky 용으로 걸어 둔 top(2행 헤더의 33px)이
        그대로 살아나 셀이 아래로 밀린다 — 그래서 top 도 함께 0 으로 못 박는다. */
-    if(getComputedStyle(th).position==='static'){th.style.position='relative';th.style.top='0';}
+    if(isStatic){th.style.position='relative';th.style.top='0';}
     const g=document.createElement('span');
     g.className='colgrip';g.title='드래그해서 열 너비 조정 · 더블클릭하면 자동';
     th.appendChild(g);
