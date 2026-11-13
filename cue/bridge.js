@@ -78,16 +78,16 @@ function renderSummary(root) {
    → 대시보드(부모 창)가 알려 주는 보이는 위치(cueStick 의 off)로 보이는 범위를 정하고, 스크롤할 때마다 다시 그린다 */
 var CUE_OFF = 0;
 window.cueAllVp = function (wrap) {
-  if (!CUE_EMB) return null;
+  /* v209 — 전체 큐시트는 표 안에서 스스로 스크롤한다(대시보드 스크롤에 기대던 방식은 필터를 바꾸거나 빨리 내리면 줄이 비었다) */
+  return null;
   var vh = 900; try { vh = parent.innerHeight || vh; } catch (e) { }
   var top = wrap.getBoundingClientRect().top;          /* 틀 안에서 표가 시작하는 높이 */
   return [Math.max(0, CUE_OFF - top - 40), vh + 80];
 };
 window.cueStick = function (off) {
   CUE_OFF = off;
-  try { var w = document.querySelector('.pane:not([hidden]) .caw') || document.querySelector('.caw'); if (w && w.__paint && w.offsetParent) w.__paint(); } catch (e) { }
   document.querySelectorAll('.pane:not([hidden]) table.calt, .pane:not([hidden]) table.t').forEach(function (tb) {
-    var hd = tb.tHead; if (!hd) return; var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
+    var hd = tb.tHead; if (!hd || tb.closest('.caw')) return;   /* 전체 큐시트 머리줄은 표 안에서 sticky */ var r = tb.getBoundingClientRect(), d = Math.max(0, Math.min(off - r.top, r.height - hd.offsetHeight - 60));
     if (tb.__d === d) return; tb.__d = d; hd.style.transform = d ? 'translateY(' + Math.round(d) + 'px)' : ''; hd.classList.toggle('stuck', d > 0);
   });
 };
@@ -97,7 +97,9 @@ window.cueCalJump = function (root, smooth) {
   setTimeout(function () {
     var td = root.querySelector('#cal-td-today'); if (!td) return; var now = td.querySelector('[data-now]') || td;
     try { cueTellH(); } catch (e) { }
-    try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, !!smooth); } catch (e) { }
+    /* v209 — 팝업(캘린더로 보기)에서는 틀 안에서 그 자리로 */
+    if (window.__CUE_POP__) { try { now.scrollIntoView({ block: 'center', inline: 'center', behavior: smooth ? 'smooth' : 'auto' }); } catch (e) { } }
+    else try { parent.cueScrollTo && parent.cueScrollTo(now.getBoundingClientRect().top, td.getBoundingClientRect().left + td.offsetWidth / 2, !!smooth); } catch (e) { }
     [td, now].forEach(function (x) { x.classList.remove('cue-flash'); void x.offsetWidth; x.classList.add('cue-flash'); });
     setTimeout(function () { [td, now].forEach(function (x) { x.classList.remove('cue-flash'); }); }, 3200);
   }, smooth ? 0 : 150);

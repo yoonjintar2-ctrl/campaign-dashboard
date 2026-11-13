@@ -9,11 +9,11 @@
 var TV_CUE=null;        // var — 14-tv 의 tvForDoc · tvFromDoc 이 typeof 로 본다
 var CUE_TAB='summary';
 var CUE_SUB='cueg';      // 큐시트 메뉴 안에서 고른 쪽(지상파 · 케이블)
-const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐시트 캘린더'],['cueall','전체 큐시트']];
+const CUE_TABS=[['summary','TV 미디어믹스'],['cue','큐시트'],['cal','큐시트 캘린더'],['cueall','큐시트']];
 const CUE={json:'',key:'',busy:false,frameKey:'',imp:null,impWait:null};
 const CUE_URL='cue.html';
 /* v184 — 큐시트 틀 주소는 버전만 붙인다. 달 · 탭은 # 뒤에 실어 같은 파일을 캐시에서 다시 쓴다(예전에는 캠페인마다 1.5MB 를 새로 받았다) */
-const CUE_VER='202';
+const CUE_VER='209';
 async function cuePipe(bytes,stream){
   const wr=stream.writable.getWriter();wr.write(bytes);wr.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());}
@@ -100,8 +100,9 @@ async function renderTvCue(){
   if(seg){seg.classList.toggle('hidden',CUE_TAB!=='cue'||!TV_CUE);
     seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.cs===CUE_SUB);b.onclick=()=>{if(CUE_SUB===b.dataset.cs)return;CUE_SUB=b.dataset.cs;renderTvCue();};});}
   /* v202 — 전체 큐시트는 캘린더의 '전체 보기' 팝업으로(예전 주소 · 메뉴로 들어오면 캘린더 + 팝업) */
-  if(CUE_TAB==='cueall'){CUE_TAB='cal';setTimeout(()=>{try{cueAllOpen();}catch(e){}},400);return renderTvCue();}
-  {const ab=$('cueAllBtn');if(ab){ab.classList.toggle('hidden',CUE_TAB!=='cal'||!TV_CUE||!TV_CUE.z);ab.onclick=()=>cueAllOpen();}}
+  /* v209 — 기본 = 전체 큐시트. 캘린더는 '캘린더로 보기' 팝업(예전 주소 · 메뉴로 캘린더에 들어오면 전체 큐시트 + 캘린더 팝업) */
+  if(CUE_TAB==='cal'){CUE_TAB='cueall';setTimeout(()=>{try{cueAllOpen();}catch(e){}},400);return renderTvCue();}
+  {const ab=$('cueAllBtn');if(ab){ab.classList.toggle('hidden',CUE_TAB!=='cueall'||!TV_CUE||!TV_CUE.z);ab.onclick=()=>cueAllOpen();}}
   const ftab=CUE_TAB==='cue'?CUE_SUB:CUE_TAB;
   let ed=false;try{ed=!isClient()&&inbxEdit();}catch(e){}
   if(!TV_CUE||!TV_CUE.z){
@@ -139,13 +140,13 @@ async function renderTvCue(){
 function cueAllOpen(){
   if(!TV_CUE||!TV_CUE.z||!CUE.json)return;
   cueAllClose(true);
-  const el=document.createElement('div');el.className='cuepop';el.id='cuePop';el.setAttribute('role','dialog');el.setAttribute('aria-label','전체 큐시트');
-  el.innerHTML=`<div class="cuepop-in"><div class="hd"><div class="ttl"><b>전체 큐시트</b><span>${esc(($('cueNote')||{}).textContent||'')}</span></div>
+  const el=document.createElement('div');el.className='cuepop';el.id='cuePop';el.setAttribute('role','dialog');el.setAttribute('aria-label','큐시트 캘린더');
+  el.innerHTML=`<div class="cuepop-in"><div class="hd"><div class="ttl"><b>큐시트 캘린더</b><span>${esc(($('cueNote')||{}).textContent||'')}</span></div>
     <button type="button" class="x" aria-label="닫기"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
-    <div class="bd"><div class="cue-load"><i class="sp"></i><b>전체 큐시트를 여는 중…</b></div><iframe title="전체 큐시트" allow="clipboard-write"></iframe></div></div>`;
+    <div class="bd"><div class="cue-load"><i class="sp"></i><b>캘린더를 여는 중…</b></div><iframe title="큐시트 캘린더" allow="clipboard-write"></iframe></div></div>`;
   document.body.appendChild(el);document.documentElement.classList.add('cuepop-on');
   const f=el.querySelector('iframe');f.onload=()=>setTimeout(()=>el.classList.add('ready'),250);
-  f.src=`${CUE_URL}?v=${CUE_VER}#t=cueall&pop=1&k=${encodeURIComponent(String(TV_CUE.at))}`;
+  f.src=`${CUE_URL}?v=${CUE_VER}#t=cal&pop=1&k=${encodeURIComponent(String(TV_CUE.at))}`;
   el.querySelector('.x').onclick=()=>cueAllClose();
   el.addEventListener('mousedown',e=>{if(e.target===el)cueAllClose();});
   requestAnimationFrame(()=>el.classList.add('in'));}

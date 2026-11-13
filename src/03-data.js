@@ -806,7 +806,8 @@ const MENUS=[
   /* v167 — TV 큐시트 (34-cue.js). 화면 하나(tab-tvcue)를 여섯 메뉴가 나눠 쓴다(cue = 큐시트 안의 탭) */
   /* v170 — 큐시트는 메뉴 하나(화면 안에서 지상파 · 케이블을 고른다). 요약 · 당월 소재는 미디어믹스로 */
   {id:'tq_cue',  area:'tv',    tab:'tvcue',cue:'cue',    l:'큐시트',       kind:'view',vdef:false,udef:false},
-  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cal',    l:'큐시트 캘린더',kind:'view'},
+  /* v209 — 메뉴 이름 '큐시트' · 기본 화면 = 전체 큐시트(id 는 예전 그대로 tq_cal — 캠페인마다 저장된 메뉴 설정을 지키려고). 캘린더는 오른쪽 위 '캘린더로 보기' 팝업 */
+  {id:'tq_cal',  area:'tv',    tab:'tvcue',cue:'cueall', l:'큐시트',       kind:'view'},
   /* v207 — '큐시트' 메뉴는 모든 캠페인에서 꺼짐(udef:false · vdef:false — 메뉴 설정에서 켠 캠페인만). TV 큐시트는 '큐시트 캘린더'(+ 전체 보기 팝업) 하나만 남긴다 */
   /* v202 — 전체 큐시트는 메뉴에서 빼고 큐시트 캘린더 오른쪽 위 '전체 보기' 단추(팝업)로 */
   /* OTT (v141) — 디지털 대시보드 엔진(구분 · 매체 · 라인 · 소재)을 그대로 쓰되 OTT 라인만 본다.

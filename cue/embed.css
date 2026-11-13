@@ -114,10 +114,14 @@ html.embed td.cue-flash::after{content:'';position:absolute;inset:0;pointer-even
 html.embed .calnow.cue-flash span{animation:none}
 html.embed .calnow.cue-flash span::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:0 0 0 6px rgba(42,111,186,.3);opacity:0;will-change:opacity;animation:cueFlashO 3s ease-in-out}
 
-/* v202 — 팝업 모드(전체 큐시트 팝업): 틀 안에서 표가 스스로 스크롤 · 머리줄은 표 안에서 고정 */
-html.embed.pop,html.embed.pop body{overflow:hidden;height:100%}
+/* v209 — 전체 큐시트: 표가 스스로 스크롤(화면 높이만큼) · 머리줄은 표 안에서 고정 */
+html.embed .tw.caw{max-height:var(--pvh,640px)!important;overflow:auto!important}
+html.embed .caw table thead{position:sticky;top:0;z-index:6;transform:none!important}
+html.embed .caw table thead th{box-shadow:0 6px 10px -8px rgba(20,30,45,.4)}
+/* 팝업 모드(캘린더로 보기): 틀 안에서 스크롤 · 캘린더 머리줄 고정 */
+html.embed.pop,html.embed.pop body{height:100%;overflow:hidden}
+html.embed.pop body{overflow-y:auto!important}
 html.embed.pop main{padding-top:4px!important}
-html.embed.pop .tw.caw{max-height:calc(100vh - 120px)!important;overflow:auto!important}
 html.embed.pop section.card{margin-top:0!important}
-html.embed.pop .caw table thead{position:sticky;top:0;z-index:6;transform:none!important}
-html.embed.pop .caw table thead th{box-shadow:0 6px 10px -8px rgba(20,30,45,.4)}
+html.embed.pop table.calt thead{position:sticky;top:0;z-index:6;transform:none!important}
+html.embed.pop .calw,html.embed.pop .calcard{overflow:visible!important}
