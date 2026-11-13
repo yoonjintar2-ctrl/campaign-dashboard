@@ -573,6 +573,13 @@ select.pill{appearance:none;-webkit-appearance:none;font-weight:700;padding-righ
   -webkit-appearance:none;appearance:none;outline:none}
 .langbtn:hover,.langbtn[aria-expanded="true"]{border-color:var(--acc);color:var(--acc)}
 .langbtn:focus-visible{box-shadow:0 0 0 3px var(--acc-soft)}
+/* v208 — 데이터 접수 단추: 언어 단추와 같은 알약 모양(스타일이 빠져 있어 기본 단추로 보였다) */
+.upbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);
+  border-radius:999px;background:var(--surface);color:var(--ink2);cursor:pointer;font:inherit;font-size:12px;font-weight:700;
+  -webkit-appearance:none;appearance:none;outline:none;white-space:nowrap;transition:border-color .15s,color .15s,transform .1s}
+.upbtn:hover{border-color:var(--acc);color:var(--acc)}.upbtn:active{transform:scale(.97)}
+.upbtn:focus-visible{box-shadow:0 0 0 3px var(--acc-soft)}
+.upbtn svg{flex:none}
 .langbtn span{color:inherit;background:none}
 .langbtn .lcv{opacity:.7}
 .langmenu{position:absolute;right:0;top:calc(100% + 6px);min-width:132px;background:var(--surface);
