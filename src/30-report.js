@@ -139,10 +139,11 @@ function renderReport(){
     return;}
   if(RPT.cat&&!RPT_DOC.cats.some(c=>c.k===RPT.cat))RPT.cat='';
   host.innerHTML=`<div id="rpOwn" class="rpblk"></div>
+    <div id="rpTvx" class="rpblk"></div><div id="rpKpi" class="rpblk"></div>
     <div class="rpsticky" id="rpCatBar"></div>
     <div id="rpCatBody" class="rpcatpanel"></div>
     <div class="rpsrc">${esc(RPT_DOC.src||'')}</div>`;
-  rpOwn();rpCatBar();rpCatBody();
+  rpOwn();try{rpTvx();}catch(e){console.warn('tvx',e);}try{rpKpi();}catch(e){console.warn('kpi',e);}rpCatBar();rpCatBody();
   try{const tb=document.querySelector('.topbar');if(tb)host.style.setProperty('--rptop',(tb.getBoundingClientRect().height)+'px');}catch(e){}}
 
 /* ================================================================

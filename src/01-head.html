@@ -1350,6 +1350,42 @@ table.rptbl td.na{background:var(--line)!important}
 .rpdtbars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 20px;margin-top:14px}@media (max-width:900px){.rpdtbars{grid-template-columns:1fr 1fr}}
 .rpdtbars .h{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}.rpdtbars .rpstk{height:12px}
 .rpdtbars .lg{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:7px;font-size:11px;color:var(--ink2);font-weight:600}
+/* v205 — 리포트 › TV 실집행 추정금액 · KPI 요약 (36-rptvx.js) */
+.rpxhl{font-size:13px;font-weight:700;color:var(--ink2);margin:2px 2px 12px;line-height:1.5}
+.rpxsvg .bl{stroke:var(--gline);stroke-width:1}
+.rpxsvg .band,.rpkpisvg .band{fill:color-mix(in srgb,var(--acc-soft) 80%,transparent)}
+.rpxsvg .fut,.rpkpisvg .fut{fill:none;stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 3}
+.rpxsvg .mo,.rpkpisvg .mo{font-size:11.5px;font-weight:700;fill:var(--muted)}.rpxsvg .mo.cur,.rpkpisvg .mo.cur{fill:var(--ink);font-weight:900;font-size:12.5px}
+.rpxsvg .mo.fut,.rpkpisvg .mo.fut{fill:#b9bdc2;font-weight:600}
+.rpxsvg .tb{--c:#b3b8be;cursor:default;transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);transition:transform .9s var(--rpd) var(--d),opacity .2s}
+.go .rpxsvg .tb{transform:scaleY(1)}.rpxsvg .tb.cur{--c:#4a4e55}
+.rpxsvg .sg{fill:var(--c);transition:fill .25s ease,transform .3s cubic-bezier(.22,1,.36,1);transform:translateY(0)}
+.rpxsvg .tb.on .sg{fill:var(--bc);transform:translateY(calc(var(--k) * -5px))}
+.rpxsvg .sl{font-size:9.5px;font-weight:800;fill:#fff;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s cubic-bezier(.22,1,.36,1);transform:translateY(calc(var(--k) * -5px))}
+.rpxsvg .tb.on .sl{opacity:.95}
+.rpxsvg.hot .tb:not(.on){opacity:.4}
+.rpxsvg .tv{font-size:11.5px;font-weight:800;fill:var(--ink2);opacity:0;transition:opacity .4s ease var(--d)}.go .rpxsvg .tv{opacity:1}
+.rpxsvg .tv.cur{fill:var(--ink);font-size:13.5px;font-weight:900}.rpxsvg .tv.nil{fill:#c2c6cb;opacity:1}
+#tip .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+.rpkpisvg .ax{font-size:10px;font-weight:700;fill:var(--muted)}.rpkpisvg .axt{font-size:10.5px;font-weight:800;fill:var(--ink2)}
+.rpkpisvg .gl{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4;opacity:.7}
+.rpkpisvg .tgl{stroke:#2a2d31;stroke-width:1.3;stroke-dasharray:4 4;opacity:.7}.rpkpisvg .tgt{font-size:10px;font-weight:800;fill:var(--ink)}
+.rpkpisvg .fb{transform-box:fill-box;transform-origin:50% 50%;transform:scaleY(0);transition:transform .8s var(--rpd) var(--d)}.go .rpkpisvg .fb{transform:scaleY(1)}
+.rpkpisvg .fr{fill:#c4c9cf}.rpkpisvg .fb.cur .fr{fill:#5a5f67}
+.rpkpisvg .pl{stroke:#fff;stroke-width:2;stroke-linecap:round}.rpkpisvg .pl.ng{stroke:#e0835f}
+.rpkpisvg .pk{stroke:#fff;stroke-width:1.2;opacity:.8}
+.rpkpisvg .pn{font-size:8.5px;font-weight:800;fill:#2e3237;letter-spacing:-.3px;paint-order:stroke;stroke:#c4c9cf;stroke-width:3px;stroke-linejoin:round}.rpkpisvg .fb.cur .pn{fill:#fff;stroke:#5a5f67}
+.rpkpisvg .fb:hover .fr{filter:brightness(1.06)}
+.rpkpisvg .cl{fill:none;stroke:#454547;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.1s var(--rpd) .5s}.go .rpkpisvg .cl{stroke-dashoffset:0}
+.rpkpisvg .cp{opacity:0;transition:opacity .35s ease var(--d)}.go .rpkpisvg .cp{opacity:1}
+.rpkpisvg .cp circle{fill:var(--surface);stroke:#454547;stroke-width:4.6}.rpkpisvg .cp text{font-size:10px;font-weight:900;fill:#454547;letter-spacing:-.4px}
+.rpkpisvg .cp.cur circle{fill:#454547}.rpkpisvg .cp.cur text{fill:#fff}
+.rpkpil{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:4px;align-items:center}
+.rpkpil .lb{font-size:11px;font-weight:800;color:var(--muted);margin-right:2px}
+.rpkpil span:not(.lb){display:inline-flex;align-items:baseline;gap:5px;border-radius:999px;padding:4px 11px;font-size:11px;background:#e7f2ea;color:#2f6d4b}
+.rpkpil span.ng{background:#f8e6df;color:#b0532f}
+.rpkpil em{font-style:normal;font-weight:700}.rpkpil b{font-weight:900}.rpkpil i{font-style:normal;font-weight:600;opacity:.75}
+#tip b.ng{color:#e0835f}
 /* v202 — 지상파 세부 운영(그래프) */
 .rpdtst{display:flex;flex-wrap:wrap;gap:10px 34px;padding:4px 2px 16px;border-bottom:1px dashed var(--line);margin-bottom:4px}
 .rpdtst span{display:flex;flex-direction:column;gap:2px}.rpdtst em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted)}
